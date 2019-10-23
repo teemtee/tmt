@@ -43,7 +43,9 @@ class Execute(tmt.steps.Step):
 
     # API
     def requires(self):
-        pass
+        """ Returns packages required to run tests - used by prepare step"""
+        return self.executor.requires()
 
     def results(self):
-        pass
+        """ Returns results from executed tests - used by report step """
+        return self.executor.results()

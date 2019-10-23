@@ -10,5 +10,15 @@ class ExecutorShell(ExecutorBase):
         super(ExecutorShell, self).__init__(data, plan)
 
     def go(self, tests):
+        """ Run tests """
         super(ExecutorShell, self).go(tests)
 
+    # API
+    def requires(self):
+        """ Returns packages required to run tests"""
+        super(ExecutorShell, self).requires()
+        return ()
+
+    def results(self):
+        """ Returns results from executed tests """
+        super(ExecutorShell, self).results()

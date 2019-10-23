@@ -11,4 +11,14 @@ class ExecutorBase(object):
         self.plan = plan
 
     def go(self, tests):
+        """ Run tests """
+        pass
+
+    # API
+    def requires(self):
+        """ Returns packages required to run tests"""
+        pass
+
+    def results(self):
+        """ Returns results from executed tests """
         pass
