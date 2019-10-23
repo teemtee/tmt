@@ -3,6 +3,7 @@
 """ Execute Step Class """
 
 import tmt
+from click import echo
 from tmt.steps.execute import shell, beakerlib
 
 
@@ -37,9 +38,11 @@ class Execute(tmt.steps.Step):
         """ Execute the test step """
         if not self.enabled:
             return
+        echo(tmt.utils.format(str(self), self.summary or '', key_color='blue'))
 
-        tests = self.plan.discover.tests()
-        self.executor.go(tests)
+        # method not ready yet
+        # tests = self.plan.discover.tests()
+        # self.executor.go(tests)
 
     # API
     def requires(self):
