@@ -2,18 +2,20 @@ Vagrant.configure("2") do |config|
   # chooses corresponding image from app.vagrantup.com
   config.vm.box = "fedora/30-cloud-base"
 
-  # just to be sure nothing fails
-  config.vm.box_check_update = false
-  config.vm.box_download_insecure = true
-  config.vm.box_download_location_trusted = true
+  # In case you encounter issues, uncomment:
+  # config.vm.box_check_update = false
+  # config.vm.box_download_insecure = true
+  # config.vm.box_download_location_trusted = true
 
   # do not require root privileges
-  libvirt.qemu_use_session = true
+  # config.provider 'libvirt' do |libvirt|
+  #   libvirt.qemu_use_session = true
+  # end
 
   # disable default sync
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # initial workdir sync + every time we 'sync' unless disabled
-  config.vm.synced_folder "/var/tmp/tmt/", "/var/tmp/tmt/", type: "rsync", rsync__exclude: ".git/"
+  config.vm.synced_folder "/var/tmp/tmt/", "/var/tmp/tmt/", type: "rsync"
 
 end

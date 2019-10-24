@@ -9,18 +9,27 @@ class ProvisionBase(object):
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
 
     def execute(self, command):
-        """ executes one command in a gyes """
+        """ executes one command in a guest """
         pass
 
     def sync_workdir_to_guest(self):
-        """ sync step workdir from host to guests """
+        """ sync self.plan.workdir from host to guests """
         pass
 
     def sync_workdir_from_guest(self):
-        """ sync step workdir from guest to host """
+        """ sync self.plan.workdir from guest to host """
         pass
 
-    def provision(self):
+    def copy_from_guest(self):
+        """ copy on guest to workdir and sync_workdir_from_guest
+
+            arg: "/var/log/journal.log"
+               => f"{provision_dir}/copy/var/log/journal.log
+
+        """
+        pass
+
+    def go(self):
         """ do the actual provisioning """
         pass
 

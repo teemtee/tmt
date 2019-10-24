@@ -29,11 +29,8 @@ class Provision(tmt.steps.Step):
             how = step.get('how')
             if how == 'local':
                 self.guests.append(ProvisionLocalhost(step, self))
-            elif how == 'virtual':
-                pass
             else:
-                raise SpecificationError(
-                    "Unknown provision method '{}'.".format(how))
+                self.guests.append(ProvisionVagrant(step, self))
 
     def go(self):
         """ Provision all resources """

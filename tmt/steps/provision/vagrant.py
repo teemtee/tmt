@@ -27,36 +27,59 @@ class ProvisionVagrant(ProvisionBase):
     config_prefix = '  config.'
     sync_type = 'rsync'
     default_image = 'fedora/f30-cloud-base'
-    default_container = 'fedora/f30'
+    default_container = 'fedora:30'
 
     def __init__(self, data, plan):
         """ Initialize the Vagrant provision step """
         super(Provision, self).__init__(data, plan)
+        self.vagrantfile = os.patch.join(self.provision_dir, 'Vagrantfile')
 
-        #TODO: investigate whether this call is needed
-        self.wake(self)
+        # Are we resuming?
+        if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
+            self.validate()
+            return self
+
+        # Check for Vagrant
+        self.run_vagrant('version')
+
+        # Let's check what's actually needed
+        self.how()
+
+        # Create a Vagrantfile
+        self.create()
+
+        # Add default entries to Vagrantfile
+        self.add_defaults()
+
+        # Let's check what's actually needed
+        self.add_knowhow()
+
 
     def load(self):
         """ Load ProvisionVagrant step """
+        #TODO: ensure this loads self.data[*]
+        # instancename and regenerates provision_dir and vagrantfile
         super(Provision, self).load(self)
 
     def save(self):
         """ Save ProvisionVagrant step """
         #TODO: ensure this saves self.data[*]
+        # instancename
         super(Provision, self).save(self)
+
+#    def wake(self):
+#        """ Prepare the Vagrantfile """
+#        super(Provision, self).wake(self)
+#        # capabilities? providers?
 
     def show(self):
         """ Show execute details """
         super(ProvisionVagrant, self).show(keys=['how', 'box', 'image'])
 
-    def wake(self):
-        """ Some minimal inicialization """
-        super(Provision, self).wake(self)
-        # capabilities? providers?
-        self.vagrantfile = os.patch.join(self.provision_dir, 'Vagrantfile')
-
-    def knowhow(self):
-        """ Decide what to do when HOW is ... """
+    def how(self):
+        """ Decide what to do when HOW is ...
+            does not add anything into Vagrantfile yet
+        """
 
         set_default('how', 'virtual')
         set_default('image', default_image)
@@ -88,57 +111,66 @@ class ProvisionVagrant(ProvisionBase):
             set_default('box', image)
 
 
-    def go(self)
+    def create(self):
+        """ Create default Vagrantfile with our modifications """
+        self.run_vagrant_success(['init', '-fm', self.box])
+
+    def add_defaults(self):
+        """ Adds default config entries
+            1) Disable default sync
+            2) To sync plan workdir
+        """
+        dir = self.plan.workdir
+        self.add_synced_folder('vm.synced_folder', ".", "/vagrant", 'disabled: true')
+        self.add_synced_folder('vm.synced_folder', dir, dir)
+        # [. . . ]
+
+    def go(self):
         """ Execute actual provisioning """
         echo ('provisioning localhost')
-        self.knowhow()
-        self.create(self)
-        # self.plan.workdir
-        # [ . . . ]
-        # Dry-run?
-        self.run_vagrant('up')
+        # self.run_vagrant_success('up')
 
-    def execute(self, command)
+    def execute(self, command):
         """ Execute remote command """
-        self.run_vagrant(['ssh', '-c', command])
+        return self.run_vagrant_success(['ssh', '-c', command])
 
-    def sync(self)
+    def status(self, command):
+        """ Get vagrant's status """
+        return self.run_vagrant_success('status')
+
+    def sync_workdir_to_guest(self):
         """ sync on demand """
         # needs reload for sync configuration change
         # TODO: test
-        self.run_vagrant('rsync')
+        self.run_vagrant_success('rsync')
 
-    def sync_back(self)
+    def sync_workdir_from_guest(self):
         """ sync_back """
         # IDK: investigate
         # 'vm.synced_folder ".", "/vagrant"'
         pass
 
-    def destroy(self)
+    def destroy(self):
         """ remove instance """
-        self.run_vagrant(['destroy', '-f'])
+        self.run_vagrant_success(['destroy', '-f'])
 
-    def cleanup(self)
+    def cleanup(self):
         """ remove box and base box """
-        self.run_vagrant(['box', 'remove', '-f'])
+        self.run_vagrant_success(['box', 'remove', '-f'])
         # libvirt?
 
-    def run_prepare(self, name, path)
+    def run_prepare(self, name, path):
         """ add single 'preparator' and run it """
-        self.add_config(['vm.provision', .....])
+        self.add_config('vm.provision', '')
 
-    def create(self)
-        """ Create default Vagrantfile with our modifications """
-        self.run_vagrant(['init', '-fm', self.box])
-        dir = f'"{self.plan.workdir}"'
-        self.add_config(['vm.synced_folder', dir, dir, 'type: "' + self.sync_type + '"'])
-        # [. . . ]
-
-    def validate(self)
+    def validate(self):
         """ Validate Vagrantfile format """
-        self.run_vagrant('validate')
+        self.run_vagrant_success('validate')
 
-    def run_vagrant(self, args)
+    def run_vagrant_success(self, *args):
+        self.run_vagrant(*args)
+
+    def run_vagrant(self, *args):
         """ Run a Vagrant command
 
               args = 'command args'
@@ -147,29 +179,44 @@ class ProvisionVagrant(ProvisionBase):
 
               args = ['comand', 'args']
 
+            return subprocess.CompletedProcess
         """
-        command = self.append(executable, args)
+        command = self.prepend(args, executable)
 
         # TODO: dry-run / verbose
-        command = self.prepend('echo', command)
+        command = self.prepend(command, 'echo')
 
-        subprocess.call(command, timeout = self.timeout, cwd = self.provision_dir) #instance_dir?
-        #subprocess.check_output
-        #exit code?
+        return echo(command)
 
-    def add_config(self, config)
+        return subprocess.run(
+            command,
+            timeout = self.timeout,
+            cwd = self.provision_dir,
+            capture_output=True)
+
+    def add_synced_folder(self, sync_from, sync_to, *args):
+        self.add_config('vm.synced_folder',
+            self.quote(sync_from),
+            self.quote(sync_to),
+            f'type: {quote(self.sync_type)}', *args)
+
+    def add_config(self, *config):
         """ Add config entry into Vagrantfile
             right before last 'end'
 
               config = "string"
 
-            or list:
+            or:
 
               config = ['one', 'two', 'three']
                 => "one two, three"
 
         """
-        if type(config) is list:
+        if len(config) == 1:
+            config = config[0]
+        elif len(config) == 0:
+            raise RuntimeError("")
+        else:
             config = f'{config[0]} ' + ', '.join(config[1:])
 
         vagrantdata = open(vagrantfile).read().splitlines()
@@ -178,12 +225,15 @@ class ProvisionVagrant(ProvisionBase):
         i = 0
         for line in reversed(vagrantdata):
             i -= 1
-            if (line.find('end') != -1)
+            if (line.find('end') != -1):
                 break
 
         vagrantdata = vagrantdata[:i] \
             + [config_prefix + config + '\n'] \
             + vagrantdata[i:]
+
+        print(vagrantdata)
+        return vagrantdata
 
         with open(vagrantfile, 'w') as f:
             f.writelines(vagrantdata)
@@ -191,42 +241,46 @@ class ProvisionVagrant(ProvisionBase):
         self.validate(self)
 
 
-    def set_default(self, where, default) #, additional = None, setthis = None)
+    def set_default(self, where, default):
         if not (where in self.data and self.data[where]):
             self.data[where] = default
-            #if not (additional is None or setthis is None):
 
-    def prepend(self, thing, string)
+    def prepend(self, thing, string):
         if type(thing) is list:
             return thing.insert(0, string)
         else:
             return string + thing
 
-    def append(self)
+    def append(self, thing, string):
         if type(thing) is list:
             return thing.append(string)
         else:
             return thing + string
 
+    def quote(self, string):
+        return thing + string
 
-    def how_vm(self)
+
+    def how_vm(self):
         self.virtual(self)
 
-    def how_libvirt(self)
+    def how_libvirt(self):
         pass
 
-    def how_openstack(self)
+    def how_openstack(self):
         pass
 
-    def how_docker(self)
+    def how_docker(self):
         self.container(self)
 
-    def how_podman(self)
+    def how_podman(self):
         self.container(self)
 
-    def how_container(self)
+    def how_container(self):
         # TODO
+        pass
 
-    def how_virtual(self)
+    def how_virtual(self):
         # TODO:
+        pass
 
