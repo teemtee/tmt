@@ -40,5 +40,5 @@ class Provision(tmt.steps.Step):
         super(Provision, self).go()
 
         for guest in self.guests:
-            guest.provision()
+            guest.go()
             guest.save()
