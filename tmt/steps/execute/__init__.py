@@ -36,9 +36,7 @@ class Execute(tmt.steps.Step):
 
     def go(self):
         """ Execute the test step """
-        if not self.enabled:
-            return
-        echo(tmt.utils.format(str(self), self.summary or '', key_color='blue'))
+        super(Execute, self).go()
 
         # method not ready yet
         # tests = self.plan.discover.tests()
