@@ -9,6 +9,7 @@ class ProvisionBase(object):
         self.step = step
         self.instance_name = instance_name or ''.join(random.choices(string.ascii_letters, k=16))
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
+        os.mkdir(self.provision_dir)
 
     def execute(self, command):
         """ executes one command in a guest """
