@@ -7,6 +7,7 @@ import tmt
 from click import echo
 
 from .localhost import ProvisionLocalhost
+from .vagrant import ProvisionVagrant
 from tmt.utils import SpecificationError
 
 
@@ -25,12 +26,12 @@ class Provision(tmt.steps.Step):
         """ Wake up the step (process workdir and command line) """
         super(Provision, self).wake()
         # Choose the plugin
-        for step in self.data:
-            how = step.get('how')
+        for data in self.data:
+            how = data.get('how')
             if how == 'local':
-                self.guests.append(ProvisionLocalhost(step, self))
+                self.guests.append(ProvisionLocalhost(data, self))
             else:
-                self.guests.append(ProvisionVagrant(step, self))
+                self.guests.append(ProvisionVagrant(data, self))
 
     def go(self):
         """ Provision all resources """

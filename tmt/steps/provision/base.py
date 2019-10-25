@@ -5,6 +5,8 @@ import string
 
 class ProvisionBase(object):
     def __init__(self, data, step, instance_name=None):
+        self.data = data
+        self.step = step
         self.instance_name = instance_name or ''.join(random.choices(string.ascii_letters, k=16))
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
 

@@ -15,7 +15,9 @@ Vagrant.configure("2") do |config|
   # disable default sync
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
-  # initial workdir sync + every time we 'sync' unless disabled
-  config.vm.synced_folder "/var/tmp/tmt/", "/var/tmp/tmt/", type: "rsync"
+  # initial workdir sync on 'vagrant up'
+  # every time we 'vagrant sync' unless disabled: true
+  # overwrites guest files
+  config.vm.synced_folder "/var/tmp/tmt/...", "/var/tmp/tmt/...", type: "rsync"
 
 end
