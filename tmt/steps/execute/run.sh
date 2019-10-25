@@ -1,127 +1,195 @@
 #!/bin/bash
-# run.sh /path/to/workdir TYPE
+# run.sh [-d] /path/to/workdir TYPE
 #
 #   TYPE of exectution:
-#       plain|beakerlib
+#       shell | beakerlib
+#
+#   Supports __only__ one workdir to run in,
+#       and only one TYPE to run the tests
+#
+#   Outputs results into folder specified by test name.
+#       Resulting files:
+#               stderr.log
+#               stdout.log
+#               exitcode.log
+#
+#   Options:
+#       -d    DEBUG output
 #
 #
 
 set -e
+set -o pipefail
 
-DEBUG=y
+bash -n "$0"
 
-main () {
-  last=""
+tmt_WD=
+tmt_DEBUG=
+tmt_TYPE='shell'
 
-  type="$1"
-  plan="$(basename -s '.yaml' "$2")"
+tmt_TESTS_D='discover'
+tmt_TESTS_F="${tmt_TESTS_D}/tests.yaml"
 
-  name=''
-  test=''
-  path=''
-  duration=''
-  environment=''
+tmt_LOG_D='execute'
+tmt_LOGOUT_F="stdout.log"
+tmt_LOGERR_F="stderr.log"
+tmt_LOGCODE_F="exitcode.log"
 
-  IFS=''
-  while read line; do
-    key="$(cut -d':' -f1 <<< "$line" | trim)"
-    val="$(cut -d':' -f2- <<< "$line" | trim)"
+# TESTS_F file is on stdin
+# TYPE is ARG
+tmt_main () {
+    local name=''
+    local test=''
+    local path=''
+    local duration=''
+    local environment=''
 
-    debug "> $line"
+    local last=''
 
-    grep -q '^\s' <<< "$line" && {
-      m=
-      [[ "$key" == 'name' ]] && { m=y; name="$val"; }
-      [[ "$key" == 'test' ]] && { m=y; test="$val"; }
-      [[ "$key" == 'path' ]] && { m=y; path="$val"; }
-      [[ "$key" == 'duration' ]] && { m=y; duration="$val"; }
-      [[ "$key" == 'environment' ]] && { m=y; environment="$val"; }
+    local IFS_b="$IFS"
+    IFS="
+    while read line; do
+      local key="$(cut -d':' -f1 <<< "$line" | tmt_trim)"
+      local val="$(cut -d':' -f2- <<< "$line" | tmt_trim)"
 
-      [[ -n "$m" ]] || error "unknown test variable: $line"
-      :
-    } || {
-      [[ "$last" == '' ]] || \
-        runtest "$type" "$plan" "$name" "$test" "$path" "$duration" "$environment"
+      tmt_debug 2 "$line"
 
-      last="$type$plan$name"
+      grep -q '^\s' <<< "$line" && {
+        m=
+        [[ "$key" == 'name' ]] && { m=y; name="$val"; }
+        [[ "$key" == 'test' ]] && { m=y; test="$val"; }
+        [[ "$key" == 'path' ]] && { m=y; path="$val"; }
+        [[ "$key" == 'duration' ]] && { m=y; duration="$val"; }
+        [[ "$key" == 'environment' ]] && { m=y; environment="$val"; }
 
-      name="$key"
-      test=''
-      path=''
-      duration=''
-      environment=''
-    }
-  done
+        [[ -n "$m" ]] || tmt_error "unknown test variable: $line"
+        :
+      } || {
+        [[ "$last" == '' ]] || \
+            runtest "$name" "$test" "$path" "$duration" "$environment"
 
-  [[ "$type$plan$name" == "$last" ]] || \
-    runtest "$type" "$plan" "$name" "$test" "$path" "$duration" "$environment"
+        last="$name"
+
+        name="$key"
+        test=''
+        path=''
+        duration=''
+        environment=''
+      }
+    done
+
+    [[ "$name" == "$last" ]] || \
+        runtest "$name" "$test" "$path" "$duration" "$environment"
+
+    local IFS="$IFS_b"
 }
 
 runtest () {
-  type="$1"
-  plan="$2"
-  name="$3"
-  test="$4"
-  path="$5"
-  duration="$6"
-  environment="$7"
+    local name="$1"
+    local test="$2"
+    local path="$3"
+    local duration="$4"
+    local environment="$5"
 
-  debug "> > runtest" "$type" "$plan" "$name" "$test" "$path" "$duration" "$environment"
+    tmt_debug 3 "runtest $name $test $path $duration $environment"
 
-  [[ -z "$environment" ]] || environment="env -i $environment "
-  [[ -z "$duration" ]] || duration="timeout '$duration' "
+    [[ -z "$name" ]] || {
+        tmt_error "Invalid test name: '$name'"
+        continue
+    }
+    [[ -z "$path" ]] || {
+        path="$(readlink -f "$tmt_TESTS_D/$path")"
+        [[ -d "$path" ]] || {
+            tmt_error "Could not find test dir: '$path'"
+            return
+        }
+        path="cd '$path' && "
+    }
+    [[ -z "$environment" ]] || environment="env -i $environment "
+    [[ -z "$duration" ]] || duration="timeout '$duration' "
 
-  #pushd .$plan/$path # ?
+    local log_dir="${tmt_LOG_D}/$name"
+    mkdir -p "$log_dir" || {
+        tmt_error "Could not create log dir: '$log_dir'"
+        return
+    }
+    cd "$log_dir" || {
+        tmt_error "Could not cd: '$log_dir'"
+        return
+    }
 
-  cmd="${environment}${duration}${test}"
-  debug "> > > $cmd"
-  #bash -c "$c" > stdout.log 2> stderr.log
+    local cmd="${path}${environment}${duration}${test}"
+    tmt_debug 4 "$cmd"
 
-  #popd
-
+    #bash -c "$c" > stdout.log 2> stderr.log
+    popd
 }
 
 # Helpers
-abort () {
-  echo "Failure: $@" >&2
-  exit 1
+tmt_abort () {
+    echo "Failure: $@" >&2
+    exit 1
 }
 
-error () {
-  echo "Error: $@" >&2
+tmt_error () {
+    echo "Error: $@" >&2
 }
 
-beakerlib () {
-  abort "NYI: beakerlib tests run"
+tmt_beakerlib () {
+    tmt_abort "NYI: beakerlib tests run"
 }
 
-trim () {
-  sed -e 's/ *$//g' \
-      -e 's/^ *//g'
+tmt_trim () {
+    sed -e 's/ *$//g' \
+        -e 's/^ *//g'
 }
 
-debug () {
-  [[ -z "$DEBUG" ]] || echo "> $@" >&2
+tmt_debug () {
+    [[ -z "$tmt_DEBUG" ]] || {
+        i="$1"
+        for x in $(seq 0 $i); do
+            echo -n ">"
+        done
+        shift
+
+        echo "$@" >&2
+    }
 }
 
 ### INIT checks
-# TODO #
+# TODO: silence this
+[[ "$1" == "-d" || "$1" == '--debug' ]] \
+    && { tmt_DEBUG=y; shift; set -x; } ||:
+
+set -x
+[[ 'WORKS' == "$(tmt_trim <<< "    WORKS    ")" ]]
+[[ 'key'   == "$(cut -d':' -f1 <<< "key:value")" ]]
+[[ 'value' == "$(cut -d':' -f2- <<< "key:value")" ]]
+{ set +xe; } &>/dev/null
 
 ### RUN
-[[ -n "$1" ]] || abort "path to workdir is missing"
-cd "$1" || abort "Failed to cd '$1'"
+[[ -n "$1" ]] || tmt_abort "path to workdir is missing"
+tmt_WD="$(readlink -f "$1")"
+shift
 
-[[ -z "$2" || "$2" == 'plain' ]] && TYPE=plain || {
-  [[ "$2" == 'beakerlib' || "$2" == 'whatever' ]] && {
-    TYPE="$2"
-    exit 0
-  }
-  abort "Unknown tests execution type: $2"
+[[ -z "$1" ]] || {
+    [[ "$1" == 'beakerlib' || "$1" == 'shell' ]] && {
+        tmt_TYPE="$1"
+        exit 0
+    }
+    tmt_abort "Unknown tests execution TYPE: '$1'"
 }
+shift
 
-find -type f -name '*.yaml' \
-  | while read file; do
-      debug main "$TYPE" "$file"
-      main "$TYPE" "$file" < <( grep -v '^$' "$file" )
-      echo
-    done
+cd "$tmt_WD" || tmt_abort "Failed to cd: $tmt_WD"
+[[ -r "$tmt_TESTS_F" ]] || tmt_abort "Could not find TESTS file: $tmt_TESTS_F"
+
+tmt_TESTS_D="$(readlink -f "${tmt_WD}/${tmt_TESTS_D}")"
+[[ -d "$tmt_TESTS_D" ]] || tmt_abort "Could not find Discover dir: $tmt_TESTS_D"
+
+tmt_LOG_D="$(readlink -f "${tmt_WD}/${tmt_LOG_D}")"
+[[ -d "$tmt_LOG_D" ]] || tmt_abort "Could not find Execute dir: $tmt_LOG_D"
+
+tmt_debug 1 "$tmt_WD $ main $tmt_TYPE < $tmt_TESTS_F"
+
+tmt_main < <( grep -vE '^\s*$' "$tmt_TESTS_F" )
