@@ -15,12 +15,9 @@ import tmt.convert
 import tmt.steps
 import tmt.templates
 
-log = fmf.utils.Logging('tmt').logger
-
-# Shared metadata tree and run
-tree = None
-run = None
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  Custom Group
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class CustomGroup(click.Group):
     """ Custom Click Group """
@@ -45,7 +42,6 @@ class CustomGroup(click.Group):
         context.fail('Did you mean {}?'.format(
             listed(sorted(matches), join='or')))
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Main
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,8 +54,10 @@ class CustomGroup(click.Group):
 def main(context, path):
     """ Test Management Tool """
     # Initialize metadata tree
-    global tree
     tree = tmt.Tree(path)
+    tree._context = context
+    context.obj = tmt.utils.Common()
+    context.obj.tree = tree
 
     # Show overview of available tests, plans and stories
     if context.invoked_subcommand is None:
@@ -67,79 +65,114 @@ def main(context, path):
         tmt.Plan.overview(tree)
         tmt.Story.overview(tree)
 
-    return 'tmt'
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Run
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @click.group(chain=True, invoke_without_command=True, cls=CustomGroup)
+@click.pass_context
 @click.option(
     '-a', '--all', 'all_', help='Run all steps, customize some', is_flag=True)
 @click.option(
     '-v', '--verbose', help='Show detailed information', is_flag=True)
-@click.option('--id', 'id_', help='Run id (name or directory path)')
-@click.pass_context
+@click.option(
+    '-i', '--id', 'id_', help='Run id (name or directory path)')
 def run(context, all_, id_, verbose):
     """ Run test steps. """
     # Initialize
-    global run
-    run = tmt.Run(id_, tree, verbose)
-    # All test steps are enabled if no step selected
-    enabled = context.invoked_subcommand is None or all_
-    tmt.steps.discover.Discover.enabled = enabled
-    tmt.steps.provision.Provision.enabled = enabled
-    tmt.steps.prepare.Prepare.enabled = enabled
-    tmt.steps.execute.Execute.enabled = enabled
-    tmt.steps.report.Report.enabled = enabled
-    tmt.steps.finish.Finish.enabled = enabled
-    # Update metadata tree path
+    run = tmt.Run(id_, context.obj.tree)
+    run._context = context
+    context.obj.run = run
 
 main.add_command(run)
 
 
 @run.command()
-def discover():
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def discover(context, how):
     """ Gather and show information about test cases to be executed """
-    tmt.steps.discover.Discover.enabled = True
+    tmt.base.Plan._enabled_steps.add('discover')
+    tmt.steps.discover.Discover._context = context
     return 'discover'
 
 
 @run.command()
-@click.option('--how', help="Force 'how' attribute for all provisioning steps.")
-def provision(how):
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def provision(context, how):
     """ Provision an environment for testing (or use localhost) """
-    tmt.steps.provision.Provision.enabled = True
-    tmt.steps.provision.Provision.how = how
-    return 'provision'
+    tmt.base.Plan._enabled_steps.add('provision')
+    tmt.steps.provision.Provision._context = context
 
 
 @run.command()
-def prepare():
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def prepare(context, how):
     """ Configure environment for testing (like ansible playbook) """
-    tmt.steps.prepare.Prepare.enabled = True
-    return 'prepare'
+    tmt.base.Plan._enabled_steps.add('prepare')
+    tmt.steps.prepare.Prepare._context = context
 
 
 @run.command()
-def execute():
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def execute(context, how):
     """ Run the tests (using the specified framework and its settings) """
-    tmt.steps.execute.Execute.enabled = True
-    return 'execute'
+    tmt.base.Plan._enabled_steps.add('execute')
+    tmt.steps.execute.Execute._context = context
 
 
 @run.command()
-def report():
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def report(context, how):
     """ Provide an overview of test results and send notifications """
-    tmt.steps.report.Report.enabled = True
-    return 'report'
+    tmt.base.Plan._enabled_steps.add('report')
+    tmt.steps.report.Report._context = context
 
 
 @run.command()
-def finish():
+@click.pass_context
+@click.option(
+    '--how', metavar='METHOD', help='Use specified method for provisioning.')
+def finish(context, how):
     """ Additional actions to be performed after the test execution """
-    tmt.steps.finish.Finish.enabled = True
-    return 'finish'
+    tmt.base.Plan._enabled_steps.add('finish')
+    tmt.steps.finish.Finish._context = context
+
+
+@run.command()
+@click.pass_context
+@click.option(
+    '--name', 'names', multiple=True, metavar='REGEXP',
+    help='Regular expression to match plan name.')
+def plans(context, names):
+    """ Select plans which should be executed. """
+    tmt.base.Plan._context = context
+
+
+@run.command()
+@click.pass_context
+@click.option('--name', 'names', multiple=True, metavar='REGEXP',
+    help='Regular expression to match test name.')
+def tests(context, names):
+    """ Select tests which should be executed. """
+    tmt.base.Test._context = context
+
+
+@run.resultcallback()
+@click.pass_context
+def finito(context, commands, *args, **kwargs):
+    """ Run tests if run defined """
+    if hasattr(context.obj, 'run'):
+        context.obj.run.go()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Test
@@ -157,46 +190,49 @@ def tests(context):
 
     # Show overview of available tests
     if context.invoked_subcommand is None:
-        tmt.Test.overview(tree)
-
-    return 'test'
+        tmt.Test.overview(context.obj.tree)
 
 main.add_command(tests)
 
 
-@click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @tests.command()
-def ls(names):
+@click.pass_context
+@click.argument('names', nargs=-1, metavar='[REGEXP]...')
+def ls(context, names):
     """ List available tests. """
-    for test in tree.tests(names=names):
+    tmt.Test._context = context
+    for test in context.obj.tree.tests(names=names):
         test.ls()
-    return 'test ls'
 
 
+@tests.command()
+@click.pass_context
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @click.option(
     '-v', '--verbose', is_flag=True,
     help='Show source files where metadata are stored.')
-@tests.command()
-def show(names, verbose):
+def show(context, names, verbose):
     """ Show test details. """
-    for test in tree.tests(names=names):
-        test.show(verbose)
+    tmt.Test._context = context
+    for test in context.obj.tree.tests(names=names):
+        test.show()
         echo()
-    return 'test show'
 
 
-@click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @tests.command()
-def lint(names):
+@click.pass_context
+@click.argument('names', nargs=-1, metavar='[REGEXP]...')
+def lint(context, names):
     """ Check tests against the L1 metadata specification. """
-    for test in tree.tests(names=names):
+    tmt.Test._context = context
+    for test in context.obj.tree.tests(names=names):
         test.lint()
         echo()
-    return 'test lint'
 
 
 _test_templates = listed(tmt.templates.TEST, join='or')
+@tests.command()
+@click.pass_context
 @click.argument('name')
 @click.option(
     '-t', '--template', metavar='TEMPLATE',
@@ -205,13 +241,14 @@ _test_templates = listed(tmt.templates.TEST, join='or')
 @click.option(
     '-f', '--force', help='Force overwriting existing files.',
     is_flag=True)
-@tests.command()
-def create(name, template, force):
+def create(context, name, template, force):
     """ Create a new test based on given template. """
-    tmt.Test.create(name, template, tree, force)
-    return 'test create'
+    tmt.Test._context = context
+    tmt.Test.create(name, template, context.obj.tree, force)
 
 
+@tests.command()
+@click.pass_context
 @click.option(
     '--nitrate / --no-nitrate', default=True,
     help='Import test metadata from Nitrate')
@@ -222,8 +259,7 @@ def create(name, template, force):
     '--makefile / --no-makefile', default=True,
     help='Convert Beaker Makefile metadata')
 @click.argument('paths', nargs=-1, metavar='[PATH]...')
-@tests.command()
-def convert(paths, makefile, nitrate, purpose):
+def convert(context, paths, makefile, nitrate, purpose):
     """
     Convert old test metadata into the new fmf format.
 
@@ -236,6 +272,7 @@ def convert(paths, makefile, nitrate, purpose):
     purpose ...... description
     nitrate ...... environment, relevancy
     """
+    tmt.Test._context = context
     if not paths:
         paths = ['.']
     for path in paths:
@@ -247,7 +284,6 @@ def convert(paths, makefile, nitrate, purpose):
         # Gather old metadata and store them as fmf
         data = tmt.convert.read(path, makefile, nitrate, purpose)
         tmt.convert.write(path, data)
-    return 'convert'
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Plan
@@ -263,50 +299,54 @@ def plans(context):
     Search for available plans.
     Explore detailed test step configuration.
     """
+    tmt.Plan._context = context
 
     # Show overview of available plans
     if context.invoked_subcommand is None:
-        tmt.Plan.overview(tree)
-
-    return 'plan'
+        tmt.Plan.overview(context.obj.tree)
 
 
 main.add_command(plans)
 
 
-@click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @plans.command()
-def ls(names):
+@click.pass_context
+@click.argument('names', nargs=-1, metavar='[REGEXP]...')
+def ls(context, names):
     """ List available plans. """
-    for plan in tree.plans(names=names):
+    tmt.Plan._context = context
+    for plan in context.obj.tree.plans(names=names):
         plan.ls()
-    return 'plan ls'
 
 
+@plans.command()
+@click.pass_context
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @click.option(
     '-v', '--verbose', is_flag=True,
     help='Show source files where metadata are stored.')
-@plans.command()
-def show(names, verbose):
+def show(context, names, verbose):
     """ Show plan details. """
-    for plan in tree.plans(names=names):
-        plan.show(verbose)
+    tmt.Plan._context = context
+    for plan in context.obj.tree.plans(names=names):
+        plan.show()
         echo()
-    return 'plan show'
 
 
-@click.argument('names', nargs=-1, metavar='[REGEXP]...')
 @plans.command()
-def lint(names):
+@click.pass_context
+@click.argument('names', nargs=-1, metavar='[REGEXP]...')
+def lint(context, names):
     """ Check plans against the L2 metadata specification. """
-    for plan in tree.plans(names=names):
+    tmt.Plan._context = context
+    for plan in context.obj.tree.plans(names=names):
         plan.lint()
         echo()
-    return 'plan lint'
 
 
 _plan_templates = listed(tmt.templates.PLAN, join='or')
+@plans.command()
+@click.pass_context
 @click.argument('name')
 @click.option(
     '-t', '--template', metavar='TEMPLATE',
@@ -315,11 +355,10 @@ _plan_templates = listed(tmt.templates.PLAN, join='or')
 @click.option(
     '-f', '--force', help='Force overwriting existing files.',
     is_flag=True)
-@plans.command()
-def create(name, template, force):
+def create(context, name, template, force):
     """ Create a new plan based on given template. """
-    tmt.Plan.create(name, template, tree, force)
-    return 'plan create'
+    tmt.Plan._context = context
+    tmt.Plan.create(name, template, context.obj.tree, force)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -336,16 +375,17 @@ def stories(context):
     Check available user stories.
     Explore coverage (test, implementation, documentation).
     """
+    tmt.Story._context = context
 
     # Show overview of available stories
     if context.invoked_subcommand is None:
-        tmt.Story.overview(tree)
-
-    return 'test'
+        tmt.Story.overview(context.obj.tree)
 
 main.add_command(stories)
 
 
+@stories.command()
+@click.pass_context
 @click.option(
     '--undocumented', is_flag=True, help='Undocumented stories only.')
 @click.option(
@@ -363,18 +403,19 @@ main.add_command(stories)
 @click.option(
     '-i', '--implemented', is_flag=True, help='Implemented stories only.')
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
-@stories.command()
 def ls(
-    names, implemented, tested, documented, covered,
+    context, names, implemented, tested, documented, covered,
     unimplemented, untested, undocumented, uncovered):
     """ List available stories. """
-    for story in tree.stories(names=names):
+    tmt.Story._context = context
+    for story in context.obj.tree.stories(names=names):
         if story._match(implemented, tested, documented, covered,
                 unimplemented, untested, undocumented, uncovered):
             story.ls()
-    return 'story ls'
 
 
+@stories.command()
+@click.pass_context
 @click.option(
     '-v', '--verbose', is_flag=True,
     help='Show source files where metadata are stored.')
@@ -395,20 +436,21 @@ def ls(
 @click.option(
     '-i', '--implemented', is_flag=True, help='Implemented stories only.')
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
-@stories.command()
 def show(
-    names, implemented, tested, documented, covered,
+    context, names, implemented, tested, documented, covered,
     unimplemented, untested, undocumented, uncovered, verbose):
     """ Show story details. """
-    for story in tree.stories(names=names):
+    tmt.Story._context = context
+    for story in context.obj.tree.stories(names=names):
         if story._match(implemented, tested, documented, covered,
                 unimplemented, untested, undocumented, uncovered):
-            story.show(verbose)
+            story.show()
             echo()
-    return 'story show'
 
 
 _story_templates = listed(tmt.templates.STORY, join='or')
+@stories.command()
+@click.pass_context
 @click.argument('name')
 @click.option(
     '-t', '--template', metavar='TEMPLATE',
@@ -417,13 +459,14 @@ _story_templates = listed(tmt.templates.STORY, join='or')
 @click.option(
     '-f', '--force', help='Force overwriting existing files.',
     is_flag=True)
-@stories.command()
-def create(name, template, force):
+def create(context, name, template, force):
     """ Create a new story based on given template. """
-    tmt.base.Story.create(name, template, tree, force)
-    return 'story create'
+    tmt.Story._context = context
+    tmt.base.Story.create(name, template, context.obj.tree, force)
 
 
+@stories.command()
+@click.pass_context
 @click.option(
     '--undocumented', is_flag=True, help='Undocumented stories only.')
 @click.option(
@@ -447,12 +490,12 @@ def create(name, template, force):
 @click.option(
     '-c', '--code', is_flag=True, help='Show code coverage.')
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
-@stories.command()
 def coverage(
-    names, code, test, docs,
+    context, names, code, test, docs,
     implemented, tested, documented, covered,
     unimplemented, untested, undocumented, uncovered):
     """ Show code, test and docs coverage for given stories. """
+    tmt.Story._context = context
 
     def headfoot(text):
         """ Format simple header/footer """
@@ -462,7 +505,7 @@ def coverage(
     total = code_coverage = test_coverage = docs_coverage = 0
     if not any([code, test, docs]):
         code = test = docs = True
-    for story in tree.stories(names=names):
+    for story in context.obj.tree.stories(names=names):
         # Header
         if not header:
             if code:
@@ -492,9 +535,9 @@ def coverage(
     headfoot('from {}'.format(listed(total, 'story')))
     echo()
 
-    return 'story coverage'
 
-
+@stories.command()
+@click.pass_context
 @click.option(
     '--undocumented', is_flag=True, help='Undocumented stories only.')
 @click.option(
@@ -515,32 +558,31 @@ def coverage(
     '--format', 'format_', default='rst', show_default=True, metavar='FORMAT',
     help='Output format.')
 @click.argument('names', nargs=-1, metavar='[REGEXP]...')
-@stories.command()
 def export(
-    names, format_,
+    context, names, format_,
     implemented, tested, documented, covered,
     unimplemented, untested, undocumented, uncovered):
     """ Export selected stories into desired format. """
+    tmt.Story._context = context
 
-    for story in tree.stories(names=names, whole=True):
+    for story in context.obj.tree.stories(names=names, whole=True):
         if story._match(implemented, tested, documented, covered,
                 unimplemented, untested, undocumented, uncovered):
             echo(story.export(format_))
-
-    return 'story export'
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Init
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+@main.command()
+@click.pass_context
 @click.argument('path', default='.')
 @click.option('--mini', is_flag=True, help='Create simple set of examples.')
 @click.option('--full', is_flag=True, help='Create full set of examples.')
 @click.option(
     '-f', '--force', is_flag=True, help='Overwrite existing files.')
-@main.command()
-def init(path, mini, full, force):
+def init(context, path, mini, full, force):
     """
     Initialize a new tmt tree.
 
@@ -551,24 +593,24 @@ def init(path, mini, full, force):
     # Check for existing tree
     path = os.path.realpath(path)
     try:
-        tree = fmf.Tree(path)
-    except fmf.utils.RootError:
-        tree = None
-    else:
+        tree = tmt.Tree(path)
         # Are we creating a new tree under the existing one?
         if path == tree.root:
             echo("Tree '{}' already exists.".format(tree.root))
         else:
             tree = None
+    except tmt.utils.GeneralError:
+        tree = None
     # Create a new tree
     if tree is None:
         try:
-            root = fmf.Tree.init(path)
+            fmf.Tree.init(path)
+            tree = tmt.Tree(path)
         except fmf.utils.GeneralError as error:
             raise tmt.utils.GeneralError(
                 "Failed to initialize tree in '{}': {}".format(
                     path, error))
-        echo("Tree '{}' initialized.".format(path))
+        echo("Tree '{}' initialized.".format(tree.root))
 
     # Populate the tree with example objects if requested
     if mini:
@@ -579,21 +621,3 @@ def init(path, mini, full, force):
         tmt.Test.create('/tests/example', 'shell', tree, force)
         tmt.Plan.create('/plans/example', 'full', tree, force)
         tmt.Story.create('/stories/example', 'full', tree, force)
-
-    return 'init'
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#  Finito
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-@main.resultcallback()
-def finito(commands, *args, **kwargs):
-    """ Process the main callback """
-    # Show all commands that have been provided
-    log.info('Detected {0}{1}.'.format(
-        listed(commands, 'command'),
-        (': ' + listed(commands)) if commands else ''))
-
-    # Run test steps if any explicitly requested or no command given at all
-    if not commands or any([step in commands for step in tmt.steps.STEPS]):
-        run.go()

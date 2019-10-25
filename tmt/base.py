@@ -8,6 +8,7 @@ import fmf
 import pprint
 
 import tmt.steps
+import tmt.utils
 import tmt.templates
 
 import tmt.steps.discover
@@ -20,12 +21,8 @@ import tmt.steps.finish
 from tmt.utils import verdict
 from click import echo, style
 
-# Default workdir root
-WORKDIR_ROOT = '/var/tmp/tmt'
-WORKDIR_MAX = 1000
 
-
-class Node(object):
+class Node(tmt.utils.Common):
     """
     General node object
 
@@ -33,10 +30,10 @@ class Node(object):
     Implements common Test, Plan and Story methods.
     """
 
-    def __init__(self, node):
+    def __init__(self, node, parent=None):
         """ Initialize the node """
+        super(Node, self).__init__(name=node.name, parent=parent)
         self.node = node
-        self.name = node.name
 
     def __str__(self):
         """ Node name """
@@ -136,7 +133,7 @@ class Test(Node):
             path=script_path, content=content,
             name='test script', force=force, mode=0o755)
 
-    def show(self, verbose=False):
+    def show(self):
         """ Show test details """
         self.ls()
         for key in self._keys:
@@ -145,7 +142,7 @@ class Test(Node):
                 continue
             else:
                 echo(tmt.utils.format(key, value))
-        if verbose:
+        if self.opt('verbose'):
             self._sources()
 
     def lint(self):
@@ -162,12 +159,14 @@ class Test(Node):
 class Plan(Node):
     """ Plan object (L2 Metadata) """
 
+    # Enabled steps
+    _enabled_steps = set()
+
     def __init__(self, node, run=None):
         """ Initialize the plan """
-        super(Plan, self).__init__(node)
+        super(Plan, self).__init__(node, parent=run)
         self.summary = node.get('summary')
         self.run = run
-        self._workdir = None
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
@@ -224,23 +223,25 @@ class Plan(Node):
             path=plan_path, content=content,
             name='plan', force=force)
 
-    @property
-    def workdir(self):
-        """ Get the workdir, create if does not exist """
-        if self._workdir is None and self.run is not None:
-            self._workdir = os.path.join(
-                self.run.workdir, self.name.lstrip('/'))
-            tmt.utils.create_directory(self._workdir, 'workdir', quiet=True)
-        return self._workdir
+    def steps(self, enabled=True, disabled=False, names=False):
+        """
+        Iterate over enabled / all steps
 
-    def show(self, verbose=False):
+        Yields instances of all enabled steps by default. Use 'names' to
+        yield step names only and 'disabled=True' to iterate over all.
+        """
+        for name in tmt.steps.STEPS:
+            step = name if names else getattr(self, name)
+            if (enabled and name in self._enabled_steps
+                    or disabled and step not in self._enabled_steps):
+                yield step
+
+    def show(self):
         """ Show plan details """
         self.ls(summary=True)
-        for step in tmt.steps.STEPS:
-            step = getattr(self, step)
-            if step.data:
-                step.show()
-        if verbose:
+        for step in self.steps(disabled=True):
+            step.show()
+        if self.opt('verbose'):
             self._sources()
 
     def lint(self):
@@ -255,12 +256,12 @@ class Plan(Node):
 
     def go(self):
         """ Execute the plan """
-        self.discover.go()
-        self.provision.go()
-        self.prepare.go()
-        self.execute.go()
-        self.report.go()
-        self.finish.go()
+        # Wake up all steps
+        for step in self.steps(disabled=True):
+            step.wake()
+        # Run enabled steps
+        for step in self.steps():
+            step.go()
 
 
 class Story(Node):
@@ -339,7 +340,7 @@ class Story(Node):
                 fmf.utils.listed(stories, max=12)
             ), fg='blue'))
 
-    def show(self, verbose=False):
+    def show(self):
         """ Show story details """
         self.ls()
         for key in self._keys:
@@ -348,7 +349,7 @@ class Story(Node):
                 # Do not wrap examples
                 wrap = key != 'example'
                 echo(tmt.utils.format(key, value, wrap=wrap))
-        if verbose:
+        if self.opt('verbose'):
             self._sources()
 
     def coverage(self, code, test, docs):
@@ -403,7 +404,7 @@ class Story(Node):
         return output
 
 
-class Tree(object):
+class Tree(tmt.utils.Common):
     """ Test Metadata Tree """
 
     def __init__(self, path='.'):
@@ -449,63 +450,35 @@ class Tree(object):
             filters=filters, conditions=conditions, whole=whole)]
 
 
-class Run(object):
-    """
-    Test run
+class Run(tmt.utils.Common):
+    """ Test run, a container of plans """
 
-    Takes care of the work directory preparation.
-    """
-
-    def __init__(self, id_=None, tree=None, verbose=False):
+    def __init__(self, id_=None, tree=None):
         """ Initialize tree, workdir and plans """
-        self.verbose = verbose
         # Save the tree
         self.tree = tree if tree else tmt.Tree('.')
         # Prepare the workdir
-        self.workdir = self._workdir(id_)
-        # Initialize plans
-        self.plans = [Plan(plan, run=self)
-            for plan in self.tree.tree.prune(keys=['execute'])]
+        self._workdir_init(id_)
+        echo(style("Workdir: ", fg='magenta') + self.workdir)
+        self._plans = None
 
-    def _workdir(self, id_):
-        """
-        Initialize the work directory
-
-        Workdir under WORKDIR_ROOT is used/created if 'id' is provided.
-        If 'id' is a path, that directory is used instead. Otherwise a
-        new workdir is created under WORKDIR_ROOT.
-        """
-        # Construct the workdir
-        if id_ is not None:
-            # Use provided directory if path given
-            if '/' in id_:
-                workdir = id_
-            # Construct directory name under workdir root
-            else:
-                if isinstance(id_, int):
-                    id_ = str(id_).rjust(3, '0')
-                directory = 'run-{}'.format(id_)
-                workdir = os.path.join(WORKDIR_ROOT, directory)
-        else:
-            # Generate a unique run id
-            for id_ in range(1, WORKDIR_MAX + 1):
-                directory = 'run-{}'.format(str(id_).rjust(3, '0'))
-                workdir = os.path.join(WORKDIR_ROOT, directory)
-                if not os.path.exists(workdir):
-                    break
-            if id_ == WORKDIR_MAX:
-                raise tmt.utils.GeneralError(
-                    "Cleanup the '{}' directory.".format(WORKDIR_ROOT))
-
-        # Create the workdir
-        echo(style("Workdir: ", fg='magenta') + workdir)
-        tmt.utils.create_directory(workdir, 'workdir', quiet=True)
-        return workdir
+    @property
+    def plans(self):
+        """ Test plans for execution """
+        if self._plans is None:
+            self._plans = [
+                Plan(plan, run=self) for plan in self.tree.tree.prune(
+                    keys=['execute'], names=Plan._opt('names', []))]
+        return self._plans
 
     def go(self):
         """ Go and do test steps for selected plans """
+        # Enable all steps if none selected or --all provided
+        if self.opt('all_') or not Plan._enabled_steps:
+            Plan._enabled_steps = set(tmt.steps.STEPS)
+        # Show summary and iterate over plan
         echo(style('Found {0}.\n'.format(
-            fmf.utils.listed(self.tree.plans(), 'plan')), fg='magenta'))
+            fmf.utils.listed(self.plans, 'plan')), fg='magenta'))
         for plan in self.plans:
             plan.ls(summary=True)
             plan.go()
