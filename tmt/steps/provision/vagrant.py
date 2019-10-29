@@ -35,6 +35,7 @@ class ProvisionVagrant(ProvisionBase):
     timeout = 333
     default_indent = 9
     eol = '\n'
+    vf_data = ''
     verbose = False
 
     ## Default API ##
@@ -103,7 +104,7 @@ class ProvisionVagrant(ProvisionBase):
     def sync_workdir_to_guest(self):
         """ sync on demand """
         # TODO: test
-        self.run_vagrant_success('rsync')
+        return self.run_vagrant_success('rsync')
 
     def sync_workdir_from_guest(self):
         """ sync from guest to host """
@@ -133,7 +134,7 @@ class ProvisionVagrant(ProvisionBase):
     def cleanup(self):
         """ remove box and base box """
         return self.run_vagrant_success('box', 'remove', '-f', self.data['box'])
-        # TODO: libvirt?
+        # TODO: libvirt storage removal?
 
     def validate(self):
         """ Validate Vagrantfile format """
@@ -222,6 +223,12 @@ class ProvisionVagrant(ProvisionBase):
 
         dir = self.step.plan.workdir
         self.add_synced_folder(dir, dir)
+
+        self.vf_backup()
+        try:
+            self.add_raw_config("provider 'libvirt' do |libvirt| libvirt.qemu_use_session = true ; end")
+        except:
+            self.vf_restore()
 
         return True
 
@@ -331,6 +338,15 @@ class ProvisionVagrant(ProvisionBase):
 
         self.debug('Vagrantfile', vfdata)
         return self.validate()
+
+    def vf_backup(self):
+        """ backup Vagrantfile contents to vf_data """
+        self.vf_data = self.vf_read()
+        return self.vf_data
+
+    def vf_restore(self):
+        """ restore Vagrantfile contents frmo vf_data"""
+        return self.vf_write(self.vf_data)
 
 
     ## Helpers ##
