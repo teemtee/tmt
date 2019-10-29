@@ -14,7 +14,7 @@ class TestExecute(unittest.TestCase):
         self.assertEqual(exe.data['how'], 'shell')
 
     def test_invalid_data_list(self):
-        data = [{'how': 'beakerlib'}, {}]
+        data = [{'how': 'beakerlib', 'name': 'one'}, {'name': 'two'}]
         plan = None
         exe = Execute(data, plan)
         self.assertRaises(SpecificationError, exe._check_data)
