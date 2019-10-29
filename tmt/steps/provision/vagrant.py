@@ -144,6 +144,74 @@ class ProvisionVagrant(ProvisionBase):
         return self.run_vagrant_success('reload')
 
 
+    ## Knowhow ##
+    def how(self):
+        """ Decide what to do when HOW is ...
+            does not add anything into Vagrantfile yet
+        """
+        self.debug()
+
+        self.set_default('how', 'virtual')
+        self.set_default('image', self.default_image)
+
+        image = self.data['image']
+
+        try:
+            i = urlparse(image)
+            if not i.schema:
+                raise (i)
+            self.image_uri = i
+        except:
+            pass
+
+        self.debug('image_uri', self.image_uri)
+
+        if self.image_uri:
+            self.set_default('box', 'box_' + self.instance_name)
+
+            if re.search(r"\.box$", image) is None:
+                # an actual box file, Great!
+                pass
+
+            elif re.search(r"\.qcow2$", image) is None:
+                # do some qcow2 magic
+                self.data['box'] = '...'
+                raise SpecificationError("NYI: QCOW2 image")
+
+            else:
+                raise SpecificationError(f"Image format not recognized: {image}")
+
+        else:
+            self.set_default('box', image)
+
+        for x in ('how','box','image'):
+            self.debug(x, self.data[x])
+
+        # TODO: Dynamic call [switch] to specific how_*
+        return True
+
+    def how_virtual(self):
+        pass
+
+    def how_libvirt(self):
+        pass
+
+    def how_openstack(self):
+        pass
+
+    def how_docker(self):
+        self.container(self)
+
+    def how_podman(self):
+        self.container(self)
+
+    def how_container(self):
+        pass
+
+    def how_virtual(self):
+        pass
+
+
     ## END of API ##
     def add_defaults(self):
         """ Adds default config entries
@@ -211,8 +279,7 @@ class ProvisionVagrant(ProvisionBase):
             f'type: {self.quote(self.sync_type)}', *args)
 
     def add_config(self, *config):
-        """ Add vm.config entry into Vagrantfile
-            right before last 'end'
+        """ Add config entry into Vagrantfile
 
               config = "string"
 
@@ -234,6 +301,8 @@ class ProvisionVagrant(ProvisionBase):
 
     def add_raw_config(self, config):
         """ Add arbitrary config entry into Vagrantfile
+            right before last 'end'.
+            Prepends with `config_prefix`.
         """
         vfdata = self.vf_read()
 
@@ -262,71 +331,6 @@ class ProvisionVagrant(ProvisionBase):
 
         self.debug('Vagrantfile', vfdata)
         return self.validate()
-
-    def how(self):
-        """ Decide what to do when HOW is ...
-            does not add anything into Vagrantfile yet
-        """
-        self.debug()
-
-        self.set_default('how', 'virtual')
-        self.set_default('image', self.default_image)
-
-        image = self.data['image']
-
-        try:
-            i = urlparse(image)
-            if not i.schema:
-                raise (i)
-            self.image_uri = i
-        except:
-            pass
-
-        self.debug('image_uri', self.image_uri)
-
-        if self.image_uri:
-            self.set_default('box', 'box_' + self.instance_name)
-
-            if re.search(r"\.box$", image) is None:
-                # an actual box file, Great!
-                pass
-
-            elif re.search(r"\.qcow2$", image) is None:
-                # do some qcow2 magic
-                self.data['box'] = '...'
-                raise SpecificationError("NYI: QCOW2 image")
-
-            else:
-                raise SpecificationError(f"Image format not recognized: {image}")
-
-        else:
-            self.set_default('box', image)
-
-        for x in ('how','box','image'):
-            self.debug(x, self.data[x])
-
-    def how_vm(self):
-        self.virtual(self)
-
-    def how_libvirt(self):
-        pass
-
-    def how_openstack(self):
-        pass
-
-    def how_docker(self):
-        self.container(self)
-
-    def how_podman(self):
-        self.container(self)
-
-    def how_container(self):
-        # TODO
-        pass
-
-    def how_virtual(self):
-        # TODO:
-        pass
 
 
     ## Helpers ##
