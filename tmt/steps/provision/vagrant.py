@@ -35,6 +35,7 @@ class ProvisionVagrant(ProvisionBase):
     timeout = 333
     default_indent = 9
     eol = '\n'
+    verbose = False
 
     ## Default API ##
     def __init__(self, data, step):
@@ -42,7 +43,7 @@ class ProvisionVagrant(ProvisionBase):
         super(ProvisionVagrant, self).__init__(data, step)
         self.vagrantfile = os.path.join(self.provision_dir, 'Vagrantfile')
 
-        self.debugon = bool(self.opt('verbose'))
+        self.verbose = bool(self.opt('verbose'))
 
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
@@ -84,10 +85,10 @@ class ProvisionVagrant(ProvisionBase):
 
     def go(self):
         """ Execute actual provisioning """
-        self.debug('')
-        self.debugon = True
+        self.debug()
+        self.verbose = True
         self.debug('Provisioning vagrant, this is the Vagrantfile:')
-        self.debug('Vagrantfile', open(self.vagrantfile).read().splitlines())
+        self.debug('Vagrantfile', self.vf_read())
         return self.run_vagrant_success('up')
 
     def execute(self, cmd):
@@ -97,7 +98,7 @@ class ProvisionVagrant(ProvisionBase):
     def show(self):
         """ Show execute details """
         super(ProvisionVagrant, self).show(keys=['how', 'box', 'image'])
-        self.debug('Vagrantfile', open(self.vagrantfile).read().splitlines())
+        self.debug('Vagrantfile', self.vf_read())
 
     def sync_workdir_to_guest(self):
         """ sync on demand """
@@ -149,10 +150,12 @@ class ProvisionVagrant(ProvisionBase):
             1) Disable default sync
             2) To sync plan workdir
         """
-        dir = self.step.plan.workdir
         self.add_synced_folder(".", "/vagrant", 'disabled: true')
+
+        dir = self.step.plan.workdir
         self.add_synced_folder(dir, dir)
-        # [. . . ]
+
+        return True
 
     def run_vagrant_success(self, *args):
         """ Run vagrant command and raise an error if it fails
@@ -208,7 +211,7 @@ class ProvisionVagrant(ProvisionBase):
             f'type: {self.quote(self.sync_type)}', *args)
 
     def add_config(self, *config):
-        """ Add config entry into Vagrantfile
+        """ Add vm.config entry into Vagrantfile
             right before last 'end'
 
               config = "string"
@@ -218,6 +221,7 @@ class ProvisionVagrant(ProvisionBase):
               config = ['one', 'two', 'three']
                 => one "two", three
 
+            see add_raw_config
         """
         if len(config) == 1:
             config = config[0]
@@ -226,26 +230,38 @@ class ProvisionVagrant(ProvisionBase):
         else:
             config = f'{config[0]} ' + ', '.join(config[1:])
 
-        vagrantdata = open(self.vagrantfile).read().splitlines()
+        return self.add_raw_config(config)
+
+    def add_raw_config(self, config):
+        """ Add arbitrary config entry into Vagrantfile
+        """
+        vfdata = self.vf_read()
 
         # Lookup last 'end' in Vagrantfile
         i = 0
-        for line in reversed(vagrantdata):
+        for line in reversed(vfdata):
             i -= 1
             if (line.find('end') != -1):
                 break
 
-        vagrantdata = vagrantdata[:i] \
+        vfdata = vfdata[:i] \
             + [self.config_prefix + config] \
-            + vagrantdata[i:]
+            + vfdata[i:]
 
-        self.debug('vdata', vagrantdata)
+        return self.vf_write(vfdata)
+
+    def vf_read(self):
+        return open(self.vagrantfile).read().splitlines()
+
+    def vf_write(self, vfdata):
+        if type(vfdata) is list:
+            vfdata = self.eol.join(vfdata)
 
         with open(self.vagrantfile, 'w', newline=self.eol) as f:
-            f.write(self.eol.join(vagrantdata))
+            f.write(vfdata)
 
-        self.validate()
-        return vagrantdata
+        self.debug('Vagrantfile', vfdata)
+        return self.validate()
 
     def how(self):
         """ Decide what to do when HOW is ...
@@ -267,7 +283,6 @@ class ProvisionVagrant(ProvisionBase):
             pass
 
         self.debug('image_uri', self.image_uri)
-
 
         if self.image_uri:
             self.set_default('box', 'box_' + self.instance_name)
@@ -320,7 +335,7 @@ class ProvisionVagrant(ProvisionBase):
             args: key, value, indent
             all optional
         """
-        if self.debugon:
+        if self.verbose:
             ind = self.default_indent * i
 
             if type(val) is list and len(val):
