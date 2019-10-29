@@ -47,35 +47,35 @@ tmt_main () {
     local last=''
 
     local IFS_b="$IFS"
-    IFS="
-    while read line; do
-      local key="$(cut -d':' -f1 <<< "$line" | tmt_trim)"
-      local val="$(cut -d':' -f2- <<< "$line" | tmt_trim)"
+    IFS=''
+    while read -r line; do
+        local key="$(cut -d':' -f1 <<< "$line" | tmt_trim)"
+        local val="$(cut -d':' -f2- <<< "$line" | tmt_trim)"
 
-      tmt_debug 2 "$line"
+        tmt_debug 2 "$line"
 
-      grep -q '^\s' <<< "$line" && {
-        m=
-        [[ "$key" == 'name' ]] && { m=y; name="$val"; }
-        [[ "$key" == 'test' ]] && { m=y; test="$val"; }
-        [[ "$key" == 'path' ]] && { m=y; path="$val"; }
-        [[ "$key" == 'duration' ]] && { m=y; duration="$val"; }
-        [[ "$key" == 'environment' ]] && { m=y; environment="$val"; }
+        grep -q "^\s" <<< "${line}" && {
+            m=
+            [[ "$key" == 'name' ]] && { m=y; name="${val}"; }
+            [[ "$key" == 'test' ]] && { m=y; test="${val}"; }
+            [[ "$key" == 'path' ]] && { m=y; path="${val}"; }
+            [[ "$key" == 'duration' ]] && { m=y; duration="${val}"; }
+            [[ "$key" == 'environment' ]] && { m=y; environment="${val}"; }
 
-        [[ -n "$m" ]] || tmt_error "unknown test variable: $line"
-        :
-      } || {
-        [[ "$last" == '' ]] || \
-            runtest "$name" "$test" "$path" "$duration" "$environment"
+            [[ -n "$m" ]] || tmt_error "unknown test variable: $line"
+            :
+        } || {
+            [[ "$last" == '' ]] || \
+                runtest "$name" "$test" "$path" "$duration" "$environment"
 
-        last="$name"
+            last="$name"
 
-        name="$key"
-        test=''
-        path=''
-        duration=''
-        environment=''
-      }
+            name="$key"
+            test=''
+            path=''
+            duration=''
+            environment''
+        }
     done
 
     [[ "$name" == "$last" ]] || \
@@ -127,12 +127,12 @@ runtest () {
 
 # Helpers
 tmt_abort () {
-    echo "Failure: $@" >&2
+    echo "Failure:" "$@" >&2
     exit 1
 }
 
 tmt_error () {
-    echo "Error: $@" >&2
+    echo "Error:" "$@" >&2
 }
 
 tmt_beakerlib () {
