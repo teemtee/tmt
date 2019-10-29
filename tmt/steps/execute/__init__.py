@@ -3,7 +3,6 @@
 """ Execute Step Class """
 
 import tmt
-from click import echo
 from tmt.steps.execute import shell, beakerlib
 
 
@@ -18,8 +17,13 @@ class Execute(tmt.steps.Step):
     def __init__(self, data, plan):
         """ Initialize the execute step """
         super(Execute, self).__init__(data, plan)
+        self.executor = None
+
+    def wake(self):
+        """ Wake up the step (process workdir and command line) """
+        super(Execute, self).wake()
         self._check_data()
-        self.executor = self.how_map[self.data['how']](data, plan)
+        self.executor = self.how_map[self.data['how']](self)
 
     def _check_data(self):
         """ Validate input data """
@@ -34,6 +38,11 @@ class Execute(tmt.steps.Step):
         if how not in self.how_map:
             raise tmt.utils.SpecificationError("How '{}' in plan '{}' is not implemented".format(how, self.plan))
 
+    def show(self):
+        """ Show discover details """
+        keys = ['how', 'isolate', 'script']
+        super(Execute, self).show(keys)
+
     def go(self):
         """ Execute the test step """
         super(Execute, self).go()
@@ -41,6 +50,9 @@ class Execute(tmt.steps.Step):
         # method not ready yet
         # tests = self.plan.discover.tests()
         # self.executor.go(tests)
+
+    def run(self, *args, **kwargs):
+        return self.plan.provision.execute(*args, **kwargs)
 
     # API
     def requires(self):

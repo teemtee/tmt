@@ -6,13 +6,15 @@
 class ExecutorBase(object):
     """ This is base executor class """
 
-    def __init__(self, data, plan):
-        self.data = data
-        self.plan = plan
+    def __init__(self, execute_step):
+        self.execute_step = execute_step
 
     def go(self, tests):
         """ Run tests """
         pass
+
+    def _run(self, *args, **kwargs):
+        return self.execute_step.run(*args, **kwargs)
 
     # API
     def requires(self):

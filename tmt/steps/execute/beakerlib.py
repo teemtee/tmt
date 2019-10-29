@@ -6,8 +6,8 @@ from tmt.steps.execute.shell import ExecutorShell
 class ExecutorBeakerlib(ExecutorShell):
     """ Run tests using how: beakerlib """
 
-    def __init__(self, data, plan):
-        super(ExecutorBeakerlib, self).__init__(data, plan)
+    def __init__(self, execute_step):
+        super(ExecutorBeakerlib, self).__init__(execute_step)
 
     def go(self, tests):
         """ Run tests """
