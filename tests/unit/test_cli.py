@@ -16,7 +16,8 @@ runner = CliRunner()
 
 def test_mini():
     """ Minimal smoke test """
-    result = runner.invoke(tmt.cli.main, ['--path', MINI, 'run'])
+    result = runner.invoke(tmt.cli.main,
+        ['--root', MINI, 'run', '--debug', 'provision', '--how=local'])
     assert result.exit_code == 0
     assert 'Found 1 plan.' in result.output
     assert '/ci/test/build/smoke' in result.output
@@ -50,24 +51,25 @@ def test_init():
 def test_no_metadata():
     """ No metadata found """
     tmp = tempfile.mkdtemp()
-    result = runner.invoke(tmt.cli.main, ['--path', tmp, 'run'])
+    result = runner.invoke(tmt.cli.main, ['--root', tmp, 'run'])
     assert result.exception
     os.rmdir(tmp)
 
 def test_step():
     """ Select desired step"""
     for step in tmt.steps.STEPS:
-        result = runner.invoke(tmt.cli.main, ['--path', MINI, 'run', step])
+        if step == 'provision':
+            continue
+        result = runner.invoke(tmt.cli.main, ['--root', MINI, 'run', step])
         assert result.exit_code == 0
         assert step in result.output
-        if step != 'provision':
-            assert 'Provision' not in result.output
+        assert 'Provision' not in result.output
 
 def test_systemd():
     """ Check systemd example """
-    result = runner.invoke(tmt.cli.main, ['--path', SYSTEMD, 'plan'])
+    result = runner.invoke(tmt.cli.main, ['--root', SYSTEMD, 'plan'])
     assert result.exit_code == 0
     assert 'Found 2 plans' in result.output
-    result = runner.invoke(tmt.cli.main, ['--path', SYSTEMD, 'plan', 'show'])
+    result = runner.invoke(tmt.cli.main, ['--root', SYSTEMD, 'plan', 'show'])
     assert result.exit_code == 0
     assert 'Tier two functional tests' in result.output

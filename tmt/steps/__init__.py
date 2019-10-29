@@ -2,13 +2,14 @@
 
 """ Step Classes """
 
-from click import echo, style
-
 import os
 import fmf
 import click
 import pprint
 import tmt.utils
+
+from click import echo, style
+from tmt.utils import GeneralError
 
 STEPS = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
 
@@ -21,29 +22,44 @@ class Step(tmt.utils.Common):
     how = 'shell'
 
     def __init__(self, data={}, plan=None, name=None):
-        """ Store step data """
+        """ Initialize and check the step data """
         super(Step, self).__init__(name=name, parent=plan)
         # Initialize data
         self.plan = plan
         self.data = data
-        if self.data is None:
-            self.data = [{}]
-        # Convert to list if single config defined
-        elif not isinstance(self.data, list):
-            self.data = [self.data]
-        # Set how to the default if not specified
-        for step in self.data:
-            if step.get('how') is None:
-                step['how'] = self.how
 
-    @property
-    def verbose(self):
-        """ Verbose mode output, by default off """
-        return self.plan.run and self.plan.run.opt('verbose')
+        # Create an empty step by default (can be updated from cli)
+        if self.data is None:
+            self.data = [{'name': 'one'}]
+        # Convert to list if only a single config provided
+        elif isinstance(self.data, dict):
+            # Give it a name unless defined
+            if not self.data.get('name'):
+                self.data['name'] = 'one'
+            self.data = [self.data]
+        # Shout about invalid configuration
+        elif not isinstance(self.data, list):
+            raise GeneralError(f"Invalid '{self}' config in '{self.plan}'.")
+
+        # Final sanity checks
+        for data in self.data:
+            # Set 'how' to the default if not specified
+            if data.get('how') is None:
+                data['how'] = self.how
+            # Ensure that each config has a name
+            if 'name' not in data and len(self.data) > 1:
+                raise GeneralError(f"Missing '{self}' name in '{self.plan}'.")
+        # Get or set the status
+        if self.status is None:
+            self.status('todo')
 
     def load(self):
         """ Load step data from the workdir """
         pass
+
+    def save(self):
+        """ Save step data to the workdir """
+        self.write('steps.yaml', tmt.utils.dictionary_to_yaml(self.data))
 
     def wake(self):
         """ Wake up the step (process workdir and command line) """
@@ -58,24 +74,27 @@ class Step(tmt.utils.Common):
 
     def go(self):
         """ Execute the test step """
-        # Show step header
-        echo(tmt.utils.format(str(self), '', key_color='blue'))
+        # Show step header and how
+        self.info(self.name, color='blue')
         # Show workdir in verbose mode
-        if self.verbose:
-            echo(tmt.utils.format(
-                'workdir', self.workdir, key_color='magenta'))
+        self.debug('workdir', self.workdir, 'magenta')
 
     def show(self, keys=[]):
         """ Show step details """
         for step in self.data:
             # Show empty steps only in verbose mode
-            if len(step.keys()) == 1 and not self.verbose:
+            if (set(step.keys()) == set(['how', 'name'])
+                    and not self.opt('verbose')):
                 continue
             # Step name (and optional header)
             echo(tmt.utils.format(
                 self, step.get('summary') or '', key_color='blue'))
             # Show all or requested step attributes
             for key in keys or step:
+                # Skip showing the default name
+                if key == 'name' and step['name'] == 'one':
+                    continue
+                # Skip showing summary again
                 if key == 'summary':
                     continue
                 try:
@@ -87,6 +106,20 @@ class Step(tmt.utils.Common):
 class Plugin(tmt.utils.Common):
     """ Common parent of all step plugins """
 
-    def __init__(self, data={}, step=None, name=None):
-        """ Basic plugin initialization """
-        super(Step, self).__init__(name=name, parent=step)
+    def __init__(self, data, step=None, name=None):
+        """ Store plugin data """
+        super(Plugin, self).__init__(name=name, parent=step)
+        self.data = data
+        self.step = step
+
+    def go(self):
+        """ Go and perform the plugin task """
+        # Show the method
+        self.info('how', self.data['how'], 'green')
+        # Show name only if there are more steps
+        if self.name != 'one':
+            self.info('name', self.name, 'green')
+
+    def dump(self):
+        """ Dump current step plugin data """
+        return self.data

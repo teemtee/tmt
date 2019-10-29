@@ -4,8 +4,8 @@ from tmt.steps.provision.base import ProvisionBase
 
 
 class ProvisionLocalhost(ProvisionBase):
-    def provision(self):
-        echo('provisioning localhost')
+    def go(self):
+        self.info('provisioning localhost')
 
     def save(self):
-        echo('saving localhost')
+        self.info('saving localhost')

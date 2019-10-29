@@ -4,31 +4,42 @@
 
 import tmt
 
-from tmt.steps.discover.fmf import DiscoverFmf
-from tmt.steps.discover.shell import DiscoverShell
-
-
 class Discover(tmt.steps.Step):
     """ Gather and show information about test cases to be executed """
+
+    # Default implementation for discover is fmf
+    how = 'fmf'
 
     def __init__(self, data, plan):
         """ Store supported attributes, check for sanity """
         super(Discover, self).__init__(data, plan)
-        self.workers = []
+        self.steps = []
+
+    def load(self):
+        """ Load step data from the workdir """
+        pass
+
+    def save(self):
+        """ Save step data to the workdir """
+        super(Discover, self).save()
+        # Create 'tests.yaml' with the list of tests for the executor
+        tests = dict([test.export(format_='execute') for test in self.tests()])
+        self.write('tests.yaml', tmt.utils.dictionary_to_yaml(tests))
 
     def wake(self):
         """ Wake up the step (process workdir and command line) """
         super(Discover, self).wake()
         # Choose the plugin
-        for step in self.data:
-            how = step.get('how')
-            if how == 'fmf':
-                self.workers.append(DiscoverFmf(step, self))
-            elif how == 'shell':
-                self.workers.append(DiscoverShell(step, self))
+        for data in self.data:
+            if data['how'] == 'fmf':
+                from tmt.steps.discover.fmf import DiscoverFmf
+                self.steps.append(DiscoverFmf(data, step=self))
+            elif data['how'] == 'shell':
+                from tmt.steps.discover.shell import DiscoverShell
+                self.steps.append(DiscoverShell(data, step=self))
             else:
                 raise tmt.utils.SpecificationError(
-                    "Unknown discover method '{}'.".format(how))
+                    f"Unknown discover method '{how}'.")
 
     def show(self):
         """ Show discover details """
@@ -36,11 +47,33 @@ class Discover(tmt.steps.Step):
         super(Discover, self).show(keys)
 
     def go(self):
-        """ Execute the test step """
+        """ Execute all steps """
+        # Nothing to do if already done
+        if self.status() == 'done':
+            return
+        # Go!
+        self.status('going')
         super(Discover, self).go()
-        self.tests = []
-        for worker in self.workers:
-            worker.go()
-            self.tests.extend(worker.tests)
-        for test in self.tests:
-            test.show()
+        for step in self.steps:
+            step.go()
+        self.save()
+        self.status('done')
+
+    def tests(self):
+        """ Return a list of all tests """
+        for step in self.steps:
+            for test in step.tests():
+                test._repository = step
+                yield test
+
+
+class DiscoverPlugin(tmt.steps.Plugin):
+    """ Common parent of discover plugins """
+
+    def __init__(self, data, step=None, name=None):
+        """ Basic plugin initialization """
+        super(DiscoverPlugin, self).__init__(data=data, step=step, name=name)
+
+    def tests(self):
+        """ Return discovered tests """
+        raise NotImplementedError

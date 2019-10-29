@@ -19,6 +19,7 @@ import tmt.steps.report
 import tmt.steps.finish
 
 from tmt.utils import verdict
+from fmf.utils import listed
 from click import echo, style
 
 
@@ -30,9 +31,12 @@ class Node(tmt.utils.Common):
     Implements common Test, Plan and Story methods.
     """
 
+    # Supported attributes
+    _keys = ['name']
+
     def __init__(self, node, parent=None):
         """ Initialize the node """
-        super(Node, self).__init__(name=node.name, parent=parent)
+        super(Node, self).__init__(parent=parent, name=node.name)
         self.node = node
 
     def __str__(self):
@@ -56,6 +60,20 @@ class Node(tmt.utils.Common):
         echo(style(self.name, fg='red'))
         if summary and self.summary:
             echo(tmt.utils.format('summary', self.summary))
+
+    def export(self, format_='yaml', keys=None):
+        """ Export data into requested format (yaml or dict) """
+        if keys is None:
+            keys = self._keys
+        data = dict([(key, getattr(self, key)) for key in keys])
+        # Choose proper format
+        if format_ == 'dict':
+            return data
+        elif format_ == 'yaml':
+            return tmt.utils.dictionary_to_yaml(data)
+        else:
+            raise tmt.utils.GeneralError(
+                f"Invalid test export format '{format_}'.")
 
 
 class Test(Node):
@@ -104,9 +122,9 @@ class Test(Node):
             style(str(test), fg='red') for test in tree.tests()]
         echo(style(
             'Found {}{}{}.'.format(
-                fmf.utils.listed(tests, 'test'),
+                listed(tests, 'test'),
                 ': ' if tests else '',
-                fmf.utils.listed(tests, max=12)
+                listed(tests, max=12)
             ), fg='blue'))
 
     @staticmethod
@@ -155,6 +173,29 @@ class Test(Node):
         elif len(self.summary) > 50:
             echo(verdict(2, 'summary should not exceed 50 characters'))
 
+    def export(self, format_='yaml', keys=None):
+        """
+        Export test data into requested format
+
+        In addition to 'yaml' and 'dict' it supports also a special
+        format 'execute' used by the execute step which returns
+        (test-name, test-data) tuples.
+        """
+        if format_ != 'execute':
+            return super(Test, self).export(format_, keys)
+
+        # Prepare special format for the executor
+        name = f'/{self._repository}{self.name}'
+        data = dict()
+        data['test'] = self.test
+        data['path'] = f'/{self._repository}{self.path}'
+        if self.duration is not None:
+            data['duration'] = self.duration
+        if self.environment is not None:
+            data['environment'] = ' '.join(
+                tmt.utils.dict_to_shell(self.environment))
+        return name, data
+
 
 class Plan(Node):
     """ Plan object (L2 Metadata) """
@@ -199,9 +240,9 @@ class Plan(Node):
             style(str(plan), fg='red') for plan in tree.plans()]
         echo(style(
             'Found {}{}{}.'.format(
-                fmf.utils.listed(plans, 'plan'),
+                listed(plans, 'plan'),
                 ': ' if plans else '',
-                fmf.utils.listed(plans, max=12)
+                listed(plans, max=12)
             ), fg='blue'))
 
     @staticmethod
@@ -256,6 +297,11 @@ class Plan(Node):
 
     def go(self):
         """ Execute the plan """
+        # Show plan name and summary (one blank line to separate plans)
+        self.info('')
+        self.info(style(self.name, fg='red'))
+        if self.summary:
+            self.verbose('summary', self.summary, 'green')
         # Wake up all steps
         for step in self.steps(disabled=True):
             step.wake()
@@ -335,9 +381,9 @@ class Story(Node):
             style(str(story), fg='red') for story in tree.stories()]
         echo(style(
             'Found {}{}{}.'.format(
-                fmf.utils.listed(stories, 'story'),
+                listed(stories, 'story'),
                 ': ' if stories else '',
-                fmf.utils.listed(stories, max=12)
+                listed(stories, max=12)
             ), fg='blue'))
 
     def show(self):
@@ -399,7 +445,7 @@ class Story(Node):
                 if getattr(self, coverage):
                     status.append(coverage)
             output += "\nStatus: {}\n".format(
-                fmf.utils.listed(status) if status else 'idea')
+                listed(status) if status else 'idea')
 
         return output
 
@@ -431,19 +477,43 @@ class Tree(tmt.utils.Common):
 
     def tests(self, keys=[], names=[], filters=[], conditions=[]):
         """ Search available tests """
+        # Apply possible command line options
+        if Test._opt('names'):
+            names.extend(Test._opt('names'))
+        if Test._opt('filters'):
+            filters.extend(Test._opt('filters'))
+        if Test._opt('conditions'):
+            conditions.extend(Test._opt('conditions'))
+        # Build the list and convert to objects
         keys.append('test')
         return [Test(test) for test in self.tree.prune(
             keys=keys, names=names, filters=filters, conditions=conditions)]
 
-    def plans(self, keys=[], names=[], filters=[], conditions=[]):
+    def plans(self, keys=[], names=[], filters=[], conditions=[], run=None):
         """ Search available plans """
+        # Apply possible command line options
+        if Plan._opt('names'):
+            names.extend(Plan._opt('names'))
+        if Plan._opt('filters'):
+            filters.extend(Plan._opt('filters'))
+        if Plan._opt('conditions'):
+            conditions.extend(Plan._opt('conditions'))
+        # Build the list and convert to objects
         keys.append('execute')
-        return [Plan(plan) for plan in self.tree.prune(
+        return [Plan(plan, run=run) for plan in self.tree.prune(
             keys=keys, names=names, filters=filters, conditions=conditions)]
 
     def stories(
             self, keys=[], names=[], filters=[], conditions=[], whole=False):
         """ Search available stories """
+        # Apply possible command line options
+        if Story._opt('names'):
+            names.extend(Story._opt('names'))
+        if Story._opt('filters'):
+            filters.extend(Story._opt('filters'))
+        if Story._opt('conditions'):
+            conditions.extend(Story._opt('conditions'))
+        # Build the list and convert to objects
         keys.append('story')
         return [Story(story) for story in self.tree.prune(
             keys=keys, names=names,
@@ -455,31 +525,29 @@ class Run(tmt.utils.Common):
 
     def __init__(self, id_=None, tree=None):
         """ Initialize tree, workdir and plans """
+        super(Run, self).__init__()
         # Save the tree
         self.tree = tree if tree else tmt.Tree('.')
         # Prepare the workdir
         self._workdir_init(id_)
-        echo(style("Workdir: ", fg='magenta') + self.workdir)
+        self.debug("Using tree '{self.tree.root}'.")
         self._plans = None
 
     @property
     def plans(self):
         """ Test plans for execution """
         if self._plans is None:
-            self._plans = [
-                Plan(plan, run=self) for plan in self.tree.tree.prune(
-                    keys=['execute'], names=Plan._opt('names', []))]
+            self._plans = self.tree.plans(run=self)
         return self._plans
 
     def go(self):
         """ Go and do test steps for selected plans """
+        # Show run id / workdir path
+        self.info(self.workdir, color='magenta')
         # Enable all steps if none selected or --all provided
         if self.opt('all_') or not Plan._enabled_steps:
             Plan._enabled_steps = set(tmt.steps.STEPS)
-        # Show summary and iterate over plan
-        echo(style('Found {0}.\n'.format(
-            fmf.utils.listed(self.plans, 'plan')), fg='magenta'))
+        # Show summary and iterate over plans
+        self.verbose('Found {0}.'.format(listed(self.plans, 'plan')))
         for plan in self.plans:
-            plan.ls(summary=True)
             plan.go()
-            echo()

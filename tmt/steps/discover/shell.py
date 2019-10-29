@@ -4,23 +4,18 @@
 
 import tmt
 import shutil
+import tmt.steps.discover
 
-class DiscoverShell(object):
-    """ Discover available tests from FMF metadata """
+class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
+    """ Discover available tests from manually provided list """
 
-    def __init__(self, data, parent):
+    def __init__(self, data, step):
         """ Check supported attributes """
-        self.parent = parent
-        self.repository = data.get('repository')
-        self.destination = data.get('destination')
-        self.filter = data.get('filter')
-        self.tests = []
-
-    def clone(self):
-        """ Prepare the repository """
-        # Copy current repository to workdir
-        if self.repository is None:
-            self.parent.plan.run.tree.root
+        super(DiscoverShell, self).__init__(
+            data=data, step=step, name=data['name'])
 
     def go(self):
         """ Discover available tests """
+
+    def tests(self):
+        return []

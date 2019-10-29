@@ -6,7 +6,6 @@ import tmt
 
 from click import echo
 
-from .localhost import ProvisionLocalhost
 from tmt.utils import SpecificationError
 
 
@@ -25,20 +24,19 @@ class Provision(tmt.steps.Step):
         """ Wake up the step (process workdir and command line) """
         super(Provision, self).wake()
         # Choose the plugin
-        for step in self.data:
-            how = step.get('how')
+        for data in self.data:
+            how = data.get('how')
             if how == 'local':
-                self.guests.append(ProvisionLocalhost(step, self))
-            elif how == 'virtual':
-                pass
+                from .localhost import ProvisionLocalhost
+                self.guests.append(ProvisionLocalhost(data, self))
             else:
-                raise SpecificationError(
-                    "Unknown provision method '{}'.".format(how))
+                from .vagrant import ProvisionVagrant
+                self.guests.append(ProvisionVagrant(data, self))
 
     def go(self):
         """ Provision all resources """
         super(Provision, self).go()
 
         for guest in self.guests:
-            guest.provision()
+            guest.go()
             guest.save()
