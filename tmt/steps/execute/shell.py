@@ -6,12 +6,12 @@ from tmt.steps.execute.base import ExecutorBase
 class ExecutorShell(ExecutorBase):
     """ Run tests using how: shell """
 
-    def __init__(self, execute_step):
-        super(ExecutorShell, self).__init__(execute_step)
+    def __init__(self,  data, step=None, name=None):
+        super(ExecutorShell, self).__init__(data, step, name)
 
-    def go(self, tests):
+    def go(self):
         """ Run tests """
-        super(ExecutorShell, self).go(tests)
+        super(ExecutorShell, self).go()
 
     # API
     def requires(self):

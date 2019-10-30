@@ -2,16 +2,18 @@
 
 """ Base Executor Provider Class """
 
+from tmt.steps import Plugin
 
-class ExecutorBase(object):
+
+class ExecutorBase(Plugin):
     """ This is base executor class """
 
-    def __init__(self, execute_step):
-        self.execute_step = execute_step
+    def __init__(self,  data, step=None, name=None):
+        super(ExecutorBase, self).__init__(data, step, name)
 
-    def go(self, tests):
+    def go(self):
         """ Run tests """
-        pass
+        super(ExecutorBase, self).go()
 
     def _run(self, *args, **kwargs):
         return self.execute_step.run(*args, **kwargs)

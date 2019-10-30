@@ -53,7 +53,7 @@ class TestShellExecutor(unittest.TestCase):
         data = {'how': 'shell'}
         plan = None
         execute = ExecuteStepMock()
-        exe = shell.ExecutorShell(execute)
+        exe = shell.ExecutorShell(data, execute)
         self.assertEqual(exe.requires(), ())
 
 
@@ -63,5 +63,5 @@ class TestBeakerlibExecutor(unittest.TestCase):
         data = {'how': 'beakerlib'}
         plan = None
         execute = ExecuteStepMock()
-        exe = beakerlib.ExecutorBeakerlib(execute)
+        exe = beakerlib.ExecutorBeakerlib(data, execute)
         self.assertEqual(exe.requires(), ('beakerlib', ))

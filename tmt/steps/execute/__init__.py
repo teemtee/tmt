@@ -23,7 +23,7 @@ class Execute(tmt.steps.Step):
         """ Wake up the step (process workdir and command line) """
         super(Execute, self).wake()
         self._check_data()
-        self.executor = self.how_map[self.data['how']](self)
+        self.executor = self.how_map[self.data['how']](self.data, self)
 
     def _check_data(self):
         """ Validate input data """
@@ -48,8 +48,8 @@ class Execute(tmt.steps.Step):
         super(Execute, self).go()
 
         # method not ready yet
-        # tests = self.plan.discover.tests()
-        # self.executor.go(tests)
+        tests = self.plan.discover.tests()
+        self.executor.go()
 
     def run(self, *args, **kwargs):
         return self.plan.provision.execute(*args, **kwargs)
