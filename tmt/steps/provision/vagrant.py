@@ -31,9 +31,9 @@ class ProvisionVagrant(ProvisionBase):
     sync_type = 'rsync'
     default_image = 'centos/7'
     default_container = 'centos:7'
+    default_indent = 16
     image_uri = None
     timeout = 333
-    default_indent = 9
     eol = '\n'
 
     ## Default API ##
@@ -84,8 +84,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def go(self):
         """ Execute actual provisioning """
-        self.info('Provisioning vagrant, this is the Vagrantfile')
-        self.info('Vagrantfile', self.vf_read())
+        self.info('Provisioning vagrant, Vagrantfile', self.vf_read())
         return self.run_vagrant('up')
 
     def execute(self, cmd):
@@ -120,6 +119,7 @@ class ProvisionVagrant(ProvisionBase):
     def create(self):
         """ Create default Vagrantfile with our modifications """
         self.run_vagrant('init', '-fm', self.data['box'])
+        self.info('Initialized new Vagrantfile', self.vf_read())
         self.validate()
 
     def status(self):
@@ -239,32 +239,15 @@ class ProvisionVagrant(ProvisionBase):
 
             return subprocess.CompletedProcess
         """
-        self.debug()
-
         if len(args) == 0:
             raise RuntimeError("vagrant has to run with args")
 
         cmd = self.prepend(args, self.executable)
 
-        self.debug('command', cmd)
-
-        cps = subprocess.run(
+#            timeout = self.timeout,
+        cps = self.run(
             cmd,
-            timeout = self.timeout,
-            cwd = self.provision_dir,
-            capture_output=True)
-
-        self.debug('stdout', cps.stdout.splitlines())
-        self.debug('stderr', cps.stderr.splitlines())
-        self.debug('returncode', cps.returncode)
-
-        if cps.returncode != 0:
-            raise ConvertError(f'Failed to run vagrant:{self.eol}\
-                  command: {self.hr(args)}{self.eol}\
-                  stdout:  {self.hr(cps.stdout)}{self.eol}\
-                  stderr:  {self.hr(cps.stderr)}{self.eol}\
-                ')
-        return cps
+            cwd = self.provision_dir)
 
     def add_synced_folder(self, sync_from, sync_to, *args):
         return self.add_config('synced_folder',
@@ -298,6 +281,8 @@ class ProvisionVagrant(ProvisionBase):
             right before last 'end'.
             Prepends with `config_prefix`.
         """
+        self.info('Adding into Vagrantfile', [config])
+
         vf_tmp = self.vf_read()
 
         # Lookup last 'end' in Vagrantfile
@@ -330,7 +315,6 @@ class ProvisionVagrant(ProvisionBase):
         with open(self.vagrantfile, 'w', newline=self.eol) as f:
             f.write(vf_tmp)
 
-        self.debug('Vagrantfile', vf_tmp)
         return self.validate()
 
     def vf_backup(self):
@@ -344,45 +328,45 @@ class ProvisionVagrant(ProvisionBase):
 
 
     ## Helpers ##
-    def info(self, key = '', val = '', ind = 0, color = 'green'):
+    def info(self, key = '', val = '', color = 'green'):
         """ info out!
             see msgout()
         """
-        return self.msgout('debug', key, val, ind, color)
+        return self.msgout('debug', key, val, color)
 
-    def debug(self, key = '', val = '', ind = 0):
+    def debug(self, key = '', val = '', color='yellow'):
         """ debugging, yay!
             see msgout()
         """
-        return self.msgout('debug', key, val, ind)
+        return self.msgout('debug', key, val, color)
 
-    def msgout(self, mtype, key = '', val = '', ind = 0, color = 'Red'):
+    def msgout(self, mtype, key = '', val = '', color = 'Red'):
         """ args: key, value, indent, color
             all optional
         """
         # Avoid unneccessary processing
         if self.opt(mtype) or self.opt('debug'):
             if type(val) is list and len(val):
-                self.debug(key, '\\', ind)
+                ind_val = self.eol
                 for v in val:
-                    self.debug('', v, ind + len(key))
-                return
+                    if v:
+                        ind_val += ' '*self.default_indent + self.hr(v) + self.eol
 
-            val = self.hr(val)
-
-            if mtype == 'info':
-                return self.super.info(key, val, color)
-
+                val = ind_val
             else:
-                if key.strip() and len(val):
-                    sep = ' = '
-                else:
-                    sep = '   '
+                val = self.hr(val)
 
-                return getattr(self.super, \
+            emsg = lambda: RuntimeError(f"Message type unknown: {mtype}")
+            if len(val):
+                getattr(self.super, \
                     mtype, \
-                    lambda: RuntimeError(f"Message type unknown: {mtype}") \
-                    )(f"{' '*ind}{key}{sep}{val}")
+                    emsg, \
+                    )(key, val, color)
+            else:
+                getattr(self.super, \
+                    mtype, \
+                    emsg, \
+                    )(key, color=color)
 
     def hr(self, val):
         """ return human readable data """
