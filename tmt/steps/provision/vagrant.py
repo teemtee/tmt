@@ -52,8 +52,8 @@ class ProvisionVagrant(ProvisionBase):
         # Check for working Vagrant
         self.run_vagrant('version')
 
-        # Let's check what's actually needed
-        self.how()
+        # Let's check what's needed
+        self.check_how()
 
         # Create a Vagrantfile
         self.create()
@@ -61,8 +61,8 @@ class ProvisionVagrant(ProvisionBase):
         # Add default entries to Vagrantfile
         self.add_defaults()
 
-        # Let's check what's actually needed
-        #self.add_knowhow()
+        # Let's add what's needed
+        self.add_how()
 
     def load(self):
         """ Load ProvisionVagrant step """
@@ -142,12 +142,10 @@ class ProvisionVagrant(ProvisionBase):
 
 
     ## Knowhow ##
-    def how(self):
+    def check_how(self):
         """ Decide what to do when HOW is ...
             does not add anything into Vagrantfile yet
         """
-        self.debug()
-
         self.set_default('how', 'virtual')
         self.set_default('image', self.default_image)
 
@@ -184,8 +182,9 @@ class ProvisionVagrant(ProvisionBase):
         for x in ('how','box','image'):
             self.info(x, self.data[x])
 
+    def add_how(self):
+        pass
         # TODO: Dynamic call [switch] to specific how_*
-        return True
 
     def how_virtual(self):
         pass
@@ -225,8 +224,6 @@ class ProvisionVagrant(ProvisionBase):
             self.add_raw_config("provider 'libvirt' do |libvirt| libvirt.qemu_use_session = true ; end")
         except:
             self.vf_restore()
-
-        return True
 
     def run_vagrant(self, *args):
         """ Run vagrant command and raise an error if it fails
