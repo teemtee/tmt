@@ -194,9 +194,9 @@ class ProvisionVagrant(ProvisionBase):
     def add_how(self):
         target = f"how_{self.data['how']}"
         self.debug(f"Relaying to: {target}")
-        getattr(self, \
-            target, \
-            lambda: 'generic', \
+        getattr(self,
+            target,
+            lambda: 'generic',
             )()
 
     def how_virtual(self):
@@ -380,14 +380,14 @@ class ProvisionVagrant(ProvisionBase):
             emsg = lambda: RuntimeError(f"Message type unknown: {mtype}")
 
             if val:
-                getattr(self.super, \
-                    mtype, \
-                    emsg, \
+                getattr(self.super,
+                    mtype,
+                    emsg,
                     )(key, val, color)
             else:
-                getattr(self.super, \
-                    mtype, \
-                    emsg, \
+                getattr(self.super,
+                    mtype,
+                    emsg,
                     )(key)
 
     def hr(self, val):
