@@ -298,20 +298,20 @@ class ProvisionVagrant(ProvisionBase):
             right before last 'end'.
             Prepends with `config_prefix`.
         """
-        vfdata = self.vf_read()
+        vf_tmp = self.vf_read()
 
         # Lookup last 'end' in Vagrantfile
         i = 0
-        for line in reversed(vfdata):
+        for line in reversed(vf_tmp):
             i -= 1
             if (line.find('end') != -1):
                 break
 
-        vfdata = vfdata[:i] \
+        vf_tmp = vf_tmp[:i] \
             + [self.config_prefix + config] \
-            + vfdata[i:]
+            + vf_tmp[i:]
 
-        return self.vf_write(vfdata)
+        return self.vf_write(vf_tmp)
 
     def vf_read(self):
         """ read Vagrantfile
@@ -319,14 +319,18 @@ class ProvisionVagrant(ProvisionBase):
         """
         return open(self.vagrantfile).read().splitlines()
 
-    def vf_write(self, vfdata):
-        if type(vfdata) is list:
-            vfdata = self.eol.join(vfdata)
+    def vf_write(self, vf_tmp):
+        """ write into Vagrantfile
+            str or list
+            runs validate()
+        """
+        if type(vf_tmp) is list:
+            vf_tmp = self.eol.join(vf_tmp)
 
         with open(self.vagrantfile, 'w', newline=self.eol) as f:
-            f.write(vfdata)
+            f.write(vf_tmp)
 
-        self.debug('Vagrantfile', vfdata)
+        self.debug('Vagrantfile', vf_tmp)
         return self.validate()
 
     def vf_backup(self):
