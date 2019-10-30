@@ -39,7 +39,8 @@ class ProvisionVagrant(ProvisionBase):
     ## Default API ##
     def __init__(self, data, step):
         """ Initialize the Vagrant provision step """
-        super(ProvisionVagrant, self).__init__(data, step)
+        self.super = super(ProvisionVagrant, self)
+        self.super.__init__(data, step)
         self.vagrantfile = os.path.join(self.provision_dir, 'Vagrantfile')
         self.vf_data = ''
 
@@ -67,18 +68,18 @@ class ProvisionVagrant(ProvisionBase):
         """ Load ProvisionVagrant step """
         #TODO: ensure this loads self.data[*]
         # instancename and regenerates provision_dir and vagrantfile
-        super(ProvisionVagrant, self).load()
+        self.super.load()
 
     def save(self):
         """ Save ProvisionVagrant step """
         #TODO: ensure this saves self.data[*]
         # instancename
-        super(ProvisionVagrant, self).save()
+        self.super.save()
         #TypeError: save() takes 1 positional argument but 2 were given
 
 #    def wake(self):
 #        """ Prepare the Vagrantfile """
-#        super(ProvisionVagrant, self).wake(self)
+#        self.super.wake(self)
 #        # capabilities? providers?
 
     def go(self):
@@ -93,8 +94,8 @@ class ProvisionVagrant(ProvisionBase):
 
     def show(self):
         """ Show execute details """
-        super(ProvisionVagrant, self).show(keys=['how', 'box', 'image'])
-        self.debug('Vagrantfile', self.vf_read())
+        self.super.show(keys=['how', 'box', 'image'])
+        self.info('Vagrantfile', self.vf_read())
 
     def sync_workdir_to_guest(self):
         """ sync on demand """
