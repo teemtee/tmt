@@ -9,9 +9,9 @@ class ExecutorShell(ExecutorBase):
     def __init__(self,  data, step=None, name=None):
         super(ExecutorShell, self).__init__(data, step, name)
 
-    def go(self):
+    def go(self, realpath, script, duration):
         """ Run tests """
-        super(ExecutorShell, self).go()
+        super(ExecutorShell, self).go(realpath, script, duration)
 
     # API
     def requires(self):

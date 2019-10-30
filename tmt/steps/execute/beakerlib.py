@@ -9,9 +9,9 @@ class ExecutorBeakerlib(ExecutorShell):
     def __init__(self,  data, step=None, name=None):
         super(ExecutorBeakerlib, self).__init__(data, step, name)
 
-    def go(self):
+    def go(self, realpath, script, duration):
         """ Run tests """
-        super(ExecutorBeakerlib, self).go()
+        super(ExecutorBeakerlib, self).go(realpath, script, duration)
 
     # API
     def requires(self):

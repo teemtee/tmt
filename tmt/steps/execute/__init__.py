@@ -3,6 +3,8 @@
 """ Execute Step Class """
 
 import tmt
+import os
+import subprocess
 from tmt.steps.execute import shell, beakerlib
 
 
@@ -47,12 +49,16 @@ class Execute(tmt.steps.Step):
         """ Execute the test step """
         super(Execute, self).go()
 
-        # method not ready yet
+        # this is a temporary workaround, this should be job of run.sh
         tests = self.plan.discover.tests()
-        self.executor.go()
+        for test in tests:
+            realpath = os.path.join(self.plan.discover.workdir, test._repository.name, 'tests', test.path.lstrip('/'))
+            self.executor.go(realpath, test.test, test.duration)
 
     def run(self, *args, **kwargs):
-        return self.plan.provision.execute(*args, **kwargs)
+        # temporary disabled till provision has an execute method
+        # return self.plan.provision.execute(*args, **kwargs)
+        subprocess.call(*args, **kwargs)
 
     # API
     def requires(self):
