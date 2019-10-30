@@ -155,7 +155,6 @@ class ProvisionVagrant(ProvisionBase):
         """
         self.debug('Checking initial status, setting defaults.')
 
-        # TODO: Dynamic call [switch] to specific how_*
         self.set_default('how', 'virtual')
         self.set_default('image', self.default_image)
 
@@ -193,28 +192,44 @@ class ProvisionVagrant(ProvisionBase):
             self.info(x, self.data[x])
 
     def add_how(self):
-        pass
+        target = f"how_{self.data['how']}"
+        self.debug(f"Relaying to: {target}")
+        getattr(self, \
+            target, \
+            lambda: 'generic', \
+            )()
 
     def how_virtual(self):
-        pass
+        self.debug(f"generating: virtual")
+        # let's just do libvirt for now
+        self.how_libvirt()
+
+    def how_generic():
+        self.debug(f"generating: generic")
+        self.add_provider_config(self.data['how'])
 
     def how_libvirt(self):
-        pass
+        self.debug(f"generating: libvirt")
+        self.vf_backup()
+        try:
+            self.debug(f"Trying QEMU session.")
+            self.add_provider_config('libvirt', 'qemu_use_session = true')
+        except:
+            self.vf_restore()
 
     def how_openstack(self):
-        pass
+        self.debug(f"generating: openstack")
+        raise SpecificationError('NYI: cannot run on openstack.')
 
     def how_docker(self):
-        self.container(self)
+        self.how_container()
 
     def how_podman(self):
-        self.container(self)
+        self.how_container()
 
     def how_container(self):
-        pass
-
-    def how_virtual(self):
-        pass
+        self.debug(f"generating: container")
+        raise SpecificationError('NYI: cannot run containers.')
 
 
     ## END of API ##
@@ -227,12 +242,6 @@ class ProvisionVagrant(ProvisionBase):
 
         dir = self.step.plan.workdir
         self.add_synced_folder(dir, dir)
-
-        self.vf_backup()
-        try:
-            self.add_raw_config("provider 'libvirt' do |libvirt| libvirt.qemu_use_session = true ; end")
-        except:
-            self.vf_restore()
 
     def run_vagrant(self, *args):
         """ Run vagrant command and raise an error if it fails
@@ -259,6 +268,13 @@ class ProvisionVagrant(ProvisionBase):
             self.quote(sync_from),
             self.quote(sync_to),
             f'type: {self.quote(self.sync_type)}', *args)
+
+    def add_provider_config(self, provider, *config):
+        config_str = ''
+        for c in config:
+          config_str += f'{provider}.{c}; '
+
+        self.add_raw_config(f"provider '{provider}' do |{provider}| {config_str}; end")
 
     def add_config(self, *config):
         """ Add config entry into Vagrantfile
@@ -328,6 +344,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def vf_restore(self):
         """ restore Vagrantfile contents frmo vf_data"""
+        self.debug('Restoring Vagrantfile from memory.')
         self.vf_write(self.vf_data)
 
 
@@ -361,7 +378,8 @@ class ProvisionVagrant(ProvisionBase):
                 val = self.hr(val)
 
             emsg = lambda: RuntimeError(f"Message type unknown: {mtype}")
-            if len(val):
+
+            if val:
                 getattr(self.super, \
                     mtype, \
                     emsg, \
@@ -370,7 +388,7 @@ class ProvisionVagrant(ProvisionBase):
                 getattr(self.super, \
                     mtype, \
                     emsg, \
-                    )(key, color=color)
+                    )(key)
 
     def hr(self, val):
         """ return human readable data """
