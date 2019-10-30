@@ -24,7 +24,7 @@ set -o pipefail
 bash -n "$0"
 
 tmt_WD=
-tmt_DEBUG=
+tmt_VERBOSE=
 tmt_TYPE='shell'
 
 tmt_TESTS_D='discover'
@@ -34,6 +34,8 @@ tmt_LOG_D='execute'
 tmt_LOGOUT_F="stdout.log"
 tmt_LOGERR_F="stderr.log"
 tmt_LOGCODE_F="exitcode.log"
+
+set -x
 
 # TESTS_F file is on stdin
 # TYPE is ARG
@@ -52,7 +54,7 @@ tmt_main () {
         local key="$(cut -d':' -f1 <<< "$line" | tmt_trim)"
         local val="$(cut -d':' -f2- <<< "$line" | tmt_trim)"
 
-        tmt_debug 2 "$line"
+        tmt_verbose 2 "$line"
 
         grep -q "^\s" <<< "${line}" && {
             m=
@@ -62,10 +64,10 @@ tmt_main () {
             [[ "$key" == 'duration' ]] && { m=y; duration="${val}"; }
             [[ "$key" == 'environment' ]] && { m=y; environment="${val}"; }
 
-            [[ -n "$m" ]] || tmt_error "unknown test variable: $line"
+            [[ -n "$m" ]] || tmt_error "Unknown test variable: $line"
             :
         } || {
-            [[ "$last" == '' ]] || \
+            [[ "$last" == '$name' ]] || \
                 runtest "$name" "$test" "$path" "$duration" "$environment"
 
             last="$name"
@@ -74,7 +76,7 @@ tmt_main () {
             test=''
             path=''
             duration=''
-            environment''
+            environment=''
         }
     done
 
@@ -91,16 +93,16 @@ runtest () {
     local duration="$4"
     local environment="$5"
 
-    tmt_debug 3 "runtest $name $test $path $duration $environment"
+    tmt_verbose 3 "runtest $name $test $path $duration $environment"
 
-    [[ -z "$name" ]] || {
+    [[ -n "$name" ]] || {
         tmt_error "Invalid test name: '$name'"
-        continue
+        return
     }
     [[ -z "$path" ]] || {
         path="$(readlink -f "$tmt_TESTS_D/$path")"
         [[ -d "$path" ]] || {
-            tmt_error "Could not find test dir: '$path'"
+            tmt_error "[${name}]" "Could not find test dir: '$path'"
             return
         }
         path="cd '$path' && "
@@ -110,16 +112,16 @@ runtest () {
 
     local log_dir="${tmt_LOG_D}/$name"
     mkdir -p "$log_dir" || {
-        tmt_error "Could not create log dir: '$log_dir'"
+        tmt_error "[${name}]" "Could not create log dir: '$log_dir'"
         return
     }
     cd "$log_dir" || {
-        tmt_error "Could not cd: '$log_dir'"
+        tmt_error "[${name}]" "Could not cd: '$log_dir'"
         return
     }
 
     local cmd="${path}${environment}${duration}${test}"
-    tmt_debug 4 "$cmd"
+    tmt_verbose 4 "$cmd" "$tmt_LOGOUT_F" "$tmt_LOGERR_F" "$tmt_LOGCODE_F"
 
     #bash -c "$c" > stdout.log 2> stderr.log
     popd
@@ -144,44 +146,49 @@ tmt_trim () {
         -e 's/^ *//g'
 }
 
-tmt_debug () {
-    [[ -z "$tmt_DEBUG" ]] || {
-        i="$1"
-        for x in $(seq 0 $i); do
-            echo -n ">"
-        done
+tmt_verbose () {
+    [[ -z "$tmt_VERBOSE" ]] || {
+        local i="$1"
+        local p=
         shift
 
-        echo "$@" >&2
+        while [[ $i -gt 0 ]]; do
+            p="${p}>"
+            let "i=$i-1"
+        done
+
+        echo "$p" "$@" >&2
     }
 }
 
-### INIT checks
-# TODO: silence this
-[[ "$1" == "-d" || "$1" == '--debug' ]] \
-    && { tmt_DEBUG=y; shift; set -x; } ||:
-
-set -x
-[[ 'WORKS' == "$(tmt_trim <<< "    WORKS    ")" ]]
-[[ 'key'   == "$(cut -d':' -f1 <<< "key:value")" ]]
-[[ 'value' == "$(cut -d':' -f2- <<< "key:value")" ]]
 { set +xe; } &>/dev/null
 
+### INIT checks
+[[ 'WORKS' == "$(tmt_trim <<< "    WORKS    ")" ]] || die 'tmt_trim does not work'
+[[ 'key'   == "$(cut -d':' -f1 <<< "key:value")" ]] || die 'lcut does not work'
+[[ 'value' == "$(cut -d':' -f2- <<< "key:value")" ]] || die 'rcut does not work'
+
 ### RUN
+[[ "$1" == "-d" || "$1" == '--debug' ]] \
+    && { shift; set -x; } ||:
+
+[[ "$1" == "-v" || "$1" == '--verbose' ]] \
+    && { shift; tmt_VERBOSE=y; } ||:
+
 [[ -n "$1" ]] || tmt_abort "path to workdir is missing"
 tmt_WD="$(readlink -f "$1")"
+[[ -d "$tmt_WD" ]] || tmt_abort "Could not find Workdir: $tmt_WD"
 shift
 
 [[ -z "$1" ]] || {
-    [[ "$1" == 'beakerlib' || "$1" == 'shell' ]] && {
-        tmt_TYPE="$1"
-        exit 0
-    }
-    tmt_abort "Unknown tests execution TYPE: '$1'"
+    [[ "$1" == 'beakerlib' || "$1" == 'shell' ]] \
+        || tmt_abort "Unknown tests execution TYPE: '$1'"
+
+    tmt_TYPE="$1"
 }
 shift
 
-cd "$tmt_WD" || tmt_abort "Failed to cd: $tmt_WD"
+cd "$tmt_WD" || tmt_ abort "Failed to cd: $tmt_WD"
 [[ -r "$tmt_TESTS_F" ]] || tmt_abort "Could not find TESTS file: $tmt_TESTS_F"
 
 tmt_TESTS_D="$(readlink -f "${tmt_WD}/${tmt_TESTS_D}")"
@@ -190,6 +197,6 @@ tmt_TESTS_D="$(readlink -f "${tmt_WD}/${tmt_TESTS_D}")"
 tmt_LOG_D="$(readlink -f "${tmt_WD}/${tmt_LOG_D}")"
 [[ -d "$tmt_LOG_D" ]] || tmt_abort "Could not find Execute dir: $tmt_LOG_D"
 
-tmt_debug 1 "$tmt_WD $ main $tmt_TYPE < $tmt_TESTS_F"
+tmt_verbose 1 "$tmt_WD $ main $tmt_TYPE < $tmt_TESTS_F"
 
 tmt_main < <( grep -vE '^\s*$' "$tmt_TESTS_F" )
