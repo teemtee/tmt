@@ -97,7 +97,23 @@ class ProvisionVagrant(ProvisionBase):
 
     def sync_workdir_from_guest(self):
         """ sync from guest to host """
-        raise SpecificationError('NYI: cannot currently sync from guest.')
+        raise ConvertError('NYI: cannot currently sync from guest.')
+
+    def copy_from_guest(self, target):
+        """ copy file/folder from guest to host's copy dir """
+        beg = f"[[ -d '{target}' ]]"
+        end = 'set -xe; exit 0; '
+
+        isdir = f"{beg} || {end}"
+        isntdir = f"{beg} && {end}"
+
+        target_dir = f'{self.provision_dir}/copy/{target}'
+        self.execute(isdir + self.cmd_mkcp(target_dir, f'{target}/.'))
+
+        target_dir = f'$(dirname "{self.provision_dir}/copy/{target}")'
+        self.execute(isntdir + self.cmd_mkcp(target_dir, target))
+
+        self.sync_workdir_from_guest()
 
     def destroy(self):
         """ remove instance """
@@ -105,7 +121,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def prepare(self, name, path):
         """ add single 'preparator' and run it """
-        raise SpecificationError('NYI: cannot currently add preparators.')
+        raise ConvertError('NYI: cannot currently add preparators.')
         self.add_config('provision', name, 'path')
 
 
@@ -129,7 +145,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def status(self):
         """ Get vagrant's status """
-        raise SpecificationError('NYI: cannot currently return status.')
+        raise ConvertError('NYI: cannot currently return status.')
         # TODO: how to get stdout from self.run?
         #csp = self.run_vagrant('status')
         #return self.hr(csp.stdout)
@@ -219,7 +235,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def how_openstack(self):
         self.debug(f"generating: openstack")
-        raise SpecificationError('NYI: cannot run on openstack.')
+        raise SpecificationError('NYI: cannot currently run on openstack.')
 
     def how_docker(self):
         self.how_container()
@@ -229,7 +245,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def how_container(self):
         self.debug(f"generating: container")
-        raise SpecificationError('NYI: cannot run containers.')
+        raise SpecificationError('NYI: cannot currently run containers.')
 
 
     ## END of API ##
@@ -428,6 +444,11 @@ class ProvisionVagrant(ProvisionBase):
             return thing + (string ,)
         else:
             return thing + ' ' + string
+
+    def cmd_mkcp(self, target_dir, target):
+        target_dir = self.quote(target_dir)
+        target = self.quote(target)
+        return f'mkdir -p {target_dir}; cp -vafr {target} {target_dir}'
 
     def quote(self, string):
         return f'"{string}"'
