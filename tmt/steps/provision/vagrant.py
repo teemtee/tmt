@@ -35,16 +35,13 @@ class ProvisionVagrant(ProvisionBase):
     timeout = 333
     default_indent = 9
     eol = '\n'
-    vf_data = ''
-    verbose = False
 
     ## Default API ##
     def __init__(self, data, step):
         """ Initialize the Vagrant provision step """
         super(ProvisionVagrant, self).__init__(data, step)
         self.vagrantfile = os.path.join(self.provision_dir, 'Vagrantfile')
-
-        self.verbose = bool(self.opt('verbose'))
+        self.vf_data = ''
 
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
@@ -86,15 +83,13 @@ class ProvisionVagrant(ProvisionBase):
 
     def go(self):
         """ Execute actual provisioning """
-        self.debug()
-        self.verbose = True
-        self.debug('Provisioning vagrant, this is the Vagrantfile:')
-        self.debug('Vagrantfile', self.vf_read())
-        return self.run_vagrant_success('up')
+        self.info('Provisioning vagrant, this is the Vagrantfile')
+        self.info('Vagrantfile', self.vf_read())
+        return self.run_vagrant('up')
 
     def execute(self, cmd):
         """ Execute remote command """
-        return self.run_vagrant_success('ssh', '-c', cmd)
+        return self.run_vagrant('ssh', '-c', cmd)
 
     def show(self):
         """ Show execute details """
@@ -104,7 +99,7 @@ class ProvisionVagrant(ProvisionBase):
     def sync_workdir_to_guest(self):
         """ sync on demand """
         # TODO: test
-        return self.run_vagrant_success('rsync')
+        return self.run_vagrant('rsync')
 
     def sync_workdir_from_guest(self):
         """ sync from guest to host """
@@ -112,7 +107,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def destroy(self):
         """ remove instance """
-        return self.run_vagrant_success('destroy', '-f')
+        return self.run_vagrant('destroy', '-f')
 
     def run_prepare(self, name, path):
         """ add single 'preparator' and run it """
@@ -123,26 +118,26 @@ class ProvisionVagrant(ProvisionBase):
     ## Additional API ##
     def create(self):
         """ Create default Vagrantfile with our modifications """
-        self.run_vagrant_success('init', '-fm', self.data['box'])
+        self.run_vagrant('init', '-fm', self.data['box'])
         self.validate()
 
     def status(self):
         """ Get vagrant's status """
-        csp = self.run_vagrant_success('status')
+        csp = self.run_vagrant('status')
         return self.hr(csp.stdout)
 
     def cleanup(self):
         """ remove box and base box """
-        return self.run_vagrant_success('box', 'remove', '-f', self.data['box'])
+        return self.run_vagrant('box', 'remove', '-f', self.data['box'])
         # TODO: libvirt storage removal?
 
     def validate(self):
         """ Validate Vagrantfile format """
-        return self.run_vagrant_success('validate')
+        return self.run_vagrant('validate')
 
     def reload(self):
         """ restart guest """
-        return self.run_vagrant_success('reload')
+        return self.run_vagrant('reload')
 
 
     ## Knowhow ##
@@ -186,7 +181,7 @@ class ProvisionVagrant(ProvisionBase):
             self.set_default('box', image)
 
         for x in ('how','box','image'):
-            self.debug(x, self.data[x])
+            self.info(x, self.data[x])
 
         # TODO: Dynamic call [switch] to specific how_*
         return True
@@ -232,23 +227,8 @@ class ProvisionVagrant(ProvisionBase):
 
         return True
 
-    def run_vagrant_success(self, *args):
-        """ Run vagrant command and raise an error if it fails
-            see run_vagrant() for args
-        """
-        self.debug()
-
-        cps = self.run_vagrant(*args)
-        if cps.returncode != 0:
-            raise ConvertError(f'Failed to run vagrant:{self.eol}\
-                  command: {self.hr(args)}{self.eol}\
-                  stdout:  {self.hr(cps.stdout)}{self.eol}\
-                  stderr:  {self.hr(cps.stderr)}{self.eol}\
-                ')
-        return cps
-
     def run_vagrant(self, *args):
-        """ Run a Vagrant command
+        """ Run vagrant command and raise an error if it fails
 
               args = 'command args'
 
@@ -277,6 +257,12 @@ class ProvisionVagrant(ProvisionBase):
         self.debug('stderr', cps.stderr.splitlines())
         self.debug('returncode', cps.returncode)
 
+        if cps.returncode != 0:
+            raise ConvertError(f'Failed to run vagrant:{self.eol}\
+                  command: {self.hr(args)}{self.eol}\
+                  stdout:  {self.hr(cps.stdout)}{self.eol}\
+                  stderr:  {self.hr(cps.stderr)}{self.eol}\
+                ')
         return cps
 
     def add_synced_folder(self, sync_from, sync_to, *args):
@@ -327,6 +313,9 @@ class ProvisionVagrant(ProvisionBase):
         return self.vf_write(vfdata)
 
     def vf_read(self):
+        """ read Vagrantfile
+            also splits
+        """
         return open(self.vagrantfile).read().splitlines()
 
     def vf_write(self, vfdata):
@@ -350,28 +339,45 @@ class ProvisionVagrant(ProvisionBase):
 
 
     ## Helpers ##
-    def debug(self, key = '', val = '', i = 1):
+    def info(self, key = '', val = '', ind = 0, color = 'green'):
+        """ info out!
+            see msgout()
+        """
+        return self.msgout('debug', key, val, ind, color)
+
+    def debug(self, key = '', val = '', ind = 0):
         """ debugging, yay!
-            args: key, value, indent
+            see msgout()
+        """
+        return self.msgout('debug', key, val, ind)
+
+    def msgout(self, mtype, key = '', val = '', ind = 0, color = 'Red'):
+        """ args: key, value, indent, color
             all optional
         """
-        if self.verbose:
-            ind = self.default_indent * i
-
+        # Avoid unneccessary processing
+        if self.opt(mtype) or self.opt('debug'):
             if type(val) is list and len(val):
-                self.debug(key, '\\', i)
+                self.debug(key, '\\', ind)
                 for v in val:
-                    self.debug(' ' * len(key), v, i)
+                    self.debug('', v, ind + len(key))
                 return
 
             val = self.hr(val)
 
-            if key.strip() and len(val):
-                sep = '='
-            else:
-                sep = ' '
+            if mtype == 'info':
+                return self.super.info(key, val, color)
 
-            echo(' ' * ind + f'{key} {sep} {val}')
+            else:
+                if key.strip() and len(val):
+                    sep = ' = '
+                else:
+                    sep = '   '
+
+                return getattr(self.super, \
+                    mtype, \
+                    lambda: RuntimeError(f"Message type unknown: {mtype}") \
+                    )(f"{' '*ind}{key}{sep}{val}")
 
     def hr(self, val):
         """ return human readable data """
@@ -384,13 +390,11 @@ class ProvisionVagrant(ProvisionBase):
         if type(val) is bytes:
             val = str(val, "utf-8")
 
-        eol = ''
         try:
             val = rstrip(val)
             eol = self.eol
-
         except:
-            pass
+            eol = ''
 
         return f'{val}{eol}'
 
