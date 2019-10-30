@@ -47,7 +47,7 @@ class ProvisionVagrant(ProvisionBase):
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
             self.validate()
-            return self
+            return
 
         # Check for working Vagrant
         self.run_vagrant('version')
@@ -55,14 +55,8 @@ class ProvisionVagrant(ProvisionBase):
         # Let's check what's needed
         self.check_how()
 
-        # Create a Vagrantfile
-        self.create()
-
-        # Add default entries to Vagrantfile
-        self.add_defaults()
-
-        # Let's add what's needed
-        self.add_how()
+        # TODO: where should this run?
+        self.init()
 
     def load(self):
         """ Load ProvisionVagrant step """
@@ -85,11 +79,11 @@ class ProvisionVagrant(ProvisionBase):
     def go(self):
         """ Execute actual provisioning """
         self.info('Provisioning vagrant, Vagrantfile', self.vf_read())
-        return self.run_vagrant('up')
+        self.run_vagrant('up')
 
     def execute(self, cmd):
         """ Execute remote command """
-        return self.run_vagrant('ssh', '-c', cmd)
+        self.run_vagrant('ssh', '-c', cmd)
 
     def show(self):
         """ Show execute details """
@@ -99,7 +93,7 @@ class ProvisionVagrant(ProvisionBase):
     def sync_workdir_to_guest(self):
         """ sync on demand """
         # TODO: test
-        return self.run_vagrant('rsync')
+        self.run_vagrant('rsync')
 
     def sync_workdir_from_guest(self):
         """ sync from guest to host """
@@ -107,15 +101,26 @@ class ProvisionVagrant(ProvisionBase):
 
     def destroy(self):
         """ remove instance """
-        return self.run_vagrant('destroy', '-f')
+        self.run_vagrant('destroy', '-f')
 
-    def run_prepare(self, name, path):
+    def prepare(self, name, path):
         """ add single 'preparator' and run it """
         raise SpecificationError('NYI: cannot currently add preparators.')
-        return self.add_config('provision', name, 'path')
+        self.add_config('provision', name, 'path')
 
 
     ## Additional API ##
+    def init(self):
+        """ Initialize Vagrantfile """
+        # Create a Vagrantfile
+        self.create()
+
+        # Add default entries to Vagrantfile
+        self.add_defaults()
+
+        # Let's add what's needed
+        self.add_how()
+
     def create(self):
         """ Create default Vagrantfile with our modifications """
         self.run_vagrant('init', '-fm', self.data['box'])
@@ -124,21 +129,23 @@ class ProvisionVagrant(ProvisionBase):
 
     def status(self):
         """ Get vagrant's status """
-        csp = self.run_vagrant('status')
-        return self.hr(csp.stdout)
+        raise SpecificationError('NYI: cannot currently return status.')
+        # TODO: how to get stdout from self.run?
+        #csp = self.run_vagrant('status')
+        #return self.hr(csp.stdout)
 
     def cleanup(self):
         """ remove box and base box """
-        return self.run_vagrant('box', 'remove', '-f', self.data['box'])
+        self.run_vagrant('box', 'remove', '-f', self.data['box'])
         # TODO: libvirt storage removal?
 
     def validate(self):
         """ Validate Vagrantfile format """
-        return self.run_vagrant('validate')
+        self.run_vagrant('validate')
 
     def reload(self):
         """ restart guest """
-        return self.run_vagrant('reload')
+        self.run_vagrant('reload')
 
 
     ## Knowhow ##
@@ -146,6 +153,9 @@ class ProvisionVagrant(ProvisionBase):
         """ Decide what to do when HOW is ...
             does not add anything into Vagrantfile yet
         """
+        self.debug('Checking initial status, setting defaults.')
+
+        # TODO: Dynamic call [switch] to specific how_*
         self.set_default('how', 'virtual')
         self.set_default('image', self.default_image)
 
@@ -159,7 +169,7 @@ class ProvisionVagrant(ProvisionBase):
         except:
             pass
 
-        self.debug('image_uri', self.image_uri)
+        self.info('image_uri', self.image_uri)
 
         if self.image_uri:
             self.set_default('box', 'box_' + self.instance_name)
@@ -184,7 +194,6 @@ class ProvisionVagrant(ProvisionBase):
 
     def add_how(self):
         pass
-        # TODO: Dynamic call [switch] to specific how_*
 
     def how_virtual(self):
         pass
@@ -234,7 +243,6 @@ class ProvisionVagrant(ProvisionBase):
 
               args = ['comand', 'args']
 
-            return subprocess.CompletedProcess
         """
         if len(args) == 0:
             raise RuntimeError("vagrant has to run with args")
@@ -247,7 +255,7 @@ class ProvisionVagrant(ProvisionBase):
             cwd = self.provision_dir)
 
     def add_synced_folder(self, sync_from, sync_to, *args):
-        return self.add_config('synced_folder',
+        self.add_config('synced_folder',
             self.quote(sync_from),
             self.quote(sync_to),
             f'type: {self.quote(self.sync_type)}', *args)
@@ -271,7 +279,7 @@ class ProvisionVagrant(ProvisionBase):
         else:
             config = f'{config[0]} ' + ', '.join(config[1:])
 
-        return self.add_raw_config(config)
+        self.add_raw_config(config)
 
     def add_raw_config(self, config):
         """ Add arbitrary config entry into Vagrantfile
@@ -293,7 +301,7 @@ class ProvisionVagrant(ProvisionBase):
             + [self.config_prefix + config] \
             + vf_tmp[i:]
 
-        return self.vf_write(vf_tmp)
+        self.vf_write(vf_tmp)
 
     def vf_read(self):
         """ read Vagrantfile
@@ -312,16 +320,15 @@ class ProvisionVagrant(ProvisionBase):
         with open(self.vagrantfile, 'w', newline=self.eol) as f:
             f.write(vf_tmp)
 
-        return self.validate()
+        self.validate()
 
     def vf_backup(self):
         """ backup Vagrantfile contents to vf_data """
         self.vf_data = self.vf_read()
-        return self.vf_data
 
     def vf_restore(self):
         """ restore Vagrantfile contents frmo vf_data"""
-        return self.vf_write(self.vf_data)
+        self.vf_write(self.vf_data)
 
 
     ## Helpers ##
@@ -329,13 +336,13 @@ class ProvisionVagrant(ProvisionBase):
         """ info out!
             see msgout()
         """
-        return self.msgout('debug', key, val, color)
+        self.msgout('debug', key, val, color)
 
     def debug(self, key = '', val = '', color='yellow'):
         """ debugging, yay!
             see msgout()
         """
-        return self.msgout('debug', key, val, color)
+        self.msgout('debug', key, val, color)
 
     def msgout(self, mtype, key = '', val = '', color = 'Red'):
         """ args: key, value, indent, color
