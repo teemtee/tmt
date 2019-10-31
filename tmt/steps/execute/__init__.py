@@ -5,7 +5,6 @@
 import tmt
 import os
 import shutil
-import subprocess
 from tmt.steps.execute import shell, beakerlib
 
 
