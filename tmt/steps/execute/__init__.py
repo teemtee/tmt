@@ -53,16 +53,15 @@ class Execute(tmt.steps.Step):
 
     def sync_run_sh(self):
         """ Place run.sh script to workdir  """
-        # localhost provision does not support sync yet, let's do it here
         # TODO: find better way to get source path of run.sh
         src_path = os.path.dirname(tmt.steps.execute.__file__)
         shutil.copy(os.path.join(src_path, 'run.sh'), self.workdir)
+        # sync added run.sh to quests
+        self.plan.provision.sync_workdir_to_guest()
 
     def run(self, *args, **kwargs):
         """  """
-        # temporary disabled till provision has an execute method
-        # return self.plan.provision.execute(*args, **kwargs)
-        subprocess.call(*args, **kwargs)
+        return self.plan.provision.execute(*args, **kwargs)
 
     # API
     def requires(self):

@@ -16,7 +16,7 @@ class ExecutorShell(ExecutorBase):
         # we need run.sh synced to workdir
         self.step.sync_run_sh()
         cmd = f'{self.step.workdir}/run.sh -v {plan_workdir} {self.type}'
-        self._run(cmd, shell=True)
+        self.step.run(cmd)
 
     # API
     def requires(self):

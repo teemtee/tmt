@@ -15,9 +15,6 @@ class ExecutorBase(Plugin):
         """ Run tests """
         super(ExecutorBase, self).go()
 
-    def _run(self, *args, **kwargs):
-        return self.step.run(*args, **kwargs)
-
     # API
     def requires(self):
         """ Returns packages required to run tests"""
