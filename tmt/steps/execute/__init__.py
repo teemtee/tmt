@@ -4,6 +4,7 @@
 
 import tmt
 import os
+import shutil
 import subprocess
 from tmt.steps.execute import shell, beakerlib
 
@@ -48,14 +49,17 @@ class Execute(tmt.steps.Step):
     def go(self):
         """ Execute the test step """
         super(Execute, self).go()
+        self.executor.go(self.plan.workdir)
 
-        # this is a temporary workaround, this should be job of run.sh
-        tests = self.plan.discover.tests()
-        for test in tests:
-            realpath = os.path.join(self.plan.discover.workdir, test._repository.name, 'tests', test.path.lstrip('/'))
-            self.executor.go(realpath, test.test, test.duration)
+    def sync_run_sh(self):
+        """ Place run.sh script to workdir  """
+        # localhost provision does not support sync yet, let's do it here
+        # TODO: find better way to get source path of run.sh
+        src_path = os.path.dirname(tmt.steps.execute.__file__)
+        shutil.copy(os.path.join(src_path, 'run.sh'), self.workdir)
 
     def run(self, *args, **kwargs):
+        """  """
         # temporary disabled till provision has an execute method
         # return self.plan.provision.execute(*args, **kwargs)
         subprocess.call(*args, **kwargs)

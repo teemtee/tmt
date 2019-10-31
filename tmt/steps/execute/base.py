@@ -11,11 +11,9 @@ class ExecutorBase(Plugin):
     def __init__(self,  data, step=None, name=None):
         super(ExecutorBase, self).__init__(data, step, name)
 
-    def go(self, realpath, script, duration):
+    def go(self, plan_workdir):
         """ Run tests """
         super(ExecutorBase, self).go()
-        cmd = f'timeout {duration} {script}'
-        self._run(cmd, cwd=realpath, shell=True)
 
     def _run(self, *args, **kwargs):
         return self.step.run(*args, **kwargs)

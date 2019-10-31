@@ -5,13 +5,14 @@ from tmt.steps.execute.shell import ExecutorShell
 
 class ExecutorBeakerlib(ExecutorShell):
     """ Run tests using how: beakerlib """
+    type = 'beakerlib'
 
     def __init__(self,  data, step=None, name=None):
         super(ExecutorBeakerlib, self).__init__(data, step, name)
 
-    def go(self, realpath, script, duration):
+    def go(self, plan_workdir):
         """ Run tests """
-        super(ExecutorBeakerlib, self).go(realpath, script, duration)
+        super(ExecutorBeakerlib, self).go(plan_workdir)
 
     # API
     def requires(self):

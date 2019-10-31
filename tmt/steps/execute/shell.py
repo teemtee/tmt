@@ -5,13 +5,18 @@ from tmt.steps.execute.base import ExecutorBase
 
 class ExecutorShell(ExecutorBase):
     """ Run tests using how: shell """
+    type = 'shell'
 
     def __init__(self,  data, step=None, name=None):
         super(ExecutorShell, self).__init__(data, step, name)
 
-    def go(self, realpath, script, duration):
+    def go(self, plan_workdir):
         """ Run tests """
-        super(ExecutorShell, self).go(realpath, script, duration)
+        super(ExecutorShell, self).go(plan_workdir)
+        # we need run.sh synced to workdir
+        self.step.sync_run_sh()
+        cmd = f'{self.step.workdir}/run.sh -v {plan_workdir} {self.type}'
+        self._run(cmd, shell=True)
 
     # API
     def requires(self):
