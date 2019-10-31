@@ -150,7 +150,7 @@ class ProvisionVagrant(ProvisionBase):
         #csp = self.run_vagrant('status')
         #return self.hr(csp.stdout)
 
-    def cleanup(self):
+    def clean(self):
         """ remove box and base box """
         self.run_vagrant('box', 'remove', '-f', self.data['box'])
         # TODO: libvirt storage removal?
