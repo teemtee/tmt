@@ -45,9 +45,9 @@ class Provision(tmt.steps.Step):
             guest.go()
             guest.save()
 
-    def execute(self, command):
+    def execute(self, *args, **kwargs):
         for guest in self.guests:
-            guest.execute(command)
+            guest.execute(*args, **kwargs)
 
     def load(self):
         for guest in self.guests:
@@ -78,9 +78,9 @@ class Provision(tmt.steps.Step):
         for guest in self.guests:
             guest.destroy()
 
-    def prepare(self, how):
+    def prepare(self, how, what):
         for guest in self.guests:
-            guest.prepare(how)
+            guest.prepare(how, what)
 
     def clean(self):
         for guest in self.guests:

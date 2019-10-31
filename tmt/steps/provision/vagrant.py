@@ -11,6 +11,7 @@ from tmt.steps.provision.base import ProvisionBase
 from tmt.utils import ConvertError, StructuredFieldError, SpecificationError, GeneralError
 
 from click import echo
+from shlex import quote, join
 from urllib.parse import urlparse
 
 
@@ -29,8 +30,8 @@ class ProvisionVagrant(ProvisionBase):
     executable = 'vagrant'
     config_prefix = '  config.vm.'
     sync_type = 'rsync'
-    default_image = 'centos/7'
-    default_container = 'centos:7'
+    default_image = 'fedora/31-cloud-base'
+    default_container = 'fedora:latest'
     default_indent = 16
     timeout = 333
     eol = '\n'
@@ -65,9 +66,9 @@ class ProvisionVagrant(ProvisionBase):
         self.info('Provisioning vagrant, Vagrantfile', self.vf_read())
         self.run_vagrant('up')
 
-    def execute(self, cmd):
+    def execute(self, *args, **kwargs):
         """ Execute remote command """
-        self.run_vagrant('ssh', '-c', cmd)
+        self.run_vagrant('ssh', '-c', join(args))
 
     def show(self):
         """ Create and show the Vagrantfile """
@@ -105,17 +106,18 @@ class ProvisionVagrant(ProvisionBase):
         """ remove instance """
         self.run_vagrant('destroy', '-f')
 
-    def prepare(self, how, what, name='prepare'):
+    def prepare(self, how, what):
         """ add single 'preparator' and run it """
         if is_uri(what):
             method = 'path'
         else:
             method = 'inline'
 
+        name= 'prepare'
         cmd = 'provision'
 
         self.add_config(cmd,
-            quote(name),
+            self.quote(name),
             self.kv('type', how),
             self.kv('run', 'never'),
             self.kv(method, what))
@@ -126,6 +128,8 @@ class ProvisionVagrant(ProvisionBase):
     ## Additional API ##
     def init(self):
         """ Initialize Vagrantfile """
+        self.info('Provision dir', self.provision_dir)
+
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
             self.validate()
@@ -168,7 +172,7 @@ class ProvisionVagrant(ProvisionBase):
         """ Decide what to do when HOW is ...
             does not add anything into Vagrantfile yet
         """
-        self.debug('Checking initial status, setting defaults.')
+        self.debug('VagrantProvider', 'Checking initial status, setting defaults.')
 
         self.set_default('how', 'virtual')
         self.set_default('image', self.default_image)
@@ -195,7 +199,7 @@ class ProvisionVagrant(ProvisionBase):
             self.data['image'] = None
 
         for x in ('how', 'box', 'image'):
-            self.info(x, self.data[x])
+            self.info(f'    {x}', self.data[x])
 
     def add_how(self):
         """ Add provider (in Vagrant-speak) specifics """
@@ -426,6 +430,9 @@ class ProvisionVagrant(ProvisionBase):
         if type(val) is bytes:
             val = str(val, "utf-8")
 
+        elif type(val) is not str:
+            val = str(val)
+
         try:
             val = rstrip(val)
             eol = self.eol
@@ -459,13 +466,13 @@ class ProvisionVagrant(ProvisionBase):
         target = self.quote(target)
         return f'mkdir -p {target_dir}; cp -vafr {target} {target_dir}'
 
-    def quote(self, string):
-        return f'"{string}"'
-
     def is_uri(self, uri):
         return getattr(urlparse(uri),
             'schema',
             None)
+
+    def quote(self, string):
+        return f'"{string}"'
 
     def kv(self, key, val):
         return f'{key}: "{val}"'
