@@ -54,11 +54,10 @@ tmt_main () {
         local key="$(cut -d':' -f1 <<< "$line" | tmt_trim)"
         local val="$(cut -d':' -f2- <<< "$line" | tmt_trim)"
 
-        tmt_verbose 2 "$line"
-
         grep -q "^\s" <<< "${line}" && {
+            tmt_verbose 1 "$line"
+
             m=
-            [[ "$key" == 'name' ]] && { m=y; name="${val}"; }
             [[ "$key" == 'test' ]] && { m=y; test="${val}"; }
             [[ "$key" == 'path' ]] && { m=y; path="${val}"; }
             [[ "$key" == 'duration' ]] && { m=y; duration="${val}"; }
@@ -67,10 +66,12 @@ tmt_main () {
             [[ -n "$m" ]] || tmt_error "Unknown test variable: $line"
             :
         } || {
-            [[ "$last" == '$name' ]] || \
+            [[ "$name" == "$last" ]] || {
                 runtest "$name" "$test" "$path" "$duration" "$environment"
+                last="$name"
+            }
 
-            last="$name"
+            tmt_verbose 1 "$line"
 
             name="$key"
             test=''
@@ -80,10 +81,11 @@ tmt_main () {
         }
     done
 
-    [[ "$name" == "$last" ]] || \
-        runtest "$name" "$test" "$path" "$duration" "$environment"
+    [[ "$name" == "$last" ]] \
+        || runtest "$name" "$test" "$path" "$duration" "$environment"
 
     local IFS="$IFS_b"
+    echo
 }
 
 runtest () {
@@ -93,17 +95,17 @@ runtest () {
     local duration="$4"
     local environment="$5"
 
-    tmt_verbose 3 "runtest $name $test $path $duration $environment"
+    tmt_verbose 2 "runtest $name $test $path $duration $environment"
 
     [[ -n "$name" ]] || {
         tmt_error "Invalid test name: '$name'"
-        return
+        return 1
     }
     [[ -z "$path" ]] || {
         path="$(readlink -f "$tmt_TESTS_D/$path")"
         [[ -d "$path" ]] || {
             tmt_error "[${name}]" "Could not find test dir: '$path'"
-            return
+            return 2
         }
         path="cd '$path' && "
     }
@@ -113,18 +115,43 @@ runtest () {
     local log_dir="${tmt_LOG_D}/$name"
     mkdir -p "$log_dir" || {
         tmt_error "[${name}]" "Could not create log dir: '$log_dir'"
-        return
+        return 3
     }
     cd "$log_dir" || {
         tmt_error "[${name}]" "Could not cd: '$log_dir'"
-        return
+        return 4
+    }
+    touch "$tmt_LOGOUT_F" "$tmt_LOGERR_F" "$tmt_LOGCODE_F" || {
+        tmt_error "[${name}]" "Could touch log files in '$log_dir'"
+        return 5
     }
 
     local cmd="${path}${environment}${duration}${test}"
-    tmt_verbose 4 "$cmd" "$tmt_LOGOUT_F" "$tmt_LOGERR_F" "$tmt_LOGCODE_F"
+    tmt_verbose 2 "$cmd" "1>$tmt_LOGOUT_F" "2>$tmt_LOGERR_F" "$?>$tmt_LOGCODE_F"
 
-    #bash -c "$c" > stdout.log 2> stderr.log
-    popd
+    bash -c "$cmd" 1>"$tmt_LOGOUT_F" 2>"$tmt_LOGERR_F"
+    echo "$?" >"$tmt_LOGCODE_F"
+
+    [[ -z "$tmt_VERBOSE" ]] && {
+      grep -q '^0$' "$tmt_LOGCODE_F" \
+          && echo -n "." \
+          || echo -n "F"
+      :
+    } || {
+        {
+            tmt_verbose 2 "$tmt_LOGOUT_F:"
+            cat "$tmt_LOGOUT_F"
+
+            tmt_verbose 2 "$tmt_LOGERR_F:"
+            cat "$tmt_LOGERR_F"
+
+            tmt_verbose 2 "$tmt_LOGCODE_F:"
+            cat "$tmt_LOGCODE_F"
+
+        } >&2
+    }
+
+    return 0
 }
 
 # Helpers
@@ -153,7 +180,7 @@ tmt_verbose () {
         shift
 
         while [[ $i -gt 0 ]]; do
-            p="${p}>"
+            p="${p} >"
             let "i=$i-1"
         done
 
@@ -197,6 +224,6 @@ tmt_TESTS_D="$(readlink -f "${tmt_WD}/${tmt_TESTS_D}")"
 tmt_LOG_D="$(readlink -f "${tmt_WD}/${tmt_LOG_D}")"
 [[ -d "$tmt_LOG_D" ]] || tmt_abort "Could not find Execute dir: $tmt_LOG_D"
 
-tmt_verbose 1 "$tmt_WD $ main $tmt_TYPE < $tmt_TESTS_F"
+tmt_verbose 0 "$tmt_WD $ main $tmt_TYPE < $tmt_TESTS_F"
 
 tmt_main < <( grep -vE '^\s*$' "$tmt_TESTS_F" )
