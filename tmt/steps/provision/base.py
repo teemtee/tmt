@@ -3,6 +3,7 @@ import os
 import random
 import string
 
+from click import echo
 
 class ProvisionBase(tmt.utils.Common):
     def __init__(self, data, step, instance_name=None):
@@ -50,3 +51,10 @@ class ProvisionBase(tmt.utils.Common):
         """ destroy the machine """
         pass
 
+    def join(self, *args):
+        if len(args) == 0:
+            return ""
+        elif len(args) == 1:
+            args = args[0]
+
+        return ' '.join(args)

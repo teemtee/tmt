@@ -11,6 +11,7 @@ from tmt.steps.provision.base import ProvisionBase
 from tmt.utils import ConvertError, StructuredFieldError, SpecificationError, GeneralError
 
 from click import echo
+from shlex import quote
 from urllib.parse import urlparse
 
 
@@ -27,10 +28,10 @@ from urllib.parse import urlparse
 class ProvisionVagrant(ProvisionBase):
     """ Use Vagrant to Provision an environment for testing """
     executable = 'vagrant'
-    config_prefix = '  config.vm.'
+    config_prefix = '  config.'
     sync_type = 'rsync'
-    default_image = 'centos/7'
-    default_container = 'centos:7'
+    default_image = 'fedora/31-cloud-base'
+    default_container = 'fedora:latest'
     default_indent = 16
     timeout = 333
     eol = '\n'
@@ -65,9 +66,9 @@ class ProvisionVagrant(ProvisionBase):
         self.info('Provisioning vagrant, Vagrantfile', self.vf_read())
         self.run_vagrant('up')
 
-    def execute(self, cmd):
+    def execute(self, *args, **kwargs):
         """ Execute remote command """
-        self.run_vagrant('ssh', '-c', cmd)
+        self.run_vagrant('ssh', '-c', self.join(args))
 
     def show(self):
         """ Create and show the Vagrantfile """
@@ -77,7 +78,6 @@ class ProvisionVagrant(ProvisionBase):
 
     def sync_workdir_to_guest(self):
         """ sync on demand """
-        # TODO: test
         self.run_vagrant('rsync')
 
     def sync_workdir_from_guest(self):
@@ -88,7 +88,7 @@ class ProvisionVagrant(ProvisionBase):
     def copy_from_guest(self, target):
         """ copy file/folder from guest to host's copy dir """
         beg = f"[[ -d '{target}' ]]"
-        end = 'set -xe; exit 0; '
+        end = 'exit 0; set -xe; '
 
         isdir = f"{beg} || {end}"
         isntdir = f"{beg} && {end}"
@@ -105,20 +105,49 @@ class ProvisionVagrant(ProvisionBase):
         """ remove instance """
         self.run_vagrant('destroy', '-f')
 
-    def prepare(self, how, what, name='prepare'):
+    def prepare(self, how, what):
         """ add single 'preparator' and run it """
-        if is_uri(what):
-            method = 'path'
-        else:
-            method = 'inline'
 
+        name = 'prepare'
         cmd = 'provision'
 
-        self.add_config(cmd,
-            quote(name),
-            self.kv('type', how),
-            self.kv('run', 'never'),
-            self.kv(method, what))
+        # TODO: FIX
+        whatpath = os.path.join(self.step.plan.workdir,
+            'discover',
+            'one',
+            'tests',
+            what)
+
+        self.debug('Trying path', whatpath)
+
+        if os.path.exists(whatpath) and os.path.isfile(whatpath):
+            what = whatpath
+
+        if how == 'ansible':
+            name = how
+
+            self.add_config_block(cmd,
+                name,
+                f'become = true',
+                f'become_user = "root"',
+                f'playbook = "{what}"')
+           #TODO: run: 'never'
+
+        else:
+            if self.is_uri(what):
+                method = 'path'
+            else:
+                method = 'inline'
+
+            self.add_config('vm',
+                cmd,
+                self.quote(name),
+                self.kv('type', how),
+                self.kv('privileged', 'true'),
+                self.kv('run', 'never'),
+                self.kv(method, what))
+
+            # maybe?
 
         self.run_vagrant(cmd, f'--{cmd}-with', name)
 
@@ -126,6 +155,8 @@ class ProvisionVagrant(ProvisionBase):
     ## Additional API ##
     def init(self):
         """ Initialize Vagrantfile """
+        self.info('Provision dir', self.provision_dir)
+
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
             self.validate()
@@ -171,7 +202,7 @@ class ProvisionVagrant(ProvisionBase):
         """ Decide what to do when HOW is ...
             does not add anything into Vagrantfile yet
         """
-        self.debug('Checking initial status, setting defaults.')
+        self.debug('VagrantProvider', 'Checking initial status, setting defaults.')
 
         self.set_default('how', 'virtual')
         self.set_default('image', self.default_image)
@@ -198,7 +229,7 @@ class ProvisionVagrant(ProvisionBase):
             self.data['image'] = None
 
         for x in ('how', 'box', 'image'):
-            self.info(x, self.data[x])
+            self.info(f'    {x}', self.data[x])
 
     def add_how(self):
         """ Add provider (in Vagrant-speak) specifics """
@@ -213,7 +244,7 @@ class ProvisionVagrant(ProvisionBase):
         image = self.data['image']
 
         if image:
-            self.add_config_value("box_url", image)
+            self.add_config_value('vm', "box_url", image)
 
         # let's try libvirt as default for now
         self.how_libvirt()
@@ -225,10 +256,12 @@ class ProvisionVagrant(ProvisionBase):
     def how_libvirt(self):
         self.debug("generating", "libvirt")
         self.vf_backup("QEMU session")
+        self.add_provider('libvirt', 'memory = 1024')
         try:
             self.add_provider('libvirt', 'qemu_use_session = true')
         except GeneralError as error:
-            self.debug(error)
+            # Not really an error
+            #self.debug(error)
             self.vf_restore()
 
     def how_openstack(self):
@@ -258,11 +291,16 @@ class ProvisionVagrant(ProvisionBase):
         """ Adds default config entries
             1) Disable default sync
             2) To sync plan workdir
+            3) setup ssh
+            4) memory: 1024
         """
         self.add_synced_folder(".", "/vagrant", 'disabled: true')
 
         dir = self.step.plan.workdir
         self.add_synced_folder(dir, dir)
+
+        self.add_config_value('ssh', 'username', "root")
+        self.add_config_value('ssh', 'insert_key', 'true')
 
     def run_vagrant(self, *args):
         """ Run vagrant command and raise an error if it fails
@@ -287,7 +325,8 @@ class ProvisionVagrant(ProvisionBase):
             cwd = self.provision_dir)
 
     def add_synced_folder(self, sync_from, sync_to, *args):
-        self.add_config('synced_folder',
+        self.add_config('vm',
+            'synced_folder',
             self.quote(sync_from),
             self.quote(sync_to),
             self.kv('type', self.sync_type),
@@ -303,14 +342,14 @@ class ProvisionVagrant(ProvisionBase):
         for c in config:
             config_str += f'{block}.{c}; '
 
-        self.add_config(f"{name} '{block}' do |{block}| {config_str}end")
+        self.add_config('vm', f"{name} '{block}' do |{block}| {config_str}end")
 
-    def add_config_value(self, key, value):
+    def add_config_value(self, type, key, value):
         """ Add config = value into Vagrantfile
         """
-        self.add_config(f"{key} = '{value}'")
+        self.add_config(type, f"{key} = '{value}'")
 
-    def add_config(self, *config):
+    def add_config(self, type, *config):
         """ Add config entry into Vagrantfile right before last 'end',
             and prepends it with `config_prefix`.
 
@@ -329,7 +368,7 @@ class ProvisionVagrant(ProvisionBase):
         else:
             config = f'{config[0]} ' + ', '.join(config[1:])
 
-        self.info('Adding into Vagrantfile', config)
+        self.info('Adding into Vagrantfile', f"{type}.{config}")
 
         vf_tmp = self.vf_read()
 
@@ -341,7 +380,7 @@ class ProvisionVagrant(ProvisionBase):
                 break
 
         vf_tmp = vf_tmp[:i] \
-            + [self.config_prefix + config] \
+            + [self.config_prefix + f"{type}." + config] \
             + vf_tmp[i:]
 
         self.vf_write(vf_tmp)
@@ -398,7 +437,7 @@ class ProvisionVagrant(ProvisionBase):
             all optional
         """
         if type(val) is list and len(val):
-            ind_val = self.eol
+            ind_val = ''
             for v in val:
                 if v:
                     ind_val += ' '*self.default_indent + self.hr(v) + self.eol
@@ -430,6 +469,9 @@ class ProvisionVagrant(ProvisionBase):
 
         if type(val) is bytes:
             val = str(val, "utf-8")
+
+        elif type(val) is not str:
+            val = str(val)
 
         try:
             val = rstrip(val)
@@ -464,13 +506,13 @@ class ProvisionVagrant(ProvisionBase):
         target = self.quote(target)
         return f'mkdir -p {target_dir}; cp -vafr {target} {target_dir}'
 
-    def quote(self, string):
-        return f'"{string}"'
-
     def is_uri(self, uri):
         return getattr(urlparse(uri),
             'schema',
             None)
+
+    def quote(self, string):
+        return f'"{string}"'
 
     def kv(self, key, val):
         return f'{key}: "{val}"'
