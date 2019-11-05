@@ -225,7 +225,7 @@ class ProvisionVagrant(ProvisionBase):
         try:
             self.add_provider('libvirt', 'qemu_use_session = true')
         except GeneralError as error:
-            self.debug(error)
+            self.debug(str(error))
             self.vf_restore()
 
     def how_openstack(self):
