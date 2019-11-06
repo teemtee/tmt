@@ -160,7 +160,10 @@ class ProvisionVagrant(ProvisionBase):
         self.run_vagrant('reload')
 
     def plugin_install(self, plugin):
-        self.run_vagrant('plugin', 'install', plugin)
+        try:
+            self.run('bash -c "vagrant plugin list | grep ^vagrant-rsync-back"')
+        except:
+            self.run_vagrant('plugin', 'install', plugin)
 
 
     ## Knowhow ##
@@ -273,6 +276,8 @@ class ProvisionVagrant(ProvisionBase):
         """
         if len(args) == 0:
             raise RuntimeError("vagrant has to run with args")
+        elif len(args) == 1:
+            args = args[0]
 
         cmd = self.prepend(args, self.executable)
 
