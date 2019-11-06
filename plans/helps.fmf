@@ -12,5 +12,5 @@ discover:
     - name: /help/smoke
       test: ./smoke.sh
       path: /tests/shell
-execute:
-    how: shell
+#execute:
+#    how: shell
