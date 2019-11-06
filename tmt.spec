@@ -55,7 +55,7 @@ This package contains the Python 3 module.
 
 %package all
 Summary: %{summary}
-Requires: vagrant vagrant-libvirt python3-nitrate
+Requires: vagrant vagrant-libvirt
 
 %description all
 All extra dependencies of the Test Management Tool. Install this
