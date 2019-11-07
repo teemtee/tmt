@@ -8,7 +8,7 @@ import os
 import re
 
 from tmt.steps.provision.base import ProvisionBase
-from tmt.utils import ConvertError, StructuredFieldError, SpecificationError, GeneralError
+from tmt.utils import ConvertError, SpecificationError, GeneralError
 
 from click import echo
 from shlex import quote
@@ -33,6 +33,7 @@ class ProvisionVagrant(ProvisionBase):
     default_image = 'fedora/31-cloud-base'
     default_container = 'fedora:latest'
     default_indent = 16
+    vf_name = 'Vagrantfile'
     timeout = 333
     eol = '\n'
 
@@ -41,8 +42,9 @@ class ProvisionVagrant(ProvisionBase):
         """ Initialize the Vagrant provision step """
         self.super = super(ProvisionVagrant, self)
         self.super.__init__(data, step)
-        self.vagrantfile = os.path.join(self.provision_dir, 'Vagrantfile')
+        self.vagrantfile = os.path.join(self.provision_dir, self.vf_name)
         self.vf_data = ''
+        self.path = os.path.join(self.provision_dir, 'data.yaml')
 
         # Check for working Vagrant
         self.run_vagrant('version')
@@ -52,38 +54,39 @@ class ProvisionVagrant(ProvisionBase):
 
     def load(self):
         """ Load ProvisionVagrant step """
-        #TODO: ensure this loads self.data[*]
+        raise SpecificationError("NYI: cannot load")
         self.super.load()
 
     def save(self):
         """ Save ProvisionVagrant step """
-        #TODO: ensure this saves self.data[*]
+        raise SpecificationError("NYI: cannot save")
         self.super.save()
 
     def go(self):
         """ Execute actual provisioning """
         self.init()
-        self.info('Provisioning vagrant, Vagrantfile', self.vf_read())
-        self.run_vagrant('up')
+        self.info(f'Provisioning {self.executable}, {self.vf_name}', self.vf_read())
+        return self.run_vagrant('up')
 
     def execute(self, *args, **kwargs):
         """ Execute remote command """
-        self.run_vagrant('ssh', '-c', self.join(args))
+        return self.run_vagrant('ssh', '-c', self.join(args))
 
     def show(self):
         """ Create and show the Vagrantfile """
         self.init()
         self.super.show(keys=['how', 'box', 'image'])
-        self.info('Vagrantfile', self.vf_read())
+        self.info(self.vf_name, self.vf_read())
 
     def sync_workdir_to_guest(self):
         """ sync on demand """
-        self.run_vagrant('rsync')
+        return self.run_vagrant('rsync')
 
     def sync_workdir_from_guest(self):
         """ sync from guest to host """
-        self.plugin_install('vagrant-rsync-back')
-        self.run_vagrant('rsync-back')
+        command = 'rsync-back'
+        self.plugin_install(command)
+        return self.run_vagrant(command)
 
     def copy_from_guest(self, target):
         """ copy file/folder from guest to host's copy dir """
@@ -103,7 +106,7 @@ class ProvisionVagrant(ProvisionBase):
 
     def destroy(self):
         """ remove instance """
-        self.run_vagrant('destroy', '-f')
+        return self.run_vagrant('destroy', '-f')
 
     def prepare(self, how, what):
         """ add single 'preparator' and run it """
@@ -149,7 +152,7 @@ class ProvisionVagrant(ProvisionBase):
 
             # maybe?
 
-        self.run_vagrant(cmd, f'--{cmd}-with', name)
+        return self.run_vagrant(cmd, f'--{cmd}-with', name)
 
 
     ## Additional API ##
@@ -165,37 +168,57 @@ class ProvisionVagrant(ProvisionBase):
         # Create a Vagrantfile
         self.create()
 
+        # Let's add what's needed
+        # Do this first to install provider
+        self.add_how()
+
         # Add default entries to Vagrantfile
         self.add_defaults()
-
-        # Let's add what's needed
-        self.add_how()
 
     def create(self):
         """ Create default Vagrantfile with our modifications """
         self.run_vagrant('init', '-fm', self.data['box'])
         self.info('Initialized new Vagrantfile', self.vf_read())
-        self.validate()
 
     def clean(self):
         """ remove box and base box """
-        self.run_vagrant('box', 'remove', '-f', self.data['box'])
+        return self.run_vagrant('box', 'remove', '-f', self.data['box'])
         # TODO: libvirt storage removal?
 
     def validate(self):
         """ Validate Vagrantfile format """
-        self.run_vagrant('validate')
+        return self.run_vagrant('validate')
 
     def reload(self):
-        """ restart guest """
-        self.run_vagrant('reload')
+        """ restart guest machine """
+        return self.run_vagrant('reload')
 
-    def plugin_install(self, plugin):
+    def plugin_install(self, name):
+        """ Install a vagrant plugin if it's not installed yet.
+        """
+        plugin = f'{self.executable}-{name}'
+        command = ['plugin', 'install']
         try:
-            self.run('bash -c "vagrant plugin list | grep ^vagrant-rsync-back"')
-        except:
-            self.run_vagrant('plugin', 'install', plugin)
+            # is it already present?
+            return self.run(f"bash -c \"{self.executable} {command[0]} list | grep '^{plugin}'\"")
+        except GeneralError:
+            pass
 
+        try:
+            # try to install it
+            return self.run_vagrant(command[0], command[1], plugin)
+        except GeneralError as error:
+            # Let's work-around the error handling limitation for now
+            # by getting the output manually
+            command = ' '.join([self.executable] + command + [plugin])
+
+            out, err = self.run(f"bash -c \"{command}; :\"")
+
+            if re.search(r"Conflicting dependency chains:", err) is None:
+                raise error
+
+            raise ConvertError('Dependency conflict detected.\n'
+                    'Please install vagrant plugins from one source only(hint: `dnf remove vagrant-libvirt`).')
 
     ## Knowhow ##
     def check_how(self):
@@ -254,11 +277,15 @@ class ProvisionVagrant(ProvisionBase):
         self.add_provider(self.data['how'])
 
     def how_libvirt(self):
-        self.debug("generating", "libvirt")
+        name = 'libvirt'
+        self.debug("generating", name)
+
+        self.plugin_install(name)
+
+        self.add_provider(name, 'memory = 1024')
         self.vf_backup("QEMU session")
-        self.add_provider('libvirt', 'memory = 1024')
         try:
-            self.add_provider('libvirt', 'qemu_use_session = true')
+            self.add_provider(name, 'qemu_use_session = true')
         except GeneralError as error:
             # Not really an error
             #self.debug(error)
@@ -300,7 +327,10 @@ class ProvisionVagrant(ProvisionBase):
         self.add_synced_folder(dir, dir)
 
         self.add_config_value('ssh', 'username', "root")
-        self.add_config_value('ssh', 'insert_key', 'true')
+        # probably not needed
+        #self.add_config_value('ssh', 'insert_key', 'true')
+
+        self.add_config_value('nfs', 'verify_installed', 'false')
 
     def run_vagrant(self, *args):
         """ Run vagrant command and raise an error if it fails
@@ -320,7 +350,7 @@ class ProvisionVagrant(ProvisionBase):
         cmd = self.prepend(args, self.executable)
 
 #            timeout = self.timeout,
-        cps = self.run(
+        return self.run(
             cmd,
             cwd = self.provision_dir)
 
@@ -492,14 +522,6 @@ class ProvisionVagrant(ProvisionBase):
             return (string ,) + thing
         else:
             return string + ' ' + thing
-
-    def append(self, thing, string):
-        if type(thing) is list:
-            return thing.append(string)
-        elif type(thing) is tuple:
-            return thing + (string ,)
-        else:
-            return thing + ' ' + string
 
     def cmd_mkcp(self, target_dir, target):
         target_dir = self.quote(target_dir)
