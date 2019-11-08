@@ -33,6 +33,9 @@ class Provision(tmt.steps.Step):
             if how == 'local':
                 from .localhost import ProvisionLocalhost
                 self.guests.append(ProvisionLocalhost(data, self))
+            if how == 'libvirt':
+                from .libvirt import ProvisionLibvirt
+                self.guests.append(ProvisionLibvirt(data, self))
             else:
                 from .vagrant import ProvisionVagrant
                 self.guests.append(ProvisionVagrant(data, self))
