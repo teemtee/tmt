@@ -22,10 +22,18 @@ class Prepare(tmt.steps.Step):
         self.super.wake()
 
         for i in range(len(self.data)):
-            self.set_default(i, 'how', 'shell')
-            self.set_default(i, 'playbooks', [])
-            self.set_default(i, 'path', self.data[i]['playbooks'])
-            self.set_default(i, 'script', self.data[i]['path'])
+            self.opts(i, 'how', 'script')
+
+            self.alias(i, 'script', 'playbooks')
+            self.alias(i, 'script', 'playbook')
+            self.alias(i, 'script', 'path')
+            self.alias(i, 'script', 'inline')
+
+            self.debug('how', self)
+
+            for key, val in self.data[i].items():
+                if not val is None:
+                    self.info(f'{key}', val)
 
     def show(self):
         """ Show discover details """
@@ -59,3 +67,15 @@ class Prepare(tmt.steps.Step):
     def set_default(self, i, where, default):
         if not (where in self.data[i] and self.data[i][where]):
             self.data[i][where] = default
+
+    def opts(self, i, *keys):
+        for key in keys:
+            val = self.opt(key)
+            if val:
+                self.data[i][key] = val
+
+    def alias(self, i, where, name):
+        self.set_default(i, where, self.opt(name))
+        val = self.data[i].get(name)
+        if not val is None:
+            self.set_default(i, where, val)
