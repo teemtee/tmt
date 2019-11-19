@@ -133,10 +133,7 @@ class ProvisionVagrant(ProvisionBase):
 
         # TODO: FIX path to playbook
         if type(what) is list:
-            for wha in what:
-                rtrs = []
-                rtrs += self.prepare(how, wha)
-                return rtrs
+            return [self.prepare(how, wha) for wha in what]
 
         whatpath = os.path.join(self.step.plan.run.tree.root, what)
 
