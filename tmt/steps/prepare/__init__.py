@@ -9,6 +9,8 @@ import subprocess
 
 from click import echo
 
+from tmt.utils import GeneralError, ConvertError
+
 class Prepare(tmt.steps.Step):
     name = 'prepare'
 
@@ -60,9 +62,19 @@ class Prepare(tmt.steps.Step):
 
         # TODO: find a better way
         packages = self.plan.execute.requires()
-        if packages:
-            self.plan.provision.prepare('shell', f"sleep 1; set -x; nohup bash -c 'dnf install -y {' '.join(packages)}' 1>/root/prepare.log 2>&1 && exit 0; cat prepare.log; exit 1")
-            self.plan.provision.copy_from_guest('/root/prepare.log')
+        if not packages:
+            return
+
+        failed = False
+        log = 'root/prepare.log'
+        try:
+            self.plan.provision.prepare('shell', f"set -x; nohup bash -c 'dnf install -y {' '.join(packages)}' 1>/{log} 2>&1 && exit 0; cat prepare.log; exit 1")
+        except GeneralError:
+            failed = True
+
+        self.plan.provision.copy_from_guest(f'/{log}')
+        if failed:
+            raise ConverError(f'Prepare failed:\n{open(log).read()}')
 
     def set_default(self, i, where, default):
         if not (where in self.data[i] and self.data[i][where]):
