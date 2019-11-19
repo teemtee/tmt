@@ -138,16 +138,22 @@ class ProvisionVagrant(ProvisionBase):
                 rtrs += self.prepare(how, wha)
                 return rtrs
 
-        whatpath = os.path.join(self.step.plan.workdir,
-            'discover',
-            self.data['name'],
-            'tests',
-            what)
+        whatpath = os.path.join(self.step.plan.run.tree.root, what)
 
         self.debug('Trying path', whatpath)
-
         if os.path.exists(whatpath) and os.path.isfile(whatpath):
             what = whatpath
+
+        else:
+            whatpath = os.path.join(self.step.plan.workdir,
+                'discover',
+                self.data['name'],
+                'tests',
+                what)
+
+            self.debug('Trying path', whatpath)
+            if os.path.exists(whatpath) and os.path.isfile(whatpath):
+                what = whatpath
 
         if how == 'ansible':
             name = how
