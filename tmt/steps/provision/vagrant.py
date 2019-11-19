@@ -131,10 +131,16 @@ class ProvisionVagrant(ProvisionBase):
         name = 'prepare'
         cmd = 'provision'
 
-        # TODO: FIX
+        # TODO: FIX path to playbook
+        if type(what) is list:
+            for wha in what:
+                rtrs = []
+                rtrs += self.prepare(how, wha)
+                return rtrs
+
         whatpath = os.path.join(self.step.plan.workdir,
             'discover',
-            'one',
+            self.data['name'],
             'tests',
             what)
 
@@ -149,7 +155,7 @@ class ProvisionVagrant(ProvisionBase):
             self.add_config_block(cmd,
                 name,
                 f'become = true',
-                self.kve('become_user', self.data['user']),
+                self.kve('become_user', self.data['username']),
                 self.kve('playbook', what))
                 # I'm not sure whether this is needed:
                 # run: 'never'
