@@ -74,7 +74,7 @@ class Prepare(tmt.steps.Step):
 
         self.plan.provision.copy_from_guest(f'/{log}')
         if failed:
-            raise ConverError(f'Prepare failed:\n{open(log).read()}')
+            raise ConvertError(f'Prepare failed:\n{open(log).read()}')
 
     def set_default(self, i, where, default):
         if not (where in self.data[i] and self.data[i][where]):
