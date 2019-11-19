@@ -66,15 +66,15 @@ class Prepare(tmt.steps.Step):
             return
 
         failed = False
-        log = 'root/prepare.log'
+        logf = os.path.join(self.workdir, 'prepare.log')
         try:
-            self.plan.provision.prepare('shell', f"set -x; nohup bash -c 'dnf install -y {' '.join(packages)}' 1>/{log} 2>&1 && exit 0; cat prepare.log; exit 1")
+            self.plan.provision.prepare('shell', f"dnf install -y {' '.join(packages)} 2>&1 | tee -a '{logf}'")
         except GeneralError:
             failed = True
 
-        self.plan.provision.copy_from_guest(f'/{log}')
+        self.plan.provision.sync_workdir_from_guest()
         if failed:
-            raise ConvertError(f'Prepare failed:\n{open(log).read()}')
+            raise ConvertError(f'Prepare failed:\n{open(logf).read()}')
 
     def set_default(self, i, where, default):
         if not (where in self.data[i] and self.data[i][where]):
