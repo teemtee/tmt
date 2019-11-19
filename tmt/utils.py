@@ -130,11 +130,15 @@ class Common(object):
         if self.opt('debug'):
             echo(self._indent(key, value, color, shift))
 
-    def _run(self, command, cwd):
+    def _run(self, command, cwd, log, shell=False):
         """ Run command, capture the output """
         # Create the process
         process = subprocess.Popen(
-            command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            command,
+            cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            shell=shell
+        )
+
         descriptors = [process.stdout.fileno(), process.stderr.fileno()]
         stdout = ''
         stderr = ''
@@ -149,23 +153,23 @@ class Common(object):
                     line = process.stdout.readline().decode('utf-8')
                     stdout += line
                     if line != '':
-                        self.debug('out', line.rstrip('\n'), 'yellow')
+                        log('out', line.rstrip('\n'), 'yellow')
                 # Handle stderr
                 if descriptor == process.stderr.fileno():
                     line = process.stderr.readline().decode('utf-8')
                     stderr += line
                     if line != '':
-                        self.debug('err', line.rstrip('\n'), 'yellow')
+                        log('err', line.rstrip('\n'), 'yellow')
 
         # Check for possible additional output
         for line in process.stdout.readlines():
             line = line.decode('utf-8')
             stdout += line
-            self.debug('out', line.rstrip('\n'), 'yellow')
+            log('out', line.rstrip('\n'), 'yellow')
         for line in process.stderr.readlines():
             line = line.decode('utf-8')
             stderr += line
-            self.debug('err', line.rstrip('\n'), 'yellow')
+            log('err', line.rstrip('\n'), 'yellow')
 
         # Handle the exit code, return output
         if process.returncode != 0:
@@ -173,7 +177,7 @@ class Common(object):
                 process.returncode, ' '.join(command))
         return stdout, stderr
 
-    def run(self, command, message=None, cwd=None, dry=False):
+    def run(self, command, message=None, cwd=None, dry=False, log=None, shell=False):
         """
         Run command, give message, handle errors
 
@@ -196,7 +200,7 @@ class Common(object):
         if isinstance(command, str):
             command = shlex.split(command)
         try:
-            return self._run(command, cwd=cwd or self.workdir)
+            return self._run(command, cwd=cwd or self.workdir, log=log or self.debug, shell=shell)
         except (OSError, subprocess.CalledProcessError) as error:
             raise GeneralError(f"{message}\n{error}")
 

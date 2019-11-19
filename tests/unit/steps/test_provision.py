@@ -68,7 +68,7 @@ def test_localhost_prepare_ansible():
         provision.prepare('ansible', 'playbook.yml')
         playbook = os.path.join(plan.run.tree.root, 'playbook.yml')
         run.assert_called_once_with(
-            f'ansible-playbook -vb -c local -i localhost, {playbook}')
+            f'ansible-playbook -vb -c local -i localhost, {playbook}', log=provision.guests[0].verbose)
 
 
 def test_localhost_prepare_shell():

@@ -2,7 +2,7 @@ import os
 
 from click import echo
 from tmt.steps.provision.base import ProvisionBase
-from tmt.utils import SpecificationError
+from tmt.utils import GeneralError, SpecificationError
 
 
 class ProvisionLocalhost(ProvisionBase):
@@ -23,7 +23,7 @@ class ProvisionLocalhost(ProvisionBase):
         # Playbook paths should be relative to the metadata tree root
         playbook = os.path.join(self.step.plan.run.tree.root, what)
         # Run ansible against localhost, in verbose mode, enable --become
-        self.run(f'ansible-playbook -vb -c local -i localhost, {playbook}')
+        self.run(f'ansible-playbook -vb -c local -i localhost, {playbook}', log=self.verbose)
 
     def _prepare_shell(self, what):
         """ Run ansible on localhost """
