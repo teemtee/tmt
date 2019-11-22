@@ -210,6 +210,9 @@ def discover(context, **kwargs):
     '-b', '--box', metavar='BOX',
     help='Vagrant box name to use.')
 @click.option(
+    '-v', '--vagrantfile', metavar='VAGRANTFILE',
+    help='Vagrant box name to use.')
+@click.option(
     '-m', '--memory', metavar='MEMORY',
     help='Set memory available to guest.')
 @click.option(
@@ -217,10 +220,10 @@ def discover(context, **kwargs):
     help='Username to use for all guest operations.')
 @click.option(
     '-p', '--password', metavar='PASSWORD',
-    help='Password to use for login on guest.')
+    help='Password to use for login into guest system.')
 @click.option(
-    '-k', '--private_key', metavar='PRIVATE_KEY',
-    help='Private key to use for login on guest.')
+    '-k', '--key', metavar='PRIVATE_KEY',
+    help='Private key to use for login into guest system.')
 @click.option(
     '-r', '--host', metavar='HOST',
     help='Select remote host to connect to (how=remote)')
@@ -239,7 +242,7 @@ def provision(context, **kwargs):
     help='Use specified method for environment preparation.')
 @click.option(
     '-s', '--script', metavar='SCRIPT',
-    help='Script, inline script, or path to ansoble playbook to execute.')
+    help='Script, inline script, or path to ansible playbook to execute.')
 @verbose_debug_quiet
 @force_dry
 def prepare(context, **kwargs):
