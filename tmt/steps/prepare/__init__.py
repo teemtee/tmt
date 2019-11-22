@@ -6,8 +6,10 @@ import tmt
 import os
 import shutil
 import subprocess
+import re
 
 from click import echo
+from urllib.parse import urlparse
 
 from tmt.utils import GeneralError, ConvertError, SpecificationError
 
@@ -95,7 +97,7 @@ class Prepare(tmt.steps.Step):
                 what = whatpath
 
         try:
-            self.plan.provision.prepare(how, packages)
+            self.plan.provision.prepare(how, what)
         except AttributeError as error:
             raise SpecificationError('NYI: cannot currently run this preparator.')
 
@@ -117,7 +119,7 @@ class Prepare(tmt.steps.Step):
             what_uri = self.get_uri(what)
 
         if what_uri:
-            query = get_query(what_uri)
+            query = self.get_query(what_uri)
 
             if not 'buildID' in query:
                 raise SpecificationError(f"No buildID found in: {what}")
@@ -129,7 +131,11 @@ class Prepare(tmt.steps.Step):
             build = what
 
         self.install('koji')
-        return self.prepare('shell', f'`pwd`; set -xe; koji download-task -a noarch -a x86_64 {build} && ls *')
+
+        install_dir = os.path.join(self.workdir, 'install')
+        os.mkdir(install_dir)
+        self.plan.provision.prepare('shell',
+            f"set -xe; cd '{install_dir}'; koji download-build -a noarch -a x86_64 {build}; dnf install -y *.rpm")
 
     def how_brew(self, how, what):
         raise SpecificationError(f"NYI: Cannot currenlty install brew builds.")
@@ -188,3 +194,9 @@ class Prepare(tmt.steps.Step):
             return what_uri
         else:
             return ''
+
+    def is_uri(self, uri):
+        return getattr(urlparse(uri),
+            'scheme',
+            None)
+
