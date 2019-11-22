@@ -36,7 +36,7 @@ class ProvisionVagrant(ProvisionBase):
     default_container = 'fedora:latest'
     default_indent = 16
     default_user = 'root'
-    default_memory = 1024
+    default_memory = 2048
     vf_name = 'Vagrantfile'
     timeout = 333
     eol = '\n'
@@ -105,6 +105,7 @@ class ProvisionVagrant(ProvisionBase):
         self.plugin_install(command)
         return self.run_vagrant(command)
 
+    # TODO: move to base
     def copy_from_guest(self, target):
         """ copy file/folder from guest to host's copy dir """
         beg = f"[[ -d '{target}' ]]"
@@ -131,27 +132,7 @@ class ProvisionVagrant(ProvisionBase):
         name = 'prepare'
         cmd = 'provision'
 
-        # TODO: FIX path to playbook
-        if type(what) is list:
-            return [self.prepare(how, wha) for wha in what]
-
-        whatpath = os.path.join(self.step.plan.run.tree.root, what)
-
-        self.debug('Trying path', whatpath)
-        if os.path.exists(whatpath) and os.path.isfile(whatpath):
-            what = whatpath
-
-        else:
-            whatpath = os.path.join(self.step.plan.workdir,
-                'discover',
-                self.data['name'],
-                'tests',
-                what)
-
-            self.debug('Trying path', whatpath)
-            if os.path.exists(whatpath) and os.path.isfile(whatpath):
-                what = whatpath
-
+        # decide what to do
         if how == 'ansible':
             name = how
 
@@ -182,14 +163,21 @@ class ProvisionVagrant(ProvisionBase):
 
     ## Additional API ##
     def init(self):
-        """ Initialize ProvisionVagrant """
+        """ Initialize ProvisionVagrant / run following:
+            1] check that Vagrant works
+            2] check for already-present or user-specified Vagrantfile
+            3] check input values and set defaults
+            4] create and populates Vagrantfile with
+                - provider-specific entries
+                - default config entries
+        """
+        self.info('Provision dir', self.provision_dir)
+
          # Check for working Vagrant
         self.run_vagrant('version')
 
         # Let's check what's needed
-        self.check_how()
-
-        self.info('Provision dir', self.provision_dir)
+        self.check_input()
 
         # Are we resuming?
         if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
@@ -209,7 +197,7 @@ class ProvisionVagrant(ProvisionBase):
         self.add_defaults()
 
     def create(self):
-        """ Create default Vagrantfile with our modifications """
+        """ Initialize Vagrantfile """
         self.run_vagrant('init', '-fm', self.data['box'])
         self.debug('Initialized new Vagrantfile', self.vf_read())
 
@@ -255,7 +243,7 @@ class ProvisionVagrant(ProvisionBase):
                 'Please install vagrant plugins from one source only (hint: `dnf remove rubygem-fog-core`).')
 
     ## Knowhow ##
-    def check_how(self):
+    def check_input(self):
         """ Decide what to do when HOW is ...
             does not add anything into Vagrantfile yet
         """
@@ -395,7 +383,7 @@ class ProvisionVagrant(ProvisionBase):
         self.add_synced_folder(dir, dir)
 
         # Used for how='managed' as well
-        for key in ['username', 'password', 'private_key_path']:
+        for key in ('username', 'password', 'private_key_path'):
             if not self.data[key] is None:
                 self.add_config('ssh', self.kve(key, self.data[key]))
 
@@ -583,9 +571,8 @@ class ProvisionVagrant(ProvisionBase):
 
     def alias(self, where, name):
         self.set_default(where, self.opt(name))
-        val = self.data.get(name)
-        if not val is None:
-            self.set_default(where, val)
+        if name in self.data:
+            self.set_default(where, self.data[name])
 
     def prepend(self, thing, string):
         if type(thing) is list:
@@ -602,16 +589,16 @@ class ProvisionVagrant(ProvisionBase):
 
     def is_uri(self, uri):
         return getattr(urlparse(uri),
-            'schema',
+            'scheme',
             None)
 
     def quote(self, string):
         return f'"{string}"'
 
-    def kv(self, key, val, sep = ': '):
+    def kv(self, key, val, sep=': '):
         return f'{key}{sep}"{val}"'
 
-    def kve(self, key, val, sep = ' = '):
+    def kve(self, key, val, sep=' = '):
         return self.kv(key, val, sep)
 
     def opts(self, *keys):
