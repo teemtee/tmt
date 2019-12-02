@@ -1,6 +1,13 @@
 - hosts: all
   tasks:
+  - name: Install tmt rpeository
+    yum_repository:
+      name: tmt
+      description: tmt repo
+      baseurl: https://copr-be.cloud.fedoraproject.org/results/psss/tmt/fedora-$releasever-$basearch/
   - name: Install necessary dependencies
     dnf:
       state: present
-      name: fmf
+      name:
+       - fmf
+       - tmt
