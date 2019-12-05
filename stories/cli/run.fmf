@@ -72,11 +72,11 @@ story: 'As a user I want to execute tests easily'
         we will also need to implement a way how to aggregate test
         results from both runs (before and after the upgrade).
     example:
-        - tmt run discover provision --image=rhel7 --output=box.json
-        - tmt run execute --environment='UPGRADE=before'
+        - tmt run --id foo discover provision --image=rhel7 --output=box.json
+        - tmt run --id foo execute --environment='UPGRADE=before'
         - upgrade-the-system box.json
-        - tmt run execute --environment='UPGRADE=after'
-        - tmt run report finish
+        - tmt run --id foo execute --environment='UPGRADE=after'
+        - tmt run --id foo report finish
 
 /shortcuts:
     story: 'Provide shortcuts for common scenarios'
