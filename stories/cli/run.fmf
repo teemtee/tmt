@@ -50,6 +50,9 @@ story: 'As a user I want to execute tests easily'
     description: |
         In order to enable developing tests for upgrade testing we
         need to provide a way how to execute these tests easily.
+        This does not cover unit tests for individual actors but
+        rather system tests which verify the whole upgrade story.
+
         The plan is to provide an environment variable available
         to the test denoting current phase of the upgrade testing
         (``before`` or ``after`` the upgrade). Based on this
