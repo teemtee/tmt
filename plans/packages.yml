@@ -1,6 +1,6 @@
 - hosts: all
   tasks:
-  - name: Install tmt rpeository
+  - name: Install tmt repository
     yum_repository:
       name: tmt
       description: tmt repo
