@@ -65,10 +65,7 @@ class Prepare(tmt.steps.Step):
     def run_how(self, how, what):
         """ Run specific HOW """
         self.info('Prepare', f"{how} = '{what}", 'yellow')
-        getattr(self,
-            f"how_{how}",
-            lambda: 'generic',
-            )(how, what)
+        getattr(self, f"how_{how}", self.how_generic)(how, what)
 
     def how_generic(self, how, what):
         if not what:
