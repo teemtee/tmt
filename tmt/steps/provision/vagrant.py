@@ -290,7 +290,7 @@ class ProvisionVagrant(ProvisionBase):
             lambda: 'generic',
             )()
 
-    def how_generic():
+    def how_generic(self):
         self.debug("generating", "generic")
         self.create()
         self.add_provider(self.data['how'])
