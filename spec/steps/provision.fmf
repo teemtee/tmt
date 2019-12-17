@@ -12,10 +12,10 @@ description: |
 
 example: |
     provision:
-        memory:
-            min: '1 GB'
+        memory: 2048
         arch:
             - 'x86_64'
+    implemented: /tmt/steps/provision/vagrant.py
 
 /virtual:
     summary: Provision a virtual machine (default)
