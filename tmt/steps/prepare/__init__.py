@@ -127,7 +127,7 @@ class Prepare(tmt.steps.Step):
             build = query['buildID']
 
         else:
-            self.info(f"Could not parse URI, assuming buildID was given.")
+            self.debug(f"Could not parse URI, assuming buildID was given.")
             build = what
 
         self.install('koji')
