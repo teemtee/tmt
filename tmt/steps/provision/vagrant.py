@@ -174,7 +174,7 @@ class ProvisionVagrant(ProvisionBase):
             return
 
         # Did we get a Vagranfile?
-        if not self.data[self.vf_name] is None:
+        if 'vagrantfile' in self.data:
             shutil.copyfile(self.data['vagrantfile'], self.vagrantfile)
             return
 
@@ -382,11 +382,11 @@ class ProvisionVagrant(ProvisionBase):
         self.add_synced_folder(dir, dir)
 
         # Credentials are used for `how: connect` as well as for VMs
-        if not self.data['user'] is None:
+        if 'user' in self.data:
           self.add_config('ssh', self.kve('username', self.data['user']))
-        if not self.data['password'] is None:
+        if 'password' in self.data:
             self.add_config('ssh', self.kve('password', self.data['password']))
-        if not self.data['key'] is None:
+        if 'key' in self.data:
             self.add_config('ssh', self.kve('private_key_path', self.data['key']))
 
         self.add_config('nfs', 'verify_installed = false')
@@ -614,7 +614,7 @@ class ProvisionVagrant(ProvisionBase):
              - use separator
              - quote val
         """
-        return f'{key}{sep}{quote(val)}'
+        return f'{key}{sep}{self.quote(val)}'
 
     def kve(self, key, val, sep=' = '):
         """ returns key equals value

@@ -133,10 +133,8 @@ class Prepare(tmt.steps.Step):
         self.install('koji')
 
         install_dir = os.path.join(self.workdir, 'install')
-        os.mkdir(install_dir)
         self.plan.provision.prepare('shell',
-            f"set -xe; cd '{install_dir}'; koji download-build -a noarch -a x86_64 {build}; dnf install -y *.rpm")
-            # f"set -xe; cd '{install_dir}'; koji download-task --arch noarch --arch x86_64 {build}; dnf install -y *.rpm")
+            f"set -xe; {self.cmd_mkcd(install_dir)}; koji download-build -a noarch -a x86_64 {build}; dnf install --skip-broken -y *.rpm; rm *.rpm")
 
     def how_brew(self, how, what):
         raise SpecificationError(f"NYI: Cannot currenlty install brew builds.")
@@ -241,4 +239,15 @@ class Prepare(tmt.steps.Step):
             See get_uri().
         """
         return dict(que.split("=") for que in what_uri.query.split("&"))
+
+    def cmd_mkcd(self, target_dir):
+        """ return string containing shell
+            commands to create dir and copy a target in there
+        """
+        target_dir = self.quote(target_dir)
+        return f'mkdir -p {target_dir}; cd {target_dir}'
+
+    def quote(self, string):
+        """ returns string decorated with squot """
+        return f"'{string}'"
 
