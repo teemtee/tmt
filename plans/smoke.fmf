@@ -1,4 +1,7 @@
 summary:
     Just a basic smoke test
+discover:
+    tests:
+    - name: /smoke/main
+      test: tmt --help
 execute:
-    script: tmt --help
