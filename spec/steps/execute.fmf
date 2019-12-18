@@ -28,7 +28,7 @@ example: |
             isolate: true
 
 /shell:
-    summary: Execute shell scripts
+    summary: Execute in a shell session
 
     /default:
         summary: Shell is the default executor
@@ -54,6 +54,7 @@ example: |
                     - systemctl start httpd
                     - echo foo > /var/www/html/index.html
                     - curl http://localhost/ | grep foo
+
     /script:
         summary: Multi-line shell script
         description:
@@ -67,3 +68,28 @@ example: |
                     systemctl start httpd
                     echo foo > /var/www/html/index.html
                     curl http://localhost/ | grep foo
+
+    /file:
+        summary: Execute given local file
+        description:
+            Execute given local file on target system. The executor
+            copies the file to the target system (if applicable), sets
+            it as executable and executes it in a shell session.
+        example: |
+            execute:
+                file: myscript.sh
+
+    /multi-file:
+        summary: Execute given local files
+        description:
+            Execute given local files on target system. The executor
+            copies the files to the target system (if applicable), sets
+            them as executable and executes them in a shell session one
+            after another. If the files have a relative path, it is relative
+            to the FMF root directory.
+        example: |
+            execute:
+                file: |
+                    shell-script.sh
+                    python-script.py
+                    some-other.rb
