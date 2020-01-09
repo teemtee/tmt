@@ -27,14 +27,14 @@ class Prepare(tmt.steps.Step):
         self.super.wake()
 
         for i in range(len(self.data)):
-            self.opts(i, 'how', 'input', 'copr')
+            self.opts(i, 'how', 'input')
 
-        for alt in ('script', 'playbooks', 'playbook', 'path', 'inline', 'package'):
+        for alt in ('script', 'playbooks', 'playbook', 'path', 'inline'):
             self.alias(i, 'input', alt)
 
     def show(self):
         """ Show discover details """
-        self.super.show(keys = ['how', 'input', 'copr'])
+        self.super.show(keys = ['how', 'input'])
 
     def go(self):
         """ Prepare the test step """
@@ -62,9 +62,6 @@ class Prepare(tmt.steps.Step):
             self.debug('note', f"No data provided for prepare.", 'yellow')
             return
         self.debug('input', input, 'yellow')
-
-        if 'copr' in dat:
-            self.copr(dat['copr'])
 
         how = dat['how']
         getattr(self, f"how_{how}", self.how_generic)(how, input)
@@ -101,57 +98,7 @@ class Prepare(tmt.steps.Step):
             raise SpecificationError('NYI: cannot currently run this preparator.')
 
 
-    def how_install(self, how, what):
-        """ Install packages
-            handles various URIs or packages themselves
-        """
-        what_uri = self.get_uri(what)
-        if what_uri:
-            if not re.search(r"^koji\.", what_uri.netloc) is None:
-                return self.how_koji(how, what, what_uri)
-            if not re.search(r"^brew\.", what_uri.netloc) is None:
-                return self.how_brew(how, what, what_uri)
-        self.install(what)
-
-    def how_koji(self, how, what, what_uri=''):
-        """ Download and install packages from koji URI """
-        if not what_uri:
-            what_uri = self.get_uri(what)
-
-        if what_uri:
-            query = self.get_query(what_uri)
-
-            if not 'buildID' in query:
-                raise SpecificationError(f"No buildID found in: {what}")
-
-            build = query['buildID']
-
-        else:
-            self.debug(f"Could not parse URI, assuming buildID was given.")
-            build = what
-
-        self.install('koji')
-
-        install_dir = os.path.join(self.workdir, 'install')
-        self.plan.provision.prepare('shell',
-            f"set -xe; {self.cmd_mkcd(install_dir)}; koji download-build -a noarch -a x86_64 {build}; dnf install --skip-broken -y *.rpm; rm *.rpm")
-
-    def how_brew(self, how, what):
-        raise SpecificationError(f"NYI: Cannot currenlty install brew builds.")
-
-
     ## Additional API ##
-    def copr(self, copr):
-        """ Enable copr repository """
-        self.debug(f'Enabling copr repository', copr)
-
-        ## TODO: remove this after run(shell=True) is in provision.prepare()
-        self.plan.provision.prepare('shell', f"sudo dnf copr -y enable {copr}")
-        return
-        ## <
-
-        self.plan.provision.prepare('shell', f"dnf copr list --enabled | grep -qE '(^|\/){copr}$' || sudo dnf copr -y enable {copr} ) 2>&1 | tee -a '{logf}'")
-
     def install(self, packages):
         """ Install specified package(s)
         """
