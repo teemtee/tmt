@@ -241,11 +241,11 @@ def provision(context, **kwargs):
     '-h', '--how', metavar='METHOD',
     help='Use specified method for environment preparation.')
 @click.option(
-    '-i', '--input', metavar='INPUT',
-    help='Script, inline script, package name, or path to ansible playbook to execute.')
+    '-i', '--script', metavar='SCRIPT',
+    help='Scriplet or path or URI to a script to execute.')
 @click.option(
-    '-c', '--copr', metavar='COPR',
-    help='Copr repository to enable.')
+    '-i', '--playbook', metavar='PLAYBOOK',
+    help='Path or URI to ansible playbook to run.')
 @verbose_debug_quiet
 @force_dry
 def prepare(context, **kwargs):
