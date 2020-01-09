@@ -211,7 +211,7 @@ def discover(context, **kwargs):
     help='Vagrant box name to use.')
 @click.option(
     '-v', '--vagrantfile', metavar='VAGRANTFILE',
-    help='Vagrant box name to use.')
+    help='Vagrantfile to override initialized one and default entries.')
 @click.option(
     '-m', '--memory', metavar='MEMORY',
     help='Set memory available to guest in MB.')
@@ -225,7 +225,7 @@ def discover(context, **kwargs):
     '-k', '--key', metavar='PRIVATE_KEY',
     help='Private key to use for login into guest system.')
 @click.option(
-    '-r', '--guest', metavar='GUEST',
+    '-g', '--guest', metavar='GUEST',
     help='Select remote host to connect to (how: connect)')
 @verbose_debug_quiet
 @force_dry

@@ -160,7 +160,7 @@ class ProvisionVagrant(ProvisionBase):
                 - provider-specific entries
                 - default config entries
         """
-        self.info('Provision dir', self.provision_dir)
+        self.debug('provision dir', self.provision_dir)
 
          # Check for working Vagrant
         self.run_vagrant('version')
