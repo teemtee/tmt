@@ -81,6 +81,16 @@ def read(path, makefile, nitrate, purpose):
         data['duration'] = re.search(
             r'echo "TestTime:\s*(.*)"', content).group(1)
         echo(style('duration: ', fg='green') + data['duration'])
+        # Requires and RhtsRequires (optional)
+        try:
+            data['requires'] = re.search(
+                r'echo "Requires:\s*(.*)"', content).group(1)
+            data['requires'] += ' ' + re.search(
+                r'echo "RhtsRequires:\s*(.*)"', content).group(1)
+            echo(style('requires: ', fg='green') + data['requires'])
+        except AttributeError:
+            pass
+
 
     # Purpose (extract everything after the header as a description)
     if purpose:
