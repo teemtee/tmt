@@ -16,6 +16,10 @@ from tmt.utils import GeneralError, SpecificationError
 class Prepare(tmt.steps.Step):
     name = 'prepare'
 
+    valid_inputs = { 'shell': ['script'],
+                     'ansible': ['playbook', 'playbooks']
+                   }
+
     ## Default API ##
     def __init__(self, data, plan):
         """ Initialize the Prepare step """
@@ -27,14 +31,20 @@ class Prepare(tmt.steps.Step):
         self.super.wake()
 
         for i in range(len(self.data)):
-            self.opts(i, 'how', 'input')
+            self.opts(i, 'how', 'script')
 
-        for alt in ('script', 'playbooks', 'playbook', 'path', 'inline'):
-            self.alias(i, 'input', alt)
+            for alt in ('playbook', 'playbooks'):
+                value = self.alias(i, 'script', alt)
+                how = self.data[i]['how']
+
+                if value and how in self.valid_inputs:
+                    valid = self.valid_inputs[how]
+                    if not alt in valid:
+                        raise SpecificationError(f"You cannot specify {alt} for {how}.")
 
     def show(self):
         """ Show discover details """
-        self.super.show(keys = ['how', 'input'])
+        self.super.show(keys = ['how', 'script'])
 
     def go(self):
         """ Prepare the test step """
@@ -57,7 +67,7 @@ class Prepare(tmt.steps.Step):
     ## Knowhow ##
     def run_how(self, dat):
         """ Run specific HOW """
-        input = dat['input']
+        input = dat['script']
         if not input:
             self.debug('note', f"No data provided for prepare.", 'yellow')
             return
@@ -137,9 +147,13 @@ class Prepare(tmt.steps.Step):
     def set_default(self, i, where, default):
         """ Set `self.data[i]` entry if not set already or if empty.
             It needs an index specified as self.data is a list.
+            Returns the value if set, '' otherwise.
         """
-        if not (where in self.data[i] and self.data[i][where]):
+        if where in self.data[i] and self.data[i][where]:
+            return ''
+        else:
             self.data[i][where] = default
+            return default
 
     def opts(self, i, *keys):
         """ Load opts into data[i][]
@@ -155,10 +169,14 @@ class Prepare(tmt.steps.Step):
         """ Maps additional data and opt entry onto a different one.
             It needs an index specified as self.data is a list.
             Actually Runs set_default based on entry in opt() and data[].
+            Returns the selected value or ''
         """
-        self.set_default(i, where, self.opt(name))
-        if name in self.data[i]:
-            self.set_default(i, where, self.data[i][name])
+        val = self.set_default(i, where, self.opt(name))
+
+        if not val and name in self.data[i]:
+            val = self.set_default(i, where, self.data[i][name])
+
+        return val
 
     def get_uri(self, what):
         """ Return parsed URI if parsable,
