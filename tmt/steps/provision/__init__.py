@@ -9,6 +9,7 @@ from click import echo
 
 from tmt.utils import SpecificationError
 from tmt.steps.provision import vagrant, localhost, podman, testcloud
+from tmt.steps.provision import fingertip_
 
 
 class Provision(tmt.steps.Step):
@@ -20,6 +21,7 @@ class Provision(tmt.steps.Step):
         'vagrant': vagrant.ProvisionVagrant,
         'libvirt': vagrant.ProvisionVagrant,
         'virtual': vagrant.ProvisionVagrant,
+        'fingertip': fingertip_.ProvisionFingertip,
         'local': localhost.ProvisionLocalhost,
         'localhost': localhost.ProvisionLocalhost,
         'container': podman.ProvisionPodman,
