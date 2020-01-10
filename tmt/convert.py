@@ -87,9 +87,10 @@ def read(path, makefile, nitrate, purpose):
                 r'echo "Requires:\s*(.*)"', content).group(1)
             data['requires'] += ' ' + re.search(
                 r'echo "RhtsRequires:\s*(.*)"', content).group(1)
-            echo(style('requires: ', fg='green') + data['requires'])
         except AttributeError:
             pass
+        if data['requires']:
+            echo(style('requires: ', fg='green') + data['requires'])
 
 
     # Purpose (extract everything after the header as a description)
