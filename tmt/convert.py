@@ -56,6 +56,7 @@ def read(path, makefile, nitrate, purpose):
     echo(style("Checking the '{0}' directory.".format(path), fg='red'))
 
     data = dict()
+    testcase_data = list()
 
     # Makefile (extract summary, component and duration)
     if makefile:
@@ -101,17 +102,26 @@ def read(path, makefile, nitrate, purpose):
 
     # Nitrate (extract contact, environment and relevancy)
     if nitrate:
+        data, testcase_data = read_nitrate(test, data)
+
+    log.debug('Gathered main.fmf metadata:\n' + pprint.pformat(data))
+    log.debug('Gathered tcms case metadata:\n' + pprint.pformat(testcase_data))
+    return data, testcase_data
+
+
+def read_nitrate(test, data):
+        """ Read old metadata from nitrate test cases """
         echo(style('Nitrate ', fg='blue'), nl=False)
         if test is None:
             raise ConvertError('No test name detected for nitrate search')
         if TestCase is None:
             raise ConvertError('Need nitrate module to import metadata')
-        testcases = list(TestCase.search(script=test))
+        # Find testcases that have CONFIRMED status
+        testcases = list(TestCase.search(script=test, case_status=2))
         if not testcases:
             raise ConvertError("No testcase found for '{0}'.".format(test))
         elif len(testcases) > 1:
-            log.warn("Multiple test cases found for '{0}'.".format(
-                test))
+            echo("Multiple test cases found for '{0}'.".format(test))
 
         testcase_data = list()
 
@@ -119,7 +129,7 @@ def read(path, makefile, nitrate, purpose):
             single_case_data = dict()
             echo("test case found '{0}'.".format(testcase.identifier))
             # Test identifier
-            single_case_data['tcms id'] = testcase.identifier
+            single_case_data['tcms'] = testcase.identifier
             # Test name
             if testcase.summary:
                 single_case_data['testname'] = '{}'.format(
@@ -159,14 +169,17 @@ def read(path, makefile, nitrate, purpose):
         for key, value in common_candidates.items():
             data[key] = value
 
+        # If there is only single testcase found there is no need to continue
+        if len(testcase_data) <= 1:
+            return data, []
+
         # Remove common data from individual fmfs
-        for common_key in list(common_candidates):
+        for common_key in common_candidates:
             for testcase in testcase_data:
                 if common_key in testcase:
                     testcase.pop(common_key)
 
-    log.debug('Gathered metadata:\n' + pprint.pformat(data))
-    return data, testcase_data
+        return data, testcase_data
 
 
 def write(path, data):

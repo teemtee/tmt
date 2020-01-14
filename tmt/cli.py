@@ -419,7 +419,7 @@ def convert(context, paths, makefile, nitrate, purpose, **kwargs):
         main_path = os.path.join(path, 'main.fmf')
         tmt.convert.write(main_path, data)
         for case in testcase_data:
-            case_path = os.path.join(path, str(case['tcms id']) + '.fmf')
+            case_path = os.path.join(path, str(case['tcms']) + '.fmf')
             tmt.convert.write(case_path, case)
 
 
