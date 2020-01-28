@@ -40,3 +40,33 @@ description: |
             playbooks:
                 - common.yml
                 - rhel7.yml
+
+/download:
+    summary:
+        Download artifact to the specificed directory on the target machine.
+    description:
+        Downloads given artifact to the specified destination directory.
+
+        Currently these artifacts are supported:
+            * brew or koji builds - can be specified by URL
+    example: |
+        prepare:
+            how: download
+            artifact: https://koji.fedoraproject.org/koji/buildinfo?buildID=1453726
+            destination: /tmp/systemd-244.1-3.fc32
+
+/download-multi:
+    summary:
+        Download multiple artifacts to the specificed directories on the target machine.
+    description:
+        Downloads each artifact to the specified destination directories.
+        Currently these artifacts are supported:
+            * brew or koji builds - can be specified by URL
+    example: |
+        prepare:
+            - how: download
+              artifact: https://koji.fedoraproject.org/koji/buildinfo?buildID=1453726
+              destination: /tmp/systemd-244.1-3.fc32
+            - how: download
+              artifact: https://koji.fedoraproject.org/koji/buildinfo?buildID=1414138
+              destination: /tmp/systemd-243.4-1.fc32
