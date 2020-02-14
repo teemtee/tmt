@@ -1,0 +1,11 @@
+/rpmdeplint:
+    summary:
+        Runs rpmdeplint test from Fedora CI - https://pagure.io/fedora-ci/rpmdeplint.
+        For execution it uses conatainer built for execution of the test.
+    provision:
+        how: container
+        image: quay.io/testing-farm/test-rpmdeplint
+    execute:
+        how: shell
+        # Note: script MUST be passed to 'tmt run' on command line
+        # e.g. tmt run -a execute --script "/tmp/test_rpmdeplint.py -r f32 -t 41354594"
