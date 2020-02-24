@@ -168,6 +168,10 @@ def read_nitrate(beaker_task, common_data):
         # Tags
         if testcase.tags:
             data['tag'] = sorted([tag.name for tag in testcase.tags])
+            try:
+                data['tag'].remove('fmf-export')
+            except ValueError:
+                pass
             echo(style('tag: ', fg='green') + str(data['tag']))
         # Status
         data['enabled'] = testcase.status.name == "CONFIRMED"
