@@ -31,6 +31,7 @@ except ImportError:
 # Python 2 version
 try:
     yaml.SafeDumper.orig_represent_unicode = yaml.SafeDumper.represent_unicode
+
     def repr_unicode(dumper, data):
         if '\n' in data:
             return dumper.represent_scalar(
@@ -40,6 +41,7 @@ try:
 # Python 3 version
 except AttributeError:
     yaml.SafeDumper.orig_represent_str = yaml.SafeDumper.represent_str
+
     def repr_str(dumper, data):
         if '\n' in data:
             return dumper.represent_scalar(
@@ -50,6 +52,7 @@ except AttributeError:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Convert
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 def read(path, makefile, nitrate, purpose):
     """
@@ -74,8 +77,13 @@ def read(path, makefile, nitrate, purpose):
             raise ConvertError("Unable to open '{0}'.".format(makefile_path))
         echo("found in '{0}'.".format(makefile_path))
         # Beaker task name
-        beaker_task = re.search('export TEST=(.*)\n', content).group(1)
-        echo(style('task: ', fg='green') + beaker_task)
+        try:
+            beaker_task = re.search('export TEST=(.*)\n', content).group(1)
+            echo(style('task: ', fg='green') + beaker_task)
+        except AttributeError:
+            echo(style(
+                "Makefile doesn't seem to belong to beakerlib test (missing TEST variable).", fg='red'))
+            exit(1)
         # Summary
         data['summary'] = re.search(
             r'echo "Description:\s*(.*)"', content).group(1)
@@ -257,9 +265,9 @@ def write(path, data):
     try:
         with open(path, 'w', encoding='utf-8') as fmf_file:
             yaml.safe_dump(
-                    data, fmf_file,
-                    encoding='utf-8', allow_unicode=True,
-                    indent=4, default_flow_style=False)
+                data, fmf_file,
+                encoding='utf-8', allow_unicode=True,
+                indent=4, default_flow_style=False)
     except IOError:
         raise ConvertError("Unable to write '{0}'".format(path))
     echo(style(
