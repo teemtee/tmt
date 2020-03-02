@@ -12,4 +12,4 @@ example: |
             RELEASE: f33
         execute:
             script:
-                - echo "Testing $KOJI_TASK_ID on relase $RELEASE"
+                - echo "Testing $KOJI_TASK_ID on release $RELEASE"
