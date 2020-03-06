@@ -27,6 +27,44 @@ description: |
         - /tmt/steps/provision/vagrant
         - /tmt/steps/provision/testcloud
 
+/install:
+    summary:
+        Install a package using dnf/yum.
+    description:
+        Installs a package(s) from specified source and verifies that it was
+        installed successfuly.
+    example: |
+        prepare:
+            how: install
+            package: ruby
+    implemented:
+        - /tmt/steps/prepare
+
+/install-copr:
+    summary:
+        Enable COPR repository using dnf and install package(s).
+    description:
+        Enable COPR repository and then run same as install.
+    example: |
+        prepare:
+            how: install
+            copr: pvalena/vagrant
+            package: vagrant
+    implemented:
+        - /tmt/steps/prepare
+
+/install-koji:
+    summary:
+        Download build package(s) and install them.
+    description:
+        Downloads build packages from koji (or brew) and install them using dnf/yum.
+    example: |
+        prepare:
+            how: install
+            url: https://koji.fedoraproject.org/koji/buildinfo?buildID=1465484
+    implemented:
+        - /tmt/steps/prepare
+
 /ansible:
     summary:
         Apply ansible playbook to get the desired final state.
