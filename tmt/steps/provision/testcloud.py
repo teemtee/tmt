@@ -1,4 +1,5 @@
 import re
+import subprocess
 import os
 import time
 
@@ -341,3 +342,9 @@ class ProvisionTestcloud(ProvisionBase):
         if self.instance:
             self.info('instance', 'stopping', 'green')
             self.instance.stop()
+        if self.option('login'):
+            self.info('instance', 'login', 'green')
+            p = subprocess.Popen(
+                ['ssh'] + self.ssh_args + [self.ssh_user_host])
+            p.communicate()
+        self.instance.stop()

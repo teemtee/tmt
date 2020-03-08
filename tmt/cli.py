@@ -242,6 +242,9 @@ def discover(context, **kwargs):
 @click.option(
     '--container-pull', is_flag=True,
     help='Force pulling container image (how: container).')
+@click.option(
+    '-l', '--login', is_flag=True,
+    help='Login to the machine after running.')
 
 @verbose_debug_quiet
 @force_dry
