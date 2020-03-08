@@ -337,6 +337,11 @@ class ProvisionTestcloud(ProvisionBase):
 
     def destroy(self):
         """ Remove the container """
+        if self.option('login'):
+            self.info('instance', 'login', 'green')
+            p = subprocess.Popen(
+                ['ssh'] + self.ssh_args + [self.ssh_user_host])
+            p.communicate()
         if self.instance:
             self.info('instance', 'stopping', 'green')
             self.instance.stop()
