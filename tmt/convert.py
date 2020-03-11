@@ -115,7 +115,6 @@ def read(path, makefile, nitrate, purpose, disabled):
                 testinfo_content = testinfo.read()
         except IOError:
             raise ConvertError("Unable to open '{0}'.".format(testinfo_path))
-        echo("found in '{0}'.".format(testinfo_path))
 
         # Beaker task name
         try:
