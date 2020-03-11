@@ -103,8 +103,8 @@ def read(path, makefile, nitrate, purpose, disabled):
         makefile_content = makefile_content.replace('include /usr/share/rhts/lib/rhts-make.include',
                                                     '-include /usr/share/rhts/lib/rhts-make.include')
         # Creating testinfo.desc file which has resolved variables
-        p = subprocess.run(["make", "testinfo.desc", "-f", "-"], input=makefile_content,
-                           encoding='ascii', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        p = subprocess.run(["make", "testinfo.desc", "-C", path, "-f", "-"], input=makefile_content,
+                           encoding='ascii', stdout=subprocess.DEVNULL)  # , stderr=subprocess.DEVNULL)
         if p.returncode:
             raise ConvertError(
                 "Unable to 'make testinfo.desc' with '{0}'.".format(makefile_path))
