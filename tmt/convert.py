@@ -171,12 +171,12 @@ def read(path, makefile, nitrate, purpose, disabled):
         purpose_path = os.path.join(path, 'PURPOSE')
         try:
             with open(purpose_path, encoding='utf-8') as purpose:
-                testinfo_content = purpose.read()
+                content = purpose.read()
             echo("found in '{0}'.".format(purpose_path))
             for header in ['PURPOSE', 'Description', 'Author']:
-                testinfo_content = re.sub(
-                    '^{0}.*\n'.format(header), '', testinfo_content)
-            data['description'] = testinfo_content.lstrip('\n')
+                content = re.sub(
+                    '^{0}.*\n'.format(header), '', content)
+            data['description'] = content.lstrip('\n')
             echo(style('description:', fg='green'))
             echo(data['description'].rstrip('\n'))
         except IOError:
