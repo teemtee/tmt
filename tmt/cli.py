@@ -262,6 +262,12 @@ def provision(context, **kwargs):
 @click.option(
     '-p', '--playbook', metavar='PLAYBOOK',
     help='Path or URI to ansible playbook to run.')
+@click.option(
+    '-g', '--package', metavar='PACKAGE',
+    help='Package name to install.')
+@click.option(
+    '-c', '--copr', metavar='COPR',
+    help='Copr repository to enable.')
 @verbose_debug_quiet
 @force_dry
 def prepare(context, **kwargs):

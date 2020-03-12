@@ -15,8 +15,10 @@ from tmt.utils import GeneralError, SpecificationError
 
 class Prepare(tmt.steps.Step):
     name = 'prepare'
+    eol = '\n'
 
     valid_inputs = { 'shell': ['script'],
+                     'install': ['package', 'packages'],
                      'ansible': ['playbook', 'playbooks']
                    }
 
@@ -31,20 +33,20 @@ class Prepare(tmt.steps.Step):
         self.super.wake()
 
         for i in range(len(self.data)):
-            self.opts(i, 'how', 'script')
+            self.opts(i, 'how', 'input', 'copr')
+            how = self.data[i]['how']
 
-            for alt in ('playbook', 'playbooks'):
-                value = self.alias(i, 'script', alt)
-                how = self.data[i]['how']
+            # Aliases for 'input'; or the WHAT is to be applied
+            for key in self.valid_inputs:
+                for alt in self.valid_inputs[key]:
+                    value = self.alias(i, 'input', alt)
 
-                if value and how in self.valid_inputs:
-                    valid = self.valid_inputs[how]
-                    if not alt in valid:
+                    if value and key != how:
                         raise SpecificationError(f"You cannot specify {alt} for {how}.")
 
     def show(self):
         """ Show discover details """
-        self.super.show(keys = ['how', 'script'])
+        self.super.show(keys = ['how', 'input', 'copr'])
 
     def go(self):
         """ Prepare the test step """
@@ -67,11 +69,14 @@ class Prepare(tmt.steps.Step):
     ## Knowhow ##
     def run_how(self, dat):
         """ Run specific HOW """
-        input = dat['script']
+        input = dat['input']
         if not input:
             self.debug('note', f"No data provided for prepare.", 'yellow')
             return
         self.debug('input', input, 'yellow')
+
+        if 'copr' in dat:
+            self.copr(dat['copr'])
 
         how = dat['how']
         getattr(self, f"how_{how}", self.how_generic)(how, input)
@@ -86,58 +91,131 @@ class Prepare(tmt.steps.Step):
 
         # Try guesssing the path (1)
         whatpath = os.path.join(self.plan.run.tree.root, what)
+        self.debug('Looking for prepare script in', self.plan.run.tree.root)
 
-        self.debug('Looking for prepare script in', whatpath)
         if os.path.exists(whatpath) and os.path.isfile(whatpath):
             what = whatpath
+
         else:
             # Try guesssing the path (2)
-            whatpath = os.path.join(self.plan.workdir,
+            base = os.path.join(self.plan.workdir,
                 'discover',
                 self.data[0]['name'],
-                'tests',
-                what)
+                'tests')
+            whatpath = os.path.join(base, what)
+            self.debug('Looking for prepare script in', base)
 
-            self.debug('Looking for prepare script', whatpath)
             if os.path.exists(whatpath) and os.path.isfile(whatpath):
                 what = whatpath
+
+            elif how == 'shell':
+                return self.command(what)
 
         try:
             self.plan.provision.prepare(how, what)
         except AttributeError as error:
             raise SpecificationError('NYI: cannot currently run this preparator.')
 
+    def how_install(self, how, what):
+        """ Install packages
+            handles various URIs or packages themselves
+        """
+        if not type(what) is list:
+            return self.install(what)
+
+        rest = []
+        for wha in what:
+            if self.is_uri(wha):
+                domain = self.get_uri(wha).netloc
+                if not re.search(r"^koji\.", domain) is None:
+                    self.how_koji('koji', how, what)
+                    continue
+                if not re.search(r"^brew\.", domain) is None:
+                    self.how_koji('brew', how, what)
+                    continue
+
+            rest += wha
+        self.install(rest)
+
+    def how_koji(self, com, how, what):
+        """ Download and install packages from koji URI """
+        what_uri = self.get_uri(what)
+
+        if what_uri:
+            query = self.get_query(what_uri)
+
+            if not 'buildID' in query:
+                raise SpecificationError(f"No buildID found in: {what}")
+
+            build = query['buildID']
+
+        else:
+            self.debug(f"Could not parse URI, assuming buildID was given.")
+            build = what
+
+        self.install(com)
+
+        install_dir = os.path.join(self.workdir, 'install')
+        self.command(f"{self.cmd_mkcd(install_dir)}; {com} download-build -a noarch -a x86_64 {build}; dnf install --skip-broken -y *.rpm; rm *.rpm")
+
 
     ## Additional API ##
+    def copr(self, copr):
+        """ Enable copr repository """
+        self.debug(f'Enabling copr repository', copr)
+        # Shouldn't be needed
+        # self.install('dnf-command(copr)')
+        return self.command(f"sudo dnf copr list --enabled | grep -qE '(^|\/){copr}$' || sudo dnf copr -y enable {copr}")
+
     def install(self, packages):
         """ Install specified package(s)
         """
         if type(packages) is list:
+            packages = [
+                self.quote(package) for package in packages
+            ]
             packages = ' '.join(packages)
+        else:
+            packages = self.quote(packages)
 
-        ## TODO: remove this after run(shell=True) is in provision.prepare()
-        try:
-            self.plan.provision.prepare('shell', f"rpm -V {packages}")
-        except GeneralError:
-            self.plan.provision.prepare('shell', f"dnf install -y {packages}")
-        return
-        ## <
+        return self.command(f"rpm -V {packages} || sudo dnf install -y {packages}")
 
+    def command(self, command, logfile=True):
         failed = False
         logf = os.path.join(self.workdir, 'prepare.log')
+
+        comf = os.path.join(self.workdir, 'command.sh')
+        comd = [
+              'set -x',
+              command,
+              'exit $?',
+              ''
+            ]
+        with open(comf, 'w', newline=self.eol) as f:
+            f.write(self.eol.join(comd))
+        os.chmod(comf, 0o700)
+
+        if type(logfile) is str and logfile:
+            logf = logfile
+
+        self.plan.provision.sync_workdir_to_guest()
         try:
-            self.plan.provision.prepare('shell', f"set -o pipefail; ( rpm -V {packages} || sudo dnf install -y {packages} ) 2>&1 | tee -a '{logf}'")
+            if logfile:
+                self.plan.provision.prepare('shell',
+                    f"set -o pipefail; bash '{comf}' 2>&1 | tee -a '{logf}'")
+            else:
+                self.plan.provision.prepare('shell', comf)
         except GeneralError:
             failed = True
 
         self.plan.provision.sync_workdir_from_guest()
 
-        output = open(logf).read()
-
         if failed:
-            raise GeneralError(f'Install failed:\n{output}')
-
-        self.debug(logf, output, 'yellow')
+            if logfile:
+                output = '\nlog:\n' + open(logf).read()
+            else:
+                output = command
+            raise GeneralError(f'Command failed: ' + output)
 
 
     ## END of API ##
@@ -215,4 +293,3 @@ class Prepare(tmt.steps.Step):
     def quote(self, string):
         """ returns string decorated with squot """
         return f"'{string}'"
-
