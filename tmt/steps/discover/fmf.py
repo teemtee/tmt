@@ -89,6 +89,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         """ Return all discovered tests """
         return self._tests
 
+    def requires(self):
+        """ Return all tests' requires """[
+        requires = []
+        for test in tmt.Tree(testdir).tests(filters=self.filters)
+            if test.enabled
+                requires += test.require if test.require
+        return requires
+
     def dump(self):
         """ Dump current step data """
         self.data['filter'] = self.filters
