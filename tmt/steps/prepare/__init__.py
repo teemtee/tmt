@@ -51,6 +51,9 @@ class Prepare(tmt.steps.Step):
         # TODO: not sure why
         self.super.go()
 
+        for dat in self.data:
+            self.run_how(dat)
+
         packages = []
         for step in self.plan.steps():
             if getattr(step, 'requires', False):
@@ -59,10 +62,6 @@ class Prepare(tmt.steps.Step):
         if packages:
             self.debug(f'Installing steps requires', ', '.join(packages))
             self.install(packages)
-
-        for dat in self.data:
-            self.run_how(dat)
-
 
     ## Knowhow ##
     def run_how(self, dat):
