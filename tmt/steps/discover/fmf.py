@@ -90,12 +90,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         return self._tests
 
     def requires(self):
-        """ Return all tests' requires """[
-        requires = []
-        for test in tmt.Tree(testdir).tests(filters=self.filters)
-            if test.enabled
-                requires += test.require if test.require
-        return requires
+        """ Return all tests' require """
+        requires = set()
+        for test in self._tests:
+            if hasattr(test, 'require'):
+                for value in test.require:
+                    requires.add(value)
+        return list(requires)
 
     def dump(self):
         """ Dump current step data """

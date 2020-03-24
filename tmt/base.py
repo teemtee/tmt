@@ -110,6 +110,7 @@ class Test(Node):
         'path',
         'duration',
         'environment',
+        'require',
         'relevancy',
         'tag',
         'tier',
@@ -220,6 +221,7 @@ class Test(Node):
             data = dict()
             data['test'] = self.test
             data['path'] = self.path
+            data['require'] = " ".join(self.require)
             if self.duration is not None:
                 data['duration'] = self.duration
             # Combine environment variables (plan overrides test)

@@ -53,8 +53,13 @@ class Prepare(tmt.steps.Step):
 
         packages = []
         for step in self.plan.steps():
-            if getattr(step, 'requires', False):
-                packages += step.requires()
+            if hasattr(step, 'steps'):
+                for inner_step in step.steps:
+                    if getattr(inner_step, 'requires', False):
+                        packages += inner_step.requires()
+            else:
+                if getattr(step, 'requires', False):
+                        packages += step.requires()
 
         if packages:
             self.debug(f'Installing steps requires', ', '.join(packages))
