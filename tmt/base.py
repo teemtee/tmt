@@ -109,6 +109,7 @@ class Test(Node):
         'test',
         'path',
         'duration',
+        'require',
         'environment',
         'relevancy',
         'tag',
