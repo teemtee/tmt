@@ -347,6 +347,44 @@ class Plan(Node):
         self.environment = node.get('environment')
 
     @staticmethod
+    def validate_args(extra_args):
+        """ Make sure that extra arguments for filling the template in discover phase are OK """
+        args = ['--name', '--how', '--url', '--ref', '--path', '--test', '--filter']
+        #if only one set of discover parameters is used
+        if len(extra_args) < 14:
+            for item in extra_args[::2]:
+                if item not in args:
+                    raise tmt.utils.GeneralError(
+                            "Unknown value to be used in the template: {}".format(item))
+            if '--how' not in extra_args:
+                extra_args.extend(('--how', 'fmf'))
+
+        #if more than one set of discover params is used - we need exact number of arguments
+        elif len(extra_args)%14 != 0:
+            raise tmt.utils.GeneralError(
+                    "Wrong number of values to fill in the template")
+
+        #else given argumentss must be in a correct position
+        else:
+            for i in range(len(extra_args)//14):
+                for (item,arg) in zip(extra_args[i*14::2],args):
+                    if item != arg:
+                        raise tmt.utils.GeneralError(
+                                "Wrong order of arguments to be filled in the template")
+
+    @staticmethod
+    def edit_template(content, extra_args):
+        new = ''
+        for (key, value) in zip(extra_args[::2], extra_args[1::2]):
+            new += '    {}: {}\n'.format(key.strip("-"), value)
+
+        new = re.sub('    name:', '  - name:', new, flags=re.MULTILINE)
+        content = re.sub(r'discover:.*prepare:', r'discover:\n{}prepare:'.format(new), content, 
+                flags=re.DOTALL)
+
+        return content
+
+    @staticmethod
     def overview(tree):
         """ Show overview of available plans """
         plans = [
@@ -359,7 +397,7 @@ class Plan(Node):
             ), fg='blue'))
 
     @staticmethod
-    def create(name, template, tree, force=False):
+    def create(name, template, tree, extra_args, force=False):
         """ Create a new plan """
         # Prepare paths
         (directory, plan) = os.path.split(name)
@@ -373,6 +411,10 @@ class Plan(Node):
         except KeyError:
             raise tmt.utils.GeneralError(
                 "Invalid template '{}'.".format(template))
+
+        if extra_args:
+            content = tmt.Plan.edit_template(content, extra_args)
+
         tmt.utils.create_file(
             path=plan_path, content=content,
             name='plan', force=force)

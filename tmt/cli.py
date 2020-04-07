@@ -578,7 +578,10 @@ def lint(context, **kwargs):
 
 
 _plan_templates = listed(tmt.templates.PLAN, join='or')
-@plans.command()
+@plans.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+))
 @click.pass_context
 @click.argument('name')
 @click.option(
@@ -589,8 +592,11 @@ _plan_templates = listed(tmt.templates.PLAN, join='or')
 @force_dry
 def create(context, name, template, force, **kwargs):
     """ Create a new plan based on given template. """
+    if context.args:
+       tmt.Plan.validate_args(context.args)
+
     tmt.Plan._save_context(context)
-    tmt.Plan.create(name, template, context.obj.tree, force)
+    tmt.Plan.create(name, template, context.obj.tree, context.args, force)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Story
