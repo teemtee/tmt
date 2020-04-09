@@ -56,7 +56,7 @@ def export_to_nitrate(test, create):
             raise ConvertError("Nitrate test case id not found.")
 
     # Summary
-    if test.node.get('extra-summary'):
+    if test.node.get('extra-summary', test.summary):
         nitrate_case.summary = test.node.get('extra-summary')
         echo(style('summary: ', fg='green') + test.node.get('extra-summary'))
 
