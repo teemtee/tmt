@@ -55,6 +55,16 @@ def export_to_nitrate(test, create):
         else:
             raise ConvertError("Nitrate test case id not found.")
 
+    # Summary
+    if test.node.get('extra-summary'):
+        nitrate_case.summary = test.node.get('extra-summary')
+        echo(style('summary: ', fg='green') + test.node.get('extra-summary'))
+
+    # Script
+    if test.node.get('extra-task'):
+        nitrate_case.script = test.node.get('extra-task')
+        echo(style('script: ', fg='green') + test.node.get('extra-task'))
+
     # Components
     # First remove any components that are already there
     nitrate_case.components.clear()
