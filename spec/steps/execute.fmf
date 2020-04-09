@@ -45,6 +45,28 @@ example: |
             how: beakerlib
             isolate: true
 
+/avc_check:
+    summary: Check for SELinux messages, default: true
+    description:
+        Optional boolean attribute `avc_check` can be used to
+        disable check for SELinux messages.
+    example: |
+        execute:
+            how: beakerlib
+            avc_check: false
+
+/plugins:
+    summary: Additional plugin to be used
+    description:
+        Names of the plugins to be run during test execution
+        and optionally their configuration as key: value pairs
+    example: |
+        executute:
+            how: beakerlib
+            plugins:
+                scl_enable:
+                    enable: rh-python27 httpd24
+
 /shell:
     story: As a user I want to easily run shell script as a test.
     summary: Execute shell scripts
