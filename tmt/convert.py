@@ -52,34 +52,45 @@ except AttributeError:
 
 def read(path, makefile, nitrate, purpose):
     """ Read old metadata from various sources """
+    import subprocess
     echo(style("Checking the '{0}' directory.".format(path), fg='red'))
 
     data = dict()
 
     # Makefile (extract summary, component and duration)
     if makefile:
+        import tempfile
+
         echo(style('Makefile ', fg='blue'), nl=False)
         makefile_path = os.path.join(path, 'Makefile')
         try:
-            with open(makefile_path, encoding='utf-8') as makefile:
-                content = makefile.read()
+            metadata_path = None
+            with tempfile.NamedTemporaryFile(prefix='metadata.', dir=path) as metadata:
+                metadata_path = metadata.name
+            args = ['/usr/bin/make', '-f', makefile_path, 'METADATA={}'.format(metadata_path), metadata_path]
+            subprocess.run(args, check=True)
+            with open(metadata_path, encoding='utf-8') as metadata:
+                content = metadata.read()
+            os.unlink(metadata_path)
         except IOError:
-            raise ConvertError("Unable to open '{0}'.".format(makefile_path))
+            raise ConvertError("Unable to open '{0}'.".format(metadata_path))
+        except subprocess.SubprocessError:
+            raise ConvertError("Unable to prepare metadata from '{0}'.".format(makefile_path))
         echo("found in '{0}'.".format(makefile_path))
         # Test
-        test = re.search('export TEST=(.*)\n', content).group(1)
+        test = re.search(r'Name:\s*(.*)\s*\n', content).group(1)
         echo(style('test: ', fg='green') + test)
         # Summary
         data['summary'] = re.search(
-            r'echo "Description:\s*(.*)"', content).group(1)
+            r'Description:\s*(.*)\s*\n', content).group(1)
         echo(style('description: ', fg='green') + data['summary'])
         # Component
         data['component'] = re.search(
-            r'echo "RunFor:\s*(.*)"', content).group(1)
+            r'RunFor:\s*(.*)\s*\n', content).group(1)
         echo(style('component: ', fg='green') + data['component'])
         # Duration
         data['duration'] = re.search(
-            r'echo "TestTime:\s*(.*)"', content).group(1)
+            r'TestTime:\s*(.*)\s*\n', content).group(1)
         echo(style('duration: ', fg='green') + data['duration'])
 
     # Purpose (extract everything after the header as a description)
