@@ -347,39 +347,30 @@ class Plan(Node):
         self.environment = node.get('environment')
 
     @staticmethod
-    def validate_args(extra_args):
-        """ Make sure that extra arguments for filling the template in discover phase are OK """
-        args = ['--name', '--how', '--url', '--ref', '--path', '--test', '--filter']
-        #if only one set of discover parameters is used
-        if len(extra_args) < 14:
-            for item in extra_args[::2]:
-                if item not in args:
-                    raise tmt.utils.GeneralError(
-                            "Unknown value to be used in the template: {}".format(item))
-            if '--how' not in extra_args:
-                extra_args.extend(('--how', 'fmf'))
-
-        #if more than one set of discover params is used - we need exact number of arguments
-        elif len(extra_args)%14 != 0:
-            raise tmt.utils.GeneralError(
-                    "Wrong number of values to fill in the template")
-
-        #else given argumentss must be in a correct position
-        else:
-            for i in range(len(extra_args)//14):
-                for (item,arg) in zip(extra_args[i*14::2],args):
-                    if item != arg:
-                        raise tmt.utils.GeneralError(
-                                "Wrong order of arguments to be filled in the template")
-
-    @staticmethod
-    def edit_template(content, extra_args):
+    def edit_template(content, new_args):
+        """ Edit the default template with custom values """
+        args = ['name', 'how', 'url', 'ref', 'path', 'test', 'filter']
         new = ''
-        for (key, value) in zip(extra_args[::2], extra_args[1::2]):
-            new += '    {}: {}\n'.format(key.strip("-"), value)
+
+        for data in new_args:
+            line = tmt.utils.yaml_to_dict(data)
+            if type(line) is not dict:
+                 raise tmt.utils.GeneralError(
+                         "Invalid YAML provided to --discover option")
+
+            #'how' is the only value that needs to be there all the time
+            if 'how' not in line:
+                line['how'] = 'fmf'
+
+            for key, value in line.items():
+                if key not in args:
+                    raise tmt.utils.GeneralError(
+                            "Invalid discover option provided, allowed values are ({})".format(args))
+
+                new += '    {}: {}\n'.format(key, value)
 
         new = re.sub('    name:', '  - name:', new, flags=re.MULTILINE)
-        content = re.sub(r'discover:.*prepare:', r'discover:\n{}prepare:'.format(new), content, 
+        content = re.sub(r'discover:.*prepare:', r'discover:\n{}prepare:'.format(new), content,
                 flags=re.DOTALL)
 
         return content
@@ -397,7 +388,7 @@ class Plan(Node):
             ), fg='blue'))
 
     @staticmethod
-    def create(name, template, tree, extra_args, force=False):
+    def create(name, template, tree, discover, force=False):
         """ Create a new plan """
         # Prepare paths
         (directory, plan) = os.path.split(name)
@@ -412,8 +403,8 @@ class Plan(Node):
             raise tmt.utils.GeneralError(
                 "Invalid template '{}'.".format(template))
 
-        if extra_args:
-            content = tmt.Plan.edit_template(content, extra_args)
+        if discover:
+            content = tmt.Plan.edit_template(content, discover)
 
         tmt.utils.create_file(
             path=plan_path, content=content,
@@ -538,6 +529,7 @@ class Story(Node):
         except KeyError:
             raise tmt.utils.GeneralError(
                 "Invalid template '{}'.".format(template))
+
         tmt.utils.create_file(
             path=story_path, content=content,
             name='story', force=force)

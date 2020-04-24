@@ -578,25 +578,26 @@ def lint(context, **kwargs):
 
 
 _plan_templates = listed(tmt.templates.PLAN, join='or')
-@plans.command(context_settings=dict(
-    ignore_unknown_options=True,
-    allow_extra_args=True,
-))
+@plans.command()
 @click.pass_context
 @click.argument('name')
 @click.option(
     '-t', '--template', metavar='TEMPLATE',
     help='Plan template ({}).'.format(_plan_templates),
     prompt='Template ({})'.format(_plan_templates))
+@click.option(
+    '--discover', metavar='\'{YAML}\'',
+    help='Parameters for discover phase in a yaml format.',
+    multiple=True)
 @verbose_debug_quiet
 @force_dry
-def create(context, name, template, force, **kwargs):
+def create(context, name, template, discover, force, **kwargs):
     """ Create a new plan based on given template. """
     if context.args:
        tmt.Plan.validate_args(context.args)
 
     tmt.Plan._save_context(context)
-    tmt.Plan.create(name, template, context.obj.tree, context.args, force)
+    tmt.Plan.create(name, template, discover, context.obj.tree, force)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Story
