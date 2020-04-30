@@ -999,7 +999,8 @@ class Result(object):
 
     def show(self):
         """ Return a nicely color result with test name """
-        colored = click.style(self.result, fg=self._results[result])
+        result = 'errr' if self.result == 'error' else self.result
+        colored = style(result, fg=self._results[self.result])
         return f"{colored} {self.name}"
 
     def export(self):
