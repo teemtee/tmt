@@ -45,12 +45,14 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
 class GuestLocal(tmt.Guest):
     """ Local Host """
 
-    def ansible(self, playbook):
+    def ansible(self, playbook, inventory=None, options=None):
         """ Prepare localhost using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
+        options = f'{options} ' or ''
         stdout, stderr = self.run(
             f'sudo sh -c "stty cols {tmt.utils.OUTPUT_WIDTH}; ansible-playbook'
-            f'{self._ansible_verbosity()} -c local -i localhost, {playbook}"')
+            f'{self._ansible_verbosity()} {options}'
+            f'-c local -i localhost, {playbook}"')
         self._ansible_summary(stdout)
 
     def execute(self, command, **kwargs):

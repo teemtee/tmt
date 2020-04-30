@@ -1,3 +1,5 @@
+import os
+
 import tmt
 import click
 
@@ -136,14 +138,16 @@ class GuestContainer(tmt.Guest):
             '-v', f'{tmt_workdir}:{tmt_workdir}:Z', '-itd', self.image],
             message=f"Start container '{self.image}'.")[0].strip()
 
-    def ansible(self, playbook):
+    def ansible(self, playbook, inventory=None, options=None):
         """ Prepare container using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
+        inventory = inventory or f'{self.container},'
+        options = f'{options} ' or ''
         stdout, stderr = self.run(
             f'stty cols {tmt.utils.OUTPUT_WIDTH}; '
             f'{self._export_environment()}'
             f'podman unshare ansible-playbook'
-            f'{self._ansible_verbosity()} -c podman -i {self.container}, '
+            f'{self._ansible_verbosity()} -c podman -i {inventory} {options}'
             f'{playbook}')
         self._ansible_summary(stdout)
 

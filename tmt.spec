@@ -57,6 +57,10 @@ The tmt Python module and command line tool implement the test
 metadata specification (L1 and L2) and allows easy test execution.
 This package contains the Python 3 module.
 
+%package execute-sti
+Summary: Dependencies for STI executor
+Requires: standard-test-roles
+
 %package provision-container
 Summary: Container provisioner for the Test Management Tool
 Obsoletes: tmt-container < 0.17
@@ -94,6 +98,7 @@ output thanks to direct links to output logs.
 %package all
 Summary: Extra dependencies for the Test Management Tool
 Requires: tmt >= %{version}
+Requires: tmt-execute >= %{version}
 Requires: tmt-provision-container >= %{version}
 Requires: tmt-provision-virtual >= %{version}
 Requires: tmt-test-convert >= %{version}

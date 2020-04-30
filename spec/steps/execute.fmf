@@ -174,3 +174,36 @@ description: |
                     systemctl start httpd
                     echo foo > /var/www/html/index.html
                     curl http://localhost/ | grep foo
+
+/sti:
+    story: As a user I want to easily run `STI`_ tests.
+    summary: Execute STI tests
+    description: |
+        Run tests in `STI`_ format via Ansible and `standard-test-roles`_.
+
+        .. _STI: https://docs.fedoraproject.org/en-US/ci/standard-test-interface/
+        .. _standard-test-roles: https://docs.fedoraproject.org/en-US/ci/standard-test-roles/
+
+        There are two deviations from the standard::
+
+        1. By default only playbook `tests/tests.yml` is executed. If you need
+           to run multiple playbooks, define separate plans for it, because each
+           playbook has to be executed in a separate environment.
+
+        2. It is possible to run playbook with any name really. The standard
+           defines that only playbooks `tests/tests*.yml` are executed.
+
+    /default:
+        summary: Execute default playbook
+        example: |
+            execute:
+                how: sti
+
+    /custom:
+        summary: Execute custom playbook
+        example: |
+            execute:
+                how: sti
+                playbook: tests/full-test-suite.yml
+
+    implemented: /tmt/steps/execute/sti.py
