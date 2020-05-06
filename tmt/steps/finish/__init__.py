@@ -52,21 +52,33 @@ class Finish(tmt.steps.Step):
         """ Execute finishing tasks """
         super().go()
 
+        available_guests = self.plan.provision.guests()
+
         # Nothing more to do if already done
         if self.status() == 'done':
-            self.info('status', 'done', 'green', shift=1)
-            self.summary()
-            return
+            if not available_guests:
+                self.info('status', 'done', 'green', shift=1)
+                self.summary()
+                return
+        else:
+            # Go and execute each plugin on all guests
+            for guest in available_guests:
+                for plugin in self.plugins():
+                    plugin.go(guest)
 
-        # Go and execute each plugin on all guests
-        for guest in self.plan.provision.guests():
-            for plugin in self.plugins():
-                plugin.go(guest)
+        if available_guests and self.opt('keep'):
+            self.info("Guest will keep running", shift=1)
+            self.info("Run `tmt run --id {} finish` later to finish properly".format(self.parent.run.workdir), shift=1)
 
-        # Stop and remove provisioned guests
-        for guest in self.plan.provision.guests():
-            guest.stop()
-            guest.remove()
+        for guest in available_guests:
+            if self.opt('keep'):
+                # Print details about connection
+                self.info("guest", guest.name, color='magenta', shift=1)
+                self.info('connect', "ssh {} {}".format(guest._ssh_guest(), guest._ssh_options(True)), 'green', shift=1)
+            else:
+                # Stop and remove provisioned guests
+                guest.stop()
+                guest.remove()
 
         # Give a summary, update status and save
         self.summary()
@@ -94,6 +106,9 @@ class FinishPlugin(tmt.steps.Plugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for finishing tasks.')
+        @click.option(
+            '--keep', is_flag=True,
+            help='Keep guests running in the end.')
         def finish(context, **kwargs):
             context.obj.steps.add('finish')
             Finish._save_context(context)
