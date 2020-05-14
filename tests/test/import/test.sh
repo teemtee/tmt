@@ -10,6 +10,7 @@ rlJournalStart
     rlPhaseStartTest 'Import metadata'
         rlRun 'tmt test import --no-nitrate'
         rlAssertGrep 'summary: Simple smoke test' 'main.fmf'
+        rlAssertGrep 'path: /parent/child' 'main.fmf'
     rlPhaseEnd
 
     rlPhaseStartTest 'Check duplicates'

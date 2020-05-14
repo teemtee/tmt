@@ -376,10 +376,9 @@ def import_(context, paths, makefile, nitrate, purpose, disabled, **kwargs):
         # Gather old metadata and store them as fmf
         common, individual = tmt.convert.read(
             path, makefile, nitrate, purpose, disabled)
-        # Add path to common metadata if there are virtual test cases
-        if individual:
-            root = fmf.Tree(path).root
-            common['path'] = os.path.join( '/', os.path.relpath(path, root))
+        # Add path to common metadata
+        root = fmf.Tree(path).root
+        common['path'] = os.path.join( '/', os.path.relpath(path, root))
         # Store common metadata
         common_path = os.path.join(path, 'main.fmf')
         tmt.convert.write(common_path, common)
