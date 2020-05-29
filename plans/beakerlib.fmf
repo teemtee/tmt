@@ -1,0 +1,36 @@
+discover:
+    how: fmf
+execute:
+    how: beakerlib.tmt
+
+/core:
+    summary: Core functionality
+    description:
+        Check common options such as --dry & --force, environment
+        variables handling, exploring tests and plans, presence of
+        documentation.
+    discover+:
+        filter: 'tier: 0'
+
+/basic:
+    summary: Basic command line features
+    description:
+        Wide set of tests that cover individual steps, commands
+        and features. Tier 2 tests go a bit more into detail and
+        can take a little bit longer to complete.
+    discover+:
+        filter: 'tier: 1, 2'
+    tag: slow
+
+/virtual:
+    summary: Tests needing virtualization support
+    description:
+        A couple of installation tests which provision a container
+        to verify that package installation works as expected.
+        Thanks to fetching dnf metadata these can take some time.
+    discover+:
+        filter: 'tier: 3'
+    artifact:
+        - build
+        - update
+    tag: [slow, virtual]

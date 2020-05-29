@@ -1,0 +1,47 @@
+execute:
+    how: shell.tmt
+artifact:
+    - build
+    - update
+
+/smoke:
+    summary: Just a basic smoke test
+    description:
+        Simple use cases should be super simple to write. In order
+        to enable at least a very basic testing of your component
+        in the CI the following two lines should be just enough.
+    execute+:
+        script: tmt --help
+
+/helps:
+    summary: Check help messages
+    description:
+        A couple of oneline examples showing how simple shell
+        tests can be written directly in the discover step. The
+        last one demonstrates a custom script in given directory.
+    discover:
+        tests:
+         - name: /help/main
+           test: tmt --help
+         - name: /help/test
+           test: tmt test --help
+         - name: /help/plan
+           test: tmt plan --help
+         - name: /help/smoke
+           test: ./smoke.sh
+           path: /tests/shell
+    execute:
+        how: shell.tmt
+
+/unit:
+    summary: Python unit tests
+    description:
+        Run all available python unit tests using pytest.
+    prepare+:
+      - name: pytest
+        how: install
+        package:
+            - python3-pytest
+            - python3-mock
+    execute+:
+        script: python3 -m pytest tests

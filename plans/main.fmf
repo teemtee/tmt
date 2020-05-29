@@ -1,4 +1,9 @@
-# Local host
+
+# ~~~~~~~~~~~~~~~~~~~
+#  Provision Options
+# ~~~~~~~~~~~~~~~~~~~
+
+# Localhost
 provision:
     how: local
 
@@ -12,9 +17,8 @@ provision:
 
 # Virtual using testcloud
 #provision:
-#    how: virtual.testcloud
-#    image: fedora
-#    image: https://kojipkgs.fedoraproject.org/compose/31/latest-Fedora-31/compose/Cloud/x86_64/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
+#    how: virtual
+#    image: fedora-32
 
 # Virtual using vagrant
 #provision:
@@ -25,3 +29,33 @@ provision:
 #provision:
 #    how: container
 #    image: fedora:latest
+
+# ~~~~~~~~~~~~~~~~~
+#  Prepare Options
+# ~~~~~~~~~~~~~~~~~
+
+# Install packages
+#prepare:
+#    how: install
+#    copr: psss/tmt
+#    package: tmt
+#    directory: tmp/RPMS/noarch
+#
+# Ansible playbook
+#prepare:
+#    how: ansible
+#    playbooks: ansible/packages.yml
+#
+# Shell commands
+#prepare:
+#    how: shell
+#    script:
+#    - sudo dnf install -y 'dnf-command(copr)'
+#    - sudo dnf copr enable -y psss/tmt
+#    - sudo dnf install -y tmt
+
+# ~~~~~~~~~~~~~~
+#  Default Tags
+# ~~~~~~~~~~~~~~
+
+tag: fast
