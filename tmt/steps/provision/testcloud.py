@@ -170,7 +170,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                 '-m', '--memory', metavar='MEMORY',
                 help='Set available memory in MB, 2048 MB by default.'),
             click.option(
-                '-D', '--disk', metavar='MEMORY',
+                '-D', '--disk', metavar='DISK',
                 help='Specify disk size in GB, 10 GB by default.'),
             click.option(
                 '-u', '--user', metavar='USER',
