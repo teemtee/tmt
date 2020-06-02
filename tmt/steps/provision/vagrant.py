@@ -9,69 +9,172 @@ import re
 import shutil
 from time import sleep
 
-from tmt.steps.provision.base import ProvisionBase
+#from tmt.steps.provision.base import ProvisionBase
 from tmt.utils import ConvertError, SpecificationError, GeneralError, quote
 
 from click import echo
 from urllib.parse import urlparse
 
 
-# DATA[*]:
-#   HOW = libvirt|virtual|docker|container|vagrant|...
-#         provider, in Vagrant's terminilogy
-#
-#   IMAGE = URI|NAME
-#         NAME is for Vagrant or other HOW, passed directly
-#         URI can be path to BOX, QCOW2 or Vagrantfile f.e.
-#
-#   BOX = Set a BOX name directly (in case of URI for IMAGE)
-#
-class ProvisionVagrant(ProvisionBase):
-    """ Use Vagrant to Provision an environment for testing """
+class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
+""" Use Vagrant to Provision an environment for testing """
+
+    # Guest instance
+    _guest = None
+
+    # Supported methods
+    _methods = [
+        tmt.steps.Method(name='virtual.vagrant', doc=__doc__, order=50),
+        tmt.steps.Method(name='libvirt.vagrant', doc=__doc__, order=50),
+        tmt.steps.Method(name='virtualbox.vagrant', doc=__doc__, order=50),
+        tmt.steps.Method(name='container.vagrant', doc=__doc__, order=50),
+        ]
+
+    display = ['image', 'memory', 'user', 'key', 'guest', 'box',
+      'password', 'vagrantfile']
+
+    @classmethod
+    def options(cls, how=None):
+        """ Prepare command line options for testcloud """
+        return [
+            click.option(
+                '-i', '--image', metavar='IMAGE',
+                help='Select image to use. Short name or complete url.'),
+            click.option(
+                '-m', '--memory', metavar='MEMORY',
+                help='Set available memory in MB, 2048 MB by default.'),
+            click.option(
+                '-u', '--user', metavar='USER',
+                help='Username to use for all guest operations.'),
+            click.option(
+                '-b', '--box', metavar='BOX',
+                help=''),
+            click.option(
+                '-p', '--password', metavar='PASSWORD',
+                help='Password for login into the guest system.'),
+            click.option(
+                '-k', '--key', metavar='KEY',
+                help='Private key for login into the guest system.'),
+            click.option(
+                '-g', '--guest', metavar='GUEST',
+                help='Select remote host to connect to (hostname or ip).'),
+            click.option(
+                '-f', '--vagrantfile', metavar='VAGRANTFILE',
+                help=''),
+            ] + super().options(how)
+
+
+    def default(self, option, default=None):
+        """ Return default data for given option """
+        defaults = {
+            'user': 'root',
+            'memory': 2048,
+            'sync_type': 'rsync',
+            'image': 'fedora/32-cloud-base',
+            'container': 'registry.fedoraproject.org/fedora:latest'
+            }
+        if option in defaults:
+            return defaults[option]
+        return default
+
+    def show(self):
+        """ Show provision details """
+        super().show(display)
+
+    def wake(self, data=None):
+        """ Override options and wake up the guest """
+        super().wake(display)
+
+        # Convert memory and disk to integers
+        for key in ['memory']:
+            if isinstance(self.get(key), str):
+                self.data[key] = int(self.data[key])
+
+        # Wake up testcloud instance
+        if data:
+            guest = GuestVagrant(data, name=self.name, parent=self.step)
+            guest.wake()
+            self._guest = guest
+
+    def go(self):
+        """ Provision the testcloud instance """
+        super().go()
+
+        # Give info about provided data
+        data = dict()
+        for key in display:
+            data[key] = self.get(key)
+            if key == 'memory':
+                self.info(key, f"{self.get('memory')} MB", 'green')
+            else:
+                self.info(key, data[key], 'green')
+
+        # Create a new GuestTestcloud instance and start it
+        self._guest = GuestVagrant(data, name=self.name, parent=self.step)
+        self._guest.start()
+
+    def guest(self):
+        """ Return the provisioned guest """
+        return self._guest
+
+
+class GuestVagrant(tmt.Guest):
+    """
+    DATA[*]:
+      HOW = libvirt|virtual|docker|container|vagrant|...
+            provider, in Vagrant's terminilogy
+
+      IMAGE = URI|NAME
+              NAME is for Vagrant or other HOW, passed directly
+              URI can be path to BOX, QCOW2 or Vagrantfile f.e.
+
+      BOX = Set a BOX name directly (in case of URI for IMAGE)
+
+    """
     executable = 'vagrant'
     config_prefix = '  config.'
-    sync_type = 'rsync'
-    default_image = 'fedora/31-cloud-base'
     dummy_image = 'tknerr/managed-server-dummy'
-    default_container = 'fedora:latest'
     default_indent = 16
-    default_user = 'root'
-    default_memory = 2048
     vf_name = 'Vagrantfile'
     timeout = 333
     eol = '\n'
-    display = ('how', 'image', 'key', 'guest', 'memory')
     statuses = ('not reachable', 'running', 'not created', 'preparing')
 
+    _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest', 'vagrantfile']
 
-    ## Default API ##
-    def __init__(self, data, step):
-        """ Initialize the Vagrant provision step """
-        self.super = super(ProvisionVagrant, self)
-        self.super.__init__(data, step)
+    def load(self):
+        """ Load ProvisionVagrant step """
+        super().load(data)
+
+    def save(self):
+        """ Save ProvisionVagrant step """
+        data = super().save()
+        return data
+
+    def wake(self):
+        """ Wake up the guest """
+        self.debug(
+            f"Waking up Vagrant instance '{self.instance_name}'.",
+            level=2, shift=0)
+
+        self.instance_name = instance_name or ''.join(random.choices(string.ascii_letters, k=16))
+        self.super = super(ProvisionBase, self)
+        self.super.__init__(parent=step, name=self.instance_name)
+        self.data = data
+        self.step = step
+        self.provision_dir = os.path.join(step.workdir, self.instance_name)
+        os.mkdir(self.provision_dir)
+
+        self.opts(keys)
+
+        self.prepare_config()
+
         self.vagrantfile = os.path.join(self.provision_dir, self.vf_name)
         self.vf_data = ''
         self.path = os.path.join(self.provision_dir, 'data.yaml')
 
-        # Which opts do we recieve
-        self.opts('image', 'box', 'memory', 'user', 'password', 'key',
-            'guest', 'vagrantfile')
-
-        self.debugon = self.opt('debug')
-
-    def load(self):
-        """ Load ProvisionVagrant step """
-        raise SpecificationError("NYI: cannot load")
-        self.super.load()
-
-    def save(self):
-        """ Save ProvisionVagrant step """
-        raise SpecificationError("NYI: cannot save")
-        self.super.save()
-
-    def go(self):
+    def start(self):
         """ Execute actual provisioning """
-        self.init()
         self.info(
             f'Provisioning {self.executable}, {self.vf_name}', self.vf_read())
         out, err = self.run_vagrant('up')
@@ -87,8 +190,6 @@ class ProvisionVagrant(ProvisionBase):
 
     def show(self):
         """ Create and show the Vagrantfile """
-        self.super.show(
-            keys=['how', 'box', 'image', 'memory', 'user', 'password'])
         self.info(self.vf_name, self.vf_read())
 
     def sync_workdir_to_guest(self):
@@ -159,7 +260,7 @@ class ProvisionVagrant(ProvisionBase):
 
 
     ## Additional API ##
-    def init(self):
+    def prepare_config(self):
         """ Initialize ProvisionVagrant / run following:
             1] check that Vagrant works
             2] check for already-present or user-specified Vagrantfile
@@ -633,3 +734,11 @@ class ProvisionVagrant(ProvisionBase):
     def opt(self, key):
         """ Return option specified on commandline """
         return self.step.plan.provision.opt(key)
+
+    def join(self, *args):
+        if len(args) == 0:
+            return ""
+        elif len(args) == 1:
+            args = args[0]
+
+        return ' '.join(args)
