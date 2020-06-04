@@ -13,6 +13,7 @@ description: |
         /test/one:
             result: OUTCOME
             log: PATH
+            artifact: ARTIFACT
 
         /test/two:
             result: OUTCOME
@@ -47,6 +48,11 @@ description: |
     or a list of strings when multiple log files available, in
     which case the first log will be considered as the main one
     (e.g. presented to the user for inspection).
+
+    The ``ARTIFACT`` is an optional section depending on the content of
+    test's :ref:`/spec/tests/artifact` attribute. Path to file or directory
+    is relative to the execute step working directory.
+
 
 /isolate:
     summary: Run tests in an isolated environment
