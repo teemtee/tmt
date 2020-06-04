@@ -50,8 +50,11 @@ description: |
     (e.g. presented to the user for inspection).
 
     The ``ARTIFACT`` is an optional section depending on the content of
-    test's :ref:`/spec/tests/artifact` attribute. Path to file or directory
-    is relative to the execute step working directory.
+    test's :ref:`/spec/tests/artifact` attribute.
+    When executors provides a way to submit file from the test itself its path
+    will be available in this field as well.
+
+    Path to file or directory is relative to the execute step working directory.
 
 
 /isolate:

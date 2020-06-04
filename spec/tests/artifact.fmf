@@ -1,0 +1,27 @@
+summary: Files or directories to be collected after test execution
+
+story:
+    As a tester I want to collect files or directories produced by
+    test so I can process them later. Some of the collected artifacts
+    can be understood by tmt.
+
+description: |
+    Test can produced artifacts as coverage data, junit summaries,
+    coredumps or other interesting data.
+
+    Artifact can be either path to the file or directory, bash wildcards
+    are accepted. In case of the directory its whole content is collected.
+
+    Another possible value of artifact is a dictionary where key marks type of the data.
+    Value of the dictionary should be string or list of string representing paths.
+
+    Should be a ``artifact`` or ``list of artifacts`` where artifact is either ``string`` or ``dictionary``
+
+example: |
+    artifact: FILE
+
+    artifact: [FILE, DIRECTORY]
+
+    artifact:
+        - DIRECTORY
+        - junit: FILE
