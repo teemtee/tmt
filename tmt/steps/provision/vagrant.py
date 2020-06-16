@@ -160,7 +160,7 @@ class GuestVagrant(tmt.Guest):
             f"Waking up Vagrant instance '{self.instance_name}'.",
             level=2, shift=0)
 
-        self.instance_name = self.instance_name or _random_name()
+        self.instance_name = self.instance_name or self._random_name()
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
         os.mkdir(self.provision_dir)
 
@@ -168,7 +168,6 @@ class GuestVagrant(tmt.Guest):
 
         self.vagrantfile = os.path.join(self.provision_dir, self.vf_name)
         self.vf_data = ''
-        self.path = os.path.join(self.provision_dir, 'data.yaml')
 
     def start(self):
         """ Execute actual provisioning """
@@ -189,11 +188,11 @@ class GuestVagrant(tmt.Guest):
         """ Create and show the Vagrantfile """
         self.info(self.vf_name, self.vf_read())
 
-    def sync_workdir_to_guest(self):
+    def push(self):
         """ sync on demand """
         return self.run_vagrant('rsync')
 
-    def sync_workdir_from_guest(self):
+    def pull(self):
         """ sync from guest to host """
         command = 'rsync-back'
         self.plugin_install(command)

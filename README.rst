@@ -214,6 +214,7 @@ Develop
 In order to experiment, play with the latest bits and develop
 improvements it is best to use a virtual environment::
 
+    dnf install krb5-devel libpq-devel
     mkvirtualenv tmt
     git clone https://github.com/psss/tmt
     cd tmt
