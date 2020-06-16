@@ -30,8 +30,8 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
         tmt.steps.Method(name='container.vagrant', doc=__doc__, order=50),
         ]
 
-    display = ['image', 'memory', 'user', 'key', 'guest', 'box',
-      'password', 'vagrantfile']
+    display = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
+        'vagrantfile']
 
     @classmethod
     def options(cls, how=None):
@@ -140,15 +140,18 @@ class GuestVagrant(tmt.Guest):
     eol = '\n'
     statuses = ('not reachable', 'running', 'not created', 'preparing')
 
-    _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest', 'vagrantfile']
+    _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
+        'vagrantfile']
 
-    def load(self):
+    def load(self, data):
         """ Load ProvisionVagrant step """
         super().load(data)
+        self.instance_name = self.data['instance_name']
 
     def save(self):
         """ Save ProvisionVagrant step """
         data = super().save()
+        self.data['instance_name'] = self.instance_name
         return data
 
     def wake(self):
@@ -157,15 +160,9 @@ class GuestVagrant(tmt.Guest):
             f"Waking up Vagrant instance '{self.instance_name}'.",
             level=2, shift=0)
 
-        self.instance_name = instance_name or ''.join(random.choices(string.ascii_letters, k=16))
-        self.super = super(ProvisionBase, self)
-        self.super.__init__(parent=step, name=self.instance_name)
-        self.data = data
-        self.step = step
+        self.instance_name = self.instance_name or _random_name()
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
         os.mkdir(self.provision_dir)
-
-        self.opts(keys)
 
         self.prepare_config()
 
@@ -357,34 +354,21 @@ class GuestVagrant(tmt.Guest):
         """
         self.debug('VagrantProvider', 'Checking initial status, setting defaults.')
 
-        self.set_default('how', 'virtual')
-        self.set_default('image', self.default_image)
-
-        image = self.data['image']
-
-        if self.is_uri(image):
-            self.set_default('box', 'box_' + self.instance_name)
-
-            if re.search(r"\.box$", image) is None:
+        if self.is_uri(self.image):
+            if re.search(r"\.box$", self.image) is None:
                 # an actual box file, Great!
                 pass
 
-            elif re.search(r"\.qcow2$", image) is None:
+            elif re.search(r"\.qcow2$", self.image) is None:
                 # do some qcow2 magic
-                self.data['box'] = '...'
+                self.box = '...'
                 raise SpecificationError("NYI: QCOW2 image")
 
             else:
-                raise SpecificationError(f"Image format not recognized: {image}")
+                raise SpecificationError(f"Image format not recognized: {self.image}")
 
         else:
-            self.set_default('box', image)
-            self.data['image'] = None
-
-        self.set_default('memory', self.default_memory)
-
-        # General ssh config, used for 'managed' as well
-        self.set_default('user', self.default_user)
+            self.image = None
 
         for key, val in self.data.items():
             if self.debugon or key in self.display:
@@ -440,7 +424,7 @@ class GuestVagrant(tmt.Guest):
 
         self.plugin_install(f"managed-servers")
 
-        self.data['box'] = self.dummy_image
+        self.box = self.dummy_image
         self.create()
 
         self.add_provider('managed', self.kve('server', guest))
@@ -478,8 +462,7 @@ class GuestVagrant(tmt.Guest):
         """
         self.create()
 
-        image = self.data['image']
-        if image:
+        if self.image:
             self.add_config('vm', self.kve("box_url", image))
 
         if provider:
@@ -621,6 +604,12 @@ class GuestVagrant(tmt.Guest):
         """
         self.msgout('info', key, val, color)
 
+    def verbose(self, key = '', val = '', color = 'green'):
+        """ info out!
+            see msgout()
+        """
+        self.msgout('verbose', key, val, color)
+
     def debug(self, key = '', val = '', color='yellow'):
         """ debugging, yay!
             see msgout()
@@ -645,12 +634,12 @@ class GuestVagrant(tmt.Guest):
 
         # Call super.debug or super.info
         if val:
-            getattr(self.super,
+            getattr(super(),
                 mtype,
                 emsg,
                 )(key, val, color)
         else:
-            getattr(self.super,
+            getattr(super(),
                 mtype,
                 emsg,
                 )(key)
@@ -720,20 +709,6 @@ class GuestVagrant(tmt.Guest):
             see kv()
         """
         return self.kv(key, val, sep)
-
-    def opts(self, *keys):
-        """ Load opts into data[]
-            By the same key.
-            see opt()
-        """
-        for key in keys:
-            val = self.opt(key)
-            if val:
-                self.data[key] = val
-
-    def opt(self, key):
-        """ Return option specified on commandline """
-        return self.step.plan.provision.opt(key)
 
     def join(self, *args):
         if len(args) == 0:
