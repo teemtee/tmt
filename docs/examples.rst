@@ -1366,7 +1366,6 @@ See the :ref:`/stories/cli/run/login` user stories for more
 details and examples.
 
 
-
 Status
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1616,3 +1615,9 @@ Use the ``tmt.utils.Path`` class when specifying paths::
     from tmt.utils import Path
 
     tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
+
+.. raw:: html
+
+   <script id="asciicast-BebC3LWc4wJWLUJPfDaZUMtGu"
+   src="https://asciinema.org/a/BebC3LWc4wJWLUJPfDaZUMtGu.js"
+   async></script>
