@@ -1,6 +1,6 @@
 # Use localhost by default
 provision:
-    how: vagrant.virtual
+    how: virtual.vagrant
 
 # Install packages
 #prepare:

@@ -7,6 +7,7 @@ import subprocess
 import os
 import re
 import shutil
+import click
 from time import sleep
 
 #from tmt.steps.provision.base import ProvisionBase
@@ -17,7 +18,9 @@ from urllib.parse import urlparse
 
 
 class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
-""" Use Vagrant to Provision an environment for testing """
+    """
+    Use Vagrant to Provision an environment for testing
+    """
 
     # Guest instance
     _guest = None
@@ -79,11 +82,11 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
 
     def show(self):
         """ Show provision details """
-        super().show(display)
+        super().show(self.display)
 
     def wake(self, data=None):
         """ Override options and wake up the guest """
-        super().wake(display)
+        super().wake(self.display)
 
         # Convert memory and disk to integers
         for key in ['memory']:
@@ -102,7 +105,7 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
 
         # Give info about provided data
         data = dict()
-        for key in display:
+        for key in self.display:
             data[key] = self.get(key)
             if key == 'memory':
                 self.info(key, f"{self.get('memory')} MB", 'green')
@@ -138,7 +141,7 @@ class GuestVagrant(tmt.Guest):
     vf_name = 'Vagrantfile'
     timeout = 333
     eol = '\n'
-    statuses = ('not reachable', 'running', 'not created', 'preparing')
+    statuses = ('not reachable', 'running', 'not created', 'preparing', 'shutoff')
 
     _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
         'vagrantfile']
@@ -146,7 +149,7 @@ class GuestVagrant(tmt.Guest):
     def load(self, data):
         """ Load ProvisionVagrant step """
         super().load(data)
-        self.instance_name = self.data['instance_name']
+        self.instance_name = data.get('instance_name')
 
     def save(self):
         """ Save ProvisionVagrant step """
@@ -156,9 +159,7 @@ class GuestVagrant(tmt.Guest):
 
     def wake(self):
         """ Wake up the guest """
-        self.debug(
-            f"Waking up Vagrant instance '{self.instance_name}'.",
-            level=2, shift=0)
+        self.debug(f"Waking up Vagrant instance '{self.instance_name}'.")
 
         self.instance_name = self.instance_name or self._random_name()
         self.provision_dir = os.path.join(step.workdir, self.instance_name)
@@ -171,14 +172,25 @@ class GuestVagrant(tmt.Guest):
 
     def start(self):
         """ Execute actual provisioning """
-        self.info(
-            f'Provisioning {self.executable}, {self.vf_name}', self.vf_read())
+        self.info(f'Provisioning {self.executable}, {self.vf_name}', self.vf_read())
+
         out, err = self.run_vagrant('up')
 
         status = self.status()
         if status != 'running':
             raise GeneralError(
                 f'Failed to provision (status: {status}), log:\n{out}\n{err}')
+
+    def stop(self):
+        """ Stop provisioning """
+        self.info(
+            f'Stopping {self.executable}, {self.vf_name}')
+        out, err = self.run_vagrant('halt')
+
+        status = self.status()
+        if status != 'shutoff':
+            raise GeneralError(
+                f'Failed to stop (status: {status}), log:\n{out}\n{err}')
 
     def execute(self, *args, **kwargs):
         """ Execute remote command """
@@ -278,12 +290,6 @@ class GuestVagrant(tmt.Guest):
             self.validate()
             return
 
-        # Did we get a Vagranfile?
-        if 'vagrantfile' in self.data:
-            shutil.copyfile(self.data['vagrantfile'], self.vagrantfile)
-            self.validate()
-            return
-
         # Let's add what's needed
         # Important: run this first to install provider
         self.add_how()
@@ -298,7 +304,7 @@ class GuestVagrant(tmt.Guest):
 
     def clean(self):
         """ remove box and base box """
-        return self.run_vagrant('box', 'remove', '-f', self.data['box'])
+        return self.run_vagrant('box', 'remove', '-f', self.box)
         # TODO: libvirt storage removal?
 
     def validate(self):
@@ -370,14 +376,13 @@ class GuestVagrant(tmt.Guest):
             self.image = None
 
         for key, val in self.data.items():
-            if self.debugon or key in self.display:
-                if not val is None:
-                    self.info(f'{key}', val)
+            if key in self.display and not val is None:
+                self.info(f'{key}', val)
 
     def add_how(self):
         """ Add provider (in Vagrant-speak) specifics """
         getattr(self,
-            f"how_{self.data['how']}",
+            f"how_{self.how}",
             self.how_generic,
             )()
         self.validate()
@@ -385,7 +390,7 @@ class GuestVagrant(tmt.Guest):
     def how_generic(self):
         self.debug("generating", "generic")
         self.create()
-        self.add_provider(self.data['how'])
+        self.add_provider(self.how)
 
     def how_libvirt(self):
         """ Add libvirt provider specifics into Vagrantfile
@@ -416,17 +421,16 @@ class GuestVagrant(tmt.Guest):
         name = 'connect'
         self.debug("generating", name)
 
-        guest = self.data['guest']
-        if guest is None:
+        if self.guest is None:
             raise SpecificationError('Guest is not specified.')
-        self.debug("guest", guest)
+        self.debug("guest", self.guest)
 
         self.plugin_install(f"managed-servers")
 
         self.box = self.dummy_image
         self.create()
 
-        self.add_provider('managed', self.kve('server', guest))
+        self.add_provider('managed', self.kve('server', self.guest))
 
         # Let's use the config.ssh setup first; this is backup:
         # => override.ssh.username
@@ -569,6 +573,7 @@ class GuestVagrant(tmt.Guest):
         """ read Vagrantfile
             also splits lines
         """
+        self.debug(f"Reading vagrantfile", self.vagrantfile)
         return open(self.vagrantfile).read().splitlines()
 
     def vf_write(self, vf_tmp):
@@ -597,7 +602,7 @@ class GuestVagrant(tmt.Guest):
 
 
     ## Helpers ##
-    def info(self, key = '', val = '', color = 'green'):
+    def info(self, key = '', val = '', color = 'blue'):
         """ info out!
             see msgout()
         """
