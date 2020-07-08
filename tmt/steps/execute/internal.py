@@ -91,6 +91,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             stdout = error.stdout
             test.returncode = error.returncode
         end = time.time()
+        if type(stdout) is tuple or type(stdout) is list:
+            stdout = ' '.join(stdout)
         self.write(self.log(test, 'out.log', full=True), stdout or '', level=3)
         duration = time.strftime("%H:%M:%S", time.gmtime(end - start))
         duration = click.style(duration, fg='cyan')
