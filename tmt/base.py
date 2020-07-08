@@ -1056,6 +1056,7 @@ class Guest(tmt.utils.Common):
 
         command ....... string or list of command arguments
         environment ... dictionary with environment variables
+        cwd ........... string with path to directory to execute in
         """
 
         # Prepare the export of environment variables
@@ -1064,7 +1065,7 @@ class Guest(tmt.utils.Common):
         # Change to given directory on guest if cwd provided
         directory = kwargs.get('cwd', '')
         if directory:
-            directory = f"cd '{directory}'; "
+            directory = f"cd '{directory}' && "
 
         # Run in interactive mode if requested
         interactive = ['-t'] if kwargs.get('interactive') else []
