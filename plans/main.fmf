@@ -1,9 +1,6 @@
 # Use localhost by default
 provision:
-    how: virtual.vagrant
-
-execute:
-    how: beakerlib.detach
+    how: local
 
 # Install packages
 #prepare:
