@@ -34,7 +34,7 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
         ]
 
     display = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
-        'vagrantfile']
+        'vagrantfile', 'sync_type']
 
     @classmethod
     def options(cls, how=None):
@@ -51,7 +51,7 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
                 help='Username to use for all guest operations.'),
             click.option(
                 '-b', '--box', metavar='BOX',
-                help=''),
+                help='Explicit box name to use.'),
             click.option(
                 '-p', '--password', metavar='PASSWORD',
                 help='Password for login into the guest system.'),
@@ -63,7 +63,10 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
                 help='Select remote host to connect to (hostname or ip).'),
             click.option(
                 '-f', '--vagrantfile', metavar='VAGRANTFILE',
-                help=''),
+                help='Path to Vagrantfile, which will be copied.'),
+            click.option(
+                '-s', '--sync-type', metavar='SYNC_TYPE',
+                help='Sync method Vagrant will use.'),
             ] + super().options(how)
 
 
@@ -73,8 +76,7 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
             'user': 'root',
             'memory': 2048,
             'sync_type': 'rsync',
-            'image': 'fedora/32-cloud-base',
-            'container': 'registry.fedoraproject.org/fedora:latest'
+            'image': 'fedora/32-cloud-base'
             }
         if option in defaults:
             return defaults[option]
@@ -122,67 +124,99 @@ class ProvisionVagrant(tmt.steps.provision.ProvisionPlugin):
 
 
 class GuestVagrant(tmt.Guest):
+    """ Architecture:
+
+        DATA[]:
+          HOW = libvirt|virtual|docker|container|vagrant|...
+                provider, in Vagrant's terminilogy
+
+          IMAGE = URI|NAME
+                  NAME is for Vagrant or other HOW, passed directly
+                  URI can be path to BOX, QCOW2 or Vagrantfile f.e.
+
+          BOX = Set a BOX name directly (in case of URI for IMAGE)
+
     """
-    DATA[*]:
-      HOW = libvirt|virtual|docker|container|vagrant|...
-            provider, in Vagrant's terminilogy
-
-      IMAGE = URI|NAME
-              NAME is for Vagrant or other HOW, passed directly
-              URI can be path to BOX, QCOW2 or Vagrantfile f.e.
-
-      BOX = Set a BOX name directly (in case of URI for IMAGE)
-
-    """
+    # For convenicence
     executable = 'vagrant'
     config_prefix = '  config.'
-    dummy_image = 'tknerr/managed-server-dummy'
-    default_indent = 16
     vf_name = 'Vagrantfile'
-    timeout = 333
     eol = '\n'
+
+    # This is for connect plugin. We should ship the image.
+    dummy_image = 'tknerr/managed-server-dummy'
+    container_image = 'registry.fedoraproject.org/fedora:latest'
+
+    default_indent = 16
+    timeout = 333
+
+    # Any possible state Vagrant could be in (`vagrant status`)
     statuses = ('not reachable', 'running', 'not created', 'preparing', 'shutoff')
 
+    # These will be saved for subsequent re-runs.
     _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
-        'vagrantfile']
+        'vagrantfile', 'instance_name', 'vf_data', 'sync_type']
 
     def load(self, data):
-        """ Load ProvisionVagrant step """
+        """ load ProvisionVagrant step
+            `data` is based on L2 config, defaults, and comamndline.
+
+            Also define instance variables, as this is run on both
+            first inicialization(start) and a subsequent one(wake).
+        """
         super().load(data)
-        self.instance_name = data.get('instance_name')
+        # Handle custom Vagrantfiles.
+        # Warning: this has higher priority than all our configs, apart from provision.
+        self.custom_vagrantfile = self.vagrantfile
+
+        # If it's defined already this is a second run
+        self.instance_name = self.instance_name or self._random_name()
+
+        # These are always derived from instance name, but defined here
+        # for code deduplication.
+        self.provision_dir = os.path.join(self.parent.plan.workdir, self.instance_name)
+        self.vagrantfile = os.path.join(self.provision_dir, self.vf_name)
 
     def save(self):
-        """ Save ProvisionVagrant step """
+        """ save ProvisionVagrant step
+            We're using `_keys` to save what's needed in for re-runs.
+        """
         data = super().save()
-        self.data['instance_name'] = self.instance_name
         return data
 
     def wake(self):
-        """ Wake up the guest """
+        """ wake up the guest
+            Ensures the config is valid and the instance is running.
+        """
         self.debug(f"Waking up Vagrant instance '{self.instance_name}'.")
-
-        self.instance_name = self.instance_name or self._random_name()
-        self.provision_dir = os.path.join(step.workdir, self.instance_name)
-        os.mkdir(self.provision_dir)
-
         self.prepare_config()
-
-        self.vagrantfile = os.path.join(self.provision_dir, self.vf_name)
-        self.vf_data = ''
+        # The machine is supposed to be running already
+        self.ensure_running()
 
     def start(self):
-        """ Execute actual provisioning """
-        self.info(f'Provisioning {self.executable}, {self.vf_name}', self.vf_read())
+        """ execute actual provisioning
+            Start the provision, after providing the config with needed
+            entries.
+        """
+        self.info(f'Provisioning {self.executable}')
+
+        self.vf_data = ''
+
+        os.mkdir(self.provision_dir)
+        self.prepare_config()
+        self.debug(f'{self.vf_name}', self.vf_read())
 
         out, err = self.run_vagrant('up')
+        self.ensure_running()
 
+    def ensure_running(self):
         status = self.status()
         if status != 'running':
             raise GeneralError(
                 f'Failed to provision (status: {status}), log:\n{out}\n{err}')
 
     def stop(self):
-        """ Stop provisioning """
+        """ stop provisioning """
         self.info(
             f'Stopping {self.executable}, {self.vf_name}')
         out, err = self.run_vagrant('halt')
@@ -193,24 +227,33 @@ class GuestVagrant(tmt.Guest):
                 f'Failed to stop (status: {status}), log:\n{out}\n{err}')
 
     def execute(self, *args, **kwargs):
-        """ Execute remote command """
+        """ Execute remote command
+            We need to redefine this, as the behaviour is different,
+            due to specifig changes in Vagrantfile (users can supply custom one).
+        """
         return self.run_vagrant('ssh', '-c', self.join(args))
 
     def show(self):
-        """ Create and show the Vagrantfile """
+        """ create and show the Vagrantfile """
         self.info(self.vf_name, self.vf_read())
 
     def push(self):
-        """ sync on demand """
+        """ sync on demand
+            This has to be overriden, as vagrant allows for
+            multiple types of sync (NFS f.e.).
+        """
         return self.run_vagrant('rsync')
 
     def pull(self):
-        """ sync from guest to host """
+        """ sync from guest to host
+            We're using custom plugin rsync-back.
+            TODO: Verify it can handle any type of sync.
+        """
         command = 'rsync-back'
         self.plugin_install(command)
         return self.run_vagrant(command)
 
-    def destroy(self):
+    def remove(self):
         """ remove instance """
         for i in range(1, 5):
             if i > 1 and self.status() == 'not created':
@@ -221,7 +264,9 @@ class GuestVagrant(tmt.Guest):
                 sleep(5)
 
     def prepare(self, how, what):
-        """ add single 'preparator' and run it """
+        """ Add single 'preparator' and run it.
+            This is for handling
+        """
 
         name = 'prepare'
         cmd = 'provision'
@@ -237,7 +282,7 @@ class GuestVagrant(tmt.Guest):
             self.add_config_block(cmd,
                 name,
                 f'become = true',
-                self.kve('become_user', self.data['user']),
+                self.kve('become_user', self.user),
                 self.kve('playbook', what),
                 self.kve('verbose', verbose))
                 # I'm not sure whether this is needed:
@@ -268,42 +313,13 @@ class GuestVagrant(tmt.Guest):
 
 
     ## Additional API ##
-    def prepare_config(self):
-        """ Initialize ProvisionVagrant / run following:
-            1] check that Vagrant works
-            2] check for already-present or user-specified Vagrantfile
-            3] check input values and set defaults
-            4] create and populates Vagrantfile with
-                - provider-specific entries
-                - default config entries
-        """
-        self.debug('provision dir', self.provision_dir)
-
-         # Check for working Vagrant
-        self.run_vagrant('version')
-
-        # Let's check what's needed
-        self.check_input()
-
-        # Are we resuming?
-        if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
-            self.validate()
-            return
-
-        # Let's add what's needed
-        # Important: run this first to install provider
-        self.add_how()
-
-        # Add default entries to Vagrantfile
-        self.add_defaults()
-
     def create(self):
         """ Initialize Vagrantfile """
-        self.run_vagrant('init', '-fm', self.data['box'])
+        self.run_vagrant('init', '-fm', self.box)
         self.debug('Initialized new Vagrantfile', self.vf_read())
 
     def clean(self):
-        """ remove box and base box """
+        """ remove base box (image) """
         return self.run_vagrant('box', 'remove', '-f', self.box)
         # TODO: libvirt storage removal?
 
@@ -351,10 +367,44 @@ class GuestVagrant(tmt.Guest):
             raise GeneralError('Dependency conflict detected:\n'
                 'Please install vagrant plugins from one source only (hint: `dnf remove rubygem-fog-core`).')
 
+    def prepare_config(self):
+        """ Initialize ProvisionVagrant / run following:
+            1] check input values and set defaults
+            2] check that Vagrant works
+            3] check for already-present or user-specified Vagrantfile
+            4] create and populates Vagrantfile with
+                - provider-specific entries
+                - default config entries
+        """
+        # Let's check we know what's needed
+        self.check_input()
 
-    ## Knowhow ##
+        self.debug('provision dir', self.provision_dir)
+
+         # Check for working Vagrant
+        self.run_vagrant('version')
+
+        # if custom vagrantfile was provided
+        if not self.custom_vagrantfile is None \
+            and self.custom_vagrantfile != self.vagrantfile \
+            and os.path.exists(self.custom_vagrantfile):
+            shutil.copy(self.custom_vagrantfile, self.vagrantfile)
+
+        # Don't setup Vagrantfile in case we are resuming, or custom
+        # Vagrantfile was specified,
+        if os.path.exists(self.vagrantfile) and os.path.isfile(self.vagrantfile):
+            self.validate()
+            return
+
+        # Let's add what's needed
+        # Important: run this first to install provider
+        self.add_how()
+
+        # Add default entries to Vagrantfile
+        self.add_defaults()
+
     def check_input(self):
-        """ Initialize configuration(sets defaults), based on data (how, image).
+        """ Initialize configuration(no defaults), based on data (how, image).
             does not create Vagrantfile or add anything into it.
         """
         self.debug('VagrantProvider', 'Checking initial status, setting defaults.')
@@ -373,16 +423,16 @@ class GuestVagrant(tmt.Guest):
                 raise SpecificationError(f"Image format not recognized: {self.image}")
 
         else:
-            self.image = None
+            if self.box is None:
+                self.box  = self.image
+                self.image = None
 
-        for key, val in self.data.items():
-            if key in self.display and not val is None:
-                self.info(f'{key}', val)
 
+    ## Knowhow ##
     def add_how(self):
         """ Add provider (in Vagrant-speak) specifics """
         getattr(self,
-            f"how_{self.how}",
+            f"how_{self.parent.how}",
             self.how_generic,
             )()
         self.validate()
@@ -390,11 +440,11 @@ class GuestVagrant(tmt.Guest):
     def how_generic(self):
         self.debug("generating", "generic")
         self.create()
-        self.add_provider(self.how)
+        self.add_provider(self.parent.how)
 
     def how_libvirt(self):
-        """ Add libvirt provider specifics into Vagrantfile
-             - try adding QEMU session entry
+        """ libvirt provider specifics
+            Try adding QEMU session entry.
         """
         name = 'libvirt'
         self.debug("generating", name)
@@ -411,7 +461,7 @@ class GuestVagrant(tmt.Guest):
         except GeneralError as error:
             self.vf_restore()
             # Not really an error
-            #self.debug(error)
+            self.debug(error)
 
     def how_connect(self):
         """ Defines a connection to guest
@@ -469,7 +519,7 @@ class GuestVagrant(tmt.Guest):
             self.add_config('vm', self.kve("box_url", image))
 
         if provider:
-            self.add_provider(provider, self.kve('memory', self.data['memory']))
+            self.add_provider(provider, self.kve('memory', self.memory))
 
     def add_defaults(self):
         """ Adds default /generic/ config entries into Vagrantfile:
@@ -479,18 +529,18 @@ class GuestVagrant(tmt.Guest):
              - disable nfs check
             and validates Vagrantfile
         """
-        self.add_synced_folder(".", "/vagrant", 'disabled: true')
+        self.add_synced_folder(".", "/vagrant", 'rsync', 'disabled: true')
 
-        dir = self.step.plan.workdir
-        self.add_synced_folder(dir, dir)
+        dir = self.parent.plan.workdir
+        self.add_synced_folder(dir, dir, self.sync_type)
 
         # Credentials are used for `how: connect` as well as for VMs
-        if 'user' in self.data:
-          self.add_config('ssh', self.kve('username', self.data['user']))
-        if 'password' in self.data:
-            self.add_config('ssh', self.kve('password', self.data['password']))
-        if 'key' in self.data:
-            self.add_config('ssh', self.kve('private_key_path', self.data['key']))
+        if self.user:
+          self.add_config('ssh', self.kve('username', self.user))
+        if self.password:
+            self.add_config('ssh', self.kve('password', self.password))
+        if self.key:
+            self.add_config('ssh', self.kve('private_key_path', self.key))
 
         self.add_config('nfs', 'verify_installed = false')
 
@@ -509,17 +559,17 @@ class GuestVagrant(tmt.Guest):
 
         cmd = self.prepend(args, self.executable)
 
-        # TODO: timeout = self.timeout,
+        # TODO: timeout = self.timeout ?,
         return self.run(cmd, cwd=self.provision_dir, shell=False)
 
-    def add_synced_folder(self, sync_from, sync_to, *args):
+    def add_synced_folder(self, sfrom, sto, stype, *sargs):
         """ Add synced_folder entry into Vagrantfile """
         self.add_config('vm',
             'synced_folder',
-            quote(sync_from),
-            quote(sync_to),
-            self.kv('type', self.sync_type),
-            *args)
+            quote(sfrom),
+            quote(sto),
+            self.kv('type', stype),
+            *sargs)
 
     def add_provider(self, provider, *config):
         """ Add provider entry into Vagrantfile """
@@ -573,7 +623,6 @@ class GuestVagrant(tmt.Guest):
         """ read Vagrantfile
             also splits lines
         """
-        self.debug(f"Reading vagrantfile", self.vagrantfile)
         return open(self.vagrantfile).read().splitlines()
 
     def vf_write(self, vf_tmp):
@@ -602,25 +651,25 @@ class GuestVagrant(tmt.Guest):
 
 
     ## Helpers ##
-    def info(self, key = '', val = '', color = 'blue'):
+    def info(self, key = '', val = '', color = 'blue', level = 1):
         """ info out!
             see msgout()
         """
-        self.msgout('info', key, val, color)
+        self.msgout('info', key, val, color, level)
 
-    def verbose(self, key = '', val = '', color = 'green'):
+    def verbose(self, key = '', val = '', color = 'green', level = 1):
         """ info out!
             see msgout()
         """
-        self.msgout('verbose', key, val, color)
+        self.msgout('verbose', key, val, color, level)
 
-    def debug(self, key = '', val = '', color='yellow'):
+    def debug(self, key = '', val = '', color='yellow', level = 1):
         """ debugging, yay!
             see msgout()
         """
-        self.msgout('debug', key, val, color)
+        self.msgout('debug', key, val, color, level)
 
-    def msgout(self, mtype, key = '', val = '', color = 'red'):
+    def msgout(self, mtype, key = '', val = '', color = 'red', level = 1):
         """ args: key, value, indent, color
             all optional
         """
@@ -638,15 +687,9 @@ class GuestVagrant(tmt.Guest):
 
         # Call super.debug or super.info
         if val:
-            getattr(super(),
-                mtype,
-                emsg,
-                )(key, val, color)
+            getattr(super(), mtype, emsg)(key, val, color=color)
         else:
-            getattr(super(),
-                mtype,
-                emsg,
-                )(key)
+            getattr(super(), mtype, emsg)(key, color=color)
 
     def hr(self, val):
         """ return human readable data
@@ -674,11 +717,6 @@ class GuestVagrant(tmt.Guest):
             eol = ''
 
         return f'{val}{eol}'
-
-    def set_default(self, where, default):
-        """ Set `self.data` entry if not set already or if empty """
-        if not (where in self.data and self.data[where]):
-            self.data[where] = default
 
     def prepend(self, thing, string):
         """ modify object to prepend it with string
