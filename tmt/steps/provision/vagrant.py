@@ -231,18 +231,19 @@ class GuestVagrant(tmt.Guest):
         """ Execute remote command
             We need to redefine this, as the behaviour is different,
             due to specifig changes in Vagrantfile (users can supply custom one).
-            For arguments see base.py
+            For arguments see base.py.
         """
-        # Prepare the export of environment variables
-        environment = self._export_environment(kwargs.get('env', dict()))
-        self.debug('environment', pprint.pformat(environment), level=4)
-
+        # Directory needs to be prepended first = higher 'priority'
         # Change to given directory on guest if cwd provided
         directory = kwargs.get('cwd', '')
-        self.debug('directory', pprint.pformat(directory), level=4)
-
         if directory:
             args = self.prepend(args, f"cd {quote(directory)} && ")
+
+        # Prepare the export of environment variables
+        environment = self._export_environment(kwargs.get('env', dict()))
+        if environment:
+            args = self.prepend(args, environment)
+            self.debug('env', environment)
 
         return self.run_vagrant('ssh', '-c', self.join(args))
 

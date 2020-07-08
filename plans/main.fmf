@@ -3,7 +3,7 @@ provision:
     how: virtual.vagrant
 
 execute:
-    how: detach
+    how: beakerlib.detach
 
 # Install packages
 #prepare:
