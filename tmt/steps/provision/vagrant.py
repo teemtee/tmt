@@ -8,13 +8,12 @@ import os
 import re
 import shutil
 import click
-import pprint
+#import pprint
 from time import sleep
 
 #from tmt.steps.provision.base import ProvisionBase
 from tmt.utils import ConvertError, SpecificationError, GeneralError, quote
 
-from click import echo
 from urllib.parse import urlparse
 
 
