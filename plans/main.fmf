@@ -3,7 +3,7 @@ provision:
     how: virtual.vagrant
 
 execute:
-    how: shell.detach
+    how: detach
 
 # Install packages
 #prepare:

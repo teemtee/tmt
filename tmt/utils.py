@@ -227,9 +227,9 @@ class Common(object):
             # Do not modify current process environment
             environment = os.environ.copy()
             environment.update(env)
+            self.debug('environment', pprint.pformat(environment), level=4)
         else:
             environment = None
-        self.debug('environment', pprint.pformat(environment), level=4)
 
         # Run the command in interactive mode if requested
         if interactive:
