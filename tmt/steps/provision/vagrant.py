@@ -155,7 +155,7 @@ class GuestVagrant(tmt.Guest):
 
     # These will be saved for subsequent re-runs.
     _keys = ['image', 'box', 'memory', 'user', 'password', 'key', 'guest',
-        'vagrantfile', 'instance_name', 'vf_data', 'sync_type']
+        'vagrantfile', 'instance_name', 'vf_data', 'sync_type', 'preparations']
 
     def load(self, data):
         """ load ProvisionVagrant step
@@ -171,6 +171,7 @@ class GuestVagrant(tmt.Guest):
 
         # If it's defined already this is a second run
         self.instance_name = self.instance_name or self._random_name()
+        self.preparations = self.preparations or 0
 
         # These are always derived from instance name, but defined here
         # for code deduplication.
@@ -276,29 +277,34 @@ class GuestVagrant(tmt.Guest):
             except GeneralError:
                 sleep(5)
 
+    def ansible(self, playbook):
+        """ Prepare guest using ansible playbook """
+        self.prepare("ansible", playbook)
+
     def prepare(self, how, what):
-        """ Add single 'preparator' and run it.
-            This is for handling
+        """ Add single 'preparation' and run it.
         """
 
-        name = 'prepare'
+        self.preparations += 1
+        name = 'prepare_' + self.preparations
         cmd = 'provision'
 
         self.vf_backup("Prepare")
 
         # decide what to do
         if how == 'ansible':
-            name = how
+            what = self._ansible_playbook_path(what)
 
             # Prepare verbose level based on the --debug option count
             verbose = self.opt('debug') * 'v' if self.opt('debug') else 'false'
+
             self.add_config_block(cmd,
                 name,
                 f'become = true',
                 self.kve('become_user', self.user),
                 self.kve('playbook', what),
                 self.kve('verbose', verbose))
-                # I'm not sure whether this is needed:
+                # I'm not sure whether this is needed.
                 # run: 'never'
 
         else:
@@ -322,8 +328,8 @@ class GuestVagrant(tmt.Guest):
             raise GeneralError(
                 f'Invalid input for vagrant prepare ({how}):\n{what}')
 
-        return self.run_vagrant(cmd, f'--{cmd}-with', name)
-
+        out, err = self.run_vagrant(cmd, f'--{cmd}-with', name)
+        self._ansible_summary(out)
 
     ## Additional API ##
     def create(self):
