@@ -7,8 +7,7 @@ provision:
 #  - name: tmt
 #    how: install
 #    package: tmt
-#    copr: psss/tmt
-#    directory: tmp/RPMS/noarch
+#    copr: packit/psss-tmt-master
 
 # Ansible playbook
 #prepare:
@@ -20,5 +19,5 @@ provision:
 #    how: shell
 #    script:
 #    - sudo dnf install -y 'dnf-command(copr)'
-#    - sudo dnf copr enable -y psss/tmt
+#    - sudo dnf copr enable -y packit/psss-tmt-master
 #    - sudo dnf install -y tmt
