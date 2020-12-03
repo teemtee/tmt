@@ -71,6 +71,15 @@ description: |
         preparation error is thrown ('fail'), which is the default
         behaviour.
 
+        Specific packages can be excluded from installation by
+        using the ``exclude`` attribute. This is useful in conjuction
+        with CI systems, which usually provide the list of packages
+        to be installed from the tested artifact. An example usage
+        is to exclude conflicting packages from installation.
+
+        To disable the installation of an artifact, the attribute
+        `disable` with value `true` can be used.
+
     example: |
         prepare:
             how: install
@@ -88,6 +97,16 @@ description: |
             copr: psss/tmt
             package: tmt-all
             missing: fail
+
+        prepare:
+            how: install
+            exclude:
+              - curl-minimal
+              - libcurl-minimal
+
+        prepare:
+            how: install
+            disable: true
 
     implemented:
       - /tmt/steps/provision/localhost
