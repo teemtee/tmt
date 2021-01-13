@@ -65,6 +65,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         if test.framework == 'beakerlib':
             environment = environment.copy()
             environment['BEAKERLIB_DIR'] = data_directory
+            if test.component:
+                environment['PACKAGES'] = ' '.join(test.component)
 
         # Prepare custom function to log output in verbose mode
         def log(key, value=None, color=None, shift=1, level=1):
