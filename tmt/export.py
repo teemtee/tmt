@@ -221,6 +221,8 @@ def create_nitrate_case(test):
 
 def find_general_plan(component):
     """ Return single General Test Plan or raise an error """
+    import_nitrate()
+
     # At first find by linked components
     found = nitrate.TestPlan.search(
         type__name="General",
