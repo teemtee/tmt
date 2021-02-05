@@ -101,8 +101,7 @@ def export_to_nitrate(test, create, general):
     if test.tier is not None:
         test.tag.append(f"Tier{test.tier}")
     # Add special fmf-export tag
-    test.tag.append('fmf-export')
-    nitrate_case.tags.add([nitrate.Tag(tag) for tag in test.tag])
+    nitrate_case.tags.add([nitrate.Tag(tag) for tag in test.tag + ['fmf-export']])
     echo(style('tags: ', fg='green') + ' '.join(set(test.tag)))
 
     # Default tester
