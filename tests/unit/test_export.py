@@ -2,8 +2,19 @@ import pytest
 from unittest.mock import MagicMock, PropertyMock, patch, call
 import subprocess
 import textwrap
+import os
 
 import tmt
+
+
+@pytest.fixture(scope="function")
+def change_test_dir(request, tmpdir):
+    # Change to test case directory
+    os.chdir(tmpdir)
+    # Run the test
+    yield
+    # Change back to the calling directory to avoid side-effects
+    os.chdir(request.config.invocation_dir)
 
 class TestEnd2End:
     @patch('tmt.export.import_nitrate')
@@ -28,11 +39,11 @@ class TestEnd2End:
 
         # TODO: Test invalid extra-nitrate (no prefix, not integer)
 
-    def test_exists(self, tmpdir):
+    def test_exists(self, change_test_dir, tmpdir):
         # initialize fmf/tmt structure
         subprocess.check_call("fmf init".split(), cwd=str(tmpdir))
         subprocess.check_call("git init".split(), cwd=str(tmpdir))
-
+        subprocess.check_call(f"git remote add origin {tmpdir}/foo".split(), cwd=str(tmpdir))
         # prepare main.fmf
         tmpdir.join('main.fmf').write(textwrap.dedent(
         """
@@ -84,7 +95,11 @@ class TestEnd2End:
         case = LocalCases.created[0]
         assert case.tags._data == [['fmf-export']]
         assert case.summary == "Fancy summary"
-        # TODO - assert case.notes
+
+        assert "[fmf]" in case.notes
+        assert "name: /" in case.notes
+        assert f"url: {tmpdir}/foo" in case.notes
+
         test_after = tmt.Tree(str(tmpdir)).tests(names=['/'])[0]
 
         assert test._metadata == test_after._metadata
