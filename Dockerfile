@@ -2,23 +2,27 @@ FROM registry.fedoraproject.org/fedora
 
 # For root user
 RUN set -x && \
-  mkdir -p /run/
+  mkdir -p /tmt/
 
-COPY plans/main.fmf /run/plans/
-COPY .fmf/ /run/.fmf
+COPY plans/main.fmf /tmt/plans/
+COPY .fmf/ /tmt/.fmf
 
 # In case someone needs regular user
 ENV HOME_DIR /home/test
 
 RUN set -x && \
-  mkdir -p $HOME_DIR/run/
+  mkdir -p $HOME_DIR/tmt/
 
-COPY plans/main.fmf $HOME_DIR/run/plans/
-COPY .fmf/ $HOME_DIR/run/.fmf
+COPY plans/main.fmf $HOME_DIR/tmt/plans/
+COPY .fmf/ $HOME_DIR/tmt/.fmf
 
 RUN set -x && \
-  dnf install -y --setopt=tsflags=nodocs \
-    tmt-all beakerlib && \
+  echo "Set disable_coredump false" >> /etc/sudo.conf && \
+  sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf && \
+  \
+  dnf install -y tmt-all beakerlib && \
+  \
+  dnf autoremove -y && \
   dnf clean all --enablerepo='*' && \
   useradd -u 1001 test && \
   chown -R test:test $HOME_DIR && \
@@ -26,8 +30,8 @@ RUN set -x && \
 
 # USER 1001
 # Run as root by default
-# WORKDIR $HOME_DIR/run
+# WORKDIR $HOME_DIR/tmt
 
-WORKDIR /run
+WORKDIR /tmt
 
 CMD tmt run -av provision -h local
