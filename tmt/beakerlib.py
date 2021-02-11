@@ -109,12 +109,12 @@ class Library(object):
             library = self.parent._library_cache[self.repo]
             if library.url != self.url:
                 raise tmt.utils.GeneralError(
-                    f"Library '{self.repo}' with url '{self.url}' conflicts "
+                    f"Library '{self}' with url '{self.url}' conflicts "
                     f"with already fetched library from '{library.url}'.")
             if library.ref != self.ref:
                 raise tmt.utils.GeneralError(
-                    f"Library '{self.repo}' using ref '{self.ref}' conflicts "
-                    f"with already fetched library using ref '{library.ref}'.")
+                    f"Library '{self}' using ref '{self.ref}' conflicts "
+                    f"with already fetched library '{library}' using ref '{library.ref}'.")
             self.parent.debug(f"Library '{self}' already fetched.", level=3)
             # Reuse the existing metadata tree
             self.tree = library.tree
