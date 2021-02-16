@@ -206,7 +206,7 @@ class GuestMinute(tmt.Guest):
 
         Returns whether the boot was successful (True on success).
         """
-        network_id, network_name = self._guess_net_id()
+        network_id, network_name = (f'74e8faa7-87ba-41b2-a000-438013194814', f'provider_net_cci_2')
         if not network_id:
             return False
 
