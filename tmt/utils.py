@@ -854,7 +854,11 @@ def format(
 
 def create_directory(path, name, quiet=False):
     """ Create a new directory, handle errors """
+    # v tejto funkcii vykonat zmeny s dry
+    #       - pridat vstup argument funkcii
     say = log.debug if quiet else echo
+    #if self.opt('dry'):
+     #   print("udeelej neco")
     if os.path.isdir(path):
         say("Directory '{}' already exists.".format(path))
         return
@@ -868,6 +872,8 @@ def create_directory(path, name, quiet=False):
 
 def create_file(path, content, name, force=False, mode=0o664, quiet=False):
     """ Create a new file, handle errors """
+    # aj v tejto funkcii vykonat zmeny s dry
+    #       - pridat vstup argument funkcii
     say = log.debug if quiet else echo
     action = 'created'
     if os.path.exists(path):
