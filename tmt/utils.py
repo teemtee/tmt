@@ -322,14 +322,14 @@ class Common(object):
                 for descriptor in selected[0]:
                     # Handle stdout
                     if descriptor == process.stdout.fileno():
-                        line = process.stdout.readline().decode(
+                        line = process.stdout.read().decode(
                             'utf-8', errors='replace')
                         stdout += line
                         if line != '':
                             log('out', line.rstrip('\n'), 'yellow', level=3)
                     # Handle stderr
                     if not join and descriptor == process.stderr.fileno():
-                        line = process.stderr.readline().decode(
+                        line = process.stderr.read().decode(
                             'utf-8', errors='replace')
                         stderr += line
                         if line != '':
@@ -343,15 +343,15 @@ class Common(object):
         selected = select.select(descriptors, [], [], timeout)
         for descriptor in selected[0]:
             if descriptor == process.stdout.fileno():
-                for line in process.stdout.readlines():
-                    line = line.decode('utf-8', errors='replace')
-                    stdout += line
-                    log('out', line.rstrip('\n'), 'yellow', level=3)
+                line = process.stdout.read()
+                line = line.decode('utf-8', errors='replace')
+                stdout += line
+                log('out', line.rstrip('\n'), 'yellow', level=3)
             if not join and descriptor == process.stderr.fileno():
-                for line in process.stderr.readlines():
-                    line = line.decode('utf-8', errors='replace')
-                    stderr += line
-                    log('err', line.rstrip('\n'), 'yellow', level=3)
+                line = process.stderr.read()
+                line = line.decode('utf-8', errors='replace')
+                stderr += line
+                log('err', line.rstrip('\n'), 'yellow', level=3)
 
         # Handle the exit code, return output
         if process.returncode != 0:
