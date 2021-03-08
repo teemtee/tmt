@@ -10,6 +10,8 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt plan create --template mini good"
         rlRun "echo 'execute:' > bad.fmf"
+        rlRun "cp good.fmf duplicate.fmf"
+        rlRun "echo 'summary: invalid plan' >> duplicate.fmf"
     rlPhaseEnd
 
     rlPhaseStartTest "Good"
@@ -20,6 +22,11 @@ rlJournalStart
         rlRun "tmt plan lint bad | tee output" 1
         rlAssertGrep 'fail execute step must be defined' output
         rlAssertGrep 'warn summary is very useful' output
+    rlPhaseEnd
+
+    rlPhaseStartTest "Duplicate keys"
+        rlRun "tmt plan lint duplicate | tee output" 1
+        rlAssertgrep 'fail fmf metadata must not contain duplicate keys' output
     rlPhaseEnd
 
     rlPhaseStartCleanup

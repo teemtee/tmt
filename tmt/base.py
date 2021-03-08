@@ -7,6 +7,7 @@ import re
 import time
 import fmf
 import yaml
+import yaml.constructor
 import click
 import pprint
 import subprocess
@@ -364,7 +365,11 @@ class Test(Node):
 
         # Check for possible test case relevancy rules
         filename = self.node.sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        try:
+            metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        except yaml.constructor.ConstructorError:
+            echo(verdict(0, 'fmf metadata must not contain duplicate keys'))
+            return False
         relevancy = metadata.pop('relevancy', None)
         if relevancy:
             # Convert into adjust rules if --fix enabled
@@ -580,6 +585,12 @@ class Plan(Node):
             echo(verdict(2, 'summary is very useful for quick inspection'))
         elif len(self.summary) > 50:
             echo(verdict(2, 'summary should not exceed 50 characters'))
+        try:
+            filename = self.node.sources[-1]
+            tmt.utils.yaml_to_dict(self.read(filename))
+        except yaml.constructor.ConstructorError:
+            echo(verdict(0, 'fmf metadata must not contain duplicate keys'))
+            return False
         return execute is not None
 
     def go(self):

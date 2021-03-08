@@ -13,6 +13,8 @@ import shlex
 import select
 import shutil
 import yaml
+import yaml.resolver
+import yaml.constructor
 import re
 import io
 import os
@@ -739,9 +741,24 @@ except TypeError:
         return output.getvalue()
 
 
+def unique_key_constructor(loader, node, deep=False):
+    """ YAML constructor that checks for duplicate keys """
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        value = loader.construct_object(value_node, deep=deep)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(
+                f"YAML contains duplicate key {key}")
+        mapping[key] = value
+    return loader.construct_mapping(node, deep)
+
+
 def yaml_to_dict(data):
     """ Convert yaml into dictionary """
-    return yaml.safe_load(data)
+    loader = yaml.loader.SafeLoader(data)
+    loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_key_constructor)
+    return loader.get_data()
 
 
 def shell_variables(data):

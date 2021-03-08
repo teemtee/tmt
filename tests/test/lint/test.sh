@@ -34,6 +34,8 @@ rlJournalStart
         rlAssertGrep 'fail directory path must exist' output
         rlRun "tmt test lint relevancy | tee output" 1
         rlAssertGrep 'fail relevancy has been obsoleted' output
+        rlRun "tmt test lint duplicate | tee output" 1
+        rlAssertgrep 'fail fmf metadata must not contain duplicate keys' output
         # There should be no change without --fix
         for format in list text; do
             rlAssertGrep 'relevancy' "relevancy-$format.fmf"

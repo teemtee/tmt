@@ -1,0 +1,2 @@
+test: /bin/true
+test: /invalid/test
