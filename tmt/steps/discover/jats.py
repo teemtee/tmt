@@ -4,6 +4,7 @@ import tmt
 import click
 import shutil
 import tmt.steps.discover
+import yaml
 
 class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
     """
@@ -45,21 +46,68 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
     def go(self):
         """ Discover available tests """
         super(DiscoverJats, self).go()
-        directory = self.step.plan.run.tree.root
-        tree = tmt.Tree(path=directory, context=self.step.plan._fmf_context())
+        if self.get('local_dir'):
+            # generate tests from local_dir
+            directory = self.step.plan.run.tree.root
 
-        # Show filters and test names if provided
-        filters = self.get('filter', [])
-        names = self.get('test', [])
-        # XXX FIXME tmt run -a provision  -h connect -g 10.0.78.255 plans --name "integration-leapp-repository"
-        # results in filter being passed as a string instead of a list. So workarounding not to return [] from
-        # tree.tests()
-        if isinstance(filters, str):
-            filters = [filters]
-        self._tests = tree.tests(filters=filters, names=names)
-        # Copy directory tree (if defined) to the workdir
-        testdir = os.path.join(self.workdir, 'tests')
-        shutil.copytree(directory, testdir, symlinks=True)
+            def _search_dir(test_dir, res):
+                # check for actual test
+                if os.path.isfile(os.path.join(test_dir, 'test')):
+                    data = {}
+                    test_suite, test_name = test_dir.split("/src/")
+                    test_suite = test_suite.rsplit(os.path.sep)[-1].strip('jats-')
+                    test_name = test_name.lstrip(os.path.sep)
+                    # the test is there, no more subdir searching
+                    # if main.fmf with test params is present - add it to the test description
+                    main_fmf = os.path.join(test_dir, 'main.fmf')
+                    jats_testdata = {}
+                    if os.path.isfile(main_fmf):
+                        with open(main_fmf) as f:
+                            jats_testdata = yaml.load(f, Loader=yaml.FullLoader)
+                    # generate data for the tmt test
+                    data['duration'] = jats_testdata.get('timeout', '15m')
+                    data['summary'] = "Run jats-{} {} tests".format(test_suite, test_name)
+                    data['test'] = './test.sh'
+                    data['path'] = '/tests/tests/jats'
+                    data['framework'] = 'shell'
+                    data['environment'] = {'TESTSUITE': test_suite, 'TESTNAME': test_name}
+                    data['tier'] = 'jats-{}'.format(test_suite)
+                    data['name'] = '/integration/{}/{}'.format(test_suite, test_name)
+                    res.append(data)
+                else:
+                    for root, dirs, files in os.walk(test_dir):
+                        for a_dir in [d for d in dirs if not d.startswith('.') and not d.startswith('_')]:
+                            _search_dir(os.path.join(root, a_dir), res)
+                return res
+
+            # XXX FIXME Add support for names and filters
+            tests_data = _search_dir(os.path.join(self.get('local_dir'), 'src'), [])
+            # write generated tmt test files to the workdir
+            if tests_data:
+                # create test dir
+                test_path = os.path.join(self.workdir, tests_data[0]['path'].lstrip('/'))
+                os.makedirs(test_path)
+            for test in tests_data:
+                with open(os.path.join(test_path, test['name'].lstrip('/').replace('/', '-')), 'w') as f:
+                    f.write(yaml.dump(test))
+            self._tests = [tmt.Test(data=test, name=test.pop('name')) for test in tests_data]
+        else:
+            # use hardcoded test cases and hope nothing new has been added
+            directory = self.step.plan.run.tree.root
+            tree = tmt.Tree(path=directory, context=self.step.plan._fmf_context())
+
+            # Show filters and test names if provided
+            filters = self.get('filter', [])
+            names = self.get('test', [])
+            # XXX FIXME tmt run -a provision  -h connect -g 10.0.78.255 plans --name "integration-leapp-repository"
+            # results in filter being passed as a string instead of a list. So workarounding not to return [] from
+            # tree.tests()
+            if isinstance(filters, str):
+                filters = [filters]
+            self._tests = tree.tests(filters=filters, names=names)
+            # Copy directory tree (if defined) to the workdir
+            testdir = os.path.join(self.workdir, 'tests')
+            shutil.copytree(directory, testdir, symlinks=True)
 
     def tests(self):
         return self._tests
