@@ -88,8 +88,12 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                 test_path = os.path.join(self.workdir, tests_data[0]['path'].lstrip('/'))
                 os.makedirs(test_path)
             for test in tests_data:
-                with open(os.path.join(test_path, test['name'].lstrip('/').replace('/', '-')), 'w') as f:
+                with open(os.path.join(
+                    test_path, "{}.fmf".format(test['name'].lstrip('/').replace('/', '-'))), 'w') as f:
                     f.write(yaml.dump(test))
+            # copy test.sh script
+            test_sh = os.path.join(self.step.plan.run.tree.root, 'tests/jats', 'test.sh')
+            shutil.copyfile(test_sh, os.path.join(test_path, 'test.sh'))
             self._tests = [tmt.Test(data=test, name=test.pop('name')) for test in tests_data]
         else:
             # use hardcoded test cases and hope nothing new has been added
