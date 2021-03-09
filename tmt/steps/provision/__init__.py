@@ -6,6 +6,7 @@ import string
 
 import fmf
 import tmt
+from tmt.utils import Common
 
 
 class Provision(tmt.steps.Step):
@@ -170,7 +171,7 @@ class ProvisionPlugin(tmt.steps.Plugin):
         return Guest.requires()
 
 
-class Guest(tmt.utils.Common):
+class Guest(Common):
     """
     Guest provisioned for test execution
 

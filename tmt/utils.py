@@ -430,7 +430,7 @@ class Common(object):
             return
         try:
             with open(path, 'w', encoding='utf-8', errors='replace') as target:
-                return target.write(data)
+                return target.write(repr(data))
         except OSError as error:
             raise FileError(f"Failed to write '{path}'.\n{error}")
 
