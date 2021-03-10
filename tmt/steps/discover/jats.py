@@ -6,6 +6,9 @@ import shutil
 import tmt.steps.discover
 import yaml
 
+from tmt import utils
+
+
 class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
     """
     Use provided list of shell script tests
@@ -66,13 +69,13 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                         with open(main_fmf) as f:
                             jats_testdata = yaml.load(f, Loader=yaml.FullLoader)
                     # generate data for the tmt test
-                    data['duration'] = jats_testdata.get('timeout', '15m')
+                    data['duration'] = jats_testdata.get('duration', jats_testdata.get('timeout', '15m'))
                     data['summary'] = "Run jats-{} {} tests".format(test_suite, test_name)
                     data['test'] = 'bash ./test.sh'
                     data['path'] = test_path
                     data['framework'] = 'shell'
                     data['environment'] = {'TESTSUITE': test_suite, 'TESTNAME': test_name}
-                    data['tier'] = 'jats-{}'.format(test_suite)
+                    data['tier'] = test_name.split(os.path.sep)[0]
                     data['name'] = '/integration/{}/{}'.format(test_suite, test_name)
                     res.append(data)
                 else:
@@ -83,8 +86,12 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                         _search_dir(a_dir, res)
                 return res
 
-            # XXX FIXME Add support for names and filters
             tests_data = _search_dir(os.path.join(self.get('local_dir'), 'src'), [])
+            # apply filters
+            # XXX FIXME figure out how to respect options specified via cli
+            filters = utils.listify(self.get('filter', []))
+            tests_data = [t for t in tests_data
+                          if all([fmf.utils.filter(a_filter, t, regexp=True) for a_filter in filters])]
             # create tmt workdir
             if tests_data:
                 test_path = os.path.join(self.workdir, test_path.lstrip('/'))
@@ -100,13 +107,8 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
             tree = tmt.Tree(path=directory, context=self.step.plan._fmf_context())
 
             # Show filters and test names if provided
-            filters = self.get('filter', [])
-            names = self.get('test', [])
-            # XXX FIXME tmt run -a provision  -h connect -g 10.0.78.255 plans --name "integration-leapp-repository"
-            # results in filter being passed as a string instead of a list. So workarounding not to return [] from
-            # tree.tests()
-            if isinstance(filters, str):
-                filters = [filters]
+            filters = utils.listify(self.get('filter', []))
+            names = utils.listify(self.get('test', []))
             self._tests = tree.tests(filters=filters, names=names)
             # Copy directory tree (if defined) to the workdir
             testdir = os.path.join(self.workdir, 'tests')
