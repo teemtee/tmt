@@ -49,6 +49,7 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
         if self.get('local_dir'):
             # generate tests from local_dir
             directory = self.step.plan.run.tree.root
+            test_path = '/tests/tests/jats'
 
             def _search_dir(test_dir, res):
                 # check for actual test
@@ -67,33 +68,31 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                     # generate data for the tmt test
                     data['duration'] = jats_testdata.get('timeout', '15m')
                     data['summary'] = "Run jats-{} {} tests".format(test_suite, test_name)
-                    data['test'] = './test.sh'
-                    data['path'] = '/tests/tests/jats'
+                    data['test'] = 'bash ./test.sh'
+                    data['path'] = test_path
                     data['framework'] = 'shell'
                     data['environment'] = {'TESTSUITE': test_suite, 'TESTNAME': test_name}
                     data['tier'] = 'jats-{}'.format(test_suite)
                     data['name'] = '/integration/{}/{}'.format(test_suite, test_name)
                     res.append(data)
                 else:
-                    for root, dirs, files in os.walk(test_dir):
-                        for a_dir in [d for d in dirs if not d.startswith('.') and not d.startswith('_')]:
-                            _search_dir(os.path.join(root, a_dir), res)
+                    dirs = [os.path.join(test_dir, f) for f in os.listdir(test_dir)
+                            if os.path.isdir(os.path.join(test_dir, f)) and not f.startswith('.') and
+                            not f.startswith('_')]
+                    for a_dir in dirs:
+                        _search_dir(a_dir, res)
                 return res
 
             # XXX FIXME Add support for names and filters
             tests_data = _search_dir(os.path.join(self.get('local_dir'), 'src'), [])
-            # write generated tmt test files to the workdir
+            # create tmt workdir
             if tests_data:
-                # create test dir
-                test_path = os.path.join(self.workdir, tests_data[0]['path'].lstrip('/'))
+                test_path = os.path.join(self.workdir, test_path.lstrip('/'))
                 os.makedirs(test_path)
-            for test in tests_data:
-                with open(os.path.join(
-                    test_path, "{}.fmf".format(test['name'].lstrip('/').replace('/', '-'))), 'w') as f:
-                    f.write(yaml.dump(test))
             # copy test.sh script
-            test_sh = os.path.join(self.step.plan.run.tree.root, 'tests/jats', 'test.sh')
+            test_sh = os.path.join(directory, 'tests/jats', 'test.sh')
             shutil.copyfile(test_sh, os.path.join(test_path, 'test.sh'))
+            # create tmt Test objects
             self._tests = [tmt.Test(data=test, name=test.pop('name')) for test in tests_data]
         else:
             # use hardcoded test cases and hope nothing new has been added
