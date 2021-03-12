@@ -35,22 +35,26 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
     def show(self):
         """ Show config details """
         super().show([])
-        tests = self.get('tests')
-        if tests:
-            test_names = [test['name'] for test in tests]
-            click.echo(tmt.utils.format('tests', test_names))
 
     def wake(self):
-        # Check provided tests, default to an empty list
-        if 'tests' not in self.data:
-            self.data['tests'] = []
+        # Process command line options, apply defaults
+        filters_from_plan = self.get('filter')
+        self.data['filter'] = utils.listify(tmt.base.Test._opt('filters') or filters_from_plan)
         self._tests = []
 
     def go(self):
         """ Discover available tests """
         super(DiscoverJats, self).go()
         if self.get('local_dir'):
-            tests_dir = os.path.join(self.get('local_dir'))
+            repo_dir = os.path.join(self.get('local_dir'))
+        elif self.get('url'):
+            url = self.get('url')
+            repo_dir = os.path.join(self.workdir, self.get('name'))
+            self.info('url', url, 'green')
+            self.debug(f"Clone '{url}' to '{repo_dir}'.")
+            self.run(
+                ['git', 'clone', url, repo_dir],
+                shell=False, env={"GIT_ASKPASS": "echo"})
         else:
             raise NotImplementedError('Jats repo has to be specified with local_dir, can not run without this')
 
@@ -73,13 +77,13 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                         jats_testdata = yaml.load(f, Loader=yaml.FullLoader)
                 # generate data for the tmt test
                 data['duration'] = jats_testdata.get('duration', jats_testdata.get('timeout', '15m'))
-                data['summary'] = "Run jats-{} {} tests".format(test_suite, test_name)
+                data['summary'] = f"Run jats-{test_suite} {test_name} tests"
                 data['test'] = 'bash ./test.sh'
                 data['path'] = test_path
                 data['framework'] = 'shell'
                 data['environment'] = {'TESTSUITE': test_suite, 'TESTNAME': test_name}
                 data['tier'] = test_name.split(os.path.sep)[0]
-                data['name'] = '/integration/{}/{}'.format(test_suite, test_name)
+                data['name'] = f"/integration/{test_suite}/{test_name}"
                 res.append(data)
             else:
                 dirs = [os.path.join(test_dir, f) for f in os.listdir(test_dir)
@@ -89,16 +93,17 @@ class DiscoverJats(tmt.steps.discover.DiscoverPlugin):
                     _search_dir(a_dir, res)
             return res
 
-        tests_data = _search_dir(os.path.join(tests_dir, 'src'), [])
+        tests_data = _search_dir(os.path.join(repo_dir, 'src'), [])
         # apply filters
-        # XXX FIXME figure out how to respect options specified via cli
-        filters = utils.listify(self.get('filter', []))
+        filters = self.get('filter', [])
         tests_data = [t for t in tests_data
                       if all([fmf.utils.filter(a_filter, t, regexp=True) for a_filter in filters])]
+        if not tests_data:
+            # No tests to run - nothing to do here
+            return
         # create tmt workdir
-        if tests_data:
-            test_path = os.path.join(self.workdir, test_path.lstrip('/'))
-            os.makedirs(test_path)
+        test_path = os.path.join(self.workdir, test_path.lstrip('/'))
+        os.makedirs(test_path)
         # copy test.sh script
         test_sh = os.path.join(directory, 'tests/jats', 'test.sh')
         shutil.copyfile(test_sh, os.path.join(test_path, 'test.sh'))
