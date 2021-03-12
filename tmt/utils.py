@@ -16,6 +16,7 @@ import yaml
 import re
 import io
 import os
+import time
 import fcntl
 import requests
 from requests.adapters import HTTPAdapter
@@ -102,6 +103,10 @@ class Common(object):
     # Command line context and workdir
     _context = None
     _workdir = None
+
+    # Timer is off by default
+    _start_time = None
+    _stop_time = None
 
     def __init__(self, parent=None, name=None, workdir=None, context=None):
         """
@@ -502,6 +507,23 @@ class Common(object):
             create_directory(self._workdir, 'workdir', quiet=True)
         return self._workdir
 
+    def start(self):
+        """ Start the timer """
+        self._start_time = time.time()
+
+    def stop(self):
+        """ Stop the timer """
+        self._stop_time = time.time()
+
+    def time(self, format_='words'):
+        """
+        Get the time duration between 'start()' and 'stop()'
+
+        See the `tmt.utils.time()` method for format details.
+        """
+        return duration(self._start_time, self._stop_time, format_)
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -780,6 +802,61 @@ def duration_to_seconds(duration):
         return int(number) * units.get(suffix, 1)
     except (ValueError, AttributeError):
         raise SpecificationError(f"Invalid duration '{duration}'.")
+
+
+def seconds_to_str(seconds):
+    """ Convert seconds to datetime string """
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(seconds))
+
+
+def str_to_seconds(datetime):
+    """ Convert datetime string to seconds """
+    return time.mktime(time.strptime(datetime, '%Y-%m-%d %H:%M:%S'))
+
+
+def duration(start, stop, format_='words'):
+    """
+    Get the time duration between 'start' and 'stop'
+
+    Value of 'start' and 'stop' should be given in seconds.
+    The following output formats are supported:
+
+        words ...  1 hour and 2 minutes
+        clock ...  01:02:03
+
+    Return 'None' if 'start' or 'stop' is not defined.
+    """
+
+    # Handle undefined values
+    try:
+        seconds = round(stop - start)
+    except TypeError:
+        return None
+
+    # Count hours and minutes
+    minutes = seconds // 60
+    seconds = seconds % 60
+    hours = minutes // 60
+    minutes = minutes % 60
+
+    # Clock format: 01:02:03
+    if format_ == 'clock':
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+    # Words format: 1 hour and 2 minutes
+    if format_ == 'words':
+        words = []
+        if hours:
+            words.append(fmf.utils.listed(hours, 'hour'))
+        if minutes:
+            words.append(fmf.utils.listed(minutes, 'minute'))
+        # Mention seconds only if hours are not defined, cover zero
+        if (seconds or not words) and not hours:
+            words.append(fmf.utils.listed(seconds, 'second'))
+        return fmf.utils.listed(words)
+
+    # Weird format
+    raise GeneralError(f"Unsupported time format '{format_}'.")
 
 
 def verdict(decision, comment=None, good='pass', bad='fail', problem='warn'):

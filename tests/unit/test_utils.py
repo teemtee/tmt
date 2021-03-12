@@ -6,7 +6,7 @@ import pytest
 import unittest
 
 from tmt.utils import StructuredField, StructuredFieldError, public_git_url
-from tmt.utils import listify, duration_to_seconds
+from tmt.utils import listify, duration_to_seconds, duration
 
 def test_public_git_url():
     """ Verify url conversion """
@@ -66,6 +66,33 @@ def test_duration_to_seconds():
     assert duration_to_seconds('5d') == 432000
     with pytest.raises(tmt.utils.SpecificationError):
         duration_to_seconds('bad')
+
+
+def test_duration_clock():
+    """ Check time duration clock format """
+    assert duration(0, 0, format_='clock') == '00:00:00'
+    assert duration(0, 1, format_='clock') == '00:00:01'
+    assert duration(0, 59, format_='clock') == '00:00:59'
+    assert duration(0, 60, format_='clock') == '00:01:00'
+    assert duration(0, 61, format_='clock') == '00:01:01'
+    assert duration(0, 60 * 60, format_='clock') == '01:00:00'
+    assert duration(0, 60 * 60 - 1, format_='clock') == '00:59:59'
+    assert duration(0, 100 * 60 * 60, format_='clock') == '100:00:00'
+
+
+def test_duration_words():
+    """ Check time duration words format """
+    assert duration(0, 0) == '0 seconds'
+    assert duration(0, 1) == '1 second'
+    assert duration(0, 2) == '2 seconds'
+    assert duration(0, 59) == '59 seconds'
+    assert duration(0, 60) == '1 minute'
+    assert duration(0, 61) == '1 minute and 1 second'
+    assert duration(0, 62) == '1 minute and 2 seconds'
+    assert duration(0, 60 * 60) == '1 hour'
+    assert duration(0, 60 * 60 + 60) == '1 hour and 1 minute'
+    assert duration(0, 60 * 60 + 61) == '1 hour and 1 minute'
+    assert duration(0, 100 * 60 * 60) == '100 hours'
 
 
 class test_structured_field(unittest.TestCase):
