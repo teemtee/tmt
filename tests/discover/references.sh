@@ -13,7 +13,7 @@ rlJournalStart
         rlRun 'tmt run -dv discover plan --name $plan | tee output'
         rlAssertNotGrep 'Cloning into' output
         rlAssertNotGrep 'Checkout ref' output
-        rlAssertGrep '3 tests selected' output
+        rlAssertGrep '3 tests discovered' output
         rlAssertGrep /tests/discover1 output
         rlAssertGrep /tests/discover2 output
         rlAssertGrep /tests/discover3 output
@@ -26,7 +26,7 @@ rlJournalStart
             | tee output'
         rlAssertNotGrep 'Cloning into' output
         rlAssertNotGrep 'Checkout ref' output
-        rlAssertGrep '3 tests selected' output
+        rlAssertGrep '3 tests discovered' output
         rlAssertGrep /tests/discover1 output
         rlAssertGrep /tests/discover2 output
         rlAssertGrep /tests/discover3 output
@@ -50,7 +50,7 @@ rlJournalStart
             plan --name $plan | tee output'
         rlAssertNotGrep 'Cloning into' output
         rlAssertGrep 'Checkout ref.*eae4d52' output
-        rlAssertGrep '2 tests selected' output
+        rlAssertGrep '2 tests discovered' output
         rlAssertGrep /tests/full output
         rlAssertGrep /tests/smoke output
     rlPhaseEnd
@@ -70,7 +70,7 @@ rlJournalStart
         rlRun 'tmt run -dddv discover plan --name $plan | tee output'
         rlAssertGrep 'Cloning into' output
         rlAssertNotGrep 'Checkout ref.*master' output
-        rlAssertGrep '2 tests selected' output
+        rlAssertGrep '2 tests discovered' output
         rlAssertGrep /tests/full output
         rlAssertGrep /tests/smoke output
     rlPhaseEnd
@@ -81,7 +81,7 @@ rlJournalStart
         rlAssertGrep 'Cloning into' output
         rlAssertGrep 'Checkout ref.*5407fe5' output
         rlAssertGrep 'hash.*5407fe5' output
-        rlAssertGrep '2 tests selected' output
+        rlAssertGrep '2 tests discovered' output
         rlAssertGrep /tests/docs output
         rlAssertNotGrep /tests/env output
         rlAssertGrep /tests/ls output
@@ -93,7 +93,7 @@ rlJournalStart
         rlAssertGrep 'Cloning into' output
         rlAssertGrep 'Checkout ref.*eae4d52' output
         rlAssertGrep 'hash.*eae4d52' output
-        rlAssertGrep '2 tests selected' output
+        rlAssertGrep '2 tests discovered' output
         rlAssertGrep /tests/full output
         rlAssertGrep /tests/smoke output
         # Before the change was committed

@@ -15,7 +15,7 @@ rlJournalStart
         rlAssertGrep "Discovered tests not found." output
         rlAssertNotGrep "Discover.*already done" output
         rlAssertNotGrep "Provision.*already done" output
-        rlAssertGrep "1 test selected" output
+        rlAssertGrep "1 test discovered" output
         rlAssertNotGrep "1 guest provisioned" output
 
         # Discover step done, no other steps executed
@@ -24,7 +24,7 @@ rlJournalStart
         rlAssertNotGrep "Discovered tests not found." output
         rlAssertGrep "Discover.*already done" output
         rlAssertNotGrep "Provision.*already done" output
-        rlAssertGrep "1 test selected" output
+        rlAssertGrep "1 test discovered" output
         rlAssertNotGrep "1 guest provisioned" output
 
         # Force, all steps should be executed again
@@ -33,7 +33,7 @@ rlJournalStart
         rlAssertGrep "Discovered tests not found." output
         rlAssertNotGrep "Discover.*already done" output
         rlAssertNotGrep "Provision.*already done" output
-        rlAssertGrep "1 test selected" output
+        rlAssertGrep "1 test discovered" output
         rlAssertGrep "1 guest provisioned" output
 
         # Finally wake up, everything should be done
@@ -42,7 +42,7 @@ rlJournalStart
         rlAssertNotGrep "Discovered tests not found." output
         rlAssertGrep "Discover.*already done" output
         rlAssertGrep "Provision.*already done" output
-        rlAssertGrep "1 test selected" output
+        rlAssertGrep "1 test discovered" output
         rlAssertGrep "1 guest provisioned" output
     rlPhaseEnd
 

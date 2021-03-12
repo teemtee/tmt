@@ -12,12 +12,12 @@ rlJournalStart
 
     rlPhaseStartTest 'Discover only'
         rlRun "tmt run discover $plan | tee output"
-        rlAssertGrep '1 test selected' 'output'
+        rlAssertGrep '1 test discovered' 'output'
     rlPhaseEnd
 
     rlPhaseStartTest 'Selected steps'
         rlRun "tmt run discover provision execute $plan | tee output"
-        rlAssertGrep '1 test selected' 'output'
+        rlAssertGrep '1 test discovered' 'output'
         rlAssertGrep 'discover' 'output'
         rlAssertGrep 'provision' 'output'
         rlAssertGrep 'execute' 'output'

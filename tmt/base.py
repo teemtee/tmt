@@ -599,6 +599,7 @@ class Plan(Node):
     def go(self):
         """ Execute the plan """
         # Show plan name and summary (one blank line to separate plans)
+        self.start()
         self.info('')
         self.info(self.name, color='red')
         if self.summary:
@@ -637,10 +638,12 @@ class Plan(Node):
                         color='yellow', shift=1)
                     abort = True
                     return
+            self.stop()
         # Make sure we run 'finish' step always if enabled
         finally:
             if not abort and self.finish.enabled:
                 self.finish.go()
+                self.stop()
 
 
 class Story(Node):
@@ -995,6 +998,8 @@ class Run(tmt.utils.Common):
             'steps': list(self._context.obj.steps),
             'environment': self.environment,
             'remove': self.remove,
+            'start': tmt.utils.seconds_to_str(self._start_time),
+            'stop': tmt.utils.seconds_to_str(self._stop_time),
             }
         self.write('run.yaml', tmt.utils.dict_to_yaml(data))
 
@@ -1037,6 +1042,16 @@ class Run(tmt.utils.Common):
         self.remove = self.remove or data.get('remove', 'False')
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
 
+        # Restore start and stop times
+        try:
+            self._start_time = tmt.utils.str_to_seconds(data.get('start'))
+        except TypeError:
+            self._start_time = None
+        try:
+            self._stop_time = tmt.utils.str_to_seconds(data.get('stop'))
+        except TypeError:
+            self._stop_time = None
+
     @property
     def plans(self):
         """ Test plans for execution """
@@ -1058,7 +1073,11 @@ class Run(tmt.utils.Common):
             for result in plan.execute.results()]
         if interesting_results:
             self.info('')
-            self.info('total', Result.summary(results), color='cyan')
+            text = Result.summary(results)
+            # Include duration in verbose mode
+            if self.opt('verbose') and self.time():
+                text += ' in ' + self.time()
+            self.info('total', text, color='cyan')
 
         # Remove the workdir if enabled
         if self.remove and self.plans[0].finish.enabled:
@@ -1111,6 +1130,7 @@ class Run(tmt.utils.Common):
         self.info(self.workdir, color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
         # Attempt to load run data
+        self.start()
         self.load()
 
         if self.opt('follow'):
@@ -1161,6 +1181,8 @@ class Run(tmt.utils.Common):
         self.config.last_run(self.workdir)
 
         # Give the final summary, remove workdir, handle exit codes
+        self.stop()
+        self.save()
         self.finish()
 
 

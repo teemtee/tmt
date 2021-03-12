@@ -3,12 +3,14 @@
 
 import os
 import re
+import time
+import pprint
+
 import fmf
 import click
-import pprint
-import tmt.utils
-
 from click import echo, style
+
+import tmt.utils
 from tmt.utils import GeneralError
 
 STEPS = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
@@ -180,7 +182,17 @@ class Step(tmt.utils.Common):
         self.info(self.name, color='blue')
         # Show workdir in verbose mode
         self.debug('workdir', self.workdir, 'magenta')
+        # Start the timer
+        self.start()
 
+    def end(self):
+        """ Perform end step tasks """
+        # Stop the timer and show summary
+        self.stop()
+        self.summary()
+        # Mark as done and save
+        self.status('done')
+        self.save()
 
 class Method(object):
     """ Step implementation method """

@@ -22,7 +22,7 @@ def test_mini():
         tmt.cli.main, ['--root', example('mini'), 'run', '-dv', 'discover'])
     assert result.exit_code == 0
     assert 'Found 1 plan.' in result.output
-    assert '1 test selected' in result.output
+    assert '1 test discovered' in result.output
     assert '/ci' in result.output
 
 def test_init():

@@ -36,11 +36,11 @@ class Report(tmt.steps.Step):
 
     def summary(self):
         """ Give a concise report summary """
-        summary = tmt.base.Result.summary(self.plan.execute.results())
-        self.info('summary', summary, 'green', shift=1)
+        text = tmt.base.Result.summary(self.plan.execute.results())
+        self.info('summary', text, 'green', shift=1)
 
     def go(self):
-        """ Report the guests """
+        """ Report the results """
         super().go()
 
         # Nothing more to do if already done
@@ -55,9 +55,7 @@ class Report(tmt.steps.Step):
             plugin.go()
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
 
 class ReportPlugin(tmt.steps.Plugin):
