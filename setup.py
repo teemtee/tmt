@@ -38,7 +38,7 @@ install_requires = [
 extras_require = {
     'docs': ['sphinx', 'sphinx_rtd_theme', 'mock'],
     'tests': ['pytest', 'python-coveralls', 'mock', 'requre'],
-    'provision': ['testcloud'],
+    'provision': ['testcloud>=0.5.0'],
     'convert': ['nitrate'],
     'report-html': ['jinja2'],
 }
