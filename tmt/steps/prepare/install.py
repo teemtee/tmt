@@ -209,11 +209,12 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
                 self.info('package', summary + ' requested', 'green')
                 for package in sorted(repo_packages):
                     self.verbose(package, shift=1)
-            # Quote package names and prepare the rpm check
-            packages = ' '.join(
-                [tmt.utils.quote(package) for package in repo_packages])
-            check = f'rpm -q --whatprovides {packages}'
+            for item in repo_packages:
+                # avoid reinstall package if already installed from another repo
+                # Quote package names and prepare the rpm check
+                quoted = tmt.utils.quote(item)
+                check = f'rpm -q --whatprovides {quoted}'
             # Check and install (extra check for yum to workaround BZ#1920176)
-            guest.execute(
-                f'{check} || {command} install -y {packages}' +
-                (f' && {check}' if 'yum' in command else ''))
+                guest.execute(
+                    f'{check} || {command} install -y {quoted}' +
+                    (f' && {check}' if 'yum' in command else ''))
