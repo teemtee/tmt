@@ -1,6 +1,7 @@
 import os
 import time
 import click
+import sys
 
 import tmt
 from tmt.steps.execute import TEST_OUTPUT_FILENAME
@@ -35,6 +36,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         options.append(click.option(
             '-i', '--interactive', is_flag=True,
             help='Run in interactive mode, do not capture output.'))
+        # Disable interactive progress bar
+        options.append(click.option(
+            '--no-progress-bar', is_flag=True,
+            help='Disable interactive progress bar showing the current test.'))
         return options + super().options(how)
 
     def show(self):
@@ -47,9 +52,28 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Make sure that script is a list
         tmt.utils.listify(self.data, keys=['script'])
 
+    def _show_progress(self, test_index, number_of_tests, test_name):
+        if self.opt('verbose'):
+            # Verbose mode outputs other information, using \r to
+            # create a status bar wouldn't work.
+            return
+        message = f"({test_index}/{number_of_tests}) {test_name}"
+        if sys.stdout.isatty() and not self.opt('no-progress-bar') \
+                and not self.opt('debug'):
+            # Only show progress bar in an interactive shell.
+            message = self._indent(message, shift=1)
+            sys.stdout.write(f"\r{message}")
+            sys.stdout.flush()
+            if test_index == number_of_tests:
+                # Jump to the next line on last test.
+                self.info('')
+        else:
+            self.info(message, shift=1)
+
     def execute(self, test, guest, test_index, number_of_tests):
         """ Run test on the guest """
         # Provide info/debug message
+        self._show_progress(test_index, number_of_tests, test.name)
         self.verbose(
             'test', test.summary or test.name, color='cyan', shift=1, level=2)
         self.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
@@ -92,7 +116,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test.real_duration = self.test_duration(start, end)
         duration = click.style(test.real_duration, fg='cyan')
         shift = 1 if self.opt('verbose') < 2 else 2
-        self.verbose(f"({test_index + 1}/{number_of_tests}) {duration} "
+        self.verbose(f"({test_index}/{number_of_tests}) {duration} "
                      f"{test.name}{timeout}", shift=shift)
 
     def check(self, test):
@@ -120,7 +144,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             # Push workdir to guest and execute tests
             guest.push()
             for i, test in enumerate(tests):
-                self.execute(test, guest, i, len(tests))
+                self.execute(test, guest, i + 1, len(tests))
 
             # Pull logs from guest and check results
             guest.pull()
