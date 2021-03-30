@@ -47,7 +47,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Make sure that script is a list
         tmt.utils.listify(self.data, keys=['script'])
 
-    def execute(self, test, guest):
+    def execute(self, test, guest, test_index, number_of_tests):
         """ Run test on the guest """
         # Provide info/debug message
         self.verbose(
@@ -92,7 +92,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test.real_duration = self.test_duration(start, end)
         duration = click.style(test.real_duration, fg='cyan')
         shift = 1 if self.opt('verbose') < 2 else 2
-        self.verbose(f"{duration} {test.name}{timeout}", shift=shift)
+        self.verbose(f"({test_index + 1}/{number_of_tests}) {duration} "
+                     f"{test.name}{timeout}", shift=shift)
 
     def check(self, test):
         """ Check the test result """
@@ -118,8 +119,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
             # Push workdir to guest and execute tests
             guest.push()
-            for test in tests:
-                self.execute(test, guest)
+            for i, test in enumerate(tests):
+                self.execute(test, guest, i, len(tests))
 
             # Pull logs from guest and check results
             guest.pull()
