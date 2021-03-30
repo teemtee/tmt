@@ -45,8 +45,11 @@ class Finish(tmt.steps.Step):
 
     def summary(self):
         """ Give a concise summary """
-        tasks  = fmf.utils.listed(self.plugins(), 'task')
-        self.info('summary', f'{tasks} completed', 'green', shift=1)
+        text  = fmf.utils.listed(self.plugins(), 'task') + ' completed'
+        # Include duration in verbose mode
+        if self.opt('verbose') and self.time():
+            text += ' in ' + self.time()
+        self.info('summary', text, 'green', shift=1)
 
     def go(self):
         """ Execute finishing tasks """
@@ -70,9 +73,7 @@ class Finish(tmt.steps.Step):
             guest.remove()
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
 
 class FinishPlugin(tmt.steps.Plugin):

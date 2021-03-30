@@ -113,8 +113,11 @@ class Execute(tmt.steps.Step):
 
     def summary(self):
         """ Give a concise summary of the execution """
-        tests = fmf.utils.listed(self.results(), 'test')
-        self.info('summary', f'{tests} executed', 'green', shift=1)
+        text = fmf.utils.listed(self.results(), 'test') + ' executed'
+        # Include duration in verbose mode
+        if self.opt('verbose') and self.time():
+            text += ' in ' + self.time()
+        self.info('summary', text, 'green', shift=1)
 
     def go(self):
         """ Execute tests """
@@ -138,9 +141,7 @@ class Execute(tmt.steps.Step):
                 self._results = plugin.results()
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
     def requires(self):
         """

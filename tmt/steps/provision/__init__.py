@@ -69,8 +69,11 @@ class Provision(tmt.steps.Step):
     def summary(self):
         """ Give a concise summary of the provisioning """
         # Summary of provisioned guests
-        guests = fmf.utils.listed(self.guests(), 'guest')
-        self.info('summary', f'{guests} provisioned', 'green', shift=1)
+        text = fmf.utils.listed(self.guests(), 'guest') + ' provisioned'
+        # Include duration in verbose mode
+        if self.opt('verbose') and self.time():
+            text += ' in ' + self.time()
+        self.info('summary', text, 'green', shift=1)
         # Guest list in verbose mode
         for guest in self.guests():
             if guest.name != tmt.utils.DEFAULT_NAME:
@@ -96,9 +99,7 @@ class Provision(tmt.steps.Step):
                 self._guests.append(plugin.guest())
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
     def guests(self):
         """ Return the list of all provisioned guests """

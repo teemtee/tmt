@@ -45,8 +45,11 @@ class Prepare(tmt.steps.Step):
 
     def summary(self):
         """ Give a concise summary of the preparation """
-        preparations = fmf.utils.listed(self.plugins(), 'preparation')
-        self.info('summary', f'{preparations} applied', 'green', shift=1)
+        text = fmf.utils.listed(self.plugins(), 'preparation') + ' applied'
+        # Include duration in verbose mode
+        if self.opt('verbose') and self.time():
+            text += ' in ' + self.time()
+        self.info('summary', text, 'green', shift=1)
 
     def go(self):
         """ Prepare the guests """
@@ -92,9 +95,7 @@ class Prepare(tmt.steps.Step):
                 plugin.go(guest)
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
 
 class PreparePlugin(tmt.steps.Plugin):

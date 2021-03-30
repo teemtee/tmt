@@ -101,15 +101,18 @@ class Discover(tmt.steps.Step):
     def summary(self):
         """ Give a concise summary of the discovery """
         # Summary of selected tests
-        text = listed(len(self.tests()), 'test') + ' selected'
-        self.info('summary', text, 'green', shift=1)
         # Test list in verbose mode
         for test in self.tests():
             self.verbose(test.name, color='red', shift=2)
+        text = listed(len(self.tests()), 'test') + " discovered"
+        # Include duration in verbose mode
+        if self.opt('verbose') and self.time():
+            text += ' in ' + self.time()
+        self.info('summary', text, 'green', shift=1)
 
     def go(self):
-        """ Execute all steps """
-        super(Discover, self).go()
+        """ Discover relevant tests """
+        super().go()
 
         # Nothing more to do if already done
         if self.status() == 'done':
@@ -141,9 +144,7 @@ class Discover(tmt.steps.Step):
                 self._tests.append(test)
 
         # Give a summary, update status and save
-        self.summary()
-        self.status('done')
-        self.save()
+        self.end()
 
     def tests(self):
         """ Return the list of all enabled tests """

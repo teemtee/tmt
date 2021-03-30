@@ -12,7 +12,7 @@ rlJournalStart
         plan='plan --name fmf/nourl/noref/nopath'
         discover='discover --how fmf --test discover1'
         rlRun 'tmt run -dv $discover $plan | tee output'
-        rlAssertGrep '1 test selected' output
+        rlAssertGrep '1 test discovered' output
         rlAssertGrep '/tests/discover1' output
         rlAssertNotGrep '/tests/discover2' output
         rlAssertNotGrep '/tests/discover3' output
@@ -22,7 +22,7 @@ rlJournalStart
         plan='plan --name fmf/nourl/noref/nopath'
         discover='discover --how fmf --filter tier:1,2'
         rlRun 'tmt run -dv $discover $plan | tee output'
-        rlAssertGrep '2 tests selected' output
+        rlAssertGrep '2 tests discovered' output
         rlAssertGrep '/tests/discover1' output
         rlAssertGrep '/tests/discover2' output
         rlAssertNotGrep '/tests/discover3' output
