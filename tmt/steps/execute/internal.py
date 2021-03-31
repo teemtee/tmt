@@ -52,21 +52,38 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Make sure that script is a list
         tmt.utils.listify(self.data, keys=['script'])
 
-    def _show_progress(self, test_index, number_of_tests, test_name):
+    def _show_progress(self, test_index, number_of_tests, test_name,
+                       finish=False):
+        """
+        Show an interactive progress bar in non-verbose mode.
+
+        If the output is not an interactive terminal, or progress bar is
+        disabled using an option, just output the message as info without
+        utilising \r. If finish is True, overwrite the previous progress bar.
+        """
         if self.opt('verbose'):
             # Verbose mode outputs other information, using \r to
             # create a status bar wouldn't work.
             return
-        message = f"({test_index}/{number_of_tests}) {test_name}"
+        message = f"({test_index}/{number_of_tests}) {test_name}" if not \
+            finish else ""
         if sys.stdout.isatty() and not self.opt('no-progress-bar') \
                 and not self.opt('debug'):
             # Only show progress bar in an interactive shell.
+            try:
+                # We need to completely override the previous message, add
+                # spaces if necessary.
+                message = message.ljust(len(self.previous_progress_message))
+            except AttributeError:
+                # First iteration, previous message not set
+                pass
+            self.previous_progress_message = message
             message = self._indent(message, shift=1)
             sys.stdout.write(f"\r{message}")
+            if finish:
+                # The progress has been overwritten, return back to the start
+                sys.stdout.write(f"\r")
             sys.stdout.flush()
-            if test_index == number_of_tests:
-                # Jump to the next line on last test.
-                self.info('')
         else:
             self.info(message, shift=1)
 
@@ -145,6 +162,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             guest.push()
             for i, test in enumerate(tests):
                 self.execute(test, guest, i + 1, len(tests))
+            # Overwrite the progress bar, the test data is irrelevant.
+            self._show_progress(0, 0, '', True)
 
             # Pull logs from guest and check results
             guest.pull()
