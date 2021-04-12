@@ -1,0 +1,4 @@
+summary: Test the distro upgrade feature
+link:
+  - /stories/cli/run/upgrade
+  - https://github.com/psss/tmt/issues/694

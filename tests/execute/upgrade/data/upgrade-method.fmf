@@ -1,0 +1,8 @@
+discover:
+    how: fmf
+prepare:
+    how: ansible
+    playbook: old.yaml
+execute:
+    how: upgrade
+    playbook: new.yaml

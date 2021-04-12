@@ -1,0 +1,12 @@
+discover:
+    how: fmf
+prepare-1:
+    how: ansible
+    playbook: old.yaml
+execute-1:
+    how: tmt
+prepare-2:
+    how: ansible
+    playbook: old.yaml
+execute-2:
+    how: tmt

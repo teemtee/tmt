@@ -1,0 +1,26 @@
+discover:
+    how: fmf
+    order: 10
+provision:
+    how: virtual
+    order: 20
+prepare-old:
+    how: ansible
+    playbook: old.yaml
+    order: 40
+execute-old:
+    how: tmt
+    order: 50
+prepare-new:
+    how: ansible
+    playbook: new.yaml
+    order: 60
+execute-new:
+    how: tmt
+    order: 70
+report:
+    how: html
+    order: 80
+finish:
+    how: shell
+    order: 90

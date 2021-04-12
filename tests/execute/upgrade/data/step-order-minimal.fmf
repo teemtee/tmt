@@ -1,0 +1,16 @@
+discover:
+    how: fmf
+
+prepare-old:
+    how: ansible
+    playbook: old.yaml
+execute-old:
+    how: tmt
+
+prepare-new:
+    how: ansible
+    playbook: new.yaml
+    order: 60
+execute-new:
+    how: tmt
+    order: 70
