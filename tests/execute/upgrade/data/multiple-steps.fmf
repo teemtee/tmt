@@ -7,6 +7,6 @@ execute-1:
     how: tmt
 prepare-2:
     how: ansible
-    playbook: old.yaml
+    playbook: new.yaml
 execute-2:
     how: tmt
