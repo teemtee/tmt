@@ -182,7 +182,7 @@ class Node(tmt.utils.Common):
             echo(tmt.utils.format('summary', self.summary))
 
     def export(self, format_='yaml', keys=None):
-        """ Export data into requested format (yaml or dict) """
+        """ Export data into requested format (yaml, dict or shell) """
         if keys is None:
             keys = self._keys
         data = dict([(key, getattr(self, key)) for key in keys])
@@ -191,6 +191,8 @@ class Node(tmt.utils.Common):
             return data
         elif format_ == 'yaml':
             return tmt.utils.dict_to_yaml(data)
+        if format_ == 'shell':
+            return tmt.utils.dict_to_shell(data)
         else:
             raise tmt.utils.GeneralError(
                 f"Invalid test export format '{format_}'.")

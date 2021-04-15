@@ -20,6 +20,7 @@ import yaml
 from click import echo, style, wrap_text
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from pprint import pformat as pretty
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -763,6 +764,24 @@ def context_to_dict(context):
     return {
         key: value.split(',')
         for key, value in environment_to_dict(context).items()}
+
+
+def dict_to_shell(data, width=None, sort=False):
+    if not data:
+        return "\n"
+    output = ""
+    # List available attributes
+    for key, value in sorted(data.items()):
+        output += "{0}: ".format(fmf.utils.color(key, 'green'))
+        if isinstance(value, type("")):
+            output += value.rstrip("\n")
+        elif isinstance(value, list) and all(
+                [isinstance(item, type("")) for item in value]):
+            output += fmf.utils.listed(value)
+        else:
+            output += pretty(value)
+        output += "\n"
+    return output + "\n"
 
 
 def dict_to_yaml(data, width=None, sort=False):
