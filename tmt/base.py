@@ -39,7 +39,7 @@ FOLLOW_LINES = 10
 # Unofficial temporary test keys
 EXTRA_TEST_KEYS = (
     "relevancy extra-nitrate extra-hardware extra-pepa "
-    "extra-summary extra-task".split())
+    "extra-summary extra-task multihost".split())
 
 
 class Node(tmt.utils.Common):
@@ -398,6 +398,10 @@ class Test(Node):
             else:
                 valid = verdict(
                     False, 'relevancy has been obsoleted by adjust')
+
+        # Check for multihost and warn user
+        if 'multihost' in self.node.get():
+            verdict(None, 'multihost is not yet supported by tmt')
 
         # Check for unknown attributes
         # FIXME - Make additional attributes configurable

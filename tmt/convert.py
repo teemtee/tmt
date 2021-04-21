@@ -325,6 +325,16 @@ def read(path, makefile, nitrate, purpose, disabled):
             echo(
                 style('recommend: ', fg='green') + ' '.join(data['recommend']))
 
+        # Multihost (from Type)
+        try:
+            type = re.search(
+                r'^Type:\s*(.*)', testinfo, re.M).group(1)
+            if type == "Multihost":
+                # Attribute value is not yet defined
+                data['multihost'] = {}
+                echo(style('multihost: ', fg='green') + 'placeholder used')
+        except AttributeError:
+            pass
         # Add relevant bugs to the 'link' attribute
         for bug in re.findall(r'^Bug:\s*([0-9]+)', testinfo, re.M):
             add_bug(bug, data)
@@ -659,7 +669,7 @@ def write(path, data):
     extra_keys = [
         'adjust', 'extra-nitrate',
         'extra-summary', 'extra-task',
-        'extra-hardware', 'extra-pepa']
+        'extra-hardware', 'extra-pepa', 'multihost']
     sorted_data = dict()
     for key in tmt.base.Test._keys + extra_keys:
         try:

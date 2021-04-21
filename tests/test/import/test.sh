@@ -53,6 +53,10 @@ rlJournalStart
         rlAssertGrep 'relates.*1234567' 'output'
     rlPhaseEnd
 
+    rlPhaseStartTest 'Multihost'
+        rlAssertGrep 'multihost:\s*{}' "main.fmf"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
         rlRun 'popd'

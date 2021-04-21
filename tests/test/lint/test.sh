@@ -25,6 +25,11 @@ rlJournalStart
         rlAssertNotGrep 'fail' output
     rlPhaseEnd
 
+    rlPhaseStartTest "Warn"
+        rlRun "tmt test lint multihost | tee output"
+        rlAssertGrep 'warn multihost is not yet supported by tmt'  output
+    rlPhaseEnd
+
     rlPhaseStartTest "Bad"
         rlRun "tmt test lint bad | tee output" 1
         rlAssertGrep 'fail test script must be defined' output
