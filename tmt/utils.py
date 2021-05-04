@@ -1,18 +1,16 @@
 
 """ Test Metadata Utilities """
 
-import fcntl
 import io
 import os
 import pprint
 import re
-import select
 import shlex
 import shutil
 import subprocess
 import unicodedata
 from collections import OrderedDict
-from threading import Timer
+from threading import Thread
 
 import fmf
 import requests
@@ -84,6 +82,51 @@ class Config(object):
         if os.path.islink(symlink):
             return os.path.realpath(symlink)
         return None
+
+
+class StdPipe(Thread):
+    """
+    https://codereview.stackexchange.com/questions/6567/redirecting-subprocesses-output-stdout-and-stderr-to-the-logging-module
+    """
+
+    def __init__(self, o_type, log):
+        Thread.__init__(self)
+        self.log = log
+        self.type = o_type
+        self._data = ""
+        self.daemon = True # False blocks output
+        self.fdRead, self.fdWrite = os.pipe()
+        self.pipeReader = os.fdopen(self.fdRead)
+        self.start()
+
+    @property
+    def data(self):
+        return self._data
+
+    def fileno(self):
+        """Return the write file descriptor of the pipe
+        """
+        return self.fdWrite
+
+    def run(self):
+        """Run the thread, logging everything.
+        """
+        for line in iter(self.pipeReader.readline, ''):
+            self._data += line.decode('utf-8', errors='replace') if hasattr(line, "decode") else line
+            try:
+                self.log(self.type, line.rstrip('\n'), 'yellow', level=3)
+            except Exception:
+                pass
+        self.pipeReader.close()
+
+    def close(self):
+        """Close the write end of the pipe.
+        """
+        os.close(self.fdWrite)
+
+    def cleanup(self):
+        self.pipeReader.flush()
+        self.close()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -271,9 +314,15 @@ class Common(object):
         if self.opt('debug') >= level:
             echo(self._indent(key, value, color, shift), err=err)
 
-    def _run(
-            self, command, cwd, shell, env, log, join=False, interactive=False,
-            timeout=None):
+    @staticmethod
+    def _process_run(interactive, command, cwd, shell, environment, stdout=None, stderr=None):
+        if interactive:
+            subprocess.run(command, cwd=cwd, shell=shell, env=environment, check=True)
+            return None
+        process = subprocess.Popen(command, cwd=cwd, shell=shell, env=environment, stdout=stdout, stderr=stderr, stdin=subprocess.DEVNULL)
+        return process
+
+    def _run(self, command, cwd, shell, env, log, join=False, interactive=False, timeout=None):
         """
         Run command, capture the output
 
@@ -294,87 +343,23 @@ class Common(object):
         else:
             environment = None
         self.debug('environment', pprint.pformat(environment), level=4)
-
-        # Run the command in interactive mode if requested
+        stdout = StdPipe("out",log)
+        stderr = stdout
+        if not join:
+            stderr = StdPipe("err", log)
+        process = self._process_run(interactive=interactive, command=command, cwd=cwd, shell=shell, environment=environment, stderr=stderr, stdout=stdout)
         if interactive:
-            try:
-                subprocess.run(
-                    command, cwd=cwd, shell=shell, env=environment, check=True)
-            except subprocess.CalledProcessError as error:
-                # Interactive mode can return non-zero if the last command
-                # failed, ignore errors here
-                pass
-            finally:
-                return None if join else (None, None)
-
-        # Create the process
-        process = subprocess.Popen(
-            command, cwd=cwd, shell=shell, env=environment,
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT if join else subprocess.PIPE)
-        if join:
-            descriptors = [process.stdout.fileno()]
-        else:
-            descriptors = [process.stdout.fileno(), process.stderr.fileno()]
-        stdout = ''
-        stderr = ''
-
-        # Prepare kill function for the timer
-        def kill():
-            """ Kill the process and adjust the return code """
+            return None if join else (None, None,)
+        try:
+            process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
             process.kill()
             process.returncode = PROCESS_TIMEOUT
-
-        try:
-            # Start the timer
-            timer = Timer(timeout, kill)
-            timer.start()
-
-            # Make sure that the read operation on the file descriptors
-            # never blocks
-            for fd in descriptors:
-                fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
-
-            # Capture the output
-            while process.poll() is None:
-                # Check which file descriptors are ready for read
-                selected = select.select(
-                    descriptors, [], [], DEFAULT_SELECT_TIMEOUT)
-
-                for descriptor in selected[0]:
-                    # Handle stdout
-                    if descriptor == process.stdout.fileno():
-                        line = process.stdout.readline().decode(
-                            'utf-8', errors='replace')
-                        stdout += line
-                        if line != '':
-                            log('out', line.rstrip('\n'), 'yellow', level=3)
-                    # Handle stderr
-                    if not join and descriptor == process.stderr.fileno():
-                        line = process.stderr.readline().decode(
-                            'utf-8', errors='replace')
-                        stderr += line
-                        if line != '':
-                            log('err', line.rstrip('\n'), 'yellow', level=3)
-
         finally:
             # Cancel the timer
-            timer.cancel()
-
-        # Check for possible additional output
-        selected = select.select(descriptors, [], [], DEFAULT_SELECT_TIMEOUT)
-        for descriptor in selected[0]:
-            if descriptor == process.stdout.fileno():
-                for line in process.stdout.readlines():
-                    line = line.decode('utf-8', errors='replace')
-                    stdout += line
-                    log('out', line.rstrip('\n'), 'yellow', level=3)
-            if not join and descriptor == process.stderr.fileno():
-                for line in process.stderr.readlines():
-                    line = line.decode('utf-8', errors='replace')
-                    stderr += line
-                    log('err', line.rstrip('\n'), 'yellow', level=3)
-
+            stdout.cleanup()
+            if stderr is not stdout:
+                stderr.cleanup()
         # Handle the exit code, return output
         if process.returncode != 0:
             if isinstance(command, (list, tuple)):
@@ -382,8 +367,10 @@ class Common(object):
             raise RunError(
                 message=f"Command returned '{process.returncode}'.",
                 command=command, returncode=process.returncode,
-                stdout=stdout, stderr=stderr)
-        return stdout if join else (stdout, stderr)
+                stdout=stdout.data, stderr=stderr.data)
+        if join:
+            return stdout.data
+        return stdout.data, stderr.data
 
     def run(
             self, command, message=None, cwd=None, dry=False, shell=True,
