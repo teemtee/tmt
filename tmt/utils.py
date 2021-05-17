@@ -94,7 +94,7 @@ class StdPipe(Thread):
         self.log = log
         self.type = o_type
         self._data = ""
-        self.daemon = True # False blocks output
+        self.daemon = True  # False blocks output
         self.fdRead, self.fdWrite = os.pipe()
         self.pipeReader = os.fdopen(self.fdRead)
         self.start()
@@ -114,7 +114,11 @@ class StdPipe(Thread):
         while True:
             line = self.pipeReader.readline()
             try:
-                decoded = line.decode('utf-8', errors='replace') if hasattr(line, "decode") else line
+                decoded = line.decode(
+                    'utf-8',
+                    errors='replace') if hasattr(
+                    line,
+                    "decode") else line
             except ValueError:
                 decoded = "Line cannot be decoded, contain bad chars\n"
             if decoded is None or decoded == '':
@@ -322,14 +326,42 @@ class Common(object):
             echo(self._indent(key, value, color, shift), err=err)
 
     @staticmethod
-    def _process_run(interactive, command, cwd, shell, environment, stdout=None, stderr=None):
+    def _process_run(
+            interactive,
+            command,
+            cwd,
+            shell,
+            environment,
+            stdout=None,
+            stderr=None):
         if interactive:
-            subprocess.run(command, cwd=cwd, shell=shell, env=environment, check=True)
+            subprocess.run(
+                command,
+                cwd=cwd,
+                shell=shell,
+                env=environment,
+                check=True)
             return None
-        process = subprocess.Popen(command, cwd=cwd, shell=shell, env=environment, stdout=stdout, stderr=stderr, stdin=subprocess.DEVNULL)
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            shell=shell,
+            env=environment,
+            stdout=stdout,
+            stderr=stderr,
+            stdin=subprocess.DEVNULL)
         return process
 
-    def _run(self, command, cwd, shell, env, log, join=False, interactive=False, timeout=None):
+    def _run(
+            self,
+            command,
+            cwd,
+            shell,
+            env,
+            log,
+            join=False,
+            interactive=False,
+            timeout=None):
         """
         Run command, capture the output
 
@@ -350,11 +382,18 @@ class Common(object):
         else:
             environment = None
         self.debug('environment', pprint.pformat(environment), level=4)
-        stdout = StdPipe("out",log)
+        stdout = StdPipe("out", log)
         stderr = stdout
         if not join:
             stderr = StdPipe("err", log)
-        process = self._process_run(interactive=interactive, command=command, cwd=cwd, shell=shell, environment=environment, stderr=stderr, stdout=stdout)
+        process = self._process_run(
+            interactive=interactive,
+            command=command,
+            cwd=cwd,
+            shell=shell,
+            environment=environment,
+            stderr=stderr,
+            stdout=stdout)
         if interactive:
             return None if join else (None, None,)
         try:
