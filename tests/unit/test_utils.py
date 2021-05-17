@@ -1,10 +1,10 @@
 # coding: utf-8
-import os
 import re
 import unittest
 
 import pytest
 
+import tmt
 from tmt.utils import (StructuredField, StructuredFieldError, public_git_url,
                        listify, duration_to_seconds, Common)
 
