@@ -111,8 +111,15 @@ class StdPipe(Thread):
     def run(self):
         """Run the thread, logging everything.
         """
-        for line in iter(self.pipeReader.readline, ''):
-            self._data += line.decode('utf-8', errors='replace') if hasattr(line, "decode") else line
+        while True:
+            line = self.pipeReader.readline()
+            try:
+                decoded = line.decode('utf-8', errors='replace') if hasattr(line, "decode") else line
+            except ValueError:
+                decoded = "Line cannot be decoded, contain bad chars\n"
+            if decoded is None or decoded == '':
+                break
+            self._data += decoded
             try:
                 self.log(self.type, line.rstrip('\n'), 'yellow', level=3)
             except Exception:
