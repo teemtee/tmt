@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun "tmt run -a prepare -ddd | tee output"
+        rlRun "tmt run -ar prepare -ddd | tee output"
         rlAssertGrep "Debug message from prepare" "output"
     rlPhaseEnd
 

@@ -105,11 +105,11 @@ class Prepare(tmt.steps.Step):
             # Create a guest copy and change its parent so that the
             # operations inside prepare plugins on the guest use the
             # prepare step config rather than provision step config.
-            new_guest = copy.copy(guest)
-            new_guest.parent = self
+            guest_copy = copy.copy(guest)
+            guest_copy.parent = self
             # Execute each prepare plugin
             for plugin in self.plugins():
-                plugin.go(new_guest)
+                plugin.go(guest_copy)
 
         # Give a summary, update status and save
         self.summary()
