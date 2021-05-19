@@ -1,3 +1,4 @@
+import copy
 import re
 
 import click
@@ -101,9 +102,14 @@ class Prepare(tmt.steps.Step):
                 self.debug('Ensure that rsync is installed on the guest.')
                 guest.execute('rpm -q rsync || yum install -y rsync')
             guest.push()
+            # Create a guest copy and change its parent so that the
+            # operations inside prepare plugins on the guest use the
+            # prepare step config rather than provision step config.
+            new_guest = copy.copy(guest)
+            new_guest.parent = self
             # Execute each prepare plugin
             for plugin in self.plugins():
-                plugin.go(guest)
+                plugin.go(new_guest)
 
         # Give a summary, update status and save
         self.summary()
