@@ -222,14 +222,17 @@ class Guest(tmt.utils.Common):
         if self.port:
             options.extend(['-p', str(self.port)])
         if self.key:
-            options.extend(['-i', self.key])
+            options.extend(['-i', f'"{self.key}"' if join else self.key])
         return ' '.join(options) if join else options
 
     def _ssh_command(self, join=False):
         """ Prepare an ssh command line for execution (list or joined) """
         command = ['sshpass', f'-p{self.password}'] if self.password else []
-        command += ['ssh'] + self._ssh_options()
-        return ' '.join(command) if join else command
+        command.append("ssh")
+        if join:
+            return " ".join(command) + " " + self._ssh_options(join=True)
+        else:
+            return command + self._ssh_options()
 
     def load(self, data):
         """
@@ -422,8 +425,8 @@ class Guest(tmt.utils.Common):
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
         try:
             self.run(
-                f'rsync {options} -e "{self._ssh_command(join=True)}" '
-                f'{source} {self._ssh_guest()}:{destination}')
+                f"rsync {options} -e '{self._ssh_command(join=True)}' "
+                f"'{source}' '{self._ssh_guest()}:{destination}'")
         except tmt.utils.RunError:
             # Provide a reasonable error to the user
             self.fail(
@@ -438,10 +441,10 @@ class Guest(tmt.utils.Common):
         By default the whole plan workdir is synced from the same
         location on the guest. Use the 'source' and 'destination' to
         sync custom location and the 'options' parametr to modify
-        default options which are '-Rrz --links --safe-links'.
+        default options '-Rrz --links --safe-links --protect-args'.
         """
         if options is None:
-            options = "-Rrz --links --safe-links"
+            options = "-Rrz --links --safe-links --protect-args"
         if destination is None:
             destination = "/"
         if source is None:
@@ -450,8 +453,8 @@ class Guest(tmt.utils.Common):
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
         self.run(
-            f'rsync {options} -e "{self._ssh_command(join=True)}" '
-            f'{self._ssh_guest()}:{source} {destination}')
+            f"rsync {options} -e '{self._ssh_command(join=True)}' "
+            f"'{self._ssh_guest()}:{source}' '{destination}'")
 
     def stop(self):
         """

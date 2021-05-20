@@ -522,7 +522,7 @@ class Plan(Node):
 
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.")
-        self.run(f'rsync -ar --exclude .git {tree_root}/ {self.worktree}')
+        self.run(f"rsync -ar --exclude .git '{tree_root}/' '{self.worktree}'")
 
     def _fmf_context(self):
         """ Return combined context from plan data and command line """
