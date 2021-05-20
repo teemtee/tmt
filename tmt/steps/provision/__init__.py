@@ -414,8 +414,9 @@ class Guest(tmt.utils.Common):
         location and the 'options' parametr to modify default options
         which are '-Rrz --links --safe-links --delete'.
         """
+        # Prepare options
         if options is None:
-            options = "-Rrz --links --safe-links --delete"
+            options = "-Rrz --links --safe-links --delete".split()
         if destination is None:
             destination = "/"
         if source is None:
@@ -423,10 +424,13 @@ class Guest(tmt.utils.Common):
             self.debug(f"Push workdir to guest '{self.guest}'.")
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
+        # Run the rsync command
         try:
             self.run(
-                f"rsync {options} -e '{self._ssh_command(join=True)}' "
-                f"'{source}' '{self._ssh_guest()}:{destination}'")
+                ["rsync"] + options
+                + ["-e", self._ssh_command(join=True)]
+                + [source, f"{self._ssh_guest()}:{destination}"],
+                shell=False)
         except tmt.utils.RunError:
             # Provide a reasonable error to the user
             self.fail(
@@ -443,8 +447,9 @@ class Guest(tmt.utils.Common):
         sync custom location and the 'options' parametr to modify
         default options '-Rrz --links --safe-links --protect-args'.
         """
+        # Prepare options
         if options is None:
-            options = "-Rrz --links --safe-links --protect-args"
+            options = "-Rrz --links --safe-links --protect-args".split()
         if destination is None:
             destination = "/"
         if source is None:
@@ -452,9 +457,12 @@ class Guest(tmt.utils.Common):
             self.debug(f"Pull workdir from guest '{self.guest}'.")
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
+        # Run the rsync command
         self.run(
-            f"rsync {options} -e '{self._ssh_command(join=True)}' "
-            f"'{self._ssh_guest()}:{source}' '{destination}'")
+            ["rsync"] + options
+            + ["-e", self._ssh_command(join=True)]
+            + [f"{self._ssh_guest()}:{source}", destination],
+            shell=False)
 
     def stop(self):
         """
