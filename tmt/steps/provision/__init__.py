@@ -1,6 +1,7 @@
 import os
 import random
 import re
+import shlex
 import string
 
 import click
@@ -222,12 +223,16 @@ class Guest(tmt.utils.Common):
         if self.port:
             options.extend(['-p', str(self.port)])
         if self.key:
-            options.extend(['-i', f'"{self.key}"' if join else self.key])
+            key = shlex.quote(self.key) if join else self.key
+            options.extend(['-i', key])
         return ' '.join(options) if join else options
 
     def _ssh_command(self, join=False):
         """ Prepare an ssh command line for execution (list or joined) """
-        command = ['sshpass', f'-p{self.password}'] if self.password else []
+        command = []
+        if self.password:
+            password = shlex.quote(self.password) if join else self.password
+            command.extend(["sshpass", "-p", password])
         command.append("ssh")
         if join:
             return " ".join(command) + " " + self._ssh_options(join=True)
