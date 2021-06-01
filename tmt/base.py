@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import time
+from pathlib import Path
 
 import click
 import fmf
@@ -495,6 +496,13 @@ class Plan(Core):
         self._environment = dict([
             (key, str(value)) for key, value
             in node.get('environment', dict()).items()])
+
+        # Environment variable from file
+        might_be_vars_from_file = self.node.get("environment_from")
+        if might_be_vars_from_file:
+            self._environment.update(
+                tmt.utils.parse_dotenv(Path(might_be_vars_from_file))
+                )
 
         # Test execution context defined in the plan
         self._plan_context = self.node.get('context', dict())

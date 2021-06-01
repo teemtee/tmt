@@ -1,6 +1,5 @@
 
 """ Test Metadata Utilities """
-
 import fcntl
 import io
 import os
@@ -12,7 +11,9 @@ import shutil
 import subprocess
 import unicodedata
 from collections import OrderedDict
+from pathlib import Path
 from threading import Timer
+from typing import Dict
 
 import fmf
 import requests
@@ -1062,6 +1063,13 @@ def default_branch(repository, remote='origin'):
     # The ref format is 'ref: refs/remotes/origin/main'
     with open(head) as ref:
         return ref.read().strip().split('/')[-1]
+
+
+def parse_dotenv(path: Path) -> Dict[str, str]:
+    assert path.is_file(), f"{path} doesn't exist"
+
+    def split_func(line): return line.split("=")
+    return dict(map(split_func, shlex.split(open(path), comments=True)))
 
 
 def validate_fmf_id(fmf_id):
