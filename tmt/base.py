@@ -751,6 +751,9 @@ class Plan(Core):
         self.debug('environment', self.environment, 'magenta', level=3)
         self.debug('context', self._fmf_context(), 'magenta', level=3)
 
+        # load environment into the shell
+        os.environ.update(self.environment)
+
         # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
         for step in self.steps(disabled=True):
