@@ -203,6 +203,9 @@ def main(click_contex, root, context, **kwargs):
     '-r', '--rm', '--remove', 'remove', is_flag=True,
     help='Remove the workdir when test run is finished.')
 @click.option(
+    '-k', '--keep', 'keep', is_flag=True,
+    help='Keep the workdir even if all tests pass.')
+@click.option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
 @click.option(

@@ -1151,6 +1151,9 @@ class Run(tmt.utils.Common):
         if context.params.get('follow') and id_ is None:
             raise tmt.utils.GeneralError(
                 "Run id has to be specified in order to use --follow.")
+        if context.params.get('remove') and context.params.get('keep'):
+            raise tmt.utils.GeneralError(
+                "Options --remove and --keep cannot be used together.")
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
@@ -1160,6 +1163,7 @@ class Run(tmt.utils.Common):
         self._plans = None
         self._environment = dict()
         self.remove = self.opt('remove')
+        self.keep = self.opt('keep')
 
     def _use_default_plan(self):
         """ Prepare metadata tree with only the default plan """
@@ -1204,6 +1208,7 @@ class Run(tmt.utils.Common):
             'steps': list(self._context.obj.steps),
             'environment': self.environment,
             'remove': self.remove,
+            'keep': self.keep,
             }
         self.write('run.yaml', tmt.utils.dict_to_yaml(data))
 
@@ -1276,9 +1281,18 @@ class Run(tmt.utils.Common):
         self._environment = data.get('environment')
         self.debug(f"Loaded environment: '{self._environment}'.", level=3)
 
-        # If the remove was enabled, restore it, option overrides
-        self.remove = self.remove or data.get('remove', 'False')
+        # If the remove was enabled, restore it, option overrides. Keep and
+        # remove are mutually exclusive (checked by the constructor).
+        # Set to true the one from the command line.
+        if self.remove:
+            self.keep = False
+        elif self.keep:
+            self.remove = False
+        else:
+            self.remove = data.get('remove', False)
+            self.keep = data.get('keep', False)
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
+        self.debug(f"Keep workdir when finished: {self.keep}", level=3)
 
     @property
     def plans(self):
@@ -1303,8 +1317,13 @@ class Run(tmt.utils.Common):
             self.info('')
             self.info('total', Result.summary(results), color='cyan')
 
-        # Remove the workdir if enabled
-        if self.remove and self.plans[0].finish.enabled:
+        # Remove the workdir if enabled or all tests passed
+        finish_enabled = self.plans[0].finish.enabled
+        tests_passed = all(result.result in ('pass', 'info')
+                           for result in results)
+        if finish_enabled and (
+            self.remove or (
+                tests_passed and not self.keep)):
             self._workdir_cleanup(self.workdir)
 
         # Skip handling of the exit codes in dry mode and
