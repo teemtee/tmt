@@ -214,6 +214,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         for package in self.get('exclude'):
             options += " --exclude " + tmt.utils.quote(package)
 
+        # Debug the "Could not resolve host: mirrors.fedoraproject.org" issue
+        guest.execute("cat /etc/resolv.conf")
+
         # Install from local filesystem
         if local_packages:
             rpms_directory = os.path.join(self.step.workdir, 'rpms')
