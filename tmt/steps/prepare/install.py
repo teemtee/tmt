@@ -158,6 +158,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         if self.opt('dry'):
             return
 
+        # Debug the "Could not resolve host: mirrors.fedoraproject.org" issue
+        guest.execute("cat /etc/resolv.conf")
+
         # Prepare the right dnf/yum command
         self.debug('Check if sudo is necessary.', level=2)
         user = guest.execute('whoami')[0].strip()
@@ -213,9 +216,6 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         options = '-y'
         for package in self.get('exclude'):
             options += " --exclude " + tmt.utils.quote(package)
-
-        # Debug the "Could not resolve host: mirrors.fedoraproject.org" issue
-        guest.execute("cat /etc/resolv.conf")
 
         # Install from local filesystem
         if local_packages:
