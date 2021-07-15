@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import time
 
 import click
 import fmf
@@ -8,6 +9,8 @@ import fmf
 import tmt
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
+RETRY_ATTEMPTS = 10
+RETRY_SLEEP = 5
 
 
 class PrepareInstall(tmt.steps.prepare.PreparePlugin):
@@ -151,6 +154,20 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         # Return quoted package names
         return " ".join([tmt.utils.quote(package) for package in package_list])
 
+    def execute(self, guest, command):
+        """ Execute command on guest, retry upon known errors """
+        for attempt in range(1, RETRY_ATTEMPTS + 1):
+            try:
+                return guest.execute(command)
+            except tmt.utils.RunError as error:
+                if "Could not resolve host" not in error.stderr:
+                    raise
+                self.warn(
+                    f"Command '{error.command}' failed (attempt {attempt}).")
+                if attempt == RETRY_ATTEMPTS:
+                    raise
+                time.sleep(RETRY_SLEEP)
+
     def go(self, guest):
         """ Prepare the guests """
         super().go()
@@ -163,12 +180,12 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
         # Prepare the right dnf/yum command
         self.debug('Check if sudo is necessary.', level=2)
-        user = guest.execute('whoami')[0].strip()
+        user = self.execute(guest, 'whoami')[0].strip()
         sudo = '' if user == 'root' else 'sudo '
         self.debug('Check if dnf is available.', level=2)
         skip = ' --skip-broken' if self.get('missing') == 'skip' else ''
         try:
-            guest.execute('rpm -q dnf')
+            self.execute(guest, 'rpm -q dnf')
             command = f"{sudo}dnf{skip}"
             plugin = 'dnf-plugins-core'
         except tmt.utils.RunError:
@@ -232,8 +249,10 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
             # Use both dnf install/reinstall to get all packages refreshed
             # FIXME Simplify this once BZ#1831022 is fixed/implemeted.
-            guest.execute(f"{command} install {options} {rpms_directory}/*")
-            guest.execute(f"{command} reinstall {options} {rpms_directory}/*")
+            self.execute(
+                guest, f"{command} install {options} {rpms_directory}/*")
+            self.execute(
+                guest, f"{command} reinstall {options} {rpms_directory}/*")
             summary = fmf.utils.listed(local_packages, 'local package')
             self.info('total', f"{summary} installed", 'green')
 
@@ -247,7 +266,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
             else:
                 yum_check = ""
             # Check and install
-            guest.execute(
+            self.execute(
+                guest,
                 f"{check} || {command} install {options} "
                 f"{packages}{yum_check}")
 
@@ -256,5 +276,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
             packages = self.prepare_packages(
                 debuginfo_packages, title="debuginfo")
             # Make sure debuginfo-install is present on the target system
-            guest.execute(f"{command} install -y /usr/bin/debuginfo-install")
-            guest.execute(f"debuginfo-install -y {packages}")
+            self.execute(
+                guest, f"{command} install -y /usr/bin/debuginfo-install")
+            self.execute(
+                guest, f"debuginfo-install -y {packages}")

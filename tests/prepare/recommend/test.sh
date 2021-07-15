@@ -8,7 +8,7 @@ rlJournalStart
 
     for image in centos:7 centos:8 fedora; do
         rlPhaseStartTest "Test $image"
-            rlRun "tmt run -ar provision -h container -i $image"
+            rlRun "tmt run -avvvdddr provision -h container -i $image"
         rlPhaseEnd
     done
 

@@ -6,3 +6,4 @@ description:
 discover:
     how: fmf
     filter: 'tier: 3'
+enabled: true

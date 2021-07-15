@@ -4,3 +4,4 @@ description:
     everything has been completed successfully. Then run a test
     which requires a missing package and check that an error is
     correctly reported. In both cases check the exit code.
+enabled: true
