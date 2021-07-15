@@ -9,8 +9,8 @@ import fmf
 import tmt
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
-RETRY_ATTEMPTS = 10
-RETRY_SLEEP = 5
+RETRY_ATTEMPTS = 15
+RETRY_SLEEP = 60
 
 
 class PrepareInstall(tmt.steps.prepare.PreparePlugin):
