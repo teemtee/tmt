@@ -789,6 +789,10 @@ class Plan(Core):
             if not abort and self.finish.enabled:
                 self.finish.go()
 
+        # remove plan related env_variables
+        for var in self.environment:
+            del os.environ[var]
+
 
 class Story(Core):
     """ User story object """
