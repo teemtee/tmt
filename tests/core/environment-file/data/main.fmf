@@ -1,0 +1,40 @@
+/test:
+
+    /with_variables:
+        summary: This is a test with variables
+        tag:
+            - "with_variables"
+        test: pytest -svv -m with_variables
+
+    /without_variables:
+        summary: This is a test without variables
+        tag:
+            - "without_variables"
+        test: pytest -svv -m without_variables
+
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+    /with_variables:
+        summary: This is a plan with variables
+        discover+:
+            filter:
+                - 'tag: with_variables'
+        environment:
+            STR: L
+            INT: 2
+        environment-file:
+            - ".env"
+            - ".env_in.yaml"
+            - ".env_in.yml"
+
+    /without_variables:
+        summary: This is a plan without variables
+        discover+:
+            filter:
+                - 'tag: without_variables'

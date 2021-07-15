@@ -502,8 +502,13 @@ class Plan(Core):
         assert isinstance(env_files, list), f"environment_file parameter should be a list. " \
                                             f"Received {type(env_files)}"
         for env_file in env_files:
+            env_file = Path(env_file)
+            assert env_file.is_file(), f"{env_file} doesn't exist"
             self._environment.update(
-                tmt.utils.parse_dotenv(Path(env_file))
+                tmt.utils.parse_yaml(env_file)
+                if env_file.suffix in (".yaml", ".yml")
+                else
+                tmt.utils.parse_dotenv(env_file)
                 )
 
         # Test execution context defined in the plan
