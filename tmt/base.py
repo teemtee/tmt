@@ -497,11 +497,13 @@ class Plan(Core):
             (key, str(value)) for key, value
             in node.get('environment', dict()).items()])
 
-        # Environment variable from file
-        might_be_vars_from_file = self.node.get("environment_from")
-        if might_be_vars_from_file:
+        # Environment variables from files
+        env_files = self.node.get("environment_file") or []
+        assert isinstance(env_files, list), f"environment_file parameter should be a list. " \
+                                            f"Received {type(env_files)}"
+        for env_file in env_files:
             self._environment.update(
-                tmt.utils.parse_dotenv(Path(might_be_vars_from_file))
+                tmt.utils.parse_dotenv(Path(env_file))
                 )
 
         # Test execution context defined in the plan
