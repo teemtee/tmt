@@ -517,6 +517,8 @@ class Plan(Core):
         """ Return combined environment from plan data and command line """
         if self.my_run and self.my_run.environment:
             combined = self._environment.copy()
+
+            # vars sets in cli takes precedence
             combined.update(self.my_run.environment)
             return combined
         else:
