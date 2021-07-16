@@ -1,4 +1,6 @@
+
 """ Test Metadata Utilities """
+
 import fcntl
 import io
 import os
@@ -21,14 +23,14 @@ from click import echo, style, wrap_text
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-log = fmf.utils.Logging("tmt").logger
+log = fmf.utils.Logging('tmt').logger
 
 # Default workdir root and max
-WORKDIR_ROOT = "/var/tmp/tmt"
+WORKDIR_ROOT = '/var/tmp/tmt'
 WORKDIR_MAX = 1000
 
 # Log in workdir
-LOG_FILENAME = "log.txt"
+LOG_FILENAME = 'log.txt'
 
 # Maximum number of lines of stdout/stderr to show upon errors
 OUTPUT_LINES = 100
@@ -39,13 +41,13 @@ OUTPUT_WIDTH = 79
 INDENT = 4
 
 # Default name and order for step plugins
-DEFAULT_NAME = "default"
+DEFAULT_NAME = 'default'
 DEFAULT_PLUGIN_ORDER = 50
 DEFAULT_PLUGIN_ORDER_REQUIRES = 70
 DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 # Config directory
-CONFIG_PATH = "~/.config/tmt"
+CONFIG_PATH = '~/.config/tmt'
 
 # Special process return code
 PROCESS_TIMEOUT = 124
@@ -55,10 +57,10 @@ DEFAULT_SELECT_TIMEOUT = 5
 
 
 class Config(object):
-    """User configuration"""
+    """ User configuration """
 
     def __init__(self):
-        """Initialize config directory path"""
+        """ Initialize config directory path """
         self.path = os.path.expanduser(CONFIG_PATH)
         if not os.path.exists(self.path):
             try:
@@ -68,8 +70,8 @@ class Config(object):
                     f"Failed to create config '{self.path}'.\n{error}")
 
     def last_run(self, run_id=None):
-        """Get and set last run id"""
-        symlink = os.path.join(self.path, "last-run")
+        """ Get and set last run id """
+        symlink = os.path.join(self.path, 'last-run')
         if run_id:
             try:
                 os.remove(symlink)
@@ -89,7 +91,6 @@ class Config(object):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Common
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 class Common(object):
     """
@@ -125,23 +126,23 @@ class Common(object):
         self._workdir_load(workdir)
 
     def __str__(self):
-        """Name is the default string representation"""
+        """ Name is the default string representation """
         return self.name
 
     @classmethod
     def _save_context(cls, context):
-        """Save provided command line context for future use"""
+        """ Save provided command line context for future use """
         cls._context = context
 
     @classmethod
     def _opt(cls, option, default=None):
-        """Get an option from the command line context (class version)"""
+        """ Get an option from the command line context (class version) """
         if cls._context is None:
             return default
         return cls._context.params.get(option, default)
 
     def _fmf_context(self):
-        """Return the current fmf contex"""
+        """ Return the current fmf contex """
         try:
             return self._context.obj.fmf_context
         except AttributeError:
@@ -163,11 +164,11 @@ class Common(object):
         Environment variables override command line options.
         """
         # Translate dashes to underscores to match click's conversion
-        option = option.replace("-", "_")
+        option = option.replace('-', '_')
         # Check the environment first
-        if option == "debug":
+        if option == 'debug':
             try:
-                debug = os.environ["TMT_DEBUG"]
+                debug = os.environ['TMT_DEBUG']
                 return int(debug)
             except ValueError:
                 raise GeneralError(
@@ -184,11 +185,11 @@ class Common(object):
         if self.parent:
             parent = self.parent.opt(option)
         # Special handling for special flags (parent's yes always wins)
-        if option in ["quiet", "force", "dry"]:
+        if option in ['quiet', 'force', 'dry']:
             return parent if parent else local
         # Special handling for counting options (child overrides the
         # parent if it was defined)
-        elif option in ["debug", "verbose"]:
+        elif option in ['debug', 'verbose']:
             winner = local if local else parent
             if winner is None:
                 winner = 0
@@ -197,17 +198,17 @@ class Common(object):
             return parent if parent is not None else local
 
     def _level(self):
-        """Hierarchy level"""
+        """ Hierarchy level """
         if self.parent is None:
             return -1
         else:
             return self.parent._level() + 1
 
     def _indent(self, key, value=None, color=None, shift=0):
-        """Indent message according to the object hierarchy"""
+        """ Indent message according to the object hierarchy """
         level = self._level() + shift
-        indent = " " * INDENT * level
-        deeper = " " * INDENT * (level + 1)
+        indent = ' ' * INDENT * level
+        deeper = ' ' * INDENT * (level + 1)
         # Colorize
         if color is not None:
             key = style(key, fg=color)
@@ -220,12 +221,12 @@ class Common(object):
             if isinstance(value, str):
                 lines = value.splitlines()
                 if len(lines) > 1:
-                    value = "".join([f"\n{deeper}{line}" for line in lines])
-            message = f"{key}: {value}"
+                    value = ''.join([f"\n{deeper}{line}" for line in lines])
+            message = f'{key}: {value}'
         return indent + message
 
     def _log(self, message):
-        """Append provided message to the current log"""
+        """ Append provided message to the current log """
         # Nothing to do if there is no workdir
         if self.workdir is None:
             return
@@ -234,56 +235,43 @@ class Common(object):
         if self.parent:
             self.parent._log(message)
         else:
-            with open(os.path.join(self.workdir, LOG_FILENAME), "a") as log:
-                log.write(remove_color(message) + "\n")
+            with open(os.path.join(self.workdir, LOG_FILENAME), 'a') as log:
+                log.write(remove_color(message) + '\n')
 
     def print(self, key, value=None, color=None, shift=0, err=False):
-        """Print a message regardless the quiet mode"""
+        """ Print a message regardless the quiet mode """
         self._log(self._indent(key, value, color=None, shift=shift))
         echo(self._indent(key, value, color, shift), err=err)
 
     def info(self, key, value=None, color=None, shift=0, err=False):
-        """Show a message unless in quiet mode"""
+        """ Show a message unless in quiet mode """
         self._log(self._indent(key, value, color=None, shift=shift))
-        if not self.opt("quiet"):
+        if not self.opt('quiet'):
             echo(self._indent(key, value, color, shift), err=err)
 
     def warn(self, message, shift=0):
-        """Show a yellow warning message on info level, send to stderr"""
-        self.info("warn", message, color="yellow", shift=shift, err=True)
+        """ Show a yellow warning message on info level, send to stderr """
+        self.info('warn', message, color='yellow', shift=shift, err=True)
 
     def fail(self, message, shift=0):
-        """Show a red failure message on info level, send to stderr"""
-        self.info("fail", message, color="red", shift=shift, err=True)
+        """ Show a red failure message on info level, send to stderr """
+        self.info('fail', message, color='red', shift=shift, err=True)
 
     def verbose(
-            self,
-            key,
-            value=None,
-            color=None,
-            shift=0,
-            level=1,
-            err=False):
-        """Show message if in requested verbose mode level"""
+            self, key, value=None, color=None, shift=0, level=1, err=False):
+        """ Show message if in requested verbose mode level """
         self._log(self._indent(key, value, color=None, shift=shift))
-        if self.opt("verbose") >= level:
+        if self.opt('verbose') >= level:
             echo(self._indent(key, value, color, shift), err=err)
 
     def debug(self, key, value=None, color=None, shift=1, level=1, err=False):
-        """Show message if in requested debug mode level"""
+        """ Show message if in requested debug mode level """
         self._log(self._indent(key, value, color=None, shift=shift))
-        if self.opt("debug") >= level:
+        if self.opt('debug') >= level:
             echo(self._indent(key, value, color, shift), err=err)
 
     def _run(
-            self,
-            command,
-            cwd,
-            shell,
-            env,
-            log,
-            join=False,
-            interactive=False,
+            self, command, cwd, shell, env, log, join=False, interactive=False,
             timeout=None):
         """
         Run command, capture the output
@@ -304,14 +292,13 @@ class Common(object):
             environment.update(env)
         else:
             environment = None
-        self.debug("environment", pprint.pformat(environment), level=4)
+        self.debug('environment', pprint.pformat(environment), level=4)
 
         # Run the command in interactive mode if requested
         if interactive:
             try:
                 subprocess.run(
-                    command, cwd=cwd, shell=shell, env=environment, check=True
-                    )
+                    command, cwd=cwd, shell=shell, env=environment, check=True)
             except subprocess.CalledProcessError as error:
                 # Interactive mode can return non-zero if the last command
                 # failed, ignore errors here
@@ -321,24 +308,19 @@ class Common(object):
 
         # Create the process
         process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            shell=shell,
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT if join else subprocess.PIPE,
-            )
+            command, cwd=cwd, shell=shell, env=environment,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT if join else subprocess.PIPE)
         if join:
             descriptors = [process.stdout.fileno()]
         else:
             descriptors = [process.stdout.fileno(), process.stderr.fileno()]
-        stdout = ""
-        stderr = ""
+        stdout = ''
+        stderr = ''
 
         # Prepare kill function for the timer
         def kill():
-            """Kill the process and adjust the return code"""
+            """ Kill the process and adjust the return code """
             process.kill()
             process.returncode = PROCESS_TIMEOUT
 
@@ -362,19 +344,17 @@ class Common(object):
                     # Handle stdout
                     if descriptor == process.stdout.fileno():
                         line = process.stdout.readline().decode(
-                            "utf-8", errors="replace"
-                            )
+                            'utf-8', errors='replace')
                         stdout += line
-                        if line != "":
-                            log("out", line.rstrip("\n"), "yellow", level=3)
+                        if line != '':
+                            log('out', line.rstrip('\n'), 'yellow', level=3)
                     # Handle stderr
                     if not join and descriptor == process.stderr.fileno():
                         line = process.stderr.readline().decode(
-                            "utf-8", errors="replace"
-                            )
+                            'utf-8', errors='replace')
                         stderr += line
-                        if line != "":
-                            log("err", line.rstrip("\n"), "yellow", level=3)
+                        if line != '':
+                            log('err', line.rstrip('\n'), 'yellow', level=3)
 
         finally:
             # Cancel the timer
@@ -385,41 +365,28 @@ class Common(object):
         for descriptor in selected[0]:
             if descriptor == process.stdout.fileno():
                 for line in process.stdout.readlines():
-                    line = line.decode("utf-8", errors="replace")
+                    line = line.decode('utf-8', errors='replace')
                     stdout += line
-                    log("out", line.rstrip("\n"), "yellow", level=3)
+                    log('out', line.rstrip('\n'), 'yellow', level=3)
             if not join and descriptor == process.stderr.fileno():
                 for line in process.stderr.readlines():
-                    line = line.decode("utf-8", errors="replace")
+                    line = line.decode('utf-8', errors='replace')
                     stderr += line
-                    log("err", line.rstrip("\n"), "yellow", level=3)
+                    log('err', line.rstrip('\n'), 'yellow', level=3)
 
         # Handle the exit code, return output
         if process.returncode != 0:
             if isinstance(command, (list, tuple)):
-                command = " ".join(command)
+                command = ' '.join(command)
             raise RunError(
                 message=f"Command returned '{process.returncode}'.",
-                command=command,
-                returncode=process.returncode,
-                stdout=stdout,
-                stderr=stderr,
-                )
+                command=command, returncode=process.returncode,
+                stdout=stdout, stderr=stderr)
         return stdout if join else (stdout, stderr)
 
     def run(
-            self,
-            command,
-            message=None,
-            cwd=None,
-            dry=False,
-            shell=True,
-            env=None,
-            interactive=False,
-            join=False,
-            log=None,
-            timeout=None,
-            ):
+            self, command, message=None, cwd=None, dry=False, shell=True,
+            env=None, interactive=False, join=False, log=None, timeout=None):
         """
         Run command, give message, handle errors
 
@@ -432,7 +399,7 @@ class Common(object):
         # Use a generic message if none given, prepare error message
         if not message:
             if isinstance(command, (list, tuple)):
-                line = " ".join(command)
+                line = ' '.join(command)
             else:
                 line = command
             message = f"Run command '{line}'."
@@ -440,7 +407,7 @@ class Common(object):
         message = "Failed to " + message[0].lower() + message[1:]
 
         # Nothing more to do in dry mode (unless requested)
-        if self.opt("dry") and not dry:
+        if self.opt('dry') and not dry:
             return None if join else (None, None)
 
         # Run the command, handle the exit code
@@ -453,45 +420,35 @@ class Common(object):
 
         try:
             return self._run(
-                command,
-                cwd,
-                shell,
-                env,
-                log,
-                join,
-                interactive,
-                timeout)
+                command, cwd, shell, env, log, join, interactive, timeout)
         except RunError as error:
             self.debug(error.message, level=3)
             raise RunError(
-                message,
-                error.command,
-                error.returncode,
-                error.stdout,
-                error.stderr)
+                message, error.command, error.returncode,
+                error.stdout, error.stderr)
 
     def read(self, path, level=2):
-        """Read a file from the workdir"""
+        """ Read a file from the workdir """
         if self.workdir:
             path = os.path.join(self.workdir, path)
         self.debug(f"Read file '{path}'.", level=level)
         try:
-            with open(path, encoding="utf-8", errors="replace") as data:
+            with open(path, encoding='utf-8', errors='replace') as data:
                 return data.read()
         except OSError as error:
             raise FileError(f"Failed to read '{path}'.\n{error}")
 
-    def write(self, path, data, mode="w", level=2):
-        """Write a file to the workdir"""
+    def write(self, path, data, mode='w', level=2):
+        """ Write a file to the workdir """
         if self.workdir:
             path = os.path.join(self.workdir, path)
-        action = "Append to" if mode == "a" else "Write"
+        action = 'Append to' if mode == 'a' else 'Write'
         self.debug(f"{action} file '{path}'.", level=level)
         # Dry mode
-        if self.opt("dry"):
+        if self.opt('dry'):
             return
         try:
-            with open(path, mode, encoding="utf-8", errors="replace") as file:
+            with open(path, mode, encoding='utf-8', errors='replace') as file:
                 return file.write(data)
         except OSError as error:
             raise FileError(f"Failed to write '{path}'.\n{error}")
@@ -507,7 +464,7 @@ class Common(object):
         # Prepare the workdir name from given id or path
         if isinstance(id_, str):
             # Use provided directory if full path given
-            if "/" in id_:
+            if '/' in id_:
                 workdir = id_
             # Construct directory name under workdir root
             else:
@@ -515,34 +472,33 @@ class Common(object):
         # Generate a unique workdir name
         elif id_ is None:
             for id_ in range(1, WORKDIR_MAX + 1):
-                directory = "run-{}".format(str(id_).rjust(3, "0"))
+                directory = 'run-{}'.format(str(id_).rjust(3, '0'))
                 workdir = os.path.join(WORKDIR_ROOT, directory)
                 if not os.path.exists(workdir):
                     break
             if id_ == WORKDIR_MAX:
                 raise GeneralError(
-                    f"Workdir full. Cleanup the '{WORKDIR_ROOT}' directory."
-                    )
+                    f"Workdir full. Cleanup the '{WORKDIR_ROOT}' directory.")
         # Weird workdir id
         else:
             raise GeneralError(
                 f"Invalid workdir '{id_}', expected a string or None.")
 
         # Cleanup possible old workdir if called with --force
-        if self.opt("force"):
+        if self.opt('force'):
             self._workdir_cleanup(workdir)
 
         # Create the workdir
-        create_directory(workdir, "workdir", quiet=True)
+        create_directory(workdir, 'workdir', quiet=True)
         self._workdir = workdir
 
     def _workdir_name(self):
-        """Construct work directory name from parent workdir"""
+        """ Construct work directory name from parent workdir """
         # Need the parent workdir
         if self.parent is None or self.parent.workdir is None:
             return None
         # Join parent name with self
-        return os.path.join(self.parent.workdir, self.name.lstrip("/"))
+        return os.path.join(self.parent.workdir, self.name.lstrip('/'))
 
     def _workdir_load(self, workdir):
         """
@@ -556,7 +512,7 @@ class Common(object):
             self._workdir_init(workdir)
 
     def _workdir_cleanup(self, path=None):
-        """Clean up the work directory"""
+        """ Clean up the work directory """
         directory = path or self._workdir_name()
         if os.path.isdir(directory):
             self.debug(f"Clean up workdir '{directory}'.", level=2)
@@ -565,14 +521,14 @@ class Common(object):
 
     @property
     def workdir(self):
-        """Get the workdir, create if does not exist"""
+        """ Get the workdir, create if does not exist """
         if self._workdir is None:
             self._workdir = self._workdir_name()
             # Workdir not enabled, even parent does not have one
             if self._workdir is None:
                 return None
             # Create a child workdir under the parent workdir
-            create_directory(self._workdir, "workdir", quiet=True)
+            create_directory(self._workdir, 'workdir', quiet=True)
         return self._workdir
 
 
@@ -580,31 +536,24 @@ class Common(object):
 #  Exceptions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 class GeneralError(Exception):
-    """General error"""
+    """ General error """
 
     def __init__(self, *args, **kwargs):
         # Store the original exception for future use
-        self.original = kwargs.get("original")
+        self.original = kwargs.get('original')
 
 
 class FileError(GeneralError):
-    """File operation error"""
+    """ File operation error """
 
 
 class RunError(GeneralError):
-    """Command execution error"""
+    """ Command execution error """
 
     def __init__(
-            self,
-            message,
-            command,
-            returncode,
-            stdout=None,
-            stderr=None,
-            *args,
-            **kwargs):
+            self, message, command, returncode,
+            stdout=None, stderr=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
         self.command = command
@@ -614,67 +563,65 @@ class RunError(GeneralError):
 
 
 class MetadataError(GeneralError):
-    """General metadata error"""
+    """ General metadata error """
 
 
 class SpecificationError(MetadataError):
-    """Metadata specification error"""
+    """ Metadata specification error """
 
 
 class ConvertError(MetadataError):
-    """Metadata conversion error"""
+    """ Metadata conversion error """
 
 
 class StructuredFieldError(GeneralError):
-    """StructuredField parsing error"""
+    """ StructuredField parsing error """
 
 
 # Step exceptions
 
-
 class DiscoverError(GeneralError):
-    """Discover step error"""
+    """ Discover step error """
 
 
 class ProvisionError(GeneralError):
-    """Provision step error"""
+    """ Provision step error """
 
 
 class PrepareError(GeneralError):
-    """Prepare step error"""
+    """ Prepare step error """
 
 
 class ExecuteError(GeneralError):
-    """Execute step error"""
+    """ Execute step error """
 
 
 class ReportError(GeneralError):
-    """Report step error"""
+    """ Report step error """
 
 
 class FinishError(GeneralError):
-    """Finish step error"""
+    """ Finish step error """
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Utilities
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 def quote(string):
-    """Surround a string with double quotes"""
+    """ Surround a string with double quotes """
     return f'"{string}"'
 
 
 def ascii(text):
-    """Transliterate special unicode characters into pure ascii"""
+    """ Transliterate special unicode characters into pure ascii """
     try:
         if not isinstance(text, unicode):
             text = unicode(text)
     except NameError:
         if not isinstance(text, str):
             text = str(text)
-    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore")
+    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
 
 
 def listify(data, split=False, keys=None):
@@ -684,7 +631,7 @@ def listify(data, split=False, keys=None):
     For dictionaries check all items or only those with provided keys.
     Also split strings on white-space/comma if split=True.
     """
-    separator = re.compile(r"[\s,]+")
+    separator = re.compile(r'[\s,]+')
     if isinstance(data, tuple):
         data = list(data)
     if isinstance(data, list):
@@ -729,7 +676,7 @@ def _add_file_vars(result, filepath):
             f"Invalid variable file specification '{filepath}'.")
 
     try:
-        with open(filepath[1:], "r") as content:
+        with open(filepath[1:], 'r') as content:
             file_vars = yaml_to_dict(content)
     except Exception as exception:
         raise GeneralError(
@@ -794,7 +741,7 @@ def environment_to_dict(variables):
         if variable is None:
             continue
         for var in shlex.split(variable):
-            if var.startswith("@"):
+            if var.startswith('@'):
                 _add_file_vars(result, var)
             else:
                 _add_simple_var(result, var)
@@ -840,23 +787,18 @@ def context_to_dict(context):
     distro=fedora-33 ---> {'distro': ['fedora']}
     arch=x86_64,ppc64 ---> {'arch': ['x86_64', 'ppc64']}
     """
-    return {key: value.split(",") for key,
-            value in environment_to_dict(context).items()}
+    return {
+        key: value.split(',')
+        for key, value in environment_to_dict(context).items()}
 
 
 def dict_to_yaml(data, width=None, sort=False):
-    """Convert dictionary into yaml"""
+    """ Convert dictionary into yaml """
     output = io.StringIO()
     yaml.safe_dump(
-        data,
-        output,
-        sort_keys=sort,
-        encoding="utf-8",
-        allow_unicode=True,
-        width=width,
-        indent=4,
-        default_flow_style=False,
-        )
+        data, output, sort_keys=sort,
+        encoding='utf-8', allow_unicode=True,
+        width=width, indent=4, default_flow_style=False)
     return output.getvalue()
 
 
@@ -866,29 +808,21 @@ def dict_to_yaml(data, width=None, sort=False):
 try:
     output = dict_to_yaml(dict(one=1, two=2, three=3))
 except TypeError:
-
     def representer(self, data):
-        return self.represent_mapping("tag:yaml.org,2002:map", data.items())
-
+        return self.represent_mapping('tag:yaml.org,2002:map', data.items())
     yaml.add_representer(dict, representer, Dumper=yaml.SafeDumper)
 
     def dict_to_yaml(data, width=None, sort=False):
-        """Convert dictionary into yaml (ignore sort)"""
+        """ Convert dictionary into yaml (ignore sort) """
         output = io.StringIO()
         yaml.safe_dump(
-            data,
-            output,
-            encoding="utf-8",
-            allow_unicode=True,
-            width=width,
-            indent=4,
-            default_flow_style=False,
-            )
+            data, output, encoding='utf-8', allow_unicode=True,
+            width=width, indent=4, default_flow_style=False)
         return output.getvalue()
 
 
 def yaml_to_dict(data):
-    """Convert yaml into dictionary"""
+    """ Convert yaml into dictionary """
     return yaml.safe_load(data)
 
 
@@ -905,7 +839,7 @@ def markdown_to_html(filename):
         raise ConvertError("Install tmt-test-convert to export tests.")
 
     try:
-        with open(filename, "r") as file:
+        with open(filename, 'r') as file:
             text = file.read()
             return markdown.markdown(text)
     except IOError:
@@ -924,10 +858,10 @@ def shell_variables(data):
     if isinstance(data, list) or isinstance(data, tuple):
         converted_data = []
         for item in data:
-            splitted_item = item.split("=")
+            splitted_item = item.split('=')
             key = splitted_item[0]
-            value = shlex.quote("=".join(splitted_item[1:]))
-            converted_data.append(f"{key}={value}")
+            value = shlex.quote('='.join(splitted_item[1:]))
+            converted_data.append(f'{key}={value}')
         return converted_data
 
     # Convert from dictionary
@@ -935,26 +869,22 @@ def shell_variables(data):
 
 
 def duration_to_seconds(duration):
-    """Convert sleep time format into seconds"""
+    """ Convert sleep time format into seconds """
     units = {
-        "s": 1,
-        "m": 60,
-        "h": 60 * 60,
-        "d": 60 * 60 * 24,
+        's': 1,
+        'm': 60,
+        'h': 60 * 60,
+        'd': 60 * 60 * 24,
         }
     try:
-        number, suffix = re.match(r"^(\d+)([smhd]?)$", str(duration)).groups()
+        number, suffix = re.match(r'^(\d+)([smhd]?)$', str(duration)).groups()
         return int(number) * units.get(suffix, 1)
     except (ValueError, AttributeError):
         raise SpecificationError(f"Invalid duration '{duration}'.")
 
 
 def verdict(
-        decision,
-        comment=None,
-        good="pass",
-        bad="fail",
-        problem="warn",
+        decision, comment=None, good='pass', bad='fail', problem='warn',
         **kwargs):
     """
     Print verdict in green, red or yellow based on the decision
@@ -970,29 +900,24 @@ def verdict(
     """
 
     if decision is False:
-        text = style(bad, fg="red")
+        text = style(bad, fg='red')
     elif decision is True:
-        text = style(good, fg="green")
+        text = style(good, fg='green')
     elif decision is None:
-        text = style(problem, fg="yellow")
+        text = style(problem, fg='yellow')
     else:
         raise GeneralError(
             "Invalid decision value, must be 'True', 'False' or 'None'.")
     if comment:
-        text = text + " " + comment
+        text = text + ' ' + comment
     echo(text, **kwargs)
     return decision
 
 
 def format(
-    key,
-    value=None,
-    indent=12,
-    width=72,
-    wrap="auto",
-    key_color="green",
-    value_color="black",
-):
+        key, value=None,
+        indent=12, width=72, wrap='auto',
+        key_color='green', value_color='black'):
     """
     Nicely format and indent a key-value pair
 
@@ -1002,55 +927,54 @@ def format(
         False ... preserve text, no new line changes
         auto .... wrap only if text contains a long line
     """
-    indent_string = (indent + 1) * " "
+    indent_string = (indent + 1) * ' '
     # Key
-    output = "{} ".format(str(key).rjust(indent, " "))
+    output = '{} '.format(str(key).rjust(indent, ' '))
     if key_color is not None:
         output = style(output, fg=key_color)
     # Bool
     if isinstance(value, bool):
-        output += "true" if value else "false"
+        output += ('true' if value else 'false')
     # List
     elif isinstance(value, list):
         # Make sure everything is string, prepare list, check for spaces
         value = [str(item) for item in value]
         listed_text = fmf.utils.listed(value)
-        has_spaces = any([item.find(" ") > -1 for item in value])
+        has_spaces = any([item.find(' ') > -1 for item in value])
         # Use listed output only for short lists without spaces
         if len(listed_text) < width - indent and not has_spaces:
             output += listed_text
         # Otherwise just place each item on a new line
         else:
-            output += ("\n" + indent_string).join(value)
+            output += ('\n' + indent_string).join(value)
     # Dictionary
     elif isinstance(value, dict):
         # Place each key value pair on a separate line
-        output += ("\n" + indent_string).join(
-            f"{item[0]}: {item[1]}" for item in value.items()
-            )
+        output += ('\n' + indent_string).join(
+            f'{item[0]}: {item[1]}' for item in value.items())
     # Text
     elif isinstance(value, str):
         # In 'auto' mode enable wrapping when long lines present
-        if wrap == "auto":
-            wrap = any([len(line) + indent - 7 >
-                       width for line in value.split("\n")])
+        if wrap == 'auto':
+            wrap = any(
+                [len(line) + indent - 7 > width
+                 for line in value.split('\n')])
         if wrap:
-            output += wrap_text(
-                value,
-                width=width,
+            output += (wrap_text(
+                value, width=width,
                 preserve_paragraphs=True,
                 initial_indent=indent_string,
-                subsequent_indent=indent_string,
-                ).lstrip()
+                subsequent_indent=indent_string).lstrip())
         else:
-            output += ("\n" + indent_string).join(value.rstrip().split("\n"))
+            output += (('\n' + indent_string).join(
+                value.rstrip().split('\n')))
     else:
         output += str(value)
     return output
 
 
 def create_directory(path, name, dry=False, quiet=False):
-    """Create a new directory, handle errors"""
+    """ Create a new directory, handle errors """
     say = log.debug if quiet else echo
     if os.path.isdir(path):
         say("Directory '{}' already exists.".format(path))
@@ -1062,25 +986,18 @@ def create_directory(path, name, dry=False, quiet=False):
         os.makedirs(path, exist_ok=True)
         say("Directory '{}' created.".format(path))
     except OSError as error:
-        raise FileError(
-            "Failed to create {} '{}' ({})".format(
-                name, path, error))
+        raise FileError("Failed to create {} '{}' ({})".format(
+            name, path, error))
 
 
 def create_file(
-        path,
-        content,
-        name,
-        dry=False,
-        force=False,
-        mode=0o664,
-        quiet=False):
-    """Create a new file, handle errors"""
+        path, content, name, dry=False, force=False, mode=0o664, quiet=False):
+    """ Create a new file, handle errors """
     say = log.debug if quiet else echo
-    action = "would be created" if dry else "created"
+    action = 'would be created' if dry else 'created'
     if os.path.exists(path):
         if force:
-            action = "would be overwritten" if dry else "overwritten"
+            action = 'would be overwritten' if dry else 'overwritten'
         else:
             raise FileError("File '{}' already exists.".format(path))
 
@@ -1089,14 +1006,13 @@ def create_file(
         return
 
     try:
-        with open(path, "w") as file_:
+        with open(path, 'w') as file_:
             file_.write(content)
         say("{} '{}' {}.".format(name.capitalize(), path, action))
         os.chmod(path, mode)
     except OSError as error:
-        raise FileError(
-            "Failed to create {} '{}' ({})".format(
-                name, path, error))
+        raise FileError("Failed to create {} '{}' ({})".format(
+            name, path, error))
 
 
 def public_git_url(url):
@@ -1110,10 +1026,10 @@ def public_git_url(url):
     # GitHub, GitLab
     # old: git@github.com:psss/tmt.git
     # new: https://github.com/psss/tmt.git
-    matched = re.match("git@(.*):(.*)", url)
+    matched = re.match('git@(.*):(.*)', url)
     if matched:
         host, project = matched.groups()
-        return f"https://{host}/{project}"
+        return f'https://{host}/{project}'
 
     # RHEL packages
     # old: git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash
@@ -1121,30 +1037,26 @@ def public_git_url(url):
     # old: ssh://pkgs.devel.redhat.com/tests/bash
     # new: git://pkgs.devel.redhat.com/tests/bash
     matched = re.match(
-        r"(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)", url)
+        r'(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)', url)
     if matched:
         _, _, host, project = matched.groups()
-        return f"git://{host}/{project}"
+        return f'git://{host}/{project}'
 
     # Fedora packages, Pagure
     # old: git+ssh://psss@pkgs.fedoraproject.org/tests/shell
     # old: ssh://psss@pkgs.fedoraproject.org/tests/shell
     # new: https://pkgs.fedoraproject.org/tests/shell
-    matched = re.match(r"(git\+)?ssh://(\w+@)?([^/]*)/(.*)", url)
+    matched = re.match(r'(git\+)?ssh://(\w+@)?([^/]*)/(.*)', url)
     if matched:
         _, _, host, project = matched.groups()
-        return f"https://{host}/{project}"
+        return f'https://{host}/{project}'
 
     # Otherwise return unmodified
     return url
 
 
-def retry_session(
-    retries=3,
-    backoff_factor=0.1,
-    method_whitelist=False,
-    status_forcelist=(429, 500, 502, 503, 504),
-):
+def retry_session(retries=3, backoff_factor=0.1, method_whitelist=False,
+                  status_forcelist=(429, 500, 502, 503, 504)):
     """
     Create a requests.Session() that retries on request failure.
 
@@ -1160,27 +1072,26 @@ def retry_session(
         raise_on_status=False,
         )
     adapter = HTTPAdapter(max_retries=retry)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
     return session
 
 
 def remove_color(text):
-    """Remove ansi color sequences from the string"""
-    return re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", text)
+    """ Remove ansi color sequences from the string """
+    return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository, remote="origin"):
-    """Detect default branch from given local git repository"""
-    head = os.path.join(repository, f".git/refs/remotes/{remote}/HEAD")
+def default_branch(repository, remote='origin'):
+    """ Detect default branch from given local git repository """
+    head = os.path.join(repository, f'.git/refs/remotes/{remote}/HEAD')
     # Make sure the HEAD reference is available
     if not os.path.exists(head):
         subprocess.run(
-            f"git remote set-head {remote} --auto".split(),
-            cwd=repository)
+            f'git remote set-head {remote} --auto'.split(), cwd=repository)
     # The ref format is 'ref: refs/remotes/origin/main'
     with open(head) as ref:
-        return ref.read().strip().split("/")[-1]
+        return ref.read().strip().split('/')[-1]
 
 
 def parse_dotenv(path: Path) -> Dict[str, str]:
@@ -1218,26 +1129,24 @@ def validate_fmf_id(fmf_id):
     except fmf.utils.GeneralError as error:
         # Map fmf errors to more user friendly alternatives
         error_map = [
-            ("git clone", f"repo '{fmf_id.get('url')}' cannot be cloned"),
-            ("git checkout", f"git ref '{fmf_id.get('ref')}' is invalid"),
-            ("directory path", f"path '{fmf_id.get('path')}' is invalid"),
-            (
-                "tree root",
-                f"No tree found in repo '{fmf_id.get('url')}', "
-                f"missing an '.fmf' directory?",
-                ),
+            ('git clone', f"repo '{fmf_id.get('url')}' cannot be cloned"),
+            ('git checkout', f"git ref '{fmf_id.get('ref')}' is invalid"),
+            ('directory path', f"path '{fmf_id.get('path')}' is invalid"),
+            ('tree root',
+             f"No tree found in repo '{fmf_id.get('url')}', "
+             f"missing an '.fmf' directory?")
             ]
         errors = [err[1] for err in error_map if err[0] in str(error)]
         return (False, errors[0] if errors else str(error))
 
-    return (True, "")
+    return (True, '')
 
 
 def generate_runs(path, id_):
-    """Generate absolute paths to runs from path"""
+    """ Generate absolute paths to runs from path """
     # Prepare absolute workdir path if --id was used
     if id_:
-        if "/" not in id_:
+        if '/' not in id_:
             id_ = os.path.join(path, id_)
         if os.path.isabs(id_):
             if os.path.exists(id_):
@@ -1252,14 +1161,15 @@ def generate_runs(path, id_):
         # to absolute path and must be equal to abs_path for the run
         # in abs_path to be generated.
         invalid_id = id_ and abs_path != id_
-        invalid_run = not os.path.exists(os.path.join(abs_path, "run.yaml"))
+        invalid_run = not os.path.exists(
+            os.path.join(abs_path, 'run.yaml'))
         if not os.path.isdir(abs_path) or invalid_id or invalid_run:
             continue
         yield abs_path
 
 
 def load_run(run):
-    """Load a run and its steps from the workdir"""
+    """ Load a run and its steps from the workdir """
     try:
         run.load_from_workdir()
     except GeneralError as error:
@@ -1273,7 +1183,6 @@ def load_run(run):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  StructuredField
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 class StructuredField(object):
     """
@@ -1417,7 +1326,7 @@ class StructuredField(object):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def __init__(self, text=None, version=1, multi=False):
-        """Initialize the structured field"""
+        """ Initialize the structured field """
         self.version(version)
         self._header = ""
         self._footer = ""
@@ -1428,12 +1337,12 @@ class StructuredField(object):
             self.load(text)
 
     def __iter__(self):
-        """By default iterate through all available sections"""
+        """ By default iterate through all available sections """
         for section in self._order:
             yield section
 
     def __nonzero__(self):
-        """True when any section is defined"""
+        """ True when any section is defined """
         return len(self._order) > 0
 
     __bool__ = __nonzero__
@@ -1443,7 +1352,7 @@ class StructuredField(object):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def _load_version_zero(self, text):
-        """Load version 0 format"""
+        """ Load version 0 format """
         # Attempt to split the text according to the section tag
         section = re.compile(r"\n?^\[([^\]]+)\]\n", re.MULTILINE)
         parts = section.split(text)
@@ -1463,13 +1372,12 @@ class StructuredField(object):
             self.set(key, value)
 
     def _load(self, text):
-        """Load version 1+ format"""
+        """ Load version 1+ format """
         # The text must exactly match the format
         format = re.compile(
             r"(.*)^\[structured-field-start\][ \t]*\n"
             r"(.*)\n\[structured-field-end\][ \t]*\n(.*)",
-            re.DOTALL + re.MULTILINE,
-            )
+            re.DOTALL + re.MULTILINE)
         # No match ---> plain text or broken structured field
         matched = format.search(text)
         if not matched:
@@ -1481,20 +1389,19 @@ class StructuredField(object):
         # Save header & footer (remove trailing new lines)
         self._header = re.sub("\n\n$", "\n", matched.groups()[0])
         if self._header:
-            log.debug("Parsed header:\n{0}".format(self._header))
+            log.debug(u"Parsed header:\n{0}".format(self._header))
         self._footer = re.sub("^\n", "", matched.groups()[2])
         if self._footer:
-            log.debug("Parsed footer:\n{0}".format(self._footer))
+            log.debug(u"Parsed footer:\n{0}".format(self._footer))
         # Split the content on the section names
         section = re.compile(r"\n\[([^\]]+)\][ \t]*\n", re.MULTILINE)
         parts = section.split(matched.groups()[1])
         # Detect the version
         try:
-            self.version(
-                int(re.search(r"version (\d+)", parts[0]).groups()[0]))
+            self.version(int(re.search(
+                r"version (\d+)", parts[0]).groups()[0]))
             log.debug(
-                "Detected StructuredField version {0}".format(
-                    self.version()))
+                "Detected StructuredField version {0}".format(self.version()))
         except AttributeError:
             log.error(parts[0])
             raise StructuredFieldError(
@@ -1505,26 +1412,24 @@ class StructuredField(object):
         values = [escape.sub("", value) for value in parts[2::2]]
         for key, value in zip(keys, values):
             self.set(key, value)
-        log.debug(
-            "Parsed sections:\n{0}".format(
-                pprint.pformat(
-                    self._sections)))
+        log.debug(u"Parsed sections:\n{0}".format(
+            pprint.pformat(self._sections)))
 
     def _save_version_zero(self):
-        """Save version 0 format"""
+        """ Save version 0 format """
         result = []
         if self._header:
             result.append(self._header)
         for section, content in self.iterate():
-            result.append("[{0}]\n{1}".format(section, content))
+            result.append(u"[{0}]\n{1}".format(section, content))
         if self:
-            result.append("[end]\n")
+            result.append(u"[end]\n")
         if self._footer:
             result.append(self._footer)
         return "\n".join(result)
 
     def _save(self):
-        """Save version 1+ format"""
+        """ Save version 1+ format """
         result = []
         # Regular expression for escaping section-like lines
         escape = re.compile(r"^(\[.+\])$", re.MULTILINE)
@@ -1534,25 +1439,20 @@ class StructuredField(object):
         # Sections
         if self:
             result.append(
-                "[structured-field-start]\n"
-                "This is StructuredField version {0}. "
-                "Please, edit with care.\n".format(self._version)
-                )
+                u"[structured-field-start]\n"
+                u"This is StructuredField version {0}. "
+                u"Please, edit with care.\n".format(self._version))
             for section, content in self.iterate():
-                result.append(
-                    "[{0}]\n{1}".format(
-                        section,
-                        escape.sub(
-                            "[structured-field-escape]\\1",
-                            content)))
-            result.append("[structured-field-end]\n")
+                result.append(u"[{0}]\n{1}".format(section, escape.sub(
+                    "[structured-field-escape]\\1", content)))
+            result.append(u"[structured-field-end]\n")
         # Footer
         if self._footer:
             result.append(self._footer)
         return "\n".join(result)
 
     def _read_section(self, content):
-        """Parse config section and return ordered dictionary"""
+        """ Parse config section and return ordered dictionary """
         dictionary = OrderedDict()
         for line in content.split("\n"):
             # Remove comments and skip empty lines
@@ -1577,7 +1477,7 @@ class StructuredField(object):
         return dictionary
 
     def _write_section(self, dictionary):
-        """Convert dictionary into a config section format"""
+        """ Convert dictionary into a config section format """
         section = ""
         for key in dictionary:
             if isinstance(dictionary[key], list):
@@ -1592,31 +1492,29 @@ class StructuredField(object):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def iterate(self):
-        """Return (section, content) tuples for all sections"""
+        """ Return (section, content) tuples for all sections """
         for section in self:
             yield section, self._sections[section]
 
     def version(self, version=None):
-        """Get or set the StructuredField version"""
+        """ Get or set the StructuredField version """
         if version is not None:
             if version in [0, 1]:
                 self._version = version
             else:
                 raise StructuredFieldError(
-                    "Bad StructuredField version: {0}".format(version)
-                    )
+                    "Bad StructuredField version: {0}".format(version))
         return self._version
 
     def load(self, text, version=None):
-        """Load the StructuredField from a string"""
+        """ Load the StructuredField from a string """
         if version is not None:
             self.version(version)
         # Make sure we got a text, convert to unicode if necessary
         try:
             if not isinstance(text, basestring):
                 raise StructuredFieldError(
-                    "Invalid StructuredField, expecting string or unicode"
-                    )
+                    "Invalid StructuredField, expecting string or unicode")
             if not isinstance(text, unicode):
                 text = text.decode("utf8")
         except NameError:
@@ -1628,7 +1526,7 @@ class StructuredField(object):
         # Make sure the text has a new line at the end
         if text and text[-1] != "\n":
             text += "\n"
-        log.debug("Parsing StructuredField\n{0}".format(text))
+        log.debug(u"Parsing StructuredField\n{0}".format(text))
         # Parse respective format version
         if self._version == 0:
             self._load_version_zero(text)
@@ -1636,36 +1534,35 @@ class StructuredField(object):
             self._load(text)
 
     def save(self):
-        """Convert the StructuredField into a string"""
+        """ Convert the StructuredField into a string """
         if self.version() == 0:
             return self._save_version_zero()
         else:
             return self._save()
 
     def header(self, content=None):
-        """Get or set the header content"""
+        """ Get or set the header content """
         if content is not None:
             self._header = content
         return self._header
 
     def footer(self, content=None):
-        """Get or set the footer content"""
+        """ Get or set the footer content """
         if content is not None:
             self._footer = content
         return self._footer
 
     def sections(self):
-        """Get the list of available sections"""
+        """ Get the list of available sections """
         return self._order
 
     def get(self, section, item=None):
-        """Return content of given section or section item"""
+        """ Return content of given section or section item """
         try:
             content = self._sections[section]
         except KeyError:
             raise StructuredFieldError(
-                "Section [{0}] not found".format(
-                    ascii(section)))
+                "Section [{0}] not found".format(ascii(section)))
         # Return the whole section content
         if item is None:
             return content
@@ -1675,12 +1572,10 @@ class StructuredField(object):
         except KeyError:
             raise StructuredFieldError(
                 "Unable to read '{0}' from section '{1}'".format(
-                    ascii(item), ascii(section)
-                    )
-                )
+                    ascii(item), ascii(section)))
 
     def set(self, section, content, item=None):
-        """Update content of given section or section item"""
+        """ Update content of given section or section item """
         # Convert to string if necessary, keep lists untouched
         if not isinstance(content, list):
             try:
@@ -1711,7 +1606,7 @@ class StructuredField(object):
             self._order.append(section)
 
     def remove(self, section, item=None):
-        """Remove given section or section item"""
+        """ Remove given section or section item """
         # Remove the whole section
         if item is None:
             try:
@@ -1719,17 +1614,14 @@ class StructuredField(object):
                 del self._order[self._order.index(section)]
             except KeyError:
                 raise StructuredFieldError(
-                    "Section [{0}] not found".format(ascii(section))
-                    )
+                    "Section [{0}] not found".format(ascii(section)))
         # Remove only selected item from the section
         else:
             try:
                 dictionary = self._read_section(self._sections[section])
-                del dictionary[item]
+                del(dictionary[item])
             except KeyError:
                 raise StructuredFieldError(
                     "Unable to remove '{0}' from section '{1}'".format(
-                        ascii(item), ascii(section)
-                        )
-                    )
+                        ascii(item), ascii(section)))
             self._sections[section] = self._write_section(dictionary)
