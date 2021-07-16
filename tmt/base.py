@@ -501,15 +501,11 @@ class Plan(Core):
         env_files = self.node.get("environment_file") or []
         assert isinstance(env_files, list), f"environment_file parameter should be a list. " \
                                             f"Received {type(env_files)}"
-        for env_file in env_files:
-            env_file = Path(env_file)
-            assert env_file.is_file(), f"{env_file} doesn't exist"
-            self._environment.update(
-                tmt.utils.parse_yaml(env_file)
-                if env_file.suffix in (".yaml", ".yml")
-                else
-                tmt.utils.parse_dotenv(env_file)
-                )
+        env_files_vars = tmt.utils.environment_file_to_dict(env_files)
+        assert not set(env_files_vars).intersection(set(self._environment)), (
+            "Variables sets in environment and environment_file are conflicting."
+        )
+        self._environment.update(tmt.utils.environment_file_to_dict(env_files))
 
         # Test execution context defined in the plan
         self._plan_context = self.node.get('context', dict())

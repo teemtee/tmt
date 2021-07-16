@@ -12,7 +12,7 @@ import unicodedata
 from collections import OrderedDict
 from pathlib import Path
 from threading import Timer
-from typing import Dict
+from typing import Dict, Iterable
 
 import fmf
 import requests
@@ -77,7 +77,8 @@ class Config(object):
             try:
                 os.symlink(run_id, symlink)
             except OSError as error:
-                raise GeneralError(f"Unable to save last run '{self.path}'.\n{error}")
+                raise GeneralError(
+                    f"Unable to save last run '{self.path}'.\n{error}")
             return run_id
         if os.path.islink(symlink):
             return os.path.realpath(symlink)
@@ -761,6 +762,34 @@ def environment_to_dict(variables):
                 _add_simple_var(result, var)
 
     return result
+
+
+def environment_file_to_dict(env_files: Iterable[str]) -> Dict[str, str]:
+    """Create dict from files.
+
+    Files should be in yaml/yml or dotenv format.
+
+    dotenv file example:
+        ```bash
+        A=B
+        C=D
+        ```
+    yaml file example:
+        ```yaml
+        A: B
+        C: D
+        ```
+    """
+    res = {}
+    for env_file in map(Path, env_files):
+        assert env_file.is_file(), f"{env_file} doesn't exist"
+        res.update(
+            parse_yaml(env_file) if
+            env_file.suffix in (".yaml", ".yml")
+            else
+            parse_dotenv(env_file)
+            )
+    return res
 
 
 def context_to_dict(context):
