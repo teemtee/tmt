@@ -1214,6 +1214,9 @@ class Run(tmt.utils.Common):
         """ Return environment combined from wake up and command line """
         combined = self._environment.copy()
         combined.update(tmt.utils.environment_to_dict(self.opt('environment')))
+        combined.update(
+            tmt.utils.environment_file_to_dict(
+                self.opt('environment-file')))
         return combined
 
     def save(self):
