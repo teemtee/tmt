@@ -498,7 +498,7 @@ class Plan(Core):
             in node.get('environment', dict()).items()])
 
         # Environment variables from files
-        env_files = self.node.get("environment_file") or []
+        env_files = self.node.get("environment-file") or []
         assert isinstance(env_files, list), f"environment_file parameter should be a list. " \
                                             f"Received {type(env_files)}"
         env_files_vars = tmt.utils.environment_file_to_dict(env_files)
