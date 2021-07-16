@@ -1213,10 +1213,14 @@ class Run(tmt.utils.Common):
     def environment(self):
         """ Return environment combined from wake up and command line """
         combined = self._environment.copy()
-        combined.update(tmt.utils.environment_to_dict(self.opt('environment')))
-        combined.update(
-            tmt.utils.environment_file_to_dict(
-                self.opt('environment-file')))
+        environment_vars = tmt.utils.environment_to_dict(
+            self.opt('environment'))
+        environment_file_vars = tmt.utils.environment_file_to_dict(
+            self.opt('environment-file')
+            )
+        assert not set(environment_vars).intersection(set(environment_file_vars)), (
+            "Variables sets in environment and environment_file are conflicting.")
+        combined.update(**environment_vars, **environment_file_vars)
         return combined
 
     def save(self):
