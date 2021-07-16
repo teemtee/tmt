@@ -504,7 +504,7 @@ class Plan(Core):
         env_files_vars = tmt.utils.environment_file_to_dict(env_files)
         assert not set(env_files_vars).intersection(set(self._environment)), (
             "Variables sets in environment and environment_file are conflicting."
-        )
+            )
         self._environment.update(tmt.utils.environment_file_to_dict(env_files))
 
         # Test execution context defined in the plan

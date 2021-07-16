@@ -64,7 +64,8 @@ class Config(object):
             try:
                 os.makedirs(self.path)
             except OSError as error:
-                raise GeneralError(f"Failed to create config '{self.path}'.\n{error}")
+                raise GeneralError(
+                    f"Failed to create config '{self.path}'.\n{error}")
 
     def last_run(self, run_id=None):
         """Get and set last run id"""
@@ -169,7 +170,8 @@ class Common(object):
                 debug = os.environ["TMT_DEBUG"]
                 return int(debug)
             except ValueError:
-                raise GeneralError(f"Invalid debug level '{debug}', use an integer.")
+                raise GeneralError(
+                    f"Invalid debug level '{debug}', use an integer.")
             except KeyError:
                 pass
 
@@ -254,7 +256,14 @@ class Common(object):
         """Show a red failure message on info level, send to stderr"""
         self.info("fail", message, color="red", shift=shift, err=True)
 
-    def verbose(self, key, value=None, color=None, shift=0, level=1, err=False):
+    def verbose(
+            self,
+            key,
+            value=None,
+            color=None,
+            shift=0,
+            level=1,
+            err=False):
         """Show message if in requested verbose mode level"""
         self._log(self._indent(key, value, color=None, shift=shift))
         if self.opt("verbose") >= level:
@@ -267,8 +276,15 @@ class Common(object):
             echo(self._indent(key, value, color, shift), err=err)
 
     def _run(
-        self, command, cwd, shell, env, log, join=False, interactive=False, timeout=None
-    ):
+            self,
+            command,
+            cwd,
+            shell,
+            env,
+            log,
+            join=False,
+            interactive=False,
+            timeout=None):
         """
         Run command, capture the output
 
@@ -295,7 +311,7 @@ class Common(object):
             try:
                 subprocess.run(
                     command, cwd=cwd, shell=shell, env=environment, check=True
-                )
+                    )
             except subprocess.CalledProcessError as error:
                 # Interactive mode can return non-zero if the last command
                 # failed, ignore errors here
@@ -312,7 +328,7 @@ class Common(object):
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT if join else subprocess.PIPE,
-        )
+            )
         if join:
             descriptors = [process.stdout.fileno()]
         else:
@@ -339,14 +355,15 @@ class Common(object):
             # Capture the output
             while process.poll() is None:
                 # Check which file descriptors are ready for read
-                selected = select.select(descriptors, [], [], DEFAULT_SELECT_TIMEOUT)
+                selected = select.select(
+                    descriptors, [], [], DEFAULT_SELECT_TIMEOUT)
 
                 for descriptor in selected[0]:
                     # Handle stdout
                     if descriptor == process.stdout.fileno():
                         line = process.stdout.readline().decode(
                             "utf-8", errors="replace"
-                        )
+                            )
                         stdout += line
                         if line != "":
                             log("out", line.rstrip("\n"), "yellow", level=3)
@@ -354,7 +371,7 @@ class Common(object):
                     if not join and descriptor == process.stderr.fileno():
                         line = process.stderr.readline().decode(
                             "utf-8", errors="replace"
-                        )
+                            )
                         stderr += line
                         if line != "":
                             log("err", line.rstrip("\n"), "yellow", level=3)
@@ -387,22 +404,22 @@ class Common(object):
                 returncode=process.returncode,
                 stdout=stdout,
                 stderr=stderr,
-            )
+                )
         return stdout if join else (stdout, stderr)
 
     def run(
-        self,
-        command,
-        message=None,
-        cwd=None,
-        dry=False,
-        shell=True,
-        env=None,
-        interactive=False,
-        join=False,
-        log=None,
-        timeout=None,
-    ):
+            self,
+            command,
+            message=None,
+            cwd=None,
+            dry=False,
+            shell=True,
+            env=None,
+            interactive=False,
+            join=False,
+            log=None,
+            timeout=None,
+            ):
         """
         Run command, give message, handle errors
 
@@ -431,15 +448,27 @@ class Common(object):
 
         # Fail nicely if the working directory does not exist
         if not os.path.exists(cwd):
-            raise GeneralError(f"The working directory '{cwd}' does not exist.")
+            raise GeneralError(
+                f"The working directory '{cwd}' does not exist.")
 
         try:
-            return self._run(command, cwd, shell, env, log, join, interactive, timeout)
+            return self._run(
+                command,
+                cwd,
+                shell,
+                env,
+                log,
+                join,
+                interactive,
+                timeout)
         except RunError as error:
             self.debug(error.message, level=3)
             raise RunError(
-                message, error.command, error.returncode, error.stdout, error.stderr
-            )
+                message,
+                error.command,
+                error.returncode,
+                error.stdout,
+                error.stderr)
 
     def read(self, path, level=2):
         """Read a file from the workdir"""
@@ -493,10 +522,11 @@ class Common(object):
             if id_ == WORKDIR_MAX:
                 raise GeneralError(
                     f"Workdir full. Cleanup the '{WORKDIR_ROOT}' directory."
-                )
+                    )
         # Weird workdir id
         else:
-            raise GeneralError(f"Invalid workdir '{id_}', expected a string or None.")
+            raise GeneralError(
+                f"Invalid workdir '{id_}', expected a string or None.")
 
         # Cleanup possible old workdir if called with --force
         if self.opt("force"):
@@ -567,8 +597,14 @@ class RunError(GeneralError):
     """Command execution error"""
 
     def __init__(
-        self, message, command, returncode, stdout=None, stderr=None, *args, **kwargs
-    ):
+            self,
+            message,
+            command,
+            returncode,
+            stdout=None,
+            stderr=None,
+            *args,
+            **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
         self.command = command
@@ -689,13 +725,15 @@ def _add_file_vars(result, filepath):
     """
 
     if not filepath[1:]:
-        raise GeneralError(f"Invalid variable file specification '{filepath}'.")
+        raise GeneralError(
+            f"Invalid variable file specification '{filepath}'.")
 
     try:
         with open(filepath[1:], "r") as content:
             file_vars = yaml_to_dict(content)
     except Exception as exception:
-        raise GeneralError(f"Failed to load variables from '{filepath}': {exception}")
+        raise GeneralError(
+            f"Failed to load variables from '{filepath}': {exception}")
 
     for name, value in file_vars.items():
         result[name] = str(value)
@@ -802,9 +840,8 @@ def context_to_dict(context):
     distro=fedora-33 ---> {'distro': ['fedora']}
     arch=x86_64,ppc64 ---> {'arch': ['x86_64', 'ppc64']}
     """
-    return {
-        key: value.split(",") for key, value in environment_to_dict(context).items()
-    }
+    return {key: value.split(",") for key,
+            value in environment_to_dict(context).items()}
 
 
 def dict_to_yaml(data, width=None, sort=False):
@@ -819,7 +856,7 @@ def dict_to_yaml(data, width=None, sort=False):
         width=width,
         indent=4,
         default_flow_style=False,
-    )
+        )
     return output.getvalue()
 
 
@@ -846,7 +883,7 @@ except TypeError:
             width=width,
             indent=4,
             default_flow_style=False,
-        )
+            )
         return output.getvalue()
 
 
@@ -904,7 +941,7 @@ def duration_to_seconds(duration):
         "m": 60,
         "h": 60 * 60,
         "d": 60 * 60 * 24,
-    }
+        }
     try:
         number, suffix = re.match(r"^(\d+)([smhd]?)$", str(duration)).groups()
         return int(number) * units.get(suffix, 1)
@@ -912,7 +949,13 @@ def duration_to_seconds(duration):
         raise SpecificationError(f"Invalid duration '{duration}'.")
 
 
-def verdict(decision, comment=None, good="pass", bad="fail", problem="warn", **kwargs):
+def verdict(
+        decision,
+        comment=None,
+        good="pass",
+        bad="fail",
+        problem="warn",
+        **kwargs):
     """
     Print verdict in green, red or yellow based on the decision
 
@@ -933,7 +976,8 @@ def verdict(decision, comment=None, good="pass", bad="fail", problem="warn", **k
     elif decision is None:
         text = style(problem, fg="yellow")
     else:
-        raise GeneralError("Invalid decision value, must be 'True', 'False' or 'None'.")
+        raise GeneralError(
+            "Invalid decision value, must be 'True', 'False' or 'None'.")
     if comment:
         text = text + " " + comment
     echo(text, **kwargs)
@@ -983,12 +1027,13 @@ def format(
         # Place each key value pair on a separate line
         output += ("\n" + indent_string).join(
             f"{item[0]}: {item[1]}" for item in value.items()
-        )
+            )
     # Text
     elif isinstance(value, str):
         # In 'auto' mode enable wrapping when long lines present
         if wrap == "auto":
-            wrap = any([len(line) + indent - 7 > width for line in value.split("\n")])
+            wrap = any([len(line) + indent - 7 >
+                       width for line in value.split("\n")])
         if wrap:
             output += wrap_text(
                 value,
@@ -996,7 +1041,7 @@ def format(
                 preserve_paragraphs=True,
                 initial_indent=indent_string,
                 subsequent_indent=indent_string,
-            ).lstrip()
+                ).lstrip()
         else:
             output += ("\n" + indent_string).join(value.rstrip().split("\n"))
     else:
@@ -1017,10 +1062,19 @@ def create_directory(path, name, dry=False, quiet=False):
         os.makedirs(path, exist_ok=True)
         say("Directory '{}' created.".format(path))
     except OSError as error:
-        raise FileError("Failed to create {} '{}' ({})".format(name, path, error))
+        raise FileError(
+            "Failed to create {} '{}' ({})".format(
+                name, path, error))
 
 
-def create_file(path, content, name, dry=False, force=False, mode=0o664, quiet=False):
+def create_file(
+        path,
+        content,
+        name,
+        dry=False,
+        force=False,
+        mode=0o664,
+        quiet=False):
     """Create a new file, handle errors"""
     say = log.debug if quiet else echo
     action = "would be created" if dry else "created"
@@ -1040,7 +1094,9 @@ def create_file(path, content, name, dry=False, force=False, mode=0o664, quiet=F
         say("{} '{}' {}.".format(name.capitalize(), path, action))
         os.chmod(path, mode)
     except OSError as error:
-        raise FileError("Failed to create {} '{}' ({})".format(name, path, error))
+        raise FileError(
+            "Failed to create {} '{}' ({})".format(
+                name, path, error))
 
 
 def public_git_url(url):
@@ -1064,7 +1120,8 @@ def public_git_url(url):
     # old: ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://pkgs.devel.redhat.com/tests/bash
     # new: git://pkgs.devel.redhat.com/tests/bash
-    matched = re.match(r"(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)", url)
+    matched = re.match(
+        r"(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)", url)
     if matched:
         _, _, host, project = matched.groups()
         return f"git://{host}/{project}"
@@ -1101,7 +1158,7 @@ def retry_session(
         status_forcelist=status_forcelist,
         method_whitelist=method_whitelist,
         raise_on_status=False,
-    )
+        )
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
@@ -1118,7 +1175,9 @@ def default_branch(repository, remote="origin"):
     head = os.path.join(repository, f".git/refs/remotes/{remote}/HEAD")
     # Make sure the HEAD reference is available
     if not os.path.exists(head):
-        subprocess.run(f"git remote set-head {remote} --auto".split(), cwd=repository)
+        subprocess.run(
+            f"git remote set-head {remote} --auto".split(),
+            cwd=repository)
     # The ref format is 'ref: refs/remotes/origin/main'
     with open(head) as ref:
         return ref.read().strip().split("/")[-1]
@@ -1128,7 +1187,11 @@ def parse_dotenv(path: Path) -> Dict[str, str]:
     def split_func(line):
         return line.split("=")
 
-    return dict(map(split_func, shlex.split(open(path), comments=True)))
+    try:
+        return dict(map(split_func, shlex.split(open(path), comments=True)))
+    except ValueError:
+        raise ValueError(f"Can't extract variables from {path}. "
+                         f"Ensure it has proper format (i.e. A=B)")
 
 
 def parse_yaml(path: Path) -> Dict[str, str]:
@@ -1136,7 +1199,7 @@ def parse_yaml(path: Path) -> Dict[str, str]:
     assert not any(isinstance(val, dict) for val in yaml_as_dict.values()), (
         "Can't set the environment from the nested yaml config. The "
         "config should be just key, value pairs."
-    )
+        )
     return {k: str(v) for k, v in yaml_as_dict.items()}
 
 
@@ -1162,8 +1225,8 @@ def validate_fmf_id(fmf_id):
                 "tree root",
                 f"No tree found in repo '{fmf_id.get('url')}', "
                 f"missing an '.fmf' directory?",
-            ),
-        ]
+                ),
+            ]
         errors = [err[1] for err in error_map if err[0] in str(error)]
         return (False, errors[0] if errors else str(error))
 
@@ -1406,7 +1469,7 @@ class StructuredField(object):
             r"(.*)^\[structured-field-start\][ \t]*\n"
             r"(.*)\n\[structured-field-end\][ \t]*\n(.*)",
             re.DOTALL + re.MULTILINE,
-        )
+            )
         # No match ---> plain text or broken structured field
         matched = format.search(text)
         if not matched:
@@ -1427,18 +1490,25 @@ class StructuredField(object):
         parts = section.split(matched.groups()[1])
         # Detect the version
         try:
-            self.version(int(re.search(r"version (\d+)", parts[0]).groups()[0]))
-            log.debug("Detected StructuredField version {0}".format(self.version()))
+            self.version(
+                int(re.search(r"version (\d+)", parts[0]).groups()[0]))
+            log.debug(
+                "Detected StructuredField version {0}".format(
+                    self.version()))
         except AttributeError:
             log.error(parts[0])
-            raise StructuredFieldError("Unable to detect StructuredField version")
+            raise StructuredFieldError(
+                "Unable to detect StructuredField version")
         # Convert to dictionary, remove escapes and save the order
         keys = parts[1::2]
         escape = re.compile(r"^\[structured-field-escape\]", re.MULTILINE)
         values = [escape.sub("", value) for value in parts[2::2]]
         for key, value in zip(keys, values):
             self.set(key, value)
-        log.debug("Parsed sections:\n{0}".format(pprint.pformat(self._sections)))
+        log.debug(
+            "Parsed sections:\n{0}".format(
+                pprint.pformat(
+                    self._sections)))
 
     def _save_version_zero(self):
         """Save version 0 format"""
@@ -1467,13 +1537,14 @@ class StructuredField(object):
                 "[structured-field-start]\n"
                 "This is StructuredField version {0}. "
                 "Please, edit with care.\n".format(self._version)
-            )
+                )
             for section, content in self.iterate():
                 result.append(
                     "[{0}]\n{1}".format(
-                        section, escape.sub("[structured-field-escape]\\1", content)
-                    )
-                )
+                        section,
+                        escape.sub(
+                            "[structured-field-escape]\\1",
+                            content)))
             result.append("[structured-field-end]\n")
         # Footer
         if self._footer:
@@ -1491,7 +1562,8 @@ class StructuredField(object):
             # Parse key and value
             matched = re.search("([^=]+)=(.*)", line)
             if not matched:
-                raise StructuredFieldError("Invalid key/value line: {0}".format(line))
+                raise StructuredFieldError(
+                    "Invalid key/value line: {0}".format(line))
             key = matched.groups()[0].strip()
             value = matched.groups()[1].strip()
             # Handle multiple values if enabled
@@ -1532,7 +1604,7 @@ class StructuredField(object):
             else:
                 raise StructuredFieldError(
                     "Bad StructuredField version: {0}".format(version)
-                )
+                    )
         return self._version
 
     def load(self, text, version=None):
@@ -1544,12 +1616,13 @@ class StructuredField(object):
             if not isinstance(text, basestring):
                 raise StructuredFieldError(
                     "Invalid StructuredField, expecting string or unicode"
-                )
+                    )
             if not isinstance(text, unicode):
                 text = text.decode("utf8")
         except NameError:
             if not isinstance(text, str):
-                raise StructuredFieldError("Invalid StructuredField, expecting string")
+                raise StructuredFieldError(
+                    "Invalid StructuredField, expecting string")
         # Remove possible carriage returns
         text = re.sub("\r\n", "\n", text)
         # Make sure the text has a new line at the end
@@ -1590,7 +1663,9 @@ class StructuredField(object):
         try:
             content = self._sections[section]
         except KeyError:
-            raise StructuredFieldError("Section [{0}] not found".format(ascii(section)))
+            raise StructuredFieldError(
+                "Section [{0}] not found".format(
+                    ascii(section)))
         # Return the whole section content
         if item is None:
             return content
@@ -1601,8 +1676,8 @@ class StructuredField(object):
             raise StructuredFieldError(
                 "Unable to read '{0}' from section '{1}'".format(
                     ascii(item), ascii(section)
+                    )
                 )
-            )
 
     def set(self, section, content, item=None):
         """Update content of given section or section item"""
@@ -1645,7 +1720,7 @@ class StructuredField(object):
             except KeyError:
                 raise StructuredFieldError(
                     "Section [{0}] not found".format(ascii(section))
-                )
+                    )
         # Remove only selected item from the section
         else:
             try:
@@ -1655,6 +1730,6 @@ class StructuredField(object):
                 raise StructuredFieldError(
                     "Unable to remove '{0}' from section '{1}'".format(
                         ascii(item), ascii(section)
+                        )
                     )
-                )
             self._sections[section] = self._write_section(dictionary)
