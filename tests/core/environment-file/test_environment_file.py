@@ -32,7 +32,7 @@ def test_environment_file_normal_case():
             catch_exceptions=False,
             )
         assert res.exit_code == 0
-        assert "total: 2 tests passed" in res.stdout
+        assert "total: 2 tests passed" in res.output
 
         # check if --environment is properly handled (override STR var)
         res = runner.invoke(
@@ -41,7 +41,7 @@ def test_environment_file_normal_case():
             catch_exceptions=False,
             )
         assert res.exit_code == 1
-        assert "total: 2 tests failed" in res.stdout
+        assert "total: 2 tests failed" in res.output
 
         # check if --environment-file is properly handled (override STR var)
         res = runner.invoke(
@@ -51,7 +51,7 @@ def test_environment_file_normal_case():
             )
 
         assert res.exit_code == 1
-        assert "total: 2 tests failed" in res.stdout
+        assert "total: 2 tests failed" in res.output
 
 
 def test_environment_file_variables_collides():
@@ -63,7 +63,7 @@ def test_environment_file_variables_collides():
             tmt.cli.main,
             ["run", "-vvvddd"],
             )
-    assert res.exit_code == 1
+    assert res.exit_code != 0
     assert (
         res.exception.args[0]
         == "Variables sets in environment and environment_file are conflicting."
@@ -80,4 +80,4 @@ def test_os_environ_vars_takes_precedence(monkeypatch):
             catch_exceptions=False,
             )
         assert res.exit_code == 1
-        assert "AssertionError: assert 'existing env value' == 'L'" in res.stdout
+        assert "AssertionError: assert 'existing env value' == 'L'" in res.output
