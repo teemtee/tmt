@@ -19,6 +19,10 @@
         how: local
     execute:
         how: tmt
+    prepare:
+      how: shell
+      script: pip3 install pytest click
+
 
     /with_variables:
         summary: This is a plan with variables
