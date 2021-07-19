@@ -4,13 +4,13 @@
         summary: This is a test with variables
         tag:
             - "with_variables"
-        test: pytest -svv -m with_variables environment_file_data.py
+        test: python3 -m pytest -svv -m with_variables environment_file_data.py
 
     /without_variables:
         summary: This is a test without variables
         tag:
             - "without_variables"
-        test: pytest -svv -m without_variables environment_file_data.py
+        test: python3 -m pytest -svv -m without_variables environment_file_data.py
 
 /plan:
     discover:

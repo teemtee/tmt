@@ -4,6 +4,6 @@
 
 rlJournalStart
     rlPhaseStartTest "Run pytest session"
-        rlRun "pytest -svv"
+        rlRun "python3 -m pytest -svv"
     rlPhaseEnd
 rlJournalEnd
