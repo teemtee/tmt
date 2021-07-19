@@ -507,6 +507,11 @@ class Plan(Core):
             )
         self._environment.update(tmt.utils.environment_file_to_dict(env_files))
 
+        # ensure that presented vars in os.environment was not overwritten
+        # and revert these values if present
+        for var in filter(lambda var_: var_ in os.environ, self._environment):
+            self._environment[var] = os.environ[var]
+
         # Test execution context defined in the plan
         self._plan_context = self.node.get('context', dict())
 
@@ -1218,9 +1223,18 @@ class Run(tmt.utils.Common):
         environment_file_vars = tmt.utils.environment_file_to_dict(
             self.opt('environment-file')
             )
+
+        # check if environments data are not conflicitng and update the
+        # combined
         assert not set(environment_vars).intersection(set(environment_file_vars)), (
             "Variables sets in environment and environment_file are conflicting.")
         combined.update(**environment_vars, **environment_file_vars)
+
+        # ensure that presented vars in os.environment was not overwritten
+        # and revert these values if present
+        for var in filter(lambda var_: var_ in os.environ, combined):
+            combined[var] = os.environ[var]
+
         return combined
 
     def save(self):
