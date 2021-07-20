@@ -14,7 +14,7 @@ import unicodedata
 from collections import OrderedDict
 from pathlib import Path
 from threading import Timer
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Union
 
 import fmf
 import requests
@@ -777,6 +777,19 @@ def environment_file_to_dict(env_files: Iterable[str]) -> Dict[str, str]:
     return res
 
 
+def environment_url_to_dict(urls):
+    res = {}
+    for url in urls:
+        f_content = requests.get(url, verify=False).text
+        res.update(
+            parse_yaml(f_content) if
+            Path(url).suffix in (".yaml", ".yml")
+            else
+            parse_dotenv(f_content)
+            )
+    return res
+
+
 def context_to_dict(context):
     """
     Convert command line context definition into a dictionary
@@ -1094,19 +1107,24 @@ def default_branch(repository, remote='origin'):
         return ref.read().strip().split('/')[-1]
 
 
-def parse_dotenv(path: Path) -> Dict[str, str]:
+def parse_dotenv(content: Union[Path, str]) -> Dict[str, str]:
+    if isinstance(content, Path):
+        content = content.read_text()
+
     def split_func(line):
         return line.split("=")
 
     try:
-        return dict(map(split_func, shlex.split(open(path), comments=True)))
+        return dict(map(split_func, shlex.split(content, comments=True)))
     except ValueError:
-        raise ValueError(f"Can't extract variables from {path}. "
+        raise ValueError(f"Can't extract variables from {content}. "
                          f"Ensure it has proper format (i.e. A=B)")
 
 
-def parse_yaml(path: Path) -> Dict[str, str]:
-    yaml_as_dict = yaml.safe_load(path.read_text())
+def parse_yaml(content: Union[Path, str]) -> Dict[str, str]:
+    if isinstance(content, Path):
+        content = content.read_text()
+    yaml_as_dict = yaml.safe_load(content)
     assert not any(isinstance(val, dict) for val in yaml_as_dict.values()), (
         "Can't set the environment from the nested yaml config. The "
         "config should be just key, value pairs."

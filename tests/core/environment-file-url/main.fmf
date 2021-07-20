@@ -1,0 +1,5 @@
+summary: Check environment-file-url
+description:
+    environment-file-url option allows to specify the
+    url of the env files. In this case tmt will download and load
+    this vars automatically

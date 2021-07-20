@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import time
+from itertools import combinations
 from pathlib import Path
 
 import click
@@ -499,13 +500,28 @@ class Plan(Core):
 
         # Environment variables from files
         env_files = self.node.get("environment-file") or []
-        assert isinstance(env_files, list), f"environment_file parameter should be a list. " \
+        assert isinstance(env_files, list), f"environment-file parameter should be a list. " \
                                             f"Received {type(env_files)}"
         env_files_vars = tmt.utils.environment_file_to_dict(env_files)
-        assert not set(env_files_vars).intersection(set(self._environment)), (
-            "Variables sets in environment and environment_file are conflicting."
-            )
-        self._environment.update(tmt.utils.environment_file_to_dict(env_files))
+
+        # Environment variables from url
+        env_urls = self.node.get("environment-file-url") or []
+        assert isinstance(env_urls, list), f"environment-file-url parameter should be a list. " \
+            f"Received {type(env_urls)}"
+        env_urls_vars = tmt.utils.environment_url_to_dict(env_urls)
+
+        # check for conflicting vars
+        # check if environments data are not conflicting
+        assert not any(set.intersection(*c) for c in combinations(
+            (
+                set(self._environment),
+                set(env_files_vars),
+                set(env_urls_vars),
+                ), 2,
+            )), ("Variables sets in environment, environment-file, environment-file-url are conflicting.")
+
+        # combine all env sources into one
+        self._environment.update(**env_files_vars, **env_urls_vars)
 
         # ensure that presented vars in os.environment was not overwritten
         # and revert these values if present
@@ -1223,12 +1239,23 @@ class Run(tmt.utils.Common):
         environment_file_vars = tmt.utils.environment_file_to_dict(
             self.opt('environment-file')
             )
+        environment_vars_from_url = tmt.utils.environment_url_to_dict(
+            self.opt('environment-file-url'))
 
-        # check if environments data are not conflicitng and update the
-        # combined
-        assert not set(environment_vars).intersection(set(environment_file_vars)), (
-            "Variables sets in environment and environment_file are conflicting.")
-        combined.update(**environment_vars, **environment_file_vars)
+        # check if environments data are not conflicting
+        assert not any(set.intersection(*c) for c in combinations(
+            (
+                set(environment_vars),
+                set(environment_file_vars),
+                set(environment_vars_from_url),
+                ), 2,
+            )), ("Variables sets in environment, environment-file, environment-file-url are conflicting.")
+
+        # combine all env sources into one
+        combined.update(
+            **environment_vars,
+            **environment_file_vars,
+            **environment_vars_from_url)
 
         # ensure that presented vars in os.environment was not overwritten
         # and revert these values if present

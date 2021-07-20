@@ -1,0 +1,26 @@
+/test:
+    summary: This is a test with variables
+    tag:
+        - "simple_test"
+    test: python3 -m pytest -svv environment_file_url.py
+
+/plan:
+    discover:
+        how: fmf
+        filter:
+            - 'tag: simple_test'
+    provision:
+        how: local
+    execute:
+        how: tmt
+    prepare:
+      how: shell
+      script: pip3 install pytest click
+
+    /with_fmf_parameter:
+        summary: This is a plan with vars provided by fmf
+        environment-file-url:
+            - https://raw.githubusercontent.com/psss/tmt/22a46a4a6760517e3eadbbff0c9bebdb95442760/tests/core/env/data/vars.yaml
+
+    /no_vars:
+        summary: no vars in this plan

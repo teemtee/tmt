@@ -66,14 +66,13 @@ def test_environment_file_variables_collides():
     assert res.exit_code != 0
     assert (
         res.exception.args[0]
-        == "Variables sets in environment and environment_file are conflicting."
+        == "Variables sets in environment, environment-file, environment-file-url are conflicting."
         )
 
 
 def test_os_environ_vars_takes_precedence(monkeypatch):
     monkeypatch.setenv("STR", "existing env value")
     with change_cwd(Path(".") / "data"):
-        # check if all tmt tests defined in ./data passed
         res = runner.invoke(
             tmt.cli.main,
             ["run", "-vvvddd"],

@@ -235,6 +235,12 @@ def main(click_contex, root, context, **kwargs):
               multiple='True',
               help='Set environment variables from file (yaml or dotenv formats are supported. '
               ' Can be specified multiple times.')
+@click.option('-f',
+              '--environment-file-url',
+              metavar='URL',
+              multiple='True',
+              help='Set environment variables from file located at url (yaml or dotenv formats are supported. '
+                   ' Can be specified multiple times.')
 @verbose_debug_quiet
 @force_dry
 def run(context, id_, **kwargs):
