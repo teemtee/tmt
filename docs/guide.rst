@@ -86,3 +86,141 @@ options::
 
 Go on and explore. Don't be shy and ask, ``--help`` is eager to
 answer all your questions ;-)
+
+
+Under The Hood
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now let's have a brief look under the hood. Similarly as with
+``git``, there is a special ``.fmf`` directory which marks root of
+the fmf metadata tree. Use the ``init`` command to initialize it::
+
+    tmt init
+
+Do not forget to include this special ``.fmf`` directory in your
+commits, it is essential for building the fmf tree structure which
+is created from all ``*.fmf`` files discovered under the fmf root.
+
+
+Plans
+------------------------------------------------------------------
+
+As we've seen above, in order to enable a simple test the
+following plan is just enough::
+
+    execute:
+        script: foo --version
+
+Store these two lines in a ``*.fmf`` file and that's it. Name and
+location of the file is completely up to you, plans are recognized
+by the ``execute`` key which is required. Once the newly created
+plan is submitted to the CI system test script will be executed.
+
+:ref:`/spec/plans` are used to enable testing and group relevant
+tests together. They describe how to :ref:`/spec/plans/discover`
+tests for execution, how to :ref:`/spec/plans/provision` the
+environment, how to :ref:`/spec/plans/prepare` it for testing, how
+to :ref:`/spec/plans/execute` tests, :ref:`/spec/plans/report`
+results and finally how to :ref:`/spec/plans/finish` the test job.
+
+Here's an example of a slightly more complex plan which changes
+the default provision method to container to speed up the testing
+process and ensures that an additional package is installed before
+the testing starts::
+
+    provision:
+        how: container
+        image: fedora:33
+    prepare:
+        how: install
+        package: wget
+    execute:
+        how: tmt
+        script: wget http://example.org/
+
+
+Tests
+------------------------------------------------------------------
+
+Very often testing is much more complex than running just a
+single shell script. There might be many scenarios covered by
+individual scripts. For these cases the ``discover`` step can
+be instructed to explore available tests from fmf metadata as
+well. The plan will look like this::
+
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+Tests, identified by the required key ``test``, define attributes
+which are closely related to individual test cases such as the
+:ref:`/spec/tests/test` script, :ref:`/spec/tests/framework`,
+directory :ref:`/spec/tests/path` where the test should be
+executed, maximum test :ref:`/spec/tests/duration` or packages
+required to run the test. Here's an example of test metadata::
+
+    summary: Fetch an example web page
+    test: wget http://example.org/
+    require: wget
+    duration: 1m
+
+Similar to plans, it is possible to choose an arbitrary name for
+the test. Just make sure the ``test`` key is defined. However, to
+organize the metadata efficiently it is recommended to keep tests
+and plans under separate folders, e.g. ``tests`` and ``plans``.
+This will also allow you to use `inheritance`__ to prevent
+unnecessary data duplication.
+
+__ https://fmf.readthedocs.io/en/latest/features.html#inheritance
+
+
+Stories
+------------------------------------------------------------------
+
+It's always good to start with a "why". Or, even better, with a
+story which can describe more context behind the motivation.
+:ref:`/spec/stories` can be used to track implementation, test and
+documentation coverage for individual features or requirements.
+Thanks to this you can track everything in one place, including
+the project implementation progress. Stories are identified by the
+``story`` attribute which every story has to define or inherit.
+
+An example story can look like this::
+
+    story:
+        As a user I want to see more detailed information for
+        particular command.
+    example:
+      - tmt test show -v
+      - tmt test show -vvv
+      - tmt test show --verbose
+
+
+Core
+------------------------------------------------------------------
+
+Finally, there are certain metadata keys which can be used across
+all levels. :ref:`/spec/core` attributes cover general metadata
+such as :ref:`/spec/core/summary` or :ref:`/spec/core/description`
+for describing the content, the :ref:`/spec/core/enabled`
+attribute for disabling and enabling tests, plans and stories and
+the :ref:`/spec/core/link` key which can be used for tracking
+relations between objects.
+
+Here's how the story above could be extended with the core
+attributes ``description`` and ``link``::
+
+    description:
+        Different verbose levels can be enabled by using the
+        option several times.
+    link:
+      - implemented-by: /tmt/cli.py
+      - documented-by: /tmt/cli.py
+      - verified-by: /tests/core/dry
+
+Last but not least, the core attribute :ref:`/spec/core/adjust`
+provides a flexible way to adjust metadata based on the
+:ref:`/spec/context`.  But this is rather a large topic, so let's
+keep it for another time. In the next chapter we'll learn how to
+comfortably create new tests and plans.
