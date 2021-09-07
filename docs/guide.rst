@@ -91,15 +91,26 @@ answer all your questions ;-)
 Under The Hood
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now let's have a brief look under the hood. Similarly as with
-``git``, there is a special ``.fmf`` directory which marks root of
-the fmf metadata tree. Use the ``init`` command to initialize it::
+Now let's have a brief look under the hood. For storing all config
+data we're using the `Flexible Metadata Format`__. In short, it is
+a ``yaml`` format extended with a couple of nice features like
+`inheritance`__ or virtual `hierarchy`__ which help to maintain
+even large data efficiently without unnecessary duplication.
+
+The data are organized into `trees`__. Similarly as with ``git``,
+there is a special ``.fmf`` directory which marks the root of the
+fmf metadata tree. Use the ``init`` command to initialize it::
 
     tmt init
 
 Do not forget to include this special ``.fmf`` directory in your
 commits, it is essential for building the fmf tree structure which
 is created from all ``*.fmf`` files discovered under the fmf root.
+
+__ https://fmf.readthedocs.io
+__ https://fmf.readthedocs.io/en/stable/features.html#inheritance
+__ https://fmf.readthedocs.io/en/stable/features.html#hierarchy
+__ https://fmf.readthedocs.io/en/stable/concept.html#trees
 
 
 Plans
@@ -138,6 +149,15 @@ the testing starts::
         how: tmt
         script: wget http://example.org/
 
+Note that each of the steps above uses the ``how`` keyword to
+choose the desired method which should be applied. Steps can
+provide multiple implementations which enables you to choose the
+best one for your use case. For example to prepare the guest it's
+possible to use the :ref:`/spec/plans/prepare/install` method for
+simple package installations, :ref:`/spec/plans/prepare/ansible`
+for more complex system setup or :ref:`/spec/plans/prepare/shell`
+for arbitrary shell commands.
+
 
 Tests
 ------------------------------------------------------------------
@@ -153,12 +173,14 @@ well. The plan will look like this::
     execute:
         how: tmt
 
-Tests, identified by the required key ``test``, define attributes
-which are closely related to individual test cases such as the
-:ref:`/spec/tests/test` script, :ref:`/spec/tests/framework`,
-directory :ref:`/spec/tests/path` where the test should be
-executed, maximum test :ref:`/spec/tests/duration` or packages
-required to run the test. Here's an example of test metadata::
+:ref:`/spec/tests`, identified by the required key ``test``,
+define attributes which are closely related to individual test
+cases such as the :ref:`/spec/tests/test` script,
+:ref:`/spec/tests/framework`, directory :ref:`/spec/tests/path`
+where the test should be executed, maximum test
+:ref:`/spec/tests/duration` or packages
+:ref:`required</spec/tests/require>` to run the test. Here's an
+example of test metadata::
 
     summary: Fetch an example web page
     test: wget http://example.org/
