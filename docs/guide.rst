@@ -116,8 +116,8 @@ __ https://fmf.readthedocs.io/en/stable/concept.html#trees
 Plans
 ------------------------------------------------------------------
 
-As we've seen above, in order to enable a simple test the
-following plan is just enough::
+As we've seen above, in order to enable testing the following plan
+is just enough::
 
     execute:
         script: foo --version
@@ -126,6 +126,14 @@ Store these two lines in a ``*.fmf`` file and that's it. Name and
 location of the file is completely up to you, plans are recognized
 by the ``execute`` key which is required. Once the newly created
 plan is submitted to the CI system test script will be executed.
+
+By the way, there are several basic templates available which can
+be applied already during the ``init`` by using the ``--template``
+option or the short version ``-t``. The minimal template, which
+includes just a simple plan skeleton, is the fastest way to get
+started::
+
+    tmt init -t mini
 
 :ref:`/spec/plans` are used to enable testing and group relevant
 tests together. They describe how to :ref:`/spec/plans/discover`
@@ -187,6 +195,13 @@ example of test metadata::
     require: wget
     duration: 1m
 
+Instead of writing the plan and test metadata manualy, you might
+want to simply apply the ``base`` template which contains the plan
+mentioned above together with a test example including both test
+metadata and test script skeleton for inspiration::
+
+    tmt init --template base
+
 Similar to plans, it is possible to choose an arbitrary name for
 the test. Just make sure the ``test`` key is defined. However, to
 organize the metadata efficiently it is recommended to keep tests
@@ -217,6 +232,12 @@ An example story can look like this::
       - tmt test show -v
       - tmt test show -vvv
       - tmt test show --verbose
+
+In order to start experimenting with the complete set of examples
+covering all metadata levels, use the ``full`` template which
+creates a test, a plan and a story::
+
+    tmt init -t full
 
 
 Core
