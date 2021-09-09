@@ -276,6 +276,10 @@ repository manually::
     make wheel
     make upload
 
+Once the copr build is completed, move the ``quay`` branch to
+point to the release commit as well to build fresh container
+images.
+
 __ https://bodhi.fedoraproject.org/releases/
 __ https://pypi.org/project/tmt/
 __ https://github.com/psss/tmt/releases/
