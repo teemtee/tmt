@@ -240,11 +240,9 @@ Release
 Follow the steps below to create a new major or minor release:
 
 * Run the full test coverage using ``tmt -c how=full run``
-* Use ``git log --oneline x.y-1..`` to generate changelog
-* Add a ``Release tmt-x.y.0`` commit with specfile update
+* Use ``git log --oneline x.y-1..`` to generate the changelog
+* Add a ``Release tmt-x.y.0`` commit with the specfile update
 * Create a pull request with the commit, ensure tests pass
-* Tag the commit with ``x.y.0``, push tags ``git push --tags``
-* Create a new `github release`__ based on the tag above
 
 Release a new package to Fedora and EPEL repositories:
 
@@ -266,8 +264,18 @@ Release a new package to Fedora and EPEL repositories:
 
 Finally, if everything went well:
 
-* Merge the original release pull request
+* Merge the original release pull request on github
+* Tag the commit with ``x.y.0``, push tags ``git push --tags``
+* Create a new `github release`__ based on the tag above
 * Close the corresponding release milestone
 
-__ https://github.com/psss/tmt/releases/
+If the automation triggered by publishing the new github release
+was not successful, publish the fresh code to the `pypi`__
+repository manually::
+
+    make wheel
+    make upload
+
 __ https://bodhi.fedoraproject.org/releases/
+__ https://pypi.org/project/tmt/
+__ https://github.com/psss/tmt/releases/
