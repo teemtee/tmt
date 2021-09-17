@@ -33,7 +33,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Last run"
-        rlRun "tmt run -a provision -h local"
+        rlRun "tmt run -ak provision -h local"
         rlRun "tmt run -rl login -c true | tee output"
         rlAssertGrep "interactive" "output"
     rlPhaseEnd

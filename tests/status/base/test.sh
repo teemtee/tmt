@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt plan create -t mini plan1"
         rlRun "tmt plan create -t mini plan2"
-        rlRun "tmt run -a -S report provision -h local | tee run-output"
+        rlRun "tmt run -ka -S report provision -h local | tee run-output"
         rlRun "runid=\$(head -n 1 run-output)" 0 "Get the run ID"
     rlPhaseEnd
 
@@ -46,7 +46,7 @@ rlJournalStart
 
     rlPhaseStartTest "Different root"
         rlRun "tmprun=\$(mktemp -d)" 0 "Create a temporary directory for runs"
-        rlRun "tmt run -a -i $tmprun/run provision -h local"
+        rlRun "tmt run -ka -i $tmprun/run provision -h local"
         rlRun "tmt status $tmprun | tee output"
         rlRun "wc -l output | tee lines" 0 "Get the number of lines"
         rlLog "The status should only show one run and its heading"
@@ -75,7 +75,6 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "tmt run -i $runid finish" 0 "Get rid of an active provision"
         rlRun "popd"
-        rlRun "rm -r $runid" 0 "Remove the initial testing run"
         rlRun "rm -r $tmp" 0 "Remove tmp directory"
         rlRun "rm -r $tmprun" 0 "Remove a temporary directory for runs"
     rlPhaseEnd

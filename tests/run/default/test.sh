@@ -18,7 +18,7 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt test create -t shell tests/smoke"
         rlRun "echo 'touch $tmp/no-plan' >> tests/smoke/test.sh"
-        rlRun "tmt run $options"
+        rlRun "tmt run -k $options"
         rlAssertExists "$tmp/no-plan"
         rlRun "tmt run -r --last report -fv finish -f" 0 "Try --last report (verify #287)"
     rlPhaseEnd

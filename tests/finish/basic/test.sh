@@ -14,7 +14,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Finish"
-        rlRun "tmt run -i $tmp finish"
+        rlRun "tmt run -ki $tmp finish"
         rlRun "ls -l $tmp"
         rlAssertNotExists "$tmp/cleanup-test"
     rlPhaseEnd

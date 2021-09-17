@@ -28,7 +28,7 @@ rlJournalStart
         rlAssertNotGrep "1 guest provisioned" output
 
         # Force, all steps should be executed again
-        rlRun "tmt run --force -ddvvi $run | tee output" 0 "Third run (force)"
+        rlRun "tmt run --force -ddvvki $run | tee output" 0 "Third run (force)"
         rlAssertGrep "Run data not found." output
         rlAssertGrep "Discovered tests not found." output
         rlAssertNotGrep "Discover.*already done" output
