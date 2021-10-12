@@ -157,18 +157,14 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         if self.opt('dry'):
             return
 
-        # Prepare the right dnf/yum command
-        self.debug('Check if sudo is necessary.', level=2)
-        user = guest.execute('whoami')[0].strip()
-        sudo = '' if user == 'root' else 'sudo '
         self.debug('Check if dnf is available.', level=2)
         skip = ' --skip-broken' if self.get('missing') == 'skip' else ''
         try:
             guest.execute('rpm -q dnf')
-            command = f"{sudo}dnf{skip}"
+            command = f"{guest.sudo}dnf{skip}"
             plugin = 'dnf-plugins-core'
         except tmt.utils.RunError:
-            command = f"{sudo}yum{skip}"
+            command = f"{guest.sudo}yum{skip}"
             plugin = 'yum-plugin-copr'
         self.debug(f"Using '{command}' for all package operations.")
 
@@ -253,4 +249,4 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
                 debuginfo_packages, title="debuginfo")
             # Make sure debuginfo-install is present on the target system
             guest.execute(f"{command} install -y /usr/bin/debuginfo-install")
-            guest.execute(f"debuginfo-install -y {packages}")
+            guest.execute(f"{guest.sudo}debuginfo-install -y {packages}")
