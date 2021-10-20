@@ -95,7 +95,9 @@ class Config(object):
 
 class StreamLogger(Thread):
     """
-    code base on:
+    Reading pipes of running process in threads.
+
+    Code based on:
     https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10
     """
 
@@ -108,10 +110,7 @@ class StreamLogger(Thread):
 
     def run(self):
         for line in self.stream:
-
             new_line = copy(line.decode('utf-8', errors='replace'))
-            # if hasattr(line, "decode") else line
-            # logger itself could blocking output, so avoid to use logger there
             stripped = new_line.rstrip('\n')
             if stripped:
                 self.logger(self.log_header, stripped, 'yellow', level=3)
