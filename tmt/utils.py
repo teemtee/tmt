@@ -12,7 +12,6 @@ import shutil
 import subprocess
 import unicodedata
 from collections import OrderedDict
-from copy import copy
 from pathlib import Path
 from threading import Thread
 from typing import Dict, Iterable
@@ -110,11 +109,11 @@ class StreamLogger(Thread):
 
     def run(self):
         for line in self.stream:
-            new_line = copy(line.decode('utf-8', errors='replace'))
-            stripped = new_line.rstrip('\n')
+            line = line.decode('utf-8', errors='replace')
+            stripped = line.rstrip('\n')
             if stripped:
                 self.logger(self.log_header, stripped, 'yellow', level=3)
-            self.output.append(new_line)
+            self.output.append(line)
 
     def get_output(self):
         return "".join(self.output)
