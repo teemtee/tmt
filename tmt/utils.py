@@ -363,6 +363,7 @@ class Common(object):
             process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             process.kill()
+            process.returncode = PROCESS_TIMEOUT
         stdout_thread.join()
         if not join:
             stderr_thread.join()
