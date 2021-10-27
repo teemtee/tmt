@@ -110,9 +110,12 @@ class StreamLogger(Thread):
     def run(self):
         for line in self.stream:
             line = line.decode('utf-8', errors='replace')
-            stripped = line.rstrip('\n')
-            if stripped:
-                self.logger(self.log_header, stripped, 'yellow', level=3)
+            if line != '':
+                self.logger(
+                    self.log_header,
+                    line.rstrip('\n'),
+                    'yellow',
+                    level=3)
             self.output.append(line)
 
     def get_output(self):
