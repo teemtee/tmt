@@ -170,9 +170,11 @@ class Core(tmt.utils.Common):
         git_root = run('git rev-parse --show-toplevel')
         fmf_root = self.node.root
         if git_root != fmf_root:
-            fmf_id['path'] = os.path.join(
-                '/', os.path.relpath(fmf_root, git_root))
-
+            try:
+                fmf_id['path'] = os.path.join(
+                    '/', os.path.relpath(fmf_root, git_root))
+            except ValueError:
+                fmf_id['path'] = git_root
         return fmf_id
 
     @classmethod

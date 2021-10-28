@@ -45,6 +45,31 @@ rlJournalStart
         done
     rlPhaseEnd
 
+    rlPhaseStartTest 'fmf-id: Show fmf ids for tests discovered in plan'
+        plan='plan --name fmf/nourl/noref/nopath'
+        rlRun "tmt run -r -dvvv $plan discover --fmf-id \
+            | tee output"
+        tests_list=$(tmt run -v $plan discover |
+tac | sed -n '/summary:/q;p')
+        for test in $tests_list; do
+            rlAssertGrep "$test" output
+        done
+
+        ids_amount=$(grep -o -i "name:" output | wc -l)
+        tests_amount=$(echo $tests_list | wc -w)
+        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
+         "$ids_amount" "$tests_amount"
+    rlPhaseEnd
+
+    rlPhaseStartTest "fmf-id: check the test with node.root=None"
+        path="$(git rev-parse --show-toplevel)"
+        rlRun "cd $path/plans/sanity"
+        rlRun "tmt run -r test --name /lint/plans \
+                          plan --name /plans/sanity/lint \
+                          discover --fmf-id | grep path | tee output"
+        rlAssertGrep "$path" output
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun 'rm -f output' 0 'Removing tmp file'
         rlRun 'popd'
