@@ -47,18 +47,34 @@ rlJournalStart
 
     rlPhaseStartTest 'fmf-id: Show fmf ids for tests discovered in plan'
         plan='plan --name fmf/nourl/noref/nopath'
-        rlRun "tmt run -r -dvvv $plan discover --fmf-id \
-            | tee output"
-        tests_list=$(tmt run -v $plan discover |
-tac | sed -n '/summary:/q;p')
+        rlRun "tmt run -dvvvr $plan discover --fmf-id | tee output"
+
+        # check "discover --fmf-id" shows the same tests as "tmt run discover"
+        tests_list=$(tmt run -rv $plan discover | tac | sed -n '/summary:/q;p')
         for test in $tests_list; do
             rlAssertGrep "$test" output
         done
 
+        # check path of "test export --fmf-id"
+        # is the same as "discover --fmf-id"
+        test1=$(echo $tests_list | awk '{print $1}')
+        path=$(tmt test export $test1 --fmf-id |
+               grep "path:" | awk '{print $2}')
+        rlAssertGrep "$path" output
+
         ids_amount=$(grep -o -i "name:" output | wc -l)
         tests_amount=$(echo $tests_list | wc -w)
         rlAssertEquals "Check that number of fmf-ids equals to tests number" \
-         "$ids_amount" "$tests_amount"
+                       "$ids_amount" "$tests_amount"
+    rlPhaseEnd
+
+    # If the user runs all steps and customize discover with --fmf-id the test
+    # should finish after discover part
+    rlPhaseStartTest "fmf-id: all steps(discover, provision, etc.) are enabled"
+        plan='plan --name fmf/nourl/noref/nopath'
+        rlRun "tmt run -dvvvr --all $plan discover --fmf-id | tail -n1 \
+               | tee output"
+        rlAssertGrep "path:" output
     rlPhaseEnd
 
     rlPhaseStartTest "fmf-id: check the test with node.root=None"
@@ -68,6 +84,30 @@ tac | sed -n '/summary:/q;p')
                           plan --name /plans/sanity/lint \
                           discover --fmf-id | grep path | tee output"
         rlAssertGrep "$path" output
+    rlPhaseEnd
+
+    # Checking the case when fmf_root = git_root
+    rlPhaseStartTest "fmf-id: path doesn't shown up"
+        path="$(git rev-parse --show-toplevel)"
+        rlRun "cd $path"
+        rlRun "tmt run -r test --name /tests/unit \
+                          plans --default \
+                          discover --how fmf --fmf-id | tee output"
+        rlAssertNotGrep "path:" output
+    rlPhaseEnd
+
+    # If plan or test weren't explicitly specified then fmf-ids for all tests
+    # in all plans should be shown
+    rlPhaseStartTest "fmf-id: all plans were executed if plan/test -n=."
+        path="$(git rev-parse --show-toplevel)"
+        rlRun "cd $path"
+        ids_amount=$(tmt run -r discover --fmf-id | grep "name:" | wc -l)
+        tests_amount=$(tmt run -r discover |
+                       grep "summary:" |
+                       awk '{print $2}' |
+                       awk '{s+=$1} END {print s}')
+        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
+                       "$ids_amount" "$tests_amount"
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -148,9 +148,16 @@ class Discover(tmt.steps.Step):
 
         # Show fmf identifiers for tests discovered in plan
         if self.opt('fmf_id'):
-            fmf_id_yaml = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
-                           for test in self.tests()]
-            click.echo(''.join(fmf_id_yaml), nl=False)
+            # don't run steps except discover
+            if self._context.obj.steps != {'discover'}:
+                tmt_steps_wo_discover = list(filter(lambda x: x != 'discover',
+                                                    tmt.steps.STEPS))
+                self._context.obj.steps.\
+                    difference_update(tmt_steps_wo_discover)
+            if self.tests():
+                fmf_id_yaml = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
+                               for test in self.tests()]
+                click.echo(''.join(fmf_id_yaml), nl=False)
             return
 
         # Give a summary, update status and save
