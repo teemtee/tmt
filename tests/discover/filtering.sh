@@ -110,6 +110,20 @@ rlJournalStart
                        "$ids_amount" "$tests_amount"
     rlPhaseEnd
 
+    # If the test exists in 2 or more plans than the test should be printed
+    # only once
+    rlPhaseStartTest "fmf-id: one test exists in 2 or more plans"
+        path="$(git rev-parse --show-toplevel)"
+        rlRun "cd $path"
+        ids_amount=$(tmt run -r discover --how fmf --fmf-id \
+                     tests --name /tests/unit |
+                     grep "name:" |
+                     wc -l)
+        tests_amount=1
+        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
+                       "$ids_amount" "$tests_amount"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun 'rm -f output' 0 'Removing tmp file'
         rlRun 'popd'

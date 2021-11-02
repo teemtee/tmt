@@ -155,9 +155,29 @@ class Discover(tmt.steps.Step):
                 self._context.obj.steps.\
                     difference_update(tmt_steps_wo_discover)
             if self.tests():
-                fmf_id_yaml = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
+                plan_fmf_ids = dict()
+                fmf_id_list = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
                                for test in self.tests()]
-                click.echo(''.join(fmf_id_yaml), nl=False)
+                plan_fmf_ids[self.plan.name] = fmf_id_list
+                try:
+                    workdir_root = self.plan.workdir[:self.plan.workdir.index(
+                        self.plan.name)] + '/plan_fmf_id.yaml'
+                except ValueError:
+                    workdir_root = self.plan.workdir
+                self.write(workdir_root,
+                           tmt.utils.dict_to_yaml(plan_fmf_ids),
+                           'a')
+                try:
+                    plan_fmf_ids = tmt.utils.yaml_to_dict(
+                        self.read(workdir_root))
+                except tmt.utils.FileError:
+                    self.debug('File path does not exist.', level=2)
+                sum_fmf_ids = set()
+                for plan, fmf_ids in plan_fmf_ids.items():
+                    if self.plan.name != plan:
+                        sum_fmf_ids.update(fmf_ids)
+                fmf_id_list = set(fmf_id_list).difference(sum_fmf_ids)
+                click.echo(''.join(fmf_id_list), nl=False)
             return
 
         # Give a summary, update status and save
