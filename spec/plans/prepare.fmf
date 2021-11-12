@@ -60,11 +60,22 @@ example: |
         using ``ansible-playbook`` in the given order. The path
         should be relative to the metadata tree root.
     example: |
+        # Apply local playbooks
         prepare:
             how: ansible
             playbook:
                 - playbooks/common.yml
                 - playbooks/os/rhel7.yml
+
+        # Download a role from the ansible galaxy
+        prepare:
+            how: ansible
+            role: nginxinc.nginx
+
+        # Fetch a role from a git repository
+        prepare:
+            how: ansible
+            role: https://github.com/bennojoy/nginx
     link:
       - implemented-by: /tmt/steps/provision
 
