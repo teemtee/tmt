@@ -199,6 +199,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
     image_url: Optional[str] = None
     instance_name: Optional[str] = None
+    list_local_images: bool = False
 
 
 @dataclasses.dataclass
@@ -603,11 +604,21 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             click.option(
                 '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
                 help='Existing private key for login into the guest system.'),
+            click.option(
+                '--list-local-images', is_flag=True,
+                help="List locally available images."),
             ] + super().options(how)
 
     def go(self) -> None:
         """ Provision the testcloud instance """
         super().go()
+
+        if self.get('list-local-images'):
+            self._print_local_images()
+            # Clean up the run workdir and exit
+            if self.step.plan.my_run:
+                self.step.plan.my_run._workdir_cleanup()
+            raise SystemExit(0)
 
         # Give info about provided data
         data = TestcloudGuestData(**{
@@ -655,6 +666,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     def guest(self) -> Optional[tmt.Guest]:
         """ Return the provisioned guest """
         return self._guest
+
+    def _print_local_images(self) -> None:
+        """ Print images which are already cached """
+        self.info("Locally available images")
+        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+            self.info(filename.name, shift=1, color='yellow')
+            click.echo(f"{TESTCLOUD_IMAGES / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
