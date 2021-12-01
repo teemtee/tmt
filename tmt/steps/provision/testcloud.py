@@ -190,7 +190,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
         ]
 
     # Supported keys
-    _keys = ["image", "user", "memory", "disk", "connection"]
+    _keys = [
+        "image",
+        "user",
+        "memory",
+        "disk",
+        "connection",
+        "list-local-images"]
 
     @classmethod
     def options(cls, how=None):
@@ -213,6 +219,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                 '-c', '--connection',
                 type=click.Choice(['session', 'system']),
                 help="What session type to use, 'session' by default."),
+            click.option(
+                '--list-local-images', is_flag=True,
+                help="List locally available images."),
             ] + super().options(how)
 
     def default(self, option, default=None):
@@ -247,6 +256,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
         """ Provision the testcloud instance """
         super().go()
 
+        if self.get('list-local-images'):
+            self._print_local_images()
+            # Clean up the run workdir and exit
+            self.step.plan.my_run._workdir_cleanup(
+                self.step.plan.my_run.workdir)
+            raise SystemExit(0)
+
         # Give info about provided data
         data = dict()
         for key in ['image', 'user', 'memory', 'disk', 'connection']:
@@ -263,6 +279,16 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestTestcloud(data, name=self.name, parent=self.step)
         self._guest.start()
+
+    def _print_local_images(self):
+        """ Print images which are already cached """
+        self.info("Locally available images including file:// prefix")
+        try:
+            for f in os.listdir(TESTCLOUD_IMAGES + "aa"):
+                if f.endswith('.qcow2'):
+                    self.print(f"file://{f}", shift=1)
+        except FileNotFoundError:
+            pass
 
     def guest(self):
         """ Return the provisioned guest """
