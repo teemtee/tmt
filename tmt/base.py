@@ -144,31 +144,48 @@ class Core(tmt.utils.Common):
         def run(command):
             """ Run command, return output """
             result = subprocess.run(
-                command.split(),
+                command,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL)
+                stderr=subprocess.DEVNULL,
+                shell=True)
             return result.stdout.strip().decode("utf-8")
+
+        def discover_step(command):
+            if self.steps() == {'discover'}:
+                return f"pushd {fmf_root} > /dev/null ; " \
+                       f"{command} ; " \
+                       f"popd > /dev/null"
+            else:
+                return command
+
+        fmf_root = self.node.root
+        # `tmt run discover -h shell` doesn't have .fmf
+        if not fmf_root:
+            return None
 
         fmf_id = {'name': self.name}
 
         # Prepare url (for now handle just the most common schemas)
-        branch = run("git rev-parse --abbrev-ref --symbolic-full-name @{u}")
+        branch = run(discover_step(
+            "git rev-parse --abbrev-ref --symbolic-full-name @{u}"))
         try:
             remote_name = branch[:branch.index('/')]
         except ValueError:
             remote_name = 'origin'
-        remote = run(f"git config --get remote.{remote_name}.url")
+        remote = run(discover_step(
+            f"git config --get remote.{remote_name}.url"))
         fmf_id['url'] = tmt.utils.public_git_url(remote)
+        if fmf_id['url'] == '' and self.steps() == {'discover'}:
+            return None
 
         # Get the ref (skip for master as it is the default)
-        ref = run('git rev-parse --abbrev-ref HEAD')
-        # FIXME: We need to detect the default branch instead
+        ref = run(discover_step('git rev-parse --abbrev-ref HEAD'))
         if ref != 'master':
             fmf_id['ref'] = ref
 
         # Construct path (if different from git root)
-        git_root = run('git rev-parse --show-toplevel')
-        fmf_root = self.node.root
+        git_root = run(discover_step('git rev-parse --show-toplevel'))
+
         if git_root != fmf_root:
             try:
                 fmf_id['path'] = os.path.join(

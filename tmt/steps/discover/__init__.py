@@ -4,6 +4,7 @@ import click
 from fmf.utils import listed
 
 import tmt
+import tmt.utils
 
 
 class Discover(tmt.steps.Step):
@@ -149,15 +150,18 @@ class Discover(tmt.steps.Step):
         # Show fmf identifiers for tests discovered in plan
         if self.opt('fmf_id'):
             # don't run steps except discover
-            if self._context.obj.steps != {'discover'}:
+            if self.steps() != {'discover'}:
                 tmt_steps_wo_discover = list(filter(lambda x: x != 'discover',
                                                     tmt.steps.STEPS))
-                self._context.obj.steps.\
+                self.steps().\
                     difference_update(tmt_steps_wo_discover)
             if self.tests():
-                plan_fmf_ids = dict()
                 fmf_id_list = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
-                               for test in self.tests()]
+                               for test in self.tests()
+                               if test.fmf_id]
+                '''
+                # fmf-ids duplication is allowed
+                plan_fmf_ids = dict()
                 plan_fmf_ids[self.plan.name] = fmf_id_list
                 try:
                     workdir_root = self.plan.workdir[:self.plan.workdir.index(
@@ -177,6 +181,7 @@ class Discover(tmt.steps.Step):
                     if self.plan.name != plan:
                         sum_fmf_ids.update(fmf_ids)
                 fmf_id_list = set(fmf_id_list).difference(sum_fmf_ids)
+                '''
                 click.echo(''.join(fmf_id_list), nl=False)
             return
 
@@ -230,10 +235,29 @@ class DiscoverPlugin(tmt.steps.Plugin):
             '--fmf-id', default=False, is_flag=True,
             help='Show fmf identifiers for tests discovered in plan.')
         def discover(context, **kwargs):
+            if kwargs.get('how') == 'shell':
+                raise tmt.utils.GeneralError(
+                    f"`tmt run discover --fmf-id` is supported only for `fmf`"
+                    f" method.")
             if kwargs.get('fmf_id'):
+                import subprocess
                 context.parent.params['quiet'] = True
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0
+                # Raise an exception if --fmf-id uses w/o --url and git root
+                # doesn't exist for ALL discovered plans
+                url = tmt.utils.Common.get_fmf_attr('discover', 'url')
+                if not context.params.get('url') and not url:
+                    try:
+                        subprocess.run(
+                            'git rev-parse --show-toplevel'.split(),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL,
+                            check=True)
+                    except subprocess.CalledProcessError:
+                        raise tmt.utils.GeneralError(
+                            f"`tmt run discover --fmf-id` without `url` option"
+                            f" can be used only within git repo.")
             context.obj.steps.add('discover')
             Discover._save_context(context)
 

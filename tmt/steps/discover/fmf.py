@@ -149,7 +149,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
         # Clone provided git repository (if url given) with disabled
         # prompt to ignore possibly missing or private repositories
-        fmf_root = path or self.step.plan.my_run.tree.root
         if url:
             self.info('url', url, 'green')
             self.debug(f"Clone '{url}' to '{testdir}'.")
@@ -166,6 +165,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             if dist_git_source:
                 git_root = self.step.plan.my_run.tree.root
             else:
+                fmf_root = path or self.step.plan.my_run.tree.root
                 # Check git repository root (use fmf root if not found)
                 try:
                     output = self.run(
@@ -214,10 +214,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.info('path', path, 'green')
 
         # Prepare the whole tree path and test path prefix
-        if self.parent.opt('fmf_id'):
-            tree_path = fmf_root
-        else:
-            tree_path = os.path.join(testdir, path.lstrip('/'))
+        tree_path = os.path.join(testdir, path.lstrip('/'))
         if not os.path.isdir(tree_path) and not self.opt('dry'):
             raise tmt.utils.DiscoverError(
                 f"Metadata tree path '{path}' not found.")
