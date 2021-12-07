@@ -45,6 +45,32 @@ rlJournalStart
         done
     rlPhaseEnd
 
+    rlPhaseStartTest 'fmf-id (w/ url): Show fmf ids for discovered tests'
+        plan='plan --name fmf/url/ref/path'
+        rlRun "tmt run -r $plan discover --fmf-id finish | tee output"
+
+        # check "discover --fmf-id" shows the same tests as "tmt run discover"
+        rlRun "tmt run -v $plan discover | tee discover"
+        tests_list=$(cat discover |
+                     tac |
+                     sed -n '/summary:/q;p')
+        url_discover=$(grep "url:" discover | awk '{print $2}')
+
+        for test in $tests_list; do
+            rlAssertGrep "$test" output
+        done
+
+        ids_amount=$(grep -o -i "name:" output | wc -l)
+        url_fmf_id=$(grep "url:" output | head -n 1 | awk '{print $2}')
+        ref_fmf_id=$(grep "ref:" output | head -n 1 | awk '{print $2}')
+
+        tests_amount=$(echo $tests_list | wc -w)
+        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
+                       "$ids_amount" "$tests_amount"
+        rlAssertEquals "Check url" "$url_discover" "$url_fmf_id"
+        rlAssertEquals "Check ref" "HEAD" "$ref_fmf_id"
+    rlPhaseEnd
+
     rlPhaseStartTest 'fmf-id (w/o url): Show fmf ids for discovered tests'
         plan='plan --name fmf/nourl/noref/nopath'
         rlRun "tmt run -dvvvr $plan discover --fmf-id finish | tee output"
@@ -80,21 +106,9 @@ rlJournalStart
         rlAssertGrep "path:" output
     rlPhaseEnd
 
-    # Checking the case when fmf_root = git_root
-    rlPhaseStartTest "fmf-id (w/o url): path doesn't shown up"
-        path="$(git rev-parse --show-toplevel)"
-        rlRun "cd $path"
-        rlRun "tmt run -r test --name /tests/unit \
-                          plans --default \
-                          discover --how fmf --fmf-id finish | tee output"
-        rlAssertNotGrep "path:" output
-    rlPhaseEnd
-
     # If plan or test weren't explicitly specified then fmf-ids for all tests
     # in all plans should be shown
     rlPhaseStartTest "fmf-id (w/o url): plans were executed if plan/test -n=."
-        path="$(git rev-parse --show-toplevel)"
-        rlRun "cd $path"
         ids_amount=$(tmt run -r discover -h fmf --fmf-id finish |
                      grep "name:" |
                      wc -l)
@@ -106,24 +120,14 @@ rlJournalStart
                        "$ids_amount" "$tests_amount"
     rlPhaseEnd
 
-    rlPhaseStartTest 'fmf-id (w/ url): Show fmf ids for discovered tests'
-        plan='plan --name /ci/pull-request/smoke'
+    # Checking the case when fmf_root = git_root
+    rlPhaseStartTest "fmf-id (w/o url): path doesn't shown up"
         path="$(git rev-parse --show-toplevel)"
-        rlRun "cd $path/examples/systemd/"
-        rlRun "tmt run -r $plan discover --fmf-id finish | tee output"
-
-        # check "discover --fmf-id" shows the same tests as "tmt run discover"
-        tests_list=$(tmt run -v $plan discover |
-                     tac |
-                     sed -n '/summary:/q;p')
-        for test in $tests_list; do
-            rlAssertGrep "$test" output
-        done
-
-        ids_amount=$(grep -o -i "name:" output | wc -l)
-        tests_amount=$(echo $tests_list | wc -w)
-        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
-                       "$ids_amount" "$tests_amount"
+        rlRun "cd $path"
+        rlRun "tmt run -r test --name /tests/unit \
+                          plans --default \
+                          discover --how fmf --fmf-id finish | tee output"
+        rlAssertNotGrep "path:" output
     rlPhaseEnd
 
 #    # If the test exists in 2 or more plans than the test should be printed
@@ -161,6 +165,39 @@ rlJournalStart
         rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
 can be used only within git repo." output
         rlRun "rm -rf $tmp_dir"
+    rlPhaseEnd
+
+    # If in non-git directory exist plan w/ and w/o url, then only fmf-ids for
+    # the plan w/ url should be reported
+    rlPhaseStartTest "fmf-id (w/o and w/ url): non-git directory"
+        plan="plan -n /plans/example"
+        tmp_dir1="$(mktemp -d)"
+        tmp_dir2="$(mktemp -d)"
+        rlRun "cd $tmp_dir1"
+        rlRun "tmt init --template full"
+        rlRun "cd $tmp_dir2"
+        rlRun "tmt init --template base"
+        rlRun "cp plans/example.fmf $tmp_dir1/plans/non-url.fmf"
+        rlRun "cd $tmp_dir1"
+        # check "discover --fmf-id" shows the same tests as "tmt run discover"
+        rlRun "tmt run -r discover --fmf-id finish | tee output"
+        rlRun "tmt run -v $plan discover | tee discover"
+        tests_list=$(cat discover |
+                     tac |
+                     sed -n '/summary:/q;p')
+        url_discover=$(grep "url:" discover | awk '{print $2}')
+
+        for test in $tests_list; do
+            rlAssertGrep "$test" output
+        done
+
+        ids_amount=$(grep -o -i "name:" output | wc -l)
+        url_fmf_id=$(grep "url:" output | head -n 1 | awk '{print $2}')
+
+        tests_amount=$(echo $tests_list | wc -w)
+        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
+                       "$ids_amount" "$tests_amount"
+        rlAssertEquals "Check url" "$url_discover" "$url_fmf_id"
     rlPhaseEnd
 
     # Raise an exception if current dir doesn't have .fmf
