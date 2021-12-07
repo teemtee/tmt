@@ -235,11 +235,11 @@ class DiscoverPlugin(tmt.steps.Plugin):
             '--fmf-id', default=False, is_flag=True,
             help='Show fmf identifiers for tests discovered in plan.')
         def discover(context, **kwargs):
-            if kwargs.get('how') == 'shell':
-                raise tmt.utils.GeneralError(
-                    f"`tmt run discover --fmf-id` is supported only for `fmf`"
-                    f" method.")
             if kwargs.get('fmf_id'):
+                if kwargs.get('how') == 'shell':
+                    raise tmt.utils.GeneralError(
+                        f"`tmt run discover --fmf-id` is supported only"
+                        f" for `fmf` method.")
                 import subprocess
                 context.parent.params['quiet'] = True
                 context.parent.params['debug'] = 0
