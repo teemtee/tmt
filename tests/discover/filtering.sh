@@ -47,12 +47,11 @@ rlJournalStart
 
     rlPhaseStartTest 'fmf-id (w/ url): Show fmf ids for discovered tests'
         plan='plan --name fmf/url/ref/path'
-        rlRun "tmt run -r $plan discover --fmf-id finish | tee output"
+        rlRun "tmt run -r $plan discover -h fmf --fmf-id finish | tee output"
 
         # check "discover --fmf-id" shows the same tests as "tmt run discover"
         rlRun "tmt run -v $plan discover | tee discover"
-        tests_list=$(cat discover |
-                     tac |
+        tests_list=$(tac discover |
                      sed -n '/summary:/q;p')
         url_discover=$(grep "url:" discover | awk '{print $2}')
 
@@ -73,7 +72,8 @@ rlJournalStart
 
     rlPhaseStartTest 'fmf-id (w/o url): Show fmf ids for discovered tests'
         plan='plan --name fmf/nourl/noref/nopath'
-        rlRun "tmt run -dvvvr $plan discover --fmf-id finish | tee output"
+        rlRun "tmt run -dvvvr $plan discover -h fmf --fmf-id finish \
+               | tee output"
 
         # check "discover --fmf-id" shows the same tests as "tmt run discover"
         tests_list=$(tmt run -v $plan discover |
@@ -101,7 +101,7 @@ rlJournalStart
     rlPhaseStartTest "fmf-id (w/o url): all steps(discover, provision, etc.) \
                       are enabled"
         plan='plan --name fmf/nourl/noref/nopath'
-        rlRun "tmt run -dvvvr --all $plan discover --fmf-id | tail -n1 \
+        rlRun "tmt run -dvvvr --all $plan discover -h fmf --fmf-id | tail -n1 \
                | tee output"
         rlAssertGrep "path:" output
     rlPhaseEnd
@@ -151,8 +151,7 @@ rlJournalStart
                           plan --name /plans/sanity/lint \
                           discover -h shell --fmf-id finish 2>&1 | \
                           tee output" 2
-        rlAssertGrep "\`tmt run discover --fmf-id\` is supported only for \
-\`fmf\` method." output
+        rlAssertGrep "Error: no such option: --fmf-id" output
     rlPhaseEnd
 
     # Raise an exception if --fmf-id uses w/o --url and git root doesn't exist
@@ -180,10 +179,9 @@ can be used only within git repo." output
         rlRun "cp plans/example.fmf $tmp_dir1/plans/non-url.fmf"
         rlRun "cd $tmp_dir1"
         # check "discover --fmf-id" shows the same tests as "tmt run discover"
-        rlRun "tmt run -r discover --fmf-id finish | tee output"
+        rlRun "tmt run -r discover -h fmf --fmf-id finish | tee output"
         rlRun "tmt run -v $plan discover | tee discover"
-        tests_list=$(cat discover |
-                     tac |
+        tests_list=$(tac discover |
                      sed -n '/summary:/q;p')
         url_discover=$(grep "url:" discover | awk '{print $2}')
 
@@ -204,7 +202,8 @@ can be used only within git repo." output
     rlPhaseStartTest "fmf-id (w/o url): current dir doesn't have fmf metadata"
         tmp_dir="$(mktemp -d)"
         rlRun "cd $tmp_dir"
-        rlRun "tmt run -rdvvv discover --fmf-id finish 2>&1 | tee output" 2
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 \
+               | tee output" 2
         rlAssertGrep "No metadata found in the current directory" output
         rlRun "rm -rf $tmp_dir"
     rlPhaseEnd
