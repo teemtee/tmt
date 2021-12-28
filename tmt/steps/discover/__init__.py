@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import click
 from fmf.utils import listed
@@ -150,11 +151,7 @@ class Discover(tmt.steps.Step):
         # Show fmf identifiers for tests discovered in plan
         if self.opt('fmf_id'):
             # don't run steps except discover
-            if self.steps() != {'discover'}:
-                tmt_steps_wo_discover = list(filter(lambda x: x != 'discover',
-                                                    tmt.steps.STEPS))
-                self.steps().\
-                    difference_update(tmt_steps_wo_discover)
+            self._context.obj.steps = {'discover'}
             if self.tests():
                 fmf_id_list = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
                                for test in self.tests()
@@ -231,16 +228,8 @@ class DiscoverPlugin(tmt.steps.Plugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method to discover tests.')
-        @click.option(
-            '--fmf-id', default=False, is_flag=True,
-            help='Show fmf identifiers for tests discovered in plan.')
         def discover(context, **kwargs):
             if kwargs.get('fmf_id'):
-                if kwargs.get('how') == 'shell':
-                    raise tmt.utils.GeneralError(
-                        f"`tmt run discover --fmf-id` is supported only"
-                        f" for `fmf` method.")
-                import subprocess
                 context.parent.params['quiet'] = True
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0

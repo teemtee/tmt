@@ -78,7 +78,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
     _keys = [
         "url", "ref", "path", "test", "link", "filter",
         "modified-only", "modified-url", "modified-ref",
-        "dist-git-source", "dist-git-type"]
+        "dist-git-source", "dist-git-type", "fmf-id"]
 
     @classmethod
     def options(cls, how=None):
@@ -121,6 +121,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 '--dist-git-type',
                 type=click.Choice(tmt.utils.get_distgit_handler_names()),
                 help='Use the provided DistGit handler instead of detection.'),
+            click.option(
+                '--fmf-id', default=False, is_flag=True,
+                help='Show fmf identifiers for tests discovered in plan.')
             ] + super().options(how)
 
     def wake(self, keys=None):
