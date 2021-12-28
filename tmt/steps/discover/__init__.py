@@ -230,6 +230,8 @@ class DiscoverPlugin(tmt.steps.Plugin):
             help='Use specified method to discover tests.')
         def discover(context, **kwargs):
             if kwargs.get('fmf_id'):
+                # Set quiet, disable debug and verbose to avoid logging
+                # to terminal with discover --fmf-id
                 context.parent.params['quiet'] = True
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0

@@ -151,7 +151,7 @@ rlJournalStart
                           plan --name /plans/sanity/lint \
                           discover -h shell --fmf-id finish 2>&1 | \
                           tee output" 2
-        rlAssertGrep "Error: no such option: --fmf-id" output
+        rlAssertGrep "Error: no such option: --fmf-id" output -i
     rlPhaseEnd
 
     # Raise an exception if --fmf-id uses w/o --url and git root doesn't exist
@@ -196,6 +196,7 @@ can be used only within git repo." output
         rlAssertEquals "Check that number of fmf-ids equals to tests number" \
                        "$ids_amount" "$tests_amount"
         rlAssertEquals "Check url" "$url_discover" "$url_fmf_id"
+        rlRun "rm -rf $tmp_dir1 $tmp_dir2"
     rlPhaseEnd
 
     # Raise an exception if current dir doesn't have .fmf
