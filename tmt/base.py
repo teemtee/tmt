@@ -151,11 +151,6 @@ class Core(tmt.utils.Common):
                 cwd=cwd)
             return result.stdout.strip().decode("utf-8")
 
-        fmf_root = self.node.root
-        # `tmt run discover -h shell` doesn't have .fmf
-        if not fmf_root:
-            return None
-
         fmf_id = {'name': self.name}
 
         # Prepare url (for now handle just the most common schemas)
@@ -176,9 +171,11 @@ class Core(tmt.utils.Common):
 
         # Construct path (if different from git root)
         git_root = run('git rev-parse --show-toplevel')
+        fmf_root = self.node.root
         if git_root != fmf_root:
             fmf_id['path'] = os.path.join(
                 '/', os.path.relpath(fmf_root, git_root))
+
         return fmf_id
 
     @classmethod
