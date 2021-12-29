@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import subprocess
 
 import click
 import fmf
@@ -149,6 +150,21 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         path = self.get('path')
         testdir = os.path.join(self.workdir, 'tests')
         dist_git_source = self.get('dist-git-source', False)
+
+        # Raise an exception if --fmf-id uses w/o --url and git root
+        # doesn't exist for ALL discovered plans
+        if self.opt('fmf_id') and \
+                not tmt.utils.Common.get_fmf_attr('discover', 'url'):
+            try:
+                subprocess.run(
+                    'git rev-parse --show-toplevel'.split(),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    check=True)
+            except subprocess.CalledProcessError:
+                raise tmt.utils.GeneralError(
+                    f"`tmt run discover --fmf-id` without `url` option"
+                    f" can be used only within git repo.")
 
         # Clone provided git repository (if url given) with disabled
         # prompt to ignore possibly missing or private repositories

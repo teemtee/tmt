@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 import click
 from fmf.utils import listed
@@ -235,20 +234,6 @@ class DiscoverPlugin(tmt.steps.Plugin):
                 context.parent.params['quiet'] = True
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0
-                # Raise an exception if --fmf-id uses w/o --url and git root
-                # doesn't exist for ALL discovered plans
-                url = tmt.utils.Common.get_fmf_attr('discover', 'url')
-                if not context.params.get('url') and not url:
-                    try:
-                        subprocess.run(
-                            'git rev-parse --show-toplevel'.split(),
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL,
-                            check=True)
-                    except subprocess.CalledProcessError:
-                        raise tmt.utils.GeneralError(
-                            f"`tmt run discover --fmf-id` without `url` option"
-                            f" can be used only within git repo.")
             context.obj.steps.add('discover')
             Discover._save_context(context)
 
