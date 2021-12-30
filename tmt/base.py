@@ -153,6 +153,7 @@ class Core(tmt.utils.Common):
 
         fmf_id = {'name': self.name}
 
+        fmf_root = self.node.root
         # Prepare url (for now handle just the most common schemas)
         branch = run("git rev-parse --abbrev-ref --symbolic-full-name @{u}")
         try:
@@ -171,7 +172,6 @@ class Core(tmt.utils.Common):
 
         # Construct path (if different from git root)
         git_root = run('git rev-parse --show-toplevel')
-        fmf_root = self.node.root
         if git_root != fmf_root:
             fmf_id['path'] = os.path.join(
                 '/', os.path.relpath(fmf_root, git_root))
