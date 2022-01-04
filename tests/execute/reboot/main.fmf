@@ -19,3 +19,7 @@ duration: 20m
         enabled: true
         when: how == full
         because: this can be run only with full virtualization
+
+/reboot:
+    summary: Verify that reboot in top level test script works
+    test: ./data/test.sh
