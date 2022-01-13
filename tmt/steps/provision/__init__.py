@@ -253,6 +253,7 @@ class Guest(tmt.utils.Common):
     def _ssh_options(self, join=False):
         """ Return common ssh options (list or joined) """
         options = [
+            '-tt',
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
             ]
@@ -277,7 +278,7 @@ class Guest(tmt.utils.Common):
         """ Check/create the master ssh connection """
         if self._ssh_master_process:
             return
-        command = command + self._ssh_options() + ["-MNnT", self._ssh_guest()]
+        command = command + self._ssh_options() + ["-MNn", self._ssh_guest()]
         self.debug(f"Create the master ssh connection: {' '.join(command)}")
         self._ssh_master_process = subprocess.Popen(
             command,
