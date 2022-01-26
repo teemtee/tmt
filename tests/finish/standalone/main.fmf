@@ -1,0 +1,16 @@
+summary: Check that finish works without push
+description:
+    When tmt is used just to provision machine, push doesn't need to happen
+    But finish should still work
+# By default we run under a container only
+environment:
+    METHODS: container
+adjust:
+  - when: trigger == commit
+    environment:
+        METHODS: container local
+    because: the pipeline does not support nested virtualization
+  - when: how == full
+    environment:
+        METHODS: container virtual local
+    because: local/virtual provision needs root/full virtualization

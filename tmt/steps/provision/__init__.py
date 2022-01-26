@@ -218,7 +218,7 @@ class Guest(tmt.utils.Common):
 
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
-    _keys = ['guest', 'port', 'user', 'key', 'password']
+    _keys = ['guest', 'port', 'user', 'key', 'password', 'has_pushed']
 
     # Master ssh connection process and socket path
     _ssh_master_process = None
@@ -300,6 +300,12 @@ class Guest(tmt.utils.Common):
             return " ".join(command) + " " + self._ssh_options(join=True)
         else:
             return command + self._ssh_options()
+
+    def mark_pushed(self):
+        """ Mark that push to guest happen and write that to the disk """
+        if not self.has_pushed:
+            self.has_pushed = True
+            self.parent.save()
 
     def load(self, data):
         """
@@ -479,7 +485,7 @@ class Guest(tmt.utils.Common):
             [f'{environment}{directory}{command}'])
         return self.run(command, shell=False, **kwargs)
 
-    def push(self, source=None, destination=None, options=None):
+    def push(self, source=None, destination=None, options=None, flag=False):
         """
         Push files to the guest
 
@@ -495,6 +501,7 @@ class Guest(tmt.utils.Common):
             destination = "/"
         if source is None:
             source = self.parent.plan.workdir
+            flag = True
             self.debug(f"Push workdir to guest '{self.guest}'.")
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
@@ -512,6 +519,9 @@ class Guest(tmt.utils.Common):
                 f"Failed to push workdir to the guest. This usually means "
                 f"login as '{self.user}' to the test machine does not work.")
             raise
+        # mark that push has happend
+        if flag:
+            self.mark_pushed()
 
     def pull(self, source=None, destination=None, options=None):
         """
@@ -523,6 +533,9 @@ class Guest(tmt.utils.Common):
         default options '-Rrz --links --safe-links --protect-args'.
         """
         # Prepare options
+        if not self.pushed:
+            self.debug('Previous push is required to pull() from guest')
+            return
         if options is None:
             options = "-Rrz --links --safe-links --protect-args".split()
         if destination is None:
