@@ -1,6 +1,10 @@
+import tempfile
+
 import click
+import requests
 
 import tmt
+from tmt.utils import PrepareError, retry_session
 
 
 class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
@@ -20,6 +24,16 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
             playbook:
               - playbook/one.yml
               - playbook/two.yml
+              - playbook/three.yml
+            extra-args: '-vvv'
+
+    Remote playbooks can be referenced as well as local ones, and both kinds be intermixed:
+
+        prepare:
+            how: ansible
+            playbook:
+              - playbook/one.yml
+              - https://foo.bar/two.yml
               - playbook/three.yml
             extra-args: '-vvv'
 
@@ -48,7 +62,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
         return [
             click.option(
                 '-p', '--playbook', metavar='PLAYBOOK', multiple=True,
-                help='Path to an ansible playbook to run.'),
+                help='Path or URL of an ansible playbook to run.'),
             click.option(
                 '--extra-args', metavar='EXTRA-ARGS',
                 help='Optional arguments for ansible-playbook.')
@@ -74,4 +88,29 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
         # Apply each playbook on the guest
         for playbook in self.get('playbook'):
             self.info('playbook', playbook, 'green')
-            guest.ansible(playbook, self.get('extra-args'))
+
+            lowercased_playbook = playbook.lower()
+            playbook_path = playbook
+
+            if lowercased_playbook.startswith(
+                    'http://') or lowercased_playbook.startswith('https://'):
+                try:
+                    response = retry_session().get(playbook)
+
+                    if not response.ok:
+                        raise PrepareError(
+                            f"failed to fetch remote playbook '{playbook}'")
+
+                except requests.RequestException as exc:
+                    raise PrepareError(
+                        f"failed to fetch remote playbook '{playbook}'", original=exc)
+
+                with tempfile.NamedTemporaryFile(mode='w+b', prefix='playbook-', suffix='.yml', dir=None, delete=False) as f:
+                    f.write(response.content)
+                    f.flush()
+
+                    playbook_path = f.name
+
+                self.info('playbook-path', playbook_path)
+
+            guest.ansible(playbook_path, self.get('extra-args'))
