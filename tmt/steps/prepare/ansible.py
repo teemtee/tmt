@@ -1,3 +1,4 @@
+import os.path
 import tempfile
 
 import click
@@ -94,6 +95,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
 
             if lowercased_playbook.startswith(
                     'http://') or lowercased_playbook.startswith('https://'):
+                root_path = self.step.plan.my_run.tree.root
+
                 try:
                     response = retry_session().get(playbook)
 
@@ -105,12 +108,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
                     raise PrepareError(
                         f"failed to fetch remote playbook '{playbook}'", original=exc)
 
-                with tempfile.NamedTemporaryFile(mode='w+b', prefix='playbook-', suffix='.yml', dir=None, delete=False) as f:
+                with tempfile.NamedTemporaryFile(mode='w+b', prefix='playbook-', suffix='.yml', dir=root_path, delete=False) as f:
                     f.write(response.content)
                     f.flush()
 
-                    playbook_path = f.name
+                    playbook_path = os.path.relpath(f.name, root_path)
 
-                self.info('playbook-path', playbook_path)
+                self.info('playbook-path', playbook_path, 'green')
 
             guest.ansible(playbook_path, self.get('extra-args'))
