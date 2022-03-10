@@ -154,30 +154,7 @@ class Discover(tmt.steps.Step):
             if self.tests():
                 fmf_id_list = [tmt.utils.dict_to_yaml(test.fmf_id, start=True)
                                for test in self.tests()
-                               if test.fmf_id]
-                '''
-                # fmf-ids duplication is allowed
-                plan_fmf_ids = dict()
-                plan_fmf_ids[self.plan.name] = fmf_id_list
-                try:
-                    workdir_root = self.plan.workdir[:self.plan.workdir.index(
-                        self.plan.name)] + '/plan_fmf_id.yaml'
-                except ValueError:
-                    workdir_root = self.plan.workdir
-                self.write(workdir_root,
-                           tmt.utils.dict_to_yaml(plan_fmf_ids),
-                           'a')
-                try:
-                    plan_fmf_ids = tmt.utils.yaml_to_dict(
-                        self.read(workdir_root))
-                except tmt.utils.FileError:
-                    self.debug('File path does not exist.', level=2)
-                sum_fmf_ids = set()
-                for plan, fmf_ids in plan_fmf_ids.items():
-                    if self.plan.name != plan:
-                        sum_fmf_ids.update(fmf_ids)
-                fmf_id_list = set(fmf_id_list).difference(sum_fmf_ids)
-                '''
+                               if 'url' in test.fmf_id]
                 click.echo(''.join(fmf_id_list), nl=False)
             return
 

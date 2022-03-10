@@ -185,13 +185,6 @@ class Common(object):
         except AttributeError:
             return dict()
 
-    def steps(self):
-        """ Return the current steps """
-        try:
-            return self._context.obj.steps
-        except AttributeError:
-            return set()
-
     def opt(self, option, default=None):
         """
         Get an option from the command line context
@@ -540,24 +533,6 @@ class Common(object):
             # Create a child workdir under the parent workdir
             create_directory(self._workdir, 'workdir', quiet=True)
         return self._workdir
-
-    @staticmethod
-    def get_fmf_attr(step, attribute):
-        try:
-            fmf_tree = fmf.Tree(os.getcwd())
-        except fmf.utils.RootError:
-            raise MetadataError(
-                f"No metadata found in the current directory. "
-                f"Use 'tmt init' to get started.")
-        attr = ''
-        for i in fmf_tree.climb():
-            try:
-                attr = i.data.get(step).get(attribute)
-                if attr:
-                    break
-            except AttributeError:
-                pass
-        return attr
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions

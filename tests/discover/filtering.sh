@@ -130,20 +130,6 @@ rlJournalStart
         rlAssertNotGrep "path:" output
     rlPhaseEnd
 
-#    # If the test exists in 2 or more plans than the test should be printed
-#    # only once
-#    rlPhaseStartTest "fmf-id: one test exists in 2 or more plans"
-#        path="$(git rev-parse --show-toplevel)"
-#        rlRun "cd $path"
-#        ids_amount=$(tmt run -r discover --how fmf --fmf-id \
-#                     tests --name /tests/unit |
-#                     grep "name:" |
-#                     wc -l)
-#        tests_amount=1
-#        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
-#                       "$ids_amount" "$tests_amount"
-#    rlPhaseEnd
-
     rlPhaseStartTest "fmf-id (w/o url): check the test with --how=shell"
         path="$(git rev-parse --show-toplevel)"
         rlRun "cd $path/plans/sanity"
@@ -155,47 +141,64 @@ rlJournalStart
     rlPhaseEnd
 
     # Raise an exception if --fmf-id uses w/o --url and git root doesn't exist
-    rlPhaseStartTest "fmf-id (w/o url): and git root doesn't exist"
+    rlPhaseStartTest "Git root doesn't exist. Different cases"
+        # 1: w/o url in plan: w/o url in CLI - w/ url in CLI
         tmp_dir="$(mktemp -d)"
         rlRun "cd $tmp_dir"
         rlRun "tmt init --template base"
         rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 \
                | tee output" 2
         rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
-can be used only within git repo." output
-        rlRun "rm -rf $tmp_dir"
-    rlPhaseEnd
+in plan \`/plans/example\` can be used only within git repo." output
 
-    # If in non-git directory exist plan w/ and w/o url, then only fmf-ids for
-    # the plan w/ url should be reported
-    rlPhaseStartTest "fmf-id (w/o and w/ url): non-git directory"
-        plan="plan -n /plans/example"
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
+               --url https://github.com/teemtee/fmf finish | tee output" 0
+        rlRun "rm -rf $tmp_dir"
+
+        # 1: w/ url in plan: w/o url in CLI - w/ url in CLI
+        tmp_dir="$(mktemp -d)"
+        rlRun "cd $tmp_dir"
+        rlRun "tmt init --template full"
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish | tee output" 0
+
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
+               --url https://github.com/teemtee/fmf finish | tee output" 0
+        rlRun "rm -rf $tmp_dir"
+
+        # 2: w/o url in plan AND w/ url in plan: w/o url in CLI - w/ url in CLI
         tmp_dir1="$(mktemp -d)"
         tmp_dir2="$(mktemp -d)"
         rlRun "cd $tmp_dir1"
         rlRun "tmt init --template full"
         rlRun "cd $tmp_dir2"
         rlRun "tmt init --template base"
-        rlRun "cp plans/example.fmf $tmp_dir1/plans/non-url.fmf"
+        rlRun "cp plans/example.fmf $tmp_dir1/plans/a-non-url.fmf"
         rlRun "cd $tmp_dir1"
-        # check "discover --fmf-id" shows the same tests as "tmt run discover"
-        rlRun "tmt run -r discover -h fmf --fmf-id finish | tee output"
-        rlRun "tmt run -v $plan discover | tee discover"
-        tests_list=$(tac discover |
-                     sed -n '/summary:/q;p')
-        url_discover=$(grep "url:" discover | awk '{print $2}')
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 \
+               | tee output" 2
+        rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
+in plan \`/plans/a-non-url\` can be used only within git repo." output
 
-        for test in $tests_list; do
-            rlAssertGrep "$test" output
-        done
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
+               --url https://github.com/teemtee/fmf finish | tee output" 0
+        rlRun "rm -rf $tmp_dir1 $tmp_dir2"
 
-        ids_amount=$(grep -o -i "name:" output | wc -l)
-        url_fmf_id=$(grep "url:" output | head -n 1 | awk '{print $2}')
+        # 2: w/ url in plan AND w/o url in plan: w/o url in CLI - w/ url in CLI
+        tmp_dir1="$(mktemp -d)"
+        tmp_dir2="$(mktemp -d)"
+        rlRun "cd $tmp_dir1"
+        rlRun "tmt init --template full"
+        rlRun "cd $tmp_dir2"
+        rlRun "tmt init --template base"
+        rlRun "cp plans/example.fmf $tmp_dir1/plans/z-non-url.fmf"
+        rlRun "cd $tmp_dir1"
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 \
+               | tee output" 2
+        rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
+in plan \`/plans/z-non-url\` can be used only within git repo." output
 
-        tests_amount=$(echo $tests_list | wc -w)
-        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
-                       "$ids_amount" "$tests_amount"
-        rlAssertEquals "Check url" "$url_discover" "$url_fmf_id"
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
+               --url https://github.com/teemtee/fmf finish | tee output" 0
         rlRun "rm -rf $tmp_dir1 $tmp_dir2"
     rlPhaseEnd
 

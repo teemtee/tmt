@@ -9,6 +9,7 @@ import fmf
 import tmt
 import tmt.beakerlib
 import tmt.steps.discover
+from tmt.utils import MetadataError
 
 
 class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
@@ -151,20 +152,45 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         testdir = os.path.join(self.workdir, 'tests')
         dist_git_source = self.get('dist-git-source', False)
 
-        # Raise an exception if --fmf-id uses w/o --url and git root
-        # doesn't exist for ALL discovered plans
-        if self.opt('fmf_id') and \
-                not tmt.utils.Common.get_fmf_attr('discover', 'url'):
+        # Raise an exception if --fmf-id uses w/o url and git root
+        # doesn't exist for discovered plan
+        if self.opt('fmf_id'):
+            def print_error(plan_name=None):
+                try:
+                    subprocess.run(
+                        'git rev-parse --show-toplevel'.split(),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        check=True)
+                except subprocess.CalledProcessError:
+                    raise tmt.utils.GeneralError(
+                        f"`tmt run discover --fmf-id` without `url` option in "
+                        f"plan `{plan_name}` can be used only within"
+                        f" git repo.")
+
             try:
-                subprocess.run(
-                    'git rev-parse --show-toplevel'.split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                    check=True)
-            except subprocess.CalledProcessError:
-                raise tmt.utils.GeneralError(
-                    f"`tmt run discover --fmf-id` without `url` option"
-                    f" can be used only within git repo.")
+                fmf_tree = fmf.Tree(os.getcwd())
+            except fmf.utils.RootError:
+                raise MetadataError(
+                    f"No metadata found in the current directory. "
+                    f"Use 'tmt init' to get started.")
+            # It covers only one case, when there is:
+            # 1) no --url on CLI
+            # 2) plan with url attr is alphabetically first (0 position)
+            # 3) plan w/o url exists in test run
+            for i, attr in enumerate(fmf_tree.climb()):
+                try:
+                    plan_url = attr.data.get('discover').get('url')
+                    plan_name = attr.name
+                    if i == 0 and not plan_url:
+                        break
+                    elif not plan_url and not self.opt('url'):
+                        print_error(plan_name)
+                except AttributeError:
+                    pass
+            # All other cases are covered by this condition
+            if not url:
+                print_error(self.step.plan.name)
 
         # Clone provided git repository (if url given) with disabled
         # prompt to ignore possibly missing or private repositories

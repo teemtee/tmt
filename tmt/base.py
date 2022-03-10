@@ -143,7 +143,7 @@ class Core(tmt.utils.Common):
 
         def run(command):
             """ Run command, return output """
-            cwd = fmf_root if self.steps() == {'discover'} else None
+            cwd = fmf_root
             result = subprocess.run(
                 command.split(),
                 stdout=subprocess.PIPE,
@@ -162,8 +162,6 @@ class Core(tmt.utils.Common):
             remote_name = 'origin'
         remote = run(f"git config --get remote.{remote_name}.url")
         fmf_id['url'] = tmt.utils.public_git_url(remote)
-        if fmf_id['url'] == '' and self.steps() == {'discover'}:
-            return None
 
         # Get the ref (skip for master as it is the default)
         ref = run('git rev-parse --abbrev-ref HEAD')
