@@ -176,15 +176,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     f"Use 'tmt init' to get started.")
             # It covers only one case, when there is:
             # 1) no --url on CLI
-            # 2) plan with url attr is alphabetically first (0 position)
-            # 3) plan w/o url exists in test run
+            # 2) plan w/o url exists in test run
             for i, attr in enumerate(fmf_tree.climb()):
                 try:
                     plan_url = attr.data.get('discover').get('url')
                     plan_name = attr.name
-                    if i == 0 and not plan_url:
-                        break
-                    elif not plan_url and not self.opt('url'):
+                    if not plan_url and not self.opt('url'):
                         print_error(plan_name)
                 except AttributeError:
                     pass
