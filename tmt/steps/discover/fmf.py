@@ -167,24 +167,24 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                         f"`tmt run discover --fmf-id` without `url` option in "
                         f"plan `{plan_name}` can be used only within"
                         f" git repo.")
-
-            try:
-                fmf_tree = fmf.Tree(os.getcwd())
-            except fmf.utils.RootError:
-                raise MetadataError(
-                    f"No metadata found in the current directory. "
-                    f"Use 'tmt init' to get started.")
             # It covers only one case, when there is:
             # 1) no --url on CLI
             # 2) plan w/o url exists in test run
-            for i, attr in enumerate(fmf_tree.climb()):
+            if not self.opt('url'):
                 try:
-                    plan_url = attr.data.get('discover').get('url')
-                    plan_name = attr.name
-                    if not plan_url and not self.opt('url'):
-                        assert_git_url(plan_name)
-                except AttributeError:
-                    pass
+                    fmf_tree = fmf.Tree(os.getcwd())
+                except fmf.utils.RootError:
+                    raise MetadataError(
+                        f"No metadata found in the current directory. "
+                        f"Use 'tmt init' to get started.")
+                for i, attr in enumerate(fmf_tree.climb()):
+                    try:
+                        plan_url = attr.data.get('discover').get('url')
+                        plan_name = attr.name
+                        if not plan_url:
+                            assert_git_url(plan_name)
+                    except AttributeError:
+                        pass
             # All other cases are covered by this condition
             if not url:
                 assert_git_url(self.step.plan.name)

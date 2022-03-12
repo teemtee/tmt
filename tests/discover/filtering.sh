@@ -202,6 +202,15 @@ in plan \`/plans/z-non-url\` can be used only within git repo." output
         rlRun "rm -rf $tmp_dir1 $tmp_dir2"
     rlPhaseEnd
 
+    # If current dir has .fmf and --url CLI option exists
+    rlPhaseStartTest "fmf-id (with url on CLI): no fmf metadata"
+        tmp_dir="$(mktemp -d)"
+        rlRun "cd $tmp_dir"
+        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
+               --url https://github.com/teemtee/fmf finish | tee output" 0
+        rlRun "rm -rf $tmp_dir"
+    rlPhaseEnd
+
     # Raise an exception if current dir doesn't have .fmf
     rlPhaseStartTest "fmf-id (w/o url): current dir doesn't have fmf metadata"
         tmp_dir="$(mktemp -d)"
