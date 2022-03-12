@@ -155,7 +155,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Raise an exception if --fmf-id uses w/o url and git root
         # doesn't exist for discovered plan
         if self.opt('fmf_id'):
-            def print_error(plan_name=None):
+            def assert_git_url(plan_name=None):
                 try:
                     subprocess.run(
                         'git rev-parse --show-toplevel'.split(),
@@ -182,12 +182,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     plan_url = attr.data.get('discover').get('url')
                     plan_name = attr.name
                     if not plan_url and not self.opt('url'):
-                        print_error(plan_name)
+                        assert_git_url(plan_name)
                 except AttributeError:
                     pass
             # All other cases are covered by this condition
             if not url:
-                print_error(self.step.plan.name)
+                assert_git_url(self.step.plan.name)
 
         # Clone provided git repository (if url given) with disabled
         # prompt to ignore possibly missing or private repositories
