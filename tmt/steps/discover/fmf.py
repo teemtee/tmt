@@ -163,7 +163,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                         stderr=subprocess.DEVNULL,
                         check=True)
                 except subprocess.CalledProcessError:
-                    raise tmt.utils.GeneralError(
+                    raise tmt.utils.DiscoverError(
                         f"`tmt run discover --fmf-id` without `url` option in "
                         f"plan `{plan_name}` can be used only within"
                         f" git repo.")
@@ -174,7 +174,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 try:
                     fmf_tree = fmf.Tree(os.getcwd())
                 except fmf.utils.RootError:
-                    raise MetadataError(
+                    raise tmt.utils.DiscoverError(
                         f"No metadata found in the current directory. "
                         f"Use 'tmt init' to get started.")
                 for i, attr in enumerate(fmf_tree.climb()):
@@ -208,6 +208,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 git_root = self.step.plan.my_run.tree.root
             else:
                 fmf_root = path or self.step.plan.my_run.tree.root
+                if fmf_root is None:
+                    raise tmt.utils.DiscoverError(
+                        f"No metadata found in the current directory.")
                 # Check git repository root (use fmf root if not found)
                 try:
                     output = self.run(
