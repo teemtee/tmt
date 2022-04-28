@@ -10,7 +10,8 @@ import requests
 
 import tmt
 from tmt.steps.provision import ProvisionPlugin
-from tmt.utils import WORKDIR_ROOT, ProvisionError, retry_session
+from tmt.utils import (WORKDIR_ROOT, GeneralError, ProvisionError,
+                       get_image_url, retry_session)
 
 
 def import_testcloud():
@@ -368,6 +369,14 @@ class GuestTestcloud(tmt.Guest):
             url = testcloud.util.get_fedora_image_url("rawhide")
 
         if not url:
+            try:
+                url = get_image_url(
+                    name, arch='x86_64', format=[
+                        'box', 'qcow2'])
+                if url is not None:
+                    return url
+            except GeneralError as error:
+                self.fail(str(error))
             raise ProvisionError(f"Could not map '{name}' to compose.")
         return url
 

@@ -1780,3 +1780,35 @@ def get_distgit_handler(remotes=None, usage_name=None):
 def get_distgit_handler_names():
     """ All known distgit handlers """
     return [i.usage_name for i in DistGitHandler.__subclasses__()]
+
+
+class Image2URLConvertor(object):
+    """ Common parent for image to url conversion plugins """
+    @staticmethod
+    def convert(value, arch=None, format=[]):
+        """
+        Return url to download image from
+
+        Caller should set 'arch' and 'format'
+        If class can't convert value it should return 'None'
+        (e.g. class converts qcow2 images but asked to map podman)
+
+        Raises GeneralError when value was expected to be converted,
+        but couldn't be (e.g. old fedora release removed from download location)
+        """
+        raise NotImplementedError()
+
+
+def get_image_url(value, arch, format):
+    """
+    Map image 'value' for 'arch' and one of 'format' into URL to download
+
+    First plugin which knows how to map the value wins
+
+    GeneralError might come from the plugin
+    """
+    for candidate_class in Image2URLConvertor.__subclasses__():
+        url = candidate_class.convert(value, arch, format=format)
+        if url is not None:
+            log.debug(f"'{value}' mapped by '{candidate_class.__name__}'")
+            return url
