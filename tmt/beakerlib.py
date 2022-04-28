@@ -55,10 +55,12 @@ class Library(object):
     workdir or into 'destination' if provided in the identifier.
     """
 
-    def __init__(self, identifier, parent=None):
+    def __init__(self, identifier, parent=None, gathered_hlp=[]):
         """ Process the library identifier and fetch the library """
         # Use an empty common class if parent not provided (for logging, cache)
         self.parent = parent or tmt.utils.Common(workdir=True)
+
+        self.gathered_hlp = gathered_hlp
 
         # Default branch is detected from the origin after cloning
         self.default_branch = None
@@ -66,6 +68,7 @@ class Library(object):
         # The 'library(repo/lib)' format
         if isinstance(identifier, str):
             identifier = identifier.strip()
+            self.identifier = identifier
             matched = LIBRARY_REGEXP.search(identifier)
             if not matched:
                 raise LibraryError
@@ -79,6 +82,7 @@ class Library(object):
 
         # The fmf identifier
         elif isinstance(identifier, dict):
+            self.identifier = identifier
             self.parent.debug(f"Detected library '{identifier}'.", level=3)
             self.format = 'fmf'
             self.url = identifier.get('url')
@@ -219,6 +223,10 @@ class Library(object):
         self.require = tmt.utils.listify(library.get('require', []))
         self.recommend = tmt.utils.listify(library.get('recommend', []))
 
+        self.require = [e for e in self.require if e not in self.gathered_hlp]
+        self.recommend = [
+            e for e in self.recommend if e not in self.gathered_hlp]
+
         # Create a symlink if the library is deep in the structure
         # FIXME: hot fix for https://github.com/beakerlib/beakerlib/pull/72
         # Covers also cases when library is stored more than 2 levels deep
@@ -236,7 +244,11 @@ class Library(object):
                     f"for a deep library ({error}).")
 
 
-def dependencies(original_require, original_recommend=None, parent=None):
+def dependencies(
+        original_require,
+        original_recommend=None,
+        parent=None,
+        gathered_hlp=[]):
     """
     Check dependencies for possible beakerlib libraries
 
@@ -258,11 +270,15 @@ def dependencies(original_require, original_recommend=None, parent=None):
     for dependency in original_require + original_recommend:
         # Library require/recommend
         try:
-            library = Library(dependency, parent=parent)
+            library = Library(
+                dependency,
+                parent=parent,
+                gathered_hlp=gathered_hlp)
             gathered_libraries.append(library)
+            gathered_hlp.append(library.identifier)
             # Recursively check for possible dependent libraries
             requires, recommends, libraries = dependencies(
-                library.require, library.recommend, parent)
+                library.require, library.recommend, parent, gathered_hlp)
             processed_require.update(set(requires))
             processed_recommend.update(set(recommends))
             gathered_libraries.extend(libraries)
