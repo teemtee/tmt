@@ -127,13 +127,16 @@ class Library(object):
                     raise tmt.utils.GeneralError(
                         f"Unable to parse repository name from '{self.url}'.")
                 repo = repo_search.group(1)
-            if not repo and self.path:
+            elif not repo and self.path:
                 try:
                     repo = os.path.basename(self.path)
                 except TypeError:
                     raise tmt.utils.GeneralError(
                         f"Unable to parse repository name from '{self.path}'.")
-            assert repo
+            else:
+                raise tmt.utils.GeneralError(
+                    f"Unable to parse repository name from '{self.path}'.")
+
             self.repo = repo
         # Something weird
         else:
