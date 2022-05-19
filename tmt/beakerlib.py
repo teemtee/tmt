@@ -72,11 +72,11 @@ class Library(object):
     def __init__(
             self,
             identifier: BeakerlibIdentifierType,
-            parent: Optional[CommonWithLibraryCache] = None
+            parent: Optional[tmt.utils.Common] = None
             ) -> None:
         """ Process the library identifier and fetch the library """
         # Use an empty common class if parent not provided (for logging, cache)
-        self.parent = parent or CommonWithLibraryCache(workdir=True)
+        self.parent = parent or tmt.utils.Common(workdir=True)
 
         # Default branch is detected from the origin after cloning
         self.default_branch: Optional[str] = None
@@ -152,17 +152,14 @@ class Library(object):
 
     @property
     def _library_cache(self) -> Dict[str, Library]:
+        # Initialize library cache (indexed by the repository name)
         if not hasattr(self.parent, '_library_cache'):
-            self.parent._library_cache = dict()
+            cast(CommonWithLibraryCache, self.parent)._library_cache = dict()
 
-        return self.parent._library_cache
+        return cast(CommonWithLibraryCache, self.parent)._library_cache
 
     def fetch(self) -> None:
         """ Fetch the library (unless already fetched) """
-        # Initialize library cache (indexed by the repository name)
-        if not hasattr(self.parent, '_library_cache'):
-            self.parent._library_cache = dict()
-
         # Check if the library was already fetched
         try:
             library = self._library_cache[self.repo]
@@ -233,7 +230,7 @@ class Library(object):
                 raise
             # Initialize metadata tree, add self into the library index
             self.tree = fmf.Tree(directory)
-            self.parent._library_cache[self.repo] = self
+            self._library_cache[self.repo] = self
 
         # Get the library node, check require and recommend
         library_node = self.tree.find(self.name)
@@ -275,7 +272,7 @@ class Library(object):
 def dependencies(
     original_require: List[str],
     original_recommend: Optional[List[str]] = None,
-    parent: Optional[CommonWithLibraryCache] = None
+    parent: Optional[tmt.utils.Common] = None
         ) -> LibraryDependenciesType:
     """
     Check dependencies for possible beakerlib libraries
