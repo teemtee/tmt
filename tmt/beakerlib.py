@@ -195,12 +195,14 @@ class Library(object):
                     self.parent.run(
                         ['git', 'clone', self.url, directory],
                         env={"GIT_ASKPASS": "echo"})
-                else:
-                    assert self.path
+                elif self.path:
                     self.parent.debug(
                         f"Copy local library '{self.path}' to '{directory}'.",
                         level=3)
                     shutil.copytree(self.path, directory, symlinks=True)
+                else:
+                    raise tmt.utils.GeneralError(
+                        f"No url or path set for the Library")
                 # Detect the default branch from the origin
                 try:
                     self.default_branch = tmt.utils.default_branch(directory)
