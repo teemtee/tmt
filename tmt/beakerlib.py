@@ -15,7 +15,7 @@ BeakerlibIdentifierType = Union[str, Dict[str, str]]
 
 # A type for Beakerlib dependencies
 LibraryDependenciesType = Tuple[
-    List[str], List[str], List[Library]
+    List[str], List[str], List['Library']
 ]
 
 # Regular expressions for beakerlib libraries
@@ -34,7 +34,7 @@ STRIP_SUFFIX_FORGES = [
 
 
 class CommonWithLibraryCache(tmt.utils.Common):
-    _library_cache: Dict[str, Library]
+    _library_cache: Dict[str, 'Library']
 
 
 class LibraryError(Exception):
@@ -154,7 +154,7 @@ class Library(object):
         return f"{self.repo}{self.name}"
 
     @property
-    def _library_cache(self) -> Dict[str, Library]:
+    def _library_cache(self) -> Dict[str, 'Library']:
         # Initialize library cache (indexed by the repository name)
         if not hasattr(self.parent, '_library_cache'):
             cast(CommonWithLibraryCache, self.parent)._library_cache = dict()
