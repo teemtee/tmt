@@ -239,7 +239,7 @@ class Library(object):
 
         # Get the library node, check require and recommend
         library_node = self.tree.find(self.name)
-        if not library:
+        if not library_node:
             # Fallback to install during the prepare step if in rpm format
             if self.format == 'rpm':
                 self.parent.debug(
