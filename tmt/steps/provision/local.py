@@ -48,7 +48,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
         return GuestLocal.requires()
 
 
-class GuestLocal(tmt.Guest):
+class GuestLocal(tmt.GuestSSH):
     """ Local Host """
 
     def ansible(self, playbook, extra_args=None):
