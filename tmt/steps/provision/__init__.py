@@ -409,15 +409,8 @@ class Guest(tmt.utils.Common):
 
     def ansible(self, playbook, extra_args=None):
         """ Prepare guest using ansible playbook """
-        playbook = self._ansible_playbook_path(playbook)
-        stdout, stderr = self.run(
-            ['ansible-playbook'] +
-            self._ansible_verbosity() +
-            self._ansible_extra_args(extra_args) +
-            ['-i', f'{self._ssh_guest()},', playbook],
-            cwd=self.parent.plan.worktree,
-            env=self._prepare_environment())
-        self._ansible_summary(stdout)
+
+        raise NotImplemented
 
     def execute(self, command, **kwargs):
         """
