@@ -1,9 +1,11 @@
 # coding: utf-8
 
+import dataclasses
 import os
 import platform
 import re
 import time
+from typing import Optional
 
 import click
 import fmf
@@ -138,6 +140,31 @@ NON_KVM_TIMEOUT_COEF = 10          # times
 # SSH key type, set None for ssh-keygen default one
 SSH_KEYGEN_TYPE = "ecdsa"
 
+DEFAULT_USER = 'root'
+DEFAULT_MEMORY = 2048
+DEFAULT_DISK = 10
+DEFAULT_IMAGE = 'fedora'
+DEFAULT_CONNECTION = 'session'
+DEFAULT_ARCH = platform.machine()
+
+# TODO: get rid of `ignore` once superclass is no longer `Any`
+
+
+@dataclasses.dataclass
+class TestcloudGuestData(
+        tmt.steps.provision.GuestSSHData):  # type: ignore[misc]
+    # Override parent class with our defaults
+    user: str = DEFAULT_USER
+
+    image: str = DEFAULT_IMAGE
+    memory: int = DEFAULT_MEMORY
+    disk: int = DEFAULT_DISK
+    connection: str = DEFAULT_CONNECTION
+    arch: str = DEFAULT_ARCH
+
+    image_url: Optional[str] = None
+    instance_name: Optional[str] = None
+
 
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     """
@@ -214,26 +241,18 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
 
     def default(self, option, default=None):
         """ Return default data for given option """
-        defaults = {
-            'user': 'root',
-            'memory': 2048,
-            'disk': 10,
-            'image': 'fedora',
-            'connection': 'session',
-            'arch': platform.machine()
-            }
-        if option in defaults:
-            return defaults[option]
-        return default
+
+        return getattr(TestcloudGuestData(), option, default)
 
     def wake(self, keys=None, data=None):
         """ Wake up the plugin, process data, apply options """
         super().wake(keys=keys, data=data)
 
         # Convert memory and disk to integers
-        for key in ['memory', 'disk']:
-            if isinstance(self.get(key), str):
-                self.data[key] = int(self.data[key])
+        # TODO: can they ever *not* be integers?
+        # for key in ['memory', 'disk']:
+        #     if isinstance(self.get(key), str):
+        #         self.data[key] = int(self.data[key])
 
         # Wake up testcloud instance
         if data:
@@ -246,18 +265,20 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
         super().go()
 
         # Give info about provided data
-        data = dict()
-        for key in self._keys + self._common_keys:
-            data[key] = self.get(key)
+        data = TestcloudGuestData(**{
+            key: self.get(key)
+            for key in TestcloudGuestData.iter_key_names()
+            })
+
+        for key, value in data.to_dict().items():
             if key == 'memory':
-                self.info('memory', f"{self.get('memory')} MB", 'green')
+                self.info('memory', f"{value} MB", 'green')
             elif key == 'disk':
-                self.info('disk', f"{self.get('disk')} GB", 'green')
+                self.info('disk', f"{value} GB", 'green')
             elif key == 'connection':
-                self.verbose(key, data[key], 'green')
-            else:
-                if data[key] is not None:
-                    self.info(key, data[key], 'green')
+                self.verbose('connection', value, 'green')
+            elif value is not None:
+                self.info(key, value, 'green')
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestTestcloud(data, name=self.name, parent=self.step)
@@ -297,6 +318,19 @@ class GuestTestcloud(tmt.GuestSSH):
         connection . either session (default) or system, to be passed to qemu
         arch ....... architecture for the VM, host arch is the default
     """
+
+    _data_class = TestcloudGuestData
+
+    image: str
+    image_url: Optional[str]
+    instance_name: Optional[str]
+    memory: int
+    disk: str
+    connection: str
+    arch: str
+
+    _image: Optional['testcloud.image.Image'] = None
+    _instance: Optional['testcloud.instance.Instance'] = None
 
     def _get_url(self, url, message):
         """ Get url, retry when fails, return response """
@@ -379,26 +413,12 @@ class GuestTestcloud(tmt.GuestSSH):
         with open(DOMAIN_TEMPLATE_FILE, 'w') as template:
             template.write(DOMAIN_TEMPLATE)
 
-    def load(self, data):
-        """ Load guest data and initialize attributes """
+    def load(self, data: TestcloudGuestData) -> None:
         super().load(data)
-        self.image = None
-        self.image_url = data.get('image')
-        self.instance = None
-        self.instance_name = data.get('instance')
-        self.memory = data.get('memory')
-        self.disk = data.get('disk')
-        self.connection = data.get('connection')
-        self.arch = data.get('arch')
 
-    def save(self):
-        """ Save guest data for future wake up """
-        data = super().save()
-        data['instance'] = self.instance_name
-        data['image'] = self.image_url
-        data['connection'] = self.connection
-        data['arch'] = self.arch
-        return data
+        # TODO: investigate how to merge "image" (as in "supplied by user")
+        # and "image_url" (the deduced and saved).
+        self.image_url = self.image
 
     def wake(self):
         """ Wake up the guest """
@@ -406,9 +426,9 @@ class GuestTestcloud(tmt.GuestSSH):
             f"Waking up testcloud instance '{self.instance_name}'.",
             level=2, shift=0)
         self.prepare_config()
-        self.image = testcloud.image.Image(self.image_url)
-        self.instance = testcloud.instance.Instance(
-            self.instance_name, image=self.image,
+        self._image = testcloud.image.Image(self.image_url)
+        self._instance = testcloud.instance.Instance(
+            self.instance_name, image=self._image,
             connection=f"qemu:///{self.connection}", desired_arch=self.arch)
 
     def prepare_ssh_key(self, key_type=None):
@@ -464,15 +484,15 @@ class GuestTestcloud(tmt.GuestSSH):
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
         # Initialize and prepare testcloud image
-        self.image = testcloud.image.Image(self.image_url)
-        self.verbose('qcow', self.image.name, 'green')
-        if not os.path.exists(self.image.local_path):
+        self._image = testcloud.image.Image(self.image_url)
+        self.verbose('qcow', self._image.name, 'green')
+        if not os.path.exists(self._image.local_path):
             self.info('progress', 'downloading...', 'cyan')
         try:
-            self.image.prepare()
+            self._image.prepare()
         except FileNotFoundError as error:
             raise ProvisionError(
-                f"Image '{self.image.local_path}' not found.", original=error)
+                f"Image '{self._image.local_path}' not found.", original=error)
         except (testcloud.exceptions.TestcloudPermissionsError,
                 PermissionError) as error:
             raise ProvisionError(
@@ -481,13 +501,13 @@ class GuestTestcloud(tmt.GuestSSH):
 
         # Create instance
         self.instance_name = self._tmt_name()
-        self.instance = testcloud.instance.Instance(
-            name=self.instance_name, image=self.image,
+        self._instance = testcloud.instance.Instance(
+            name=self.instance_name, image=self._image,
             connection=f"qemu:///{self.connection}", desired_arch=self.arch)
         self.verbose('name', self.instance_name, 'green')
 
         # Decide if we want to multiply timeouts when emulating an architecture
-        time_coeff = NON_KVM_TIMEOUT_COEF if not self.instance.kvm else 1
+        time_coeff = NON_KVM_TIMEOUT_COEF if not self._instance.kvm else 1
 
         # Decide which networking setup to use
         # Autodetect works with libguestfs python bindings
@@ -500,30 +520,30 @@ class GuestTestcloud(tmt.GuestSSH):
             match_legacy = re.search(
                 r'(rhel|centos).*-7', self.image_url.lower())
             if match_legacy:
-                self.instance.pci_net = "e1000"
+                self._instance.pci_net = "e1000"
             else:
-                self.instance.pci_net = "virtio-net-pci"
+                self._instance.pci_net = "virtio-net-pci"
 
         # Prepare ssh key
         self.prepare_ssh_key(SSH_KEYGEN_TYPE)
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
-        self.instance.ram = self.memory
-        self.instance.disk_size = self.disk
+        self._instance.ram = self.memory
+        self._instance.disk_size = self.disk
         try:
-            self.instance.prepare()
-            self.instance.spawn_vm()
-            self.instance.start(DEFAULT_BOOT_TIMEOUT * time_coeff)
+            self._instance.prepare()
+            self._instance.spawn_vm()
+            self._instance.start(DEFAULT_BOOT_TIMEOUT * time_coeff)
         except (testcloud.exceptions.TestcloudInstanceError,
                 libvirt.libvirtError) as error:
             raise ProvisionError(
                 f'Failed to boot testcloud instance ({error}).')
-        self.guest = self.instance.get_ip()
-        self.port = self.instance.get_instance_port()
+        self.guest = self._instance.get_ip()
+        self.port = self._instance.get_instance_port()
         self.verbose('ip', self.guest, 'green')
         self.verbose('port', self.port, 'green')
-        self.instance.create_ip_file(self.guest)
+        self._instance.create_ip_file(self.guest)
 
         # Wait a bit until the box is up
         timeout = DEFAULT_CONNECT_TIMEOUT * time_coeff
@@ -546,7 +566,7 @@ class GuestTestcloud(tmt.GuestSSH):
             wait += 1
             timeout -= wait + attempt_duration
 
-        if not self.instance.kvm:
+        if not self._instance.kvm:
             self.debug(
                 f"Waiting {NON_KVM_ADDITIONAL_WAIT} seconds "
                 f"for non-kvm instance...")
@@ -555,10 +575,10 @@ class GuestTestcloud(tmt.GuestSSH):
     def stop(self):
         """ Stop provisioned guest """
         super().stop()
-        if self.instance:
+        if self._instance:
             self.debug(f"Stopping testcloud instance '{self.instance_name}'.")
             try:
-                self.instance.stop()
+                self._instance.stop()
             except testcloud.exceptions.TestcloudInstanceError as error:
                 raise tmt.utils.ProvisionError(
                     f"Failed to stop testcloud instance: {error}")
@@ -566,10 +586,10 @@ class GuestTestcloud(tmt.GuestSSH):
 
     def remove(self):
         """ Remove the guest (disk cleanup) """
-        if self.instance:
+        if self._instance:
             self.debug(f"Removing testcloud instance '{self.instance_name}'.")
             try:
-                self.instance.remove(autostop=True)
+                self._instance.remove(autostop=True)
             except FileNotFoundError as error:
                 raise tmt.utils.ProvisionError(
                     f"Failed to remove testcloud instance: {error}")
@@ -577,7 +597,7 @@ class GuestTestcloud(tmt.GuestSSH):
 
     def reboot(self, hard=False):
         """ Reboot the guest, return True if successful """
-        if not self.instance:
+        if not self._instance:
             raise tmt.utils.ProvisionError("No instance initialized.")
-        self.instance.reboot(soft=not hard)
+        self._instance.reboot(soft=not hard)
         return self.reconnect()

@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import os
 import random
 import re
@@ -7,6 +8,7 @@ import string
 import subprocess
 import tempfile
 import time
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import click
 import fmf
@@ -225,6 +227,36 @@ class ProvisionPlugin(tmt.steps.Plugin):
         """ Remove the images of one particular plugin """
 
 
+@dataclasses.dataclass
+class GuestData:
+    """
+    Keys necessary to describe, create, save and restore a guest.
+
+    Very basic set of keys shared across all known guest classes.
+    """
+
+    # guest role in the multihost scenario
+    role: Optional[str] = None
+
+    @classmethod
+    def iter_key_names(cls) -> Generator[str, None, None]:
+        """ Iterate over key names """
+
+        for field in dataclasses.fields(cls):
+            yield field.name
+
+    @classmethod
+    def iter_keys(cls) -> Generator[Tuple[str, Any], None, None]:
+        """ Iterate over key/value pairs """
+
+        yield from dataclasses.asdict(cls).items()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """ Return keys and values in the form of a dictionary """
+
+        return dataclasses.asdict(self)
+
+
 class Guest(tmt.utils.Common):
     """
     Guest provisioned for test execution
@@ -235,23 +267,27 @@ class Guest(tmt.utils.Common):
     to Guest subclasses to provide one working in their respective
     infrastructure.
 
-    The following keys are expected in the 'data' dictionary::
+    The following keys are expected in the 'data' container::
 
         role ....... guest role in the multihost scenario
 
-    These are by default imported into instance attributes (see the
-    class attribute '_keys' below).
+    These are by default imported into instance attributes.
     """
 
+    # Used by save() to construct the correct container for keys.
+    _data_class = GuestData
+
+    role: Optional[str] = None
+
+    # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
-    _keys = ['role']
+    _keys = list(_data_class.iter_key_names())
 
-    def __init__(self, data, name=None, parent=None):
+    def __init__(self, data: GuestData, name=None, parent=None):
         """ Initialize guest data """
         super().__init__(parent, name)
-        # Initialize role, it will be overridden by load() if specified
-        self.role = None
+
         self.load(data)
 
     def _random_name(self, prefix='', length=16):
@@ -268,7 +304,7 @@ class Guest(tmt.utils.Common):
         _, run_id = os.path.split(self.parent.plan.my_run.workdir)
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
-    def load(self, data):
+    def load(self, data: GuestData) -> None:
         """
         Load guest data into object attributes for easy access
 
@@ -281,10 +317,11 @@ class Guest(tmt.utils.Common):
         line options / L2 metadata / user configuration and wake up data
         stored by the save() method below.
         """
-        for key in self._keys:
-            setattr(self, key, data.get(key))
 
-    def save(self):
+        for name, value in data.to_dict().items():
+            setattr(self, name, value)
+
+    def save(self) -> GuestData:
         """
         Save guest data for future wake up
 
@@ -293,11 +330,14 @@ class Guest(tmt.utils.Common):
         the guest. Everything needed to attach to a running instance
         should be added into the data dictionary by child classes.
         """
-        data = dict()
-        for key in self._keys:
+
+        data = self._data_class()
+
+        for key in data.iter_key_names():
             value = getattr(self, key)
             if value is not None:
-                data[key] = value
+                setattr(data, key, value)
+
         return data
 
     def wake(self):
@@ -521,6 +561,28 @@ class Guest(tmt.utils.Common):
         return []
 
 
+@dataclasses.dataclass
+class GuestSSHData(GuestData):
+    """
+    Keys necessary to describe, create, save and restore a guest with SSH
+    capability.
+
+    Derived from GuestData, this class adds keys relevant for guests that can be
+    reached over SSH.
+    """
+
+    # hostname or ip address
+    guest: Optional[str] = None
+    # port to connect to
+    port: Optional[int] = None
+    # user name to log in
+    user: Optional[str] = None
+    # path to the private key
+    key: List[str] = dataclasses.field(default_factory=list)
+    # password
+    password: Optional[str] = None
+
+
 class GuestSSH(Guest):
     """
     Guest provisioned for test execution, capable of accepting SSH connections
@@ -534,13 +596,21 @@ class GuestSSH(Guest):
         key ........ path to the private key (str or list)
         password ... password
 
-    These are by default imported into instance attributes (see the
-    class attribute '_keys' below).
+    These are by default imported into instance attributes.
     """
 
+    _data_class = GuestSSHData
+
+    guest: Optional[str] = None
+    port: Optional[int] = None
+    user: Optional[str] = None
+    key: List[str] = []
+    password: Optional[str] = None
+
+    # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
-    _keys = Guest._keys + ['guest', 'port', 'user', 'key', 'password']
+    _keys = list(_data_class.iter_key_names())
 
     # Master ssh connection process and socket path
     _ssh_master_process = None

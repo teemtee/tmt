@@ -1,8 +1,18 @@
+import dataclasses
 import os
+from typing import Optional, cast
 
 import click
 
 import tmt
+import tmt.steps.provision
+
+
+# TODO: get rid of `ignore` once superclass is no longer `Any`
+@dataclasses.dataclass
+class PodmanGuestData(tmt.steps.provision.GuestData):  # type: ignore[misc]
+    container: Optional[str] = None
+    image: Optional[str] = None
 
 
 class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
@@ -68,9 +78,11 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
         self.info('image', f"{self.get('image')}{pull}", 'green')
 
         # Prepare data for the guest instance
-        data = dict()
-        for key in self._keys + self._common_keys:
-            data[key] = self.get(key)
+        data = PodmanGuestData()
+        data = PodmanGuestData(**{
+            key: self.get(key)
+            for key in PodmanGuestData.iter_key_names()
+            })
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(data, name=self.name, parent=self.step)
@@ -88,23 +100,21 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
 class GuestContainer(tmt.Guest):
     """ Container Instance """
 
-    def load(self, data):
-        """ Load guest data and initialize attributes """
-        super().load(data)
+    _data_class = PodmanGuestData
 
-        # Load basic data
-        self.image = data.get('image')
-        self.force_pull = data.get('pull')
-        self.container = data.get('container')
+    image: Optional[str]
+    force_pull: bool = False
+    container: Optional[str] = None
 
-        # Instances variables initialized later
-        self.container_id = None
+    container_id: Optional[str] = None
 
-    def save(self):
+    def save(self) -> PodmanGuestData:
         """ Save guest data for future wake up """
-        data = super().save()
-        data['container'] = self.container
-        data['image'] = self.image
+        data = cast(PodmanGuestData, super().save())
+
+        data.container = self.container
+        data.image = self.image
+
         return data
 
     def wake(self):
