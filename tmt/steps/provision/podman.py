@@ -141,7 +141,7 @@ class GuestContainer(tmt.Guest):
         self.podman(
             ['run'] + workaround +
             ['--name', self.container, '-v', f'{workdir}:{workdir}:z',
-             '-itd', self.image])[0].strip()
+             '-itd', self.image])
 
     def reboot(self, hard=False, command=None):
         """ Restart the container, return True if successful  """
