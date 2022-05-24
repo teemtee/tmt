@@ -1,0 +1,57 @@
+---
+
+#
+# JSON Schema definition for `fmf` discover plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
+#
+
+$id: /schemas/discover/fmf
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - fmf
+
+  name:
+    type: string
+
+  url:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/url"
+
+  ref:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/ref"
+
+  path:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/path"
+
+  test:
+    $ref: "/schemas/common#/definitions/array_of_strings"
+
+  link:
+    $ref: "/schemas/common#/definitions/array_of_strings"
+
+  filter:
+    type: string
+
+  exclude:
+    type: string
+
+  modified-only:
+    type: boolean
+
+  modified-url:
+    type: string
+    format: uri
+
+  modified-ref:
+    type: string
+
+required:
+  - how

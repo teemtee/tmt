@@ -1,0 +1,220 @@
+---
+
+#
+# JSON Schema definition for hardware specification
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#hardware
+#
+
+$id: /schemas/provision/hardware
+$schema: http://json-schema.org/draft-07/schema
+
+definitions:
+
+  # HW requirements: `boot` block
+  hw_boot:
+    type: object
+
+    properties:
+      method:
+        type: string
+        enum:
+          - bios
+          - uefi
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `boot`.
+    minProperties: 1
+
+  # HW requirements: `cpu` block
+  hw_cpu:
+    type: object
+
+    properties:
+      processors:
+        anyOf:
+          - type: string
+          - type: integer
+      cores:
+        anyOf:
+          - type: string
+          - type: integer
+      family:
+        anyOf:
+          - type: string
+          - type: integer
+      model:
+        anyOf:
+          - type: string
+          - type: integer
+      model-name:
+        type: string
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `cpu`.
+    minProperties: 1
+
+  # HW requirements: single `disk` item
+  hw_disk:
+    type: object
+
+    properties:
+      size:
+        anyOf:
+          - type: string
+          - type: integer
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `disk`.
+    minProperties: 1
+
+  # HW requirements: `disk` block
+  hw_disks:
+    type: array
+    items:
+      "$ref": "#/definitions/hw_disk"
+
+  hw_hostname:
+    type: string
+
+  hw_memory:
+    anyOf:
+      - type: string
+      - type: integer
+
+  # HW requirements: single `network` item
+  hw_network:
+    type: object
+
+    properties:
+      type:
+        type: string
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `network`.
+    minProperties: 1
+
+  # HW requirements: `network` block
+  hw_networks:
+    type: array
+    items:
+      "$ref": "#/definitions/hw_network"
+
+  # HW requirements: `virtualization` block
+  hw_virtualization:
+    type: object
+
+    properties:
+      is-virtualized:
+        type: boolean
+
+      is-supported:
+        type: boolean
+
+      hypervisor:
+        type: string
+        enum:
+          - nitro
+          - kvm
+          - xen
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `boot`.
+    minProperties: 1
+
+  # HW requirements: basic block
+  hw_block:
+    type: object
+
+    properties:
+      boot:
+        "$ref": "#/definitions/hw_boot"
+
+      cpu:
+        "$ref": "#/definitions/hw_cpu"
+
+      disk:
+        "$ref": "#/definitions/hw_disks"
+
+      hostname:
+        "$ref": "#/definitions/hw_hostname"
+
+      memory:
+        "$ref": "#/definitions/hw_memory"
+
+      network:
+        "$ref": "#/definitions/hw_networks"
+
+      virtualization:
+        "$ref": "#/definitions/hw_virtualization"
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `block`.
+    minProperties: 1
+
+  # HW requirements: conditions
+  hw_and:
+    type: object
+    properties:
+      "and":
+        type: array
+        items:
+          anyOf:
+            - "$ref": "#/definitions/hw_boot"
+            - "$ref": "#/definitions/hw_cpu"
+            - "$ref": "#/definitions/hw_disks"
+            - "$ref": "#/definitions/hw_networks"
+            - "$ref": "#/definitions/hw_virtualization"
+            - "$ref": "#/definitions/hw_block"
+            - "$ref": "#/definitions/hw_and"
+            - "$ref": "#/definitions/hw_or"
+
+    required:
+      - "and"
+
+  hw_or:
+    type: object
+    properties:
+      "or":
+        type: array
+        items:
+          anyOf:
+            - "$ref": "#/definitions/hw_boot"
+            - "$ref": "#/definitions/hw_cpu"
+            - "$ref": "#/definitions/hw_disks"
+            - "$ref": "#/definitions/hw_networks"
+            - "$ref": "#/definitions/hw_virtualization"
+            - "$ref": "#/definitions/hw_block"
+            - "$ref": "#/definitions/hw_and"
+            - "$ref": "#/definitions/hw_or"
+
+    required:
+      - "or"
+
+type: object
+additionalProperties: false
+
+properties:
+  anyOf:
+    - "$ref": "#/definitions/hw_boot"
+    - "$ref": "#/definitions/hw_cpu"
+    - "$ref": "#/definitions/hw_disks"
+    - "$ref": "#/definitions/hw_networks"
+    - "$ref": "#/definitions/hw_virtualization"
+    - "$ref": "#/definitions/hw_block"
+    - "$ref": "#/definitions/hw_and"
+    - "$ref": "#/definitions/hw_or"
+
+  required: []
