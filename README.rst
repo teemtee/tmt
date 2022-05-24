@@ -368,6 +368,10 @@ TMT_PLAN_DATA
     back from the guest and available for inspection after the
     plan is completed.
 
+TMT_SOURCE_DIR
+    Path to directory with downloaded and extracted sources if
+    dist-git-source option was used in discover.
+
 TMT_REBOOT_COUNT
     During the test execution the ``tmt-reboot`` command can be
     used to request reboot of the guest. This variable contains

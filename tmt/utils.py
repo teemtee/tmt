@@ -2102,3 +2102,23 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore
 
         sys.stdout.write(f"\r{message}")
         sys.stdout.flush()
+
+
+def find_fmf_root(path: str) -> List[str]:
+    """
+    Search trough path and return all fmf roots that exist there
+
+    Returned list is ordered by path length, shorted one first.
+
+    Raise MetadataError if no fmf root is found
+    """
+    fmf_roots = []
+    for root, _, files in os.walk(path):
+        if not os.path.basename(root) == '.fmf':
+            continue
+        if 'version' in files:
+            fmf_roots.append(os.path.dirname(root))
+    if len(fmf_roots) == 0:
+        raise MetadataError(f"No fmf root present inside {path}")
+    fmf_roots.sort()
+    return fmf_roots
