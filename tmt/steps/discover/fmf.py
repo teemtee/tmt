@@ -389,7 +389,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
             # Now copy dist_git_extract into tests
             if not self.opt('dry'):
-                shutil.copytree(
+                tmt.utils.copytree(
                     dist_git_extract,
                     self.testdir,
                     symlinks=True,

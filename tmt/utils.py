@@ -843,6 +843,47 @@ def listify(
     return [data]
 
 
+def copytree(
+    src: str,
+    dst: str,
+    symlinks: bool = False,
+    dirs_exist_ok: bool = False,
+) -> Any:
+    """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
+    # No need to reimplement for newer python or if argument is not requested
+    if not dirs_exist_ok or sys.version_info >= (3, 8):
+        return shutil.copytree(
+            src=src,
+            dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok)
+    # Choice was to either copy python implementation and change ONE line
+    # or use rsync (or cp with shell)
+    # We need to copy CONTENT of src into dst
+    # so src has to end with / and dst cannot
+    if src[-1] != '/':
+        src += '/'
+    if dst[-1] == '/':
+        dst = dst[:-1]
+
+    command = ["rsync", "-r"]
+    if symlinks:
+        command.append('-l')
+    command.extend([src, dst])
+
+    log.debug(f"Calling {command}")
+    outcome = subprocess.run(
+        command,
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+        )
+
+    if outcome.returncode != 0:
+        raise shutil.Error(
+            [f"Unable to copy '{src}' into '{dst}' using rsync",
+             outcome.returncode, outcome.stdout])
+    return dst
+
+
 # These two are helpers for shell_to_dict and environment_to_dict -
 # there is some overlap of their functionality.
 def _add_simple_var(result: EnvironmentType, var: str) -> None:
