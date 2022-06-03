@@ -27,7 +27,7 @@ description: |
         Exit code and BeakerLib's ``TestResults`` file determine
         the test result.
 
-example:
+example: |
   - framework: shell
   - framework: beakerlib
 
