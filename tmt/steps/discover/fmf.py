@@ -44,10 +44,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             dist-git-source: true
 
     Related config options (all optional):
-    * dist-git-merge - set to True if you want to copy in extracted sources to the local repo
-    * dist-git-init - set to True and 'fmf init' will be called inside extracted sources (at dist-git-copy-path or top directory)
-    * dist-git-copy-path - directory (glob supported) to copy from extracted sources (defaults to inner fmf-root)
-    * dist-git-strip-fmf-root - set to True to remove fmf root from extracted sources
+    * dist-git-merge - set to True if you want to copy in extracted
+      sources to the local repo
+    * dist-git-init - set to True and 'fmf init' will be called inside
+      extracted sources (at dist-git-copy-path or top directory)
+    * dist-git-copy-path - directory (glob supported) to copy from
+      extracted sources (defaults to inner fmf-root)
+    * dist-git-strip-fmf-root - set to True to remove fmf root from
+      extracted sources
 
     Selecting tests containing specified link is possible using 'link'
     option accepting RELATION:TARGET format of values. Regular
@@ -141,13 +145,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 help="Filter by linked objects (regular expressions are "
                      "supported for both relation and target)."),
             cls.FILTER_OPTION,
-            click.option(
-                '--dist-git-source', is_flag=True,
-                help='Extract DistGit sources and run discover on top of it.'),
-            click.option(
-                '--dist-git-type',
-                type=click.Choice(tmt.utils.get_distgit_handler_names()),
-                help='Use the provided DistGit handler instead of detection.'),
             cls.EXCLUDE_OPTION,
             click.option(
                 '--fmf-id', default=False, is_flag=True,
@@ -157,17 +154,29 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 help='Force the sync of the whole git repo. By default, the '
                      'repo is copied only if the used options require it.'),
             click.option(
+                '--dist-git-source', is_flag=True,
+                help='Extract DistGit sources and run discover on top of it.'),
+            click.option(
+                '--dist-git-type',
+                type=click.Choice(tmt.utils.get_distgit_handler_names()),
+                help='Use the provided DistGit handler instead of detection.'),
+            click.option(
                 '--dist-git-init', is_flag=True,
-                help='Initialize fmf root inside extracted sources (at dist-git-copy-path or top directory)'),
+                help='Initialize fmf root inside extracted sources '
+                     '(at dist-git-copy-path or top directory).'),
             click.option(
                 '--dist-git-strip-fmf-root', is_flag=True,
-                help='Remove fmf root from extracted source (top one or selected by copy-path, happens before dist-git-copy-path'),
+                help='Remove fmf root from extracted source '
+                     '(top one or selected by copy-path, '
+                     'happens before dist-git-copy-path'),
             click.option(
                 '--dist-git-merge', is_flag=True,
-                help='Merge copied sources and plan fmf root'),
+                help='Merge copied sources and plan fmf root.'),
             click.option(
                 '--dist-git-use-path',
-                help=f'What to copy from extracted sources, globbing is supported. Defaults to the top fmf root if it is present, otherwise top directory (shortcut "/")'
+                help='What to copy from extracted sources, globbing is '
+                     'supported. Defaults to the top fmf root if it is '
+                     'present, otherwise top directory (shortcut "/").'
                 ),
             ] + super().options(how)
 

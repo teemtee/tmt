@@ -2108,9 +2108,9 @@ def find_fmf_root(path: str) -> List[str]:
     """
     Search trough path and return all fmf roots that exist there
 
-    Returned list is ordered by path length, shorted one first.
+    Returned list is ordered by path length, shortest one first.
 
-    Raise MetadataError if no fmf root is found
+    Raise `MetadataError` if no fmf root is found.
     """
     fmf_roots = []
     for root, _, files in os.walk(path):
@@ -2118,7 +2118,7 @@ def find_fmf_root(path: str) -> List[str]:
             continue
         if 'version' in files:
             fmf_roots.append(os.path.dirname(root))
-    if len(fmf_roots) == 0:
-        raise MetadataError(f"No fmf root present inside {path}")
-    fmf_roots.sort()
+    if not fmf_roots:
+        raise MetadataError(f"No fmf root present inside '{path}'.")
+    fmf_roots.sort(key=lambda path: len(path))
     return fmf_roots

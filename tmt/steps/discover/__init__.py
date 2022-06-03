@@ -236,12 +236,12 @@ class DiscoverPlugin(tmt.steps.Plugin):
             click.option(
                 '--dist-git-source',
                 is_flag=True,
-                help='Extract DistGit sources'),
+                help='Extract DistGit sources.'),
             click.option(
                 '--dist-git-type',
-                type=click.Choice(
-                    tmt.utils.get_distgit_handler_names()),
-                help='Use the provided DistGit handler instead of the auto detection.'),
+                type=click.Choice(tmt.utils.get_distgit_handler_names()),
+                help='Use the provided DistGit handler '
+                     'instead of the auto detection.'),
             ] + super().options(how)
 
     def tests(self):
