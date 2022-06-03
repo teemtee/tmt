@@ -1,0 +1,99 @@
+---
+
+#
+# JSON Schema definition for tmt `Plans`
+#
+# https://tmt.readthedocs.io/en/stable/spec/stories.html
+#
+
+$id: /schemas/plans
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#adjust
+  adjust:
+    $ref: "/schemas/core#/definitions/adjust"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#context
+  # TODO
+  context:
+    $ref: "/schemas/plans#/definitions/context"
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#description
+  description:
+    $ref: "/schemas/core#/definitions/description"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-discover
+  discover:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/discover_fmf"
+      - $ref: "/schemas/plans#/definitions/discover_shell"
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#enabled
+  enabled:
+    $ref: "/schemas/core#/definitions/enabled"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#environment
+  environment:
+    $ref: "/schemas/common#/definitions/environment"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#environment-file
+  environment-file:
+    type: array
+    items:
+      type: string
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#execute
+  execute:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/discover_detach"
+      - $ref: "/schemas/plans#/definitions/discover_tmt"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
+  finish:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/finish_ansible"
+      - $ref: "/schemas/plans#/definitions/finish_shell"
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#link
+  link:
+    $ref: "/schemas/core#/definitions/link"
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#order
+  order:
+    $ref: "/schemas/core#/definitions/order"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
+  # TODO: can be a list
+  prepare:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/prepare_ansible"
+      - $ref: "/schemas/plans#/definitions/prepare_install"
+      - $ref: "/schemas/plans#/definitions/prepare_shell"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
+  # TODO: can be a list
+  provision:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/provision_connect"
+      - $ref: "/schemas/plans#/definitions/provision_container"
+      - $ref: "/schemas/plans#/definitions/provision_local"
+      - $ref: "/schemas/plans#/definitions/provision_virtual"
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
+  report:
+    oneOf:
+      - $ref: "/schemas/plans#/definitions/report_display"
+      - $ref: "/schemas/plans#/definitions/report_file"
+      - $ref: "/schemas/plans#/definitions/report_html"
+
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
+  summary:
+    $ref: "/schemas/core#/definitions/summary"
+
+required:
+  - execute
