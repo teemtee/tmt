@@ -261,7 +261,7 @@ done
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
-            --dist-git-type TESTING --dist-git-merge --dist-git-use-path /simple*/tests'
+            --dist-git-type TESTING --dist-git-merge --dist-git-extract /simple*/tests'
         rlAssertGrep "\s/top_test" $rlRun_LOG -E
         rlAssertGrep "\s/magic" $rlRun_LOG -E
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG -F
@@ -290,7 +290,7 @@ done
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
-            --dist-git-type TESTING --dist-git-merge --dist-git-strip-fmf-root'
+            --dist-git-type TESTING --dist-git-merge --dist-git-remove-fmf-root'
         rlAssertGrep "\s/top_test" $rlRun_LOG -E
         rlAssertGrep "\s/simple-1/tests/magic" $rlRun_LOG -E
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG -F
@@ -300,7 +300,7 @@ done
         rlAssertExists $WORKDIR_SOURCE/simple-1
         rlAssertExists $WORKDIR_SOURCE/simple.tgz
 
-        # fmf root stripped and dist-git-use-path not set so everything is copied
+        # fmf root stripped and dist-git-extract not set so everything is copied
         rlAssertExists $WORKDIR_TESTS/simple-1/tests/magic.fmf
         rlAssertExists $WORKDIR_TESTS/outsider
         rlAssertExists $WORKDIR_TESTS/simple-1
@@ -337,7 +337,7 @@ done
         rlPhaseStartTest "${prefix}path pointing to the fmf root in the extracted sources"
             rlRun 'pushd tmt'
             rlRun -s "tmt run --remove plans --default discover -v --how fmf \
-            --dist-git-source --dist-git-merge --ref e2d36db --dist-git-use-path ${prefix}tmt-*/tests/execute/framework/data \
+            --dist-git-source --dist-git-merge --ref e2d36db --dist-git-extract ${prefix}tmt-*/tests/execute/framework/data \
             tests --name ^/tests/beakerlib/with-framework\$"
             rlAssertGrep "summary: 1 test selected" $rlRun_LOG -F
 
