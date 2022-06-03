@@ -28,10 +28,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
           test: ./smoke.sh
           path: /tests/shell
 
-
     For DistGit repo one can extract source tarball and use its code.
     It is extracted to TMT_SOURCE_DIR however no patches are applied
-    (only source tarball is extracted)
+    (only source tarball is extracted).
 
     discover:
         how: shell
@@ -107,10 +106,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
             try:
                 git_root = self.run(
                     ["git", "rev-parse", "--show-toplevel"],
-                    cwd=self.step.plan.my_run.tree.root, dry=True)[0].strip('\n')
+                    cwd=self.step.plan.my_run.tree.root,
+                    dry=True)[0].strip('\n')
             except tmt.utils.RunError:
                 raise tmt.utils.DiscoverError(
-                    f"{self.step.plan.my_run.tree.root} is not a git repo")
+                    f"Directory '{self.step.plan.my_run.tree.root}' "
+                    f"is not a git repository.")
             try:
                 self.extract_distgit_source(
                     git_root, sourcedir, self.get('dist-git-type'))

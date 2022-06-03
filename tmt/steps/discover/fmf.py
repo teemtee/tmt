@@ -168,7 +168,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 '--dist-git-remove-fmf-root', is_flag=True,
                 help='Remove fmf root from extracted source '
                      '(top one or selected by copy-path, '
-                     'happens before dist-git-extract'),
+                     'happens before dist-git-extract.'),
             click.option(
                 '--dist-git-merge', is_flag=True,
                 help='Merge copied sources and plan fmf root.'),
@@ -210,7 +210,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         path = self.get('path')
         # Save the test directory so that others can reference it
         ref = self.get('ref')
-        self.testdir = testdir = os.path.join(self.workdir, 'tests')
+        self.testdir = os.path.join(self.workdir, 'tests')
         sourcedir = os.path.join(self.workdir, 'source')
         dist_git_source = self.get('dist-git-source', False)
         dist_git_merge = self.get('dist-git-merge', False)
@@ -221,7 +221,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Self checks
         if dist_git_source and not dist_git_merge and (ref or url):
             raise tmt.utils.DiscoverError(
-                "Cannot manipulate with dist-git without --dist-git-merge option")
+                "Cannot manipulate with dist-git without "
+                "the `--dist-git-merge` option.")
 
         def get_git_root(dir):
             return self.run(
@@ -273,7 +274,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.run(
                 ['git', 'clone', url, self.testdir],
                 env={"GIT_ASKPASS": "echo"})
-            git_root = testdir
+            git_root = self.testdir
         # Copy git repository root to workdir
         else:
             fmf_root = path or self.step.plan.my_run.tree.root
@@ -285,6 +286,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 raise tmt.utils.DiscoverError(
                     f"Provided path '{path}' is not a directory.")
             if dist_git_source:
+                # Ensure we're in a git repo when extracting dist-git sources
                 try:
                     git_root = get_git_root(self.step.plan.my_run.tree.root)
                 except tmt.utils.RunError:
@@ -303,10 +305,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 # Set path to relative path from the git root to fmf root
                 path = os.path.relpath(
                     fmf_root, git_root if requires_git else fmf_root)
+
+            # And finally copy the git/fmf root directory to testdir
+            # (for dist-git case only when merge explicitly requested)
             directory = git_root if requires_git else fmf_root
             self.info('directory', directory, 'green')
-            self.debug(f"Copy '{directory}' to '{self.testdir}'.")
             if not dist_git_source or dist_git_merge:
+                self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.opt('dry'):
                     shutil.copytree(directory, self.testdir, symlinks=True)
 
@@ -336,6 +341,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 raise tmt.utils.DiscoverError(
                     f"Failed to process 'dist-git-source'.", original=error)
 
+            # Check what should be extracted from the sources
             if dist_git_extract:
                 if dist_git_extract == '/':
                     dist_git_extract = sourcedir
@@ -345,8 +351,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                             sourcedir, dist_git_extract.lstrip('/')))[0]
                     except IndexError:
                         raise tmt.utils.DiscoverError(
-                            f"Couldn't glob {dist_git_extract} within extracted sources")
+                            f"Couldn't glob '{dist_git_extract}' "
+                            f"within extracted sources.")
 
+            # Check sources for the fmf root, copy git root if not found
             if not dist_git_init and not dist_git_extract:
                 try:
                     top_fmf_root = tmt.utils.find_fmf_root(sourcedir)[0]
@@ -354,12 +362,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     dist_git_extract = sourcedir
                     if not dist_git_merge:
                         self.warn(
-                            "Extracted sources doesn't contain fmf root, merging with plan data."
-                            " Avoid this warning by explicit use of '--dist-git-merge' option")
-                        self.debug(f"Copy '{git_root}' to '{testdir}'.")
+                            "Extracted sources do not contain fmf root, "
+                            "merging with plan data. Avoid this warning by "
+                            "explicit use of the '--dist-git-merge' option.")
+                        self.debug(f"Copy '{git_root}' to '{self.testdir}'.")
                         if not self.opt('dry'):
-                            shutil.copytree(git_root, testdir, symlinks=True)
+                            shutil.copytree(
+                                git_root, self.testdir, symlinks=True)
 
+            # Initialize or remove fmf root
             if dist_git_init:
                 if not dist_git_extract:
                     dist_git_extract = sourcedir
@@ -367,22 +378,20 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     fmf.Tree.init(dist_git_extract)
             elif dist_git_remove_fmf_root:
                 if not self.opt('dry'):
-                    shutil.rmtree(
-                        os.path.join(
-                            dist_git_extract or top_fmf_root,
-                            '.fmf'))
+                    shutil.rmtree(os.path.join(
+                        dist_git_extract or top_fmf_root, '.fmf'))
                 if not dist_git_extract:
                     dist_git_extract = sourcedir
 
-            # now can safely default to top_fmf_root
+            # Now can safely default to top_fmf_root
             if not dist_git_extract:
                 dist_git_extract = top_fmf_root
 
-            # now copy dist_git_extract into tests
+            # Now copy dist_git_extract into tests
             if not self.opt('dry'):
                 shutil.copytree(
                     dist_git_extract,
-                    testdir,
+                    self.testdir,
                     symlinks=True,
                     dirs_exist_ok=True)
 

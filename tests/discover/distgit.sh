@@ -147,7 +147,7 @@ done
         rlAssertExists $WORKDIR_SOURCE/unit-no-tmt.tgz
         rlAssertExists $WORKDIR_SOURCE/outsider
 
-        # Test dir has only fmf_root from source (so one lest level)
+        # Test dir has only fmf_root from source (so one less level)
         rlAssertExists $WORKDIR_TESTS/tests/magic.fmf
         rlAssertNotExists $WORKDIR_TESTS/simple-1/tests/magic.fmf
         rlAssertNotExists $WORKDIR_TESTS/simple-1.tgz
@@ -386,7 +386,7 @@ done
         rlAssertExists $WORKDIR_SOURCE/unit-no-tmt.tgz
         rlAssertExists $WORKDIR_SOURCE/outsider
 
-        # Test dir has only fmf_root from source (so one lest level)
+        # Test dir has only fmf_root from source (so one less level)
         rlAssertExists $WORKDIR_TESTS/tests/magic.fmf
         rlAssertNotExists $WORKDIR_TESTS/simple-1/tests/magic.fmf
         rlAssertNotExists $WORKDIR_TESTS/simple-1.tgz
