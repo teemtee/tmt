@@ -133,6 +133,12 @@ definitions:
         items:
           type: string
 
+  # helper for specifying aarray of strings
+  array_of_strings:
+    type: array
+    items:
+      type: string
+
   # a url, path or fmf_id
   url_path_or_fmf_id:
     oneOf:

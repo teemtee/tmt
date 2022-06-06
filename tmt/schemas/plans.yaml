@@ -30,8 +30,8 @@ properties:
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-discover
   discover:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/discover_fmf"
-      - $ref: "/schemas/plans#/definitions/discover_shell"
+      - $ref: "/schemas/discover/fmf#"
+      - $ref: "/schemas/discover/shell#"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#enabled
   enabled:
@@ -43,21 +43,19 @@ properties:
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#environment-file
   environment-file:
-    type: array
-    items:
-      type: string
+    $ref: "/schemas/common#/definitions/array_of_strings"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#execute
   execute:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/discover_detach"
-      - $ref: "/schemas/plans#/definitions/discover_tmt"
+      - $ref: "/schemas/execute/detach#"
+      - $ref: "/schemas/execute/tmt#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
   finish:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/finish_ansible"
-      - $ref: "/schemas/plans#/definitions/finish_shell"
+      - $ref: "/schemas/finish/ansible#"
+      - $ref: "/schemas/finish/shell#"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#link
   link:
@@ -71,25 +69,25 @@ properties:
   # TODO: can be a list
   prepare:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/prepare_ansible"
-      - $ref: "/schemas/plans#/definitions/prepare_install"
-      - $ref: "/schemas/plans#/definitions/prepare_shell"
+      - $ref: "/schemas/prepare/ansible#"
+      - $ref: "/schemas/prepare/install#"
+      - $ref: "/schemas/prepare/shell#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
   # TODO: can be a list
   provision:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/provision_connect"
-      - $ref: "/schemas/plans#/definitions/provision_container"
-      - $ref: "/schemas/plans#/definitions/provision_local"
-      - $ref: "/schemas/plans#/definitions/provision_virtual"
+      - $ref: "/schemas/provision/connect#"
+      - $ref: "/schemas/provision/container#"
+      - $ref: "/schemas/provision/local#"
+      - $ref: "/schemas/provision/virtual#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
   report:
     oneOf:
-      - $ref: "/schemas/plans#/definitions/report_display"
-      - $ref: "/schemas/plans#/definitions/report_file"
-      - $ref: "/schemas/plans#/definitions/report_html"
+      - $ref: "/schemas/report/display#"
+      - $ref: "/schemas/report/file#"
+      - $ref: "/schemas/report/html#"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
   summary:
