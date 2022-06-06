@@ -1,7 +1,7 @@
 ---
 
 #
-# JSON Schema definition for `shell` discover step
+# JSON Schema definition for `shell` discover plugin
 #
 # https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
 #
@@ -42,3 +42,6 @@ properties:
         required:
           - name
           - test
+
+required:
+  - how

@@ -8,6 +8,19 @@ $id: /schemas/common
 $schema: https://json-schema.org/draft-07/schema
 
 definitions:
+
+  # list of all recognized architectures
+  arch:
+    type: string
+    enum:
+      - aarch64
+      - armhfp
+      - i386
+      - ppc64
+      - ppc64le
+      - s390x
+      - x86_64
+
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
   beakerlib_library:
     allOf:
@@ -32,10 +45,7 @@ definitions:
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#environment
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#environment
   environment:
-    type: object
-
-    additionalProperties:
-      type: string
+    $ref: "/schemas/common#/definitions/object_of_strings"
 
   # https://fmf.readthedocs.io/en/stable/concept.html#identifiers
   fmf_id:
@@ -130,6 +140,13 @@ definitions:
       relates:
         $ref: "/schemas/common#/definitions/url_path_or_fmf_id"
 
+  # helper for specifying an object with string properties
+  object_of_strings:
+    type: object
+
+    additionalProperties:
+      type: string
+
   # helper for specifying a string or an array of strings
   string_or_array:
     oneOf:
@@ -145,11 +162,15 @@ definitions:
     items:
       type: string
 
+  # helper
+  url:
+    type: string
+    pattern: "^https?://"
+
   # a url, path or fmf_id
   url_path_or_fmf_id:
     oneOf:
-      - type: string
-        pattern: "^https?://"
+      - $ref: "/schemas/common#/definitions/url"
 
       - type: string
         pattern: "^/"

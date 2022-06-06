@@ -26,15 +26,7 @@ properties:
 
     properties:
       arch:
-        type: string
-        enum:
-          - aarch64
-          - armhfp
-          - i386
-          - ppc64
-          - ppc64le
-          - s390x
-          - x86_64
+        $ref: "/schemas/common#/definitions/arch"
 
       component:
         type: string

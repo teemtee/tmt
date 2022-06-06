@@ -1,7 +1,7 @@
 ---
 
 #
-# JSON Schema definition for `fmf` discover step
+# JSON Schema definition for `fmf` discover plugin
 #
 # https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
 #
@@ -49,3 +49,6 @@ properties:
 
   modified-ref:
     type: string
+
+required:
+  - how
