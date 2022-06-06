@@ -844,17 +844,16 @@ def listify(
 
 
 def copytree(
-    src: str,
-    dst: str,
-    symlinks: bool = False,
-    dirs_exist_ok: bool = False,
-) -> Any:
+        src: str,
+        dst: str,
+        symlinks: bool = False,
+        dirs_exist_ok: bool = False,
+        ) -> Any:
     """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
     # No need to reimplement for newer python or if argument is not requested
     if not dirs_exist_ok or sys.version_info >= (3, 8):
         return shutil.copytree(
-            src=src,
-            dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok)
+            src=src, dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok)
     # Choice was to either copy python implementation and change ONE line
     # or use rsync (or cp with shell)
     # We need to copy CONTENT of src into dst
@@ -869,17 +868,15 @@ def copytree(
         command.append('-l')
     command.extend([src, dst])
 
-    log.debug(f"Calling {command}")
+    log.debug(f"Calling command '{command}'.")
     outcome = subprocess.run(
         command,
         stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        )
+        stderr=subprocess.STDOUT, universal_newlines=True)
 
     if outcome.returncode != 0:
         raise shutil.Error(
-            [f"Unable to copy '{src}' into '{dst}' using rsync",
+            [f"Unable to copy '{src}' into '{dst}' using rsync.",
              outcome.returncode, outcome.stdout])
     return dst
 
