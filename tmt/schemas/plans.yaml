@@ -19,9 +19,56 @@ properties:
     $ref: "/schemas/core#/definitions/adjust"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#context
-  # TODO
+  # https://tmt.readthedocs.io/en/stable/spec/context.html#spec-context
   context:
-    $ref: "/schemas/plans#/definitions/context"
+    type: object
+    additionalProperties: false
+
+    properties:
+      arch:
+        type: string
+        enum:
+          - aarch64
+          - armhfp
+          - i386
+          - ppc64
+          - ppc64le
+          - s390x
+          - x86_64
+
+      component:
+        type: string
+
+      collection:
+        type: string
+
+      distro:
+        type: string
+        patterns:
+          - ^fedora(-[0-9]+)?$
+          - ^centos(-stream)?(-[0-9]+(.[0-9]+)?)?$
+          - ^rhel(-[0-9]+(.[0-9]+)?)?$
+
+      module:
+        type: string
+
+      trigger:
+        type: string
+        enum:
+          - build
+          - commit
+          - compose
+          - update
+
+      variant:
+        type: string
+        enum:
+          - Client
+          - Desktop
+          - Server
+          - Workstation
+          - Silverblue
+          - CoreOS
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#description
   description:
