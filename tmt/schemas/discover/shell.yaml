@@ -1,0 +1,44 @@
+---
+
+#
+# JSON Schema definition for `shell` discover step
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
+#
+
+$id: /schemas/discover/shell
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - shell
+
+    tests:
+      type: array
+      items:
+        type: object
+
+        additionalProperties: false
+
+        properties:
+          name:
+            type: string
+
+          test:
+            type: string
+
+          path:
+            type: string
+
+          duration:
+            $ref: "/schemas/common#/definitions/duration"
+
+        required:
+          - name
+          - test
