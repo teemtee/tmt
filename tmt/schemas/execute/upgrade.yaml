@@ -1,0 +1,30 @@
+---
+
+#
+# JSON Schema definition for `upgrade` execute plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#upgrade
+#
+
+$id: /schemas/execute/upgrade
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - upgrade
+
+  upgrade-path:
+    type: string
+
+  url:
+    type: string
+    format: uri
+
+required:
+  - how
