@@ -1,0 +1,26 @@
+---
+
+#
+# JSON Schema definition for `shell` prepare plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-shell
+#
+
+$id: /schemas/prepare/shell
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - shell
+
+  script:
+    $ref: "/schemas/common#/definitions/string_or_array"
+
+required:
+  - how
