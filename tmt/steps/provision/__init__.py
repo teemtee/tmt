@@ -24,8 +24,10 @@ CONNECTION_TIMEOUT = 60 * 60
 RECONNECT_INITIAL_WAIT_TIME = 5
 
 # Default rsync options
-DEFAULT_RSYNC_OPTIONS = [
-    "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
+RSYNC_PUSH_OPTIONS = [
+    "-Rrz", "--links", "--safe-links", "--delete"]
+RSYNC_PULL_OPTIONS = [
+    "-Rrz", "--links", "--safe-links", "--protect-args", "--fake-super"]
 
 
 class Provision(tmt.steps.Step):
@@ -702,12 +704,12 @@ class GuestSsh(Guest):
 
         By default the whole plan workdir is synced to the same location
         on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parametr to modify default options
+        location and the 'options' parameter to modify default options
         which are '-Rrz --links --safe-links --delete'.
         """
         # Prepare options and the push command
         if options is None:
-            options = DEFAULT_RSYNC_OPTIONS
+            options = RSYNC_PUSH_OPTIONS
         if destination is None:
             destination = "/"
         if source is None:
@@ -749,13 +751,12 @@ class GuestSsh(Guest):
 
         By default the whole plan workdir is synced from the same
         location on the guest. Use the 'source' and 'destination' to
-        sync custom location, the 'options' parameter to modify
-        default options '-Rrz --links --safe-links --protect-args'
-        and 'extend_options' to extend them (e.g. by exclude).
+        sync custom location and the 'options' parametr to modify
+        default options '-Rrz --links --safe-links --protect-args --fake-super'.
         """
         # Prepare options and the pull command
         if options is None:
-            options = "-Rrz --links --safe-links --protect-args".split()
+            options = RSYNC_PULL_OPTIONS
         if extend_options is not None:
             options.extend(extend_options)
         if destination is None:
