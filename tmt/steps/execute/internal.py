@@ -9,7 +9,7 @@ import click
 import tmt
 import tmt.utils
 from tmt.steps.execute import TEST_OUTPUT_FILENAME
-from tmt.steps.provision import DEFAULT_RSYNC_OPTIONS
+from tmt.steps.provision import RSYNC_PUSH_OPTIONS
 from tmt.steps.provision.local import GuestLocal
 
 REBOOT_VARIABLES = (
@@ -240,7 +240,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         template = setup_file(REBOOT_TEMPLATE_NAME, REBOOT_SCRIPT)
         setup = setup_file(REBOOT_SETUP_NAME, REBOOT_SETUP_SCRIPT)
         teardown = setup_file(REBOOT_TEARDOWN_NAME, REBOOT_TEARDOWN_SCRIPT)
-        guest.push(self.workdir, options=DEFAULT_RSYNC_OPTIONS + ["-p"])
+        guest.push(self.workdir, options=RSYNC_PUSH_OPTIONS + ["-p"])
         return template, setup, teardown
 
     @contextlib.contextmanager
