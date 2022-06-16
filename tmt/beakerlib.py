@@ -133,9 +133,9 @@ class Library(object):
                 except TypeError:
                     raise tmt.utils.GeneralError(
                         f"Unable to parse repository name from '{self.path}'.")
-            else:
+            elif not repo:
                 raise tmt.utils.GeneralError(
-                    f"Unable to parse repository name from '{self.path}'.")
+                    f"Unable to parse repository, no nick, url or path.")
 
             self.repo = repo
         # Something weird
