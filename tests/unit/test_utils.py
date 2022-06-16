@@ -1,13 +1,15 @@
 # coding: utf-8
 
 import re
+import subprocess
 import unittest
 
 import pytest
 
 import tmt
 from tmt.utils import (Common, StructuredField, StructuredFieldError,
-                       duration_to_seconds, listify, public_git_url)
+                       duration_to_seconds, listify, public_git_url,
+                       validate_git_status)
 
 
 def test_public_git_url():
@@ -438,3 +440,91 @@ def test_FedoraDistGit(tmpdir):
     fedora_sources_obj = tmt.utils.FedoraDistGit()
     assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
             "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=tmpdir)
+
+
+class Test_validate_git_status:
+    def test_all_good(cls, tmpdir):
+        pass
+
+    def test_no_remote(cls, tmpdir):
+        subprocess.run('git init'.split(), check=True, cwd=tmpdir)
+        tmt.Tree.init(str(tmpdir), None, None)
+        tmpdir.join('main.fmf').write('test: echo')
+        subprocess.run('git add main.fmf'.split(), check=True, cwd=tmpdir)
+        subprocess.run(
+            'git ci -m initial_commit'.split(),
+            check=True,
+            cwd=tmpdir)
+
+        test = tmt.Tree(str(tmpdir)).tests()[0]
+        val, msg = validate_git_status(test)
+        assert not val
+        assert "Failed to get remote branch" in msg
+
+    @pytest.mark.parametrize("use_path",
+                             [False, True], ids=["without path", "with path"])
+    def test_local_changes(cls, tmpdir, use_path):
+        origin = tmpdir.join('origin')
+
+        if use_path:
+            fmfroot = origin.join('fmfroot')
+        else:
+            fmfroot = origin
+        tmt.Tree.init(str(fmfroot), None, None)
+        subprocess.run('git init'.split(), check=True, cwd=origin)
+        fmfroot.join('main.fmf').write('test: echo')
+        subprocess.run('git add -A'.split(), check=True, cwd=origin)
+        subprocess.run(
+            'git ci -m initial_commit'.split(),
+            check=True,
+            cwd=origin)
+
+        mine = tmpdir.join('mine')
+        subprocess.run(
+            f'git clone {origin} {mine}'.split(),
+            check=True,
+            cwd=tmpdir)
+        mine_fmf_root = mine
+        if use_path:
+            mine_fmf_root = mine.join('fmfroot')
+        mine_fmf_root.join('main.fmf').write('test: echo ahoy')
+
+        test = tmt.Tree(str(mine_fmf_root)).tests()[0]
+        validation_result = validate_git_status(test)
+
+        assert validation_result == (
+            False, "Not committed changes in " + ('fmfroot/' if use_path else '') + "main.fmf")
+
+    def test_not_pushed(cls, tmpdir):
+        origin = tmpdir.join('origin')
+        fmfroot = origin
+
+        tmt.Tree.init(str(fmfroot), None, None)
+        subprocess.run('git init'.split(), check=True, cwd=origin)
+        fmfroot.join('main.fmf').write('test: echo')
+        smoke = fmfroot.mkdir('smoke')
+        smoke.join('main.fmf').write('tag: []')
+        subprocess.run('git add -A'.split(), check=True, cwd=origin)
+        subprocess.run(
+            'git ci -m initial_commit'.split(),
+            check=True,
+            cwd=origin)
+
+        mine = tmpdir.join('mine')
+        subprocess.run(
+            f'git clone {origin} {mine}'.split(),
+            check=True,
+            cwd=tmpdir)
+        mine_fmf_root = mine
+        mine_fmf_root.join('smoke').join(
+            'main.fmf').write('tag: [ fmf-export ]')
+        subprocess.run(
+            'git ci -a -m my_changes'.split(),
+            check=True,
+            cwd=mine_fmf_root)
+
+        test = tmt.Tree(str(mine_fmf_root)).tests()[0]
+        validation_result = validate_git_status(test)
+
+        assert validation_result == (
+            False, 'Not pushed changes in smoke/main.fmf')

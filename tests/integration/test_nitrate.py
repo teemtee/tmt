@@ -52,7 +52,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--create", "--general", "."],
+            ["test", "export", "--nitrate", "--force-git-validation", "--create", "--general", "."],
             catch_exceptions=False)
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
@@ -66,7 +66,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--create", "--dry",
+            ["test", "export", "--nitrate", "--force-git-validation", "--create", "--dry",
              "--general", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
@@ -84,7 +84,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--create", "--general", "."],
+            ["test", "export", "--nitrate", "--force-git-validation", "--create", "--general", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
 
@@ -96,7 +96,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--debug", "--dry", "--general",
+            ["test", "export", "--nitrate", "--force-git-validation", "--debug", "--dry", "--general",
              "--bugzilla", "."],
             catch_exceptions=False)
         self.assertIn(
@@ -111,7 +111,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--debug", "--dry", "--general",
+            ["test", "export", "--nitrate", "--force-git-validation", "--debug", "--dry", "--general",
              "--bugzilla", "--link-runs", "."],
             catch_exceptions=False)
         self.assertIn(
@@ -135,7 +135,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--bugzilla", "."],
+            ["test", "export", "--nitrate", "--force-git-validation", "--bugzilla", "."],
             catch_exceptions=False)
         assert self.runner_output.exit_code == 0
 
@@ -147,6 +147,36 @@ class NitrateExport(Base):
                 tmt.cli.main,
                 ["test", "export", "--nitrate", "--debug", "--dry", "."],
                 catch_exceptions=False)
+
+    def test_export_blocked_by_validation(self):
+        os.chdir(self.tmpdir / "validation")
+        fmf_node = Tree(self.tmpdir).find("/validation")
+        with fmf_node as data:
+            data['test'] = 'echo hello world'
+        runner = CliRunner()
+        with self.assertRaises(ConvertError) as error:
+            self.runner_output = runner.invoke(
+                tmt.cli.main,
+                ["test", "export", "--nitrate", "--debug", "--dry", "."],
+                catch_exceptions=False)
+        self.assertIn('Not committed changes', str(error.exception))
+
+    def test_export_forced_validation(self):
+        os.chdir(self.tmpdir / "validation")
+        fmf_node = Tree(self.tmpdir).find("/validation")
+        with fmf_node as data:
+            data['extra-nitrate'] = 'TC#599605'
+
+        runner = CliRunner()
+
+        self.runner_output = runner.invoke(
+            tmt.cli.main,
+            ["test", "export", "--nitrate", "--debug", "--force-git-validation", "."],
+            catch_exceptions=False)
+
+        self.assertIn(
+            "Exporting regardless Not committed changes",
+            self.runner_output.output)
 
 
 class NitrateImport(Base):
