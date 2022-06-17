@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from typing import (TYPE_CHECKING, Any, AnyStr, Dict, List, Optional, Type,
-                    TypeVar, Union)
+                    TypeVar, Union, cast)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -84,7 +84,7 @@ class Step(tmt.utils.Common):
             data: Optional[StepData] = None,
             plan: Optional['Plan'] = None,
             name: Optional[str] = None,
-            workdir: Optional[str] = None) -> None:
+            workdir: tmt.utils.WorkdirArgumentType = None) -> None:
         """ Initialize and check the step data """
         super().__init__(name=name, parent=plan, workdir=workdir)
         # Initialize data
@@ -128,7 +128,8 @@ class Step(tmt.utils.Common):
     def enabled(self) -> Optional[bool]:
         """ True if the step is enabled """
         try:
-            assert self.plan is not None
+            if self.plan is None:
+                return None
             return self.name in self.plan.my_run._context.obj.steps
         except AttributeError:
             return None
@@ -150,9 +151,14 @@ class Step(tmt.utils.Common):
     def usage(cls, method_overview: str) -> str:
         """ Prepare general usage message for the step """
         # Main description comes from the class docstring
-        assert cls.__doc__ is not None
+        if cls.__name__ is None:
+            raise tmt.utils.GeneralError(f"Missing name of the step.")
+
+        if cls.__doc__ is None:
+            raise tmt.utils.GeneralError(
+                f"Missing docstring of the step {cls.__name__.lower()}.")
+
         usage = re.sub('\n    ', '\n', cls.__doc__)
-        assert usage is not None
         # Append the list of supported methods
         usage += '\n\n' + method_overview
         # Give a hint about detailed help
@@ -338,15 +344,13 @@ class PluginIndex(type):
             pass
 
 
-class PluginData(StepData):
+class PluginData(TypedDict, total=False):
     """
     Step data structure
     """
+    name: Optional[str]
+    how: Optional[str]
     order: Optional[int]
-
-
-PluginDataContainerVar = TypeVar(
-    'PluginDataContainerVar', bound=PluginData)
 
 
 class Plugin(Phase, metaclass=PluginIndex):
@@ -372,7 +376,7 @@ class Plugin(Phase, metaclass=PluginIndex):
             self,
             step: Step,
             data: Dict[Any, Any],
-            workdir: Optional[str] = None) -> None:
+            workdir: tmt.utils.WorkdirArgumentType = None) -> None:
         """ Store plugin name, data and parent step """
 
         # Ensure that plugin data contains name
@@ -382,11 +386,10 @@ class Plugin(Phase, metaclass=PluginIndex):
                 f"of the '{step.plan}' plan.")
 
         # Initialize plugin order
-        try:
-            assert 'order' in data and data['order'] is not None
-            order = int(data['order'])
-        except (AssertionError):
+        if 'order' not in data or data['order'] is None:
             order = tmt.utils.DEFAULT_PLUGIN_ORDER
+        else:
+            order = int(data['order'])
 
         # Store name, data and parent step
         super().__init__(
@@ -409,6 +412,8 @@ class Plugin(Phase, metaclass=PluginIndex):
     def options(cls, how: Optional[str] = None) -> List[click.Option]:
         """ Prepare command line options for given method """
         # Include common options supported across all plugins
+        # TODO: These should not be needed once mypy
+        # is allowed to peek into other modules.
         assert isinstance(tmt.options.verbose_debug_quiet, list)
         assert isinstance(tmt.options.force_dry, list)
         return tmt.options.verbose_debug_quiet + tmt.options.force_dry
@@ -454,7 +459,6 @@ class Plugin(Phase, metaclass=PluginIndex):
         """
         # Filter matching methods, pick the one with the lowest order
         for method in cls.methods():
-            assert 'how' in data and data['how'] is not None
             if method.name.startswith(data['how']):
                 step.debug(
                     f"Using the '{method.class_.__name__}' plugin "
@@ -465,7 +469,8 @@ class Plugin(Phase, metaclass=PluginIndex):
 
         show_step_method_hints(step, step.name, data['how'])
         # Report invalid method
-        assert step.plan is not None
+        if step.plan is None:
+            raise tmt.utils.GeneralError(f"Plan for {step.name} is not set.")
         raise tmt.utils.SpecificationError(
             f"Unsupported {step.name} method '{data['how']}' "
             f"in the '{step.plan.name}' plan.")
@@ -503,7 +508,6 @@ class Plugin(Phase, metaclass=PluginIndex):
         base_keys = ['name', 'how']
         if keys is None:
             keys = self._common_keys + self._keys
-        assert keys is not None
         for key in base_keys + keys:
             # Skip showing the default name
             if key == 'name' and self.name == tmt.utils.DEFAULT_NAME:
@@ -537,7 +541,6 @@ class Plugin(Phase, metaclass=PluginIndex):
         """
         if keys is None:
             keys = self._common_keys + self._keys
-        assert keys is not None
         for key in keys:
             value = self.opt(key)
             if value:
@@ -590,7 +593,9 @@ class Action(Phase):
             login_during: Optional[Step] = None
             # The last run may have failed before all enabled steps were
             # completed, select the last step done
-            assert step.plan is not None
+            if step.plan is None:
+                raise tmt.utils.GeneralError(
+                    f"Plan for {step.name} is not set.")
             if step.plan.my_run.opt('last'):
                 steps: List[Step] = [
                     s for s in step.plan.steps() if s.status() == 'done']
@@ -618,12 +623,12 @@ class Action(Phase):
             except ValueError:
                 # Convert 'start' and 'end' aliases
                 try:
-                    phase = dict(start=PHASE_START, end=PHASE_END)[phase]
+                    phase = cast(Dict[str, int],
+                                 dict(start=PHASE_START, end=PHASE_END))[phase]
                 except KeyError:
                     raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
             # Store the phase for given step
             try:
-                assert isinstance(phase, int)
                 phases[step_name].append(phase)
             except KeyError:
                 phases[step_name] = [phase]

@@ -61,7 +61,6 @@ extras_require = {
         'python-coveralls',
         'requre',
         'pre-commit',
-        'types-click',
         'mypy'
         ],
     'provision': ['testcloud>=0.7.0'],
