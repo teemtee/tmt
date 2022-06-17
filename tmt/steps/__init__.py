@@ -182,7 +182,7 @@ class Step(tmt.utils.Common):
         # Return status
         return self._status
 
-    def load(self, extra_keys: Optional[List[Any]] = None) -> None:
+    def load(self, extra_keys: Optional[List[str]] = None) -> None:
         """ Load status and step data from the workdir """
         extra_keys = extra_keys or []
         try:
@@ -402,7 +402,7 @@ class Plugin(Phase, metaclass=PluginIndex):
     @classmethod
     def base_command(cls, method_class: Optional[Method] = None,
                      usage: Optional[str] = None) -> click.Command:
-        """ Create base click command (common for all discover plugins) """
+        """ Create base click command (common for all step plugins) """
         raise NotImplementedError
 
     @classmethod
@@ -457,7 +457,7 @@ class Plugin(Phase, metaclass=PluginIndex):
             assert 'how' in data and data['how'] is not None
             if method.name.startswith(data['how']):
                 step.debug(
-                    f"Using the '{method.class_.__name__}' plugin "  #
+                    f"Using the '{method.class_.__name__}' plugin "
                     f"for the '{data['how']}' method.", level=2)
                 plugin = method.class_(step, data)
                 assert isinstance(plugin, Plugin)
