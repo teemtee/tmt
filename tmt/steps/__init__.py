@@ -81,14 +81,14 @@ class Step(tmt.utils.Common):
 
     def __init__(
             self,
+            plan: 'Plan',
             data: Optional[StepData] = None,
-            plan: Optional['Plan'] = None,
             name: Optional[str] = None,
             workdir: tmt.utils.WorkdirArgumentType = None) -> None:
         """ Initialize and check the step data """
         super().__init__(name=name, parent=plan, workdir=workdir)
         # Initialize data
-        self.plan: Optional['Plan'] = plan
+        self.plan: 'Plan' = plan
         self.data: Union[StepData, List[StepData]] = data or {}
         self._status: Optional[str] = None
         self._phases: List[Phase] = []
@@ -128,8 +128,6 @@ class Step(tmt.utils.Common):
     def enabled(self) -> Optional[bool]:
         """ True if the step is enabled """
         try:
-            if self.plan is None:
-                return None
             return self.name in self.plan.my_run._context.obj.steps
         except AttributeError:
             return None
