@@ -345,9 +345,7 @@ class PluginIndex(type):
 
 
 class PluginData(TypedDict, total=False):
-    """
-    Step data structure
-    """
+    """ Step data structure """
     name: Optional[str]
     how: Optional[str]
     order: Optional[int]
@@ -389,7 +387,12 @@ class Plugin(Phase, metaclass=PluginIndex):
         if 'order' not in data or data['order'] is None:
             order = tmt.utils.DEFAULT_PLUGIN_ORDER
         else:
-            order = int(data['order'])
+            try:
+                order = int(data['order'])
+            except ValueError:
+                raise tmt.utils.SpecificationError(
+                    f"Invalid order '{data['order']}' in {step} config "
+                    f"'{data['name']}'. Should be an integer.")
 
         # Store name, data and parent step
         super().__init__(
