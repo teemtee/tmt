@@ -1,11 +1,13 @@
 import os
 import re
 import shutil
+from typing import Any, List, Optional
 
 import click
 import fmf
 
 import tmt
+from tmt.steps.provision import Guest
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 
@@ -52,7 +54,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
     _methods = [tmt.steps.Method(name='install', doc=__doc__, order=50)]
 
     @classmethod
-    def options(cls, how=None):
+    def options(cls, how: Optional[str] = None) -> Any:
         """ Prepare command line options """
         return [
             click.option(
@@ -73,7 +75,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
                 help='Action on missing packages, fail (default) or skip.'),
             ] + super().options(how)
 
-    def default(self, option, default=None):
+    def default(self, option: str, default: Optional[Any] = None) -> Any:
         """ Return default data for given option """
         if option == 'missing':
             return 'fail'
@@ -85,7 +87,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         """ Show provided scripts """
         super().show(['package', 'directory', 'copr', 'exclude', 'missing'])
 
-    def wake(self, data=None):
+    def wake(self, data: Optional[List[str]] = None):
         """ Override options and wake up the guest """
         super().wake(['package', 'directory', 'copr', 'exclude', 'missing'])
 
@@ -94,7 +96,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
             self.data, split=True, keys=[
                 'package', 'directory', 'copr', 'exclude'])
 
-    def enable_copr_epel6(self, copr, guest):
+    def enable_copr_epel6(self, copr: Any, guest: Guest) -> None:
         """ Manually enable copr repositories for epel6 """
         # Parse the copr repo name
         matched = re.match("^(@)?([^/]+)/([^/]+)$", copr)
@@ -116,7 +118,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
                     f"Copr repository '{copr}' not found.")
             raise
 
-    def enable_copr(self, command, plugin, guest):
+    def enable_copr(self, command: str, plugin: Any, guest: Guest) -> None:
         """ Enable requested copr repositories """
         coprs = self.get('copr')
         if not coprs:
@@ -136,7 +138,10 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
                 self.info('copr', copr, 'green')
                 guest.execute(f'{command} copr enable -y {copr}')
 
-    def prepare_packages(self, package_list, title):
+    def prepare_packages(
+            self,
+            package_list: List[str],
+            title: str) -> List[Any]:
         """ Show package info and return quoted package names """
         # Show a brief summary by default
         if not self.opt('verbose'):
@@ -151,11 +156,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         # Return quoted package names
         return " ".join([tmt.utils.quote(package) for package in package_list])
 
-    def go(self, guest):
-        """ Prepare the guests """
-        super().go()
-        # Nothing to do in dry mode
-        if self.opt('dry'):
+    def go(self, guest: 'Guest') -> None
+     """ Prepare the guests """
+      super().go()
+       # Nothing to do in dry mode
+       if self.opt('dry'):
             return
 
         # Prepare the right dnf/yum command
