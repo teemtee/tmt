@@ -3,7 +3,7 @@
 import os
 import re
 import shutil
-from typing import Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 import fmf
 
@@ -16,7 +16,7 @@ BeakerlibIdentifierType = Union[str, Dict[str, str]]
 # A type for Beakerlib dependencies
 LibraryDependenciesType = Tuple[
     List[str], List[str], List['Library']
-]
+    ]
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
