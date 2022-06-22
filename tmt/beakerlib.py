@@ -103,6 +103,9 @@ class Library(object):
             self.format = 'fmf'
             self.url = identifier.get('url')
             self.path = identifier.get('path')
+            # Strip possible trailing slash from path
+            if isinstance(self.path, str):
+                self.path = self.path.rstrip('/')
             if not self.url and not self.path:
                 raise tmt.utils.SpecificationError(
                     "Need 'url' or 'path' to fetch a beakerlib library.")
@@ -119,25 +122,32 @@ class Library(object):
             if not self.name.startswith('/'):
                 raise tmt.utils.SpecificationError(
                     f"Library name '{self.name}' does not start with a '/'.")
+
             # Use provided repository nick name or parse it from the url/path
             repo = identifier.get('nick')
-            if not repo and self.url:
-                repo_search = re.search(r'/([^/]+?)(/|\.git)?$', self.url)
-                if not repo_search:
-                    raise tmt.utils.GeneralError(
-                        f"Unable to parse repository name from '{self.url}'.")
-                repo = repo_search.group(1)
-            elif not repo and self.path:
-                try:
-                    repo = os.path.basename(self.path)
-                except TypeError:
-                    raise tmt.utils.GeneralError(
-                        f"Unable to parse repository name from '{self.path}'.")
-            elif not repo:
-                raise tmt.utils.GeneralError(
-                    f"Unable to parse repository, no nick, url or path.")
-
+            if repo:
+                if not isinstance(repo, str):
+                    raise tmt.utils.SpecificationError(
+                        f"Invalid library nick '{repo}', should be a string.")
+            else:
+                if self.url:
+                    repo_search = re.search(r'/([^/]+?)(/|\.git)?$', self.url)
+                    if not repo_search:
+                        raise tmt.utils.GeneralError(
+                            f"Unable to parse repository name from '{self.url}'.")
+                    repo = repo_search.group(1)
+                else:
+                    # Either url or path must be defined
+                    assert self.path is not None
+                    try:
+                        repo = os.path.basename(self.path)
+                        if not repo:
+                            raise TypeError
+                    except TypeError:
+                        raise tmt.utils.GeneralError(
+                            f"Unable to parse repository name from '{self.path}'.")
             self.repo = repo
+
         # Something weird
         else:
             raise LibraryError
@@ -199,14 +209,13 @@ class Library(object):
                     if self.ref is not None:
                         command = ['git', 'clone', self.url, directory]
                     self.parent.run(command, env={"GIT_ASKPASS": "echo"})
-                elif self.path:
+                else:
+                    # Either url or path must be defined
+                    assert self.path is not None
                     self.parent.debug(
                         f"Copy local library '{self.path}' to '{directory}'.",
                         level=3)
                     shutil.copytree(self.path, directory, symlinks=True)
-                else:
-                    raise tmt.utils.GeneralError(
-                        f"No url or path set for the Library")
                 # Detect the default branch from the origin
                 try:
                     self.default_branch = tmt.utils.default_branch(directory)
@@ -252,14 +261,8 @@ class Library(object):
                 raise LibraryError
             raise tmt.utils.GeneralError(
                 f"Library '{self.name}' not found in '{self.repo}'.")
-        self.require = cast(
-            List[str], tmt.utils.listify(
-                library_node.get(
-                    'require', [])))
-        self.recommend = cast(
-            List[str], tmt.utils.listify(
-                library_node.get(
-                    'recommend', [])))
+        self.require = cast(List[str], tmt.utils.listify(library_node.get('require', [])))
+        self.recommend = cast(List[str], tmt.utils.listify(library_node.get('recommend', [])))
 
         # Create a symlink if the library is deep in the structure
         # FIXME: hot fix for https://github.com/beakerlib/beakerlib/pull/72
@@ -318,5 +321,4 @@ def dependencies(
                 processed_recommend.add(dependency)
 
     # Convert to list and return the results
-    return list(processed_require), list(
-        processed_recommend), gathered_libraries
+    return list(processed_require), list(processed_recommend), gathered_libraries
