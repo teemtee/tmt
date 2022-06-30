@@ -176,6 +176,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     Short names are also provided for 'centos', 'centos-stream',
     'debian' and 'ubuntu' (e.g. 'centos-8' or 'c8').
 
+    Supported Fedora CoreOS images are:
+
+        fedora-coreos
+        fedora-coreos-stable
+        fedora-coreos-testing
+        fedora-coreos-next
+
     Use the full path for images stored on local disk, for example:
 
         /var/tmp/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
@@ -348,7 +355,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # Map fedora aliases (e.g. rawhide, fedora, fedora-32, f-32, f32)
         matched_fedora = re.match(r'^f(edora)?-?(\d+)$', name)
         # Map fedora coreos aliases (e.g. stable, next or testing)
-        matched_fedora_coreos = re.match(r'^f(edora-coreos)?-?(\w+)$', name)
+        matched_fedora_coreos = re.match(r'^f(edora-coreos)?-?(stable|testing|next)$', name)
         # Map centos aliases (e.g. centos:X, centos, centos-stream:X)
         matched_centos = [re.match(r'^c(entos)?-?(\d+)$', name),
                           re.match(r'^c(entos-stream)?-?(\d+)$', name)]
