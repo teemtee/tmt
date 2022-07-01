@@ -1,0 +1,10 @@
+summary: Check that hardware key works correctly
+
+environment:
+    # This is the desired state:
+    #
+    # PROVISION_METHODS: artemis beaker connect container local virtual
+    #
+    # But right now, we are here:
+    #
+    PROVISION_METHODS: artemis beaker

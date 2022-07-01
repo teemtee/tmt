@@ -29,6 +29,8 @@ repos:
           - types-urllib3
           - ruamel.yaml
           - types-jinja2
+          - pint==0.20
+          - types-babel
         pass_filenames: false
         args: [--config-file=pyproject.toml]
 
@@ -57,3 +59,5 @@ repos:
     rev: 1.24.1
     hooks:
     - id: tmt-lint
+      additional_dependencies:
+        - pint==0.20

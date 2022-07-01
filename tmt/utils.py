@@ -2208,7 +2208,10 @@ class DataContainer:
         See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
         """
 
-        return dataclasses.asdict(self)
+        return {
+            key: getattr(self, key)
+            for key in self.keys()  # noqa: SIM118  # self is *not* a dictionary
+            }
 
     def to_minimal_dict(self) -> Dict[str, Any]:
         """

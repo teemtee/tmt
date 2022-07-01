@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, TypedDict, cast
 import requests
 
 import tmt
+import tmt.hardware
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -140,7 +141,6 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         option='--image',
         metavar='COMPOSE',
         help='Image (or "compose" in Artemis terminology) to provision.')
-    hardware: Optional[Any] = None
     pool: Optional[str] = field(
         default=None,
         option='--pool',
@@ -386,7 +386,6 @@ class GuestArtemis(tmt.GuestSsh):
     # Guest request properties
     arch: str
     image: str
-    hardware: Optional[Any]
     pool: Optional[str]
     priority_group: str
     keyname: str
@@ -445,9 +444,7 @@ class GuestArtemis(tmt.GuestSsh):
             environment['pool'] = self.pool
 
         if self.hardware is not None:
-            assert isinstance(self.hardware, dict)
-
-            environment['hw']['constraints'] = self.hardware
+            environment['hw']['constraints'] = self.hardware.to_spec()
 
         if self.api_version >= "0.0.56":
             if self.watchdog_dispatch_delay:

@@ -141,6 +141,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
 
         data.show(verbose=self.get('verbose'), logger=self._logger)
 
+        if data.hardware and data.hardware.constraint:
+            self.warn("The 'local' provision plugin does not support hardware requirements.")
+
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
 
     def guest(self) -> Optional[GuestLocal]:

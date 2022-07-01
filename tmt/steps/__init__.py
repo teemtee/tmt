@@ -1453,6 +1453,23 @@ class Topology(tmt.utils.SerializableContainer):
             for role, role_guests in roles.items()
             }
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to a mapping.
+
+        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        """
+
+        data = super().to_dict()
+
+        data['guest'] = self.guest.to_dict() if self.guest else None
+        data['guests'] = {
+            guest_name: guest.to_dict() for guest_name, guest in self.guests.items()
+
+            }
+
+        return data
+
     def save_yaml(self, dirpath: Path, filename: Optional[str] = None) -> Path:
         """
         Save the topology in a YAML file.

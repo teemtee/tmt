@@ -1,0 +1,61 @@
+/plan:
+    execute:
+        how: tmt
+
+    provision:
+        hardware:
+            boot:
+                method: bios
+            compatible:
+                distro:
+                    - rhel-7
+                    - rhel-8
+            cpu:
+                sockets: "<= 1"
+                cores: 2
+                threads: ">= 8"
+                cores-per-socket: "= 2"
+                threads-per-core: "== 4"
+                processors: "> 8"
+                model: 62
+                model-name: "!~ Haswell"
+                family: "< 6"
+                family-name: Skylake
+            disk:
+                - size: 40 GiB
+                - size: ">= 120 GiB"
+            hostname: "~ .*.foo.redhat.com"
+            memory: 8 GiB
+            network:
+                - type: eth
+                - type: eth
+            tpm:
+                version: "2.0"
+            virtualization:
+                is-supported: true
+                is-virtualized: false
+                hypervisor: "~ xen"
+
+/plan/artemis:
+    provision+:
+        how: artemis
+
+/plan/beaker:
+    provision+:
+        how: beaker
+
+/plan/connect:
+    provision+:
+        how: connect
+
+/plan/container:
+    provision+:
+        how: container
+
+/plan/local:
+    provision+:
+        how: local
+
+/plan/virtual:
+    provision+:
+        how: virtual

@@ -93,6 +93,9 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
         else:
             self.debug('Using private key authentication.')
 
+        if data.hardware and data.hardware.constraint:
+            self.warn("The 'connect' provision plugin does not support hardware requirements.")
+
         # And finally create the guest
         self._guest = tmt.GuestSsh(
             logger=self._logger,

@@ -14,6 +14,7 @@ from shlex import quote
 from typing import (
     TYPE_CHECKING,
     Any,
+    DefaultDict,
     Dict,
     Generator,
     List,
@@ -28,8 +29,10 @@ from typing import (
 
 import click
 import fmf
+from click import echo
 
 import tmt
+import tmt.hardware
 import tmt.log
 import tmt.plugins
 import tmt.steps
@@ -330,6 +333,41 @@ class GuestFacts(tmt.utils.SerializableContainer):
         self.in_sync = True
 
 
+def normalize_hardware(
+        key_address: str,
+        raw_hardware: Optional[tmt.hardware.Spec],
+        logger: tmt.log.Logger) -> Optional[tmt.hardware.Hardware]:
+    """
+    Normalize a ``hardware`` key value.
+
+    :param key_address: location of the key being that's being normalized.
+    :param logger: logger to use for logging.
+    :param raw_hardware: input from either command line or fmf node.
+    """
+
+    if raw_hardware is None:
+        return None
+
+    # From command line
+    if isinstance(raw_hardware, (list, tuple)):
+        merged: DefaultDict[str, Any] = collections.defaultdict(dict)
+
+        for raw_datum in raw_hardware:
+            components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
+
+            if components.child_name:
+                merged[components.name][components.child_name] = \
+                    f'{components.operator} {components.value}'
+
+            else:
+                merged[components.name] = f'{components.operator} {components.value}'
+
+        return tmt.hardware.Hardware.from_spec(dict(merged))
+
+    # From fmf
+    return tmt.hardware.Hardware.from_spec(raw_hardware)
+
+
 @dataclasses.dataclass
 class GuestData(tmt.utils.SerializableContainer):
     """
@@ -348,6 +386,17 @@ class GuestData(tmt.utils.SerializableContainer):
         serialize=lambda facts: facts.to_serialized(),  # type: ignore[attr-defined]
         unserialize=lambda serialized: GuestFacts.from_serialized(serialized)
         )
+
+    hardware: Optional[tmt.hardware.Hardware] = field(
+        default=cast(Optional[tmt.hardware.Hardware], None),
+        option='--hardware',
+        help='Add a hardware requirement.',
+        metavar='KEY=VALUE',
+        multiple=True,
+        normalize=normalize_hardware,
+        serialize=lambda hardware: hardware.to_spec() if hardware else None,
+        unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
+        if serialized is not None else None)
 
     def show(
             self,
@@ -416,6 +465,8 @@ class Guest(tmt.utils.Common):
 
     role: Optional[str]
     guest: Optional[str]
+
+    hardware: Optional[tmt.hardware.Hardware]
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -552,8 +603,12 @@ class Guest(tmt.utils.Common):
         return facts
 
     @facts.setter
-    def facts(self, facts: Dict[str, Any]) -> None:
-        self.__dict__['facts'] = GuestFacts.from_serialized(facts)
+    def facts(self, facts: Union[GuestFacts, Dict[str, Any]]) -> None:
+        if isinstance(facts, GuestFacts):
+            self.__dict__['facts'] = facts
+
+        else:
+            self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
     def details(self) -> None:
         """ Show guest details such as distro and kernel """
@@ -1384,7 +1439,12 @@ class GuestSsh(Guest):
 
 @dataclasses.dataclass
 class ProvisionStepData(tmt.steps.StepData):
-    pass
+    hardware: Optional[tmt.hardware.Hardware] = field(
+        default=cast(Optional[tmt.hardware.Hardware], None),
+        normalize=normalize_hardware,
+        serialize=lambda hardware: hardware.to_spec() if hardware else None,
+        unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
+        if serialized is not None else None)
 
 
 class ProvisionPlugin(tmt.steps.GuestlessPlugin):
@@ -1490,6 +1550,22 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
         """ Remove the images of one particular plugin """
         return True
+
+    def show(self, keys: Optional[List[str]] = None) -> None:
+        keys = keys or list(set(self.data.keys()))
+
+        show_hardware = 'hardware' in keys
+
+        if show_hardware:
+            keys.remove('hardware')
+
+        super().show(keys=keys)
+
+        if show_hardware:
+            hardware: Optional[tmt.hardware.Hardware] = self.get('hardware')
+
+            if hardware:
+                echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
 class Provision(tmt.steps.Step):

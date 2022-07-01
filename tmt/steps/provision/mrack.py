@@ -5,9 +5,11 @@ import logging
 import os
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Dict, Optional, Tuple, TypedDict, cast
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, cast
 
 import tmt
+import tmt.hardware
+import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.provision
@@ -40,26 +42,204 @@ GuestInspectType = TypedDict(
         }
     )
 
-size_translation = {
-    "TB": 1000000,
-    "GB": 1000,
-    "MB": 1,
-    "TiB": 1048576,
-    "GiB": 1024,
-    "MiB": 1,
-    }
 
-operators = [
-    "~=",
-    ">=",
-    "<=",
-    ">",
-    "<",
-    "=",
+SUPPORTED_HARDWARE_CONSTRAINTS: List[str] = [
+    'cpu.processors',
+    'cpu.model',
+    'disk.size',
+    'hostname',
+    'memory'
     ]
 
 
-def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
+# Mapping of HW requirement operators to their Beaker representation.
+OPERATOR_SIGN_TO_OPERATOR = {
+    tmt.hardware.Operator.EQ: '==',
+    tmt.hardware.Operator.NEQ: '!=',
+    tmt.hardware.Operator.GT: '>',
+    tmt.hardware.Operator.GTE: '>=',
+    tmt.hardware.Operator.LT: '<',
+    tmt.hardware.Operator.LTE: '<=',
+    }
+
+
+def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> Tuple[str, str]:
+    """
+    Convert constraint operator to Beaker "op".
+    """
+
+    if operator in OPERATOR_SIGN_TO_OPERATOR:
+        return OPERATOR_SIGN_TO_OPERATOR[operator], value
+
+    # MATCH has special handling - convert the pattern to a wildcard form -
+    # and that may be weird :/
+    return 'like', value.replace('.*', '%').replace('.+', '%')
+
+
+# Transcription of our HW constraints into Mrack's own representation. It's based
+# on dictionaries, and it's slightly weird. There is no distinction between elements
+# that do not have attributes, like <and/>, and elements that must have them, like
+# <memory/> and other binary operations. Also, there is no distinction betwen
+# element attribute and child element, both are specified as dictionary key, just
+# the former would be a string, the latter another, nested, dictionary.
+#
+# This makes it harder for us to enforce correct structure of the transcribed tree.
+# Therefore adding a thin layer of containers that describe what Mrack is willing
+# to accept, but with strict type annotations; the layer is aware of how to convert
+# its components into dictionaries.
+@dataclasses.dataclass
+class MrackBaseHWElement:
+    """ Base for Mrack hardware requirement elements """
+
+    # Only a name is defined, as it's the only property shared across all element
+    # types.
+    name: str
+
+    def to_mrack(self) -> Dict[str, Any]:
+        """ Convert the element to Mrack-compatible dictionary tree """
+        raise NotImplementedError
+
+
+@dataclasses.dataclass
+class MrackHWElement(MrackBaseHWElement):
+    """
+    An element with name and attributes.
+
+    This type of element is not allowed to have any child elements.
+    """
+
+    attributes: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def to_mrack(self) -> Dict[str, Any]:
+        return {
+            self.name: self.attributes
+            }
+
+
+@dataclasses.dataclass(init=False)
+class MrackHWBinOp(MrackHWElement):
+    """ An element describing a binary operation, a "check" """
+
+    def __init__(self, name: str, operator: str, value: str) -> None:
+        super().__init__(name)
+
+        self.attributes = {
+            '_op': operator,
+            '_value': value
+            }
+
+
+@dataclasses.dataclass
+class MrackHWGroup(MrackBaseHWElement):
+    """
+    An element with child elements.
+
+    This type of element is not allowed to have any attributes.
+    """
+
+    children: List[MrackBaseHWElement] = dataclasses.field(default_factory=list)
+
+    def to_mrack(self) -> Dict[str, Any]:
+        # Another unexpected behavior of mrack dictionary tree: if there is just
+        # a single child, it is "packed" into its parent as a key/dict item.
+        if len(self.children) == 1 and self.name not in ('and', 'or'):
+            return {
+                self.name: self.children[0].to_mrack()
+                }
+
+        return {
+            self.name: [child.to_mrack() for child in self.children]
+            }
+
+
+@dataclasses.dataclass
+class MrackHWAndGroup(MrackHWGroup):
+    """ Represents ``<and/>`` element """
+
+    name: str = 'and'
+
+
+@dataclasses.dataclass
+class MrackHWOrGroup(MrackHWGroup):
+    """ Represents ``<or/>`` element """
+
+    name: str = 'or'
+
+
+def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> MrackBaseHWElement:
+    """ Convert a hardware constraint into a Mrack-compatible filter """
+
+    if isinstance(constraint, tmt.hardware.And):
+        return MrackHWAndGroup(
+            children=[
+                constraint_to_beaker_filter(child_constraint)
+                for child_constraint in constraint.constraints
+                ]
+            )
+
+    if isinstance(constraint, tmt.hardware.Or):
+        return MrackHWOrGroup(
+            children=[
+                constraint_to_beaker_filter(child_constraint)
+                for child_constraint in constraint.constraints
+                ]
+            )
+
+    assert isinstance(constraint, tmt.hardware.Constraint)
+
+    name, _, child_name = constraint.expand_name()
+
+    if name == 'memory':
+        beaker_operator, actual_value = operator_to_beaker_op(
+            constraint.operator,
+            str(int(cast('tmt.hardware.Size', constraint.value).to('MiB').magnitude)))
+
+        return MrackHWGroup(
+            'system',
+            children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
+
+    if name == "disk" and child_name == 'size':
+        beaker_operator, actual_value = operator_to_beaker_op(
+            constraint.operator,
+            str(int(cast('tmt.hardware.Size', constraint.value).to('B').magnitude))
+            )
+
+        return MrackHWGroup(
+            'disk',
+            children=[MrackHWBinOp('size', beaker_operator, actual_value)])
+
+    if name == 'hostname':
+        assert isinstance(constraint.value, str)
+
+        beaker_operator, actual_value = operator_to_beaker_op(
+            constraint.operator,
+            constraint.value)
+
+        return MrackHWBinOp(
+            'hostname',
+            beaker_operator,
+            actual_value)
+
+    if name == "cpu":
+        beaker_operator, actual_value = operator_to_beaker_op(
+            constraint.operator,
+            str(constraint.value))
+
+        if child_name == 'processors':
+            return MrackHWGroup(
+                'cpu',
+                children=[MrackHWBinOp('cpu_count', beaker_operator, actual_value)])
+
+        if child_name == 'model':
+            return MrackHWGroup(
+                'cpu',
+                children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+    raise tmt.utils.ProvisionError(
+        f"Unsupported hardware constraint '{constraint.printable_name}'.")
+
+
+def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
     """
     Import mrack module only when needed
 
@@ -100,108 +280,28 @@ def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
     # as mypy does not have type information for the BeakerTransformer class
     class TmtBeakerTransformer(BeakerTransformer):  # type: ignore[misc]
-        def _parse_amount(self, in_string: str) -> Tuple[str, int]:
-            """ Return amount from given string """
-            result = []
-            amount = ""
-
-            for op in operators:
-                parts = in_string.split(op, maxsplit=1)
-                if len(parts) != 2:
-                    continue
-
-                if parts[0]:
-                    continue
-
-                if any(op in parts[1] for op in op):
-                    continue
-
-                result.append(op)
-                amount = parts[1]
-                break
-
-            assert len(result) == 1
-            assert len(amount) >= 1
-
-            for size, multiplier in size_translation.items():
-                if size not in amount:
-                    continue
-
-                result.append(str(multiplier * int(amount.split(size, maxsplit=1)[0])))
-                break
-
-            # returns operator, amount
-            return result[0], int(result[1])
-
-        def _translate_tmt_hw(self, hw: Dict[str, Any]) -> Dict[str, Any]:
+        def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> Dict[str, Any]:
             """ Return hw requirements from given hw dictionary """
-            key = "_key"
-            value = "_value"
-            op = "_op"
 
-            system = {}
-            disks = []
-            cpu = {}
+            assert hw.constraint
 
-            for key, val in hw.items():
-                if key == "memory":
-                    operator, amount = self._parse_amount(val)
-                    system.update({
-                        key: {
-                            value: amount,
-                            op: operator
-                            }
-                        })
-                if key == "disk":
-                    for dsk in val:
-                        operator, disk = self._parse_amount(dsk["size"])
-                        disks.append({
-                            "disk": {
-                                "size": {
-                                    value: disk,
-                                    op: operator,
-                                    }
-                                }
-                            })
-                if key == "cpu":
-                    if val.get("processors"):
-                        cpu.update({
-                            "cpu_count": {
-                                value: val["processors"],
-                                op: "=",
-                                }
-                            })
-                    if val.get("model"):
-                        cpu.update({
-                            "model": {
-                                value: val["model"],
-                                op: "=",
-                                }
-                            })
+            transformed = MrackHWAndGroup(
+                children=[
+                    constraint_to_beaker_filter(constraint)
+                    for constraint in hw.constraint.variant()
+                    ])
 
-            and_req = []
-            for rec in [system, disks, cpu]:
-                if not rec:
-                    continue
-                if isinstance(rec, dict):
-                    and_req.append(rec)
-                if isinstance(rec, list):
-                    and_req += rec
+            logger.info('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
 
-            host_req = {}
-            if and_req:
-                host_req = {
-                    "hostRequires": {
-                        "and": and_req
-                        }
-                    }
-
-            return host_req
+            return {
+                'hostRequires': transformed.to_mrack()
+                }
 
         def create_host_requirement(self, host: Dict[str, Any]) -> Dict[str, Any]:
             """ Create single input for Beaker provisioner """
-            mrack_req: Dict[str, Any] = self._translate_tmt_hw(host.get("hardware", {}))
-            host.update({"beaker": mrack_req})
+            hardware = cast(Optional[tmt.hardware.Hardware], host.get('hardware'))
+            if hardware and hardware.constraint:
+                host.update({"beaker": self._translate_tmt_hw(hardware)})
             req: Dict[str, Any] = super().create_host_requirement(host)
             req.update({"whiteboard": host.get("tmt_name", req.get("whiteboard"))})
             return req
@@ -238,7 +338,6 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option='--image',
         metavar='COMPOSE',
         help='Image (distro or "compose" in Beaker terminology) to provision.')
-    hardware: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     # Provided in Beaker job
     job_id: Optional[str] = None
@@ -370,14 +469,14 @@ class BeakerAPI:
         return await self._mrack_provider.delete_host(self._bkr_job_id, None)
 
 
-class GuestBeaker(tmt.GuestSsh):
+class GuestBeaker(tmt.steps.provision.GuestSsh):
     """ Beaker guest instance """
     _data_class = BeakerGuestData
 
     # Guest request properties
     arch: str
     image: str = "fedora-latest"
-    hardware: Dict[str, Any] = {}
+    hardware: Optional[tmt.hardware.Hardware] = None
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -559,7 +658,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
 
     def go(self) -> None:
         """ Provision the guest """
-        import_and_load_mrack_deps(self.workdir, self.name)
+        import_and_load_mrack_deps(self.workdir, self.name, self._logger)
 
         super().go()
 
@@ -573,6 +672,11 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
             )
 
         data.show(verbose=self.get('verbose'), logger=self._logger)
+
+        if data.hardware:
+            data.hardware.report_support(
+                names=SUPPORTED_HARDWARE_CONSTRAINTS,
+                logger=self._logger)
 
         self._guest = GuestBeaker(
             data=data,

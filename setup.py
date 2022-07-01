@@ -50,6 +50,8 @@ __scripts__ = ['bin/tmt']
 install_requires = [
     'fmf>=1.2.1',
     'click<8.1.4',
+    # 'pint>=0.22',
+    'pint',
     'requests',
     'urllib3',
     'ruamel.yaml',
@@ -68,6 +70,7 @@ extras_require = {
         'requre',
         'pre-commit',
         'mypy',
+        "typing-extensions>=3.7.4.3; python_version < '3.10'",
         'yq==3.1.1'  # frozen to be able to install on el8
         ],
     'provision': [

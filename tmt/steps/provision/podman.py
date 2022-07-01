@@ -308,6 +308,9 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
 
         data.show(verbose=self.get('verbose'), logger=self._logger)
 
+        if data.hardware and data.hardware.constraint:
+            self.warn("The 'container' provision plugin does not support hardware requirements.")
+
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(
             logger=self._logger,

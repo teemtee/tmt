@@ -43,6 +43,11 @@ BuildRequires: python%{python3_pkgversion}-markdown
 BuildRequires: python%{python3_pkgversion}-junit_xml
 BuildRequires: python%{python3_pkgversion}-ruamel-yaml
 BuildRequires: python%{python3_pkgversion}-jinja2
+BuildRequires: python%{python3_pkgversion}-pint
+# TypeAlias is not available with python3.9 on RHEL9
+%if 0%{?rhel} == 9
+BuildRequires: python%{python3_pkgversion}-typing-extensions
+%endif
 # Required for tests
 BuildRequires: rsync
 %{?python_provide:%python_provide python%{python3_pkgversion}-%{name}}
