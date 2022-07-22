@@ -57,9 +57,6 @@ class Execute(tmt.steps.Step):
         # List of Result() objects representing test results
         self._results: List[tmt.Result] = []
 
-        # List of scripts to install
-        self.scripts: List[str] = []
-
         # Default test framework and mapping old methods
         # FIXME remove when we drop the old execution methods
         self._framework = DEFAULT_FRAMEWORK
@@ -89,7 +86,6 @@ class Execute(tmt.steps.Step):
     def _map_old_methods(self) -> None:
         """ Map the old execute methods in a backward-compatible way """
         how = self.data[0]['how']
-        assert isinstance(how, str)
         matched = re.search(r"^(shell|beakerlib)(\.tmt)?$", how)
         if not matched:
             return
@@ -203,7 +199,7 @@ class ExecutePlugin(tmt.steps.Plugin):
     # Internal executor is the default implementation
     how = 'tmt'
 
-    scripts: Optional[Tuple['Script', 'Script']] = None
+    scripts: Tuple['Script', ...] = ()
 
     @classmethod
     def base_command(
@@ -214,7 +210,6 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         # Prepare general usage message for the step
         if method_class:
-            assert usage is not None
             usage = Execute.usage(method_overview=usage)
 
         # Create the command
@@ -223,7 +218,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for test execution.')
-        def execute(context: Any, **kwargs: Any) -> None:
+        def execute(context: click.Context, **kwargs: Any) -> None:
             context.obj.steps.add('execute')
             Execute._save_context(context)
 
@@ -296,8 +291,6 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         Prepare additional scripts for testing
         """
-        assert self.scripts
-
         # Install all scripts on guest
         for script in self.scripts:
             source = os.path.join(
@@ -343,18 +336,22 @@ class ExecutePlugin(tmt.steps.Plugin):
             self.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
             data['note'] = 'beakerlib: TestResults FileError'
             return tmt.Result(data, name=test.name, interpret=test.result)
-        try:
-            result = re.search(
-                'TESTRESULT_RESULT_STRING=(.*)', results).group(1)  # type: ignore
-            # States are: started, incomplete and complete
-            # FIXME In quotes until beakerlib/beakerlib/pull/92 is merged
-            state = re.search(r'TESTRESULT_STATE="?(\w+)"?', results).group(1)  # type: ignore
-        except AttributeError:
+
+        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
+        # States are: started, incomplete and complete
+        # FIXME In quotes until beakerlib/beakerlib/pull/92 is merged
+        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', results)
+
+        if search_result is None or search_state is None:
             self.debug(
                 f"No result or state found in '{beakerlib_results_file}'.",
                 level=3)
             data['note'] = 'beakerlib: Result/State missing'
             return tmt.Result(data, name=test.name, interpret=test.result)
+
+        result = search_result.group(1)
+        state = search_state.group(1)
+
         # Check if it was killed by timeout (set by tmt executor)
         if test.returncode == tmt.utils.PROCESS_TIMEOUT:
             data['result'] = 'error'
