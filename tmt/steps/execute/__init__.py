@@ -2,7 +2,7 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type
 
 import click
 import fmf
@@ -232,9 +232,13 @@ class ExecutePlugin(tmt.steps.Plugin):
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         # Add option to exit after the first test failure
-        return cast(List[tmt.options.ClickOptionDecoratorType], [click.option(
-            '-x', '--exit-first', is_flag=True,
-            help='Stop execution after the first test failure.')]) + super().options(how)
+        options = super().options(how)
+        options[:0] = [
+            click.option(
+                '-x', '--exit-first', is_flag=True,
+                help='Stop execution after the first test failure.'),
+            ]
+        return options
 
     def go(self, *args: Any, **kwargs: Any) -> None:
         super().go()
