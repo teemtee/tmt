@@ -51,7 +51,7 @@ class Execute(tmt.steps.Step):
     how = 'tmt'
     data: List[tmt.steps.StepData]
 
-    def __init__(self, plan: tmt.Plan, data: tmt.steps.StepData) -> None:
+    def __init__(self, plan: "tmt.Plan", data: tmt.steps.StepData) -> None:
         """ Initialize execute step data """
         super().__init__(plan=plan, data=data)
         # List of Result() objects representing test results
@@ -181,7 +181,7 @@ class Execute(tmt.steps.Step):
             requires.update(plugin.requires())
         return list(requires)
 
-    def results(self) -> List[tmt.Result]:
+    def results(self) -> List["tmt.base.Result"]:
         """
         Results from executed tests
 
@@ -250,7 +250,7 @@ class ExecutePlugin(tmt.steps.Plugin):
 
     def data_path(
             self,
-            test: tmt.Test,
+            test: "tmt.Test",
             filename: Optional[str] = None,
             full: bool = False,
             create: bool = False) -> str:
@@ -272,7 +272,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         path = os.path.join(directory, filename)
         return path if full else os.path.relpath(path, self.step.workdir)
 
-    def prepare_tests(self) -> List[tmt.Test]:
+    def prepare_tests(self) -> List["tmt.Test"]:
         """
         Prepare discovered tests for testing
 
@@ -288,7 +288,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                 metadata_filename, tmt.utils.dict_to_yaml(test._metadata))
         return tests
 
-    def prepare_scripts(self, guest: tmt.steps.provision.Guest) -> None:
+    def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """
         Prepare additional scripts for testing
         """
@@ -305,7 +305,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                     destination=dest,
                     options=["-p", "--chmod=755"])
 
-    def check_shell(self, test: tmt.Test) -> tmt.Result:
+    def check_shell(self, test: "tmt.Test") -> "tmt.Result":
         """ Check result of a shell test """
         # Prepare the log path
         data = {'log': self.data_path(test, TEST_OUTPUT_FILENAME),
@@ -321,7 +321,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                 self.timeout_hint(test)
         return tmt.Result(data, name=test.name, interpret=test.result)
 
-    def check_beakerlib(self, test: tmt.Test) -> tmt.Result:
+    def check_beakerlib(self, test: "tmt.Test") -> "tmt.Result":
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
         data = {'result': 'error',
@@ -365,7 +365,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             data['result'] = result.lower()
         return tmt.Result(data, name=test.name, interpret=test.result)
 
-    def check_result_file(self, test: tmt.Test) -> tmt.Result:
+    def check_result_file(self, test: "tmt.Test") -> "tmt.Result":
         """
         Check result file created by tmt-report-result
 
@@ -414,7 +414,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         """ Convert duration to a human readable format """
         return time.strftime("%H:%M:%S", time.gmtime(end - start))
 
-    def timeout_hint(self, test: tmt.Test) -> None:
+    def timeout_hint(self, test: "tmt.Test") -> None:
         """ Append a duration increase hint to the test output """
         output = self.data_path(test, TEST_OUTPUT_FILENAME, full=True)
         self.write(
@@ -424,7 +424,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             f"https://tmt.readthedocs.io/en/stable/spec/tests.html#duration\n",
             mode='a', level=3)
 
-    def results(self) -> List[tmt.Result]:
+    def results(self) -> List["tmt.Result"]:
         """ Return test results """
         raise NotImplementedError
 
