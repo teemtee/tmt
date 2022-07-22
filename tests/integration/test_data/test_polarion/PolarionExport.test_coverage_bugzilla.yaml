@@ -2,11 +2,216 @@ _requre:
   DataTypes: 1
   key_strategy: StorageKeysInspectSimple
   version_storage_file: 3
-tmt.utils:
-  check_git_url:
+requests.sessions:
+  send:
+    POST:
+      https://bugzilla.redhat.com/xmlrpc.cgi:
+      - metadata:
+          latency: 0.0
+          module_call_list:
+          - unittest.case
+          - integration.test_polarion
+          - click.testing
+          - click.core
+          - click.decorators
+          - tmt.cli
+          - tmt.base
+          - tmt.export
+          - bugzilla.base
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - bugzilla._session
+          - requests.sessions
+          - requre.objects
+          - requre.cassette
+          - requests.sessions
+          - send
+        output:
+          __store_indicator: 1
+          _content: <?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><value><struct><member><name>version</name><value><string>5.0.4.rh76</string></value></member></struct></value></param></params></methodResponse>
+          _next: null
+          elapsed: 0.687092
+          encoding: ISO-8859-1
+          headers:
+            Cache-Control: private, must-revalidate
+            Connection: keep-alive
+            Content-Encoding: gzip
+            Content-Length: '159'
+            Content-Security-Policy: frame-ancestors 'self' bugzilla.redhat.com
+            Content-Type: text/xml
+            Date: Fri, 14 Oct 2022 08:09:53 GMT
+            SOAPServer: SOAP::Lite/Perl/1.27
+            Set-Cookie: Bugzilla_login_request_cookie=jdYxoHb3ds; domain=bugzilla.redhat.com;
+              path=/; secure; HttpOnly; SameSite=Lax
+            Strict-Transport-Security: max-age=63072000; includeSubDomains
+            Vary: Accept-Encoding,User-Agent
+            X-content-type-options: nosniff
+            X-frame-options: ALLOW-FROM=https://bugzilla.redhat.com/
+            X-xss-protection: 1; mode=block
+            x-rh-edge-cache-status: Miss from child, Miss from parent
+            x-rh-edge-reference-id: 0.9e7cd117.1665734993.c64bfb
+            x-rh-edge-request-id: c64bfb
+          raw: !!binary ""
+          reason: OK
+          status_code: 200
+      - metadata:
+          latency: 0.0
+          module_call_list:
+          - unittest.case
+          - integration.test_polarion
+          - click.testing
+          - click.core
+          - click.decorators
+          - tmt.cli
+          - tmt.base
+          - tmt.export
+          - bugzilla.base
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - bugzilla._session
+          - requests.sessions
+          - requre.objects
+          - requre.cassette
+          - requests.sessions
+          - send
+        output:
+          __store_indicator: 1
+          _content: <?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><value><struct><member><name>users</name><value><array><data><value><struct><member><name>id</name><value><int>1</int></value></member><member><name>name</name><value><string>aander07@packetmaster.com</string></value></member><member><name>real_name</name><value><string>Need
+            Real Name</string></value></member><member><name>email</name><value><string>aander07@packetmaster.com</string></value></member><member><name>can_login</name><value><boolean>1</boolean></value></member></struct></value></data></array></value></member></struct></value></param></params></methodResponse>
+          _next: null
+          elapsed: 0.529315
+          encoding: ISO-8859-1
+          headers:
+            Cache-Control: private, must-revalidate
+            Connection: keep-alive
+            Content-Encoding: gzip
+            Content-Length: '253'
+            Content-Security-Policy: frame-ancestors 'self' bugzilla.redhat.com
+            Content-Type: text/xml
+            Date: Fri, 14 Oct 2022 08:09:53 GMT
+            SOAPServer: SOAP::Lite/Perl/1.27
+            Strict-Transport-Security: max-age=63072000; includeSubDomains
+            Vary: Accept-Encoding,User-Agent
+            X-content-type-options: nosniff
+            X-frame-options: ALLOW-FROM=https://bugzilla.redhat.com/
+            X-xss-protection: 1; mode=block
+            x-rh-edge-cache-status: Miss from child, Miss from parent
+            x-rh-edge-reference-id: 0.9e7cd117.1665734993.c64ccc
+            x-rh-edge-request-id: c64ccc
+          raw: !!binary ""
+          reason: OK
+          status_code: 200
+      - metadata:
+          latency: 0.0
+          module_call_list:
+          - unittest.case
+          - integration.test_polarion
+          - click.testing
+          - click.core
+          - click.decorators
+          - tmt.cli
+          - tmt.base
+          - tmt.export
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - bugzilla._session
+          - requests.sessions
+          - requre.objects
+          - requre.cassette
+          - requests.sessions
+          - send
+        output:
+          __store_indicator: 1
+          _content: <?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><value><struct><member><name>faults</name><value><array><data
+            /></array></value></member><member><name>bugs</name><value><array><data><value><struct><member><name>flags</name><value><array><data
+            /></array></value></member><member><name>external_bugs</name><value><array><data><value><struct><member><name>ext_bz_id</name><value><int>69</int></value></member><member><name>type</name><value><struct><member><name>description</name><value><string>TCMS
+            Test Case</string></value></member><member><name>type</name><value><string>None</string></value></member><member><name>url</name><value><string>https://tcms.engineering.redhat.com</string></value></member><member><name>full_url</name><value><string>https://tcms.engineering.redhat.com/case/%id%/</string></value></member><member><name>send_once</name><value><boolean>0</boolean></value></member><member><name>can_get</name><value><boolean>0</boolean></value></member><member><name>id</name><value><int>69</int></value></member><member><name>must_send</name><value><boolean>0</boolean></value></member><member><name>can_send</name><value><boolean>0</boolean></value></member></struct></value></member><member><name>ext_bz_bug_id</name><value><string>609686</string></value></member><member><name>bug_id</name><value><int>1925518</int></value></member><member><name>ext_status</name><value><string>None</string></value></member><member><name>ext_priority</name><value><string>None</string></value></member><member><name>id</name><value><int>1815278</int></value></member><member><name>ext_description</name><value><string>This
+            is case what already exists inside nitrate</string></value></member></struct></value><value><struct><member><name>bug_id</name><value><int>1925518</int></value></member><member><name>type</name><value><struct><member><name>can_send</name><value><boolean>0</boolean></value></member><member><name>must_send</name><value><boolean>0</boolean></value></member><member><name>can_get</name><value><boolean>0</boolean></value></member><member><name>id</name><value><int>117</int></value></member><member><name>send_once</name><value><boolean>0</boolean></value></member><member><name>full_url</name><value><string>https://polarion.engineering.redhat.com/polarion/#/project/%id%</string></value></member><member><name>url</name><value><string>https://polarion.engineering.redhat.com/polarion/</string></value></member><member><name>type</name><value><string>None</string></value></member><member><name>description</name><value><string>Polarion
+            test case</string></value></member></struct></value></member><member><name>ext_bz_bug_id</name><value><string>RedHatEnterpriseLinux7/workitem?id=RHEL-293393</string></value></member><member><name>ext_bz_id</name><value><int>117</int></value></member><member><name>ext_description</name><value><string>None</string></value></member><member><name>id</name><value><int>2053192</int></value></member><member><name>ext_priority</name><value><string>None</string></value></member><member><name>ext_status</name><value><string>None</string></value></member></struct></value><value><struct><member><name>bug_id</name><value><int>1925518</int></value></member><member><name>ext_bz_id</name><value><int>117</int></value></member><member><name>ext_bz_bug_id</name><value><string>RHELBASEOS/workitem?id=BASEOS-12729</string></value></member><member><name>type</name><value><struct><member><name>url</name><value><string>https://polarion.engineering.redhat.com/polarion/</string></value></member><member><name>description</name><value><string>Polarion
+            test case</string></value></member><member><name>type</name><value><string>None</string></value></member><member><name>can_send</name><value><boolean>0</boolean></value></member><member><name>id</name><value><int>117</int></value></member><member><name>must_send</name><value><boolean>0</boolean></value></member><member><name>can_get</name><value><boolean>0</boolean></value></member><member><name>send_once</name><value><boolean>0</boolean></value></member><member><name>full_url</name><value><string>https://polarion.engineering.redhat.com/polarion/#/project/%id%</string></value></member></struct></value></member><member><name>id</name><value><int>2090002</int></value></member><member><name>ext_description</name><value><string>None</string></value></member><member><name>ext_status</name><value><string>None</string></value></member><member><name>ext_priority</name><value><string>None</string></value></member></struct></value></data></array></value></member><member><name>id</name><value><int>1925518</int></value></member></struct></value></data></array></value></member></struct></value></param></params></methodResponse>
+          _next: null
+          elapsed: 0.553832
+          encoding: ISO-8859-1
+          headers:
+            Cache-Control: private, must-revalidate
+            Connection: keep-alive
+            Content-Encoding: gzip
+            Content-Length: '668'
+            Content-Security-Policy: frame-ancestors 'self' bugzilla.redhat.com
+            Content-Type: text/xml
+            Date: Fri, 14 Oct 2022 08:09:54 GMT
+            SOAPServer: SOAP::Lite/Perl/1.27
+            Strict-Transport-Security: max-age=63072000; includeSubDomains
+            Vary: Accept-Encoding,User-Agent
+            X-content-type-options: nosniff
+            X-frame-options: ALLOW-FROM=https://bugzilla.redhat.com/
+            X-xss-protection: 1; mode=block
+            x-rh-edge-cache-status: Miss from child, Miss from parent
+            x-rh-edge-reference-id: 0.9e7cd117.1665734994.c64e4c
+            x-rh-edge-request-id: c64e4c
+          raw: !!binary ""
+          reason: OK
+          status_code: 200
+      - metadata:
+          latency: 0.0
+          module_call_list:
+          - unittest.case
+          - integration.test_polarion
+          - click.testing
+          - click.core
+          - click.decorators
+          - tmt.cli
+          - tmt.base
+          - tmt.export
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - xmlrpc.client
+          - bugzilla._backendxmlrpc
+          - bugzilla._session
+          - requests.sessions
+          - requre.objects
+          - requre.cassette
+          - requests.sessions
+          - send
+        output:
+          __store_indicator: 1
+          _content: <?xml version="1.0" encoding="UTF-8"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>700</int></value></member><member><name>faultString</name><value><string>No
+            data given for change or flag name invalid.</string></value></member></struct></value></fault></methodResponse>
+          _next: null
+          elapsed: 0.611486
+          encoding: ISO-8859-1
+          headers:
+            Cache-Control: private, must-revalidate
+            Connection: keep-alive
+            Content-Encoding: gzip
+            Content-Length: '196'
+            Content-Security-Policy: frame-ancestors 'self' bugzilla.redhat.com
+            Content-Type: text/xml
+            Date: Fri, 14 Oct 2022 08:09:55 GMT
+            SOAPServer: SOAP::Lite/Perl/1.27
+            Strict-Transport-Security: max-age=63072000; includeSubDomains
+            Vary: Accept-Encoding,User-Agent
+            X-content-type-options: nosniff
+            X-frame-options: ALLOW-FROM=https://bugzilla.redhat.com/
+            X-xss-protection: 1; mode=block
+            x-rh-edge-cache-status: Miss from child, Miss from parent
+            x-rh-edge-reference-id: 0.9e7cd117.1665734995.c64fdd
+            x-rh-edge-request-id: c64fdd
+          raw: !!binary ""
+          reason: OK
+          status_code: 200
+suds.transport.http:
+  send:
   - metadata:
-      guess_type: Simple
-      latency: 0.6193697452545166
+      latency: 0.0
       module_call_list:
       - unittest.case
       - integration.test_polarion
@@ -16,8 +221,110 @@ tmt.utils:
       - tmt.cli
       - tmt.base
       - tmt.export
+      - pylero.work_item
+      - suds.client
+      - suds.transport.https
       - requre.objects
       - requre.cassette
-      - tmt.utils
-      - check_git_url
-    output: https://github.com/teemtee/tmt.git
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.21
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.work_item
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.22
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.base_polarion
+      - pylero.session
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.23
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.base_polarion
+      - pylero.session
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.24
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.base_polarion
+      - pylero.work_item
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.25
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.base_polarion
+      - pylero.session
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_coverage_bugzilla.yaml.bin.26

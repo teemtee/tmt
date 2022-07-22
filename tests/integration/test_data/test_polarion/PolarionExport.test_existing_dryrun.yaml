@@ -1,0 +1,44 @@
+_requre:
+  DataTypes: 1
+  key_strategy: StorageKeysInspectSimple
+  version_storage_file: 3
+suds.transport.http:
+  send:
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.work_item
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_existing_dryrun.yaml.bin.47
+  - metadata:
+      latency: 0.0
+      module_call_list:
+      - unittest.case
+      - integration.test_polarion
+      - click.testing
+      - click.core
+      - click.decorators
+      - tmt.cli
+      - tmt.base
+      - tmt.export
+      - pylero.work_item
+      - suds.client
+      - suds.transport.https
+      - requre.objects
+      - requre.cassette
+      - suds.transport.http
+      - send
+    output: PolarionExport.test_existing_dryrun.yaml.bin.48

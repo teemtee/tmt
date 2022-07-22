@@ -29,10 +29,15 @@ coverage: tmp
 # Regenerate test data for integration tests
 # remove selected/all response files in tests/integration/test_data directory
 requre:
-	cd tests/integration; python3 -m pytest -vvv -ra --showlocals
+	cd tests/integration; python3 -m pytest -vvv -ra --showlocals tests/integration/test_nitrate.py
 	# response files cleanup
-	requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*
+	requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/*/*.yaml
 
+requre_polarion:
+	# pack binary data for polarion tests
+	pytest -v -x tests/integration/test_polarion.py
+	cd tests/integration/test_data/test_polarion/; tar cfJ binary_data.tar.xz *.bin.*; rm *.bin.*
+	requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/*/*.yaml
 
 # Build documentation, prepare man page
 docs: man

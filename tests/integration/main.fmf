@@ -44,8 +44,12 @@ tag: [integration]
 tier: null
 link: https://github.com/packit/requre
 
-/coverage_bugzilla:
-    test: "python3 -m pytest -vvv -ra --showlocals -k 'test_coverage_bugzilla'"
+/nitrate:
+    test: "python3 -m pytest -vvv -ra --showlocals "
+    /coverage_bugzilla:
+        test+: "-k 'test_coverage_bugzilla' test_nitrate.py"
 
-/the_rest:
-    test: "python3 -m pytest -vvv -ra --showlocals -k 'not test_coverage_bugzilla'"
+    /the_rest:
+        test+: "-k 'not test_coverage_bugzilla' test_nitrate.py"
+/polarion:
+    test: "tar xJf test_data/test_polarion/binary_data.tar.xz -C test_data/test_polarion/; python3 -m pytest -vvv -ra --showlocals test_polarion.py"

@@ -1,16 +1,28 @@
 import os
 
-import pytest
 from click.testing import CliRunner
 from fmf import Tree
 
+import tmt.base
 import tmt.cli
+import tmt.export
 from tmt.identifier import ID_KEY
 
 from .test_nitrate import TEST_DIR, Base
 
+PROJECT = "RHELBASEOS"
 
-@pytest.mark.skip(reason="Only works locally for now")
+
+class PolarionBase(Base):
+    EXAMPLES = TEST_DIR / "data" / "polarion"
+
+    def test(self):
+        fmf_node = Tree(self.tmpdir).find("/existing_testcase")
+        tmt_test = tmt.base.Test(node=fmf_node)
+        tmt_test.opt("project_id", PROJECT)
+        tmt.export.export_to_polarion(tmt_test)
+
+
 class PolarionExport(Base):
     EXAMPLES = TEST_DIR / "data" / "polarion"
 
@@ -22,7 +34,7 @@ class PolarionExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--create", "."])
+            PROJECT, "--create", "."])
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         self.assertIn(ID_KEY, fmf_node.data)
@@ -35,13 +47,14 @@ class PolarionExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--how", "polarion", "--create", "--dry", "."],
+            ["test", "export", "--how", "polarion", "--create", "--project-id",
+             PROJECT, "--dry", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         self.assertNotIn(ID_KEY, fmf_node.data)
         self.assertEqual(fmf_node_before.data, fmf_node.data)
         self.assertIn(
-            "title: tmt /new_testcase - This i",
+            "title: This is new testcase inside polarion",
             self.runner_output.output)
 
     def test_existing(self):
@@ -52,7 +65,7 @@ class PolarionExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--create", "."])
+            PROJECT, "--create", "."])
 
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
         self.assertEqual(fmf_node.data["extra-nitrate"], "TC#0609686")
@@ -69,7 +82,7 @@ class PolarionExport(Base):
              "--bugzilla", "."],
             catch_exceptions=False)
         self.assertIn(
-            "title: tmt /existing_dryrun_testcase - ABCDEF",
+            "title: ABCDEF",
             self.runner_output.output)
 
     def test_coverage_bugzilla(self):
@@ -80,5 +93,5 @@ class PolarionExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--bugzilla", "."])
+            PROJECT, "--bugzilla", "."])
         assert self.runner_output.exit_code == 0
