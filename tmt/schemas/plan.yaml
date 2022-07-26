@@ -134,7 +134,6 @@ properties:
             - $ref: "/schemas/prepare/shell#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
-  # TODO: can be a list
   provision:
     oneOf:
       - $ref: "/schemas/provision/artemis#"
@@ -142,6 +141,14 @@ properties:
       - $ref: "/schemas/provision/container#"
       - $ref: "/schemas/provision/local#"
       - $ref: "/schemas/provision/virtual#"
+      - type: array
+        items:
+          anyOf:
+            - $ref: "/schemas/provision/artemis#"
+            - $ref: "/schemas/provision/connect#"
+            - $ref: "/schemas/provision/container#"
+            - $ref: "/schemas/provision/local#"
+            - $ref: "/schemas/provision/virtual#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
   report:
