@@ -24,17 +24,14 @@ properties:
 
   api-retries:
     type: integer
-    multipleOf: 1
     minimum: 1
 
   api-retry-backoff-factor:
     type: integer
-    multipleOf: 1
     minimum: 1
 
   api-timeout:
     type: integer
-    multipleOf: 1
     minimum: 1
 
   api-url:
@@ -61,12 +58,10 @@ properties:
 
   provision-timeout:
     type: integer
-    multipleOf: 1
     minimum: 1
 
   provision-tick:
     type: integer
-    multipleOf: 1
     minimum: 1
 
   keyname:
