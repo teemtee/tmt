@@ -97,6 +97,9 @@ properties:
       - type: array
         items:
           $ref: "/schemas/execute/tmt#"
+      - type: array
+        items:
+          $ref: "/schemas/execute/upgrade#"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
   finish:
