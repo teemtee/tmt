@@ -12,7 +12,7 @@ $schema: http://json-schema.org/draft-07/schema
 definitions:
 
   # HW requirements: `boot` block
-  hw_boot:
+  boot:
     type: object
 
     properties:
@@ -29,7 +29,7 @@ definitions:
     minProperties: 1
 
   # HW requirements: `cpu` block
-  hw_cpu:
+  cpu:
     type: object
 
     properties:
@@ -59,7 +59,7 @@ definitions:
     minProperties: 1
 
   # HW requirements: single `disk` item
-  hw_disk:
+  disk:
     type: object
 
     properties:
@@ -75,21 +75,21 @@ definitions:
     minProperties: 1
 
   # HW requirements: `disk` block
-  hw_disks:
+  disks:
     type: array
     items:
-      "$ref": "#/definitions/hw_disk"
+      "$ref": "#/definitions/disk"
 
-  hw_hostname:
+  hostname:
     type: string
 
-  hw_memory:
+  memory:
     anyOf:
       - type: string
       - type: integer
 
   # HW requirements: single `network` item
-  hw_network:
+  network:
     type: object
 
     properties:
@@ -103,13 +103,13 @@ definitions:
     minProperties: 1
 
   # HW requirements: `network` block
-  hw_networks:
+  networks:
     type: array
     items:
-      "$ref": "#/definitions/hw_network"
+      "$ref": "#/definitions/network"
 
   # HW requirements: `virtualization` block
-  hw_virtualization:
+  virtualization:
     type: object
 
     properties:
@@ -133,30 +133,30 @@ definitions:
     minProperties: 1
 
   # HW requirements: basic block
-  hw_block:
+  block:
     type: object
 
     properties:
       boot:
-        "$ref": "#/definitions/hw_boot"
+        "$ref": "#/definitions/boot"
 
       cpu:
-        "$ref": "#/definitions/hw_cpu"
+        "$ref": "#/definitions/cpu"
 
       disk:
-        "$ref": "#/definitions/hw_disks"
+        "$ref": "#/definitions/disks"
 
       hostname:
-        "$ref": "#/definitions/hw_hostname"
+        "$ref": "#/definitions/hostname"
 
       memory:
-        "$ref": "#/definitions/hw_memory"
+        "$ref": "#/definitions/memory"
 
       network:
-        "$ref": "#/definitions/hw_networks"
+        "$ref": "#/definitions/networks"
 
       virtualization:
-        "$ref": "#/definitions/hw_virtualization"
+        "$ref": "#/definitions/virtualization"
 
     additionalProperties: false
 
@@ -165,40 +165,40 @@ definitions:
     minProperties: 1
 
   # HW requirements: conditions
-  hw_and:
+  and:
     type: object
     properties:
       "and":
         type: array
         items:
           anyOf:
-            - "$ref": "#/definitions/hw_boot"
-            - "$ref": "#/definitions/hw_cpu"
-            - "$ref": "#/definitions/hw_disks"
-            - "$ref": "#/definitions/hw_networks"
-            - "$ref": "#/definitions/hw_virtualization"
-            - "$ref": "#/definitions/hw_block"
-            - "$ref": "#/definitions/hw_and"
-            - "$ref": "#/definitions/hw_or"
+            - "$ref": "#/definitions/boot"
+            - "$ref": "#/definitions/cpu"
+            - "$ref": "#/definitions/disks"
+            - "$ref": "#/definitions/networks"
+            - "$ref": "#/definitions/virtualization"
+            - "$ref": "#/definitions/block"
+            - "$ref": "#/definitions/and"
+            - "$ref": "#/definitions/or"
 
     required:
       - "and"
 
-  hw_or:
+  or:
     type: object
     properties:
       "or":
         type: array
         items:
           anyOf:
-            - "$ref": "#/definitions/hw_boot"
-            - "$ref": "#/definitions/hw_cpu"
-            - "$ref": "#/definitions/hw_disks"
-            - "$ref": "#/definitions/hw_networks"
-            - "$ref": "#/definitions/hw_virtualization"
-            - "$ref": "#/definitions/hw_block"
-            - "$ref": "#/definitions/hw_and"
-            - "$ref": "#/definitions/hw_or"
+            - "$ref": "#/definitions/boot"
+            - "$ref": "#/definitions/cpu"
+            - "$ref": "#/definitions/disks"
+            - "$ref": "#/definitions/networks"
+            - "$ref": "#/definitions/virtualization"
+            - "$ref": "#/definitions/block"
+            - "$ref": "#/definitions/and"
+            - "$ref": "#/definitions/or"
 
     required:
       - "or"
@@ -208,13 +208,13 @@ additionalProperties: false
 
 properties:
   anyOf:
-    - "$ref": "#/definitions/hw_boot"
-    - "$ref": "#/definitions/hw_cpu"
-    - "$ref": "#/definitions/hw_disks"
-    - "$ref": "#/definitions/hw_networks"
-    - "$ref": "#/definitions/hw_virtualization"
-    - "$ref": "#/definitions/hw_block"
-    - "$ref": "#/definitions/hw_and"
-    - "$ref": "#/definitions/hw_or"
+    - "$ref": "#/definitions/boot"
+    - "$ref": "#/definitions/cpu"
+    - "$ref": "#/definitions/disks"
+    - "$ref": "#/definitions/networks"
+    - "$ref": "#/definitions/virtualization"
+    - "$ref": "#/definitions/block"
+    - "$ref": "#/definitions/and"
+    - "$ref": "#/definitions/or"
 
   required: []
