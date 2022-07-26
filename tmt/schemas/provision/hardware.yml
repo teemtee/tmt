@@ -93,7 +93,13 @@ definitions:
     type: object
 
     properties:
+      device-name:
+        type: string
+
       type:
+        type: string
+
+      vendor-name:
         type: string
 
     additionalProperties: false
