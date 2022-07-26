@@ -25,5 +25,11 @@ properties:
   image:
     type: string
 
+  pull:
+    type: boolean
+
+  user:
+    type: string
+
 required:
   - how
