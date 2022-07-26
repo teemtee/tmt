@@ -121,7 +121,6 @@ properties:
     $ref: "/schemas/core#/definitions/order"
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
-  # TODO: can be a list
   prepare:
     oneOf:
       - $ref: "/schemas/prepare/ansible#"
