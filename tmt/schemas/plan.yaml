@@ -120,7 +120,7 @@ properties:
   order:
     $ref: "/schemas/core#/definitions/order"
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#finish
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#prepare
   prepare:
     oneOf:
       - $ref: "/schemas/prepare/ansible#"
