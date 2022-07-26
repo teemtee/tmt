@@ -3,7 +3,7 @@
 #
 # JSON Schema definition for `shell` discover plugin
 #
-# https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
 #
 
 $id: /schemas/discover/shell
@@ -30,17 +30,89 @@ properties:
       additionalProperties: false
 
       properties:
+
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#adjust
+        adjust:
+          $ref: "/schemas/core#/definitions/adjust"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#component
+        component:
+          $ref: "/schemas/test#/properties/component"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#contact
+        contact:
+          $ref: "/schemas/test#/properties/contact"
+
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#description
+        description:
+          $ref: "/schemas/core#/definitions/description"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#duration
+        duration:
+          $ref: "/schemas/test#/properties/duration"
+
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#enabled
+        enabled:
+          $ref: "/schemas/core#/definitions/enabled"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#environment
+        environment:
+          $ref: "/schemas/test#/properties/environment"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#framework
+        framework:
+          $ref: "/schemas/test#/properties/framework"
+
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#link
+        link:
+          $ref: "/schemas/core#/definitions/link"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#manual
+        manual:
+          $ref: "/schemas/test#/properties/manual"
+
+        # name of the test
         name:
           type: string
 
-        test:
-          type: string
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#order
+        order:
+          $ref: "/schemas/core#/definitions/order"
 
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#path
         path:
-          type: string
+          $ref: "/schemas/test#/properties/path"
 
-        duration:
-          $ref: "/schemas/common#/definitions/duration"
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#recommend
+        recommend:
+          $ref: "/schemas/test#/properties/recommend"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
+        require:
+          $ref: "/schemas/test#/properties/require"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
+        result:
+          $ref: "/schemas/test#/properties/result"
+
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
+        summary:
+          $ref: "/schemas/core#/definitions/summary"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#tag
+        tag:
+          $ref: "/schemas/test#/properties/tag"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#test
+        test:
+          $ref: "/schemas/test#/properties/test"
+
+        # https://tmt.readthedocs.io/en/stable/spec/tests.html#tier
+        tier:
+          $ref: "/schemas/test#/properties/tier"
+
+      patternProperties:
+        $ref: "/schemas/test#/patternProperties"
 
       required:
         - name

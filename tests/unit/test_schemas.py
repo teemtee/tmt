@@ -48,7 +48,8 @@ def schema_store():
             'prepare/ansible', 'prepare/install', 'prepare/shell',
             'provision/artemis', 'provision/connect', 'provision/container',
             'provision/local', 'provision/virtual',
-            'report/display', 'report/html'
+            'report/display', 'report/html',
+            'test'
             ):
         schema_file = os.path.join(SCHEMADIR, f'{schema_name}.yaml')
         schema = YAML(typ="safe").load(
