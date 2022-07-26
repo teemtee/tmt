@@ -32,16 +32,16 @@ properties:
     $ref: "/schemas/common#/definitions/fmf_id/properties/path"
 
   test:
-    $ref: "/schemas/common#/definitions/array_of_strings"
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   link:
     $ref: "/schemas/common#/definitions/array_of_strings"
 
   filter:
-    type: string
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   exclude:
-    type: string
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   modified-only:
     type: boolean
