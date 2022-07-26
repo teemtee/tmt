@@ -214,7 +214,7 @@ definitions:
         items:
           type: string
 
-  # common definition of an ansible execution method
+  # common definition of a shell execution method
   shell:
     type: object
     additionalProperties: false
