@@ -30,7 +30,7 @@ definitions:
         $ref: "/schemas/core#/definitions/order"
 
       playbook:
-        $ref: "/schemas/common#/definitions/array_of_strings"
+        $ref: "/schemas/common#/definitions/one_or_more_strings"
 
       summary:
         $ref: "/schemas/core#/definitions/summary"
