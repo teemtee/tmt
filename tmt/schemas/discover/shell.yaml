@@ -112,7 +112,8 @@ properties:
           $ref: "/schemas/test#/properties/tier"
 
       patternProperties:
-        $ref: "/schemas/test#/patternProperties"
+        ^extra-:
+          type: string
 
       required:
         - name
