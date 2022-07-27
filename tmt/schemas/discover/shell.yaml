@@ -22,6 +22,12 @@ properties:
   name:
     type: string
 
+  dist-git-source:
+    $ref: "/schemas/common#/definitions/dist-git-source"
+
+  dist-git-type:
+    $ref: "/schemas/common#/definitions/dist-git-type"
+
   tests:
     type: array
     items:

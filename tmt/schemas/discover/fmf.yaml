@@ -43,6 +43,27 @@ properties:
   exclude:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
+  dist-git-extract:
+    type: string
+
+  dist-git-init:
+    type: boolean
+
+  dist-git-merge:
+    type: boolean
+
+  dist-git-remove-fmf-root:
+    type: boolean
+
+  dist-git-source:
+    $ref: "/schemas/common#/definitions/dist-git-source"
+
+  dist-git-type:
+    $ref: "/schemas/common#/definitions/dist-git-type"
+
+  fmf-id:
+    type: boolean
+
   modified-only:
     type: boolean
 
@@ -52,6 +73,9 @@ properties:
 
   modified-ref:
     type: string
+
+  sync-repo:
+    type: boolean
 
 required:
   - how
