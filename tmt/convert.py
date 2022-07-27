@@ -254,8 +254,15 @@ def read_datafile(
 
     # Detect framework
     try:
+        print("##################################################")
+        print(data["test"].split()[0])
+        test_path = ""
         if data["test"].split()[0] != 'make':
-            test_path = os.path.join(path, data["test"].split()[-1])
+            print("##### in make If statement")
+            match = re.search('\./.+\.sh', data['test'])
+            if match:
+                print("##### in match If statement")
+                test_path = os.path.join(path, match.group(0))
         else:
             # As 'make' command was specified for test, ensure Makefile present.
             makefile_path = os.path.join(path, 'Makefile')
@@ -267,13 +274,16 @@ def read_datafile(
             except IOError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
-            test_path =  os.path.join(path, search_result.group(1).split()[-1])
+            test_path = os.path.join(path, search_result.group(1).split()[-1])
         # Read the test file and determine the framework used.
-        with open(test_path, encoding="utf-8") as test_file:
-            if re.search("beakerlib", test_file.read()):
-                data["framework"] = "beakerlib"
-            else:
-                data["framework"] = "shell"
+        if test_path:
+            with open(test_path, encoding="utf-8") as test_file:
+                if re.search("beakerlib", test_file.read()):
+                    data["framework"] = "beakerlib"
+                else:
+                    data["framework"] = "shell"
+        else:
+            data["framework"] = "shell"
         echo(style("framework: ", fg="green") + data["framework"])
     except IOError:
         raise ConvertError("Unable to open '{0}'.".format(test_path))
