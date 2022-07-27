@@ -254,14 +254,10 @@ def read_datafile(
 
     # Detect framework
     try:
-        print("##################################################")
-        print(data["test"].split()[0])
         test_path = ""
         if data["test"].split()[0] != 'make':
-            print("##### in make If statement")
-            match = re.search('\./.+\.sh', data['test'])
+            match = re.search('\\./.+\\.sh', data['test'])
             if match:
-                print("##### in match If statement")
                 test_path = os.path.join(path, match.group(0))
         else:
             # As 'make' command was specified for test, ensure Makefile present.
