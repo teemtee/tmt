@@ -180,7 +180,7 @@ properties:
             - $ref: "/schemas/provision/local#"
             - $ref: "/schemas/provision/virtual#"
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#provision
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#report
   report:
     oneOf:
       - $ref: "/schemas/report/display#"
