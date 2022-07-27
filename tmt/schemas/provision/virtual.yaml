@@ -25,11 +25,23 @@ properties:
   image:
     type: string
 
+  user:
+    type: string
+
   memory:
     type: integer
 
-  user:
+  disk:
+    type: integer
+
+  connection:
     type: string
+    enum:
+      - session
+      - system
+
+  arch:
+    $ref: "/schemas/common#/definitions/arch"
 
 required:
   - how
