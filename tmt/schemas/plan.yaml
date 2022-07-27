@@ -185,11 +185,13 @@ properties:
     oneOf:
       - $ref: "/schemas/report/display#"
       - $ref: "/schemas/report/html#"
+      - $ref: "/schemas/report/junit#"
       - type: array
         items:
           anyOf:
             - $ref: "/schemas/report/display#"
             - $ref: "/schemas/report/html#"
+            - $ref: "/schemas/report/junit#"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
   summary:
