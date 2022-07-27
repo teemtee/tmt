@@ -47,7 +47,7 @@ def schema_store():
             'finish/ansible', 'finish/shell',
             'prepare/ansible', 'prepare/install', 'prepare/shell',
             'provision/artemis', 'provision/connect', 'provision/container',
-            'provision/local', 'provision/virtual',
+            'provision/hardware', 'provision/local', 'provision/virtual',
             'report/display', 'report/html',
             'test'
             ):
