@@ -48,7 +48,7 @@ properties:
     type: string
 
   hardware:
-    $ref: "/schemas/provision/hardware#"
+    $ref: "/schemas/provision/hardware#/definitions/hardware"
 
   pool:
     type: string

@@ -209,18 +209,13 @@ definitions:
     required:
       - "or"
 
-type: object
-additionalProperties: false
-
-properties:
-  anyOf:
-    - "$ref": "#/definitions/boot"
-    - "$ref": "#/definitions/cpu"
-    - "$ref": "#/definitions/disks"
-    - "$ref": "#/definitions/networks"
-    - "$ref": "#/definitions/virtualization"
-    - "$ref": "#/definitions/block"
-    - "$ref": "#/definitions/and"
-    - "$ref": "#/definitions/or"
-
-  required: []
+  hardware:
+    anyOf:
+      - "$ref": "#/definitions/boot"
+      - "$ref": "#/definitions/cpu"
+      - "$ref": "#/definitions/disks"
+      - "$ref": "#/definitions/networks"
+      - "$ref": "#/definitions/virtualization"
+      - "$ref": "#/definitions/block"
+      - "$ref": "#/definitions/and"
+      - "$ref": "#/definitions/or"
