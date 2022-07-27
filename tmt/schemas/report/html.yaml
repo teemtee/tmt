@@ -19,5 +19,8 @@ properties:
     enum:
       - html
 
+  open:
+    type: boolean
+
 required:
   - how
