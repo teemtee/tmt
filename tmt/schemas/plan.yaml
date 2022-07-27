@@ -12,6 +12,32 @@ $schema: https://json-schema.org/draft-07/schema
 type: object
 additionalProperties: false
 
+definitions:
+  distro:
+    type: string
+    patterns:
+      - ^fedora(-[0-9]+)?$
+      - ^centos(-stream)?(-[0-9]+(.[0-9]+)?)?$
+      - ^rhel(-[0-9]+(.[0-9]+)?)?$
+
+  trigger:
+    type: string
+    enum:
+      - build
+      - commit
+      - compose
+      - update
+
+  variant:
+    type: string
+    enum:
+      - Client
+      - Desktop
+      - Server
+      - Workstation
+      - Silverblue
+      - CoreOS
+
 properties:
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#adjust
@@ -26,41 +52,45 @@ properties:
 
     properties:
       arch:
-        $ref: "/schemas/common#/definitions/arch"
+        oneOf:
+          - $ref: "/schemas/common#/definitions/arch"
+
+          - type: array
+            items:
+              $ref: "/schemas/common#/definitions/arch"
 
       component:
-        type: string
+        $ref: "/schemas/common#/definitions/one_or_more_strings"
 
       collection:
-        type: string
+        $ref: "/schemas/common#/definitions/one_or_more_strings"
 
       distro:
-        type: string
-        patterns:
-          - ^fedora(-[0-9]+)?$
-          - ^centos(-stream)?(-[0-9]+(.[0-9]+)?)?$
-          - ^rhel(-[0-9]+(.[0-9]+)?)?$
+        oneOf:
+          - $ref: "#/definitions/distro"
+
+          - type: array
+            items:
+              $ref: "#/definitions/distro"
 
       module:
-        type: string
+        $ref: "/schemas/common#/definitions/one_or_more_strings"
 
       trigger:
-        type: string
-        enum:
-          - build
-          - commit
-          - compose
-          - update
+        oneOf:
+          - $ref: "#/definitions/trigger"
+
+          - type: array
+            items:
+              $ref: "#/definitions/trigger"
 
       variant:
-        type: string
-        enum:
-          - Client
-          - Desktop
-          - Server
-          - Workstation
-          - Silverblue
-          - CoreOS
+        oneOf:
+          - $ref: "#/definitions/variant"
+
+          - type: array
+            items:
+              $ref: "#/definitions/variant"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#description
   description:
