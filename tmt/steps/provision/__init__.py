@@ -704,6 +704,14 @@ class GuestSsh(Guest):
         else:
             return command + self._ssh_options()
 
+    @classmethod
+    def options(cls, how=None):
+        return []
+        #@click.pass_context
+        #@click.option(
+        #    '--ssh-option', metavar="SSHOPTION", multiple=True, default=[],
+        #    help="Additional ssh option. Can be specified multiple times.")
+
     def ansible(self, playbook, extra_args=None):
         """ Prepare guest using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)

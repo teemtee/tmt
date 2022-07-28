@@ -32,6 +32,9 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
             guest: host.example.org
     """
 
+    # Guest class implementation
+    _guest_class = tmt.GuestSsh
+
     # Guest instance
     _guest = None
 
