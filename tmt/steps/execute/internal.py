@@ -331,8 +331,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                     f"{duration} {test.name} [{progress}]", shift=shift)
                 if self._handle_reboot(test, guest):
                     continue
-            self._results.append(result)
             abort = self.check_abort_file(test)
+            if abort:
+                result.note = 'aborted'
+            self._results.append(result)
             self.verbose(
                 f"{duration} {result.show()} [{progress}]", shift=shift)
             if (abort or exit_first and
