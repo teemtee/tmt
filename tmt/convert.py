@@ -9,6 +9,7 @@ import re
 import subprocess
 from io import open
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+import shlex
 
 import fmf.utils
 from click import echo, style
@@ -256,9 +257,9 @@ def read_datafile(
     try:
         test_path = ""
         if data["test"].split()[0] != 'make':
-            match = re.search('\\./.+\\.sh', data['test'])
-            if match:
-                test_path = os.path.join(path, match.group(0))
+            script_paths = [s for s in shlex.split(data['test']) if s.endswith('.sh')]
+            if script_paths:
+                test_path = os.path.join(path, script_paths[0])
         else:
             # As 'make' command was specified for test, ensure Makefile present.
             makefile_path = os.path.join(path, 'Makefile')
