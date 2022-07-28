@@ -270,7 +270,8 @@ def read_datafile(
             except IOError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
-            test_path = os.path.join(path, search_result.group(1).split()[-1])
+            if search_result is not None:
+                test_path = os.path.join(path, search_result.group(1).split()[-1])
         # Read the test file and determine the framework used.
         if test_path:
             with open(test_path, encoding="utf-8") as test_file:
