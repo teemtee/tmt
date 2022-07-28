@@ -6,10 +6,10 @@ import copy
 import os
 import pprint
 import re
+import shlex
 import subprocess
 from io import open
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
-import shlex
 
 import fmf.utils
 from click import echo, style
