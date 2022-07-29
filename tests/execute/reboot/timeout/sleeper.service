@@ -1,0 +1,11 @@
+[Unit]
+Description=Delay sshd start
+Documentation=Delay sshd start
+Before=sshd.service
+
+[Service]
+Type=oneshot
+ExecStart=sleep 400
+
+[Install]
+WantedBy=multi-user.target
