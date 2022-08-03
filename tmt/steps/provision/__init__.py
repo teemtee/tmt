@@ -24,6 +24,9 @@ from tmt.steps import Action
 # Timeout in seconds of waiting for a connection after reboot
 CONNECTION_TIMEOUT = 5 * 60
 
+# Wait time when reboot happens in seconds
+RECONNECT_INITIAL_WAIT_TIME = 5
+
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
     "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
@@ -518,6 +521,9 @@ class Guest(tmt.utils.Common):
         """
         # The default is handled here rather than in the argument so that
         # the caller can pass in None as an argument (i.e. don't care value)
+
+        # Even with waiting for connection to drop we need slight delay
+        time.sleep(RECONNECT_INITIAL_WAIT_TIME)
         timeout = timeout or CONNECTION_TIMEOUT
         self.debug("Wait for a connection to the guest.")
 
