@@ -2699,14 +2699,14 @@ def wait(
     if tick <= 0:
         raise GeneralError('Tick must be a positive integer')
 
-    NOW = datetime.datetime.utcnow
+    NOW = time.monotonic
 
-    deadline = datetime.datetime.utcnow() + timeout
+    deadline = NOW() + timeout.total_seconds()
 
     parent.debug(
         'wait',
         f"waiting for condition '{check.__name__}' with timeout {timeout},"
-        f"deadline {deadline}, check every {tick} seconds")
+        f"deadline in {timeout.total_seconds()}, checking every {tick} seconds")
 
     while True:
         now = NOW()
@@ -2725,20 +2725,20 @@ def wait(
                 parent.debug(
                     'wait',
                     f"'{check.__name__}' finished successfully but took too much time,"
-                    f"{deadline - now} over quota")
+                    f"{now - deadline} over quota")
 
                 raise WaitingTimedOutError()
 
             parent.debug(
                 'wait',
-                f"'{check.__name__}' finished successfully, {deadline - now} left")
+                f"'{check.__name__}' finished successfully, {deadline - now} seconds left")
 
             return ret
 
         except WaitingIncomplete:
             parent.debug(
                 'wait',
-                f"'{check.__name__}' still pending, {deadline - now} left")
+                f"'{check.__name__}' still pending, {deadline - now} seconds left")
 
             time.sleep(tick)
 
