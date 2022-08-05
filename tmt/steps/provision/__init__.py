@@ -963,6 +963,8 @@ class GuestSsh(Guest):
                 self.debug('Failed to connect to the guest.')
                 raise tmt.utils.WaitingIncomplete()
 
+        timeout = timeout or CONNECTION_TIMEOUT
+
         try:
             tmt.utils.wait(
                 self,
