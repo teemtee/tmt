@@ -268,6 +268,8 @@ class ProvisionArtemis(
             api-retry-backoff-factor: 1
     """
 
+    _data_class = ArtemisGuestData
+
     # Guest instance
     _guest = None
 
