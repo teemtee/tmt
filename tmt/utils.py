@@ -20,7 +20,7 @@ from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 from threading import Thread
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator,
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Generic,
                     Iterable, List, NamedTuple, Optional, Pattern, Tuple, Type,
                     TypeVar, Union, cast, overload)
 
@@ -263,7 +263,7 @@ class StreamLogger(Thread):
 #  Common
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
+CommonParentType = TypeVar('CommonParentType', bound='Optional[Common[Any]]')
 
 
 class CommandOutput(NamedTuple):
@@ -271,7 +271,7 @@ class CommandOutput(NamedTuple):
     stderr: Optional[str]
 
 
-class Common:
+class Common(Generic[CommonParentType]):
     """
     Common shared stuff
 
@@ -296,15 +296,15 @@ class Common:
     # Common owns workdir, for example, whose value affects logging too, so no
     # clear solution so far.
     #
-    # Note: cannot use CommonDerivedType - it's a TypeVar filled in by the type
+    # Note: cannot use CommonParentType - it's a TypeVar filled in by the type
     # given to __init__() and therefore the type it's representing *now* is
     # unknown. but we know `parent` will be derived from `Common` class, so it's
     # mostly fine.
-    parent: Optional['Common'] = None
+    parent: Optional['Common[CommonParentType]'] = None
 
     def __init__(
             self,
-            parent: Optional[CommonDerivedType] = None,
+            parent: Optional[CommonParentType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
             context: Optional[click.Context] = None,
@@ -2496,7 +2496,7 @@ def get_distgit_handler_names() -> List[str]:
 def git_clone(
         url: str,
         destination: str,
-        common: Common,
+        common: Common[CommonParentType],
         env: Optional[EnvironmentType] = None,
         shallow: bool = False
         ) -> CommandOutput:
@@ -2897,7 +2897,7 @@ WaitCheckType = Callable[[], T]
 
 
 def wait(
-    parent: Common,
+    parent: Common[CommonParentType],
     check: WaitCheckType[T],
     timeout: datetime.timedelta,
     tick: float = DEFAULT_WAIT_TICK,

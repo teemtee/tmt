@@ -39,7 +39,7 @@ PHASE_BASE = 50
 PHASE_END = 90
 
 
-class Phase(tmt.utils.Common):
+class Phase(tmt.utils.Common['Step']):
     """ A phase of a step """
 
     def __init__(
@@ -82,7 +82,7 @@ class StepData(TypedDict, total=False):
     tests: Optional[List['tmt.base.Test']]
 
 
-class Step(tmt.utils.Common):
+class Step(tmt.utils.Common['Plan']):
     """ Common parent of all test steps """
 
     # Default implementation for all steps is "shell", but some

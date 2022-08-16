@@ -45,7 +45,7 @@ fix = click.option(
 
 
 def show_step_method_hints(
-        log_object: tmt.utils.Common,
+        log_object: tmt.utils.Common['tmt.utils.CommonParentType'],
         step_name: str,
         how: str) -> None:
     """

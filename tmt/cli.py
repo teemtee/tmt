@@ -38,7 +38,7 @@ tmt.plugins.explore()
 @dataclasses.dataclass
 class ContextObject:
     """ Click Context Object Container """
-    common: tmt.utils.Common
+    common: tmt.utils.Common[None]  # Root common object -> no parent
     fmf_context: tmt.utils.FmfContextType
     steps: Set[tmt.steps.Step]
     tree: tmt.Tree
