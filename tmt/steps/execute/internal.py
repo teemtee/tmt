@@ -24,6 +24,7 @@ from tmt.steps.execute import (
     )
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, field
+from tmt.steps.common import RebootCommon
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 
@@ -63,7 +64,9 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 
 
 @tmt.steps.provides_method('tmt')
-class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
+@tmt.steps.provides_method('shell.tmt', order=80)
+@tmt.steps.provides_method('beakerlib.tmt', order=80)
+class ExecuteInternal(RebootCommon, tmt.steps.execute.ExecutePlugin):
     """
     Use the internal tmt executor to execute tests
 
@@ -274,63 +277,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test.starttime = self.format_timestamp(starttime)
         test.endtime = self.format_timestamp(endtime)
         test.real_duration = self.format_duration(endtime - starttime)
-
-    def _will_reboot(self, test: Test, guest: Guest) -> bool:
-        """ True if reboot is requested """
-        return self._reboot_request_path(test, guest).exists()
-
-    def _reboot_request_path(self, test: Test, guest: Guest) -> Path:
-        """ Return reboot_request """
-        return self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / TMT_REBOOT_SCRIPT.created_file
-
-    def _handle_reboot(self, test: Test, guest: Guest) -> bool:
-        """
-        Reboot the guest if the test requested it.
-
-        Check for presence of a file signalling reboot request
-        and orchestrate the reboot if it was requested. Also increment
-        REBOOTCOUNT variable, reset it to 0 if no reboot was requested
-        (going forward to the next test). Return whether reboot was done.
-        """
-        if self._will_reboot(test, guest):
-            test._reboot_count += 1
-            self.debug(f"Reboot during test '{test}' "
-                       f"with reboot count {test._reboot_count}.")
-            reboot_request_path = self._reboot_request_path(test, guest)
-            test_data = self.data_path(test, guest, full=True) / tmt.steps.execute.TEST_DATA
-            with open(reboot_request_path) as reboot_file:
-                reboot_data = json.loads(reboot_file.read())
-            reboot_command = None
-            if reboot_data.get('command'):
-                with suppress(TypeError):
-                    reboot_command = ShellScript(reboot_data.get('command'))
-
-            try:
-                timeout = int(reboot_data.get('timeout'))
-            except ValueError:
-                timeout = None
-            # Reset the file
-            os.remove(reboot_request_path)
-            guest.push(test_data)
-            rebooted = False
-            try:
-                rebooted = guest.reboot(command=reboot_command, timeout=timeout)
-            except tmt.utils.RunError:
-                self.fail(
-                    f"Failed to reboot guest using the "
-                    f"custom command '{reboot_command}'.")
-                raise
-            except tmt.utils.ProvisionError:
-                self.warn(
-                    "Guest does not support soft reboot, "
-                    "trying hard reboot.")
-                rebooted = guest.reboot(hard=True, timeout=timeout)
-            if not rebooted:
-                raise tmt.utils.RebootTimeoutError("Reboot timed out.")
-            return True
-        return False
 
     def go(
             self,

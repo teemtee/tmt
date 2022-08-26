@@ -1,0 +1,9 @@
+provision:
+    how: virtual
+prepare:
+  - name: reboot-prepare
+    how: reboot
+    script: ./reboot.sh
+execute:
+    how: tmt
+    script: echo "Execute simple test"

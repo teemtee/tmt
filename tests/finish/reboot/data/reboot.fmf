@@ -1,0 +1,9 @@
+provision:
+    how: virtual
+execute:
+    how: tmt
+    script: echo "Execute simple test"
+finish:
+  - name: reboot-finish
+    how: reboot
+    script: ./reboot.sh
