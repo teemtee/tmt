@@ -1,0 +1,109 @@
+# mrack provisioning supports also static provisioning
+# this record is needed (mrack >= v0.5.2) to enable it
+static: {}
+
+beaker:
+    strategy: abort  # possible values: (retry|abort)
+    # max_retry: 2  #  if retry is set
+
+    distros:
+        c9s: CentOS-Stream-9%
+        rhel-6.10: RHEL-6.10%
+        rhel-7.6: RHEL-7.6%
+        rhel-7.7: RHEL-7.7%
+        rhel-7.8: RHEL-7.8%
+        rhel-7.9: RHEL-7.9%
+        rhel-7.9-nightly: RHEL-7.9%
+        rhel-8.0: RHEL-8.0%
+        rhel-8.1: RHEL-8.1%
+        rhel-8.2: RHEL-8.2%
+        rhel-8.3: RHEL-8.3%
+        rhel-8.3-nightly: RHEL-8.3%
+        rhel-8.4: RHEL-8.4%
+        rhel-8.4-nightly: RHEL-8.4%
+        rhel-8.5: RHEL-8.5%
+        rhel-8.5-nightly: RHEL-8.5%
+        rhel-8.6: RHEL-8.6%
+        rhel-8.6-nightly: RHEL-8.6%
+        rhel-8.7: RHEL-8.7%
+        rhel-8.7-nightly: RHEL-8.7%
+        rhel-8.8: RHEL-8.8%
+        rhel-8.8-nightly: RHEL-8.8%
+        rhel-9.0: RHEL-9.0%
+        rhel-9.0-nightly: RHEL-9.0%
+        rhel-9.1: RHEL-9.1%
+        rhel-9.1-nightly: RHEL-9.1%
+        rhel-9.2: RHEL-9.2%
+        rhel-9.2-nightly: RHEL-9.2%
+        rhel-9-beta: RHEL-9.0%
+        rhel-9-beta-nightly: RHEL-9.0%
+        fedora-30: Fedora-30%
+        fedora-31: Fedora-31%
+        fedora-32: Fedora-32%
+        fedora-33: Fedora-33%
+        fedora-34: Fedora-34%
+        fedora-35: Fedora-35%
+        fedora-36: Fedora-36%
+        fedora-37: Fedora-37%
+        fedora-latest: Fedora-37%
+        fedora: Fedora-37%
+        fedora-rawhide: Fedora-Rawhide-%
+
+    distro_variants:
+        default: BaseOS
+        RHEL-6.10%: Server
+        RHEL-7.6%: Server
+        RHEL-7.7%: Server
+        RHEL-7.8%: Server
+        RHEL-7.9%: Server
+        Fedora-30%: Server
+        Fedora-31%: Server
+        Fedora-32%: Server
+        Fedora-33%: Server
+        Fedora-34%: Server
+        Fedora-35%: Server
+        Fedora-36%: Server
+        Fedora-37%: Server
+
+    distro_tags:
+        RHEL-9.0%:
+            - CTS_NIGHTLY
+        CentOS-Stream-9%:
+            - RC-0.1
+        RHEL-9.1%:
+            - CTS_NIGHTLY
+        RHEL-9.2%:
+            - CTS_NIGHTLY
+
+    reserve_duration: 86400
+    # the phase timeout is 14400s which is 240 mins so give 10 mins to phase env to get ready
+    timeout: 230 # in minutes
+
+    tasks:
+        default: [ {"name": "/distribution/dummy", "role": "STANDALONE"} ]
+
+
+# mrack inventory layout setup
+# =========================================
+# inventory_layout:
+#     all:
+#         children:
+#             ad:
+#                 children:
+#                     ad_root: {}
+#                     ad_rootbackup: {}
+#                     ad_subdomain: {}
+#                     ad_subsubdomain: {}
+#                     ad_treedomain: {}
+#                     ad_member: {}
+#             ipa:
+#                 children:
+#                     ipaclient: {}
+#                     ipaserver: {}
+#             linux:
+#                 children:
+#                     ipa: {}
+#                     runner: {}
+#             windows:
+#                 children:
+#                     ad: {}

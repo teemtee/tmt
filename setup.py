@@ -25,7 +25,8 @@ __pkgdata__ = {
         'schemas/*.yaml',
         'schemas/*/*.yaml',
         'steps/execute/scripts/*',
-        'steps/report/html/*'
+        'steps/report/html/*',
+        'steps/provision/mrack/*',
         ]
     }
 __pkgdir__: Dict[str, str] = {}
@@ -78,7 +79,10 @@ extras_require = {
         'mypy',
         'yq'
         ],
-    'provision': ['testcloud>=0.9.2'],
+    'provision': [
+        'testcloud>=0.9.2',
+        'mrack>=1.12.1',
+        ],
     'convert': [
         'nitrate',
         'markdown',

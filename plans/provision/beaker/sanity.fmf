@@ -1,0 +1,12 @@
+summary: Beaker machine using mrack plugin
+discover:
+    how: fmf
+    filter: 'tag:beaker & tag:mrack'
+
+provision:
+    how: container
+
+enabled: false
+adjust:
+  when: how == beaker and distro != centos-stream-8
+  enabled: true

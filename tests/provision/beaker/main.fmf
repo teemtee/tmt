@@ -1,0 +1,8 @@
+summary: Smoke test beaker plugin
+contact: Tibor Dudlák <tdudlak@redhat.com>
+duration: 10m
+require:
+- tmt-provision-beaker
+tag: [mrack, beaker]
+tier: null
+order: 10

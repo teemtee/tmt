@@ -49,6 +49,9 @@ BuildRequires: python%{python3_pkgversion}-markdown
 BuildRequires: python%{python3_pkgversion}-junit_xml
 BuildRequires: python%{python3_pkgversion}-ruamel-yaml
 BuildRequires: python%{python3_pkgversion}-jinja2
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+BuildRequires: python%{python3_pkgversion}-mrack-beaker >= 1.12.1
+%endif
 # Only needed for rhel-8 (it has python3.6)
 %if 0%{?rhel} == 8
 BuildRequires: python%{python3_pkgversion}-typing-extensions
@@ -88,6 +91,18 @@ Recommends: qemu-system-aarch64-core
 Recommends: qemu-system-ppc-core
 Recommends: qemu-system-s390x-core
 Recommends: qemu-system-x86-core
+%endif
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%package provision-beaker
+Summary: Beaker provisioner for the Test Management Tool
+Requires: tmt = %{version}-%{release}
+Requires: python3-mrack-beaker >= 1.12.1
+%endif
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%description provision-beaker
+Dependencies required to run tests in a Beaker environment.
 %endif
 
 %description provision-virtual
@@ -167,6 +182,10 @@ install -pm 644 tmt.1* %{buildroot}%{_mandir}/man1
 install -pm 644 bin/complete %{buildroot}/etc/bash_completion.d/tmt
 mkdir -p %{buildroot}%{workdir_root}
 chmod 1777 %{buildroot}%{workdir_root}
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+mkdir -p %{buildroot}/etc/%{name}/
+install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
+%endif
 
 %check
 %{__python3} -m pytest -vv -m 'not web' --ignore=tests/integration
@@ -187,21 +206,29 @@ chmod 1777 %{buildroot}%{workdir_root}
 %{python3_sitelib}/%{name}-*.egg-info/
 %license LICENSE
 %dir %{workdir_root}
-%exclude %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}{podman,testcloud}.*
+%exclude %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}{podman,testcloud,mrack}.*
+%exclude %{python3_sitelib}/%{name}/steps/provision/mrack
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
 
+%exclude %{_sysconfdir}/%{name}/mrack*
+
 %files provision-container
 %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}podman.*
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%files provision-beaker
+%{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}mrack.*
+%config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%endif
 
 %files provision-virtual
 %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}testcloud.*
 
 %files report-html
 %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
-
 
 %files report-junit
 %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*

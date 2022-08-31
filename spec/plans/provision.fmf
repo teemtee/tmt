@@ -79,13 +79,43 @@ example: |
 
 /beaker:
     summary: Provision a machine in Beaker
-    description:
-        Reserve a machine from the Beaker pool.
-    example: |
+    description: |
+        Reserve a machine from the Beaker pool using mrack plugin.
+        `mrack`__ is a multicloud provisioning library supporting
+        multiple cloud services including Beaker.
+
+        Two files are used for configuration: ``mrack.conf``
+        (basic configuration) and ``provisioning-config.yaml``
+        file (configuration per supported provider). These files
+        are shipped in the ``/tmt/steps/provision/mrack/``
+        directory.
+
+        Beaker installs distribution specified by the ``image``
+        key. If the image can not be translated using the
+        ``provisioning-config.yaml`` file mrack passes the image
+        value to Beaker hub and tries to request distribution
+        based on the image value. This way we can bypass default
+        translations and use desired distribution specified like
+        the one in the example below.
+
+        __ https://github.com/neoave/mrack
+
+    example:
+      - |
+        # Use image name translation
         provision:
             how: beaker
-            family: Fedora31
-            tag: released
+            image: fedora
+      - |
+        # Specify the distro directly
+        provision:
+            how: beaker
+            image: Fedora-37%
+
+    link:
+      - implemented-by: /tmt/steps/provision/mrack.py
+      - verified-by: /tests/provision/beaker
+
 
 /connect:
     summary: Connect to a provisioned box
