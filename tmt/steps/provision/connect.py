@@ -69,7 +69,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
                 '-P', '--port', metavar='PORT',
                 help='Use specific port to connect to.'),
             click.option(
-                '-k', '--key', metavar='PRIVATE_KEY',
+                '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
                 help='Private key for login into the guest system.'),
             click.option(
                 '-u', '--user', metavar='USER',
@@ -93,7 +93,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
         # Check connection details
         guest = self.get('guest')
         user = self.get('user')
-        key = self.get('key')
+        keys = self.get('key')
         password = self.get('password')
         port = self.get('port')
 
@@ -119,14 +119,11 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
             data.password = password
         # Default to using a private key (user can have configured one)
         else:
-            self.info('key', key or 'not provided', 'green')
+            self.info('key', fmf.utils.listed(keys, 'key'), 'green')
+            for key in keys:
+                self.verbose(key, shift=1)
             self.debug('Using private key authentication.')
-            # TODO: something to fix in the future, multiple --key options would help.
-            # Right now, the default value is List[str], while the option is just str.
-            if isinstance(key, list):
-                data.key = key
-            else:
-                data.key = [key]
+            data.key = keys
 
         # FIXME: cast() - typeless "dispatcher" method
         data.ssh_option = cast(List[str], self.get('ssh-option'))
