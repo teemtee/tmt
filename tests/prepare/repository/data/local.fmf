@@ -1,0 +1,12 @@
+summary: Prepare local rpm repository
+provision:
+    how: virtual
+prepare:
+    how: repository
+    name: Local
+    baseurl: url
+    order: 1
+    priority: 99
+execute:
+    how: tmt
+    script: dnf repolist | grep 'Local'
