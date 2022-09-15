@@ -5,6 +5,11 @@ duration: 20m
     test: ./basic.sh
 
 
+/efi:
+    summary: Verify that reboot on EUFI booted machine sets BootNext to BootCurrent
+    test: ./efi.sh
+
+
 /multi-part:
     summary: Verify reboot during multiple consecutive tests
     test: ./multi-part.sh
