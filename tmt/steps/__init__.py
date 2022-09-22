@@ -1158,7 +1158,7 @@ class Login(Action):
             cwd: Optional[str] = None,
             env: Optional[tmt.utils.EnvironmentType] = None) -> None:
         """ Run the interactive command """
-        commands: List[str] = self.opt('command')
+        commands = [[command] for command in self.opt('command')]
         self.info('login', 'Starting interactive shell', color='yellow')
         for guest in self.parent.plan.provision.guests():
             # Attempt to push the workdir to the guest

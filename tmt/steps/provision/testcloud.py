@@ -503,7 +503,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def reboot(self,
                hard: bool = False,
-               command: Optional[str] = None,
+               command: Optional[tmt.utils.CommandLine] = None,
                timeout: Optional[int] = None,
                tick: float = tmt.utils.DEFAULT_WAIT_TICK,
                tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:

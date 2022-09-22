@@ -118,7 +118,7 @@ class GuestContainer(tmt.Guest):
         return self.run(['podman'] + command, **kwargs)
 
     def execute(self,
-                command: Union[List[str], str],
+                remote_command: tmt.utils.CommandLine,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
@@ -130,7 +130,7 @@ class GuestContainer(tmt.Guest):
                 'Could not execute without provisioned container.')
 
         # Change to given directory on guest if cwd provided
-        directory = kwargs.get('cwd', '')
+        directory: str = kwargs.get('cwd', '')
         if directory:
             directory = f"cd {quote(directory)}; "
 
@@ -143,15 +143,12 @@ class GuestContainer(tmt.Guest):
 
         # Note that we MUST run commands via bash, so variables
         # work as expected
-        if isinstance(command, list):
-            command = ' '.join(command)
-        command = directory + environment + command
-        assert isinstance(command, str)
+        remote_command_joined = directory + environment + ' '.join(remote_command)
         return self.podman(
-            ['exec'] + interactive +
-            [self.container or 'dry', 'bash', '-c', command],
+            ['exec', *interactive, self.container or 'dry',
+             'bash', '-c', remote_command_joined],
             log=log if log else self._command_verbose_logger,
-            friendly_command=friendly_command or command,
+            friendly_command=friendly_command or remote_command_joined,
             silent=silent,
             **kwargs)
 

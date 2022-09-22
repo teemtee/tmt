@@ -196,12 +196,11 @@ class GuestExample(tmt.Guest):
 
         Execute command on the guest
 
-            command ... string or list of command arguments (required)
+            command ... list of a command and its arguments (required)
             env ....... dictionary with environment variables
             cwd ....... working directory to be entered before execution
 
-        If the command is provided as a list, it will be space-joined.
-        If necessary, quote escaping has to be handled by the caller.
+        If necessary, quote escaping of the command has to be handled by the caller.
         """
 
         print("execute() called. This is an optional overload...")

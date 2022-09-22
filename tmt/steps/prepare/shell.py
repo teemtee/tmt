@@ -57,12 +57,17 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
         super().go(guest)
 
         # Give a short summary
-        scripts = self.get('script')
+        scripts: List[str] = self.get('script')
         overview = fmf.utils.listed(scripts, 'script')
         self.info('overview', f'{overview} found', 'green')
 
         # Execute each script on the guest (with default shell options)
         for script in scripts:
             self.verbose('script', script, 'green')
-            script_with_options = f'{tmt.utils.SHELL_OPTIONS}; {script}'
+
+            # Function shell_options_commands_joined() returns a list of standalone commands, which
+            # are strings. We need to add ';' to separate each command.
+            script_with_options = [
+                command + ';' for command in tmt.utils.shell_options_commands_joined()
+                ] + [script]
             guest.execute(script_with_options, cwd=self.step.plan.worktree)

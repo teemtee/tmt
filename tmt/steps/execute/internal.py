@@ -20,8 +20,13 @@ from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
-TEST_WRAPPER_INTERACTIVE = '{remote_command}'
-TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& cat'
+
+
+def test_wrapper_command(interactive: bool,
+                         remote_command: tmt.utils.CommandLine) -> tmt.utils.CommandLine:
+    if interactive:
+        return remote_command
+    return ['set', '-eo', 'pipefail', ';', *remote_command, '<', '/dev/null', '|&', 'cat']
 
 
 @dataclasses.dataclass
@@ -168,7 +173,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # Prepare the test command (use default options for shell tests)
         if test.framework == "shell":
-            test_command = f"{tmt.utils.SHELL_OPTIONS}; {test.test}"
+            test_command = f"{';'.join(tmt.utils.shell_options_commands_joined())}; {test.test}"
         else:
             test_command = test.test
         self.debug('Test script', test_command, level=3)
@@ -182,11 +187,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             options=["-s", "-p", "--chmod=755"])
 
         # Prepare the actual remote command
-        remote_command = f'./{TEST_WRAPPER_FILENAME}'
-        if self.get('interactive'):
-            remote_command = TEST_WRAPPER_INTERACTIVE.format(remote_command=remote_command)
-        else:
-            remote_command = TEST_WRAPPER_NONINTERACTIVE.format(remote_command=remote_command)
+        remote_command = test_wrapper_command(
+            self.get('interactive'), [f'./{TEST_WRAPPER_FILENAME}'])
 
         # Execute the test, save the output and return code
         start = time.time()

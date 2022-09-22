@@ -30,7 +30,7 @@ class InstallBase(tmt.utils.Common):
     # Each installer knows its package manager and copr plugin
     package_manager: Optional[str] = None
     copr_plugin: Optional[str] = None
-    command: Optional[str] = None
+    command: Optional[tmt.utils.CommandLine] = None
 
     def __init__(self, *, parent: tmt.steps.prepare.PreparePlugin, guest: Guest) -> None:
         """ Initialize installation data """
@@ -85,7 +85,7 @@ class InstallBase(tmt.utils.Common):
     def prepare_sudo(self) -> None:
         """ Check if sudo is needed for installation """
         self.debug('Check if sudo is necessary.', level=2)
-        user_output = self.guest.execute('whoami', silent=True)
+        user_output = self.guest.execute(['whoami'], silent=True)
         if user_output.stdout is None:
             raise tmt.utils.RunError(
                 'unexpected command output',
@@ -94,7 +94,7 @@ class InstallBase(tmt.utils.Common):
                 user_output.stdout,
                 user_output.stderr)
 
-        self.sudo = '' if user_output.stdout.strip() == 'root' else 'sudo '
+        self.sudo = [] if user_output.stdout.strip() == 'root' else ['sudo']
 
     def prepare_command(self) -> None:
         """ Prepare installation command"""
@@ -134,7 +134,7 @@ class InstallBase(tmt.utils.Common):
         url = '/'.join(parts)
         # Download the repo file on guest
         try:
-            self.guest.execute(f'curl -LOf {url}', cwd='/etc/yum.repos.d', silent=True)
+            self.guest.execute(['curl', '-LOf', url], cwd='/etc/yum.repos.d', silent=True)
         except tmt.utils.RunError as error:
             if error.stderr and 'not found' in error.stderr.lower():
                 raise tmt.utils.PrepareError(
@@ -149,10 +149,11 @@ class InstallBase(tmt.utils.Common):
             return
         # Try to install copr plugin
         self.debug('Make sure the copr plugin is available.')
+        assert self.command is not None
+        assert self.copr_plugin is not None
         try:
-            self.guest.execute(
-                f'rpm -q {self.copr_plugin} || {self.command} install -y {self.copr_plugin}',
-                silent=True)
+            self.guest.execute(['rpm', '-q', self.copr_plugin, '||',
+                                *self.command, 'install', '-y', self.copr_plugin], silent=True)
         # Enable repositories manually for epel6
         except tmt.utils.RunError:
             for copr in coprs:
@@ -162,7 +163,7 @@ class InstallBase(tmt.utils.Common):
         else:
             for copr in coprs:
                 self.info('copr', copr, 'green')
-                self.guest.execute(f'{self.command} copr enable -y {copr}')
+                self.guest.execute([*self.command, 'copr', 'enable', '-y', copr])
 
     def prepare_install_local(self) -> None:
         """ Copy packages to the test system """
@@ -213,52 +214,58 @@ class InstallBase(tmt.utils.Common):
 class InstallDnf(InstallBase):
     """ Install packages using dnf """
 
-    package_manager: Optional[str] = "dnf"
-    copr_plugin: Optional[str] = "dnf-plugins-core"
+    package_manager = "dnf"
+    copr_plugin = "dnf-plugins-core"
 
     def prepare_command(self) -> None:
         """ Prepare installation command """
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(tmt.steps.prepare.PreparePlugin, self.parent)
+
+        # TODO: self.options should be a list as well
         self.options = '-y'
-        self.skip = ' --skip-broken' if parent.get('missing') == 'skip' else ''
+        self.skip = ['--skip-broken'] if parent.get('missing') == 'skip' else []
         for package in self.exclude:
             self.options += " --exclude " + tmt.utils.quote(package)
 
-        self.command = f"{self.sudo}{self.package_manager}{self.skip}"
-        self.debug(f"Using '{self.command}' for all package operations.")
+        self.command = [*self.sudo, self.package_manager, *self.skip]
+        self.debug(f"Using '{' '.join(self.command)}' for all package operations.")
         self.debug(f"Options for package operations are '{self.options}'")
 
     def install_local(self) -> None:
         """ Install copied local packages """
         # Use both dnf install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemeted.
-        self.guest.execute(f"{self.command} install {self.options} {self.rpms_directory}/*")
-        self.guest.execute(f"{self.command} reinstall {self.options} {self.rpms_directory}/*")
+        assert self.command is not None
+        self.guest.execute([*self.command, 'install', self.options, f'{self.rpms_directory}/*'])
+        self.guest.execute([*self.command, 'reinstall', self.options, f'{self.rpms_directory}/*'])
         summary = fmf.utils.listed(self.local_packages, 'local package')
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
         """ Install packages directly from URL """
         packages = self.list_packages(self.remote_packages, title="remote package")
-        self.guest.execute(f"{self.command} install {self.options} {packages}")
+        assert self.command is not None
+        self.guest.execute([*self.command, "install", self.options, packages])
 
     def install_from_repository(self) -> None:
         """ Install packages from the repository """
         packages = self.list_packages(self.repository_packages, title="package")
         check = f'rpm -q --whatprovides {packages}'
         # Check and install
-        self.guest.execute(f"{check} || {self.command} install {self.options} {packages}")
+        assert self.command is not None
+        self.guest.execute([check, '||', *self.command, 'install', self.options, packages])
 
     def install_debuginfo(self) -> None:
         """ Install debuginfo packages """
         packages = self.list_packages(self.debuginfo_packages, title="debuginfo")
         # Make sure debuginfo-install is present on the target system
-        self.guest.execute(f"{self.command} install -y /usr/bin/debuginfo-install")
+        assert self.command is not None
+        self.guest.execute([*self.command, 'install', '-y', '/usr/bin/debuginfo-install'])
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(tmt.steps.prepare.PreparePlugin, self.parent)
-        skip = "--skip-broken " if parent.get("missing") == "skip" else ""
-        self.guest.execute(f"debuginfo-install -y {skip}{packages}")
+        skip = ['--skip-broken'] if parent.get('missing') == 'skip' else []
+        self.guest.execute(['debuginfo-install', '-y', *skip, packages])
 
 
 class InstallYum(InstallDnf):
@@ -272,10 +279,11 @@ class InstallYum(InstallDnf):
         packages = self.list_packages(self.repository_packages, title="package")
         # Extra ignore/check for yum to workaround BZ#1920176
         check = f'rpm -q --whatprovides {packages}'
-        final_check = " || true" if self.skip else f" && {check}"
+        final_check = ['||', 'true'] if self.skip else ['&&', check]
         # Check and install
-        self.guest.execute(
-            f"{check} || {self.command} install {self.options} {packages}{final_check}")
+        assert self.command is not None
+        self.guest.execute([check, '||', *self.command, 'install',
+                           self.options, packages, *final_check])
 
 
 class InstallRpmOstree(InstallBase):
@@ -290,7 +298,8 @@ class InstallRpmOstree(InstallBase):
         self.required_packages = []
         for package in self.repository_packages:
             try:
-                output = self.guest.execute(f"rpm -q --whatprovides '{package}'", silent=True)
+                output = self.guest.execute(
+                    ['rpm', '-q', '--whatprovides', f"'{package}'"], silent=True)
                 assert output.stdout
                 self.debug(f"Package '{output.stdout.strip()}' already installed.")
             except tmt.utils.RunError:
@@ -304,7 +313,7 @@ class InstallRpmOstree(InstallBase):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         missing = cast(tmt.steps.prepare.PreparePlugin, self.parent).get("missing")
         self.skip = True if missing == 'skip' else False
-        self.command = f"{self.sudo}rpm-ostree"
+        self.command = [*self.sudo, 'rpm-ostree']
         self.options = '--apply-live --idempotent --allow-inactive'
         for package in self.exclude:
             # exclude not supported in rpm-ostree
@@ -322,9 +331,9 @@ class InstallRpmOstree(InstallBase):
         local_packages_installed = []
         for package in self.local_packages:
             try:
-                self.guest.execute(
-                    f"{self.command} install {self.options} "
-                    f"{self.rpms_directory}/{os.path.basename(package)}")
+                assert self.command is not None
+                self.guest.execute([*self.command, 'install', self.options,
+                                    f"{self.rpms_directory}/{os.path.basename(package)}"])
                 local_packages_installed.append(package)
             except tmt.utils.RunError as error:
                 self.warn(f"Local package '{package}' not installed: {error.stderr}")
@@ -340,7 +349,8 @@ class InstallRpmOstree(InstallBase):
             self.list_packages(self.recommended_packages, title="package")
             for package in self.recommended_packages:
                 try:
-                    self.guest.execute(f"{self.command} install {self.options} '{package}'")
+                    assert self.command is not None
+                    self.guest.execute([*self.command, 'install', self.options, f"'{package}'"])
                 except tmt.utils.RunError as error:
                     if error.stderr and "error: Packages not found" in error.stderr and self.skip:
                         self.warn(f"No match for recommended package '{package}'.")
@@ -350,7 +360,8 @@ class InstallRpmOstree(InstallBase):
         # Install required packages
         if self.required_packages:
             packages = self.list_packages(self.required_packages, title="package")
-            self.guest.execute(f"{self.command} install {self.options} {packages}")
+            assert self.command is not None
+            self.guest.execute([*self.command, 'install', self.options, packages])
 
 
 @dataclasses.dataclass
@@ -449,11 +460,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
         # Pick the right implementation
         try:
-            guest.execute('stat /run/ostree-booted', silent=True)
+            guest.execute(['stat', '/run/ostree-booted'], silent=True)
             installer: InstallBase = InstallRpmOstree(parent=self, guest=guest)
         except tmt.utils.RunError:
             try:
-                guest.execute('rpm -q dnf', silent=True)
+                guest.execute(['rpm', '-q', 'dnf'], silent=True)
                 installer = InstallDnf(parent=self, guest=guest)
             except tmt.utils.RunError:
                 installer = InstallYum(parent=self, guest=guest)

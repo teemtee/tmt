@@ -1,6 +1,6 @@
 import dataclasses
 import shlex
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import tmt
 import tmt.steps
@@ -32,7 +32,7 @@ class GuestLocal(tmt.Guest):
         self._ansible_summary(stdout)
 
     def execute(self,
-                command: Union[List[str], str],
+                remote_command: tmt.utils.CommandLine,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
@@ -47,15 +47,11 @@ class GuestLocal(tmt.Guest):
         environment.update(kwargs.pop('env', None) or {})
         environment.update(self.parent.plan.environment)
         if friendly_command is None:
-            if isinstance(command, (list, tuple)):
-                friendly_command = ' '.join(shlex.quote(s) for s in command)
-            else:
-                friendly_command = command
+            friendly_command = ' '.join(shlex.quote(s) for s in remote_command)
         # Run the command under the prepared environment
-        return self.run(command,
+        return self.run(remote_command,
                         env=environment,
                         shell=True,
-                        log=log if log else self._command_verbose_logger,
                         friendly_command=friendly_command,
                         silent=silent,
                         **kwargs)
@@ -67,7 +63,7 @@ class GuestLocal(tmt.Guest):
 
     def reboot(self,
                hard: bool = False,
-               command: Optional[str] = None,
+               command: Optional[tmt.utils.CommandLine] = None,
                timeout: Optional[int] = None) -> bool:
         """ Reboot the guest, return True if successful """
 

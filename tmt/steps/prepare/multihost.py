@@ -53,6 +53,5 @@ class PrepareMultihost(tmt.steps.prepare.PreparePlugin):
         self.debug("Add hosts to '/etc/hosts'.", level=2)
         for host_name, host_address in self.get('hosts').items():
             if host_address:
-                guest.execute(
-                    f'echo "{host_address} {host_name}" >> /etc/hosts',
-                    silent=True)
+                guest.execute(['echo', f'{host_address} {host_name}',
+                              '>>', '/etc/hosts'], silent=True)

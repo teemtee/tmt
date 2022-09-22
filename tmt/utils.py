@@ -52,6 +52,8 @@ if TYPE_CHECKING:
 
 log = fmf.utils.Logging('tmt').logger
 
+CommandLine = List[str]
+
 # Default workdir root and max
 WORKDIR_ROOT = '/var/tmp/tmt'
 WORKDIR_MAX = 1000
@@ -85,7 +87,15 @@ DEFAULT_SELECT_TIMEOUT = 5
 
 # Default shell and options to be set for all shell scripts
 DEFAULT_SHELL = "/bin/bash"
-SHELL_OPTIONS = 'set -eo pipefail'
+SHELL_OPTIONS_COMMANDS: List[CommandLine] = [
+    ['set', '-eo', 'pipefail']
+    ]
+
+
+def shell_options_commands_joined() -> List[str]:
+    """ Transforms each command of SHELL_OPTIONS_COMMANDS into a string. """
+    return [' '.join(command) for command in SHELL_OPTIONS_COMMANDS]
+
 
 # Defaults for HTTP/HTTPS retries and timeouts (see `retry_session()`).
 DEFAULT_RETRY_SESSION_RETRIES: int = 3
@@ -573,7 +583,7 @@ class Common:
         self.verbose(key=key, value=value, color=color, shift=shift, level=level, err=err)
 
     def _run(self,
-             command: Union[str, List[str]],
+             command: CommandLine,
              cwd: Optional[str],
              shell: bool,
              env: Optional[EnvironmentType],
@@ -697,7 +707,7 @@ class Common:
                 stdout_thread.get_output(), stderr_thread.get_output())
 
     def run(self,
-            command: Union[str, List[str]],
+            command: CommandLine,
             friendly_command: Optional[str] = None,
             silent: bool = False,
             message: Optional[str] = None,
@@ -724,12 +734,7 @@ class Common:
         """
 
         # A bit of logging - command, default message, error message for later...
-        # for debug output we want to rather print actual command rather than
-        # the provided printable command
-        if isinstance(command, (list, tuple)):
-            full_command_string = ' '.join(shlex.quote(s) for s in command)
-        else:
-            full_command_string = command
+        full_command_string = ' '.join(shlex.quote(s) for s in command)
 
         if message:
             self.verbose(message, level=2)
