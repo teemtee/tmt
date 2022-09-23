@@ -327,6 +327,11 @@ class Common:
         self.name = name or self.__class__.__name__.lower()
         self.parent = parent
 
+        # Name may contains spaces, and it is not user friendly if a directory created based on
+        # the name contains spaces. So a shadow name is introduced by replacing spaces in the name
+        # with underscores
+        self.fs_name = re.sub(r'\s+', '_', self.name)
+
         # Relative log indent level shift against the parent
         self._relative_indent = relative_indent
 
@@ -766,7 +771,7 @@ class Common:
         if self.parent is None or self.parent.workdir is None:
             return None
         # Join parent name with self
-        return os.path.join(self.parent.workdir, self.name.lstrip('/'))
+        return os.path.join(self.parent.workdir, self.fs_name.lstrip('/'))
 
     def _workdir_load(self, workdir: WorkdirArgumentType) -> None:
         """
