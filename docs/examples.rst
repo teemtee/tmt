@@ -492,7 +492,7 @@ and detailed plan information, respectively::
           filter tier: 0,1
          prepare
              how ansible
-        playbook plans/packages.yml
+        playbook ansible/packages.yml
 
     /plans/helps
          summary Check help messages
@@ -596,7 +596,7 @@ step could look like this::
     prepare:
       - name: packages
         how: ansible
-        playbook: plans/packages.yml
+        playbook: ansible/packages.yml
       - name: services
         how: shell
         script: systemctl start service
