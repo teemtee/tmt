@@ -47,6 +47,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
         return cast(List[tmt.options.ClickOptionDecoratorType], [
             click.option(
                 '-s', '--script', metavar='SCRIPT',
+                multiple=True,
                 help='Shell script to be executed.')
             ]) + super().options(how)
 

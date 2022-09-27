@@ -10,6 +10,10 @@ rlJournalStart
         rlRun "tmt run -rv plan -n custom" 0 "Prepare using a custom script"
     rlPhaseEnd
 
+    rlPhaseStartTest "Commandline Script"
+        rlRun "tmt run -arv plan -n custom prepare -h shell -s './prepare.sh'" 0 "Prepare using a custom script from cmdline"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
