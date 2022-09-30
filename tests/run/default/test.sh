@@ -30,6 +30,12 @@ rlJournalStart
         rlAssertNotgrep "/plans/plan" "output"
     rlPhaseEnd
 
+    rlPhaseStartTest "Symlink pointing to last run is created"
+        rlRun "tmt run --dry"
+        rlRun "find /var/tmp/tmt/ -name last -type l | tee output"
+        rlAssertGrep "/var/tmp/tmt/last" "output"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $tmp" 0 "Removing tmp directory"

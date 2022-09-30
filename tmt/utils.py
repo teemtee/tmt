@@ -748,9 +748,16 @@ class Common:
                 try:
                     # Call is atomic, no race possible
                     os.makedirs(workdir)
+                    symlink = os.path.join(WORKDIR_ROOT, "last")
+                    if os.path.exists(symlink):
+                        os.remove(symlink)
+                    os.symlink(directory, symlink)
                     break
                 except FileExistsError:
                     pass
+                except OSError as error:
+                    log.warn(f"Unable to create symlink to last run '{symlink}'.\n{error}")
+                    break
             else:
                 raise GeneralError(
                     f"Workdir full. Cleanup the '{WORKDIR_ROOT}' directory.")

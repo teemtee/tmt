@@ -852,6 +852,11 @@ the execution is finished::
     tmt run --rm
     tmt run -r
 
+Execution of test run also creates symlink ``last`` pointing to the
+workdir of last run with numeric id, so content from exaple above
+``/var/tmp/tmt/run-581`` can be also accessed via following path:
+``/var/tmp/tmt/last``.
+
 
 Select Plans
 ------------------------------------------------------------------
