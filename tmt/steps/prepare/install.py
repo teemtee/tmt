@@ -23,7 +23,7 @@ else:
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 
 
-class InstallBase(tmt.utils.Common):
+class InstallBase(tmt.utils.Common['PrepareInstall']):
     """ Base class for installation implementations """
 
     # Each installer knows its package manager and copr plugin

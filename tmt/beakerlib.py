@@ -10,6 +10,7 @@ import fmf
 
 import tmt
 import tmt.utils
+from tmt.steps.discover import DiscoverPlugin
 
 # A beakerlib indetified type, can be a string or a dictionary
 BeakerlibIdentifierType = Union[str, Dict[str, str]]
@@ -35,7 +36,7 @@ STRIP_SUFFIX_FORGES = [
     ]
 
 
-class CommonWithLibraryCache(tmt.utils.Common):
+class CommonWithLibraryCache(tmt.utils.Common[DiscoverPlugin]):
     _library_cache: Dict[str, 'Library']
 
 
@@ -74,7 +75,7 @@ class Library:
     def __init__(
             self,
             identifier: BeakerlibIdentifierType,
-            parent: Optional[tmt.utils.Common] = None
+            parent: Optional[tmt.utils.Common[DiscoverPlugin]] = None
             ) -> None:
         """ Process the library identifier and fetch the library """
         # Use an empty common class if parent not provided (for logging, cache)
@@ -296,7 +297,7 @@ class Library:
 def dependencies(
     original_require: List[str],
     original_recommend: Optional[List[str]] = None,
-    parent: Optional[tmt.utils.Common] = None,
+    parent: Optional[tmt.utils.Common[DiscoverPlugin]] = None,
     imported_lib_ids: ImportedIdentifiersType = None,
         ) -> LibraryDependenciesType:
     """
