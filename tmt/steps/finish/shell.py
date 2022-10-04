@@ -44,7 +44,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin):
             click.option(
                 '-s', '--script', metavar='SCRIPT',
                 multiple=True,
-                help='Shell script to be executed.')
+                help='Shell script to be executed, can be used multiple times.')
             ]
         return options
 
