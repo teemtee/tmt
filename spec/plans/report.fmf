@@ -93,43 +93,59 @@ description:
             result: OVERALL_RESULT
             plans:
                 /plan/one:
-                    result: PLAN_RESULT
+                    result: PLAN_OUTCOME
                     tests:
                         /test/one:
-                            result: TEST_RESULT
+                            result: TEST_OUTCOME
                             log: LOG_PATH
 
                         /test/two:
-                            result: TEST_RESULT
+                            result: TEST_OUTCOME
                             log:
                                 - LOG_PATH
                                 - LOG_PATH
                                 - LOG_PATH
                 /plan/two:
-                    result: PLAN_RESULT
+                    result: PLAN_OUTCOME
                         /test/one:
-                            result: TEST_RESULT
+                            result: TEST_OUTCOME
                             log: LOG_PATH
 
         Where ``OVERALL_RESULT`` is the overall result of all plan
-        results. It is counted the same way as ``PLAN_RESULT``.
+        results. It is counted the same way as ``PLAN_OUTCOME``.
 
-        Where ``TEST_RESULT`` is the same as in `execute`_ step
-        definition:
+        Where ``TEST_OUTCOME`` is the same as ``OUTCOME`` in
+        the `execute`_ step definition:
 
-            * info - test finished and produced only information
-              message
-            * passed - test finished and passed
-            * failed - test finished and failed
-            * error - a problem encountered during test execution
+        pass
+            Test execution successfully finished and passed.
+        info
+            Test finished but only produced an informational
+            message. Represents a soft pass, used for skipped
+            tests and for tests with the :ref:`/spec/tests/result`
+            attribute set to *ignore*. Automation must treat
+            this as a passed test.
+        warn
+            A problem appeared during test execution which does
+            not affect test results but might be worth checking
+            and fixing. For example test cleanup phase failed
+            or a check failure for a passing test. Automation
+            must treat this as a failed test.
+        error
+            Undefined problem encountered during test execution.
+            Human inspection is needed to investigate whether it
+            was a test bug, infrastructure error or a real test
+            failure. Automation must treat it as a failed test.
+        fail
+            Test execution successfully finished and failed.
 
-        Note the priority  of test results is as written above,
+        Note the priority of test results is as written above,
         with ``info`` having the lowest priority and ``error`` has
-        the highest. This is important for ``PLAN_RESULT``.
+        the highest. This is important for ``PLAN_OUTCOME``.
 
-        Where ``PLAN_RESULT`` is the overall result or all test
+        Where ``PLAN_OUTCOME`` is the overall result or all test
         results for the plan run. It has the same values as
-        ``TEST_RESULT``. Plan result is counted according to the
+        ``TEST_OUTCOME``. Plan result is counted according to the
         priority of the test outcome values. For example:
 
             * if the test results are info, passed, passed - the

@@ -25,6 +25,10 @@ description: |
         /test/one:
             result: OUTCOME
             log: PATH
+            check:
+                CHECK_NAME:
+                    result: TEST_RESULT
+                    log: PATH
 
         /test/two:
             result: OUTCOME
@@ -45,8 +49,9 @@ description: |
         warn
             A problem appeared during test execution which does
             not affect test results but might be worth checking
-            and fixing. For example test cleanup phase failed.
-            Automation must treat this as a failed test.
+            and fixing. For example test cleanup phase failed
+            or a check failure for a passing test. Automation
+            must treat this as a failed test.
         error
             Undefined problem encountered during test execution.
             Human inspection is needed to investigate whether it
@@ -63,6 +68,13 @@ description: |
 
     The ``DURATION`` is an optional section stating how long did
     the test run. Its value is in the ``hh:mm:ss`` format.
+
+    The ``CHECK_NAME`` specifies a check which was executed during
+    the testing. Multiple checks can end up here.
+
+    Checks can be overridden by the ``check`` property of the
+    ``execute`` step. The property in execute overrides all checks
+    from the test attribute.
 
 /upgrade:
     summary: Perform system upgrades during testing
@@ -313,6 +325,21 @@ description: |
             shell options.
         example: |
             execute:
+                script: |
+                    dnf -y install httpd curl
+                    systemctl start httpd
+                    echo foo > /var/www/html/index.html
+                    curl http://localhost/ | grep foo
+
+
+    /avc:
+        summary: A shell script with AVC check enabled
+        description:
+            The ``avc`` check is enabled when running this test.
+        example: |
+            execute:
+                check:
+                    - avc
                 script: |
                     dnf -y install httpd curl
                     systemctl start httpd

@@ -1,0 +1,26 @@
+summary: Specify additional checks which should be enabled by the test runner.
+
+story: As a tester I want to enable additional checks when running my tests.
+
+description: |
+    In some cases we want to run additional checks while running a test. A nice
+    example is a check for unexpected SELinux AVCs produced during the test,
+    this can point to additional issues a user can run into and is very valuable
+    for Red Hat based and Fedora distros.
+
+    These checks can alter the test result and usually provide a separate log
+    output. Note that the value set here can be overridden by L2 metadata.
+
+    Currently the following additional checks are recognized:
+
+    avc
+        SELinux AVCs are inspected during the test time
+    test-inspector
+        Run test inspector
+
+    By default no additional checks are run.
+
+example: |
+    check:
+        - avc
+        - test-inspector
