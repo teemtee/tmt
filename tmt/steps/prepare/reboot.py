@@ -50,20 +50,9 @@ class PrepareReboot(
         """ Prepare command line options """
         return cast(List[tmt.options.ClickOptionDecoratorType], [
             click.option(
-                '-n', '--name', metavar='NAME',
-                help='Set name of the reboot step.'),
-            click.option(
-                '-n', '--script', metavar='NAME',
+                '-s', '--script', metavar='NAME', multiple=True,
                 help='Set path to the reboot script.')
             ]) + super().options(how)
-
-    def default(self, option: str, default: Optional[Any] = None) -> Any:
-        """ Return default data for given option """
-        if option == 'name':
-            return "Reboot script name"
-        if option == 'reboot':
-            return "reboot-script"
-        return default
 
     def go(self, guest: Guest) -> None:
         """ Prepare the guests """

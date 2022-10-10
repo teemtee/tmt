@@ -51,43 +51,43 @@ class RebootCommon(ExecutePlugin):
         """
         # 'test' is None if reboot is requested from prepare/finish step
         if self._will_reboot(test):
-            reboot_request_path = self._reboot_request_path(test)
-            if test is not None:
-                test._reboot_count += 1
-                self.debug(f"Reboot during test '{test}' "
-                           f"with reboot count {test._reboot_count}.")
-                data = os.path.join(
-                    self.data_path(test, full=True),
-                    tmt.steps.execute.TEST_DATA)
-            else:
-                self._reboot_count += 1
-                self.debug(f"Reboot during prepare/finish step "
-                           f"with reboot count {self._reboot_count}.")
-            with open(reboot_request_path, 'r') as reboot_file:
-                reboot_data = json.loads(reboot_file.read())
-                data = os.path.join(self.step.plan.data_directory)
-            reboot_command = reboot_data.get('command')
-            try:
-                timeout = int(reboot_data.get('timeout'))
-            except ValueError:
-                timeout = None
-            # Reset the file
-            os.remove(reboot_request_path)
-            guest.push(data)
-            rebooted = False
-            try:
-                rebooted = guest.reboot(command=reboot_command, timeout=timeout)
-            except tmt.utils.RunError:
-                self.fail(
-                    f"Failed to reboot guest using the "
-                    f"custom command '{reboot_command}'.")
-                raise
-            except tmt.utils.ProvisionError:
-                self.warn(
-                    "Guest does not support soft reboot, "
-                    "trying hard reboot.")
-                rebooted = guest.reboot(hard=True, timeout=timeout)
-            if not rebooted:
-                raise tmt.utils.RebootTimeoutError("Reboot timed out.")
-            return True
-        return False
+            return False
+        reboot_request_path = self._reboot_request_path(test)
+        if test is not None:
+            test._reboot_count += 1
+            self.debug(f"Reboot during test '{test}' "
+                       f"with reboot count {test._reboot_count}.")
+            data = os.path.join(
+                self.data_path(test, full=True),
+                tmt.steps.execute.TEST_DATA)
+        else:
+            self._reboot_count += 1
+            self.debug(f"Reboot during prepare/finish step "
+                       f"with reboot count {self._reboot_count}.")
+        with open(reboot_request_path, 'r') as reboot_file:
+            reboot_data = json.loads(reboot_file.read())
+            data = os.path.join(self.step.plan.data_directory)
+        reboot_command = reboot_data.get('command')
+        try:
+            timeout = int(reboot_data.get('timeout'))
+        except ValueError:
+            timeout = None
+        # Reset the file
+        os.remove(reboot_request_path)
+        guest.push(data)
+        rebooted = False
+        try:
+            rebooted = guest.reboot(command=reboot_command, timeout=timeout)
+        except tmt.utils.RunError:
+            self.fail(
+                f"Failed to reboot guest using the "
+                f"custom command '{reboot_command}'.")
+            raise
+        except tmt.utils.ProvisionError:
+            self.warn(
+                "Guest does not support soft reboot, "
+                "trying hard reboot.")
+            rebooted = guest.reboot(hard=True, timeout=timeout)
+        if not rebooted:
+            raise tmt.utils.RebootTimeoutError("Reboot timed out.")
+        return True
