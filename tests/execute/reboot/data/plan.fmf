@@ -2,6 +2,6 @@ summary: Basic smoke test
 discover:
     how: fmf
 provision:
-    how: container
+    how: virtual
 execute:
     how: tmt

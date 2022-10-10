@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Union
 
 import tmt
 import tmt.options
@@ -40,7 +41,7 @@ class RebootCommon(ExecutePlugin):
                 TMT_REBOOT_SCRIPT.created_file)
         return reboot_request_path
 
-    def _handle_reboot(self, test: Test, guest: Guest) -> bool:
+    def _handle_reboot(self, test: Union[Test, None], guest: Guest) -> bool:
         """
         Reboot the guest if the test requested it.
 
@@ -50,7 +51,7 @@ class RebootCommon(ExecutePlugin):
         (going forward to the next test). Return whether reboot was done.
         """
         # 'test' is None if reboot is requested from prepare/finish step
-        if self._will_reboot(test):
+        if not self._will_reboot(test):
             return False
         reboot_request_path = self._reboot_request_path(test)
         if test is not None:

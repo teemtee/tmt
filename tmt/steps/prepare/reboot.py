@@ -79,12 +79,14 @@ class PrepareReboot(
         script = self.get("script")
         try:
             guest.execute(script, cwd=self.step.plan.worktree)
-        except BaseException:
-            self.debug("Reboot script was executed")
+        except tmt.utils.RunError as e:
+            self.debug(f"Reboot script was executed: {e}")
+            if not guest.execute("test -f $TMT_REBOOT_REQUEST", cwd=self.step.plan.worktree):
+                raise tmt.utils.GeneralError("Reboot request file wasn't generated")
         guest.pull(source=self.step.plan.data_directory)
 
-        self.debug(f"Reboot request file: {self._reboot_request_path(None)}")
         # Handle reboot
+        self.debug(f"Reboot request file: {self._reboot_request_path(None)}")
         if self._will_reboot(None):
             # Output before the reboot
             self.debug("Reboot is in progress")

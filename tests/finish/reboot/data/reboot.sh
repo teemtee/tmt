@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 if [ "$TMT_REBOOT_COUNT" == "0" ]; then
   echo 'Execute reboot during finish step'
