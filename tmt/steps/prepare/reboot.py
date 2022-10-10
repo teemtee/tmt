@@ -8,9 +8,9 @@ import pkg_resources
 import tmt
 import tmt.steps.prepare
 import tmt.utils
-from tmt.steps.common import RebootCommon
 from tmt.steps.execute import TMT_REBOOT_SCRIPT
 from tmt.steps.provision import Guest
+from tmt.steps.rebootable import RebootCommon
 
 # Scripts source directory
 SCRIPTS_SRC_DIR = pkg_resources.resource_filename(
