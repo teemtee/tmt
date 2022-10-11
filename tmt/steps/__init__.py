@@ -739,6 +739,43 @@ class BasePlugin(Phase):
                 command = option(command)
             commands[method.name] = command
 
+            for param in command.params:
+                if param.name == 'how':
+                    continue
+
+                if not isinstance(param, click.Option):
+                    continue
+
+                assert command.name is not None  # narrow type
+                assert param.name is not None  # narrow type
+
+                command_name, method_name, param_name = \
+                    command.name.upper(), method.name.upper(), param.name.upper()
+
+                envvar = f'TMT_PLUGIN_{command_name}_{method_name}_{param_name}'
+
+                # We do not want to overwrite existing envvar setup of the parameter,
+                # we want to *add* our variable. The `envvar` attribute can be of
+                # different types, carefully modify each variant:
+
+                # Unset...
+                if param.envvar is None:
+                    param.envvar = [envvar]
+
+                # ..., a string, i.e. a single pre-set envvar, ...
+                elif isinstance(param.envvar, str):
+                    param.envvar = [param.envvar, envvar]
+
+                # ..., a list of strings, i.e. several pre-set envvars, or...
+                elif isinstance(param.envvar, list):
+                    param.envvar.append(envvar)
+
+                # ... or an unexpected type we don't know how to handle.
+                else:
+                    raise tmt.utils.GeneralError(
+                        f"Envvar property of '{param.name}' option "
+                        f"set to unexpected type {type(param.envvar)}")
+
         # Create base command with common options using method class
         method_class = tmt.options.create_method_class(commands)
         command = cls.base_command(usage=method_overview, method_class=method_class)

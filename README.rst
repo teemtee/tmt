@@ -448,6 +448,62 @@ SERVERS
     to make multihost prototype support easier to verify as many current
     tests were developed with Restraint.
 
+Plugin options
+--------------
+
+.. note::
+
+   The following applies to situations when a plugin is specified
+   on the command line only. Keys of plugins specified in fmf files
+   would not be modified. This is a limit of the current implementation,
+   and will be addressed in the future.
+
+      # Here the verbosity will not be increased since the plugin is
+      # not mentioned on the command line:
+      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a
+
+      # Here the environment variable will take effect:
+      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
+
+Each plugin option can be also specified via environment variable.
+Variables follow a naming scheme utilizing plugin name, step it
+belongs to, and the option name:
+
+    ``TMT_PLUGIN_${STEP}_${PLUGIN}_${OPTION}``
+
+All values are upper-cased, with dashes (``-``) replaced by
+underscores (``_``).
+
+For example, an execute plugin "tmt" would run with verbosity
+equal to ``-vvv``::
+
+    TMT_PLUGIN_EXECUTE_TMT_VERBOSE=3 tmt run ... execute -h tmt ...
+
+Command-line takes precedence over environment variables, therefore
+``-v`` would undo the effect of environment variable, and reduce
+verbosity to one level only::
+
+    TMT_PLUGIN_EXECUTE_TMT_VERBOSE=3 tmt run ... execute -h tmt -v ...
+
+Environment variables - just like command-line options - take
+precedence over values stored in files. For example, consider the
+following discover step::
+
+    discover:
+        how: fmf
+        url: https://example.org/
+
+The following commands would override the URL::
+
+    tmt run ... discover -h fmf --url https://actual.org/ ...
+
+    TMT_PLUGIN_DISCOVER_FMF_URL=https://actual.org/ tmt run ...
+
+For setting flag-like option, 0 and 1 are the expected value. For
+example, an interactive mode would be enabled in this run::
+
+    TMT_PLUGIN_EXECUTE_TMT_INTERACTIVE=1 tmt run ... execute -h tmt ...
+
 Links
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
