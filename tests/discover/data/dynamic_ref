@@ -1,0 +1,7 @@
+environment:
+  REF: tmt
+
+adjust:
+  - when: "branch == fmf"
+    environment:
+      REF: fmf

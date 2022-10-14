@@ -87,3 +87,19 @@ execute:
         discover:
             how: fmf
             exclude: /tests/discover1
+    /dynamic_ref_noctx:
+        discover:
+            how: fmf
+            ref: "@tests/discover/data/dynamic_ref"
+    /dynamic_ref_ctx:
+        context:
+            branch: fmf
+        discover:
+            how: fmf
+            ref: "@tests/discover/data/dynamic_ref"
+    /dynamic_ref_env:
+        environment:
+            branch: fmf
+        discover:
+            how: fmf
+            ref: "@tests/discover/data/dynamic_ref"
