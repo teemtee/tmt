@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 import subprocess
-from typing import List, Optional, cast
+from typing import List, Optional, Union, cast
 
 import click
 import fmf
@@ -39,6 +39,13 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     # Legacy fields
     repository: Optional[str] = None
     revision: Optional[str] = None
+
+    # TODO: drop when schema validation becomes mandatory
+    def _normalize_ref(self, value: Optional[Union[str, int]]) -> Optional[str]:
+        if value is None:
+            return None
+
+        return str(value)
 
     _normalize_test = tmt.utils.NormalizeKeysMixin._normalize_string_list
     _normalize_link = tmt.utils.NormalizeKeysMixin._normalize_string_list
