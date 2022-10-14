@@ -43,6 +43,16 @@ execute:
                 discover:
                     how: fmf
                     url: https://github.com/teemtee/${REPO}
+            /context:
+                context:
+                    repo: tmt
+                discover:
+                    how: fmf
+                    url: https://github.com/teemtee/$@repo
+            /nocontext:
+                discover:
+                    how: fmf
+                    url: https://github.com/teemtee/$@{repo}
     /nourl:
         /ref:
             /path:

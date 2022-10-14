@@ -634,13 +634,16 @@ package then could be done in the following way::
 Parametrize Plans
 ------------------------------------------------------------------
 
-It is possible to parametrize plans using environment variables.
-This may be useful to reduce duplication, for example in CI systems.
-The syntax is standard, both ``$var`` and ``${var}`` may be used.
-The values of variables are taken from the ``--environment``
-command line option and the ``environment`` plan attribute.
-If a variable is defined using both the attribute and the option,
-the value from the ``--environment`` option has priority::
+It is possible to parametrize plans using environment variables and
+context. This may be useful to reduce duplication, for example in
+CI systems.
+
+For environment variables the syntax is standard, both ``$var`` and
+``${var}`` may be used. The values of variables are taken from the
+``--environment`` command line option and the ``environment`` plan
+attribute. If a variable is defined using both the attribute and
+the option, the value from the ``--environment`` option has
+a priority::
 
     discover:
         how: fmf
@@ -648,6 +651,15 @@ the value from the ``--environment`` option has priority::
 
     $ tmt run -e REPO=tmt
 
+For context parametrization the syntax is ``$@dimension`` or
+``$@{dimension}``. The values are set according to the defined
+context specified using ``--context`` command line option and the
+``context`` plan attribute::
+
+    context:
+        repo: tmt
+
+    $ tmt -c repo=tmt run
 
 Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------
