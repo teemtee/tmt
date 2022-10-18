@@ -38,3 +38,13 @@ duration: 20m
         enabled: true
         when: how == full
         because: this can be run only with full virtualization
+
+/timeout:
+    summary: Allow test to wait longer
+    test: ./timeout.sh
+    enabled: false
+
+    adjust:
+        enabled: true
+        when: how == full
+        because: this can be run only with full virtualization
