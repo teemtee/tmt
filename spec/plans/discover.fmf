@@ -79,9 +79,9 @@ description: |
             Additionally, one can set ``ref`` dynamically. This is
             possible using a special file in tmt format stored in
             the *default* branch of a tests repository. This special
-            file should contain rules assigning environment variable
-            ``REF`` in an `adjust` block, for example depending on
-            a test run context.
+            file should contain rules assigning attribute ``ref``
+            in an `adjust` block, for example depending on a test
+            run context.
             Dynamic ``ref`` assignment is enabled whenever
             ``.tmt/ref.fmf`` file exists in a test repository or
             the actual test plan reference has a format

@@ -354,7 +354,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             if os.path.exists(ref_filepath):
                 self.debug(f"Dynamic 'ref' definition file '{ref_filepath}' exists")
                 # there is a file with rules
-                # read it, process it and get the value of the variable REF
+                # read it, process it and get the value of the attribute 'ref'
                 try:
                     with open(ref_filepath, encoding='utf-8') as datafile:
                         data = tmt.utils.yaml_to_dict(datafile.read())
@@ -363,7 +363,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 # we need to built a dummy tree so we can evaluate fmf data
                 dummy_node = fmf.Tree(data=data)
                 dummy_node.adjust(fmf.context.Context(**self.step.plan._fmf_context()))
-                ref = dummy_node.get("environment").get("REF", None)
+                ref = dummy_node.get("ref", '')
             # there is no dynamic ref file
             else:
                 # if dynamic ref file was specified using @ but not found raise an exception

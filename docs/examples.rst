@@ -656,8 +656,8 @@ When using test branching for test maintenance it becomes handy to
 be able to set ``ref`` dynamically depending on the provided tmt run
 ``--context``. This is possible using a special file in tmt format
 stored in a default branch of a tests repository. That special file
-should contain rules assigning environemnt variable
-``REF`` a value depending on a test run context.
+should contain rules assigning attribute ``ref`` in an ``adjust``
+block depending on a test run context.
 Dynamic ``ref`` assignment is enabled whenever ``.tmt/ref.fmf`` file
 exists in a test repository or the actual test plan reference has
 a format ``ref: @FILEPATH``.
@@ -669,16 +669,14 @@ Example of a test plan::
         ref: "@.tmtref"
 
 Example of a dynamic ``ref`` definition file in ``repo/.tmtref``::
-    environment:
-        REF: main
+    ref: main
     adjust:
         - when: "distro == centos-stream-9"
-          environment:
-              REF: rhel-9
+          ref: rhel-9
         - when: "distro == fedora"
-              REF: fedora
+          ref: fedora
         - when: "distro == rhel-9"
-              REF: rhel-9
+          ref: rhel-9
 
 
 Stories

@@ -93,13 +93,7 @@ execute:
             ref: "@tests/discover/data/dynamic_ref"
     /dynamic_ref_ctx:
         context:
-            branch: fmf
-        discover:
-            how: fmf
-            ref: "@tests/discover/data/dynamic_ref"
-    /dynamic_ref_env:
-        environment:
-            branch: fmf
+            branch: fedora
         discover:
             how: fmf
             ref: "@tests/discover/data/dynamic_ref"
