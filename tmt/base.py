@@ -989,9 +989,18 @@ class Plan(Core):
     def _expand_node_data(self, data: T) -> T:
         """ Recursively expand variables in node data """
         if isinstance(data, str):
-            # This cast is tricky: we get a string, and we return a string, so T -> T hold,
-            # yet mypy does not recognize this, and we need to help with an explicit cast().
-            return cast(T, os.path.expandvars(data))
+            # expand env variables
+            data_expanded_vars = os.path.expandvars(data)
+            # convert context values to string and define env variables using context
+            # keys and values
+            dict_context_vars = {
+                key: ','.join(value)
+                for (key, value) in self._fmf_context().items()
+                }
+            with tmt.utils.modify_environ(dict_context_vars):
+                # convert $@{} to ${} and expand context using temporarily defined
+                # environment variables
+                return os.path.expandvars(data_expanded_vars.replace('$@', '$'))
         elif isinstance(data, dict):
             for key, value in data.items():
                 data[key] = self._expand_node_data(value)
