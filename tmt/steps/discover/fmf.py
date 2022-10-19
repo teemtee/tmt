@@ -363,6 +363,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 # we need to built a dummy tree so we can evaluate fmf data
                 dummy_node = fmf.Tree(data=data)
                 dummy_node.adjust(fmf.context.Context(**self.step.plan._fmf_context()))
+                # and also a dummy plan to expand environment variables and context variables
+                dummy_plan = tmt.Plan(node=dummy_node, run=None, skip_validation=True)
+                dummy_plan._expand_node_data(dummy_node.data)
                 ref = dummy_node.get("ref", '')
             # there is no dynamic ref file
             else:
