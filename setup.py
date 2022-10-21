@@ -28,6 +28,7 @@ __pkgs__ = [
     'tmt',
     'tmt/plugins',
     'tmt/steps',
+    'tmt/cli',
     'tmt/steps/discover',
     'tmt/steps/provision',
     'tmt/steps/prepare',
