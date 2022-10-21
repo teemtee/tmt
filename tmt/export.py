@@ -7,40 +7,35 @@ import email.utils
 import os
 import re
 import traceback
-import types
 import xmlrpc.client
 from functools import lru_cache
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union, cast
+from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple,
+                    Union, cast)
 
 import fmf
 from click import echo, secho, style
 
 import tmt
 import tmt.base
+import tmt.plugins
 import tmt.utils
 from tmt.convert import SYSTEM_OTHER, add_link
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
+from tmt.plugins import LazyModuleImporter
 from tmt.utils import ConvertError, check_git_url, markdown_to_html
 
-bugzilla: Optional[types.ModuleType] = None
-gssapi: Optional[types.ModuleType] = None
-nitrate: Optional[types.ModuleType] = None
+if TYPE_CHECKING:
+    import bugzilla
+    import gssapi
+    import gssapi.raw.misc
+    import nitrate
+    import nitrate.xmlrpc_driver
+    import pylero
+    import pylero.exceptions
+    import pylero.work_item
 
-# FIXME: Any - https://github.com/teemtee/tmt/issues/1602
 
-# Until nitrate gets its own annotations and recognizable imports...
-Nitrate = Any
-NitrateTestPlan = Any
-NitrateTestCase = Any
-
-# Until Bugzilla gets its own annotations and recognizable imports...
-BugzillaInstance = Any
-
-PolarionException: Any = None
-PolarionTestCase: Any = None
-PolarionWorkItem: Any = None
-
-DEFAULT_PRODUCT: Any = None
+DEFAULT_PRODUCT: Optional['nitrate.Product'] = None
 
 SectionsReturnType = Tuple[str, str, str, str]
 HeadingsType = List[List[Union[int, str]]]
@@ -62,53 +57,81 @@ RE_POLARION_URL = r'.*/polarion/#/project/.*/workitem\?id=(.*)'
 LEGACY_POLARION_PROJECTS = set(['RedHatEnterpriseLinux7'])
 
 
-def import_nitrate() -> Nitrate:
-    """ Conditionally import the nitrate module """
-    # Need to import nitrate only when really needed. Otherwise we get
-    # traceback when nitrate not installed or config file not available.
-    # And we want to keep the core tmt package with minimal dependencies.
+# Need to import nitrate only when really needed. Otherwise we get
+# traceback when nitrate not installed or config file not available.
+# And we want to keep the core tmt package with minimal dependencies.
+import_gssapi: LazyModuleImporter['gssapi'] = LazyModuleImporter(
+    'gssapi',
+    ConvertError,
+    "Install tmt-test-convert to export tests to nitrate."
+    )
+
+
+_import_nitrate: LazyModuleImporter['nitrate'] = LazyModuleImporter(
+    'nitrate',
+    ConvertError,
+    "Install tmt-test-convert to export tests to nitrate."
+    )
+
+
+_import_nitrate_mutable: LazyModuleImporter['nitrate.mutable'] = LazyModuleImporter(
+    'nitrate.mutable',
+    ConvertError,
+    "Install tmt-test-convert to export tests to nitrate."
+    )
+
+
+def import_nitrate() -> 'nitrate':
+    import_gssapi()
+
+    _nitrate = _import_nitrate()
+    _import_nitrate_mutable()
+
     try:
-        global nitrate, DEFAULT_PRODUCT, gssapi
-        import gssapi
-        import nitrate
-        assert nitrate
-        DEFAULT_PRODUCT = nitrate.Product(name='RHEL Tests')
-        return nitrate
-    except ImportError:
-        raise ConvertError(
-            "Install tmt-test-convert to export tests to nitrate.")
-    # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
-    except nitrate.NitrateError as error:  # type: ignore[union-attr]
+        global DEFAULT_PRODUCT
+
+        DEFAULT_PRODUCT = _nitrate.Product(name='RHEL Tests')
+
+    except _nitrate.NitrateError as error:
         raise ConvertError(error)
 
-
-def import_polarion() -> None:
-    """ Import polarion python api - pylero """
-    try:
-        global PolarionException, PolarionTestCase, PolarionWorkItem
-        from pylero.exceptions import PyleroLibException as PolarionException
-    except ImportError:
-        raise ConvertError(
-            "Run 'pip install tmt[export-polarion]' so pylero is installed.")
-
-    try:
-        from pylero.work_item import TestCase as PolarionTestCase
-        from pylero.work_item import _WorkItem as PolarionWorkItem
-    except PolarionException as exc:
-        log.debug(traceback.format_exc())
-        raise ConvertError("Failed to login with pylero") from exc
+    return _nitrate
 
 
-def get_bz_instance() -> BugzillaInstance:
+_import_polarion: LazyModuleImporter['pylero'] = LazyModuleImporter(
+    'pylero',
+    ConvertError,
+    "Run 'pip install tmt[export-polarion]' so pylero is installed."
+    )
+
+
+_import_work_item: LazyModuleImporter['pylero.work_item'] = LazyModuleImporter(
+    'pylero.work_item',
+    ConvertError,
+    "Failed to login with pylero"
+    )
+
+
+def import_polarion() -> 'pylero':
+    _pylero = _import_polarion()
+    _import_work_item()
+
+    return _pylero
+
+
+import_bugzilla: LazyModuleImporter['bugzilla'] = LazyModuleImporter(
+    'bugzilla',
+    ConvertError,
+    "Install 'tmt-test-convert' to link test to the bugzilla."
+    )
+
+
+def get_bz_instance() -> 'bugzilla.Bugzilla':
     """ Import the bugzilla module and return BZ instance """
-    try:
-        import bugzilla
-    except ImportError:
-        raise ConvertError(
-            "Install 'tmt-test-convert' to link test to the bugzilla.")
+    bugzilla = import_bugzilla()
 
     try:
-        bz_instance: BugzillaInstance = bugzilla.Bugzilla(url=BUGZILLA_XMLRPC_URL)
+        bz_instance = bugzilla.Bugzilla(url=BUGZILLA_XMLRPC_URL)
     except Exception as exc:
         log.debug(traceback.format_exc())
         raise ConvertError("Couldn't initialize the Bugzilla client.") from exc
@@ -126,7 +149,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Generator[Any, None, None]:
 
     All component general plans are explored for possible duplicates.
     """
-    assert nitrate
+    nitrate = import_nitrate()
     for component in test.component:
         try:
             for testcase in find_general_plan(component).testcases:
@@ -324,20 +347,20 @@ def find_polarion_case_ids(
         preferred_project: Optional[str] = None,
         polarion_case_id: Optional[str] = None) -> Tuple[str, Optional[str]]:
     """ Find IDs for Polarion case from data dictionary """
-    assert PolarionWorkItem
+    pylero = import_polarion()
 
     case_id = 'None'
     project_id = None
 
     # Search for Polarion case ID directly
     if polarion_case_id:
-        query_result = PolarionWorkItem.query(
+        query_result = pylero.work_item._WorkItem.query(
             polarion_case_id, fields=['work_item_id', 'project_id'])
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by UUID
     if not project_id and data.get(ID_KEY):
-        query_result = PolarionWorkItem.query(
+        query_result = pylero.work_item._WorkItem.query(
             data.get(ID_KEY), fields=['work_item_id', 'project_id'])
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
@@ -349,13 +372,13 @@ def find_polarion_case_ids(
             raise ConvertError(
                 "Could not find a valid nitrate testcase ID in 'extra-nitrate' attribute")
         nitrate_case_id = str(int(nitrate_case_id_search.group()))
-        query_result = PolarionWorkItem.query(
+        query_result = pylero.work_item._WorkItem.query(
             f"tcmscaseid:{nitrate_case_id}", fields=['work_item_id', 'project_id'])
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by extra task
     if not project_id and data.get('extra-task'):
-        query_result = PolarionWorkItem.query(
+        query_result = pylero.work_item._WorkItem.query(
             data.get('extra-task'), fields=['work_item_id', 'project_id'])
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
@@ -365,23 +388,20 @@ def find_polarion_case_ids(
 def get_polarion_case(
         data: Dict[str, Optional[str]],
         preferred_project: Optional[str] = None,
-        polarion_case_id: Optional[str] = None) -> Optional[PolarionTestCase]:
+        polarion_case_id: Optional[str] = None) -> Optional['pylero.work_item.TestCase']:
     """ Get Polarion case through couple different methods """
-    import_polarion()
-
-    assert PolarionTestCase
-    assert PolarionException
+    pylero = import_polarion()
 
     case_id, project_id = find_polarion_case_ids(data, preferred_project, polarion_case_id)
 
     try:
-        polarion_case = PolarionTestCase(
+        polarion_case = pylero.work_item.TestCase(
             project_id=project_id, work_item_id=case_id)
         echo(style(
             f"Test case '{str(polarion_case.work_item_id)}' found.",
             fg='blue'))
         return polarion_case
-    except PolarionException:
+    except pylero.exceptions.PyleroLibException:
         return None
 
 
@@ -415,9 +435,8 @@ def enabled_somewhere(test: 'tmt.Test') -> bool:
 
 def export_to_nitrate(test: 'tmt.Test') -> None:
     """ Export fmf metadata to nitrate test cases """
-    import_nitrate()
-    assert nitrate
-    assert gssapi
+    gssapi = import_gssapi()
+    nitrate = import_nitrate()
 
     # Check command line options
     create = test.opt('create')
@@ -444,7 +463,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Check nitrate test case
     try:
         nitrate_id = test.node.get('extra-nitrate')[3:]
-        nitrate_case: NitrateTestCase = nitrate.TestCase(int(nitrate_id))
+        nitrate_case = nitrate.TestCase(int(nitrate_id))
         nitrate_case.summary  # Make sure we connect to the server now
         echo(style(f"Test case '{nitrate_case.identifier}' found.", fg='blue'))
     except TypeError:
@@ -512,6 +531,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         echo(style('components: ', fg='green') + ' '.join(test.component))
         for component in test.component:
             try:
+                assert DEFAULT_PRODUCT is not None  # narrow type
                 nitrate_component = nitrate.Component(
                     name=component, product=DEFAULT_PRODUCT.id)
                 if not dry_mode:
@@ -705,7 +725,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 
 def export_to_polarion(test: 'tmt.Test') -> None:
     """ Export fmf metadata to a Polarion test case """
-    import_polarion()
+    pylero = import_polarion()
 
     # Check command line options
     create = test.opt('create')
@@ -802,7 +822,7 @@ def export_to_polarion(test: 'tmt.Test') -> None:
             if not dry_mode:
                 polarion_case.add_assignee(login_name)
             echo(style('default tester: ', fg='green') + login_name)
-        except PolarionException as err:
+        except pylero.exceptions.PyleroLibException as err:
             log.debug(err)
 
     # Status
@@ -884,8 +904,8 @@ def export_to_polarion(test: 'tmt.Test') -> None:
 
 
 def add_to_nitrate_runs(
-        nitrate_case: NitrateTestCase,
-        general_plan: NitrateTestPlan,
+        nitrate_case: 'nitrate.TestCase',
+        general_plan: 'nitrate.TestPlan',
         test: 'tmt.Test',
         dry_mode: bool) -> None:
     """
@@ -894,7 +914,7 @@ def add_to_nitrate_runs(
     Go down plan tree from general plan, add case and case run to
     all open runs. Try to apply adjust.
     """
-    assert nitrate
+    nitrate = import_nitrate()
     for child_plan in nitrate.TestPlan.search(parent=general_plan.id):
         for testrun in child_plan.testruns:
             if testrun.status == nitrate.RunStatus("FINISHED"):
@@ -1124,20 +1144,21 @@ def get_category() -> str:
     return category
 
 
-def create_nitrate_case(summary: str) -> NitrateTestCase:
+def create_nitrate_case(summary: str) -> 'nitrate.TestCase':
     """ Create new nitrate case """
     # Create the new test case
-    assert nitrate
+    nitrate = import_nitrate()
     category = nitrate.Category(name=get_category(), product=DEFAULT_PRODUCT)
-    testcase: NitrateTestCase = nitrate.TestCase(summary=summary, category=category)
+    testcase = nitrate.TestCase(summary=summary, category=category)
     echo(style(f"Test case '{testcase.identifier}' created.", fg='blue'))
     return testcase
 
 
-def create_polarion_case(summary: str, project_id: str) -> PolarionTestCase:
+def create_polarion_case(summary: str, project_id: str) -> 'pylero.work_item.TestCase':
     """ Create new polarion case """
     # Create the new test case
-    testcase = PolarionTestCase.create(project_id, summary, summary)
+    pylero = import_polarion()
+    testcase = pylero.work_item.TestCase.create(project_id, summary, summary)
     testcase.tcmscategory = get_category()
     testcase.update()
     echo(style(f"Test case '{testcase.work_item_id}' created.", fg='blue'))
@@ -1159,11 +1180,12 @@ def prepare_extra_summary(test: 'tmt.Test') -> str:
 
 # avoid multiple searching for general plans (it is expensive)
 @lru_cache(maxsize=None)
-def find_general_plan(component: str) -> NitrateTestPlan:
+def find_general_plan(component: str) -> 'nitrate.TestPlan':
     """ Return single General Test Plan or raise an error """
-    assert nitrate
+    nitrate = import_nitrate()
     # At first find by linked components
-    found: List[NitrateTestPlan] = nitrate.TestPlan.search(
+    # ignore[name-defined]: it really is defined...
+    found: List['nitrate.TestPlan'] = nitrate.TestPlan.search(  # type: ignore[name-defined]
         type__name="General",
         is_active=True,
         component__name=f"{component}")

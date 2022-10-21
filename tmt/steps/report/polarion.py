@@ -52,9 +52,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         super().go()
 
         from tmt.export import find_polarion_case_ids, import_polarion
-        import_polarion()
-        from tmt.export import PolarionWorkItem
-        assert PolarionWorkItem
+        pylero = import_polarion()
 
         title = self.get(
             'testrun_title',
@@ -69,7 +67,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
         properties = {
             'polarion-project-id': project_id,
-            'polarion-user-id': PolarionWorkItem._session.user_id,
+            'polarion-user-id': pylero.work_item._WorkItem._session.user_id,
             'polarion-testrun-id': title,
             'polarion-project-span-ids': project_id}
         testsuites_properties = ET.SubElement(xml_tree, 'properties')
@@ -116,13 +114,13 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             ET.ElementTree(xml_tree).write(fw)
 
         if upload:
-            server_url = str(PolarionWorkItem._session._server.url)
+            server_url = str(pylero.work_item._WorkItem._session._server.url)
             polarion_import_url = (
                 f'{server_url}{"" if server_url.endswith("/") else "/"}'
                 'import/xunit')
             auth = (
-                PolarionWorkItem._session.user_id,
-                PolarionWorkItem._session.password)
+                pylero.work_item._WorkItem._session.user_id,
+                pylero.work_item._WorkItem._session.password)
 
             response = post(
                 polarion_import_url, auth=auth,

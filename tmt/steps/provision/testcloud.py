@@ -6,7 +6,6 @@ import os
 import platform
 import re
 import time
-import types
 from typing import TYPE_CHECKING, List, Optional
 
 import click
@@ -15,35 +14,68 @@ import fmf.utils
 import requests
 
 import tmt
+import tmt.plugins
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.plugins import LazyModuleImporter
 from tmt.utils import WORKDIR_ROOT, ProvisionError, retry_session
 
 if TYPE_CHECKING:
+    import libvirt
+    import testcloud
+    import testcloud.config
+    import testcloud.exceptions
+    import testcloud.image
+    import testcloud.instance
+    import testcloud.util
+
     import tmt.base
 
 
-libvirt: Optional[types.ModuleType] = None
-testcloud: Optional[types.ModuleType] = None
+import_libvirt: LazyModuleImporter['libvirt'] = LazyModuleImporter(
+    'libvirt',
+    ProvisionError,
+    "Install 'testcloud' to provision using this method."
+    )
 
 
-def import_testcloud() -> None:
-    """
-    Import testcloud module only when needed
+_import_testcloud: LazyModuleImporter['testcloud'] = LazyModuleImporter(
+    'testcloud',
+    ProvisionError,
+    "Install 'testcloud' to provision using this method."
+    )
 
-    Until we have a separate package for each plugin.
-    """
-    global testcloud
-    global libvirt
-    try:
-        import libvirt
-        import testcloud.image
-        import testcloud.instance
-        import testcloud.util
-    except ImportError:
-        raise ProvisionError(
-            "Install 'testcloud' to provision using this method.")
+
+_import_testcloud_image: LazyModuleImporter['testcloud.image'] = LazyModuleImporter(
+    'testcloud.image',
+    ProvisionError,
+    "Install 'testcloud' to provision using this method."
+    )
+
+
+_import_testcloud_instance: LazyModuleImporter['testcloud.instance'] = LazyModuleImporter(
+    'testcloud.instance',
+    ProvisionError,
+    "Install 'testcloud' to provision using this method."
+    )
+
+
+_import_testcloud_util: LazyModuleImporter['testcloud.util'] = LazyModuleImporter(
+    'testcloud.util',
+    ProvisionError,
+    "Install 'testcloud' to provision using this method."
+    )
+
+
+def import_testcloud() -> 'testcloud':
+    testcloud = _import_testcloud()
+
+    _import_testcloud_image()
+    _import_testcloud_instance()
+    _import_testcloud_util()
+
+    return testcloud
 
 
 # Testcloud cache to our tmt's workdir root
@@ -215,9 +247,8 @@ class GuestTestcloud(tmt.GuestSsh):
 
     # Not to be saved, recreated from image_url/instance_name/... every
     # time guest is instantiated.
-    # FIXME: ignore[name-defined]: https://github.com/teemtee/tmt/issues/1616
-    _image: Optional['testcloud.image.Image'] = None  # type: ignore[name-defined]
-    _instance: Optional['testcloud.instance.Instance'] = None  # type: ignore[name-defined]
+    _image: Optional['testcloud.image.Image'] = None
+    _instance: Optional['testcloud.instance.Instance'] = None
 
     @property
     def is_ready(self) -> bool:
@@ -280,7 +311,7 @@ class GuestTestcloud(tmt.GuestSsh):
         matched_ubuntu = re.match(r'^u(buntu)?-?(\w+)$', name)
         matched_debian = re.match(r'^d(ebian)?-?(\w+)$', name)
 
-        assert testcloud is not None
+        testcloud = import_testcloud()
         # Plain name match means we want the latest release
         try:
             if name == 'fedora':
@@ -336,7 +367,7 @@ class GuestTestcloud(tmt.GuestSsh):
             f"Waking up testcloud instance '{self.instance_name}'.",
             level=2, shift=0)
         self.prepare_config()
-        assert testcloud is not None
+        testcloud = import_testcloud()
         self._image = testcloud.image.Image(self.image_url)
         if self.instance_name is None:
             raise ProvisionError(f"The instance name '{self.instance_name}' is invalid.")
@@ -368,10 +399,9 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def prepare_config(self) -> None:
         """ Prepare common configuration """
-        import_testcloud()
+        testcloud = import_testcloud()
 
         # Get configuration
-        assert testcloud is not None
         self.config = testcloud.config.get_config()
 
         # Make sure download progress is disabled unless in debug mode,
@@ -387,6 +417,10 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Start provisioned guest """
         if self.opt('dry'):
             return
+
+        libvirt = import_libvirt()
+        testcloud = import_testcloud()
+
         # Make sure required directories exist
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
@@ -407,7 +441,6 @@ class GuestTestcloud(tmt.GuestSsh):
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
         # Initialize and prepare testcloud image
-        assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not os.path.exists(self._image.local_path):
@@ -469,7 +502,6 @@ class GuestTestcloud(tmt.GuestSsh):
         self.info('progress', 'booting...', 'cyan')
         self._instance.ram = self.memory
         self._instance.disk_size = self.disk
-        assert libvirt is not None
         try:
             self._instance.prepare()
             self._instance.spawn_vm()
@@ -500,11 +532,11 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def stop(self) -> None:
         """ Stop provisioned guest """
+        testcloud = import_testcloud()
         super().stop()
         # Stop only if the instance successfully booted
         if self._instance and self.guest:
             self.debug(f"Stopping testcloud instance '{self.instance_name}'.")
-            assert testcloud is not None
             try:
                 self._instance.stop()
             except testcloud.exceptions.TestcloudInstanceError as error:

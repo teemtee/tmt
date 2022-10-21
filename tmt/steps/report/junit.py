@@ -1,39 +1,30 @@
 import dataclasses
 import os
-import types
-from typing import Any, List, Optional, cast, overload
+from typing import TYPE_CHECKING, List, Optional, overload
 
 import click
 
 import tmt
 import tmt.base
 import tmt.options
+import tmt.plugins
 import tmt.result
 import tmt.steps
 import tmt.steps.report
+from tmt.plugins import LazyModuleImporter
+
+if TYPE_CHECKING:
+    import junit_xml
+
 
 DEFAULT_NAME = "junit.xml"
 
-junit_xml: Optional[types.ModuleType] = None
 
-# Thanks to import burried in a function, we don't get the regular missing annotations
-# but "name ... is not defined". Define a special type to follow the test suite instance
-# around, and if junit_xml ever gets annotations, we can replace it with provided type.
-JunitTestSuite = Any
-
-
-def import_junit_xml() -> None:
-    """
-    Import junit_xml module only when needed
-
-    Until we have a separate package for each plugin.
-    """
-    global junit_xml
-    try:
-        import junit_xml
-    except ImportError:
-        raise tmt.utils.ReportError(
-            "Missing 'junit-xml', fixable by 'pip install tmt[report-junit]'.")
+import_junit_xml: LazyModuleImporter['junit_xml'] = LazyModuleImporter(
+    'junit_xml',
+    tmt.utils.ReportError,
+    "Missing 'junit-xml', fixable by 'pip install tmt[report-junit]'."
+    )
 
 
 @overload
@@ -56,10 +47,9 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
             f"Malformed duration '{duration}' ({error}).")
 
 
-def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> JunitTestSuite:
+def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> 'junit_xml.TestSuite':
     """ Create junit xml object """
-    import_junit_xml()
-    assert junit_xml
+    junit_xml = import_junit_xml()
 
     suite = junit_xml.TestSuite(report.step.plan.name)
 
@@ -85,7 +75,7 @@ def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> JunitTestSuite:
         # Passed state is the default
         suite.test_cases.append(case)
 
-    return cast(JunitTestSuite, suite)
+    return suite
 
 
 @dataclasses.dataclass
@@ -121,6 +111,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin):
         """ Read executed tests and write junit """
         super().go()
 
+        junit_xml = import_junit_xml()
         suite = make_junit_xml(self)
 
         assert self.workdir is not None
@@ -128,12 +119,10 @@ class ReportJUnit(tmt.steps.report.ReportPlugin):
         try:
             with open(f_path, 'w') as fw:
                 if hasattr(junit_xml, 'to_xml_report_file'):
-                    # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
-                    junit_xml.to_xml_report_file(fw, [suite])  # type: ignore[union-attr]
+                    junit_xml.to_xml_report_file(fw, [suite])
                 else:
                     # For older junit-xml
-                    # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
-                    junit_xml.TestSuite.to_file(fw, [suite])  # type: ignore[union-attr]
+                    junit_xml.TestSuite.to_file(fw, [suite])
             self.info("output", f_path, 'yellow')
         except Exception as error:
             raise tmt.utils.ReportError(

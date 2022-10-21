@@ -18,7 +18,9 @@ from click import echo, style
 import tmt.base
 import tmt.export
 import tmt.identifier
+import tmt.plugins
 import tmt.utils
+from tmt.plugins import LazyModuleImporter
 from tmt.utils import ConvertError, GeneralError
 
 log = fmf.utils.Logging('tmt').logger
@@ -27,7 +29,9 @@ log = fmf.utils.Logging('tmt').logger
 NitrateDataType = Dict[str, Any]
 
 if TYPE_CHECKING:
-    from nitrate import TestCase
+    import gssapi.raw.misc
+    import html2text
+    import nitrate
 
 
 # Test case relevancy regular expressions
@@ -124,7 +128,7 @@ def read_manual(
     os.chdir(old_cwd)
 
 
-def read_manual_data(testcase: 'TestCase') -> Dict[str, str]:
+def read_manual_data(testcase: 'nitrate.TestCase') -> Dict[str, str]:
     """ Read test data from manual fields """
     md_content = {}
     md_content['setup'] = html_to_markdown(testcase.setup)
@@ -134,13 +138,17 @@ def read_manual_data(testcase: 'TestCase') -> Dict[str, str]:
     return md_content
 
 
+import_html2text: LazyModuleImporter['html2text'] = LazyModuleImporter(
+    'html2text',
+    ConvertError,
+    "Install tmt-test-convert to import tests."
+    )
+
+
 def html_to_markdown(html: str) -> str:
     """ Convert html to markdown """
-    try:
-        import html2text
-        md_handler = html2text.HTML2Text()
-    except ImportError:
-        raise ConvertError("Install tmt-test-convert to import tests.")
+    html2text = import_html2text()
+    md_handler = html2text.HTML2Text()
 
     if html is None:
         markdown: str = ""
@@ -605,11 +613,7 @@ def read_nitrate(
 
     # Need to import nitrate only when really needed. Otherwise we get
     # traceback when nitrate is not installed or config file not available.
-    try:
-        import gssapi
-        import nitrate
-    except ImportError:
-        raise ConvertError('Install tmt-test-convert to import metadata.')
+    nitrate = tmt.export.import_nitrate()
 
     # Check test case
     echo(style('Nitrate ', fg='blue'), nl=False)
@@ -842,7 +846,7 @@ def extract_relevancy(
 
 
 def read_nitrate_case(
-        testcase: 'TestCase',
+        testcase: 'nitrate.TestCase',
         makefile_data: Optional[NitrateDataType] = None,
         general: bool = False
         ) -> NitrateDataType:

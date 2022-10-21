@@ -47,9 +47,12 @@ else:
 
 
 if TYPE_CHECKING:
+    import markdown
+
     import tmt.base
     import tmt.cli
     import tmt.steps
+
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -1789,7 +1792,7 @@ class SerializableContainer(DataContainer):
                 "Use 'tmt clean runs' to clean up old runs.")
 
         klass_info = serialized.pop('__class__')
-        klass = import_member(klass_info['module'], klass_info['name'])
+        _, klass = import_member(klass_info['module'], klass_info['name'])
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
@@ -1799,6 +1802,27 @@ class SerializableContainer(DataContainer):
         return cast(SerializableContainerDerivedType, klass.from_serialized(serialized))
 
 
+# tmt.plugins seems to be set to not import stuff from tmt packages on module level.
+# Wrapping the markdown import with a helper function to perform a local import when
+# called.
+#
+# ignore[valid-type]: markdown package is weird, at least that's how it appears to mypy.
+# According to the linter, markdown module is not a valid type, but the module does not seem to be
+# that different. This might be just a packaging issue, I can't spot the problem, and it does not
+# seem to have any measurable effect. It might be related to mypy internals, e.g. vscode & pyright
+# do infer correct types of markdown package and its members, therefore it cannot be too opaque.
+def import_markdown() -> 'markdown':  # type: ignore[valid-type]
+    from tmt.plugins import LazyModuleImporter
+
+    _importer: LazyModuleImporter['markdown'] = LazyModuleImporter(  # type: ignore[valid-type]
+        'markdown',
+        ConvertError,
+        "Install tmt-test-convert to export tests."
+        )
+
+    return _importer()
+
+
 def markdown_to_html(filename: str) -> str:
     """
     Convert markdown to html
@@ -1806,18 +1830,18 @@ def markdown_to_html(filename: str) -> str:
     Expects: Markdown document as a file.
     Returns: An HTML document as a string.
     """
-    try:
-        import markdown
-    except ImportError:
-        raise ConvertError("Install tmt-test-convert to export tests.")
-
+    markdown = import_markdown()
     try:
         with open(filename, 'r') as file:
             try:
                 text = file.read()
             except UnicodeError:
                 raise MetadataError(f"Unable to read '{filename}'.")
-            return markdown.markdown(text)
+            # ignore[attr-defined]: as described in import_markdown(), mypy has troubles
+            # decyphering markdown package, and needs a bit of help. Adding a waiver to silence
+            # mypy, and an `assert` to make sure we're not lying.
+            assert hasattr(markdown, 'markdown')
+            return cast(str, markdown.markdown(text))  # type: ignore[attr-defined]
     except IOError:
         raise ConvertError(f"Unable to open '{filename}'.")
 
@@ -3315,7 +3339,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
         step_module_name = f'tmt.steps.{step_name}'
         step_class_name = step_name.capitalize()
 
-        step_class = import_member(step_module_name, step_class_name)
+        _, step_class = import_member(step_module_name, step_class_name)
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(
