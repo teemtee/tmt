@@ -58,7 +58,7 @@ class TestDescription(
     framework: Optional[str] = None
     manual: bool = False
     require: List[tmt.base.Require] = dataclasses.field(default_factory=list)
-    recommend: List[str] = dataclasses.field(default_factory=list)
+    recommend: List[tmt.base.Require] = dataclasses.field(default_factory=list)
     environment: tmt.utils.EnvironmentType = dataclasses.field(default_factory=dict)
     duration: str = '1h'
     result: str = 'respect'
@@ -145,7 +145,8 @@ class TestDescription(
         obj = super().from_serialized(serialized)
         obj.link = tmt.base.Links(serialized['link'])
         obj.require = [
-            require if isinstance(require, str) else tmt.base.RequireFmfId.from_serialized(require)
+            tmt.base.RequireSimple.from_spec(require)
+            if isinstance(require, str) else tmt.base.RequireFmfId.from_serialized(require)
             for require in serialized['require']
             ]
 
