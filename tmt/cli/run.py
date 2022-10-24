@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import click
 
 import tmt
+import tmt.plugins
 import tmt.steps
 from tmt.cli.click_context_object import ContextObject
 from tmt.cli.click_group import CustomGroup
@@ -13,6 +14,10 @@ from tmt.cli.common_options import force_dry_options, verbosity_options
 if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
+
+
+# Explore available plugins (need to detect all supported methods first)
+tmt.plugins.explore()
 
 
 @click.group(chain=True, invoke_without_command=True, cls=CustomGroup)

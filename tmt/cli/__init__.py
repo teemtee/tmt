@@ -22,9 +22,6 @@ from tmt.cli.status import status
 from tmt.cli.stories import stories
 from tmt.cli.tests import tests
 
-# Explore available plugins (need to detect all supported methods first)
-tmt.plugins.explore()
-
 
 @click.group(invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
