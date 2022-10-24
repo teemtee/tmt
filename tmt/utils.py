@@ -1513,7 +1513,7 @@ class SpecBasedContainer(DataContainer):
 
     def to_minimal_spec(self) -> Dict[str, Any]:
         """
-        Convert to a form suitable for saving in a specification file.
+        Convert to specification, skip default values
 
         See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
 

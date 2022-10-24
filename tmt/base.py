@@ -140,6 +140,7 @@ class FmfId(tmt.utils.SpecBasedContainer, tmt.utils.SerializableContainer):
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_minimal_spec(self) -> _RawFmfId:  # type: ignore[override]
+        """ Convert to specification, skip default values """
         return cast(_RawFmfId, super().to_minimal_spec())
 
     @classmethod
