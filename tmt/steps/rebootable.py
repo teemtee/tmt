@@ -23,11 +23,11 @@ class RebootCommon(ExecutePlugin):
         super().__init__(step, data, workdir)
         self._reboot_count = 0
 
-    def _will_reboot(self, test: Test) -> bool:
+    def _will_reboot(self, test: Union[Test, None]) -> bool:
         """ True if reboot is requested """
         return os.path.exists(self._reboot_request_path(test))
 
-    def _reboot_request_path(self, test: Test) -> str:
+    def _reboot_request_path(self, test: Union[Test, None]) -> str:
         """ Return reboot_request """
         # 'test' is None if reboot is requested from prepare/finish step
         if test is not None:
