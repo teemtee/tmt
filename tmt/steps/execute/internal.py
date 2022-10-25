@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import sys
-from contextlib import suppress
 from typing import Any, Dict, List, Optional, cast
 
 import click
@@ -21,8 +20,8 @@ from tmt.steps.execute import (
     TMT_REBOOT_SCRIPT,
     )
 from tmt.steps.provision import Guest
-from tmt.utils import EnvironmentType, ShellScript, field
 from tmt.steps.rebootable import RebootCommon
+from tmt.utils import EnvironmentType, ShellScript, field
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 

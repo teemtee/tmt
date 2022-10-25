@@ -1,5 +1,5 @@
 provision:
-    how: virtual
+    how: container
 prepare:
   - name: reboot-prepare
     how: reboot

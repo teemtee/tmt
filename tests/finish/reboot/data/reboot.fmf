@@ -1,5 +1,5 @@
 provision:
-    how: virtual
+    how: container
 execute:
     how: tmt
     script: echo "Execute simple test"

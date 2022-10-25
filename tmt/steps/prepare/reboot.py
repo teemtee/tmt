@@ -27,8 +27,6 @@ SCRIPTS = (
 class PrepareRebootData(tmt.steps.prepare.PrepareStepData):
     script: List[str] = dataclasses.field(default_factory=list)
 
-    _normalize_script = tmt.utils.NormalizeKeysMixin._normalize_string_list
-
 
 @tmt.steps.provides_method('reboot')
 class PrepareReboot(
@@ -54,9 +52,14 @@ class PrepareReboot(
                 help='Set path to the reboot script.')
             ]) + super().options(how)
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Prepare the guests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Prepare scripts, except localhost guest
         self.scripts = SCRIPTS
@@ -81,13 +84,15 @@ class PrepareReboot(
             guest.execute(script, cwd=self.step.plan.worktree)
         except tmt.utils.RunError as e:
             self.debug(f"Reboot script was executed: {e}")
-            if not guest.execute("test -f $TMT_REBOOT_REQUEST", cwd=self.step.plan.worktree):
+            if not guest.execute(
+                    tmt.utils.ShellScript("test -f $TMT_REBOOT_REQUEST"),
+                    cwd=self.step.plan.worktree):
                 raise tmt.utils.GeneralError("Reboot request file wasn't generated")
         guest.pull(source=self.step.plan.data_directory)
 
         # Handle reboot
-        self.debug(f"Reboot request file: {self._reboot_request_path(None)}")
-        if self._will_reboot(None):
+        self.debug(f"Reboot request file: {self._reboot_request_path(None, guest)}")
+        if self._will_reboot(None, guest):
             # Output before the reboot
             self.debug("Reboot is in progress")
             if self._handle_reboot(None, guest):
