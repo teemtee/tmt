@@ -222,6 +222,7 @@ class Prepare(tmt.steps.Step):
             # if there was at least one plugin executed
             if self.phases():
                 guest_copy.pull(self.plan.data_directory)
+                guest_copy.pull(self.plan.worktree)
 
         # Give a summary, update status and save
         self.summary()
