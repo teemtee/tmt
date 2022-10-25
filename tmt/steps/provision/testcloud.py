@@ -471,6 +471,9 @@ class GuestTestcloud(tmt.GuestSsh):
             level=2, shift=0)
         self.prepare_config()
         assert testcloud is not None
+        # Make sure image_url is specified
+        if self.image_url is None:
+            raise ProvisionError("image_url is not found")
         self._image = testcloud.image.Image(self.image_url)
         self._instance = testcloud.instance.Instance(
             self.instance_name, image=self._image,
