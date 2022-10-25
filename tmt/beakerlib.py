@@ -345,7 +345,7 @@ def dependencies(
         except LibraryError:
             if dependency in original_require:
                 processed_require.add(dependency)
-            if isinstance(dependency, str) and dependency in original_recommend:
+            if dependency in original_recommend:
                 processed_recommend.add(dependency)
 
     # Convert to list and return the results
