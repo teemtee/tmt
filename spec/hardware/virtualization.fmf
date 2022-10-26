@@ -1,0 +1,14 @@
+summary:
+    Features related to virtualization
+example:
+  - |
+    # Require a guest which supports virtualization
+    virtualization:
+        is-supported: false
+  - |
+    # Ask for a virtualized guest using kvm hypervisor
+    virtualization:
+        is-virtualized: true
+        hypervisor: kvm
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py

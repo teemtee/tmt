@@ -1,0 +1,8 @@
+summary:
+    Select the desired amount of memory
+example:
+  - |
+    # Basic key-value format used to specify the memory size
+    memory: 8 GB
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py
