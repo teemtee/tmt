@@ -10,25 +10,38 @@ description: |
     requirements. For example one consistent way how to specify
     `at least 2 GB of RAM` for all supported provisioners.
 
+    Introduction
+    ^^^^^^^^^^^^
+
     Individual requirements are provided as a simple ``key:
     value`` pairs, for example the minimum amount of
     :ref:`/spec/hardware/memory`, or the related information is
     grouped under a common parent, for example ``cores`` or
     ``model`` under the :ref:`/spec/hardware/cpu` key.
 
-    **Search**
+    Search
+    ------
 
     Regular expressions can be used for selected fields such as
-    the ``model-name``. Please note, that the full extent of
-    regular expressions might not be supported across all
-    provision implementations. The ``.*`` notation, however,
-    should be supported everywhere::
+    the :ref:`/spec/hardware/cpu` model name or
+    :ref:`/spec/hardware/hostname`. Use ``~`` for positive and
+    ``!~`` for negative regular expressions at the beginning of
+    the string. Any leading or trailing white space from the
+    search string is removed.
 
-        # Enable regular expression search
+    Please note, that the full extent of regular expressions might
+    not be supported across all provision implementations. The
+    ``.*`` notation, however, should be supported everywhere::
+
+        # Search for processors using a cpu model name
         cpu:
-            model-name: =~ .*AMD.*
+            model-name: "~ AMD"
 
-    **Operators**
+        # Select guests with a non-matching hostname
+        hostname: "!~ kvm-01.*"
+
+    Operators
+    ---------
 
     When multiple environment requirements are provided the
     provision implementation should attempt to satisfy all of
@@ -62,7 +75,8 @@ description: |
               - cpu:
                     model: 69
 
-    **Units**
+    Units
+    -----
 
     The `pint`__ library is used for processing various units,
     both decimal and binary prefixes can be used::
@@ -72,14 +86,15 @@ description: |
 
     __ https://pint.readthedocs.io/
 
-    .. note::
+    Notes
+    -----
 
-        The implementation for this common ``hardware`` key is in
-        progress. Features under this section marked as
-        implemented are already supported by the ``artemis``
-        plugin. Support in other provision plugins is on the way.
-        Check individual plugin documentation for additional
-        information on the hardware requirement support.
+    The implementation for this common ``hardware`` key is in
+    progress. Features under this section marked as implemented
+    are already supported by the ``artemis`` plugin. Support in
+    other provision plugins is on the way.  Check individual
+    plugin documentation for additional information on the
+    hardware requirement support.
 
     .. note::
 
