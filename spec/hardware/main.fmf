@@ -78,6 +78,27 @@ description: |
         progress. Features under this section marked as
         implemented are already supported by the ``artemis``
         plugin. Support in other provision plugins is on the way.
+        Check individual plugin documentation for additional
+        information on the hardware requirement support.
+
+    .. note::
+
+        Some plugins may require additional configuration. For
+        example, Artemis can provision machines with disks of a
+        particular size, but to do so, Artemis maintainers must
+        configure disk sizes for various AWS / OpenStack / Azure
+        flavors. The constraint is supported and implemented, but
+        it will not deliver the required virtual machine when the
+        plugin's backend, the Artemis deployment, isn't configured
+        correctly.
+
+    .. note::
+
+        Some plugins may support requirements that are impossible
+        to satisfy, e.g. the :ref:`/spec/plans/provision/local`
+        plugin can support the ``cpu.family`` requirement, but it
+        is hard-locked to the CPU of one's own machine.
+
 
 example:
   - |
