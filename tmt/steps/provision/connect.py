@@ -52,10 +52,12 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
     """
 
     _data_class = ProvisionConnectData
-    _guest_class = tmt.steps.provision.GuestSsh
 
     # Guest instance
     _guest = None
+
+    # Provide additional options
+    _guest_class = tmt.steps.provision.GuestSsh
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
@@ -95,6 +97,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
         key = self.get('key')
         password = self.get('password')
         port = self.get('port')
+        ssh_option = self.get('ssh_option')
 
         # Check guest and auth info
         if not guest:
@@ -126,6 +129,14 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
                 data.key = key
             else:
                 data.key = [key]
+
+        if ssh_option:
+            for option in ssh_option:
+                self.info('ssh option', option, 'green')
+            self.debug('ssh option provided.')
+            data['ssh_option'] = ssh_option
+        else:
+            self.debug('No ssh option provided.')
 
         # And finally create the guest
         self._guest = tmt.GuestSsh(data, name=self.name, parent=self.step)

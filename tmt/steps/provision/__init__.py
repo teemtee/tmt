@@ -118,6 +118,11 @@ class Guest(tmt.utils.Common):
         _, run_id = os.path.split(parent.plan.my_run.workdir)
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
+    @classmethod
+    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
+        """ Default list of global options. """
+        return list()
+
     def load(self, data: GuestData) -> None:
         """
         Load guest data into object attributes for easy access
@@ -754,11 +759,18 @@ class GuestSsh(Guest):
         return self._ssh_socket_path
 
     def _ssh_options(self, join: bool = False) -> Union[str, List[str]]:
-        """ Return common ssh options (list or joined) """
+        """ Return common ssh options (list or joined)
+            Rationale for default ServerAlive* settings:
+            There is issue with reboots so this seems to be issues with high values
+            for reboot. However, some tests needs to run really long (kernel recompilation
+            for example), so user need to be able to change those options.
+        """
         options = [
             '-oForwardX11=no',
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
+            '-oServerAliveInterval=60',
+            '-oServerAliveCountMax=5',
             ]
         if self.key or self.password:
             # Skip ssh-agent (it adds additional identities)
@@ -816,6 +828,12 @@ class GuestSsh(Guest):
             assert isinstance(ssh_options, list)
 
             return command + ssh_options
+
+    @classmethod
+    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
+        return super().options() + [click.option(
+            '--ssh-option', metavar="SSHOPTION", multiple=True, default=[],
+            help="Additional ssh option. Can be specified multiple times.")]
 
     def ansible(self, playbook: str, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """

@@ -557,15 +557,18 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     """
 
     _data_class = ProvisionTestcloudData
-    _guest_class = GuestTestcloud
 
     # Guest instance
     _guest = None
 
+    # Provide additional options
+    _guest_class = GuestTestcloud
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for testcloud """
-        return [
+        options = super().options(how)
+        options[:0] = [
             click.option(
                 '-i', '--image', metavar='IMAGE',
                 help='Select image to be used. Provide a short name, '
@@ -587,7 +590,8 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                 '-a', '--arch',
                 type=click.Choice(['x86_64', 'aarch64', 's390x', 'ppc64le']),
                 help="What architecture to virtualize, host arch by default."),
-            ] + super().options(how)
+            ]
+        return options
 
     # FIXME: ignore - https://github.com/teemtee/tmt/issues/1437
     def wake(self, data: Optional[TestcloudGuestData] = None) -> None:  # type: ignore[override]

@@ -435,16 +435,19 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
     """
 
     _data_class = ProvisionArtemisData
-    _guest_class = GuestArtemis
 
     # Guest instance
     _guest = None
+
+    # Provide additional options
+    _guest_class = GuestArtemis
 
     # TODO: fix types once superclass gains its annotations
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for Artemis """
-        return [
+        options = super().options(how)
+        options[:0] = [
             click.option(
                 '--api-url', metavar='URL',
                 help="Artemis API URL.",
@@ -508,7 +511,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
                 help=f'A factor for exponential API retry backoff, '
                      f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
                 ),
-            ] + super().options(how)
+            ]
+        return options
 
     # FIXME: ignore - https://github.com/teemtee/tmt/issues/1437
     def wake(self, data: Optional[ArtemisGuestData] = None) -> None:  # type: ignore[override]
