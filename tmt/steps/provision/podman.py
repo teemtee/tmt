@@ -218,7 +218,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
                 '-c', '--container', metavar='NAME',
                 help='Name or id of an existing container to be used.'),
             click.option(
-                '-p', '--pull', is_flag=True,
+                '-p', '--pull', 'force_pull', is_flag=True,
                 help='Force pulling a fresh container image.'),
             click.option(
                 '-u', '--user', metavar='USER',
@@ -246,17 +246,14 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
         super().go()
 
         # Show which image we are using
-        pull = ' (force pull)' if self.get('pull') else ''
+        pull = ' (force pull)' if self.get('force_pull') else ''
         self.info('image', f"{self.get('image')}{pull}", 'green')
 
         # Prepare data for the guest instance
         data_from_options = {
             key: self.get(key)
             for key in PodmanGuestData.keys()
-            if key != 'force_pull'
             }
-
-        data_from_options['force_pull'] = self.get('pull')
 
         data = PodmanGuestData(**data_from_options)
 
