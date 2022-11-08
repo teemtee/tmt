@@ -53,21 +53,15 @@ class GuestContainer(tmt.Guest):
             return
         # Check if the image is available
         assert self.image is not None
-        command = ['images', '-q', self.image]
-        podman_output = self.podman(command, message=f"Check for container image '{self.image}'.")
-
-        if podman_output.stdout is None:
-            raise tmt.utils.RunError(
-                'command produced no usable output',
-                command,
-                0,
-                podman_output.stdout,
-                podman_output.stderr)
-
-        image_id = podman_output.stdout.strip()
+        command = ['image', 'exists', self.image]
+        try:
+            self.podman(command, message=f"Check for container image '{self.image}'.")
+            needs_pull = False
+        except tmt.utils.RunError:
+            needs_pull = True
 
         # Pull image if not available or pull forced
-        if not image_id or self.force_pull:
+        if needs_pull or self.force_pull:
             self.podman(
                 ['pull', '-q', self.image],
                 message=f"Pull image '{self.image}'.")
