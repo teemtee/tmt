@@ -2291,6 +2291,7 @@ class Run(tmt.utils.Common):
                 new_tree = fmf.Tree(default_plan)
                 # Make sure the fmf root is set for the default plan
                 new_tree.find(tmt.templates.DEFAULT_PLAN_NAME).root = self.tree.root
+                new_tree.root = self.tree.root
                 self.tree.tree = new_tree
                 self.debug("Enforcing use of the default plan.")
             # Insert default plan if no plan detected. Check using
