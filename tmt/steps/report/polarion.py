@@ -59,9 +59,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         """ Go through executed tests and report into Polarion """
         super().go()
 
-        from tmt.export import find_polarion_case_ids, import_polarion
+        from tmt.export.polarion import find_polarion_case_ids, import_polarion
         import_polarion()
-        from tmt.export import PolarionWorkItem
+        from tmt.export.polarion import PolarionWorkItem
         assert PolarionWorkItem
 
         title = self.get(

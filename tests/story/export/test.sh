@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Export to yaml (minimal story)"
-        rlRun -s "tmt story export mini --format=yaml"
+        rlRun -s "tmt story export mini --how=yaml"
         rlAssertGrep "name: /mini" $rlRun_LOG
         rlAssertGrep "order: 50" $rlRun_LOG
         rlAssertGrep "story: As a user I want this and that" $rlRun_LOG
@@ -15,7 +15,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Export to yaml (full story)"
-        rlRun -s "tmt story export full --format=yaml"
+        rlRun -s "tmt story export full --how=yaml"
         rlAssertGrep "name: /full" $rlRun_LOG
         rlAssertGrep "summary: Story keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "description: Some description" $rlRun_LOG
@@ -27,13 +27,13 @@ rlJournalStart
         rlAssertGrep "title: A Concise Title" $rlRun_LOG
         rlAssertGrep "priority: must have" $rlRun_LOG
         rlAssertNotGrep " _" $rlRun_LOG
-        rlRun "grep -A1 ^link: $rlRun_LOG | grep -- ' - implemented-by: /some/code.py'"
-        rlRun "grep -A1 ^tag: $rlRun_LOG | grep -- '- foo'"
-        rlRun "grep -A1 ^example: $rlRun_LOG | grep -- '- An inspiring example'"
+        rlRun "grep -A1 '^    link:' $rlRun_LOG | grep -- ' - implemented-by: /some/code.py'"
+        rlRun "grep -A1 '^    tag:' $rlRun_LOG | grep -- '- foo'"
+        rlRun "grep -A1 '^    example:' $rlRun_LOG | grep -- '- An inspiring example'"
     rlPhaseEnd
 
     rlPhaseStartTest "Export to rst (minimal story)"
-        rlRun -s "tmt story export mini --format=rst"
+        rlRun -s "tmt story export mini --how=rst"
         rlAssertGrep "\.\. _/mini:" $rlRun_LOG
         rlAssertGrep "\*As a user I want this and that\*" $rlRun_LOG
         rlRun "grep -A1 ^mini$ $rlRun_LOG | grep ====" 0 "Check for header"
@@ -42,7 +42,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Export to rst (full story)"
-        rlRun -s "tmt story export full --format=rst"
+        rlRun -s "tmt story export full --how=rst"
         rlAssertGrep "\.\. _/full:" $rlRun_LOG
         rlAssertGrep "Story keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "Some description" $rlRun_LOG

@@ -22,14 +22,14 @@ rlJournalStart
             rlAssertGrep "name: $tname" $rlRun_LOG
         rlPhaseEnd
 
-        cmd="tmt tests export --format dict $tname"
+        cmd="tmt tests export --how dict $tname"
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "'name': '$tname'" $rlRun_LOG
             rlAssertNotGrep "'_" $rlRun_LOG
         rlPhaseEnd
 
-        cmd="tmt tests export --format yaml $tname"
+        cmd="tmt tests export --how yaml $tname"
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "name: $tname" $rlRun_LOG
@@ -39,8 +39,14 @@ rlJournalStart
 
     # 2 - (negative) format testing
     rlPhaseStartTest "Invalid format"
-        rlRun -s "tmt tests export --format weird" 2
-        rlAssertGrep "Invalid test export format" $rlRun_LOG
+        rlRun -s "tmt tests export --how weird" 2
+        if rlIsRHELLike "=8"; then
+            # RHEL-8 and Centos stream 8 usually offer an older Click package that has slightly
+            # different wording & quotes.
+            rlAssertgrep "Error: Invalid value for \"-h\" / \"--how\": invalid choice: weird. (choose from dict, nitrate, polarion, yaml)" $rlRun_LOG
+        else
+            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'nitrate', 'polarion', 'yaml'." $rlRun_LOG
+        fi
     rlPhaseEnd
 
     # 3 - fmf-id testing
@@ -59,14 +65,14 @@ rlJournalStart
             rlAssertGrep "name: $tname" $rlRun_LOG
         rlPhaseEnd
 
-        cmd="tmt tests export --format dict --fmf-id $tname"
+        cmd="tmt tests export --how dict --fmf-id $tname"
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "'name': '$tname'" $rlRun_LOG
             rlAssertNotGrep "'_" $rlRun_LOG
         rlPhaseEnd
 
-        cmd="tmt tests export --format yaml --fmf-id $tname"
+        cmd="tmt tests export --how yaml --fmf-id $tname"
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "name: $tname" $rlRun_LOG
@@ -75,10 +81,10 @@ rlJournalStart
     done
 
     rlPhaseStartTest "Test does not exist"
-        rlRun -s "tmt tests export --format yaml --fmf-id XXX" 0
+        rlRun -s "tmt tests export --how yaml --fmf-id XXX" 0
         rlAssertGrep "\[\]" $rlRun_LOG
 
-        rlRun -s "tmt tests export --format dict --fmf-id XXX" 0
+        rlRun -s "tmt tests export --how dict --fmf-id XXX" 0
         rlAssertGrep "\[\]" $rlRun_LOG
     rlPhaseEnd
 

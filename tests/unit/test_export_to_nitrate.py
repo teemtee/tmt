@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
-from tmt.export import convert_manual_to_nitrate
+from tmt.export.nitrate import convert_manual_to_nitrate
 
 TEST_DIR = Path(__file__).parent
 

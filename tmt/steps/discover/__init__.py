@@ -158,7 +158,7 @@ class Discover(tmt.steps.Step):
 
         # Create tests.yaml with the full test data
         raw_test_data = {
-            test.name: test.export(format_=tmt.base.ExportFormat.DICT)
+            test.name: test._export()
             for test in self.tests()
             }
 

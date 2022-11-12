@@ -10,7 +10,7 @@ import sys
 import time
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generator,
                     Iterable, List, Optional, Sequence, Tuple, TypeVar, Union,
-                    cast, overload)
+                    cast)
 
 import fmf
 import fmf.base
@@ -79,20 +79,6 @@ SECTIONS_HEADINGS = {
     }
 
 
-# TODO: it might be better to open this functionality to custom plugins. Provide
-# a basic set of formats - dict, YAML - and allow plugins define and handle
-# additional formats (like Nitrate and Polarion). In that case, this particular
-# enum would need a few changes.
-class ExportFormat(enum.Enum):
-    """ Formats supported by base class export functionality """
-
-    DICT = 'dict'
-    YAML = 'yaml'
-    RST = 'rst'
-    NITRATE = 'nitrate'
-    POLARION = 'polarion'
-
-
 #
 # fmf id types
 #
@@ -112,7 +98,11 @@ class _RawFmfId(TypedDict):
 
 # An internal fmf id representation.
 @dataclasses.dataclass
-class FmfId(tmt.utils.SpecBasedContainer, tmt.utils.SerializableContainer):
+class FmfId(
+        tmt.utils.SpecBasedContainer,
+        tmt.utils.SerializableContainer,
+        tmt.export.Exportable['FmfId']):
+
     # The list of valid fmf id keys
     VALID_KEYS: ClassVar[List[str]] = ['url', 'ref', 'path', 'name']
 
@@ -192,6 +182,16 @@ class FmfId(tmt.utils.SpecBasedContainer, tmt.utils.SerializableContainer):
             return (False, errors[0] if errors else stringified_error)
 
         return (True, '')
+
+    # cast: expected, we do want to return more specific type than the one returned by the
+    # existing serialization.
+    def _export(
+            self,
+            *,
+            keys: Optional[List[str]] = None
+            ) -> tmt.export._RawExportedInstance:
+        return cast(tmt.export._RawExportedInstance, self.to_minimal_dict())
+
 
 #
 # Various types describing constructs as stored in "raw" fmf node data.
@@ -451,7 +451,7 @@ class Core(
 
     def _update_metadata(self) -> None:
         """ Update the _metadata attribute """
-        self._metadata.update(self.export(format_=ExportFormat.DICT))
+        self._metadata.update(self._export())
         self._metadata['name'] = self.name
 
     def _show_additional_keys(self) -> None:
@@ -534,34 +534,7 @@ class Core(
         if summary and self.summary:
             echo(tmt.utils.format('summary', self.summary))
 
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.DICT],
-               keys: Optional[List[str]] = None) -> Dict[str, Any]:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.YAML],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.RST],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.NITRATE],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.POLARION],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    def export(self, *, format_: ExportFormat = ExportFormat.YAML,
-               keys: Optional[List[str]] = None) -> Any:
-        """ Export data into requested format (yaml or dict) """
+    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
         if keys is None:
             keys = self._keys()
 
@@ -572,6 +545,10 @@ class Core(
             # Until that, do not export fields that start with an underscore, to avoid leaking
             # "private" object members.
             if key.startswith('_'):
+                continue
+
+            # TODO: override the method, or provide better way to filter out this class var
+            if key == '_export_plugin_registry':
                 continue
 
             if key == 'adjust':
@@ -614,14 +591,7 @@ class Core(
             else:
                 data[key] = value
 
-        # Choose proper format
-        if format_ == ExportFormat.DICT:
-            return data
-
-        if format_ == ExportFormat.YAML:
-            return tmt.utils.dict_to_yaml(data)
-
-        raise tmt.utils.GeneralError(f"Invalid export format '{format_}'.")
+        return data
 
     def lint_keys(self, additional_keys: List[str]) -> List[str]:
         """ Return list of invalid keys used, empty when all good """
@@ -649,7 +619,7 @@ class Core(
 Node = Core
 
 
-class Test(Core):
+class Test(Core, tmt.export.Exportable['Test']):
     """ Test object (L1 Metadata) """
 
     # Basic test information
@@ -966,69 +936,8 @@ class Test(Core):
 
         return valid
 
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.DICT],
-               keys: Optional[List[str]] = None) -> Dict[str, Any]:
-        pass
 
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.YAML],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.RST],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.NITRATE],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.POLARION],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    def export(self, *, format_: ExportFormat = ExportFormat.YAML,
-               keys: Optional[List[str]] = None) -> Any:
-        """
-        Export test data into requested format
-
-        In addition to 'yaml' and 'dict' it supports also a special
-        format 'execute' used by the execute step which returns
-        (test-name, test-data) tuples.
-        """
-
-        # Export to Nitrate test case management system
-        if format_ == ExportFormat.NITRATE:
-            return tmt.export.export_to_nitrate(self)
-
-        # Export to Polarion test case management system
-        if format_ == ExportFormat.POLARION:
-            return tmt.export.export_to_polarion(self)
-
-        # Export the fmf identifier
-        if keys == ['fmf-id']:
-            if format_ == ExportFormat.DICT:
-                return self.fmf_id.to_minimal_spec()
-
-            if format_ == ExportFormat.YAML:
-                return tmt.utils.dict_to_yaml(self.fmf_id.to_minimal_spec())
-
-            raise tmt.utils.GeneralError(f"Invalid test export format '{format_}'.")
-
-        # Common node export otherwise
-        # ignore[call-overload]: overloaded superclass methods allow only
-        # literal types, and format_ is not a literal. Even when it's a
-        # member of ExportFormat enum, it's still a variable.
-        # Unfortunately, there's no way to amend this and different
-        # return value types depending on input parameter type.
-        return super().export(format_=format_, keys=keys)  # type: ignore[call-overload]
-
-
-class Plan(Core):
+class Plan(Core, tmt.export.Exportable['Plan']):
     """ Plan object (L2 Metadata) """
 
     # `environment` and `environment-file` are NOT promoted to instance variables.
@@ -1635,39 +1544,8 @@ class Plan(Core):
             if not abort and self.finish.enabled:
                 self.finish.go()
 
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.DICT],
-               keys: Optional[List[str]] = None) -> Dict[str, Any]:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.YAML],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.RST],
-               keys: Optional[List[str]] = None) -> str:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.NITRATE],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    @overload
-    def export(self, *, format_: Literal[ExportFormat.POLARION],
-               keys: Optional[List[str]] = None) -> None:
-        pass
-
-    def export(self, *, format_: ExportFormat = ExportFormat.YAML,
-               keys: Optional[List[str]] = None) -> Any:
-        """
-        Export plan data into requested format
-
-        Supported formats are 'yaml' and 'dict'.
-        """
-        data = super().export(format_=ExportFormat.DICT, keys=keys)
+    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+        data = super()._export(keys=keys)
 
         for key in self.extra_L2_keys:
             value = self.node.data.get(key)
@@ -1679,14 +1557,7 @@ class Plan(Core):
             if value:
                 data[step] = value
 
-        # Choose proper format
-        if format_ == ExportFormat.DICT:
-            return data
-
-        if format_ == ExportFormat.YAML:
-            return tmt.utils.dict_to_yaml(data)
-
-        raise tmt.utils.GeneralError(f"Invalid plan export format '{format_}'.")
+        return data
 
     @property
     def is_remote_plan_reference(self) -> bool:
@@ -1760,7 +1631,7 @@ class StoryPriority(enum.Enum):
         return self.value
 
 
-class Story(Core):
+class Story(Core, tmt.export.Exportable['Story']):
     """ User story object """
 
     example: List[str] = []
@@ -1918,93 +1789,6 @@ class Story(Core):
             verdict(docs, good='done ', bad='todo ', nl=False)
         echo(self)
         return (code, test, docs)
-
-    # ignore[override]: mypy is correct here, subclass signature is
-    # different, there's an extra parameter include_title. It is
-    # expected and acceptable, for now.
-    @overload  # type: ignore[override]
-    def export(self, *, format_: Literal[ExportFormat.RST,
-               ExportFormat.YAML], include_title: bool = True) -> str:
-        pass
-
-    @overload
-    def export(self,
-               *,
-               format_: Literal[ExportFormat.DICT],
-               include_title: bool = True) -> Dict[str,
-                                                   Any]:
-        pass
-
-    @overload
-    def export(self,
-               *,
-               format_: Literal[ExportFormat.NITRATE, ExportFormat.POLARION],
-               include_title: bool = True) -> None:
-        pass
-
-    def export(self, *, format_: ExportFormat = ExportFormat.RST,
-               include_title: bool = True) -> Any:
-        """ Export story data into requested format """
-
-        # Use common Core export unless 'rst' requested
-        if format_ != ExportFormat.RST:
-            # ignore[call-overload]: overladed superclass methods allow
-            # only literal types, and format_ is not a literal. Even
-            # when it's a member of ExportFormat enum, it's still a
-            # variable. Unfortunately, there's no way to amend this and
-            # different return value types depending on input parameter
-            # type.
-            return super().export(format_=format_)  # type: ignore[call-overload]
-
-        output = ''
-
-        # Title and its anchor
-        if include_title:
-            depth = len(re.findall('/', self.name)) - 1
-            if self.title and self.title != self.node.parent.get('title'):
-                title = self.title
-            else:
-                title = re.sub('.*/', '', self.name)
-            output += f'\n.. _{self.name}:\n'
-            output += '\n{}\n{}\n'.format(title, '=~^:-><'[depth] * len(title))
-
-        # Summary, story and description
-        if self.summary and self.summary != self.node.parent.get('summary'):
-            output += '\n{}\n'.format(self.summary)
-        if self.story != self.node.parent.get('story'):
-            output += '\n*{}*\n'.format(self.story.strip())
-        # Insert note about unimplemented feature (leaf nodes only)
-        if not self.node.children and not self.implemented:
-            output += '\n.. note:: This is a draft, '
-            output += 'the story is not implemented yet.\n'
-        if (self.description and
-                self.description != self.node.parent.get('description')):
-            output += '\n{}\n'.format(self.description)
-
-        # Examples
-        if self.example and self.example != self.node.parent.get('example'):
-            examples = tmt.utils.listify(self.example)
-            first = True
-            for example in examples:
-                if first:
-                    output += '\nExamples::\n\n'
-                    first = False
-                else:
-                    output += '\n::\n\n'
-                output += tmt.utils.format(
-                    '', example, wrap=False, indent=4,
-                    key_color=None, value_color=None) + '\n'
-
-        # Status
-        if not self.node.children:
-            status = []
-            for coverage in ['implemented', 'verified', 'documented']:
-                if getattr(self, coverage):
-                    status.append(coverage)
-            output += "\nStatus: {}\n".format(
-                listed(status) if status else 'idea')
-
-        return output
 
     def _lint_story(self) -> Optional[bool]:
         story = self.node.get('story')

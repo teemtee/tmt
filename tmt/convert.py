@@ -60,7 +60,8 @@ def read_manual(
     """
     Reads metadata of manual test cases from Nitrate
     """
-    nitrate = tmt.export.import_nitrate()
+    import tmt.export.nitrate
+    nitrate = tmt.export.nitrate.import_nitrate()
     # Turns off nitrate caching
     nitrate.set_cache_level(0)
 
@@ -743,9 +744,11 @@ def read_polarion(
         polarion_case_id: Optional[str],
         link_polarion: bool) -> None:
     """ Read data from Polarion """
+    import tmt.export.polarion
+
     # Find Polarion case
     echo(style('Polarion ', fg='blue'), nl=False)
-    polarion_case = tmt.export.get_polarion_case(data, polarion_case_id=polarion_case_id)
+    polarion_case = tmt.export.polarion.get_polarion_case(data, polarion_case_id=polarion_case_id)
     if not polarion_case:
         raise ConvertError('Failed to find test case in Polarion.')
 
@@ -847,6 +850,8 @@ def read_nitrate_case(
         general: bool = False
         ) -> NitrateDataType:
     """ Read old metadata from nitrate test case """
+    import tmt.export.nitrate
+
     data: NitrateDataType = {'tag': []}
     echo("test case found '{0}'.".format(testcase.identifier))
     # Test identifier
@@ -936,7 +941,7 @@ def read_nitrate_case(
 
     # Header and footer from notes (do not import the warning back)
     data['description'] = re.sub(
-        tmt.export.WARNING, '', field.header() + field.footer())
+        tmt.export.nitrate.WARNING, '', field.header() + field.footer())
 
     # Extras: [pepa] and [hardware]
     try:

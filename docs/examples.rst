@@ -391,7 +391,7 @@ directory::
     implements: https://polarion.example/polarion/#/project/TMT/workitem?id=TMT-42
     Test case 'This is case what already exists inside polarion' successfully exported to Polarion.
 
-Before export to ``--nitrate`` tmt checks that used test
+Before export to ``--how nitrate`` tmt checks that used test
 metadata are committed to git and present on ``origin`` remote.
 On own risk the failure can be ignored with ``--ignore-git-validation``.
 

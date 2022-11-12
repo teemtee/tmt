@@ -94,7 +94,7 @@ Nitrate Migration
 After a nitrate test case is migrated to ``fmf`` git becomes the
 canonical source of the test case metadata. All further changes
 should be done in git and updates synchronized back to nitrate
-using ``tmt test export . --nitrate`` command. Otherwise direct
+using ``tmt test export . --how nitrate`` command. Otherwise direct
 changes in Nitrate might be lost.
 
 A unique identifier of the new test metadata location is stored in

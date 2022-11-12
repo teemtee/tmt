@@ -64,8 +64,15 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid format"
-        rlRun -s "tmt plan export --format weird" 2
-        rlAssertGrep "Invalid plan export format" $rlRun_LOG
+        rlRun -s "tmt plan export --how weird" 2
+
+        if rlIsRHELLike "=8"; then
+            # RHEL-8 and Centos stream 8 usually offer an older Click package that has slightly
+            # different wording & quotes.
+            rlAssertgrep "Error: Invalid value for \"-h\" / \"--how\": invalid choice: weird. (choose from dict, yaml)" $rlRun_LOG
+        else
+            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'yaml'." $rlRun_LOG
+        fi
     rlPhaseEnd
 
     rlPhaseStartCleanup

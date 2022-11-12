@@ -17,6 +17,7 @@ import sys
 from unittest.mock import Mock as MagicMock
 
 import tmt
+import tmt.plugins
 
 try:
     # use bootstrap theme if user has it installed
@@ -253,6 +254,9 @@ class Mock(MagicMock):
 MOCK_MODULES = ['testcloud', 'testcloud.image', 'testcloud.instance']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
+# Explore available *export* plugins - do not import other plugins, we don't need them.
+tmt.plugins._explore_export_directory()
+
 # Generate stories
 tree = tmt.Tree(logger=tmt.Logger.create(), path='.')
 
@@ -279,4 +283,4 @@ for area in areas:
         # Included stories
         for story in tree.stories(names=[area], whole=True):
             if story.enabled:
-                doc.write(story.export(include_title=story.name != area))
+                doc.write(story.export(format='rst', include_title=story.name != area))

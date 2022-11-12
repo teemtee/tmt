@@ -27,19 +27,34 @@ ENTRY_POINT_NAME = 'tmt.plugin'
 ENVIRONMENT_NAME = 'TMT_PLUGINS'
 
 
-def explore() -> None:
-    """ Explore all available plugins """
+_TMT_ROOT = os.path.dirname(os.path.realpath(tmt.__file__))
 
-    # Check all tmt steps for native plugins
-    root = os.path.dirname(os.path.realpath(tmt.__file__))
+
+def _explore_steps_directories(root: str = _TMT_ROOT) -> None:
+    """ Check all tmt steps for native plugins """
+
     for step in STEPS:
         for module in discover(os.path.join(root, 'steps', step)):
             import_(f'tmt.steps.{step}.{module}')
-    # Check for possible plugins in the 'plugins' directory
+
+
+def _explore_plugins_directory(root: str = _TMT_ROOT) -> None:
+    """ Check for possible plugins in the 'plugins' directory """
+
     for module in discover(os.path.join(root, 'plugins')):
         import_(f'tmt.plugins.{module}')
 
-    # Check environment variable for user plugins
+
+def _explore_export_directory(root: str = _TMT_ROOT) -> None:
+    """ Check for possible plugins in the 'export' directory """
+
+    for module in discover(os.path.join(root, 'export')):
+        import_(f'tmt.export.{module}')
+
+
+def _explore_custom_directories() -> None:
+    """ Check environment variable for user plugins """
+
     try:
         paths = [
             os.path.realpath(os.path.expandvars(os.path.expanduser(path)))
@@ -53,13 +68,30 @@ def explore() -> None:
                 sys.path.insert(0, path)
             import_(module, path)
 
-    # Import by entry_points
+
+def _explore_plugins_directories() -> None:
+    _explore_steps_directories()
+    _explore_plugins_directory()
+    _explore_export_directory()
+    _explore_custom_directories()
+
+
+def _explore_entry_points() -> None:
+    """ Import by entry_points """
+
     try:
         for found in entry_points()[ENTRY_POINT_NAME]:
             log.debug(f'Loading plugin "{found.name}" ({found.value}).')
             found.load()
     except KeyError:
         log.debug(f'No custom plugins detected for "{ENTRY_POINT_NAME}".')
+
+
+def explore() -> None:
+    """ Explore all available plugins """
+
+    _explore_plugins_directories()
+    _explore_entry_points()
 
 
 def import_(module: str, path: Optional[str] = None) -> None:

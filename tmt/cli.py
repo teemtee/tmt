@@ -576,12 +576,21 @@ def tests_import(
         tmt.convert.adjust_runtest(os.path.join(path, 'runtest.sh'))
 
 
+_test_export_formats = list(tmt.Test.get_export_plugin_registry().keys())
+_test_export_default = 'yaml'
+
+
 @tests.command(name='export')
 @click.pass_context
 @filter_options_long
 @click.option(
-    '-h', '--how', metavar='METHOD',
-    help='Use specified method for export (nitrate or polarion).')
+    '-h', '--how', metavar='METHOD', default=_test_export_default, show_default=True,
+    help='Output format.',
+    type=click.Choice(choices=_test_export_formats))
+@click.option(
+    '--format', metavar='FORMAT', default=_test_export_default, show_default=True,
+    help='Output format. Deprecated, use --how instead.',
+    type=click.Choice(choices=_test_export_formats))
 @click.option(
     '--nitrate', is_flag=True,
     help="Export test metadata to Nitrate, deprecated by '--how nitrate'.")
@@ -610,9 +619,6 @@ def tests_import(
     help="Link Nitrate case to all open runs of descendant plans of "
          "General plan. Disabled by default. Implies --general option.")
 @click.option(
-    '--format', 'format_', default='yaml', show_default=True, metavar='FORMAT',
-    help='Output format (yaml or dict).')
-@click.option(
     '--fmf-id', is_flag=True,
     help='Show fmf identifiers instead of test metadata.')
 @click.option(
@@ -627,7 +633,7 @@ def tests_import(
     help='Provide as much debugging details as possible.')
 def tests_export(
         context: Context,
-        format_: str,
+        format: str,
         how: str,
         nitrate: bool,
         bugzilla: bool,
@@ -639,34 +645,34 @@ def tests_export(
     Use '.' to select tests under the current working directory.
     """
     tmt.Test._save_context(context)
+
     if nitrate:
         context.obj.common.warn(
             "Option '--nitrate' is deprecated, please use '--how nitrate' instead.")
         how = 'nitrate'
-    if bugzilla and not how:
+
+    if format != _test_export_default:
+        context.obj.common.warn("Option '--format' is deprecated, please use '--how' instead.")
+
+        how = format
+
+    # TODO: move this "requires bugzilla" flag to export plugin level.
+    if bugzilla and how not in ('nitrate', 'polarion'):
         raise tmt.utils.GeneralError(
             "The --bugzilla option is supported only with --nitrate "
             "or --polarion for now.")
 
-    if how == 'nitrate' or how == 'polarion':
-        for test in context.obj.tree.tests():
-            test.export(format_=tmt.base.ExportFormat(how))  # type: ignore[call-overload]
-    elif format_ in ['dict', 'yaml']:
-        keys = None
-        if kwargs.get('fmf_id'):
-            keys = ['fmf-id']
+    if kwargs.get('fmf_id'):
+        echo(tmt.base.FmfId.export_collection(
+            collection=[test.fmf_id for test in context.obj.tree.tests()],
+            format=how
+            ))
 
-        # Do not be fooled by explicit DICT, YAML export format is honored by
-        # the `else` branch, and applied to `tests` list as a whole.
-        tests = [test.export(format_=tmt.base.ExportFormat.DICT, keys=keys)
-                 for test in context.obj.tree.tests()]
-        if format_ == 'dict':
-            echo(tests, nl=False)
-        else:
-            echo(tmt.utils.dict_to_yaml(tests), nl=False)
     else:
-        raise tmt.utils.GeneralError(
-            f"Invalid test export format '{format_}'.")
+        echo(tmt.Test.export_collection(
+            collection=context.obj.tree.tests(),
+            format=how
+            ))
 
 
 @tests.command(name="id")
@@ -810,16 +816,25 @@ def plans_create(
     tmt.Plan.create(name, template, context.obj.tree.root, force)
 
 
+_plan_export_formats = list(tmt.Plan.get_export_plugin_registry().keys())
+_plan_export_default = 'yaml'
+
+
 @plans.command(name='export')
 @click.pass_context
 @filter_options_long
 @click.option(
-    '--format', 'format_', default='yaml', show_default=True, metavar='FORMAT',
-    help='Output format.')
+    '-h', '--how', metavar='METHOD', default=_plan_export_default, show_default=True,
+    help='Output format.',
+    type=click.Choice(choices=_plan_export_formats))
+@click.option(
+    '--format', metavar='FORMAT', default=_plan_export_default, show_default=True,
+    help='Output format. Deprecated, use --how instead.',
+    type=click.Choice(choices=_plan_export_formats))
 @click.option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
-def plans_export(context: Context, format_: str, **kwargs: Any) -> None:
+def plans_export(context: Context, how: str, format: str, **kwargs: Any) -> None:
     """
     Export plans into desired format.
 
@@ -827,16 +842,13 @@ def plans_export(context: Context, format_: str, **kwargs: Any) -> None:
     Use '.' to select plans under the current working directory.
     """
     tmt.Plan._save_context(context)
-    plans = [plan.export(format_=tmt.base.ExportFormat.DICT) for plan in context.obj.tree.plans()]
 
-    # Choose proper format
-    if format_ == 'dict':
-        echo(plans)
-    elif format_ == 'yaml':
-        echo(tmt.utils.dict_to_yaml(plans))
-    else:
-        raise tmt.utils.GeneralError(
-            f"Invalid plan export format '{format_}'.")
+    if format != _test_export_default:
+        context.obj.common.warn("Option '--format' is deprecated, please use '--how' instead.")
+
+        how = format
+
+    echo(tmt.Plan.export_collection(collection=context.obj.tree.plans(), format=how))
 
 
 @plans.command(name="id")
@@ -1039,19 +1051,29 @@ def stories_coverage(
     echo()
 
 
+_story_export_formats = list(tmt.Story.get_export_plugin_registry().keys())
+_story_export_default = 'yaml'
+
+
 @stories.command(name='export')
 @click.pass_context
 @filter_options_long
 @story_flags_filter_options
 @click.option(
-    '--format', 'format_', default='rst', show_default=True, metavar='FORMAT',
-    help='Output format.')
+    '-h', '--how', metavar='METHOD', default=_story_export_default, show_default=True,
+    help='Output format.',
+    type=click.Choice(choices=_story_export_formats))
+@click.option(
+    '--format', metavar='FORMAT', default=_story_export_default, show_default=True,
+    help='Output format. Deprecated, use --how instead.',
+    type=click.Choice(choices=_story_export_formats))
 @click.option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
 def stories_export(
         context: Context,
-        format_: str,
+        how: str,
+        format: str,
         implemented: bool,
         verified: bool,
         documented: bool,
@@ -1069,17 +1091,18 @@ def stories_export(
     """
     tmt.Story._save_context(context)
 
-    for story in context.obj.tree.stories(whole=True):
-        if not story._match(implemented, verified, documented, covered,
-                            unimplemented, unverified, undocumented, uncovered):
-            continue
+    if format != _test_export_default:
+        context.obj.common.warn("Option '--format' is deprecated, please use '--how' instead.")
 
-        # ignore[call-overload]: overladed superclass methods allow only
-        # literal types, and format_ is not a literal. Even when it's a
-        # member of ExportFormat enum, it's still a variable.
-        # Unfortunately, there's no way to amend this and different
-        # return value types depending on input parameter type.
-        echo(story.export(format_=tmt.base.ExportFormat(format_)))  # type: ignore[call-overload]
+        how = format
+
+    stories = [
+        story for story in context.obj.tree.stories(whole=True)
+        if story._match(implemented, verified, documented, covered, unimplemented, unverified,
+                        undocumented, uncovered)
+        ]
+
+    echo(tmt.Story.export_collection(collection=stories, format=how))
 
 
 @stories.command(name='lint')
