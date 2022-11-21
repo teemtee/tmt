@@ -3600,3 +3600,8 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
 
         kwargs.setdefault('logger', logger)
         super().__init__(node=node, **kwargs)
+
+
+def fun(data: List[str] = []) -> List[str]:
+    """ Bad default """
+    return data
