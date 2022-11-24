@@ -233,6 +233,11 @@ description: |
         much more concise config especially when defining several
         shell scripts for each guest or role.
 
+        Defined tests can be :ref:`synchronized</spec/plans/sync>`
+        in parallel execution using the ``sync`` keyword
+        in the discovery step definition.
+
+
     example:
       - |
         # Run different script for each guest or role

@@ -1,0 +1,46 @@
+summary: Define synchronization method for each TMT step
+
+description: |
+    The main idea of :ref:`/spec/plans/provision/multihost`
+    tests is to run certain tasks in parallel (e.g., a RestAPI
+    requests from a client to a server). Therefore, these kinds
+    of tests may require test synchronization.
+    The synchronization method may be specified for each step
+    by providing one of defined options under ``step`` keyword.
+    This creates a synchronization barrier before each provided step.
+
+        start
+            Synchronize at the beginning of the step.
+        name
+            Synchronize execution of tests with the same name.
+        index
+            Synchronize execution of all tests.
+        none
+            **Default** value, which disables the synchronization
+            on the test level.
+example:
+  - |
+    prepare:
+      - name: packages
+        how: ansible
+        playbook: plans/packages.yml
+      - name: services
+        how: shell
+        script: systemctl start service
+        sync: index
+
+    execute:
+        how: tmt
+        sync: start
+
+  - |
+    discover:
+      - name: setup-tasks
+        how: fmf
+        url: https://github.com/teemtee/tmt
+        sync: none
+      - name: multihost-tests
+        how: fmf
+        url: https://src.fedoraproject.org/rpms/tmt/
+        where: client
+        sync: name
