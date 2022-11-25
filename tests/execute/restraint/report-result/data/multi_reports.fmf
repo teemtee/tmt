@@ -1,0 +1,49 @@
+summary: Verify that correct overall test result is returned.
+description:
+    Test to ensure result hierarchy is honoured
+    by rstrnt-report-result and rhts-report-result.
+    Hierarchy( FAIL > WARN > PASS > SKIP)
+
+/rstrnt-good:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: pass
+
+/rstrnt-bad:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: fail
+
+/rstrnt-skip:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: skip
+
+/rstrnt-warn:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: warn
+
+/rhts-good:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: pass
+        REPORT: rhts
+
+/rhts-bad:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: fail
+        REPORT: rhts
+
+/rhts-skip:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: skip
+        REPORT: rhts
+
+/rhts-warn:
+    test: ./multi_reports.sh
+    environment:
+        TESTARGS: warn
+        REPORT: rhts

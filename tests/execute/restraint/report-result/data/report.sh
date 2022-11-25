@@ -29,9 +29,29 @@ rlJournalStart
         rlRun "rstrnt-report-result --server http://test-example.com report FAIL" 0 "Generating Restraint report of failed test."
         rlRun -s "cat $RESULT_FILE"
         rlAssertGrep 'TESTRESULT=FAIL' $rlRun_LOG
+	rlRun "rm -f $RESULT_FILE" 0 "Result report successfully deleted."
+    rlPhaseEnd
+
+    rlPhaseStartTest 'Verify mocked RHTS rhts-report-result file generated correctly.'
+        rlRun "rhts-report-result rhts-report SKIP /tmp/example_output.txt 1" 0 "Generating RHTS report of skipped test."
+        rlRun "ls $RESULT_FILE" 0 "Result report successfully generated."
+        rlRun -s "cat $RESULT_FILE"
+        rlAssertGrep 'TESTRESULT=SKIP' $rlRun_LOG
+        rlRun "rhts-report-result rhts-report PASS /tmp/example_output.txt 66" 0 "Generating RHTS report of passed test."
+        rlRun -s "cat $RESULT_FILE"
+        rlAssertGrep 'OUTPUTFILE=/tmp/example_output.txt' $rlRun_LOG
+        rlAssertGrep 'TESTNAME=rhts-report' $rlRun_LOG
+        rlAssertGrep 'TESTRESULT=PASS' $rlRun_LOG
+        rlAssertGrep 'METRIC=66' $rlRun_LOG
+        rlRun "rhts-report-result rhts-report WARN /tmp/example_output.txt 66" 0 "Generating RHTS report of warned test."
+        rlRun -s "cat $RESULT_FILE"
+        rlAssertGrep 'TESTRESULT=WARN' $rlRun_LOG
+        rlRun "rhts-report-result rhts-report FAIL /tmp/example_output.txt 66" 0 "Generating RHTS report of failed test."
+        rlRun -s "cat $RESULT_FILE"
+        rlAssertGrep 'TESTRESULT=FAIL' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -f $TMT_TEST_DATA/reportResult" 0 "Report file successfully removed post test."
+        rlRun "rm -f $TMT_TEST_DATA/restraint-result" 0 "Report file successfully removed post test."
     rlPhaseEnd
 rlJournalEnd
