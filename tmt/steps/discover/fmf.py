@@ -298,10 +298,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         if url:
             self.info('url', url, 'green')
             self.debug(f"Clone '{url}' to '{self.testdir}'.")
-            # Shallow clone to speed up testing and
-            # minimize data transfers if ref is not provided
+            # cannot do shallow clone as before as it breaks dynamic ref
             tmt.utils.git_clone(
-                url, self.testdir, self, env={"GIT_ASKPASS": "echo"}, shallow=ref is None)
+                url, self.testdir, self, env={"GIT_ASKPASS": "echo"})
             git_root = self.testdir
         # Copy git repository root to workdir
         else:
