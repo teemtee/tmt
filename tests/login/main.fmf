@@ -17,3 +17,11 @@
 /test:
     summary: Log into the guest after each test
     test: ./test.sh
+
+/keep:
+    summary: Leave workdir untouched by login
+    test: ./keep.sh
+    adjust:
+      - when: how is not defined or how != full
+        enabled: false
+        because: Can happen only when push is implemented
