@@ -1090,6 +1090,9 @@ class Login(Action):
         @click.option(
             '-t', '--test', is_flag=True,
             help='Log into the guest after each executed test in the execute phase.')
+        @click.option(
+            '-k', '--keep', is_flag=True,
+            help='Do not overwrite workdir by push to the guest before the login')
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
             Provide user with an interactive shell on the guest.
@@ -1159,15 +1162,17 @@ class Login(Action):
             env: Optional[tmt.utils.EnvironmentType] = None) -> None:
         """ Run the interactive command """
         commands: List[str] = self.opt('command')
+        keep = self.opt('keep')
         self.info('login', 'Starting interactive shell', color='yellow')
         for guest in self.parent.plan.provision.guests():
-            # Attempt to push the workdir to the guest
-            try:
-                guest.push()
-                cwd = cwd or self.parent.plan.worktree
-            except tmt.utils.GeneralError:
-                self.warn("Failed to push workdir to the guest.")
-                cwd = None
+            cwd = cwd or self.parent.plan.worktree
+            if not keep:
+                # Attempt to push the workdir to the guest
+                try:
+                    guest.push()
+                except tmt.utils.GeneralError:
+                    self.warn("Failed to push workdir to the guest.")
+                    cwd = None
             # Execute all requested commands
             for command in commands:
                 self.debug(f"Run '{command}' in interactive mode.")
