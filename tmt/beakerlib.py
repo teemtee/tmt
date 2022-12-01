@@ -3,6 +3,7 @@
 import os
 import re
 import shutil
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Dict, List, Optional, Tuple, Union, cast
 
@@ -98,8 +99,7 @@ class Library:
             self.format: str = 'rpm'
             self.repo: str = matched.groups()[0]
             self.name: str = matched.groups()[1]
-            self.url: Optional[str] = os.path.join(
-                DEFAULT_REPOSITORY, self.repo)
+            self.url: Optional[str] = str(Path(DEFAULT_REPOSITORY).joinpath(self.repo))
             self.path: Optional[str] = None
             self.ref: Optional[str] = None
             self.dest: str = DEFAULT_DESTINATION
@@ -148,7 +148,7 @@ class Library:
                     # Either url or path must be defined
                     assert self.path is not None
                     try:
-                        repo = os.path.basename(self.path)
+                        repo = Path(self.path).name
                         if not repo:
                             raise TypeError
                     except TypeError:
@@ -217,7 +217,7 @@ class Library:
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
-            directory = os.path.join(self.parent.workdir, self.dest, self.repo)
+            directory = str(Path(self.parent.workdir).joinpath(self.dest, self.repo))
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
