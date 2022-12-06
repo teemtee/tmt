@@ -15,3 +15,4 @@ adjust:
         -   how: shell
             script:
             -   pip3 install --user pre-commit
+enabled: true

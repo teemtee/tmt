@@ -4,3 +4,4 @@ contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 tag: [container, virtual]
 require: [tmt]
+enabled: false

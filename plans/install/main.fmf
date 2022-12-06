@@ -3,6 +3,3 @@ provision:
 
 # Run only during a full testing
 enabled: false
-adjust:
-  - enabled: true
-    when: how == full or trigger == commit

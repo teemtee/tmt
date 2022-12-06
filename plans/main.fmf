@@ -13,3 +13,5 @@ adjust:
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+
+enabled: false

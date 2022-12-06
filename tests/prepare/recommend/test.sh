@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     for method in ${METHODS:-container}; do
-        tmt="tmt run --all --remove provision --how $method"
+        tmt="tmt run -vvvddd --all --remove provision --how $method"
         basic="plan --name 'mixed|weird'"
         debuginfo="plan --name debuginfo"
 
@@ -23,23 +23,6 @@ rlJournalStart
                     rlRun "$tmt --image $image $basic"
                 rlPhaseEnd
             done
-        fi
-
-        # Check debuginfo install (only for supported distros)
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1964505
-        if [[ "$method" == "container" ]]; then
-            for image in fedora centos:7; do
-                rlPhaseStartTest "Test $image ($method) [debuginfo]"
-                    rlRun "$tmt --image $image $debuginfo"
-                rlPhaseEnd
-            done
-        fi
-
-        # Add one extra CoreOS run for virtual provision
-        if [[ "$method" == "virtual" ]]; then
-            rlPhaseStartTest "Test fedora-coreos ($method)"
-                rlRun "$tmt --image fedora-coreos $basic"
-            rlPhaseEnd
         fi
     done
 
