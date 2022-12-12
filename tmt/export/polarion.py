@@ -82,7 +82,7 @@ def find_polarion_case_ids(
     # Search for Polarion case ID directly
     if polarion_case_id:
         query_result = PolarionWorkItem.query(
-            polarion_case_id, fields=['work_item_id', 'project_id'])
+            f'id:{polarion_case_id}', fields=['work_item_id', 'project_id'])
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by UUID
@@ -191,6 +191,15 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     if test.summary is not None:
         echo(style('title: ', fg='green') + test.summary)
 
+    # Add id to Polarion case
+    uuid = add_uuid_if_not_defined(test.node, dry=dry_mode)
+    if not uuid:
+        uuid = test.node.get(ID_KEY)
+    if not dry_mode:
+        polarion_case.test_case_id = uuid
+        polarion_case.update()  # upload the ID first so the case can be found in case of errors
+    echo(style(f"Append the ID {uuid}.", fg='green'))
+
     # Description
     description = summary
     if test.description:
@@ -217,7 +226,12 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         polarion_case.caselevel = 'component'
         polarion_case.testtype = 'functional'
         if test.component:
-            polarion_case.casecomponent = [test.component[0]]
+            # Depending on project this can require either single item or list,
+            # however we are always taking the first component only for consistency
+            try:
+                polarion_case.casecomponent = test.component[0]
+            except PolarionException:
+                polarion_case.casecomponent = [test.component[0]]
     echo(style('components: ', fg='green') + ' '.join(test.component))
 
     # Tags and Importance
@@ -300,14 +314,6 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         tcms_case_id_search = re.search(r'\d+', test.node.get("extra-nitrate"))
         if tcms_case_id_search:
             polarion_case.tcmscaseid = str(int(tcms_case_id_search.group()))
-
-    # Add id to Polarion case
-    uuid = add_uuid_if_not_defined(test.node, dry=dry_mode)
-    if not uuid:
-        uuid = test.node.get(ID_KEY)
-    if not dry_mode:
-        polarion_case.test_case_id = uuid
-    echo(style(f"Append the ID {uuid}.", fg='green'))
 
     # Add Requirements to Polarion case
     if not dry_mode:
