@@ -1,0 +1,6 @@
+summary:
+    Select systems with specific number of NUMA nodes
+example:
+  - |
+    # Choose machine with given number of NUMA nodes
+    numa-nodes: 2

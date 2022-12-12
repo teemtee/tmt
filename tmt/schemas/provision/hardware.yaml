@@ -145,6 +145,11 @@ definitions:
     items:
       "$ref": "#/definitions/network"
 
+  numa-nodes:
+    anyOf:
+      - type: string
+      - type: integer
+
   # HW requirements: `tpm` block
   tpm:
     type: object
@@ -205,6 +210,9 @@ definitions:
 
       network:
         "$ref": "#/definitions/networks"
+
+      numa-nodes:
+        "$ref": "#/definitions/numa-nodes
 
       tpm:
         "$ref": "#/definitions/tpm"
