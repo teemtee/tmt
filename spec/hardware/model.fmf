@@ -1,0 +1,6 @@
+summary:
+    Select systems with a given model name
+example:
+  - |
+    # Choose machine with a given model name
+    model: ProLiant DL385 Gen10

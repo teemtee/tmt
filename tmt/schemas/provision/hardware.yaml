@@ -119,6 +119,9 @@ definitions:
       - type: string
       - type: integer
 
+  model:
+    type: string
+
   # HW requirements: single `network` item
   network:
     type: object
@@ -202,6 +205,9 @@ definitions:
 
       memory:
         "$ref": "#/definitions/memory"
+
+      model:
+        "$ref": "#/definitions/model"
 
       network:
         "$ref": "#/definitions/networks"
