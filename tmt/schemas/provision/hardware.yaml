@@ -212,7 +212,7 @@ definitions:
         "$ref": "#/definitions/networks"
 
       numa-nodes:
-        "$ref": "#/definitions/numa-nodes
+        "$ref": "#/definitions/numa-nodes"
 
       tpm:
         "$ref": "#/definitions/tpm"
@@ -239,6 +239,7 @@ definitions:
             - "$ref": "#/definitions/cpu"
             - "$ref": "#/definitions/disks"
             - "$ref": "#/definitions/networks"
+            - "$ref": "#/definitions/numa-nodes"
             - "$ref": "#/definitions/tpm"
             - "$ref": "#/definitions/virtualization"
             - "$ref": "#/definitions/block"
@@ -260,6 +261,7 @@ definitions:
             - "$ref": "#/definitions/cpu"
             - "$ref": "#/definitions/disks"
             - "$ref": "#/definitions/networks"
+            - "$ref": "#/definitions/numa-nodes"
             - "$ref": "#/definitions/tpm"
             - "$ref": "#/definitions/virtualization"
             - "$ref": "#/definitions/block"
@@ -276,6 +278,7 @@ definitions:
       - "$ref": "#/definitions/cpu"
       - "$ref": "#/definitions/disks"
       - "$ref": "#/definitions/networks"
+      - "$ref": "#/definitions/numa-nodes"
       - "$ref": "#/definitions/tpm"
       - "$ref": "#/definitions/virtualization"
       - "$ref": "#/definitions/block"
