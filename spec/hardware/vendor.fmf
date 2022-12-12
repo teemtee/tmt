@@ -1,0 +1,6 @@
+summary:
+    Select systems by specific vendor
+example:
+  - |
+    # Choose machine by specific vendor
+    vendor: HPE

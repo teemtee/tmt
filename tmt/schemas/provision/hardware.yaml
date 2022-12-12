@@ -156,6 +156,9 @@ definitions:
     additionalProperties: false
     minProperties: 1
 
+  vendor:
+    type: string
+
   # HW requirements: `virtualization` block
   virtualization:
     type: object
@@ -208,6 +211,9 @@ definitions:
 
       tpm:
         "$ref": "#/definitions/tpm"
+
+      vendor:
+        "$ref": "#/definitions/vendor"
 
       virtualization:
         "$ref": "#/definitions/virtualization"
