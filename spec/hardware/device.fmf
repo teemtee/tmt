@@ -1,0 +1,16 @@
+summary:
+    Select system with given device
+description:
+    Use the ``device-name`` to provide the device name as a string,
+    ``device`` to select a system with a specified device PCI ID,
+    ``driver`` key to specify the kernel module name
+    ``vendor-name`` to provide the vendor name as a string,
+    ``vendor`` to select a system with the vendor's unique identifier
+example:
+  - |
+    device:
+        device-name: C51 [GeForce 6150 LE]
+        device: 0241
+        driver: nouveau
+        vendor-name: NVIDIA
+        vendor: 10de

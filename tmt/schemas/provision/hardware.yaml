@@ -97,6 +97,41 @@ definitions:
     # empty `cpu`.
     minProperties: 1
 
+  # HW requirements: single `device` item
+  device:
+    type: object
+
+    properties:
+      device-name:
+        type: string
+
+      device:
+        anyOf:
+          - type: string
+          - type: integer
+
+      driver:
+        type: string
+
+      vendor-name:
+        type: string
+
+      vendor:
+        anyOf:
+          - type: string
+          - type: integer
+
+    additionalProperties: false
+
+    # enforce at least one property
+    minProperties: 1
+
+  # HW requirements: `device` block
+  devices:
+    type: array
+    items:
+      "$ref": "#/definitions/device"
+
   # HW requirements: single `disk` item
   disk:
     type: object
@@ -231,6 +266,9 @@ definitions:
 
       cpu:
         "$ref": "#/definitions/cpu"
+
+      device:
+        "$ref": "#/definitions/devices"
 
       disk:
         "$ref": "#/definitions/disks"
