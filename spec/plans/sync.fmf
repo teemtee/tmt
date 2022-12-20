@@ -10,15 +10,31 @@ description: |
     This creates a synchronization barrier before each provided step.
 
         start
-            Synchronize at the beginning of the step.
+            Synchronize at the beginning of the ``step`` by adding
+            a synchronization barrier at the beginning of the step.
+            In case of multiple configurations, it also adds a barrier
+            at the beginning of the ``step``, even if the configuration
+            filters out every ``test``.
         name
-            Synchronize execution of tests with the same name.
+            Synchronize execution of tests with the same name. Standalone
+            tests (without parallel test on a different guest) instantly
+            pass synchronization barrier. ``tmt`` is not responsible for
+            possible synchronization problems caused by duplicate test names
+            and similar mistakes.
         index
-            Synchronize execution of all tests.
+            Synchronize execution of all tests by adding a synchronization
+            barriers in front of each ``test`` execution.
         none
-            **Default** value, which disables the synchronization
-            on the test level.
+            **Default** value, which disables the synchronization for
+            given ``step``.
 example:
+  - |
+    discover:
+      how: fmf
+      url: https://src.fedoraproject.org/rpms/tmt/
+      where: client
+      sync: name  # add sync barrier before
+
   - |
     prepare:
       - name: packages
@@ -26,21 +42,12 @@ example:
         playbook: plans/packages.yml
       - name: services
         how: shell
-        script: systemctl start service
-        sync: index
+        script:
+          - systemctl start iperf3.service
+          - systemctl start netperf.service
+          - systemctl stop firewalld.service
+        sync: index  # add sync barrier in front of each shell command
 
     execute:
         how: tmt
-        sync: start
-
-  - |
-    discover:
-      - name: setup-tasks
-        how: fmf
-        url: https://github.com/teemtee/tmt
-        sync: none
-      - name: multihost-tests
-        how: fmf
-        url: https://src.fedoraproject.org/rpms/tmt/
-        where: client
-        sync: name
+        sync: start  # add sync barrier before the execute step
