@@ -720,6 +720,62 @@ variables or context dimensions::
         ref: $@distro
 
 
+
+
+.. _multihost synchronization example:
+
+Multihost synchronization
+------------------------------------------------------------------
+
+Multihost tests introduce various synchronization methods defined
+in the step under :ref:`/spec/plans/sync` keyword. The section shows
+several complex examples of multihost plan with different
+synchronization::
+
+    provision:
+      - name: server
+        how: virtual
+      - name: client1
+        how: virtual
+        role: client
+      - name: client2
+        how: virtual
+        role: client
+
+    prepare:
+      - name: packages
+        how: ansible
+        playbook: plans/packages.yml
+        where: client
+
+      # no sync specified -> continue in executing prepare steps in parallel
+      - name: services
+        how: shell
+        script:
+          - systemctl stop firewalld
+          - systemctl start httpd
+        where: server
+
+      # Adding a synchronization barrier to start executing
+      # following scripts at the same time on all hosts
+      - name: tuned
+        how: shell
+        sync: start
+        script:
+          - dnf install tuned
+          - tuned-adm profile throughput-performance
+
+    discover:
+      how: fmf
+      url: https://src.fedoraproject.org/rpms/tmt/
+      where: client
+      # execute tests on both clients at the same time
+      # sync barrier before each executed test
+      sync: index
+
+    execute:
+      how: tmt
+
 Stories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

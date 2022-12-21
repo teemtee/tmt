@@ -27,6 +27,9 @@ description: |
         none
             **Default** value, which disables the synchronization for
             given ``step``.
+
+    More complex synchronization scenarios can be found :ref:`Multihost synchronization examples. <multihost synchronization example>`
+
 example:
   - |
     discover:
