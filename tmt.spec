@@ -44,7 +44,7 @@ BuildRequires: python%{python3_pkgversion}-pytest
 BuildRequires: python%{python3_pkgversion}-click
 BuildRequires: python%{python3_pkgversion}-fmf >= 1.2.0
 BuildRequires: python%{python3_pkgversion}-requests
-BuildRequires: python%{python3_pkgversion}-testcloud >= 0.8.1
+BuildRequires: python%{python3_pkgversion}-testcloud >= 0.8.2
 BuildRequires: python%{python3_pkgversion}-markdown
 BuildRequires: python%{python3_pkgversion}-junit_xml
 BuildRequires: python%{python3_pkgversion}-ruamel-yaml
@@ -77,7 +77,7 @@ Dependencies required to run tests in a container environment.
 Summary: Virtual machine provisioner for the Test Management Tool
 Obsoletes: tmt-testcloud < 0.17
 Requires: tmt == %{version}-%{release}
-Requires: python%{python3_pkgversion}-testcloud >= 0.8.1
+Requires: python%{python3_pkgversion}-testcloud >= 0.8.2
 Requires: libvirt-daemon-config-network
 Requires: openssh-clients
 Requires: (ansible or ansible-core)
@@ -125,6 +125,14 @@ Requires: tmt-report-junit >= %{version}
 %description report-polarion
 Generate test results in xUnit format for exporting to Polarion.
 
+%package report-reportportal
+Summary: Report step plugin for ReportPortal
+Requires: tmt == %{version}-%{release}
+Requires: tmt-report-junit == %{version}
+
+%description report-reportportal
+Report test results to a ReportPortal instance.
+
 %package all
 Summary: Extra dependencies for the Test Management Tool
 Requires: tmt >= %{version}
@@ -134,6 +142,7 @@ Requires: tmt-test-convert >= %{version}
 Requires: tmt-report-html >= %{version}
 Requires: tmt-report-junit >= %{version}
 Requires: tmt-report-polarion >= %{version}
+Requires: tmt-report-reportportal >= %{version}
 
 %description all
 All extra dependencies of the Test Management Tool. Install this
@@ -181,6 +190,7 @@ chmod 1777 %{buildroot}%{workdir_root}
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
+%exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
 
 %files provision-container
 %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}podman.*
@@ -197,6 +207,9 @@ chmod 1777 %{buildroot}%{workdir_root}
 
 %files report-polarion
 %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
+
+%files report-reportportal
+%{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
 
 %files test-convert
 %license LICENSE
