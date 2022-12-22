@@ -1692,6 +1692,22 @@ class Story(Core, tmt.export.Exportable['Story']):
         """ Return links to relevant source code """
         return self.link.get('implemented-by') if self.link else []
 
+    @property
+    def status(self) -> List[str]:
+        """ Aggregate story status from implemented-, verified- and documented-by links """
+        status = []
+
+        if self.implemented:
+            status.append('implemented')
+
+        if self.verified:
+            status.append('verified')
+
+        if self.documented:
+            status.append('documented')
+
+        return status
+
     def _match(
             self, implemented: bool, verified: bool, documented: bool, covered: bool,
             unimplemented: bool, unverified: bool, undocumented: bool, uncovered: bool) -> bool:

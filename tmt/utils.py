@@ -30,6 +30,8 @@ from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Generic,
 
 import click
 import fmf
+import jinja2
+import jinja2.exceptions
 import jsonschema
 import pkg_resources
 import requests
@@ -4102,3 +4104,49 @@ def field(  # type: ignore[misc]
         default_factory=default_factory,
         metadata={'tmt': metadata}
         )
+
+
+def default_template_environment() -> jinja2.Environment:
+    """
+    Create a Jinja2 environment with default settings.
+
+    Adds common filters, and enables block trimming and left strip.
+    """
+
+    environment = jinja2.Environment()
+
+    environment.filters['findall'] = lambda s, pattern: re.findall(pattern, s)
+    environment.filters['listed'] = fmf.utils.listed
+    environment.filters['strip'] = lambda x: x.strip()
+    environment.filters['search'] = lambda string, pattern: re.search(pattern, string)
+    environment.filters['match'] = lambda string, pattern: re.search(pattern, string)
+    environment.filters['regex_replace'] = lambda string, pattern, repl: re.sub(
+        pattern, repl, string)
+
+    environment.trim_blocks = True
+    environment.lstrip_blocks = True
+
+    return environment
+
+
+def render_template_file(
+        template_filepath: str,
+        environment: Optional[jinja2.Environment] = None,
+        **variables: Any
+        ) -> str:
+    """ Render a template read from a file """
+
+    environment = environment or default_template_environment()
+
+    try:
+        with open(template_filepath, 'r') as f:
+            template = environment.from_string(f.read())
+
+        return cast(str, template.render(**variables).strip())
+
+    except jinja2.exceptions.TemplateSyntaxError as exc:
+        raise GeneralError(
+            f"Could not parse template '{template_filepath}' at line {exc.lineno}.") from exc
+
+    except jinja2.exceptions.TemplateError as exc:
+        raise GeneralError(f"Could not render template '{template_filepath}'.") from exc

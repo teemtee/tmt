@@ -21,6 +21,8 @@ else:
     from typing_extensions import Protocol
 
 import fmf
+import fmf.utils
+import pkg_resources
 from click import echo, style
 
 import tmt
@@ -28,6 +30,8 @@ import tmt.utils
 
 if TYPE_CHECKING:
     import tmt.base
+
+TEMPLATES_DIRECTORY = pkg_resources.resource_filename('tmt', 'export/templates')
 
 bugzilla: Optional[types.ModuleType] = None
 

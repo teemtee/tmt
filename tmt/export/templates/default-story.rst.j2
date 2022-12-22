@@ -1,0 +1,55 @@
+{% if INCLUDE_TITLE %}
+{% set depth = STORY.name | findall('/') | length - 1 %}
+{% set title_underline = '=~^:-><'[depth] %}
+{% if STORY.title and STORY.title != STORY.node.parent.get('title') %}
+    {% set title = STORY.title %}
+{% else %}
+    {% set title = STORY.name | regex_replace('.*/', '') %}
+{% endif %}
+
+.. _{{ STORY.name | strip }}:
+
+{{ title | strip }}
+{{ title_underline * title | length }}
+{% endif %}
+
+{# Summary, story and description #}
+{% if STORY.summary and STORY.summary != STORY.node.parent.get('summary') %}
+{{ STORY.summary | strip }}
+{% endif %}
+
+{% if STORY.story != STORY.node.parent.get('story') %}
+*{{ STORY.story | strip }}*
+{% endif %}
+
+{# Insert note about unimplemented feature (leaf nodes only) #}
+{% if not STORY.node.children and not STORY.implemented %}
+.. note:: This is a draft, the story is not implemented yet.
+{% endif %}
+
+{% if STORY.description and STORY.description != STORY.node.parent.get('description') %}
+{{ STORY.description }}
+{% endif %}
+
+{# Examples #}
+{% if STORY.example and STORY.example != STORY.node.parent.get('example') %}
+    {% for example in STORY.example %}
+        {% if example == STORY.example | first %}
+Examples::
+        {% else %}
+::
+        {% endif %}
+
+{{ example | indent(width=4, first=True, blank=True) }}
+
+    {% endfor %}
+{% endif %}
+
+{# Status #}
+{% if not STORY.node.children %}
+    {% if STORY.status %}
+Status: {{ STORY.status | listed }}
+    {% else %}
+Status: idea
+    {% endif %}
+{% endif %}

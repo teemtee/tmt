@@ -21,6 +21,7 @@ __pkg__ = 'tmt'
 __pkgdata__ = {
     'tmt': [
         'py.typed',
+        'export/templates/*',
         'schemas/*.yaml',
         'schemas/*/*.yaml',
         'steps/execute/scripts/*',

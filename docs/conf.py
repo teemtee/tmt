@@ -284,3 +284,4 @@ for area in areas:
         for story in tree.stories(names=[area], whole=True):
             if story.enabled:
                 doc.write(story.export(format='rst', include_title=story.name != area))
+                doc.write('\n\n')
