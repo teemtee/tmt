@@ -832,15 +832,16 @@ def test_wait_success_but_too_late():
 
 
 def test_import_member():
-    klass = tmt.plugins.import_member('tmt.steps.discover', 'Discover')
+    module, klass = tmt.plugins.import_member('tmt.steps.discover', 'Discover')
 
+    assert module is tmt.steps.discover
     assert klass is tmt.steps.discover.Discover
 
 
 def test_import_member_no_such_module():
     with pytest.raises(
-            tmt.utils.GeneralError,
-            match=r"Failed to import module 'tmt\.steps\.nope_does_not_exist'."):
+            SystemExit,
+            match=r"Failed to import the 'tmt\.steps\.nope_does_not_exist' module from '.'."):
         tmt.plugins.import_member('tmt.steps.nope_does_not_exist', 'Discover')
 
 

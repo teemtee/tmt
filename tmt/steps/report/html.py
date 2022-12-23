@@ -1,36 +1,31 @@
 import dataclasses
 import os
 import os.path
-import types
 import webbrowser
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import click
 import pkg_resources
 
 import tmt
 import tmt.options
+import tmt.plugins
 import tmt.steps
 import tmt.steps.report
+from tmt.plugins import LazyModuleImporter
+
+if TYPE_CHECKING:
+    import jinja2
 
 HTML_TEMPLATE_PATH = pkg_resources.resource_filename(
     'tmt', 'steps/report/html/template.html.j2')
 
-jinja2: Optional[types.ModuleType] = None
 
-
-def import_jinja2() -> None:
-    """
-    Import jinja2 module only when needed
-
-    Until we have a separate package for each plugin.
-    """
-    global jinja2
-    try:
-        import jinja2
-    except ImportError:
-        raise tmt.utils.ReportError(
-            "Missing 'jinja2', fixable by 'pip install tmt[report-html]'")
+import_jinja: LazyModuleImporter['jinja2'] = LazyModuleImporter(
+    'jinja2',
+    tmt.utils.ReportError,
+    "Missing 'jinja2', fixable by 'pip install tmt[report-html]'"
+    )
 
 
 @dataclasses.dataclass
@@ -73,8 +68,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         """ Process results """
         super().go()
 
-        import_jinja2()
-        assert jinja2
+        jinja2 = import_jinja()
 
         # Prepare the template
         environment = jinja2.Environment()
