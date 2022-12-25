@@ -2,7 +2,7 @@ import copy
 import dataclasses
 import os
 import shutil
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Optional, Type, TypeVar, cast
 
 import click
 import fmf
@@ -13,7 +13,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command, ShellScript
+from tmt.utils import Command, ShellScript, field
 
 T = TypeVar('T', bound='TestDescription')
 
@@ -38,86 +38,89 @@ class TestDescription(
     # does not support save/load operations. This is a known issue, introduced by a patch
     # transitioning step data to data classes, it is temporary, and it will be fixed as
     # soon as possible - nobody want's to keep two very same lists of attributes.
-    test: ShellScript
+    test: ShellScript = field(
+        default=ShellScript(''),
+        normalize=lambda raw_value, logger: ShellScript(raw_value),
+        serialize=lambda test: str(test),
+        unserialize=lambda serialized_test: ShellScript(serialized_test)
+        )
 
     # Core attributes (supported across all levels)
     summary: Optional[str] = None
     description: Optional[str] = None
     enabled: bool = True
-    # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
-    order: int = 50
-    link: Optional[tmt.base.Links] = None
+    order: int = field(
+        # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
+        default=50,
+        normalize=lambda raw_value, logger: 50 if raw_value is None else int(raw_value)
+        )
+    link: Optional[tmt.base.Links] = field(
+        default=None,
+        normalize=lambda raw_value, logger: tmt.base.Links(data=raw_value),
+        # Using `to_spec()` on purpose: `Links` does not provide serialization
+        # methods, because specification of links is already good enough. We
+        # can use existing `to_spec()` method, and undo it with a simple
+        # `Links(...)` call.
+        #
+        # ignore[attr-defined]: mypy reports `to_spec` to be an unknown attribute,
+        # but reveal_type() reports `link` to be a known type, not Any, and it's
+        # not clear why would mypy misread the situation.
+        serialize=lambda link: link.to_spec() if link else None,  # type: ignore[attr-defined]
+        unserialize=lambda serialized_link: tmt.base.Links(data=serialized_link)
+        )
     id: Optional[str] = None
-    tag: List[str] = dataclasses.field(default_factory=list)
-    tier: Optional[str] = None
-    adjust: Optional[List[tmt.base._RawAdjustRule]] = None
+    tag: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
+    tier: Optional[str] = field(
+        default=None,
+        normalize=lambda raw_value, logger: None if raw_value is None else str(raw_value)
+        )
+    adjust: Optional[List[tmt.base._RawAdjustRule]] = field(
+        default=None,
+        normalize=lambda raw_value, logger: [] if raw_value is None else (
+            [raw_value] if not isinstance(raw_value, list) else raw_value
+            )
+        )
 
     # Basic test information
-    contact: List[str] = dataclasses.field(default_factory=list)
-    component: List[str] = dataclasses.field(default_factory=list)
+    contact: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
+    component: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
 
     # Test execution data
     path: Optional[str] = None
     framework: Optional[str] = None
     manual: bool = False
-    require: List[tmt.base.Require] = dataclasses.field(default_factory=list)
-    recommend: List[tmt.base.Require] = dataclasses.field(default_factory=list)
-    environment: tmt.utils.EnvironmentType = dataclasses.field(default_factory=dict)
+    require: List[tmt.base.Require] = field(
+        default_factory=list,
+        normalize=tmt.base.normalize_require,
+        serialize=lambda requires: [require.to_spec() for require in requires],
+        unserialize=lambda serialized_requires: [
+            tmt.base.RequireSimple.from_spec(require)
+            if isinstance(require, str) else tmt.base.RequireFmfId.from_spec(require)
+            for require in serialized_requires
+            ]
+        )
+    recommend: List[tmt.base.Require] = field(
+        default_factory=list,
+        normalize=tmt.base.normalize_require,
+        serialize=lambda recommends: [recommend.to_spec() for recommend in recommends],
+        unserialize=lambda serialized_recommends: [
+            tmt.base.RequireSimple.from_spec(recommend)
+            if isinstance(recommend, str) else tmt.base.RequireFmfId.from_spec(recommend)
+            for recommend in serialized_recommends
+            ]
+        )
+    environment: tmt.utils.EnvironmentType = field(default_factory=dict)
     duration: str = '1h'
     result: str = 'respect'
-
-    _normalize_tag = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-    _normalize_contact = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-    _normalize_component = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-
-    def _normalize_test(
-            self,
-            value: str,
-            logger: tmt.log.Logger) -> ShellScript:
-        return ShellScript(value)
-
-    def _normalize_order(
-            self,
-            value: Optional[int],
-            logger: tmt.log.Logger) -> int:
-        if value is None:
-            # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
-            return 50
-        return int(value)
-
-    def _normalize_link(
-            self,
-            value: tmt.base._RawLinks,
-            logger: tmt.log.Logger) -> tmt.base.Links:
-        return tmt.base.Links(data=value)
-
-    def _normalize_adjust(
-            self,
-            value: Optional[Union[tmt.base._RawAdjustRule, List[tmt.base._RawAdjustRule]]],
-            logger: tmt.log.Logger) -> List[tmt.base._RawAdjustRule]:
-        if value is None:
-            return []
-        return [value] if not isinstance(value, list) else value
-
-    def _normalize_tier(
-            self,
-            value: Optional[Union[int, str]],
-            logger: tmt.log.Logger) -> Optional[str]:
-        if value is None:
-            return None
-        return str(value)
-
-    def _normalize_require(
-            self,
-            value: Optional[tmt.base._RawRequire],
-            logger: tmt.log.Logger) -> List[tmt.base.Require]:
-        return tmt.base.normalize_require(value, logger)
-
-    def _normalize_recommend(
-            self,
-            value: Optional[tmt.base._RawRequire],
-            logger: tmt.log.Logger) -> List[tmt.base.Require]:
-        return tmt.base.normalize_require(value, logger)
 
     # ignore[override]: expected, we do want to accept more specific
     # type than the one declared in superclass.
@@ -144,46 +147,24 @@ class TestDescription(
 
         return data
 
-    def to_serialized(self) -> Dict[str, Any]:
-        """ Convert to a form suitable for saving in a file """
-
-        data = super().to_serialized()
-
-        # Using `to_spec()` on purpose: `Links` does not provide serialization
-        # methods, because specification of links is already good enough. We
-        # can use existing `to_spec()` method, and undo it with a simple
-        # `Links(...)` call.
-        data['link'] = self.link.to_spec() if self.link else None
-        data['require'] = [require.to_spec() for require in self.require]
-        data['recommend'] = [recommend.to_spec() for recommend in self.recommend]
-        data['test'] = str(self.test)
-
-        return data
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'TestDescription':
-        """ Convert from a serialized form loaded from a file """
-
-        obj = super().from_serialized(serialized)
-        obj.link = tmt.base.Links(data=serialized['link'])
-        obj.require = [
-            tmt.base.RequireSimple.from_spec(require)
-            if isinstance(require, str) else tmt.base.RequireFmfId.from_spec(require)
-            for require in serialized['require']
-            ]
-        obj.recommend = [
-            tmt.base.RequireSimple.from_spec(recommend)
-            if isinstance(recommend, str) else tmt.base.RequireFmfId.from_spec(recommend)
-            for recommend in serialized['recommend']
-            ]
-        obj.test = ShellScript(serialized['test'])
-
-        return obj
-
 
 @dataclasses.dataclass
 class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
-    tests: List[TestDescription] = dataclasses.field(default_factory=list)
+    tests: List[TestDescription] = field(
+        default_factory=list,
+        normalize=lambda raw_value, logger: [
+            TestDescription.from_spec(raw_datum, logger)
+            for raw_datum in cast(List[Dict[str, Any]], raw_value)
+            ],
+        serialize=lambda tests: [
+            test.to_serialized()
+            for test in tests
+            ],
+        unserialize=lambda serialized_tests: [
+            TestDescription.from_serialized(serialized_test)
+            for serialized_test in serialized_tests
+            ]
+        )
 
     url: Optional[str] = tmt.utils.field(
         option="--url",
@@ -202,33 +183,6 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         is_flag=True,
         default=False,
         help="Keep the git metadata if a repo is synced to guest.")
-
-    def _normalize_tests(
-            self,
-            value: List[Dict[str, Any]],
-            logger: tmt.log.Logger) -> List[TestDescription]:
-        # TODO: find a better logger
-        return [TestDescription.from_spec(raw_datum, logger) for raw_datum in value]
-
-    def to_serialized(self) -> Dict[str, Any]:
-        """ Convert to a form suitable for saving in a file """
-
-        serialized = super().to_serialized()
-
-        serialized['tests'] = [test.to_serialized() for test in self.tests]
-
-        return serialized
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'DiscoverShellData':
-        """ Convert from a serialized form loaded from a file """
-
-        obj = super().from_serialized(serialized)
-
-        obj.tests = [TestDescription.from_serialized(
-            serialized_test) for serialized_test in serialized['tests']]
-
-        return obj
 
 
 @tmt.steps.provides_method('shell')

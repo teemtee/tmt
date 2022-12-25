@@ -7,6 +7,7 @@ import click
 import fmf
 
 import tmt.utils
+from tmt.utils import field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -63,15 +64,19 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
 
 
 @dataclasses.dataclass
-class ResultData:
+class ResultData(tmt.utils.SerializableContainer):
     """
     Formal data class containing information about result of the test
     """
-    result: ResultOutcome
-    log: List[str] = dataclasses.field(default_factory=list)
+    result: ResultOutcome = field(
+        default=ResultOutcome.PASS,
+        serialize=lambda result: result.value,
+        unserialize=ResultOutcome.from_spec
+        )
+    log: List[str] = field(default_factory=list)
     note: Optional[str] = None
     duration: Optional[str] = None
-    ids: Dict[str, Optional[str]] = dataclasses.field(default_factory=dict)
+    ids: Dict[str, Optional[str]] = field(default_factory=dict)
 
 
 @dataclasses.dataclass(init=False)
@@ -84,11 +89,15 @@ class Result(tmt.utils.SerializableContainer):
     """
 
     name: str
-    result: ResultOutcome
+    result: ResultOutcome = field(
+        default=ResultOutcome.PASS,
+        serialize=lambda result: result.value,
+        unserialize=ResultOutcome.from_spec
+        )
     note: Optional[str] = None
     duration: Optional[str] = None
-    ids: Dict[str, Optional[str]] = dataclasses.field(default_factory=dict)
-    log: Union[List[Any], Dict[Any, Any]] = dataclasses.field(default_factory=list)
+    ids: Dict[str, Optional[str]] = field(default_factory=dict)
+    log: Union[List[Any], Dict[Any, Any]] = field(default_factory=list)
     # TODO: Check why log can be also a Dictionary.
     # Check if we can safely get rid of Union.
     # Should be the same type as in ResultData class.
@@ -197,11 +206,6 @@ class Result(tmt.utils.SerializableContainer):
         note = f" ({self.note})" if self.note else ''
         return f"{colored} {self.name}{note}"
 
-    def to_serialized(self) -> Dict[str, Any]:
-        fields = super().to_serialized()
-        fields['result'] = self.result.value
-        return fields
-
     @classmethod
     def from_serialized(cls, serialized: Dict[str, Any]) -> 'Result':
         # TODO: from_serialized() should trust the input. We should add its
@@ -215,8 +219,7 @@ class Result(tmt.utils.SerializableContainer):
         serialized.pop('__class__', None)
 
         name = serialized.pop('name')
-        serialized['result'] = ResultOutcome.from_spec(serialized['result'])
-        return cls(data=ResultData(**serialized), name=name)
+        return cls(data=ResultData.from_serialized(serialized), name=name)
 
     @staticmethod
     def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:

@@ -1546,6 +1546,11 @@ class FieldMetadata(Generic[T]):
     #: (performed by :py:class:`NormalizeKeysMixin`).
     normalize_callback: Optional['NormalizeCallback[T]'] = None
 
+    # Callbacks for custom serialize/unserialize operations (performed by
+    # :py:class:`SerializableContainer`).
+    serialize_callback: Optional['SerializeCallback[T]'] = None
+    unserialize_callback: Optional['SerializeCallback[T]'] = None
+
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.option_args and self.option_kwargs:
@@ -1741,6 +1746,10 @@ SerializableContainerDerivedType = TypeVar(
     bound='SerializableContainer')
 
 
+SerializeCallback = Callable[[T], Any]
+UnserializeCallback = Callable[[Any], T]
+
+
 @dataclasses.dataclass
 class SerializableContainer(DataContainer):
     """ A mixin class for saving and loading objects """
@@ -1791,6 +1800,13 @@ class SerializableContainer(DataContainer):
 
         fields = self.to_dict()
 
+        for name in fields.keys():
+            field: dataclasses.Field[Any] = dataclass_field_by_name(self, name)
+            serialize_callback = dataclass_field_metadata(field).serialize_callback
+
+            if serialize_callback:
+                fields[name] = serialize_callback(getattr(self, name))
+
         # Add a special field tracking what class we just shattered to pieces.
         fields.update({
             '__class__': {
@@ -1818,7 +1834,18 @@ class SerializableContainer(DataContainer):
         # already know what class to restore: this one.
         serialized.pop('__class__', None)
 
-        return cls(**serialized)
+        obj = cls(**serialized)
+
+        for keyname, value in serialized.items():
+            field: dataclasses.Field[Any] = dataclass_field_by_name(obj, keyname)
+            unserialize_callback = dataclass_field_metadata(field).unserialize_callback
+
+            if unserialize_callback:
+                # Set attribute by adding it to __dict__ directly. Messing with setattr()
+                # might cause re-use of mutable values by other instances.
+                obj.__dict__[keyname] = unserialize_callback(value)
+
+        return obj
 
     # ignore[misc,type-var]: mypy is correct here, method does return a
     # TypeVar, but there is no way to deduce the actual type, because
@@ -3990,6 +4017,9 @@ def field(
         # Input data normalization - not needed, the field is a boolean
         # flag.
         # normalize: Optional[NormalizeCallback[T]] = None
+        # Custom serialization
+        # serialize: Optional[SerializeCallback[bool]] = None,
+        # unserialize: Optional[UnserializeCallback[bool]] = None
         ) -> bool:
     pass
 
@@ -4006,7 +4036,10 @@ def field(
         metavar: Optional[str] = None,
         help: Optional[str] = None,
         # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None
+        normalize: Optional[NormalizeCallback[T]] = None,
+        # Custom serialization
+        serialize: Optional[SerializeCallback[T]] = None,
+        unserialize: Optional[UnserializeCallback[T]] = None
         ) -> T:
     pass
 
@@ -4023,14 +4056,15 @@ def field(
         metavar: Optional[str] = None,
         help: Optional[str] = None,
         # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None
+        normalize: Optional[NormalizeCallback[T]] = None,
+        # Custom serialization
+        serialize: Optional[SerializeCallback[T]] = None,
+        unserialize: Optional[UnserializeCallback[T]] = None
         ) -> T:
     pass
 
 
-# TODO: ignore[misc]: mypy reports implementation cannot handle all possible arguments of
-# signatures 2 and 3, but I can't find the issue :/
-def field(  # type: ignore[misc]
+def field(
         *,
         default: Any = dataclasses.MISSING,
         default_factory: Any = dataclasses.MISSING,
@@ -4042,7 +4076,10 @@ def field(  # type: ignore[misc]
         metavar: Optional[str] = None,
         help: Optional[str] = None,
         # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None
+        normalize: Optional[NormalizeCallback[T]] = None,
+        # Custom serialization
+        serialize: Optional[SerializeCallback[T]] = None,
+        unserialize: Optional[UnserializeCallback[T]] = None
         ) -> Any:
     """
     Define a :py:class:`DataContainer` field.
@@ -4070,6 +4107,10 @@ def field(  # type: ignore[misc]
         Passed directly to :py:func:`click.option`.
     :param normalize: a callback for normalizing the input value. Consumed by
         :py:class:`NormalizeKeysMixin`.
+    :param serialize: a callback for custom serialization of the field value.
+        Consumed by :py:class:`SerializableKeysMixin`.
+    :param unserialize: a callback for custom unserialization of the field value.
+        Consumed by :py:class:`SerializableKeysMixin`.
     """
 
     if default is dataclasses.MISSING and default_factory is dataclasses.MISSING:
@@ -4094,6 +4135,9 @@ def field(  # type: ignore[misc]
 
     if normalize:
         metadata.normalize_callback = normalize
+
+    metadata.serialize_callback = serialize
+    metadata.unserialize_callback = unserialize
 
     # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
