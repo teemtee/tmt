@@ -7,7 +7,7 @@ import threading
 import time
 import unittest
 import unittest.mock
-from typing import Tuple
+from typing import Any, List, Tuple
 
 import py
 import pytest
@@ -906,3 +906,39 @@ def test_common_base_inheritance(root_logger):
     # And that both classes can be instantiated.
     ClassA(logger=root_logger, foo='bar')
     ClassB(logger=root_logger, foo='bar')
+
+
+@pytest.mark.parametrize(
+    ('values', 'expected'),
+    [
+        ([], []),
+        ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]),
+        ([1, 2, 1, 2, 3], [1, 2, 3])
+        ],
+    ids=(
+        'empty-list',
+        'no-duplicates',
+        'duplicates'
+        )
+    )
+def test_uniq(values: List[Any], expected: List[Any]) -> None:
+    assert tmt.utils.uniq(values) == expected
+
+
+@pytest.mark.parametrize(
+    ('lists', 'unique', 'expected'),
+    [
+        ([], False, []),
+        ([[], [], []], False, []),
+        ([[], [1, 2, 3], [1, 2, 3], [4, 5], [3, 2, 1]], False, [1, 2, 3, 1, 2, 3, 4, 5, 3, 2, 1]),
+        ([[], [1, 2, 3], [1, 2, 3], [4, 5], [3, 2, 1]], True, [1, 2, 3, 4, 5])
+        ],
+    ids=(
+        'empty-input',
+        'empty-lists',
+        'keep-duplicates',
+        'unique-enabled'
+        )
+    )
+def test_flatten(lists: List[List[Any]], unique: bool, expected: List[Any]) -> None:
+    assert tmt.utils.flatten(lists, unique=unique) == expected

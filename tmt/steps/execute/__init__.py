@@ -563,18 +563,6 @@ class Execute(tmt.steps.Step):
         self.status('done')
         self.save()
 
-    def requires(self) -> List[str]:
-        """
-        Packages required for test execution
-
-        Return a list of packages which need to be installed on the
-        guest so that tests can be executed. Used by the prepare step.
-        """
-        requires = set()
-        for plugin in self.phases(classes=ExecutePlugin):
-            requires.update(plugin.requires())
-        return list(requires)
-
     def results(self) -> List["tmt.result.Result"]:
         """
         Results from executed tests

@@ -25,6 +25,7 @@ from tmt.steps import Action
 from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
 
 if TYPE_CHECKING:
+    import tmt.base
     import tmt.cli
 
 
@@ -514,8 +515,8 @@ class Guest(tmt.utils.Common):
         return CheckRsyncOutcome.INSTALLED
 
     @classmethod
-    def requires(cls) -> List[str]:
-        """ No extra requires needed """
+    def requires(cls) -> List['tmt.base.Require']:
+        """ All requirements of the guest implementation """
         return []
 
 
@@ -1134,14 +1135,17 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
         """
         raise NotImplementedError()
 
-    def requires(self) -> List[str]:
+    def requires(self) -> List['tmt.base.Require']:
         """
-        Provide a list of packages required for the workdir sync.
+        All requirements of the guest implementation.
 
-        By default, plugin's guest class - :py:attr:`ProvisionPlugin._guest_class` - is asked to
-        provide the list of required packages via :py:meth:`Guest.requires` method.
+        Provide a list of requirements for the workdir sync.
 
-        :returns: a list of package names.
+        By default, plugin's guest class, :py:attr:`ProvisionPlugin._guest_class`,
+        is asked to provide the list of required packages via
+        :py:meth:`Guest.requires` method.
+
+        :returns: a list of requirements.
         """
 
         return self._guest_class.requires()
@@ -1315,16 +1319,3 @@ class Provision(tmt.steps.Step):
     def guests(self) -> List[Guest]:
         """ Return the list of all provisioned guests """
         return self._guests
-
-    def requires(self) -> List[str]:
-        """
-        Packages required by all enabled provision plugins
-
-        Return a list of packages which need to be installed on the
-        provisioned guest so that the workdir can be synced to it.
-        Used by the prepare step.
-        """
-        requires = set()
-        for plugin in self.phases(classes=ProvisionPlugin):
-            requires.update(plugin.requires())
-        return list(requires)

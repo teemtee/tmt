@@ -8,6 +8,7 @@ import fmf
 import fmf.utils
 
 import tmt
+import tmt.base
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -483,13 +484,23 @@ class InstallRpmOstree(InstallBase):
 
 @dataclasses.dataclass
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
-    package: List[str] = field(
+    package: List[tmt.base.RequireSimple] = field(
         default_factory=list,
         option=('-p', '--package'),
         metavar='PACKAGE',
         multiple=True,
         help='Package name or path to rpm to be installed.',
-        normalize=tmt.utils.normalize_string_list
+        # PrepareInstall supports *simple* requirements only
+        normalize=lambda value, logger: tmt.base.assert_simple_requirements(
+            tmt.base.normalize_require(value, logger),
+            "'install' plugin support simple packages only, no fmf links are allowed",
+            logger
+            ),
+        serialize=lambda packages: [package.to_spec() for package in packages],
+        unserialize=lambda serialized: [
+            tmt.base.RequireSimple.from_spec(package)
+            for package in serialized
+            ]
         )
 
     directory: List[Path] = field(
