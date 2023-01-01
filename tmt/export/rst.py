@@ -1,8 +1,8 @@
-import os.path
 from typing import Any, List, Optional
 
 import tmt.base
 import tmt.export
+import tmt.export.template
 import tmt.utils
 
 
@@ -13,10 +13,9 @@ class RestructuredExporter(tmt.export.ExportPlugin):
                      story: tmt.base.Story,
                      keys: Optional[List[str]] = None,
                      include_title: bool = True) -> str:
-        template_filepath = os.path.join(tmt.export.TEMPLATES_DIRECTORY, 'default-story.rst.j2')
-
-        return tmt.utils.render_template_file(
-            template_filepath,
+        return tmt.export.template.TemplateExporter.render_template(
+            default_template_filename='default-story.rst.j2',
+            keys=keys,
             STORY=story,
             INCLUDE_TITLE=include_title)
 
@@ -26,5 +25,5 @@ class RestructuredExporter(tmt.export.ExportPlugin):
                                 keys: Optional[List[str]] = None,
                                 include_title: bool = True,
                                 **kwargs: Any) -> str:
-        return '\n\n'.join([cls.export_story(story, include_title=include_title)
+        return '\n\n'.join([cls.export_story(story, keys=keys, include_title=include_title)
                            for story in stories])

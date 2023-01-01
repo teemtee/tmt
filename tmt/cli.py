@@ -631,12 +631,18 @@ _test_export_default = 'yaml'
 @click.option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
+# TODO: move to `template` export plugin options
+@click.option(
+    '--template', metavar='PATH',
+    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    )
 def tests_export(
         context: Context,
         format: str,
         how: str,
         nitrate: bool,
         bugzilla: bool,
+        template: Optional[str],
         **kwargs: Any) -> None:
     """
     Export test data into the desired format.
@@ -665,13 +671,15 @@ def tests_export(
     if kwargs.get('fmf_id'):
         echo(tmt.base.FmfId.export_collection(
             collection=[test.fmf_id for test in context.obj.tree.tests()],
-            format=how
+            format=how,
+            template=template
             ))
 
     else:
         echo(tmt.Test.export_collection(
             collection=context.obj.tree.tests(),
-            format=how
+            format=how,
+            template=template
             ))
 
 
@@ -834,7 +842,17 @@ _plan_export_default = 'yaml'
 @click.option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
-def plans_export(context: Context, how: str, format: str, **kwargs: Any) -> None:
+# TODO: move to `template` export plugin options
+@click.option(
+    '--template', metavar='PATH',
+    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    )
+def plans_export(
+        context: Context,
+        how: str,
+        format: str,
+        template: Optional[str],
+        **kwargs: Any) -> None:
     """
     Export plans into desired format.
 
@@ -848,7 +866,11 @@ def plans_export(context: Context, how: str, format: str, **kwargs: Any) -> None
 
         how = format
 
-    echo(tmt.Plan.export_collection(collection=context.obj.tree.plans(), format=how))
+    echo(tmt.Plan.export_collection(
+        collection=context.obj.tree.plans(),
+        format=how,
+        template=template
+        ))
 
 
 @plans.command(name="id")
@@ -1070,6 +1092,11 @@ _story_export_default = 'yaml'
 @click.option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
+# TODO: move to `template` export plugin options
+@click.option(
+    '--template', metavar='PATH',
+    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    )
 def stories_export(
         context: Context,
         how: str,
@@ -1082,6 +1109,7 @@ def stories_export(
         unverified: bool,
         undocumented: bool,
         uncovered: bool,
+        template: Optional[str],
         **kwargs: Any) -> None:
     """
     Export selected stories into desired format.
@@ -1102,7 +1130,7 @@ def stories_export(
                         undocumented, uncovered)
         ]
 
-    echo(tmt.Story.export_collection(collection=stories, format=how))
+    echo(tmt.Story.export_collection(collection=stories, format=how, template=template))
 
 
 @stories.command(name='lint')

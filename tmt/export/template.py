@@ -1,0 +1,88 @@
+import os.path
+from typing import Any, List, Optional
+
+import tmt.base
+import tmt.export
+import tmt.utils
+
+
+@tmt.base.Story.provides_export('template')
+class TemplateExporter(tmt.export.ExportPlugin):
+    @classmethod
+    def render_template(
+            cls,
+            *,
+            template_filepath: Optional[str] = None,
+            default_template_filename: str,
+            keys: Optional[List[str]] = None,
+            **variables: Any
+            ) -> str:
+        return tmt.utils.render_template_file(
+            template_filepath or os.path.join(
+                tmt.export.TEMPLATES_DIRECTORY,
+                default_template_filename),
+            KEYS=keys,
+            **variables
+            )
+
+    @classmethod
+    def export_fmfid_collection(cls,
+                                fmf_ids: List[tmt.base.FmfId],
+                                keys: Optional[List[str]] = None,
+                                template: Optional[str] = None,
+                                **kwargs: Any) -> str:
+        return '\n\n'.join([
+            cls.render_template(
+                template_filepath=template,
+                default_template_filename='default-fmfid.j2',
+                keys=keys,
+                FMF_ID=fmf_id)
+            for fmf_id in fmf_ids
+            ])
+
+    @classmethod
+    def export_test_collection(cls,
+                               tests: List[tmt.base.Test],
+                               keys: Optional[List[str]] = None,
+                               template: Optional[str] = None,
+                               **kwargs: Any) -> str:
+        return '\n\n'.join([
+            cls.render_template(
+                template_filepath=template,
+                default_template_filename='default-test.j2',
+                keys=keys,
+                TEST=test)
+            for test in tests
+            ])
+
+    @classmethod
+    def export_plan_collection(cls,
+                               plans: List[tmt.base.Plan],
+                               keys: Optional[List[str]] = None,
+                               template: Optional[str] = None,
+                               **kwargs: Any) -> str:
+        return '\n\n'.join([
+            cls.render_template(
+                template_filepath=template,
+                default_template_filename='default-plan.j2',
+                keys=keys,
+                PLAN=plan)
+            for plan in plans
+            ])
+
+    @classmethod
+    def export_story_collection(cls,
+                                stories: List[tmt.base.Story],
+                                keys: Optional[List[str]] = None,
+                                template: Optional[str] = None,
+                                include_title: bool = True,
+                                **kwargs: Any) -> str:
+        return '\n\n'.join([
+            cls.render_template(
+                template_filepath=template,
+                default_template_filename='default-story.j2',
+                keys=keys,
+                STORY=story,
+                INCLUDE_TITLE=include_title)
+            for story in stories
+            ])
