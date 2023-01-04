@@ -14,7 +14,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import Command, ShellScript, field
+from tmt.utils import Command, Path, ShellScript, field
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -203,7 +203,7 @@ class InstallBase(tmt.utils.Common):
         # Download the repo file on guest
         try:
             self.guest.execute(Command('curl', '-LOf', url),
-                               cwd='/etc/yum.repos.d', silent=True)
+                               cwd=Path('/etc/yum.repos.d'), silent=True)
         except tmt.utils.RunError as error:
             if error.stderr and 'not found' in error.stderr.lower():
                 raise tmt.utils.PrepareError(

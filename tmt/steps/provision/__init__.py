@@ -22,7 +22,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.utils
 from tmt.steps import Action
-from tmt.utils import BaseLoggerFnType, Command, ShellScript
+from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -124,7 +124,7 @@ class Guest(tmt.utils.Common):
 
         assert parent.plan.my_run is not None  # narrow type
         assert parent.plan.my_run.workdir is not None  # narrow type
-        _, run_id = os.path.split(parent.plan.my_run.workdir)
+        run_id = parent.plan.my_run.workdir.name
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
     @property
@@ -280,16 +280,16 @@ class Guest(tmt.utils.Common):
                 tasks = fmf.utils.listed(matched.group(1), 'task')
                 self.verbose(key, tasks, 'green')
 
-    def _ansible_playbook_path(self, playbook: str) -> str:
+    def _ansible_playbook_path(self, playbook: Path) -> Path:
         """ Prepare full ansible playbook path """
-        # Playbook paths should be relative to the metadata tree root
         self.debug(f"Applying playbook '{playbook}' on guest '{self.guest}'.")
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
         assert parent.plan.my_run is not None  # narrow type
         assert parent.plan.my_run.tree is not None  # narrow type
         assert parent.plan.my_run.tree.root is not None  # narrow type
-        playbook = os.path.join(parent.plan.my_run.tree.root, playbook)
+        # Playbook paths should be relative to the metadata tree root
+        playbook = parent.plan.my_run.tree.root / playbook.unrooted()
         self.debug(f"Playbook full path: '{playbook}'", level=2)
         return playbook
 
@@ -319,7 +319,7 @@ class Guest(tmt.utils.Common):
             for variable in tmt.utils.shell_variables(environment)
             ]
 
-    def ansible(self, playbook: str, extra_args: Optional[str] = None) -> None:
+    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """
 
         raise NotImplementedError()
@@ -327,7 +327,7 @@ class Guest(tmt.utils.Common):
     @overload
     def execute(self,
                 command: tmt.utils.ShellScript,
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -340,7 +340,7 @@ class Guest(tmt.utils.Common):
     @overload
     def execute(self,
                 command: tmt.utils.Command,
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -352,7 +352,7 @@ class Guest(tmt.utils.Common):
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -372,8 +372,8 @@ class Guest(tmt.utils.Common):
         raise NotImplementedError()
 
     def push(self,
-             source: Optional[str] = None,
-             destination: Optional[str] = None,
+             source: Optional[Path] = None,
+             destination: Optional[Path] = None,
              options: Optional[List[str]] = None) -> None:
         """
         Push files to the guest
@@ -382,8 +382,8 @@ class Guest(tmt.utils.Common):
         raise NotImplementedError()
 
     def pull(self,
-             source: Optional[str] = None,
-             destination: Optional[str] = None,
+             source: Optional[Path] = None,
+             destination: Optional[Path] = None,
              options: Optional[List[str]] = None,
              extend_options: Optional[List[str]] = None) -> None:
         """
@@ -562,29 +562,29 @@ class GuestSsh(Guest):
 
     port: Optional[int]
     user: Optional[str]
-    key: List[str]
+    key: List[Path]
     password: Optional[str]
     ssh_option: List[str]
 
     # Master ssh connection process and socket path
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
-    _ssh_socket_path: Optional[str] = None
+    _ssh_socket_path: Optional[Path] = None
 
     def _ssh_guest(self) -> str:
         """ Return user@guest """
         return f'{self.user}@{self.guest}'
 
-    def _ssh_socket(self) -> str:
+    def _ssh_socket(self) -> Path:
         """ Prepare path to the master connection socket """
         if not self._ssh_socket_path:
             # Use '/run/user/uid' if it exists, '/tmp' otherwise
-            run_dir = f"/run/user/{os.getuid()}"
-            if os.path.isdir(run_dir):
-                socket_dir = os.path.join(run_dir, "tmt")
+            run_dir = Path(f"/run/user/{os.getuid()}")
+            if run_dir.is_dir():
+                socket_dir = run_dir / "tmt"
             else:
-                socket_dir = "/tmp"
-            os.makedirs(socket_dir, exist_ok=True)
-            self._ssh_socket_path = tempfile.mktemp(dir=socket_dir)
+                socket_dir = Path("/tmp")
+            socket_dir.mkdir(exist_ok=True)
+            self._ssh_socket_path = Path(tempfile.mktemp(dir=socket_dir))
         return self._ssh_socket_path
 
     def _ssh_options(self) -> Command:
@@ -605,7 +605,7 @@ class GuestSsh(Guest):
             options.append(f'-p{self.port}')
         if self.key:
             for key in self.key:
-                options.extend(['-i', key])
+                options.extend(['-i', str(key)])
         if self.password:
             options.extend(['-oPasswordAuthentication=yes'])
 
@@ -651,7 +651,7 @@ class GuestSsh(Guest):
                               "Value is passed to SSH's -o option, see ssh_config(5) for "
                               "supported options. Can be specified multiple times.")]
 
-    def ansible(self, playbook: str, extra_args: Optional[str] = None) -> None:
+    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
 
@@ -663,7 +663,7 @@ class GuestSsh(Guest):
         ansible_command += Command(
             '--ssh-common-args', self._ssh_options().to_element(),
             '-i', f'{self._ssh_guest()},',
-            playbook)
+            str(playbook))
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
@@ -683,7 +683,7 @@ class GuestSsh(Guest):
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -728,7 +728,7 @@ class GuestSsh(Guest):
 
         # Change to given directory on guest if cwd provided
         if cwd:
-            remote_commands += ShellScript(f'cd {quote(cwd)}')
+            remote_commands += ShellScript(f'cd {quote(str(cwd))}')
 
         if isinstance(command, Command):
             remote_commands += command.to_script()
@@ -758,8 +758,8 @@ class GuestSsh(Guest):
             **kwargs)
 
     def push(self,
-             source: Optional[str] = None,
-             destination: Optional[str] = None,
+             source: Optional[Path] = None,
+             destination: Optional[Path] = None,
              options: Optional[List[str]] = None) -> None:
         """
         Push files to the guest
@@ -777,7 +777,7 @@ class GuestSsh(Guest):
         # Prepare options and the push command
         options = options or DEFAULT_RSYNC_PUSH_OPTIONS
         if destination is None:
-            destination = "/"
+            destination = Path("/")
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
@@ -800,7 +800,7 @@ class GuestSsh(Guest):
                 "rsync",
                 *options,
                 "-e", self._ssh_command().to_element(),
-                source,
+                str(source),
                 f"{self._ssh_guest()}:{destination}"
                 ))
 
@@ -820,8 +820,8 @@ class GuestSsh(Guest):
                 raise
 
     def pull(self,
-             source: Optional[str] = None,
-             destination: Optional[str] = None,
+             source: Optional[Path] = None,
+             destination: Optional[Path] = None,
              options: Optional[List[str]] = None,
              extend_options: Optional[List[str]] = None) -> None:
         """
@@ -843,7 +843,7 @@ class GuestSsh(Guest):
         if extend_options is not None:
             options.extend(extend_options)
         if destination is None:
-            destination = "/"
+            destination = Path("/")
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
@@ -867,7 +867,7 @@ class GuestSsh(Guest):
                 *options,
                 "-e", self._ssh_command().to_element(),
                 f"{self._ssh_guest()}:{source}",
-                destination
+                str(destination)
                 ))
 
         # Try to pull twice, check for rsync after the first failure
@@ -905,11 +905,11 @@ class GuestSsh(Guest):
                 pass
 
         # Remove the ssh socket
-        if self._ssh_socket_path and os.path.exists(self._ssh_socket_path):
+        if self._ssh_socket_path and self._ssh_socket_path.exists():
             self.debug(
                 f"Remove ssh socket '{self._ssh_socket_path}'.", level=3)
             try:
-                os.unlink(self._ssh_socket_path)
+                self._ssh_socket_path.unlink()
             except OSError as error:
                 self.debug(f"Failed to remove the socket: {error}", level=3)
 
@@ -1203,7 +1203,7 @@ class Provision(tmt.steps.Step):
         """ Load guest data from the workdir """
         super().load()
         try:
-            raw_guest_data = tmt.utils.yaml_to_dict(self.read('guests.yaml'))
+            raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
 
             self._guest_data = {
                 name: tmt.utils.SerializableContainer.unserialize(guest_data)
@@ -1220,7 +1220,7 @@ class Provision(tmt.steps.Step):
             raw_guest_data = {guest.name: guest.save().to_serialized()
                               for guest in self.guests()}
 
-            self.write('guests.yaml', tmt.utils.dict_to_yaml(raw_guest_data))
+            self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 

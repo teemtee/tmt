@@ -17,6 +17,7 @@ import fmf
 
 import tmt
 from tmt.steps import STEPS
+from tmt.utils import Path
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -27,28 +28,28 @@ ENTRY_POINT_NAME = 'tmt.plugin'
 ENVIRONMENT_NAME = 'TMT_PLUGINS'
 
 
-_TMT_ROOT = os.path.dirname(os.path.realpath(tmt.__file__))
+_TMT_ROOT = Path(tmt.__file__).resolve().parent
 
 
-def _explore_steps_directories(root: str = _TMT_ROOT) -> None:
+def _explore_steps_directories(root: Path = _TMT_ROOT) -> None:
     """ Check all tmt steps for native plugins """
 
     for step in STEPS:
-        for module in discover(os.path.join(root, 'steps', step)):
+        for module in discover(root / 'steps' / step):
             import_(f'tmt.steps.{step}.{module}')
 
 
-def _explore_plugins_directory(root: str = _TMT_ROOT) -> None:
+def _explore_plugins_directory(root: Path = _TMT_ROOT) -> None:
     """ Check for possible plugins in the 'plugins' directory """
 
-    for module in discover(os.path.join(root, 'plugins')):
+    for module in discover(root / 'plugins'):
         import_(f'tmt.plugins.{module}')
 
 
-def _explore_export_directory(root: str = _TMT_ROOT) -> None:
+def _explore_export_directory(root: Path = _TMT_ROOT) -> None:
     """ Check for possible plugins in the 'export' directory """
 
-    for module in discover(os.path.join(root, 'export')):
+    for module in discover(root / 'export'):
         import_(f'tmt.export.{module}')
 
 
@@ -57,15 +58,15 @@ def _explore_custom_directories() -> None:
 
     try:
         paths = [
-            os.path.realpath(os.path.expandvars(os.path.expanduser(path)))
+            Path(os.path.expandvars(path)).expanduser().resolve()
             for path in os.environ[ENVIRONMENT_NAME].split(os.pathsep)]
     except KeyError:
         log.debug(f'No custom plugin locations detected in {ENVIRONMENT_NAME}.')
         paths = []
     for path in paths:
         for module in discover(path):
-            if path not in sys.path:
-                sys.path.insert(0, path)
+            if str(path) not in sys.path:
+                sys.path.insert(0, str(path))
             import_(module, path)
 
 
@@ -94,7 +95,7 @@ def explore() -> None:
     _explore_entry_points()
 
 
-def import_(module: str, path: Optional[str] = None) -> None:
+def import_(module: str, path: Optional[Path] = None) -> None:
     """ Attempt to import requested module """
     try:
         importlib.import_module(module)
@@ -127,8 +128,8 @@ def import_member(module_name: str, member_name: str) -> Any:
     return getattr(module, member_name)
 
 
-def discover(path: str) -> Generator[str, None, None]:
+def discover(path: Path) -> Generator[str, None, None]:
     """ Discover available plugins for given paths """
-    for _, name, package in pkgutil.iter_modules([path]):
+    for _, name, package in pkgutil.iter_modules([str(path)]):
         if not package:
             yield name

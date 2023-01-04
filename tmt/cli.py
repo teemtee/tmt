@@ -26,6 +26,7 @@ import tmt.steps
 import tmt.templates
 import tmt.utils
 from tmt.options import create_options_decorator
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.steps.discover
@@ -143,7 +144,7 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 @click.group(invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
 @click.option(
-    '-r', '--root', metavar='PATH', show_default=True,
+    '-r', '--root', metavar='PATH', show_default=True, default='.',
     help="Path to the tree root, '.' by default.")
 @click.option(
     '-c', '--context', metavar='DATA', multiple=True,
@@ -179,7 +180,7 @@ def main(
     tmt.utils.Common._save_context(click_contex)
 
     # Initialize metadata tree (from given path or current directory)
-    tree = tmt.Tree(logger=logger, path=root or os.curdir)
+    tree = tmt.Tree(logger=logger, path=Path(root))
 
     # TODO: context object details need checks
     click_contex.obj = ContextObject(
@@ -247,14 +248,14 @@ def main(
          'are supported). Can be specified multiple times.')
 @verbosity_options
 @force_dry_options
-def run(context: Context, id_: str, **kwargs: Any) -> None:
+def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
     """ Run test steps. """
     # Initialize
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
     run = tmt.Run(
-        id_=id_,
+        id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
         context=context,
         logger=logger
@@ -550,10 +551,11 @@ def tests_import(
 
     if not paths:
         paths = ['.']
-    for path in paths:
+    for _path in paths:
+        path = Path(_path)
         # Make sure we've got a real directory
-        path = os.path.realpath(path)
-        if not os.path.isdir(path):
+        path = path.resolve()
+        if not path.is_dir():
             raise tmt.utils.GeneralError(
                 "Path '{0}' is not a directory.".format(path))
         # Gather old metadata and store them as fmf
@@ -562,18 +564,17 @@ def tests_import(
             purpose, disabled, types, general)
         # Add path to common metadata if there are virtual test cases
         if individual:
-            root = fmf.Tree(path).root
-            common['path'] = os.path.join('/', os.path.relpath(path, root))
+            root = Path(fmf.Tree(str(path)).root)
+            common['path'] = str(Path('/') / path.relative_to(root))
         # Store common metadata
-        common_path = os.path.join(path, 'main.fmf')
+        common_path = path / 'main.fmf'
         tmt.convert.write(common_path, common)
         # Store individual data (as virtual tests)
         for testcase in individual:
-            testcase_path = os.path.join(
-                path, str(testcase['extra-nitrate']) + '.fmf')
+            testcase_path = path / f'{testcase["extra-nitrate"]}.fmf'
             tmt.convert.write(testcase_path, testcase)
         # Adjust runtest.sh content and permission if needed
-        tmt.convert.adjust_runtest(os.path.join(path, 'runtest.sh'))
+        tmt.convert.adjust_runtest(path / 'runtest.sh')
 
 
 _test_export_formats = list(tmt.Test.get_export_plugin_registry().keys())
@@ -1221,7 +1222,7 @@ def init(
     """
 
     tmt.Tree._save_context(context)
-    tmt.Tree.init(logger=context.obj.logger, path=path, template=template, force=force)
+    tmt.Tree.init(logger=context.obj.logger, path=Path(path), template=template, force=force)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1270,7 +1271,7 @@ def status(
         raise tmt.utils.GeneralError(
             "Options --abandoned, --active and --finished cannot be "
             "used together.")
-    if not os.path.exists(workdir_root):
+    if not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
     status_obj = tmt.Status(logger=context.obj.logger, context=context)
     status_obj.show()
@@ -1325,7 +1326,7 @@ def clean(context: Context, **kwargs: Any) -> None:
             parent=clean_obj,
             context=context
             )
-        if os.path.exists(tmt.utils.WORKDIR_ROOT):
+        if tmt.utils.WORKDIR_ROOT.exists():
             if not clean_obj.guests():
                 exit_code = 1
             if not clean_obj.runs():
@@ -1397,7 +1398,7 @@ def clean_runs(
             "Options --last, --id and --keep cannot be used together.")
     if keep is not None and keep < 0:
         raise tmt.utils.GeneralError("--keep must not be a negative number.")
-    if not os.path.exists(workdir_root):
+    if not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
@@ -1438,7 +1439,7 @@ def clean_guests(
     if last and id_ is not None:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-    if not os.path.exists(workdir_root):
+    if not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
@@ -1552,10 +1553,10 @@ def setup_completion(shell: str, install: bool) -> None:
     # Fish gets installed into its special location where it is automatically
     # loaded.
     if shell == 'fish':
-        script = os.path.expanduser('~/.config/fish/completions/tmt.fish')
+        script = Path('~/.config/fish/completions/tmt.fish').expanduser()
     # Bash and zsh get installed to tmt's config directory.
     else:
-        script = os.path.join(config.path, f'{COMPLETE_SCRIPT}.{shell}')
+        script = Path(config.path) / f'{COMPLETE_SCRIPT}.{shell}'
 
     out = open(script, 'w') if install else sys.stdout
     subprocess.run(f'{COMPLETE_VARIABLE}={shell}_source tmt',
@@ -1565,7 +1566,7 @@ def setup_completion(shell: str, install: bool) -> None:
         out.close()
         # If requested, modify .bashrc or .zshrc
         if shell != 'fish':
-            config_path = os.path.expanduser(f'~/.{shell}rc')
+            config_path = Path(f'~/.{shell}rc').expanduser()
             with open(config_path, 'a') as shell_config:
                 shell_config.write('\n# Generated by tmt\n')
                 shell_config.write(f'source {script}')

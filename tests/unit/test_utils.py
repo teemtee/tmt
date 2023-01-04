@@ -1,21 +1,23 @@
 # coding: utf-8
 
 import datetime
-import os
 import queue
 import re
 import threading
 import time
 import unittest
 import unittest.mock
+from typing import Tuple
 
+import py
 import pytest
 
 import tmt
 import tmt.log
 import tmt.plugins
 import tmt.steps.discover
-from tmt.utils import (Command, Common, GeneralError, ShellScript,
+import tmt.utils
+from tmt.utils import (Command, Common, GeneralError, Path, ShellScript,
                        StructuredField, StructuredFieldError,
                        WaitingIncomplete, WaitingTimedOutError,
                        duration_to_seconds, listify, public_git_url,
@@ -25,9 +27,9 @@ run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
 
 @pytest.fixture
-def local_git_repo(tmpdir):
-    origin = tmpdir.join('origin')
-    os.makedirs(origin)
+def local_git_repo(tmpdir: py.path.local) -> Path:
+    origin = Path(str(tmpdir)) / 'origin'
+    origin.mkdir()
 
     run(Command('git', 'init'), cwd=origin)
     run(
@@ -42,7 +44,7 @@ def local_git_repo(tmpdir):
     run(
         Command('git', 'config', '--local', 'receive.denyCurrentBranch', 'ignore'),
         cwd=origin)
-    origin.join('README').write('something to have in the repo')
+    origin.joinpath('README').write_text('something to have in the repo')
     run(Command('git', 'add', '-A'), cwd=origin)
     run(
         Command('git', 'commit', '-m', 'initial_commit'),
@@ -51,9 +53,9 @@ def local_git_repo(tmpdir):
 
 
 @pytest.fixture
-def origin_and_local_git_repo(local_git_repo):
-    top_dir = local_git_repo.dirpath()
-    fork_dir = top_dir.join('fork')
+def origin_and_local_git_repo(local_git_repo: Path) -> Tuple[Path, Path]:
+    top_dir = local_git_repo.parent
+    fork_dir = top_dir / 'fork'
     run(ShellScript(f'git clone {local_git_repo} {fork_dir}').to_shell_command(),
         cwd=top_dir)
     run(ShellScript('git config --local user.email lzachar@redhat.com').to_shell_command(),
@@ -105,16 +107,16 @@ def test_listify():
 
 def test_config():
     """ Config smoke test """
-    run = '/var/tmp/tmt/test'
+    run = Path('/var/tmp/tmt/test')
     config1 = tmt.utils.Config()
-    config1.last_run(run)
+    config1.last_run = run
     config2 = tmt.utils.Config()
-    assert config2.last_run() == run
+    assert config2.last_run.resolve() == run.resolve()
 
 
 def test_last_run_race(tmpdir, monkeypatch):
     """ Race in last run symlink should't be fatal """
-    monkeypatch.setattr(tmt.utils, 'CONFIG_PATH', tmpdir.mkdir('config'))
+    monkeypatch.setattr(tmt.utils, 'CONFIG_PATH', Path(str(tmpdir.mkdir('config'))))
     mock_logger = unittest.mock.MagicMock()
     monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
     config = tmt.utils.Config()
@@ -123,7 +125,7 @@ def test_last_run_race(tmpdir, monkeypatch):
 
     def create_last_run(config, counter):
         try:
-            val = config.last_run(tmpdir.mkdir(f"run-{counter}"))
+            val = config.last_run = Path(str(tmpdir.mkdir(f"run-{counter}")))
             results.put(val)
         except Exception as err:
             results.put(err)
@@ -146,7 +148,7 @@ def test_last_run_race(tmpdir, monkeypatch):
     assert all_good
     # Getting into race is not certain, do not assert
     # assert mock_logger.called
-    assert config.last_run(), "Some run was stored as last run"
+    assert config.last_run, "Some run was stored as last run"
 
 
 def test_workdir_env_var(tmpdir, monkeypatch, root_logger):
@@ -156,32 +158,32 @@ def test_workdir_env_var(tmpdir, monkeypatch, root_logger):
     common = Common(logger=root_logger)
     common._workdir_init()
     monkeypatch.delenv('TMT_WORKDIR_ROOT')
-    assert common.workdir == f'{tmpdir}/run-001'
+    assert common.workdir == Path(f'{tmpdir}/run-001')
 
 
 def test_workdir_root_full(tmpdir, monkeypatch, root_logger):
     """ Raise if all ids lower than WORKDIR_MAX are exceeded """
-    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', tmpdir)
+    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', Path(str(tmpdir)))
     monkeypatch.setattr(tmt.utils, 'WORKDIR_MAX', 1)
-    possible_workdir = str(tmpdir.join('run-001'))
+    possible_workdir = Path(str(tmpdir)) / 'run-001'
     # First call success
     common1 = Common(logger=root_logger)
     common1._workdir_init()
-    assert common1.workdir == possible_workdir
+    assert common1.workdir.resolve() == possible_workdir.resolve()
     # Second call has no id to try
     with pytest.raises(GeneralError):
         Common(logger=root_logger)._workdir_init()
     # Removed run-001 should be used again
     common1._workdir_cleanup(common1.workdir)
-    assert not os.path.exists(possible_workdir)
+    assert not possible_workdir.exists()
     common2 = Common(logger=root_logger)
     common2._workdir_init()
-    assert common2.workdir == possible_workdir
+    assert common2.workdir.resolve() == possible_workdir.resolve()
 
 
 def test_workdir_root_race(tmpdir, monkeypatch, root_logger):
     """ Avoid race in workdir creation """
-    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', str(tmpdir))
+    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', Path(str(tmpdir)))
     results = queue.Queue()
     threads = []
 
@@ -205,7 +207,7 @@ def test_workdir_root_race(tmpdir, monkeypatch, root_logger):
     unique_workdirs = set()
     for t in threads:
         value = results.get()
-        if isinstance(value, str):
+        if isinstance(value, Path):
             unique_workdirs.add(value)
         else:
             # None or Exception: Record to the log and fail test
@@ -608,57 +610,61 @@ def test_get_distgit_handler_explicit():
 
 def test_FedoraDistGit(tmpdir):
     # Fake values, production hash is too long
-    tmpdir.join('sources').write(
-        'SHA512 (fn-1.tar.gz) = 09af\n')
-    tmpdir.join('tmt.spec').write('')
+    path = Path(str(tmpdir))
+    path.joinpath('sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
+    path.joinpath('tmt.spec').write_text('')
     fedora_sources_obj = tmt.utils.FedoraDistGit()
     assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",  # noqa: E501
-            "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=tmpdir)
+            "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=path)
 
 
 class Test_validate_git_status:
     @pytest.mark.parametrize("use_path",
                              [False, True], ids=["without path", "with path"])
-    def test_all_good(cls, origin_and_local_git_repo, use_path, root_logger):
+    def test_all_good(
+            cls,
+            origin_and_local_git_repo: Tuple[Path, Path],
+            use_path: bool,
+            root_logger):
         # No need to modify origin, ignoring it
         mine = origin_and_local_git_repo[1]
 
         # In local repo:
         # Init tmt and add test
         if use_path:
-            fmf_root = mine.join('fmf_root')
+            fmf_root = mine / 'fmf_root'
         else:
             fmf_root = mine
-        tmt.Tree.init(logger=root_logger, path=str(fmf_root), template=None, force=None)
-        fmf_root.join('main.fmf').write('test: echo')
-        run(ShellScript(f'git add {fmf_root} {fmf_root.join("main.fmf")}').to_shell_command(),
+        tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
+        fmf_root.joinpath('main.fmf').write_text('test: echo')
+        run(ShellScript(f'git add {fmf_root} {fmf_root / "main.fmf"}').to_shell_command(),
             cwd=mine)
         run(ShellScript('git commit -m add_test').to_shell_command(),
             cwd=mine)
         run(ShellScript('git push').to_shell_command(),
             cwd=mine)
-        test = tmt.Tree(logger=root_logger, path=str(fmf_root)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=fmf_root).tests()[0]
         validation = validate_git_status(test)
         assert validation == (True, '')
 
-    def test_no_remote(cls, local_git_repo, root_logger):
+    def test_no_remote(cls, local_git_repo: Path, root_logger):
         tmpdir = local_git_repo
-        tmt.Tree.init(logger=root_logger, path=str(tmpdir), template=None, force=None)
-        tmpdir.join('main.fmf').write('test: echo')
+        tmt.Tree.init(logger=root_logger, path=tmpdir, template=None, force=None)
+        tmpdir.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript('git add main.fmf .fmf/version').to_shell_command(),
             cwd=tmpdir)
         run(ShellScript('git commit -m initial_commit').to_shell_command(),
             cwd=tmpdir)
 
-        test = tmt.Tree(logger=root_logger, path=str(tmpdir)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=tmpdir).tests()[0]
         val, msg = validate_git_status(test)
         assert not val
         assert "Failed to get remote branch" in msg
 
-    def test_untracked_fmf_root(cls, local_git_repo, root_logger):
+    def test_untracked_fmf_root(cls, local_git_repo: Path, root_logger):
         # local repo is enough since this can't get passed 'is pushed' check
-        tmt.Tree.init(logger=root_logger, path=str(local_git_repo), template=None, force=None)
-        local_git_repo.join('main.fmf').write('test: echo')
+        tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
+        local_git_repo.joinpath('main.fmf').write_text('test: echo')
         run(
             ShellScript('git add main.fmf').to_shell_command(),
             cwd=local_git_repo)
@@ -666,35 +672,39 @@ class Test_validate_git_status:
             ShellScript('git commit -m missing_fmf_root').to_shell_command(),
             cwd=local_git_repo)
 
-        test = tmt.Tree(logger=root_logger, path=str(local_git_repo)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         validate = validate_git_status(test)
         assert validate == (False, 'Uncommitted changes in .fmf/version')
 
-    def test_untracked_sources(cls, local_git_repo, root_logger):
-        tmt.Tree.init(logger=root_logger, path=str(local_git_repo), template=None, force=None)
-        local_git_repo.join('main.fmf').write('test: echo')
-        local_git_repo.join('test.fmf').write('tag: []')
+    def test_untracked_sources(cls, local_git_repo: Path, root_logger):
+        tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
+        local_git_repo.joinpath('main.fmf').write_text('test: echo')
+        local_git_repo.joinpath('test.fmf').write_text('tag: []')
         run(ShellScript('git add .fmf/version test.fmf').to_shell_command(),
             cwd=local_git_repo)
         run(
             ShellScript('git commit -m main.fmf').to_shell_command(),
             cwd=local_git_repo)
 
-        test = tmt.Tree(logger=root_logger, path=str(local_git_repo)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         validate = validate_git_status(test)
         assert validate == (False, 'Uncommitted changes in main.fmf')
 
     @pytest.mark.parametrize("use_path",
                              [False, True], ids=["without path", "with path"])
-    def test_local_changes(cls, origin_and_local_git_repo, use_path, root_logger):
+    def test_local_changes(
+            cls,
+            origin_and_local_git_repo: Tuple[Path, Path],
+            use_path,
+            root_logger):
         origin, mine = origin_and_local_git_repo
 
         if use_path:
-            fmf_root = origin.join('fmf_root')
+            fmf_root = origin / 'fmf_root'
         else:
             fmf_root = origin
-        tmt.Tree.init(logger=root_logger, path=str(fmf_root), template=None, force=None)
-        fmf_root.join('main.fmf').write('test: echo')
+        tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
+        fmf_root.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript('git add -A').to_shell_command(), cwd=origin)
         run(ShellScript('git commit -m added_test').to_shell_command(),
             cwd=origin)
@@ -705,33 +715,33 @@ class Test_validate_git_status:
 
         mine_fmf_root = mine
         if use_path:
-            mine_fmf_root = mine.join('fmf_root')
-        mine_fmf_root.join('main.fmf').write('test: echo ahoy')
+            mine_fmf_root = mine / 'fmf_root'
+        mine_fmf_root.joinpath('main.fmf').write_text('test: echo ahoy')
 
         # Change README but since it is not part of metadata we do not check it
-        mine.join("README").write('changed')
+        mine.joinpath("README").write_text('changed')
 
-        test = tmt.Tree(logger=root_logger, path=str(mine_fmf_root)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=mine_fmf_root).tests()[0]
         validation_result = validate_git_status(test)
 
         assert validation_result == (
             False, "Uncommitted changes in " + ('fmf_root/' if use_path else '') + "main.fmf")
 
-    def test_not_pushed(cls, origin_and_local_git_repo, root_logger):
+    def test_not_pushed(cls, origin_and_local_git_repo: Tuple[Path, Path], root_logger):
         # No need for original repo (it is required just to have remote in
         # local clone)
         mine = origin_and_local_git_repo[1]
         fmf_root = mine
 
-        tmt.Tree.init(logger=root_logger, path=str(fmf_root), template=None, force=None)
+        tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
 
-        fmf_root.join('main.fmf').write('test: echo')
+        fmf_root.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript('git add main.fmf .fmf/version').to_shell_command(),
             cwd=fmf_root)
         run(ShellScript('git commit -m changes').to_shell_command(),
             cwd=mine)
 
-        test = tmt.Tree(logger=root_logger, path=str(fmf_root)).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=fmf_root).tests()[0]
         validation_result = validate_git_status(test)
 
         assert validation_result == (

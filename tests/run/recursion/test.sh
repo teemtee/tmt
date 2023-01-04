@@ -10,7 +10,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt run --id $(pwd) --rm discover" 2 "Invalid run command"
-        rlAssertGrep "workdir must not be inside" $rlRun_LOG
+        rlAssertGrep "workdir .* must not be inside" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

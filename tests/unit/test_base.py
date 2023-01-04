@@ -11,7 +11,7 @@ import pytest
 import tmt
 import tmt.cli
 from tmt.base import FmfId, Link, LinkNeedle, Links
-from tmt.utils import SpecificationError
+from tmt.utils import Path, SpecificationError
 
 runner = click.testing.CliRunner()
 
@@ -37,7 +37,7 @@ def test_test_defaults(root_logger):
     assert test.name == '/smoke'
     assert test.component == list()
     assert str(test.test) == './test.sh'
-    assert test.path == '/'
+    assert test.path == Path('/')
     assert test.require == list()
     assert test.environment == dict()
     assert test.duration == '5m'

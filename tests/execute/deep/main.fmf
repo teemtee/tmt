@@ -1,0 +1,6 @@
+summary: Verify that deep fmf trees are executed fine
+description:
+    Make sure that tests defined under an `fmf` tree stored deeper
+    in the git repository structure are successfully executed.
+test: cd data && tmt run -v
+framework: shell

@@ -19,7 +19,7 @@ import tmt.base
 import tmt.export
 import tmt.identifier
 import tmt.utils
-from tmt.utils import ConvertError, GeneralError
+from tmt.utils import ConvertError, GeneralError, Path
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -65,8 +65,10 @@ def read_manual(
     # Turns off nitrate caching
     nitrate.set_cache_level(0)
 
+    old_cwd = Path.cwd()
+
     try:
-        tree = fmf.Tree(os.getcwd())
+        tree = fmf.Tree(str(old_cwd))
     except fmf.utils.RootError:
         raise ConvertError("Initialize metadata tree using 'tmt init'.")
 
@@ -80,14 +82,9 @@ def read_manual(
         raise ConvertError('Test plan/case identifier must be an integer.')
 
     # Create directory to store manual tests in
-    old_cwd = os.getcwd()
-    os.chdir(tree.root)
-    try:
-        os.mkdir('Manual')
-    except FileExistsError:
-        pass
-
-    os.chdir('Manual')
+    new_cwd = Path(tree.root) / 'Manual'
+    new_cwd.mkdir(exist_ok=True)
+    os.chdir(new_cwd)
 
     for case_id in case_ids:
         testcase = nitrate.TestCase(case_id)
@@ -102,13 +99,11 @@ def read_manual(
         # Filename sanitization
         dir_name = testcase.summary.replace(' ', '_')
         dir_name = dir_name.replace('/', '_')
-        try:
-            os.mkdir(dir_name)
-        except FileExistsError:
-            pass
+        directory = Path(dir_name)
+        directory.mkdir(exist_ok=True)
 
-        os.chdir(dir_name)
-        echo("Importing the '{0}' test case.".format(dir_name))
+        os.chdir(directory)
+        echo("Importing the '{0}' test case.".format(directory))
 
         # Test case data
         md_content = read_manual_data(testcase)
@@ -118,9 +113,9 @@ def read_manual(
         data['manual'] = True
         data['test'] = 'test.md'
 
-        write_markdown(os.getcwd() + '/test.md', md_content)
-        write(os.getcwd() + '/main.fmf', data)
-        os.chdir('..')
+        write_markdown(Path.cwd() / 'test.md', md_content)
+        write(Path.cwd() / 'main.fmf', data)
+        os.chdir(new_cwd)
 
     os.chdir(old_cwd)
 
@@ -150,7 +145,7 @@ def html_to_markdown(html: str) -> str:
     return markdown
 
 
-def write_markdown(path: str, content: Dict[str, str]) -> None:
+def write_markdown(path: Path, content: Dict[str, str]) -> None:
     """ Write gathered metadata in the markdown format """
     to_print = ""
     if content['setup']:
@@ -195,7 +190,7 @@ def add_link(target: str, data: NitrateDataType,
 
 
 def read_datafile(
-        path: str,
+        path: Path,
         filename: str,
         datafile: str,
         types: List[str],
@@ -259,14 +254,14 @@ def read_datafile(
 
     # Detect framework
     try:
-        test_path = ""
+        test_path: Optional[Path] = None
         if data["test"].split()[0] != 'make':
             script_paths = [s for s in shlex.split(data['test']) if s.endswith('.sh')]
             if script_paths:
-                test_path = os.path.join(path, script_paths[0])
+                test_path = path / script_paths[0]
         else:
             # As 'make' command was specified for test, ensure Makefile present.
-            makefile_path = os.path.join(path, 'Makefile')
+            makefile_path = path / 'Makefile'
             try:
                 with open(makefile_path, encoding='utf-8') as makefile_file:
                     makefile = makefile_file.read()
@@ -276,7 +271,7 @@ def read_datafile(
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
             if search_result is not None:
-                test_path = os.path.join(path, search_result.group(1).split()[-1])
+                test_path = path / search_result.group(1).split()[-1]
         # Read the test file and determine the framework used.
         if test_path:
             with open(test_path, encoding="utf-8") as test_file:
@@ -375,7 +370,7 @@ ReadOutputType = Tuple[NitrateDataType, List[NitrateDataType]]
 
 
 def read(
-        path: str,
+        path: Path,
         makefile: bool,
         restraint: bool,
         nitrate: bool,
@@ -399,7 +394,7 @@ def read(
 
     # Make sure there is a metadata tree initialized
     try:
-        tree = fmf.Tree(path)
+        tree = fmf.Tree(str(path))
     except fmf.utils.RootError:
         raise ConvertError("Initialize metadata tree using 'tmt init'.")
 
@@ -408,9 +403,7 @@ def read(
     restraint_file = None
     filename = None
 
-    files = \
-        [f for f in os.listdir(path)
-         if os.path.isfile(os.path.join(path, f))]
+    filenames = [f.name for f in path.iterdir() if f.is_file()]
 
     # Ascertain which file to use based on cmd arg.
     # If both are false raise an assertion.
@@ -421,25 +414,25 @@ def read(
         raise ConvertError("Please specify either a "
                            "Makefile or Restraint file.")
     elif makefile and restraint:
-        if 'metadata' in files:
+        if 'metadata' in filenames:
             filename = 'metadata'
             restraint_file = True
             echo(style('Restraint file ', fg='blue'), nl=False)
-        elif 'Makefile' in files:
+        elif 'Makefile' in filenames:
             filename = 'Makefile'
             makefile_file = True
             echo(style('Makefile ', fg='blue'), nl=False)
         else:
             raise ConvertError("Unable to find any metadata file.")
     elif makefile:
-        if 'Makefile' not in files:
+        if 'Makefile' not in filenames:
             raise ConvertError("Unable to find Makefile")
         else:
             filename = 'Makefile'
             makefile_file = True
             echo(style('Makefile ', fg='blue'), nl=False)
     elif restraint:
-        if 'metadata' not in files:
+        if 'metadata' not in filenames:
             raise ConvertError("Unable to find restraint metadata file")
         else:
             filename = 'metadata'
@@ -450,7 +443,7 @@ def read(
         raise GeneralError('filename is not defined')
     # Open the datafile
     if restraint_file or makefile_file:
-        datafile_path = os.path.join(path, filename)
+        datafile_path = path / filename
         try:
             with open(datafile_path, encoding='utf-8') as datafile_file:
                 datafile = datafile_file.read()
@@ -460,12 +453,12 @@ def read(
         echo("found in '{0}'.".format(datafile_path))
 
     # If testinfo.desc exists read it to preserve content and remove it
-    testinfo_path = os.path.join(path, 'testinfo.desc')
-    if os.path.isfile(testinfo_path):
+    testinfo_path = path / 'testinfo.desc'
+    if testinfo_path.is_file():
         try:
             with open(testinfo_path, encoding='utf-8') as testinfo_file:
                 old_testinfo = testinfo_file.read()
-                os.remove(testinfo_path)
+            testinfo_path.unlink()
         except IOError:
             raise ConvertError(
                 "Unable to open '{0}'.".format(testinfo_path))
@@ -551,12 +544,12 @@ def read(
                     "Unable to write '{0}'.".format(testinfo_path))
         # Remove created testinfo.desc otherwise
         else:
-            os.remove(testinfo_path)
+            testinfo_path.unlink()
 
     # Purpose (extract everything after the header as a description)
     if purpose:
         echo(style('Purpose ', fg='blue'), nl=False)
-        purpose_path = os.path.join(path, 'PURPOSE')
+        purpose_path = path / 'PURPOSE'
         try:
             with open(purpose_path, encoding='utf-8') as purpose_file:
                 content = purpose_file.read()
@@ -582,8 +575,8 @@ def read(
         read_polarion(common_data, polarion_case_id, link_polarion)
 
     # Remove keys which are inherited from parent
-    parent_path = os.path.dirname(path.rstrip('/'))
-    parent_name = '/' + os.path.relpath(parent_path, tree.root)
+    parent_path = path.parent
+    parent_name = str(Path('/') / parent_path.relative_to(tree.root))
     parent = tree.find(parent_name)
     if parent:
         for test in [common_data] + individual_data:
@@ -652,12 +645,12 @@ def read_nitrate(
 
     # Write md file if there is something to write
     # or try to remove if there isn't.
-    md_path = os.getcwd() + '/test.md'
+    md_path = Path.cwd() / 'test.md'
     if md_content:
         write_markdown(md_path, md_content)
     else:
         try:
-            os.remove(md_path)
+            md_path.unlink()
             echo(style(f"Test case file '{md_path}' "
                        "successfully removed.", fg='magenta'))
         except FileNotFoundError:
@@ -964,11 +957,11 @@ def read_nitrate_case(
     return data
 
 
-def adjust_runtest(path: str) -> None:
+def adjust_runtest(path: Path) -> None:
     """ Adjust runtest.sh content and permission """
 
     # Nothing to do if there is no runtest.sh
-    if not os.path.exists(path):
+    if not path.exists():
         return
 
     # Remove sourcing of rhts-environment.sh and update beakerlib path
@@ -999,13 +992,13 @@ def adjust_runtest(path: str) -> None:
 
     # Make sure the script has correct execute permissions
     try:
-        os.chmod(path, 0o755)
+        path.chmod(0o755)
     except IOError:
         raise tmt.convert.ConvertError(
             "Could not make '{0}' executable.".format(path))
 
 
-def write(path: str, data: NitrateDataType) -> None:
+def write(path: Path, data: NitrateDataType) -> None:
     """ Write gathered metadata in the fmf format """
     # Put keys into a reasonable order
     extra_keys = [

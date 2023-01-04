@@ -5,6 +5,7 @@ import pytest
 import tmt
 import tmt.base
 import tmt.beakerlib
+from tmt.utils import Path
 
 
 @pytest.mark.web
@@ -20,10 +21,11 @@ def test_library(root_logger):
 
     for library in [library_with_parent, library_without_parent]:
         assert library.format == 'rpm'
-        assert library.repo == 'openssl'
+        assert library.repo == Path('openssl')
         assert library.url == 'https://github.com/beakerlib/openssl'
         assert library.ref == 'master'  # The default branch is master
-        assert library.dest == tmt.beakerlib.DEFAULT_DESTINATION
+        assert library.dest.resolve() \
+            == Path.cwd().joinpath(tmt.beakerlib.DEFAULT_DESTINATION).resolve()
         shutil.rmtree(library.parent.workdir)
 
 
@@ -43,8 +45,9 @@ def test_library_from_fmf(url, name, default_branch, root_logger):
     assert library.format == 'fmf'
     assert library.ref == default_branch
     assert library.url == url
-    assert library.dest == tmt.beakerlib.DEFAULT_DESTINATION
-    assert library.repo == url.split('/')[-1]
+    assert library.dest.resolve() \
+        == Path.cwd().joinpath(tmt.beakerlib.DEFAULT_DESTINATION).resolve()
+    assert library.repo == Path(url.split('/')[-1])
     assert library.name == name
     shutil.rmtree(library.parent.workdir)
 
@@ -90,11 +93,12 @@ def test_dependencies(root_logger):
     assert 'library(openssl/certgen)' in libraries[0].require
     assert 'library(openssl/certgen)' not in requires
     # Check library attributes for sane values
-    assert libraries[0].repo == 'httpd'
+    assert libraries[0].repo == Path('httpd')
     assert libraries[0].name == '/http'
     assert libraries[0].url == 'https://github.com/beakerlib/httpd'
     assert libraries[0].ref == 'master'  # The default branch is master
-    assert libraries[0].dest == tmt.beakerlib.DEFAULT_DESTINATION
-    assert libraries[1].repo == 'openssl'
+    assert libraries[0].dest.resolve() == Path.cwd().joinpath(
+        tmt.beakerlib.DEFAULT_DESTINATION).resolve()
+    assert libraries[1].repo == Path('openssl')
     assert libraries[1].name == '/certgen'
     shutil.rmtree(parent.workdir)

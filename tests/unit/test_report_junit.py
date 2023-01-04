@@ -7,6 +7,7 @@ import pytest
 
 from tmt.result import Result, ResultData, ResultOutcome
 from tmt.steps.report.junit import ReportJUnit, ReportJUnitData
+from tmt.utils import Path
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def report_fix(tmpdir, root_logger):
         logger=root_logger,
         step=step_mock,
         data=ReportJUnitData(name='x', how='junit'),
-        workdir=str(tmpdir.join('junit')))
+        workdir=Path(str(tmpdir.join('junit'))))
     report.get = get
     report.info = MagicMock()
 

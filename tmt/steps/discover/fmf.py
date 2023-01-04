@@ -17,7 +17,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command
+from tmt.utils import Command, Path
 
 
 @dataclasses.dataclass
@@ -241,12 +241,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Check url and path, prepare test directory
         url = self.get('url')
         # FIXME: cast() - typeless "dispatcher" method
-        path = cast(Optional[str], self.get('path'))
+        path = Path(cast(str, self.get('path'))) if self.get('path') else None
         # Save the test directory so that others can reference it
         ref = self.get('ref')
         assert self.workdir is not None
-        self.testdir = os.path.join(self.workdir, 'tests')
-        sourcedir = os.path.join(self.workdir, 'source')
+        self.testdir = self.workdir / 'tests'
+        sourcedir = self.workdir / 'source'
         dist_git_source = self.get('dist-git-source', False)
         dist_git_merge = self.get('dist-git-merge', False)
         dist_git_init = self.get('dist-git-init', False)
@@ -259,10 +259,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 "Cannot manipulate with dist-git without "
                 "the `--dist-git-merge` option.")
 
-        def get_git_root(dir: str) -> str:
+        def get_git_root(dir: Path) -> Path:
             stdout, _ = self.run(Command("git", "rev-parse", "--show-toplevel"), cwd=dir, dry=True)
             assert stdout is not None
-            return stdout.strip("\n")
+            return Path(stdout.strip("\n"))
 
         # Raise an exception if --fmf-id uses w/o url and git root
         # doesn't exist for discovered plan
@@ -314,20 +314,20 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Copy git repository root to workdir
         else:
             if path is not None:
-                fmf_root: Optional[str] = path
+                fmf_root: Optional[Path] = path
             else:
-                fmf_root = self.step.plan.node.root
+                fmf_root = Path(self.step.plan.node.root)
             requires_git = self.opt('sync-repo') or any(
                 self.get(opt) for opt in self._REQUIRES_GIT)
             # Path for distgit sources cannot be checked until the
             # tarball is extracted
-            if path and not os.path.isdir(path) and not dist_git_source:
+            if path and not path.is_dir() and not dist_git_source:
                 raise tmt.utils.DiscoverError(
                     f"Provided path '{path}' is not a directory.")
             if dist_git_source:
                 # Ensure we're in a git repo when extracting dist-git sources
                 try:
-                    git_root = get_git_root(self.step.plan.node.root)
+                    git_root = get_git_root(Path(self.step.plan.node.root))
                 except tmt.utils.RunError:
                     assert self.step.plan.my_run is not None  # narrow type
                     assert self.step.plan.my_run.tree is not None  # narrow type
@@ -344,17 +344,17 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     self.debug(f"Git root not found, using '{fmf_root}.'")
                     git_root = fmf_root
                 # Set path to relative path from the git root to fmf root
-                path = os.path.relpath(
-                    fmf_root, git_root if requires_git else fmf_root)
+                path = fmf_root.resolve().relative_to(
+                    git_root.resolve() if requires_git else fmf_root.resolve())
 
             # And finally copy the git/fmf root directory to testdir
             # (for dist-git case only when merge explicitly requested)
             if requires_git:
-                directory: str = git_root
+                directory: Path = git_root
             else:
                 assert fmf_root is not None  # narrow type
                 directory = fmf_root
-            self.info('directory', directory, 'green')
+            self.info('directory', str(directory), 'green')
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.opt('dry'):
@@ -379,7 +379,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 cwd=self.testdir)
 
         # Show current commit hash if inside a git repository
-        if os.path.isdir(self.testdir):
+        if self.testdir.is_dir():
             try:
                 hash_, _ = self.run(Command("git", "rev-parse", "--short", "HEAD"),
                                     cwd=self.testdir)
@@ -453,17 +453,17 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     dirs_exist_ok=True)
 
         # Adjust path and optionally show
-        if path is None or path == '.':
-            path = ''
+        if path is None or path.resolve() == Path.cwd().resolve():
+            path = Path('')
         else:
-            self.info('path', path, 'green')
+            self.info('path', str(path), 'green')
 
         # Prepare the whole tree path and test path prefix
-        tree_path = os.path.join(self.testdir, path.lstrip('/'))
-        if not os.path.isdir(tree_path) and not self.opt('dry'):
+        tree_path = self.testdir / path.unrooted()
+        if not tree_path.is_dir() and not self.opt('dry'):
             raise tmt.utils.DiscoverError(
                 f"Metadata tree path '{path}' not found.")
-        prefix_path = os.path.join('/tests', path.lstrip('/'))
+        prefix_path = Path('/tests') / path.unrooted()
 
         # Show filters and test names if provided
         # Check the 'test --filter' option first, then from discover
@@ -529,7 +529,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             # Prefix test path with 'tests' and possible 'path' prefix
 
             assert test.path is not None  # narrow type
-            test.path = os.path.join(prefix_path, test.path.lstrip('/'))
+            test.path = prefix_path / test.path.unrooted()
             # Check for possible required beakerlib libraries
             if test.require or test.recommend:
                 test.require, test.recommend, _ = tmt.beakerlib.dependencies(
@@ -541,7 +541,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Add TMT_SOURCE_DIR variable for each test
         if dist_git_source:
             for test in self._tests:
-                test.environment['TMT_SOURCE_DIR'] = sourcedir
+                test.environment['TMT_SOURCE_DIR'] = str(sourcedir)
 
     def tests(self) -> List[tmt.base.Test]:
         """ Return all discovered tests """

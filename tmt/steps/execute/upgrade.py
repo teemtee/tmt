@@ -15,6 +15,7 @@ from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal
+from tmt.utils import Path
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'
@@ -182,7 +183,7 @@ class ExecuteUpgrade(ExecuteInternal):
             'upgrade', 'run tests on the new system', color='blue', shift=1)
         self._run_test_phase(guest, AFTER_UPGRADE_PREFIX)
 
-    def _get_plan(self, upgrades_repo: str) -> tmt.base.Plan:
+    def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
         """ Get plan based on upgrade path """
         tree = tmt.base.Tree(logger=self._logger, path=upgrades_repo)
         try:

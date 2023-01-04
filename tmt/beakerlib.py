@@ -11,7 +11,7 @@ import fmf
 import tmt
 import tmt.base
 import tmt.utils
-from tmt.utils import Command
+from tmt.utils import Command, Path
 
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
 BeakerlibIdentifierType = Union[tmt.base.RequireSimple, tmt.base.RequireFmfId]
@@ -26,7 +26,7 @@ LibraryDependenciesType = Tuple[
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 
 # Default beakerlib libraries location and destination directory
-DEFAULT_REPOSITORY = 'https://github.com/beakerlib'
+DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
 
 # List of git forges for which the .git suffix should be stripped
@@ -97,13 +97,12 @@ class Library:
             self.parent.debug(
                 f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
             self.format: str = 'rpm'
-            self.repo: str = matched.groups()[0]
+            self.repo: Path = Path(matched.groups()[0])
             self.name: str = matched.groups()[1]
-            self.url: Optional[str] = os.path.join(
-                DEFAULT_REPOSITORY, self.repo)
-            self.path: Optional[str] = None
+            self.url: Optional[str] = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
+            self.path: Optional[Path] = None
             self.ref: Optional[str] = None
-            self.dest: str = DEFAULT_DESTINATION
+            self.dest: Path = Path(DEFAULT_DESTINATION)
 
         # The fmf identifier
         elif isinstance(identifier, tmt.base.RequireFmfId):
@@ -126,7 +125,7 @@ class Library:
                             and self.url.endswith('.git')):
                         self.url = self.url.rstrip('.git')
             self.ref = identifier.ref
-            self.dest = identifier.destination or DEFAULT_DESTINATION.lstrip('/')
+            self.dest = identifier.destination or Path(DEFAULT_DESTINATION.lstrip('/'))
             self.name = identifier.name or '/'
             if not self.name.startswith('/'):
                 raise tmt.utils.SpecificationError(
@@ -149,13 +148,13 @@ class Library:
                     # Either url or path must be defined
                     assert self.path is not None
                     try:
-                        repo = os.path.basename(self.path)
+                        repo = self.path.name
                         if not repo:
                             raise TypeError
                     except TypeError:
                         raise tmt.utils.GeneralError(
                             f"Unable to parse repository name from '{self.path}'.")
-            self.repo = repo
+            self.repo = Path(repo)
 
         # Something weird
         else:
@@ -185,14 +184,14 @@ class Library:
         """ Fetch the library (unless already fetched) """
         # Check if the library was already fetched
         try:
-            library = self._library_cache[self.repo]
+            library = self._library_cache[str(self.repo)]
             # The url must be identical
             if library.url != self.url:
                 # tmt guessed url so try if repo exists
                 if self.format == 'rpm':
                     with TemporaryDirectory() as tmp:
                         try:
-                            tmt.utils.git_clone(str(self.url), str(tmp), self.parent,
+                            tmt.utils.git_clone(str(self.url), Path(tmp), self.parent,
                                                 env={"GIT_ASKPASS": "echo"}, shallow=True)
                         except tmt.utils.RunError:
                             self.parent.debug(f"Repository '{self.url}' not found.")
@@ -218,7 +217,7 @@ class Library:
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
-            directory = os.path.join(self.parent.workdir, self.dest, self.repo)
+            directory = self.parent.workdir / self.dest / self.repo
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
@@ -263,8 +262,8 @@ class Library:
                     f"Reference '{self.ref}' for library '{self}' not found.")
                 raise
             # Initialize metadata tree, add self into the library index
-            self.tree = fmf.Tree(directory)
-            self._library_cache[self.repo] = self
+            self.tree = fmf.Tree(str(directory))
+            self._library_cache[str(self.repo)] = self
 
         # Get the library node, check require and recommend
         library_node = self.tree.find(self.name)
@@ -286,13 +285,13 @@ class Library:
         # FIXME: hot fix for https://github.com/beakerlib/beakerlib/pull/72
         # Covers also cases when library is stored more than 2 levels deep
         if os.path.dirname(self.name).lstrip('/'):
-            link = self.name.lstrip('/')
-            path = os.path.join(self.tree.root, os.path.basename(self.name))
+            link = Path(self.name.lstrip('/'))
+            path = Path(self.tree.root) / Path(self.name).name
             self.parent.debug(
                 f"Create a '{link}' symlink as the library is stored "
                 f"deep in the directory structure.")
             try:
-                os.symlink(link, path)
+                path.symlink_to(link)
             except OSError as error:
                 self.parent.warn(
                     f"Unable to create a '{link}' symlink "

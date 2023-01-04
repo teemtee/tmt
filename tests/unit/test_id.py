@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-from pathlib import Path
 from unittest import TestCase
 
 import fmf
@@ -11,6 +10,7 @@ import tmt
 import tmt.cli
 import tmt.log
 from tmt.identifier import ID_KEY, locate_key
+from tmt.utils import Path
 
 runner = CliRunner()
 test_path = Path(__file__).parent / "id"

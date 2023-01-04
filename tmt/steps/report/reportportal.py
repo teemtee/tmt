@@ -102,7 +102,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         # Use provided launch name, default to run workdir name
         assert self.step.plan.my_run is not None
         assert self.step.plan.my_run.workdir is not None
-        launch_name = self.get("launch-name") or os.path.basename(self.step.plan.my_run.workdir)
+        launch_name = self.get("launch-name") or self.step.plan.my_run.workdir.name
         self.info("launch", launch_name, color="green")
 
         # Generate a xUnit report

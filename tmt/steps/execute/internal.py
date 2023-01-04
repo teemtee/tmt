@@ -17,7 +17,7 @@ from tmt.result import Result, ResultOutcome
 from tmt.steps.execute import (SCRIPTS, TEST_OUTPUT_FILENAME,
                                TMT_FILE_SUBMIT_SCRIPT, TMT_REBOOT_SCRIPT)
 from tmt.steps.provision import Guest
-from tmt.utils import EnvironmentType, ShellScript
+from tmt.utils import EnvironmentType, Path, ShellScript
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 
@@ -144,18 +144,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         environment.update(test.environment)
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
-        environment["TMT_TEST_DATA"] = os.path.join(
-            data_directory, tmt.steps.execute.TEST_DATA)
-        environment["TMT_REBOOT_REQUEST"] = os.path.join(
-            data_directory,
-            tmt.steps.execute.TEST_DATA,
-            TMT_REBOOT_SCRIPT.created_file)
+
+        environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
+        environment["TMT_REBOOT_REQUEST"] = str(
+            data_directory / tmt.steps.execute.TEST_DATA / TMT_REBOOT_SCRIPT.created_file)
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = str(test._reboot_count)
         # Variables related to beakerlib tests
         if test.framework == 'beakerlib':
-            environment['BEAKERLIB_DIR'] = data_directory
+            environment['BEAKERLIB_DIR'] = str(data_directory)
             environment['BEAKERLIB_COMMAND_SUBMIT_LOG'] = (
                 f"bash {TMT_FILE_SUBMIT_SCRIPT.path}")
 
@@ -180,13 +178,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
         assert test.path is not None  # narrow type
-        workdir = os.path.join(self.discover.workdir, test.path.lstrip('/'))
+        workdir = self.discover.workdir / test.path.unrooted()
         self.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
         environment = self._test_environment(test, extra_environment)
 
-        test_wrapper_filepath = os.path.join(workdir, TEST_WRAPPER_FILENAME)
+        test_wrapper_filepath = workdir / TEST_WRAPPER_FILENAME
 
         # Prepare the test command (use default options for shell tests)
         if test.framework == "shell":
@@ -197,7 +195,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # Prepare the wrapper, push to guest
         self.write(test_wrapper_filepath, str(test_command), 'w')
-        os.chmod(test_wrapper_filepath, 0o755)
+        test_wrapper_filepath.chmod(0o755)
         guest.push(
             source=test_wrapper_filepath,
             destination=test_wrapper_filepath,
@@ -254,15 +252,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
     def _will_reboot(self, test: Test) -> bool:
         """ True if reboot is requested """
-        return os.path.exists(self._reboot_request_path(test))
+        return self._reboot_request_path(test).exists()
 
-    def _reboot_request_path(self, test: Test) -> str:
+    def _reboot_request_path(self, test: Test) -> Path:
         """ Return reboot_request """
-        reboot_request_path = os.path.join(
-            self.data_path(test, full=True),
-            tmt.steps.execute.TEST_DATA,
-            TMT_REBOOT_SCRIPT.created_file)
-        return reboot_request_path
+        return self.data_path(test, full=True) \
+            / tmt.steps.execute.TEST_DATA \
+            / TMT_REBOOT_SCRIPT.created_file
 
     def _handle_reboot(self, test: Test, guest: Guest) -> bool:
         """
@@ -278,9 +274,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             self.debug(f"Reboot during test '{test}' "
                        f"with reboot count {test._reboot_count}.")
             reboot_request_path = self._reboot_request_path(test)
-            test_data = os.path.join(
-                self.data_path(test, full=True),
-                tmt.steps.execute.TEST_DATA)
+            test_data = self.data_path(test, full=True) / tmt.steps.execute.TEST_DATA
             with open(reboot_request_path, 'r') as reboot_file:
                 reboot_data = json.loads(reboot_file.read())
             reboot_command = None
@@ -363,7 +357,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             if test.framework == "beakerlib":
                 exclude = [
                     "--exclude",
-                    self.data_path(test, "backup*", full=True)]
+                    str(self.data_path(test, "backup*", full=True))]
             else:
                 exclude = None
             guest.pull(
@@ -411,9 +405,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             # --test" option is provided
             if self._login_after_test:
                 assert test.path is not None  # narrow type
+                if self.discover.workdir is None:
+                    cwd = test.path.unrooted()
+                else:
+                    cwd = self.discover.workdir / test.path.unrooted()
                 self._login_after_test.after_test(
                     result,
-                    cwd=os.path.join(self.discover.workdir or "", test.path.lstrip('/')),
+                    cwd=cwd,
                     env=self._test_environment(test, extra_environment),
                     )
         # Overwrite the progress bar, the test data is irrelevant

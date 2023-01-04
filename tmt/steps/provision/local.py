@@ -5,7 +5,7 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import BaseLoggerFnType, Command, ShellScript
+from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
 
 
 @dataclasses.dataclass
@@ -24,7 +24,7 @@ class GuestLocal(tmt.Guest):
         """ Local is always ready """
         return True
 
-    def ansible(self, playbook: str, extra_args: Optional[str] = None) -> None:
+    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare localhost using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
         stdout, _ = self.run(
@@ -35,13 +35,13 @@ class GuestLocal(tmt.Guest):
                 *self._ansible_extra_args(extra_args),
                 '-c', 'local',
                 '-i', 'localhost,',
-                playbook),
+                str(playbook)),
             env=self._prepare_environment())
         self._ansible_summary(stdout)
 
     def execute(self,
                 command: Union[Command, ShellScript],
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -91,15 +91,15 @@ class GuestLocal(tmt.Guest):
 
     def push(
             self,
-            source: Optional[str] = None,
-            destination: Optional[str] = None,
+            source: Optional[Path] = None,
+            destination: Optional[Path] = None,
             options: Optional[List[str]] = None) -> None:
         """ Nothing to be done to push workdir """
 
     def pull(
             self,
-            source: Optional[str] = None,
-            destination: Optional[str] = None,
+            source: Optional[Path] = None,
+            destination: Optional[Path] = None,
             options: Optional[List[str]] = None,
             extend_options: Optional[List[str]] = None) -> None:
         """ Nothing to be done to pull workdir """

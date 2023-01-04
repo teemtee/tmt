@@ -27,6 +27,7 @@ from click import echo, style
 
 import tmt
 import tmt.utils
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.base
@@ -280,7 +281,7 @@ def bz_set_coverage(bug_ids: List[int], case_id: str, tracker_id: int) -> None:
         " ".join([f"BZ#{bz_id}" for bz_id in bug_ids])), fg='magenta'))
 
 
-def check_md_file_respects_spec(md_path: str) -> List[str]:
+def check_md_file_respects_spec(md_path: Path) -> List[str]:
     """
     Check that the file respects manual test specification
 

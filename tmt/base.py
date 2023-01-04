@@ -32,8 +32,8 @@ import tmt.steps.report
 import tmt.templates
 import tmt.utils
 from tmt.result import Result, ResultOutcome
-from tmt.utils import (Command, EnvironmentType, FmfContextType, ShellScript,
-                       WorkdirArgumentType, verdict)
+from tmt.utils import (Command, EnvironmentType, FmfContextType, Path,
+                       ShellScript, WorkdirArgumentType, verdict)
 
 if sys.version_info >= (3, 8):
     from typing import Literal, TypedDict
@@ -108,7 +108,7 @@ class FmfId(
 
     url: Optional[str] = None
     ref: Optional[str] = None
-    path: Optional[str] = None
+    path: Optional[Path] = None
     name: Optional[str] = None
 
     # ignore[override]: expected, we do want to return more specific
@@ -130,13 +130,24 @@ class FmfId(
     def to_spec(self) -> _RawFmfId:  # type: ignore[override]
         """ Convert to a form suitable for saving in a specification file """
 
-        return self.to_dict()
+        spec = self.to_dict()
+
+        if self.path is not None:
+            spec['path'] = str(self.path)
+
+        return spec
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_minimal_spec(self) -> _RawFmfId:  # type: ignore[override]
         """ Convert to specification, skip default values """
-        return cast(_RawFmfId, super().to_minimal_spec())
+
+        spec = cast(_RawFmfId, super().to_minimal_spec())
+
+        if self.path is not None:
+            spec['path'] = str(self.path)
+
+        return spec
 
     @classmethod
     def from_spec(cls, raw: _RawFmfId) -> 'FmfId':
@@ -148,7 +159,16 @@ class FmfId(
             raise tmt.utils.SpecificationError(
                 f"The 'ref' field must be a string, got '{type(ref).__name__}'.")
 
-        return FmfId(**{key: cast(Optional[str], raw.get(key, None)) for key in cls.VALID_KEYS})
+        fmf_id = FmfId()
+
+        for key in ('url', 'ref', 'name'):
+            setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
+
+        for key in ('path',):
+            raw_path = cast(Optional[str], raw.get(key, None))
+            setattr(fmf_id, key, Path(raw_path) if raw_path is not None else None)
+
+        return fmf_id
 
     def validate(self) -> Tuple[bool, str]:
         """
@@ -163,10 +183,13 @@ class FmfId(
         try:
             # Simple asdict() is not good enough, fmf does not like keys that exist but are `None`.
             # Don't include those.
-            fmf.base.Tree.node({
+            node_data = {
                 key: value for key, value in self.items()
                 if value is not None
-                })
+                }
+            if self.path:
+                node_data['path'] = str(self.path)
+            fmf.base.Tree.node(node_data)
         except fmf.utils.GeneralError as error:
             # Map fmf errors to more user friendly alternatives
             error_map: List[Tuple[str, str]] = [
@@ -289,8 +312,13 @@ class _RawRequireFmfId(_RawFmfId):
 class RequireFmfId(FmfId):
     VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick']
 
-    destination: Optional[str] = None
+    destination: Optional[Path] = None
     nick: Optional[str] = None
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_dict(self) -> _RawRequireFmfId:  # type: ignore[override]
+        return cast(_RawRequireFmfId, super().to_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -298,6 +326,30 @@ class RequireFmfId(FmfId):
         """ Convert to a mapping with unset keys omitted """
 
         return cast(_RawRequireFmfId, super().to_minimal_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_spec(self) -> _RawRequireFmfId:  # type: ignore[override]
+        """ Convert to a form suitable for saving in a specification file """
+
+        spec = self.to_dict()
+
+        if self.destination is not None:
+            spec['destination'] = str(self.destination)
+
+        return spec
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_spec(self) -> _RawRequireFmfId:  # type: ignore[override]
+        """ Convert to specification, skip default values """
+
+        spec = self.to_minimal_dict()
+
+        if self.destination is not None:
+            spec['destination'] = str(self.destination)
+
+        return spec
 
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
@@ -311,8 +363,16 @@ class RequireFmfId(FmfId):
             raise tmt.utils.SpecificationError(
                 f"The 'ref' field must be a string, got '{type(ref).__name__}'.")
 
-        return RequireFmfId(
-            **{key: cast(Optional[str], raw.get(key, None)) for key in cls.VALID_KEYS})
+        fmf_id = RequireFmfId()
+
+        for key in ('url', 'ref', 'name', 'nick'):
+            setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
+
+        for key in ('path', 'destination'):
+            raw_path = cast(Optional[str], raw.get(key, None))
+            setattr(fmf_id, key, Path(raw_path) if raw_path is not None else None)
+
+        return fmf_id
 
 
 _RawRequireItem = Union[str, _RawRequireFmfId]
@@ -475,24 +535,24 @@ class Core(
     def fmf_id(self) -> FmfId:
         """ Return full fmf identifier of the node """
 
-        return tmt.utils.fmf_id(self.name, self.node.root)
+        return tmt.utils.fmf_id(self.name, Path(self.node.root))
 
     def web_link(self) -> str:
         """ Return a clickable web link to the fmf metadata location """
-        fmf_id = tmt.utils.fmf_id(self.name, self.node.root, always_get_ref=True)
+        fmf_id = tmt.utils.fmf_id(self.name, Path(self.node.root), always_get_ref=True)
         assert fmf_id.url is not None
         assert fmf_id.ref is not None
 
         # Detect relative path of the last source from the metadata tree root
-        relative_path = os.path.relpath(self.node.sources[-1], self.node.root)
-        if relative_path == '.':
-            relative_path = '/'
+        relative_path = Path(self.node.sources[-1]).relative_to(self.node.root)
+        if str(relative_path) == '.':
+            relative_path = Path('/')
         else:
-            relative_path = os.path.join('/', relative_path)
+            relative_path = Path('/') / relative_path
 
         # Add fmf path if the tree is nested deeper in the git repo
         if fmf_id.path:
-            relative_path = fmf_id.path + relative_path
+            relative_path = fmf_id.path / relative_path.relative_to('/')
 
         return tmt.utils.web_git_url(fmf_id.url, fmf_id.ref, relative_path)
 
@@ -507,16 +567,16 @@ class Core(
             # FIXME: cast() - https://github.com/teemtee/tmt/pull/1592
             obj = cast(Optional['tmt.cli.ContextObject'], context.obj)
             assert obj is not None  # narrow type
+            assert obj.tree.root is not None  # narrow type
             root = obj.tree.root
-            current = os.getcwd()
+            current = Path.cwd()
             # Handle special case when directly in the metadata root
-            if current == root:
+            if current.resolve() == root.resolve():
                 pattern = '/'
             # Prepare path from the tree root to the current directory
             else:
-                pattern = os.path.join('/', os.path.relpath(current, root))
                 # Prevent matching common prefix from other directories
-                pattern = f"{pattern}(/|$)"
+                pattern = f"{current.relative_to(root)}(/|$)"
             assert cls._context is not None  # narrow type
             cls._context.params['names'] = tuple(
                 pattern if name == '.' else name for name in names)
@@ -588,6 +648,11 @@ class Core(
             elif key == 'test' and isinstance(value, ShellScript):
                 data[key] = str(value)
 
+            # TODO: this belongs to Test.export, and it will be moved when the time
+            # of export() cleanup comes.
+            elif key == 'path' and isinstance(value, Path):
+                data[key] = str(value)
+
             else:
                 data[key] = value
 
@@ -628,7 +693,7 @@ class Test(Core, tmt.export.Exportable['Test']):
 
     # Test execution data
     test: ShellScript
-    path: Optional[str] = None
+    path: Optional[Path] = None
     framework: str = "shell"
     manual: bool = False
     require: List[Require] = []
@@ -666,6 +731,15 @@ class Test(Core, tmt.export.Exportable['Test']):
             value: Optional[_RawRequire],
             logger: tmt.log.Logger) -> List[Require]:
         return normalize_require(value, logger)
+
+    def _normalize_path(
+            self,
+            value: str,
+            logger: tmt.log.Logger) -> Optional[Path]:
+        if value is None:
+            return None
+
+        return Path(value)
 
     KEYS_SHOW_ORDER = [
         # Basic test information
@@ -747,14 +821,14 @@ class Test(Core, tmt.export.Exportable['Test']):
         # assign it to attribute *before* calling superclass and its handy
         # node key extraction.
         try:
-            directory = os.path.dirname(node.sources[-1])
-            relative_path = os.path.relpath(directory, node.root)
-            if relative_path == '.':
-                default_path = '/'
+            directory = Path(node.sources[-1]).parent
+            relative_path = directory.relative_to(Path(node.root))
+            if relative_path == Path('.'):
+                default_path = Path('/')
             else:
-                default_path = os.path.join('/', relative_path)
+                default_path = Path('/') / relative_path
         except (AttributeError, IndexError):
-            default_path = '/'
+            default_path = Path('/')
 
         self.path = default_path
 
@@ -792,7 +866,7 @@ class Test(Core, tmt.export.Exportable['Test']):
     def create(
             name: str,
             template: str,
-            path: str,
+            path: Path,
             force: bool = False,
             dry: Optional[bool] = None) -> None:
         """ Create a new test """
@@ -801,15 +875,15 @@ class Test(Core, tmt.export.Exportable['Test']):
 
         # Create directory
         if name == '.':
-            directory_path = os.getcwd()
+            directory_path = Path.cwd()
         else:
-            directory_path = os.path.join(path, name.lstrip('/'))
+            directory_path = path / name.lstrip('/')
             tmt.utils.create_directory(
                 directory_path, 'test directory', dry=dry)
 
         # Create metadata
         try:
-            metadata_path = os.path.join(directory_path, 'main.fmf')
+            metadata_path = directory_path / 'main.fmf'
             tmt.utils.create_file(
                 path=metadata_path,
                 content=tmt.templates.TEST_METADATA[template],
@@ -820,7 +894,7 @@ class Test(Core, tmt.export.Exportable['Test']):
             raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
         # Create script
-        script_path = os.path.join(directory_path, 'test.sh')
+        script_path = directory_path / 'test.sh'
         try:
             content = tmt.templates.TEST[template]
         except KeyError:
@@ -860,12 +934,13 @@ class Test(Core, tmt.export.Exportable['Test']):
                 if value not in [None, list(), dict()]:
                     echo(tmt.utils.format(key, value, key_color='blue'))
 
-    def _lint_manual(self, test_path: str) -> bool:
+    def _lint_manual(self, test_path: Path) -> bool:
         """ Check that the manual instructions respect the specification """
-        manual_test = os.path.join(test_path, str(self.test))
+        # Manual tests should store a path to a document describing the test case steps.
+        manual_test = test_path / str(self.test)
 
         # File does not exist
-        if not os.path.exists(manual_test):
+        if not manual_test.exists():
             return verdict(False, f"file '{self.test}' does not exist")
 
         # Check syntax for warnings
@@ -886,17 +961,20 @@ class Test(Core, tmt.export.Exportable['Test']):
         """
         self.ls()
         assert self.path is not None  # narrow type
-        stripped_path = self.path.strip()
-        test_path = self.node.root + stripped_path
 
         # Check test, path and summary (use bitwise '&' because 'and' is
         # lazy and would skip all verdicts following the first fail)
         valid = verdict(
             bool(self.test), 'test script must be defined')
         valid &= verdict(
-            stripped_path.startswith('/'), 'directory path must be absolute')
+            self.path.is_absolute(), 'directory path must be absolute')
+        if self.path.is_absolute():
+            assert self.path is not None  # narrow type
+            test_path = Path(self.node.root) / self.path.unrooted()
+        else:
+            test_path = self.path
         valid &= verdict(
-            os.path.exists(test_path), 'directory path must exist')
+            test_path.exists(), 'directory path must exist')
         self._lint_summary()
 
         # Check for possible test case relevancy rules
@@ -1002,7 +1080,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
 
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
-        self.worktree: Optional[str] = None
+        self.worktree: Optional[Path] = None
         if self.my_run:
             # Skip to initialize the work tree if the corresponding option is
             # true. Note that 'tmt clean' consumes the option because it
@@ -1107,10 +1185,11 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             # Command line variables take precedence
             combined.update(self.my_run.environment)
             # Include path to the plan data directory
-            combined["TMT_PLAN_DATA"] = self.data_directory
+            combined["TMT_PLAN_DATA"] = str(self.data_directory)
             # And tree path if possible
             if self.worktree:
-                combined["TMT_TREE"] = self.worktree
+                combined["TMT_TREE"] = str(self.worktree)
+
             return combined
         else:
             return self._environment
@@ -1124,8 +1203,8 @@ class Plan(Core, tmt.export.Exportable['Plan']):
                 f"The 'environment-file' should be a list. "
                 f"Received '{type(environment_files).__name__}'.")
         combined = tmt.utils.environment_files_to_dict(
-            env_files=environment_files,
-            root=node.root,
+            filenames=environment_files,
+            root=Path(node.root) if node.root else None,
             logger=self._logger)
 
         # Environment variables from key, make sure that values are string
@@ -1150,18 +1229,18 @@ class Plan(Core, tmt.export.Exportable['Plan']):
 
         # Prepare worktree path and detect the source tree root
         assert self.workdir is not None  # narrow type
-        self.worktree = os.path.join(self.workdir, 'tree')
+        self.worktree = self.workdir / 'tree'
         tree_root = self.node.root
 
         # Create an empty directory if there's no metadata tree
         if not tree_root:
             self.debug('Create an empty worktree (no metadata tree).', level=2)
-            os.makedirs(self.worktree, exist_ok=True)
+            self.worktree.mkdir(exist_ok=True)
             return
 
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
-        self.run(Command("rsync", "-ar", "--exclude", ".git", f"{tree_root}/", self.worktree))
+        self.run(Command("rsync", "-ar", "--exclude", ".git", f"{tree_root}/", str(self.worktree)))
 
     def _initialize_data_directory(self) -> None:
         """
@@ -1172,10 +1251,10 @@ class Plan(Core, tmt.export.Exportable['Plan']):
         from the guest for possible future inspection.
         """
         assert self.workdir is not None  # narrow type
-        self.data_directory = os.path.join(self.workdir, "data")
+        self.data_directory = self.workdir / "data"
         self.debug(
             f"Create the data directory '{self.data_directory}'.", level=2)
-        os.makedirs(self.data_directory, exist_ok=True)
+        self.data_directory.mkdir(exist_ok=True, parents=True)
 
     def _fmf_context(self) -> tmt.utils.FmfContextType:
         """ Return combined context from plan data and command line """
@@ -1246,7 +1325,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
     def create(
             name: str,
             template: str,
-            path: str,
+            path: Path,
             force: bool = False,
             dry: Optional[bool] = None) -> None:
         """ Create a new plan """
@@ -1255,10 +1334,9 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             dry = Plan._opt('dry')
 
         (directory, plan) = os.path.split(name)
-        directory_path = os.path.join(path, directory.lstrip('/'))
+        directory_path = path / directory.lstrip('/')
         has_fmf_ext = os.path.splitext(plan)[1] == '.fmf'
-        plan_path = os.path.join(
-            directory_path, plan + ('' if has_fmf_ext else '.fmf'))
+        plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
 
         # Create directory & plan
         tmt.utils.create_directory(directory_path, 'plan directory', dry=dry)
@@ -1578,19 +1656,19 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             if self.my_run and not self.my_run.opt('dry'):
                 assert self.parent is not None  # narrow type
                 assert self.parent.workdir is not None  # narrow type
-                destination = os.path.join(self.parent.workdir, "import", self.name.lstrip("/"))
+                destination = self.parent.workdir / "import" / self.name.lstrip("/")
                 if plan_id.url is None:
                     raise tmt.utils.SpecificationError(
                         f"No url provided for remote plan '{self.name}'.")
-                if os.path.exists(destination):
+                if destination.exists():
                     self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
                 else:
                     tmt.utils.git_clone(plan_id.url, destination, self)
                 if plan_id.ref:
                     self.run(Command('git', 'checkout', plan_id.ref), cwd=destination)
                 if plan_id.path:
-                    destination = os.path.join(destination, plan_id.path.lstrip("/"))
-                node = fmf.Tree(destination).find(plan_id.name)
+                    destination = destination / plan_id.path.unrooted()
+                node = fmf.Tree(str(destination)).find(plan_id.name)
 
             # Use fmf cache for exploring plans (the whole git repo is not needed)
             else:
@@ -1736,7 +1814,7 @@ class Story(Core, tmt.export.Exportable['Story']):
     def create(
             name: str,
             template: str,
-            path: str,
+            path: Path,
             force: bool = False,
             dry: Optional[bool] = None) -> None:
         """ Create a new story """
@@ -1745,10 +1823,9 @@ class Story(Core, tmt.export.Exportable['Story']):
 
         # Prepare paths
         (directory, story) = os.path.split(name)
-        directory_path = os.path.join(path, directory.lstrip('/'))
+        directory_path = path / directory.lstrip('/')
         has_fmf_ext = os.path.splitext(story)[1] == '.fmf'
-        story_path = os.path.join(directory_path,
-                                  story + ('' if has_fmf_ext else '.fmf'))
+        story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
 
         # Create directory & story
         tmt.utils.create_directory(directory_path, 'story directory', dry=dry)
@@ -1837,7 +1914,7 @@ class Tree(tmt.utils.Common):
 
     def __init__(self,
                  *,
-                 path: str = '.',
+                 path: Path = Path.cwd(),
                  tree: Optional[fmf.Tree] = None,
                  context: Optional[tmt.utils.FmfContextType] = None,
                  logger: tmt.log.Logger) -> None:
@@ -1912,7 +1989,8 @@ class Tree(tmt.utils.Common):
         """ Initialize tree only when accessed """
         if self._tree is None:
             try:
-                self._tree = fmf.Tree(self._path)
+                # TODO: fmf.Tree should get a stringified path
+                self._tree = fmf.Tree(str(self._path))
             except fmf.utils.RootError:
                 raise tmt.utils.MetadataError(
                     f"No metadata found in the '{self._path}' directory. "
@@ -1928,10 +2006,12 @@ class Tree(tmt.utils.Common):
         self._tree = new_tree
 
     @property
-    def root(self) -> Optional[str]:
+    def root(self) -> Optional[Path]:
         """ Metadata root """
-        # FIXME: cast() - https://github.com/teemtee/tmt/pull/1592
-        return cast(Optional[str], self.tree.root)
+        if self.tree is None or self.tree.root is None:
+            return None
+
+        return Path(self.tree.root)
 
     def tests(
             self,
@@ -2126,12 +2206,12 @@ class Tree(tmt.utils.Common):
     @staticmethod
     def init(
             *,
-            path: str,
+            path: Path,
             template: str,
             force: bool,
             logger: tmt.log.Logger) -> None:
         """ Initialize a new tmt tree, optionally with a template """
-        path = os.path.realpath(path)
+        path = path.resolve()
         dry = Tree._opt('dry')
 
         # Check for existing tree
@@ -2205,7 +2285,7 @@ class Run(tmt.utils.Common):
 
     def __init__(self,
                  *,
-                 id_: Optional[str] = None,
+                 id_: Optional[Path] = None,
                  tree: Optional[Tree] = None,
                  context: Optional['tmt.cli.Context'] = None,
                  logger: tmt.log.Logger) -> None:
@@ -2214,7 +2294,7 @@ class Run(tmt.utils.Common):
         self.config = tmt.utils.Config()
         if context is not None:
             if context.params.get('last'):
-                id_ = self.config.last_run()
+                id_ = self.config.last_run
                 if id_ is None:
                     raise tmt.utils.GeneralError(
                         "No last run id found. Have you executed any run?")
@@ -2244,7 +2324,7 @@ class Run(tmt.utils.Common):
         """ Save metadata tree, handle the default plan """
         default_plan = tmt.utils.yaml_to_dict(tmt.templates.DEFAULT_PLAN)
         try:
-            self.tree = tree if tree else tmt.Tree(logger=self._logger, path='.')
+            self.tree = tree if tree else tmt.Tree(logger=self._logger, path=Path('.'))
             self.debug(f"Using tree '{self.tree.root}'.")
             # Clear the tree and insert default plan if requested
             if Plan._opt("default"):
@@ -2278,7 +2358,7 @@ class Run(tmt.utils.Common):
             # Variables gathered from 'environment-file' options
             self._environment_from_options.update(
                 tmt.utils.environment_files_to_dict(
-                    env_files=(self.opt('environment-file') or []),
+                    filenames=(self.opt('environment-file') or []),
                     root=self.tree.root,
                     logger=self._logger))
             # Variables from 'environment' options (highest priority)
@@ -2296,13 +2376,13 @@ class Run(tmt.utils.Common):
         assert self.tree is not None  # narrow type
         assert self._context_object is not None  # narrow type
         data = RunData(
-            root=self.tree.root,
+            root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
             steps=list(self._context_object.steps),
             environment=self.environment,
             remove=self.remove
             )
-        self.write('run.yaml', tmt.utils.dict_to_yaml(data.to_serialized()))
+        self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
     def load_from_workdir(self) -> None:
         """
@@ -2316,7 +2396,7 @@ class Run(tmt.utils.Common):
         self._save_tree(self._tree)
         self._workdir_load(self._workdir_path)
         try:
-            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read('run.yaml')))
+            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read(Path('run.yaml'))))
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
@@ -2345,7 +2425,7 @@ class Run(tmt.utils.Common):
     def load(self) -> None:
         """ Load list of selected plans and enabled steps """
         try:
-            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read('run.yaml')))
+            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read(Path('run.yaml'))))
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
@@ -2354,7 +2434,7 @@ class Run(tmt.utils.Common):
         # create a new Tree from the root in run.yaml
         if self._workdir and not self.opt('root'):
             if data.root:
-                self._save_tree(tmt.Tree(logger=self._logger.descend(), path=data.root))
+                self._save_tree(tmt.Tree(logger=self._logger.descend(), path=Path(data.root)))
             else:
                 # The run was used without any metadata, default plan
                 # was used, load it
@@ -2436,7 +2516,7 @@ class Run(tmt.utils.Common):
     def follow(self) -> None:
         """ Periodically check for new lines in the log. """
         assert self.workdir is not None  # narrow type
-        logfile = open(os.path.join(self.workdir, tmt.log.LOG_FILENAME), 'r')
+        logfile = open(self.workdir / tmt.log.LOG_FILENAME, 'r')
         # Move to the end of the file
         logfile.seek(0, os.SEEK_END)
         # Rewind some lines back to show more context
@@ -2465,13 +2545,13 @@ class Run(tmt.utils.Common):
         self._workdir_load(self._workdir_path)
         assert self.tree is not None  # narrow type
         assert self._workdir is not None  # narrow type
-        if self.tree.root and self._workdir.startswith(self.tree.root):
+        if self.tree.root and self._workdir.is_relative_to(self.tree.root):
             raise tmt.utils.GeneralError(
-                "Run workdir must not be inside fmf root.")
+                f"Run workdir '{self._workdir}' must not be inside fmf root '{self.tree.root}'.")
         assert self.workdir is not None  # narrow type
-        self.config.last_run(self.workdir)
+        self.config.last_run = self.workdir
         # Show run id / workdir path
-        self.info(self.workdir, color='magenta')
+        self.info(str(self.workdir), color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
         # Attempt to load run data
         self.load()
@@ -2529,7 +2609,7 @@ class Run(tmt.utils.Common):
 
         # Update the last run id at the very end
         # (override possible runs created during execution)
-        self.config.last_run(self.workdir)
+        self.config.last_run = self.workdir
 
         # Give the final summary, remove workdir, handle exit codes
         self.finish()
@@ -2664,8 +2744,9 @@ class Status(tmt.utils.Common):
     def show(self) -> None:
         """ Display the current status """
         # Prepare absolute workdir path if --id was used
-        id_ = self.opt('id')
-        root_path = self.opt('workdir-root')
+        # FIXME: cast() - typeless "dispatcher" method
+        id_ = cast(str, self.opt('id'))
+        root_path = Path(self.opt('workdir-root'))
         self.print_header()
         assert self._context_object is not None  # narrow type
         assert self._context_object.tree is not None  # narrow type
@@ -2760,8 +2841,9 @@ class Clean(tmt.utils.Common):
     def guests(self) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = self.opt('workdir-root')
-        id_ = self.opt('id_')
+        root_path = Path(self.opt('workdir-root'))
+        # FIXME: cast() - typeless "dispatcher" method
+        id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -2778,7 +2860,7 @@ class Clean(tmt.utils.Common):
                 successful = False
         return successful
 
-    def _clean_workdir(self, path: str) -> bool:
+    def _clean_workdir(self, path: Path) -> bool:
         """ Remove a workdir (unless in dry mode) """
         if self.opt('dry'):
             self.verbose(f"Would remove workdir '{path}'.", shift=1)
@@ -2794,8 +2876,9 @@ class Clean(tmt.utils.Common):
     def runs(self) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = self.opt('workdir-root')
-        id_ = self.opt('id_')
+        root_path = Path(self.opt('workdir-root'))
+        # FIXME: cast() - typeless "dispatcher" method
+        id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -2807,8 +2890,8 @@ class Clean(tmt.utils.Common):
         keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
-            all_workdirs.sort(key=lambda workdir: os.path.getmtime(
-                os.path.join(workdir, 'run.yaml')), reverse=True)
+            all_workdirs.sort(
+                key=lambda workdir: os.path.getmtime(workdir / 'run.yaml'), reverse=True)
             all_workdirs = all_workdirs[keep:]
 
         successful = True
@@ -3084,7 +3167,7 @@ class Links(tmt.utils.SpecBasedContainer):
 
 def resolve_dynamic_ref(
         *,
-        workdir: str,
+        workdir: Path,
         ref: Optional[str],
         plan: Plan,
         logger: tmt.log.Logger) -> Optional[str]:
@@ -3101,8 +3184,8 @@ def resolve_dynamic_ref(
         return ref
 
     # Prepare path of the dynamic reference file
-    ref_filepath = os.path.join(workdir, ref[1:])
-    if not os.path.exists(ref_filepath):
+    ref_filepath = workdir / ref[1:]
+    if not ref_filepath.exists():
         raise tmt.utils.FileError(
             f"Dynamic 'ref' definition file '{ref_filepath}' does not exist.")
     logger.debug(f"Dynamic 'ref' definition file '{ref_filepath}' detected.")

@@ -1,5 +1,4 @@
 import dataclasses
-import os.path
 import tempfile
 from typing import List, Optional, Union
 
@@ -12,7 +11,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import PrepareError, field, retry_session
+from tmt.utils import Path, PrepareError, field, retry_session
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -110,12 +109,13 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
             logger.info('playbook', playbook, 'green')
 
             lowercased_playbook = playbook.lower()
-            playbook_path = playbook
+            playbook_path = Path(playbook)
 
             if lowercased_playbook.startswith(
                     'http://') or lowercased_playbook.startswith('https://'):
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type
+                assert self.step.plan.my_run.tree.root is not None  # narrow type
                 root_path = self.step.plan.my_run.tree.root
 
                 try:
@@ -139,8 +139,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
                     file.write(response.content)
                     file.flush()
 
-                    playbook_path = os.path.relpath(file.name, root_path)
+                    playbook_path = Path(file.name).relative_to(root_path)
 
-                logger.info('playbook-path', playbook_path, 'green')
+                logger.info('playbook-path', str(playbook_path), 'green')
 
             guest.ansible(playbook_path, self.get('extra-args'))

@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-from pathlib import Path
 
 import nitrate
 from click.testing import CliRunner
@@ -12,7 +11,7 @@ from ruamel.yaml import YAML
 import tmt.base
 import tmt.cli
 import tmt.log
-from tmt.utils import ConvertError
+from tmt.utils import ConvertError, Path
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent

@@ -1,5 +1,4 @@
 import dataclasses
-import os
 import types
 from typing import Any, Optional, cast, overload
 
@@ -121,7 +120,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin):
         assert junit_xml  # narrow type
 
         assert self.workdir is not None
-        f_path = self.get("file", os.path.join(self.workdir, DEFAULT_NAME))
+        f_path = self.get("file", self.workdir / DEFAULT_NAME)
         try:
             with open(f_path, 'w') as fw:
                 if hasattr(junit_xml, 'to_xml_report_file'):

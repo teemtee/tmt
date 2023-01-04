@@ -1,5 +1,4 @@
 import dataclasses
-import os
 import re
 import time
 from dataclasses import dataclass
@@ -12,10 +11,11 @@ import pkg_resources
 import tmt
 import tmt.base
 import tmt.steps
+import tmt.utils
 from tmt.result import Result, ResultData, ResultOutcome
 from tmt.steps import Action, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError
+from tmt.utils import GeneralError, Path
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -33,15 +33,15 @@ DEFAULT_FRAMEWORK = 'shell'
 TEST_OUTPUT_FILENAME = 'output.txt'
 
 # Scripts source directory
-SCRIPTS_SRC_DIR = pkg_resources.resource_filename(
-    'tmt', 'steps/execute/scripts')
+SCRIPTS_SRC_DIR = Path(pkg_resources.resource_filename(
+    'tmt', 'steps/execute/scripts'))
 
 
 @dataclass
 class Script:
     """ Represents a script provided by the internal executor """
-    path: str
-    aliases: List[str]
+    path: Path
+    aliases: List[Path]
     related_variables: List[str]
 
 
@@ -53,10 +53,10 @@ class ScriptCreatingFile(Script):
 
 # Script handling reboots, in restraint compatible fashion
 TMT_REBOOT_SCRIPT = ScriptCreatingFile(
-    path="/usr/local/bin/tmt-reboot",
+    path=Path("/usr/local/bin/tmt-reboot"),
     aliases=[
-        "/usr/local/bin/rstrnt-reboot",
-        "/usr/local/bin/rhts-reboot"],
+        Path("/usr/local/bin/rstrnt-reboot"),
+        Path("/usr/local/bin/rhts-reboot")],
     related_variables=[
         "TMT_REBOOT_COUNT",
         "REBOOTCOUNT",
@@ -66,30 +66,30 @@ TMT_REBOOT_SCRIPT = ScriptCreatingFile(
 
 # Script handling result reporting, in restraint compatible fashion
 TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
-    path="/usr/local/bin/tmt-report-result",
+    path=Path("/usr/local/bin/tmt-report-result"),
     aliases=[
-        "/usr/local/bin/rstrnt-report-result",
-        "/usr/local/bin/rhts-report-result"],
+        Path("/usr/local/bin/rstrnt-report-result"),
+        Path("/usr/local/bin/rhts-report-result")],
     related_variables=[],
     created_file="restraint-result"
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
 TMT_FILE_SUBMIT_SCRIPT = Script(
-    path="/usr/local/bin/tmt-file-submit",
+    path=Path("/usr/local/bin/tmt-file-submit"),
     aliases=[
-        "/usr/local/bin/rstrnt-report-log",
-        "/usr/local/bin/rhts-submit-log",
-        "/usr/local/bin/rhts_submit_log"],
+        Path("/usr/local/bin/rstrnt-report-log"),
+        Path("/usr/local/bin/rhts-submit-log"),
+        Path("/usr/local/bin/rhts_submit_log")],
     related_variables=[]
     )
 
 # Script handling text execution abortion, in restraint compatible fashion
 TMT_ABORT_SCRIPT = ScriptCreatingFile(
-    path="/usr/local/bin/tmt-abort",
+    path=Path("/usr/local/bin/tmt-abort"),
     aliases=[
-        "/usr/local/bin/rstrnt-abort",
-        "/usr/local/bin/rhts-abort"],
+        Path("/usr/local/bin/rstrnt-abort"),
+        Path("/usr/local/bin/rhts-abort")],
     related_variables=[],
     created_file="abort"
     )
@@ -191,7 +191,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             test: "tmt.Test",
             filename: Optional[str] = None,
             full: bool = False,
-            create: bool = False) -> str:
+            create: bool = False) -> Path:
         """
         Prepare full/relative test data directory/file path
 
@@ -201,14 +201,13 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         # Prepare directory path, create if requested
         assert self.step.workdir is not None
-        directory = os.path.join(
-            self.step.workdir, TEST_DATA, test.name.lstrip('/'))
-        if create and not os.path.isdir(directory):
-            os.makedirs(os.path.join(directory, TEST_DATA))
+        directory = self.step.workdir / TEST_DATA / test.name.lstrip('/')
+        if create and not directory.is_dir():
+            directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:
             return directory
-        path = os.path.join(directory, filename)
-        return path if full else os.path.relpath(path, self.step.workdir)
+        path = directory / filename
+        return path if full else path.relative_to(self.step.workdir)
 
     def prepare_tests(self) -> List["tmt.Test"]:
         """
@@ -232,8 +231,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         # Install all scripts on guest
         for script in self.scripts:
-            source = os.path.join(
-                SCRIPTS_SRC_DIR, os.path.basename(script.path))
+            source = SCRIPTS_SRC_DIR / script.path.name
 
             for dest in [script.path] + script.aliases:
                 guest.push(
@@ -266,7 +264,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         # Initialize data, prepare log paths
         data = ResultData(result=ResultOutcome.ERROR, duration=test.real_duration)
         for log in [TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if os.path.isfile(self.data_path(test, log, full=True)):
+            if self.data_path(test, log, full=True).is_file():
                 data.log.append(self.data_path(test, log))
         # Check beakerlib log for the result
         try:
@@ -314,13 +312,12 @@ class ExecutePlugin(tmt.steps.Plugin):
         return a Result instance. Raise the FileError exception when no
         test result file is found.
         """
-        report_result_path = os.path.join(
-            self.data_path(test, full=True),
-            tmt.steps.execute.TEST_DATA,
-            TMT_REPORT_RESULT_SCRIPT.created_file)
+        report_result_path = self.data_path(test, full=True) \
+            / tmt.steps.execute.TEST_DATA \
+            / TMT_REPORT_RESULT_SCRIPT.created_file
 
         # Nothing to do if there's no result file
-        if not os.path.exists(report_result_path):
+        if not report_result_path.exists():
             raise tmt.utils.FileError(f"Results file '{report_result_path}' does not exist.")
 
         # Prepare the log path and duration
@@ -354,12 +351,11 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         self.debug("Processing custom 'results.yaml' file created by the test itself.")
 
-        custom_results_path = os.path.join(
-            self.data_path(test, full=True),
-            tmt.steps.execute.TEST_DATA,
-            'results.yaml')
+        custom_results_path = self.data_path(test, full=True) \
+            / tmt.steps.execute.TEST_DATA \
+            / 'results.yaml'
 
-        if not os.path.exists(custom_results_path):
+        if not custom_results_path.exists():
             # Missing results.yaml means error result, but tmt contines with other tests
             return [tmt.Result(
                 data=ResultData(
@@ -385,12 +381,9 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         Returns whether an abort file is present (i.e. abort occurred).
         """
-        abort_file_path = os.path.join(
-            self.data_path(test, full=True),
+        return self.data_path(test, full=True).joinpath(
             tmt.steps.execute.TEST_DATA,
-            TMT_ABORT_SCRIPT.created_file)
-
-        return os.path.exists(abort_file_path)
+            TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
     def test_duration(start: float, end: float) -> str:
@@ -439,7 +432,7 @@ class Execute(tmt.steps.Step):
         """ Load test results """
         super().load()
         try:
-            results = tmt.utils.yaml_to_dict(self.read('results.yaml'))
+            results = tmt.utils.yaml_to_dict(self.read(Path('results.yaml')))
             self._results = [Result.from_serialized(data) for data in results.values()]
         except tmt.utils.FileError:
             self.debug('Test results not found.', level=2)
@@ -448,7 +441,7 @@ class Execute(tmt.steps.Step):
         """ Save test results to the workdir """
         super().save()
         results = {result.name: result.to_serialized() for result in self.results()}
-        self.write('results.yaml', tmt.utils.dict_to_yaml(results))
+        self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(results))
 
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """

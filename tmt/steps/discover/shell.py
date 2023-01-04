@@ -13,7 +13,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command, ShellScript, field
+from tmt.utils import Command, Path, ShellScript, field
 
 T = TypeVar('T', bound='TestDescription')
 
@@ -243,7 +243,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
             click.echo(tmt.utils.format('tests', test_names))
 
     def fetch_remote_repository(
-            self, url: Optional[str], ref: Optional[str], testdir: str) -> None:
+            self, url: Optional[str], ref: Optional[str], testdir: Path) -> None:
         """ Fetch remote git repo from given url to testdir """
         # Nothing to do if no url provided
         if not url:
@@ -277,7 +277,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         # Remove .git so that it's not copied to the SUT
         # if 'keep-git-metadata' option is not specified
         if not self.get('keep_git_metadata', False):
-            shutil.rmtree(os.path.join(testdir, '.git'))
+            shutil.rmtree(testdir / '.git')
 
     def go(self) -> None:
         """ Discover available tests """
@@ -285,7 +285,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         tests = fmf.Tree(dict(summary='tests'))
 
         assert self.workdir is not None
-        testdir = os.path.join(self.workdir, "tests")
+        testdir = self.workdir / "tests"
 
         # Fetch remote repository
         url = self.get('url', None)
@@ -293,7 +293,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         self.fetch_remote_repository(url, ref, testdir)
 
         # dist-git related
-        sourcedir = os.path.join(self.workdir, 'source')
+        sourcedir = self.workdir / 'source'
         dist_git_source = self.get('dist-git-source', False)
 
         # Check and process each defined shell test
@@ -318,7 +318,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
                 data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
             # Add source dir path variable
             if dist_git_source:
-                data.environment['TMT_SOURCE_DIR'] = sourcedir
+                data.environment['TMT_SOURCE_DIR'] = str(sourcedir)
 
             # Create a simple fmf node, with correct name. Emit only keys and values
             # that are no longer default. Do not add `name` itself into the node,
@@ -336,6 +336,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         # (unless remote repository is provided using 'url')
         if not url:
             assert self.step.plan.worktree  # narrow type
+
             relative_path = os.path.relpath(self.step.plan.worktree, self.workdir)
             os.symlink(relative_path, testdir)
 
@@ -349,7 +350,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
                     cwd=self.step.plan.my_run.tree.root,
                     dry=True)[0]
                 assert run_result is not None
-                git_root = run_result.strip('\n')
+                git_root = Path(run_result.strip('\n'))
             except tmt.utils.RunError:
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type

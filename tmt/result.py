@@ -1,13 +1,13 @@
 import dataclasses
 import enum
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 import click
 import fmf
 
 import tmt.utils
-from tmt.utils import field
+from tmt.utils import Path, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -73,7 +73,10 @@ class ResultData(tmt.utils.SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
-    log: List[str] = field(default_factory=list)
+    log: List[Path] = field(
+        default_factory=list,
+        serialize=lambda logs: [str(log) for log in logs],
+        unserialize=lambda value: [Path(log) for log in value])
     note: Optional[str] = None
     duration: Optional[str] = None
     ids: Dict[str, Optional[str]] = field(default_factory=dict)
@@ -97,11 +100,10 @@ class Result(tmt.utils.SerializableContainer):
     note: Optional[str] = None
     duration: Optional[str] = None
     ids: Dict[str, Optional[str]] = field(default_factory=dict)
-    log: Union[List[Any], Dict[Any, Any]] = field(default_factory=list)
-    # TODO: Check why log can be also a Dictionary.
-    # Check if we can safely get rid of Union.
-    # Should be the same type as in ResultData class.
-    # Check why there is a List[Any] and not a List[str]
+    log: List[Path] = field(
+        default_factory=list,
+        serialize=lambda logs: [str(log) for log in logs],
+        unserialize=lambda value: [Path(log) for log in value])
 
     def __init__(
             self,

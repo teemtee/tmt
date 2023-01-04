@@ -22,6 +22,7 @@ import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.base
@@ -360,7 +361,7 @@ class Step(tmt.utils.Common):
     def load(self) -> None:
         """ Load status and step data from the workdir """
         try:
-            raw_step_data: Dict[Any, Any] = tmt.utils.yaml_to_dict(self.read('step.yaml'))
+            raw_step_data: Dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
             self.debug('Successfully loaded step data.', level=2)
 
             self.data = [
@@ -376,7 +377,7 @@ class Step(tmt.utils.Common):
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data]
             }
-        self.write('step.yaml', tmt.utils.dict_to_yaml(content))
+        self.write(Path('step.yaml'), tmt.utils.dict_to_yaml(content))
 
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
@@ -517,7 +518,8 @@ class Step(tmt.utils.Common):
         # Show step header and how
         self.info(self.name, color='blue')
         # Show workdir in verbose mode
-        self.debug('workdir', self.workdir, 'magenta')
+        if self.workdir:
+            self.debug('workdir', str(self.workdir), 'magenta')
 
     def prune(self) -> None:
         """ Remove all uninteresting files from the step workdir """
@@ -1256,7 +1258,7 @@ class Login(Action):
 
     def _login(
             self,
-            cwd: Optional[str] = None,
+            cwd: Optional[Path] = None,
             env: Optional[tmt.utils.EnvironmentType] = None) -> None:
         """ Run the interactive command """
         scripts = [tmt.utils.ShellScript(script) for script in self.opt('command')]
@@ -1278,7 +1280,7 @@ class Login(Action):
     def after_test(
             self,
             result: 'tmt.base.Result',
-            cwd: Optional[str] = None,
+            cwd: Optional[Path] = None,
             env: Optional[tmt.utils.EnvironmentType] = None) -> None:
         """ Check and login after test execution """
         if self._enabled_by_results([result]):

@@ -1,5 +1,4 @@
 import dataclasses
-import os
 from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 
 import click
@@ -16,7 +15,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.steps import Action
-from tmt.utils import Command, GeneralError
+from tmt.utils import Command, GeneralError, Path
 
 
 @dataclasses.dataclass
@@ -86,7 +85,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         raise NotImplementedError
 
     def extract_distgit_source(
-            self, distgit_dir: str, target_dir: str, handler_name: Optional[str] = None) -> None:
+            self, distgit_dir: Path, target_dir: Path, handler_name: Optional[str] = None) -> None:
         """
         Extract source tarball into target_dir
 
@@ -111,8 +110,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
             with tmt.utils.retry_session() as session:
                 response = session.get(url)
             response.raise_for_status()
-            os.makedirs(target_dir, exist_ok=True)
-            with open(os.path.join(target_dir, source_name), 'wb') as tarball:
+            target_dir.mkdir(exist_ok=True, parents=True)
+            with open(target_dir / source_name, 'wb') as tarball:
                 tarball.write(response.content)
             self.run(
                 Command("tar", "--auto-compress", "--extract", "-f", source_name),
@@ -141,7 +140,7 @@ class Discover(tmt.steps.Step):
         """ Load step data from the workdir """
         super().load()
         try:
-            raw_test_data = tmt.utils.yaml_to_dict(self.read('tests.yaml'))
+            raw_test_data = tmt.utils.yaml_to_dict(self.read(Path('tests.yaml')))
             self._tests = [
                 tmt.Test.from_dict(
                     logger=self._logger,
@@ -162,7 +161,7 @@ class Discover(tmt.steps.Step):
             for test in self.tests()
             }
 
-        self.write('tests.yaml', tmt.utils.dict_to_yaml(raw_test_data))
+        self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 
     def _discover_from_execute(self) -> None:
         """ Check the execute step for possible shell script tests """
@@ -272,7 +271,7 @@ class Discover(tmt.steps.Step):
                 # Check discovered tests, modify test name/path
                 for test in phase.tests():
                     test.name = f"{prefix}{test.name}"
-                    test.path = f"/{phase.safe_name}{test.path}"
+                    test.path = Path(f"/{phase.safe_name}{test.path}")
                     # Update test environment with plan environment
                     test.environment.update(self.plan.environment)
                     self._tests.append(test)

@@ -1,6 +1,4 @@
 import dataclasses
-import os
-import os.path
 import webbrowser
 
 import jinja2
@@ -11,7 +9,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
-from tmt.utils import field
+from tmt.utils import Path, field
 
 HTML_TEMPLATE_PATH = pkg_resources.resource_filename(
     'tmt', 'steps/report/html/template.html.j2')
@@ -58,13 +56,14 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
 
         # Prepare the template
         environment = jinja2.Environment()
-        environment.filters["basename"] = lambda x: os.path.basename(x)
+        environment.filters["basename"] = lambda x: Path(x).name
 
         if self.get('absolute-paths'):
-            environment.filters["linkable_path"] = os.path.abspath
+            environment.filters["linkable_path"] = lambda x: str(Path(x).absolute())
         else:
             # Links used in html should be relative to a workdir
-            environment.filters["linkable_path"] = lambda x: os.path.relpath(x, self.workdir)
+            assert self.workdir is not None  # narrow type
+            environment.filters["linkable_path"] = lambda x: str(Path(x).relative_to(self.workdir))
 
         environment.trim_blocks = True
         environment.lstrip_blocks = True
@@ -72,7 +71,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
             template = environment.from_string(file.read())
 
         # Write the report
-        filename = 'index.html'
+        filename = Path('index.html')
         self.write(
             filename,
             data=template.render(
@@ -86,8 +85,8 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
 
         # Show output file path
         assert self.workdir is not None
-        target = os.path.join(self.workdir, filename)
-        self.info("output", target, color='yellow')
+        target = self.workdir / filename
+        self.info("output", str(target), color='yellow')
         if not self.get('open'):
             return
 

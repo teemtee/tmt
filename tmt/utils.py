@@ -6,9 +6,9 @@ import copy
 import dataclasses
 import datetime
 import functools
-import glob
 import io
 import os
+import pathlib
 import pprint
 import re
 import shlex
@@ -22,7 +22,6 @@ import unicodedata
 import urllib.parse
 from collections import OrderedDict
 from functools import lru_cache
-from pathlib import Path
 from threading import Thread
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Generic,
                     Iterable, List, NamedTuple, Optional, Pattern, Sequence,
@@ -42,6 +41,7 @@ from click import echo, style, wrap_text
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
+from ruamel.yaml.representer import Representer
 
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol
@@ -55,10 +55,58 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.steps
 
+
+class Path(pathlib.PosixPath):
+    # Apparently, `pathlib`` does not offer `relpath` transition between
+    # parallel trees, instead, a `ValueError`` is raised when `self` does not
+    # lie under `other`. Overriding the original implementation with one based
+    # on `os.path.relpath()`, which is more suited to tmt code base needs.
+    #
+    # ignore[override]: does not match the signature on purpose, our use is
+    # slightly less generic that what pathlib supports, to be usable with
+    # os.path.relpath.
+    def relative_to(self, other: Union[str, 'Path']) -> 'Path':  # type: ignore[override]
+        return Path(os.path.relpath(self, other))
+
+    # * `Path.is_relative_to()`` has been added in 3.9
+    # https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.is_relative_to
+    #
+    # * The original implementation calls `relative_to()`, which we just made
+    # to return a relative path for all possible inputs, even those the original
+    # implementation considers to not be relative to each other. Therefore, we
+    # need to override `is_relative_to()` even for other Python versions, to not
+    # depend on `ValueError` raised by the original `relative_to()`.
+    #
+    # ignore[override]: does not match the signature on purpose, our use is
+    # slightly less generic that what pathlib supports, to be usable with
+    # os.path.relpath.
+    def is_relative_to(self, other: 'Path') -> bool:  # type: ignore[override]
+        # NOTE: the following is not perfect, but it should be enough for
+        # what tmt needs to know about its paths.
+
+        # Acquire the relative path from the one we're given and the other...
+        relpath = os.path.relpath(str(self), str(other))
+
+        # ... and if the relative path starts with `..`, it means we had to
+        # walk *up* from `other` and descend to `path`, therefore `path` cannot
+        # be a subtree of `other`.
+
+        return not relpath.startswith('..')
+
+    def unrooted(self) -> 'Path':
+        """ Return the path as if it was not starting in file system root """
+
+        if self.is_absolute():
+            return self.relative_to('/')
+
+        return self
+
+
 log = fmf.utils.Logging('tmt').logger
 
+
 # Default workdir root and max
-WORKDIR_ROOT = '/var/tmp/tmt'
+WORKDIR_ROOT = Path('/var/tmp/tmt')
 WORKDIR_MAX = 1000
 
 # Maximum number of lines of stdout/stderr to show upon errors
@@ -77,7 +125,7 @@ DEFAULT_PLUGIN_ORDER_REQUIRES = 70
 DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 # Config directory
-CONFIG_PATH = '~/.config/tmt'
+CONFIG_PATH = Path('~/.config/tmt')
 
 # Special process return code
 PROCESS_TIMEOUT = 124
@@ -112,10 +160,10 @@ FmfContextType = Dict[str, List[str]]
 EnvironmentType = Dict[str, str]
 
 # Workdir argument type, can be True, a string, a path or None
-WorkdirArgumentType = Union[Literal[True], str, None]
+WorkdirArgumentType = Union[Literal[True], Path, None]
 
-# Workdir type, can be None or a string
-WorkdirType = Optional[str]
+# Workdir type, can be None or a path
+WorkdirType = Optional[Path]
 
 # Option to skip to initialize work tree in plan
 PLAN_SKIP_WORKTREE_INIT = 'plan_skip_worktree_init'
@@ -160,34 +208,40 @@ class Config:
 
     def __init__(self) -> None:
         """ Initialize config directory path """
-        self.path = os.path.expanduser(CONFIG_PATH)
-        if not os.path.exists(self.path):
+        self.path = CONFIG_PATH.expanduser()
+        if not self.path.exists():
             try:
-                os.makedirs(self.path)
+                self.path.mkdir(parents=True)
             except OSError as error:
                 raise GeneralError(
                     f"Failed to create config '{self.path}'.\n{error}")
 
-    def last_run(self, run_id: Optional[str] = None) -> Optional[str]:
-        """ Get and set last run id """
-        symlink = os.path.join(self.path, 'last-run')
-        if run_id:
-            try:
-                os.remove(symlink)
-            except OSError:
-                pass
-            try:
-                os.symlink(run_id, symlink)
-            except FileExistsError:
-                # Race when tmt runs in parallel
-                log.warning(f"Race condition, unable to save last run '{run_id}'.")
-            except OSError as error:
-                raise GeneralError(
-                    f"Unable to save last run '{self.path}'.\n{error}")
-            return run_id
-        if os.path.islink(symlink):
-            return os.path.realpath(symlink)
-        return None
+    @property
+    def _last_run_symlink(self) -> Path:
+        return self.path / 'last-run'
+
+    @property
+    def last_run(self) -> Optional[Path]:
+        """ Get the last run workdir path """
+        return self._last_run_symlink.resolve() if self._last_run_symlink.is_symlink() else None
+
+    @last_run.setter
+    def last_run(self, workdir: Path) -> None:
+        """ Set the last run to the given run workdir """
+
+        try:
+            self._last_run_symlink.unlink()
+        except OSError:
+            pass
+
+        try:
+            self._last_run_symlink.symlink_to(workdir)
+        except FileExistsError:
+            # Race when tmt runs in parallel
+            log.warning(f"Race condition, unable to save last run '{workdir}'.")
+        except OSError as error:
+            raise GeneralError(
+                f"Unable to save last run '{self.path}'.\n{error}")
 
 
 # TODO: `StreamLogger` is a dedicated thread fillowing given stream, passing their content to
@@ -622,7 +676,7 @@ class Common:
 
     def _run(self,
              command: Command,
-             cwd: Optional[str],
+             cwd: Optional[Path],
              shell: bool,
              env: Optional[EnvironmentType],
              log: Optional[BaseLoggerFnType],
@@ -751,7 +805,7 @@ class Common:
             friendly_command: Optional[str] = None,
             silent: bool = False,
             message: Optional[str] = None,
-            cwd: Optional[str] = None,
+            cwd: Optional[Path] = None,
             dry: bool = False,
             shell: bool = False,
             env: Optional[EnvironmentType] = None,
@@ -798,7 +852,7 @@ class Common:
         cwd = cwd or self.workdir
 
         # Fail nicely if the working directory does not exist
-        if cwd and not os.path.exists(cwd):
+        if cwd and not cwd.exists():
             raise GeneralError(
                 f"The working directory '{cwd}' does not exist.")
 
@@ -812,10 +866,10 @@ class Common:
                 message, error.command, error.returncode,
                 error.stdout, error.stderr, caller=self)
 
-    def read(self, path: str, level: int = 2) -> str:
+    def read(self, path: Path, level: int = 2) -> str:
         """ Read a file from the workdir """
         if self.workdir:
-            path = os.path.join(self.workdir, path)
+            path = self.workdir / path
         self.debug(f"Read file '{path}'.", level=level)
         try:
             with open(path, encoding='utf-8', errors='replace') as data:
@@ -825,13 +879,13 @@ class Common:
 
     def write(
             self,
-            path: str,
+            path: Path,
             data: str,
             mode: str = 'w',
             level: int = 2) -> None:
         """ Write a file to the workdir """
         if self.workdir:
-            path = os.path.join(self.workdir, path)
+            path = self.workdir / path
         action = 'Append to' if mode == 'a' else 'Write'
         self.debug(f"{action} file '{path}'.", level=level)
         # Dry mode
@@ -853,27 +907,33 @@ class Common:
         If 'id' is a path, that directory is used instead. Otherwise a
         new workdir is created under the 'workdir_root' directory.
         """
-        workdir_root = os.getenv('TMT_WORKDIR_ROOT', WORKDIR_ROOT)
+
+        if 'TMT_WORKDIR_ROOT' in os.environ:
+            workdir_root = Path(os.environ['TMT_WORKDIR_ROOT'])
+        else:
+            workdir_root = WORKDIR_ROOT
 
         # Prepare the workdir name from given id or path
-        if isinstance(id_, str):
+        if isinstance(id_, Path):
             # Use provided directory if full path given
-            if '/' in id_:
+            if '/' in str(id_):
                 workdir = id_
             # Construct directory name under workdir root
             else:
-                workdir = os.path.join(workdir_root, id_)
+                workdir = workdir_root / id_
+            # Resolve any relative paths
+            workdir = workdir.resolve()
         # Weird workdir id
         elif id_ is not None:
             raise GeneralError(
-                f"Invalid workdir '{id_}', expected a string or None.")
+                f"Invalid workdir '{id_}', expected a path or None.")
 
         def _check_or_create_workdir_root_with_perms() -> None:
             """ If created workdir_root has to be 1777 for multi-user"""
-            if not os.path.isdir(workdir_root):
+            if not workdir_root.is_dir():
                 try:
-                    os.makedirs(workdir_root, exist_ok=True)
-                    os.chmod(workdir_root, 0o1777)
+                    workdir_root.mkdir(exist_ok=True, parents=True)
+                    workdir_root.chmod(0o1777)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{workdir_root}': {error}")
 
@@ -884,10 +944,10 @@ class Common:
             # Generated unique id or fail, has to be atomic call
             for id_bit in range(1, WORKDIR_MAX + 1):
                 directory = 'run-{}'.format(str(id_bit).rjust(3, '0'))
-                workdir = os.path.join(workdir_root, directory)
+                workdir = workdir_root / directory
                 try:
                     # Call is atomic, no race possible
-                    os.makedirs(workdir)
+                    workdir.mkdir(parents=True)
                     break
                 except FileExistsError:
                     pass
@@ -899,7 +959,7 @@ class Common:
             if self.opt('scratch'):
                 self._workdir_cleanup(workdir)
 
-            if workdir.startswith(workdir_root):
+            if workdir.is_relative_to(workdir_root):
                 _check_or_create_workdir_root_with_perms()
 
             # Create the workdir
@@ -915,13 +975,13 @@ class Common:
         self._logger.add_logfile_handler(os.path.join(workdir, tmt.log.LOG_FILENAME))
         self._workdir = workdir
 
-    def _workdir_name(self) -> Optional[str]:
+    def _workdir_name(self) -> Optional[Path]:
         """ Construct work directory name from parent workdir """
         # Need the parent workdir
         if self.parent is None or self.parent.workdir is None:
             return None
         # Join parent name with self
-        return os.path.join(self.parent.workdir, self.safe_name.lstrip("/"))
+        return self.parent.workdir / self.safe_name.lstrip("/")
 
     def _workdir_load(self, workdir: WorkdirArgumentType) -> None:
         """
@@ -934,17 +994,17 @@ class Common:
         elif workdir is not None:
             self._workdir_init(workdir)
 
-    def _workdir_cleanup(self, path: Optional[str] = None) -> None:
+    def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
         """ Clean up the work directory """
         directory = path or self._workdir_name()
         if directory is not None:
-            if os.path.isdir(directory):
+            if directory.is_dir():
                 self.debug(f"Clean up workdir '{directory}'.", level=2)
                 shutil.rmtree(directory)
         self._workdir = None
 
     @property
-    def workdir(self) -> Optional[str]:
+    def workdir(self) -> Optional[Path]:
         """ Get the workdir, create if does not exist """
         if self._workdir is None:
             self._workdir = self._workdir_name()
@@ -1130,30 +1190,31 @@ def listify(
 
 
 def copytree(
-        src: str,
-        dst: str,
+        src: Path,
+        dst: Path,
         symlinks: bool = False,
         dirs_exist_ok: bool = False,
-        ) -> str:
+        ) -> Path:
     """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
     # No need to reimplement for newer python or if argument is not requested
     if not dirs_exist_ok or sys.version_info >= (3, 8):
         return cast(
-            str,
+            Path,
             shutil.copytree(src=src, dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok))
     # Choice was to either copy python implementation and change ONE line
     # or use rsync (or cp with shell)
     # We need to copy CONTENT of src into dst
     # so src has to end with / and dst cannot
-    if src[-1] != '/':
-        src += '/'
-    if dst[-1] == '/':
-        dst = dst[:-1]
+    rsync_src, rsync_dst = str(src), str(dst)
+    if rsync_src[-1] != '/':
+        rsync_src += '/'
+    if rsync_dst[-1] == '/':
+        rsync_dst = rsync_dst[:-1]
 
     command = ["rsync", "-r"]
     if symlinks:
         command.append('-l')
-    command.extend([src, dst])
+    command.extend([rsync_src, rsync_dst])
 
     log.debug(f"Calling command '{command}'.")
     outcome = subprocess.run(
@@ -1286,8 +1347,8 @@ def environment_to_dict(
 @lru_cache(maxsize=None)
 def environment_file_to_dict(
         *,
-        env_file: str,
-        root: str = ".",
+        filename: str,
+        root: Optional[Path] = None,
         logger: tmt.log.Logger) -> EnvironmentType:
     """
     Read environment variables from the given file.
@@ -1314,10 +1375,12 @@ def environment_file_to_dict(
        :py:func:`environment_files_to_dict`.
     """
 
-    env_file = env_file.strip()
+    root = root or Path.cwd()
+    filename = filename.strip()
+    environment_filepath: Optional[Path] = None
 
     # Fetch a remote file
-    if env_file.startswith("http"):
+    if filename.startswith("http"):
         # Create retry session for longer retries, see #1229
         session = retry_session.create(
             retries=ENVFILE_RETRY_SESSION_RETRIES,
@@ -1332,32 +1395,32 @@ def environment_file_to_dict(
                 ),
             )
         try:
-            response = session.get(env_file)
+            response = session.get(filename)
             response.raise_for_status()
             content = response.text
         except requests.RequestException as error:
             raise GeneralError(
-                f"Failed to fetch the environment file from '{env_file}'. "
+                f"Failed to fetch the environment file from '{filename}'. "
                 f"The problem was: '{error}'")
 
     # Read a local file
     else:
         # Ensure we don't escape from the metadata tree root
-        try:
-            root_path = Path(root).resolve()
-            full_path = (Path(root_path) / Path(env_file)).resolve()
-            full_path.relative_to(root_path)
-        except ValueError:
-            raise GeneralError(
-                f"The 'environment-file' path '{full_path}' is outside "
-                f"of the metadata tree root '{root}'.")
-        if not Path(full_path).is_file():
-            raise GeneralError(f"File '{full_path}' doesn't exist.")
 
-        content = Path(full_path).read_text()
+        root = root.resolve()
+        environment_filepath = root.joinpath(filename).resolve()
+
+        if not environment_filepath.is_relative_to(root):
+            raise GeneralError(
+                f"The 'environment-file' path '{environment_filepath}' is outside "
+                f"of the metadata tree root '{root}'.")
+        if not environment_filepath.is_file():
+            raise GeneralError(f"File '{environment_filepath}' doesn't exist.")
+
+        content = environment_filepath.read_text()
 
     # Parse yaml file
-    if os.path.splitext(env_file)[1].lower() in ('.yaml', '.yml'):
+    if os.path.splitext(filename)[1].lower() in ('.yaml', '.yml'):
         environment = parse_yaml(content)
 
     else:
@@ -1367,11 +1430,11 @@ def environment_file_to_dict(
         except ValueError:
             raise GeneralError(
                 f"Failed to extract variables from environment file "
-                f"'{full_path}'. Ensure it has the proper format "
+                f"'{environment_filepath or filename}'. Ensure it has the proper format "
                 f"(i.e. A=B).")
 
     if not environment:
-        logger.warn(f"Empty environment file '{env_file}'.")
+        logger.warn(f"Empty environment file '{filename}'.")
 
         return {}
 
@@ -1380,8 +1443,8 @@ def environment_file_to_dict(
 
 def environment_files_to_dict(
         *,
-        env_files: Iterable[str],
-        root: Optional[str] = None,
+        filenames: Iterable[str],
+        root: Optional[Path] = None,
         logger: tmt.log.Logger) -> EnvironmentType:
     """
     Read environment variables from the given list of files.
@@ -1410,12 +1473,12 @@ def environment_files_to_dict(
        accumulating data from all input files.
     """
 
-    root = root or '.'
+    root = root or Path.cwd()
 
     result: EnvironmentType = {}
 
-    for env_file in env_files:
-        result.update(environment_file_to_dict(env_file=env_file, root=root, logger=logger))
+    for filename in filenames:
+        result.update(environment_file_to_dict(filename=filename, root=root, logger=logger))
 
     return result
 
@@ -1463,6 +1526,15 @@ def dict_to_yaml(
     yaml.encoding = 'utf-8'
     yaml.width = width
     yaml.explicit_start = start
+
+    # For simpler dumping of well-known classes
+    def _represent_path(representer: Representer, data: Path) -> Any:
+        return representer.represent_scalar('tag:yaml.org,2002:str', str(data))
+
+    yaml.representer.add_representer(pathlib.Path, _represent_path)
+    yaml.representer.add_representer(pathlib.PosixPath, _represent_path)
+    yaml.representer.add_representer(Path, _represent_path)
+
     # Convert multiline strings
     scalarstring.walk_tree(data)
     if sort:
@@ -1896,7 +1968,7 @@ class SerializableContainer(DataContainer):
         return cast(SerializableContainerDerivedType, klass.from_serialized(serialized))
 
 
-def markdown_to_html(filename: str) -> str:
+def markdown_to_html(filename: Path) -> str:
     """
     Convert markdown to html
 
@@ -2082,28 +2154,28 @@ def format(
 
 
 def create_directory(
-        path: str,
+        path: Path,
         name: str,
         dry: bool = False,
         quiet: bool = False) -> None:
     """ Create a new directory, handle errors """
     say = log.debug if quiet else echo
-    if os.path.isdir(path):
+    if path.is_dir():
         say("Directory '{}' already exists.".format(path))
         return
     if dry:
         say("Directory '{}' would be created.".format(path))
         return
     try:
-        os.makedirs(path, exist_ok=True)
+        path.mkdir(exist_ok=True, parents=True)
         say("Directory '{}' created.".format(path))
     except OSError as error:
         raise FileError("Failed to create {} '{}' ({})".format(
-            name, path, error))
+            name, path, error)) from error
 
 
 def create_file(
-        path: str,
+        path: Path,
         content: str,
         name: str,
         dry: bool = False,
@@ -2113,7 +2185,7 @@ def create_file(
     """ Create a new file, handle errors """
     say = log.debug if quiet else echo
     action = 'would be created' if dry else 'created'
-    if os.path.exists(path):
+    if path.exists():
         if force:
             action = 'would be overwritten' if dry else 'overwritten'
         else:
@@ -2124,10 +2196,9 @@ def create_file(
         return
 
     try:
-        with open(path, 'w') as file_:
-            file_.write(content)
+        path.write_text(content)
         say("{} '{}' {}.".format(name.capitalize(), path, action))
-        os.chmod(path, mode)
+        path.chmod(mode)
     except OSError as error:
         raise FileError("Failed to create {} '{}' ({})".format(
             name, path, error))
@@ -2188,7 +2259,7 @@ def public_git_url(url: str) -> str:
     return url
 
 
-def web_git_url(url: str, ref: str, path: Optional[str] = None) -> str:
+def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
     """
     Convert a public git url into a clickable web url format
 
@@ -2196,14 +2267,14 @@ def web_git_url(url: str, ref: str, path: Optional[str] = None) -> str:
     for the most common git servers.
     """
     if path:
-        path = urllib.parse.quote_plus(path, safe="/")
+        path = Path(urllib.parse.quote_plus(str(path), safe="/"))
 
     # Special handling for pkgs.devel (ref at the end)
     if 'pkgs.devel' in url:
         url = url.replace('git://', 'https://').replace('.com', '.com/cgit')
         url += '/tree'
         if path:
-            url += path
+            url += str(path)
         url += f'?h={ref}'
         return url
 
@@ -2213,13 +2284,13 @@ def web_git_url(url: str, ref: str, path: Optional[str] = None) -> str:
         url += f'/tree/{ref}'
 
     if path:
-        url += path
+        url += str(path)
 
     return url
 
 
 @lru_cache(maxsize=None)
-def fmf_id(name: str, fmf_root: str, always_get_ref: bool = False) -> 'tmt.base.FmfId':
+def fmf_id(name: str, fmf_root: Path, always_get_ref: bool = False) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
     def run(command: str) -> str:
@@ -2246,10 +2317,9 @@ def fmf_id(name: str, fmf_root: str, always_get_ref: bool = False) -> 'tmt.base.
     fmf_id.url = public_git_url(remote)
 
     # Construct path (if different from git root)
-    git_root = run('git rev-parse --show-toplevel')
-    if git_root != fmf_root:
-        fmf_id.path = os.path.join(
-            '/', os.path.relpath(fmf_root, git_root))
+    git_root = Path(run('git rev-parse --show-toplevel'))
+    if git_root.resolve() != fmf_root.resolve():
+        fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
 
     # Get the ref (skip for the default)
     ref = run('git rev-parse --abbrev-ref HEAD')
@@ -2385,11 +2455,11 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository: str, remote: str = 'origin') -> str:
+def default_branch(repository: Path, remote: str = 'origin') -> str:
     """ Detect default branch from given local git repository """
-    head = os.path.join(repository, f'.git/refs/remotes/{remote}/HEAD')
+    head = repository / f'.git/refs/remotes/{remote}/HEAD'
     # Make sure the HEAD reference is available
-    if not os.path.exists(head):
+    if not head.exists():
         subprocess.run(
             f'git remote set-head {remote} --auto'.split(), cwd=repository)
     # The ref format is 'ref: refs/remotes/origin/main'
@@ -2443,7 +2513,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
         *sources
         )
     try:
-        result = run(cmd, cwd=test.node.root, join=True)
+        result = run(cmd, cwd=Path(test.node.root), join=True)
     except RunError as error:
         return (
             False,
@@ -2463,7 +2533,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
     # Check for not pushed changes
     cmd = Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
     try:
-        result = run(cmd, cwd=test.node.root)
+        result = run(cmd, cwd=Path(test.node.root))
     except RunError as error:
         return (
             False,
@@ -2482,7 +2552,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
         *sources
         )
     try:
-        result = run(cmd, cwd=test.node.root)
+        result = run(cmd, cwd=Path(test.node.root))
     except RunError as error:
         return (
             False,
@@ -2501,30 +2571,31 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
 
 
 def generate_runs(
-        path: str, id_: Optional[str] = None) -> Generator[str, None, None]:
+        path: Path,
+        id_: Optional[str] = None) -> Generator[Path, None, None]:
     """ Generate absolute paths to runs from path """
     # Prepare absolute workdir path if --id was used
     if id_:
+        run_path = Path(id_)
         if '/' not in id_:
-            id_ = os.path.join(path, id_)
-        if os.path.isabs(id_):
-            if os.path.exists(id_):
-                yield id_
+            run_path = path / run_path
+        if run_path.is_absolute():
+            if run_path.exists():
+                yield run_path
             return
-    if not os.path.exists(path):
+    if not path.exists():
         return
-    for filename in os.listdir(path):
-        abs_path = os.path.join(path, filename)
+    for childpath in path.iterdir():
+        abs_child_path = childpath.absolute()
         # If id_ is None, the abs_path is considered valid (no filtering
         # is being applied). If it is defined, it has been transformed
         # to absolute path and must be equal to abs_path for the run
         # in abs_path to be generated.
-        invalid_id = id_ and abs_path != id_
-        invalid_run = not os.path.exists(
-            os.path.join(abs_path, 'run.yaml'))
-        if not os.path.isdir(abs_path) or invalid_id or invalid_run:
+        invalid_id = id_ and str(abs_child_path) != id_
+        invalid_run = not abs_child_path.joinpath('run.yaml').exists()
+        if not abs_child_path.is_dir() or invalid_id or invalid_run:
             continue
-        yield abs_path
+        yield abs_child_path
 
 
 def load_run(run: 'tmt.base.Run') -> Tuple[bool, Optional[Exception]]:
@@ -3003,20 +3074,21 @@ class DistGitHandler:
     lookaside_server: str
     remote_substring: Pattern[str]
 
-    def url_and_name(self, cwd: str = '.') -> List[Tuple[str, str]]:
+    def url_and_name(self, cwd: Optional[Path] = None) -> List[Tuple[str, str]]:
         """
         Return list of urls and basenames of the used source
 
         The 'cwd' parameter has to be a DistGit directory.
         """
+        cwd = cwd or Path.cwd()
         # Assumes <package>.spec
-        globbed = glob.glob(os.path.join(cwd, '*.spec'))
+        globbed = list(cwd.glob('*.spec'))
         if len(globbed) != 1:
             raise GeneralError(f"No .spec file is present in '{cwd}'.")
-        package = os.path.basename(globbed[0])[:-len('.spec')]
+        package = globbed[0].stem
         ret_values = []
         try:
-            with open(os.path.join(cwd, self.sources_file_name)) as f:
+            with open(cwd / self.sources_file_name) as f:
                 for line in f.readlines():
                     match = self.re_source.match(line)
                     if match is None:
@@ -3093,7 +3165,7 @@ def get_distgit_handler_names() -> List[str]:
 
 def git_clone(
         url: str,
-        destination: str,
+        destination: Path,
         common: Common,
         env: Optional[EnvironmentType] = None,
         shallow: bool = False
@@ -3113,7 +3185,7 @@ def git_clone(
             Command(
                 'git', 'clone',
                 *depth,
-                url, destination
+                url, str(destination)
                 ), env=env)
     except RunError:
         if not shallow:
@@ -3200,7 +3272,7 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
         sys.stdout.flush()
 
 
-def find_fmf_root(path: str) -> List[str]:
+def find_fmf_root(path: Path) -> List[Path]:
     """
     Search trough path and return all fmf roots that exist there
 
@@ -3209,14 +3281,15 @@ def find_fmf_root(path: str) -> List[str]:
     Raise `MetadataError` if no fmf root is found.
     """
     fmf_roots = []
-    for root, _, files in os.walk(path):
-        if not os.path.basename(root) == '.fmf':
+    for _root, _, files in os.walk(path):
+        root = Path(_root)
+        if root.name != '.fmf':
             continue
         if 'version' in files:
-            fmf_roots.append(os.path.dirname(root))
+            fmf_roots.append(root.parent)
     if not fmf_roots:
         raise MetadataError(f"No fmf root present inside '{path}'.")
-    fmf_roots.sort(key=lambda path: len(path))
+    fmf_roots.sort(key=lambda path: len(str(path)))
     return fmf_roots
 
 
@@ -3283,17 +3356,16 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
             }
 
 
-def _load_schema(schema_filepath: str) -> Schema:
+def _load_schema(schema_filepath: Path) -> Schema:
     """
     Load a JSON schema from a given filepath.
 
     A helper returning the raw loaded schema.
     """
 
-    if not os.path.isabs(schema_filepath):
-        schema_filepath = os.path.join(
-            pkg_resources.resource_filename(
-                'tmt', 'schemas'), schema_filepath)
+    if not schema_filepath.is_absolute():
+        schema_filepath = Path(pkg_resources.resource_filename('tmt', 'schemas')) \
+            / schema_filepath
 
     try:
         with open(schema_filepath, 'r', encoding='utf-8') as f:
@@ -3304,7 +3376,7 @@ def _load_schema(schema_filepath: str) -> Schema:
 
 
 @functools.lru_cache(maxsize=None)
-def load_schema(schema_filepath: str) -> Schema:
+def load_schema(schema_filepath: Path) -> Schema:
     """
     Load a JSON schema from a given filepath.
 
@@ -3332,17 +3404,19 @@ def load_schema_store() -> SchemaStore:
 
     store: SchemaStore = {}
 
-    schema_dirpath = pkg_resources.resource_filename('tmt', 'schemas')
+    schema_dirpath = Path(pkg_resources.resource_filename('tmt', 'schemas'))
 
     try:
         for dirpath, _, filenames in os.walk(
                 schema_dirpath, followlinks=True):
             for filename in filenames:
+                filepath = Path(dirpath) / filename
+
                 # Ignore all files but YAML files.
-                if os.path.splitext(filename)[1].lower() not in ('.yaml', '.yml'):
+                if filepath.suffix.lower() not in ('.yaml', '.yml'):
                     continue
 
-                schema = _load_schema(os.path.join(dirpath, filename))
+                schema = _load_schema(filepath)
 
                 store[schema['$id']] = schema
 
@@ -3470,7 +3544,7 @@ def validate_fmf_node(
 
     node = _prenormalize_fmf_node(node, schema_name)
 
-    result = node.validate(load_schema(schema_name), schema_store=load_schema_store())
+    result = node.validate(load_schema(Path(schema_name)), schema_store=load_schema_store())
 
     if result.result is True:
         return []

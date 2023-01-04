@@ -1,6 +1,5 @@
 import dataclasses
 import datetime
-import os
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -119,7 +118,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
         assert self.workdir is not None
 
-        f_path = self.get("file", os.path.join(self.workdir, DEFAULT_NAME))
+        f_path = self.get("file", self.workdir / DEFAULT_NAME)
         with open(f_path, 'wb') as fw:
             ET.ElementTree(xml_tree).write(fw)
 

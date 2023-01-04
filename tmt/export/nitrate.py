@@ -12,7 +12,7 @@ from click import echo, style
 import tmt.export
 import tmt.identifier
 import tmt.utils
-from tmt.utils import ConvertError
+from tmt.utils import ConvertError, Path
 
 if TYPE_CHECKING:
     import tmt.base
@@ -91,7 +91,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Generator[Any, None, None]:
             pass
 
 
-def convert_manual_to_nitrate(test_md: str) -> SectionsReturnType:
+def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     """
     Convert Markdown document to html sections.
 
@@ -238,7 +238,7 @@ def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
         return True
 
 
-def return_markdown_file() -> str:
+def return_markdown_file() -> Optional[Path]:
     """ Return path to the markdown file """
     files = '\n'.join(os.listdir())
     reg_exp = r'.+\.md$'
@@ -246,16 +246,15 @@ def return_markdown_file() -> str:
     fail_message = "in the current working directory.\n" \
                    "Manual steps couldn't be exported"
     if len(md_files) == 1:
-        md_path = os.path.join(os.getcwd(), md_files[0])
-    elif len(md_files) == 0:
-        md_path = ''
+        return Path.cwd() / str(md_files[0])
+    if not md_files:
         echo((style(f'Markdown file doesn\'t exist {fail_message}',
                     fg='yellow')))
-    else:
-        md_path = ''
-        echo((style(f'{len(md_files)} Markdown files found {fail_message}',
-                    fg='yellow')))
-    return md_path
+        return None
+
+    echo((style(f'{len(md_files)} Markdown files found {fail_message}',
+                fg='yellow')))
+    return None
 
 
 def get_category() -> str:
@@ -578,7 +577,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             echo(style(section + ': ', fg='green') + attribute.strip())
 
     # fmf identifer
-    fmf_id = tmt.utils.dict_to_yaml(test.fmf_id.to_minimal_dict())
+    fmf_id = tmt.utils.dict_to_yaml(test.fmf_id.to_minimal_spec())
     struct_field.set('fmf', fmf_id)
     echo(style('fmf id:\n', fg='green') + fmf_id.strip())
 
@@ -601,7 +600,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 
     # Export manual test instructions from *.md file to nitrate as html
     md_path = return_markdown_file()
-    if os.path.exists(md_path):
+    if md_path and md_path.exists():
         step, expect, setup, cleanup = convert_manual_to_nitrate(md_path)
         if not dry_mode:
             nitrate.User()._server.TestCase.store_text(

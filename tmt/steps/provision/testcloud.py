@@ -18,8 +18,8 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import (WORKDIR_ROOT, Command, ProvisionError, ShellScript,
-                       retry_session)
+from tmt.utils import (WORKDIR_ROOT, Command, Path, ProvisionError,
+                       ShellScript, retry_session)
 
 if TYPE_CHECKING:
     import tmt.base
@@ -48,8 +48,10 @@ def import_testcloud() -> None:
 
 
 # Testcloud cache to our tmt's workdir root
-TESTCLOUD_DATA = os.path.join(os.getenv('TMT_WORKDIR_ROOT', WORKDIR_ROOT), 'testcloud')
-TESTCLOUD_IMAGES = os.path.join(TESTCLOUD_DATA, 'images')
+TESTCLOUD_DATA = (
+    Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
+    ) / 'testcloud'
+TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 # Userdata for cloud-init
 USER_DATA = """#cloud-config
@@ -95,7 +97,7 @@ passwd:
 
 # Libvirt domain XML template related variables
 DOMAIN_TEMPLATE_NAME = 'domain-template.jinja'
-DOMAIN_TEMPLATE_FILE = os.path.join(TESTCLOUD_DATA, DOMAIN_TEMPLATE_NAME)
+DOMAIN_TEMPLATE_FILE = TESTCLOUD_DATA / DOMAIN_TEMPLATE_NAME
 DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   <name>{{ domain_name }}</name>
   <uuid>{{ uuid }}</uuid>
@@ -265,7 +267,8 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Guess image url for given name """
 
         # Try to check if given url is a local file
-        if os.path.isabs(name) and os.path.isfile(name):
+        name_as_path = Path(name)
+        if name_as_path.is_absolute() and name_as_path.is_file():
             return f'file://{name}'
 
         name = name.lower().strip()
@@ -352,19 +355,19 @@ class GuestTestcloud(tmt.GuestSsh):
         # Use existing key
         if self.key:
             self.debug("Extract public key from the provided private one.")
-            command = Command("ssh-keygen", "-f", self.key[0], "-y")
+            command = Command("ssh-keygen", "-f", str(self.key[0]), "-y")
             public_key = self.run(command).stdout
         # Generate new ssh key pair
         else:
             self.debug('Generating an ssh key.')
             key_name = "id_{}".format(key_type if key_type is not None else 'rsa')
-            self.key = [os.path.join(self.workdir, key_name)]
-            command = Command("ssh-keygen", "-f", self.key[0], "-N", "")
+            self.key = [self.workdir / key_name]
+            command = Command("ssh-keygen", "-f", str(self.key[0]), "-N", "")
             if key_type is not None:
                 command += Command("-t", key_type)
             self.run(command)
-            self.verbose('key', self.key[0], 'green')
-            with open(os.path.join(self.workdir, f'{key_name}.pub'), 'r') as pubkey_file:
+            self.verbose('key', str(self.key[0]), 'green')
+            with open(self.workdir / f'{key_name}.pub', 'r') as pubkey_file:
                 public_key = pubkey_file.read()
 
         # Place public key content into the machine configuration
@@ -417,7 +420,7 @@ class GuestTestcloud(tmt.GuestSsh):
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
-        if not os.path.exists(self._image.local_path):
+        if not Path(self._image.local_path).exists():
             self.info('progress', 'downloading...', 'cyan')
         try:
             self._image.prepare()
@@ -680,19 +683,18 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
         """ Remove the testcloud images """
         clean.info('testcloud', shift=1, color='green')
-        if not os.path.exists(TESTCLOUD_IMAGES):
+        if not TESTCLOUD_IMAGES.exists():
             clean.warn(
                 f"Directory '{TESTCLOUD_IMAGES}' does not exist.", shift=2)
             return True
         successful = True
-        for image in os.listdir(TESTCLOUD_IMAGES):
-            image = os.path.join(TESTCLOUD_IMAGES, image)
+        for image in TESTCLOUD_IMAGES.iterdir():
             if dry:
                 clean.verbose(f"Would remove '{image}'.", shift=2)
             else:
                 clean.verbose(f"Removing '{image}'.", shift=2)
                 try:
-                    os.remove(image)
+                    image.unlink()
                 except OSError:
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False

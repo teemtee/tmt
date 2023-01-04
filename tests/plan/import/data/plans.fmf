@@ -10,9 +10,16 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            path: /tests/run/worktree/data/prepare
             name: /plan
             ref: 1.16.0
+    /with-slash:
+        plan+:
+            import+:
+                path: /tests/run/worktree/data/prepare
+    /no-slash:
+        plan+:
+            import+:
+                path: tests/run/worktree/data/prepare
 
 /full:
     summary: Full plan with test scripts

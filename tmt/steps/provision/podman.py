@@ -9,7 +9,7 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import BaseLoggerFnType, Command, ShellScript
+from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -123,7 +123,7 @@ class GuestContainer(tmt.Guest):
         self.podman(Command('container', 'restart', self.container))
         return self.reconnect(timeout=timeout or CONNECTION_TIMEOUT)
 
-    def ansible(self, playbook: str, extra_args: Optional[str] = None) -> None:
+    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare container using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
 
@@ -137,7 +137,7 @@ class GuestContainer(tmt.Guest):
             'ansible-playbook',
             *self._ansible_verbosity(),
             *self._ansible_extra_args(extra_args),
-            '-c', 'podman', '-i', f'{self.container},', playbook
+            '-c', 'podman', '-i', f'{self.container},', str(playbook)
             ]
 
         stdout, _ = self.run(
@@ -152,7 +152,7 @@ class GuestContainer(tmt.Guest):
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-                cwd: Optional[str] = None,
+                cwd: Optional[Path] = None,
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
@@ -173,7 +173,7 @@ class GuestContainer(tmt.Guest):
 
         # Change to given directory on guest if cwd provided
         if cwd is not None:
-            script += ShellScript(f'cd {quote(cwd)}')
+            script += ShellScript(f'cd {quote(str(cwd))}')
 
         if isinstance(command, Command):
             script += command.to_script()
@@ -203,8 +203,8 @@ class GuestContainer(tmt.Guest):
 
     def push(
             self,
-            source: Optional[str] = None,
-            destination: Optional[str] = None,
+            source: Optional[Path] = None,
+            destination: Optional[Path] = None,
             options: Optional[List[str]] = None) -> None:
         """ Make sure that the workdir has a correct selinux context """
         if not self.is_ready:
@@ -213,17 +213,17 @@ class GuestContainer(tmt.Guest):
         self.debug("Update selinux context of the run workdir.", level=3)
         assert self.parent.plan.workdir is not None  # narrow type
         self.run(Command(
-            "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
+            "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
             ), shell=False)
         # In case explicit destination is given, use `podman cp` to copy data
         # to the container
         if source and destination:
-            self.podman(Command("cp", source, f"{self.container}:{destination}"))
+            self.podman(Command("cp", str(source), f"{self.container}:{destination}"))
 
     def pull(
             self,
-            source: Optional[str] = None,
-            destination: Optional[str] = None,
+            source: Optional[Path] = None,
+            destination: Optional[Path] = None,
             options: Optional[List[str]] = None,
             extend_options: Optional[List[str]] = None) -> None:
         """ Nothing to be done to pull workdir """
