@@ -556,6 +556,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         if self.clone_dirpath.exists():
             shutil.rmtree(self.clone_dirpath, ignore_errors=True)
 
+        # Cleanup clone directories
+        if tmt.beakerlib.DEFAULT_CLONE_DIR:
+            shutil.rmtree(tmt.beakerlib.DEFAULT_CLONE_DIR, ignore_errors=True)
+
         # Add TMT_SOURCE_DIR variable for each test
         if dist_git_source:
             for test in self._tests:
