@@ -1,6 +1,6 @@
 import os
 import re
-import shutil
+from glob import glob
 from tempfile import TemporaryDirectory
 from typing import Dict, Optional, Set, Union, cast
 
@@ -9,6 +9,7 @@ import fmf
 import tmt
 import tmt.base
 from tmt.base import DependencyFmfId, DependencySimple
+from tmt.convert import write
 from tmt.utils import Command, Path
 
 from . import Library, LibraryError
@@ -19,6 +20,7 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 # Default beakerlib libraries location and destination directory
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
+DEFAULT_CLONE_DIR = None  # filled on first usage, {discover.workdir}/libs/clone
 
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
@@ -158,6 +160,15 @@ class BeakerLib(Library):
             return Path(self.path / self.name.strip('/'))
         return super().fmf_node_path
 
+    @property
+    def hostname(self) -> str:
+        """ Get hostname from url or default to local """
+        if self.url:
+            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
+            assert matched is not None
+            return matched.group(1)
+        return 'local'
+
     def __str__(self) -> str:
         """ Use repo/name for string representation """
         assert self.path is not None
@@ -180,6 +191,16 @@ class BeakerLib(Library):
             cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()
 
         return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
+
+    def _merge_metadata(self, library_path: str, local_library_path: str) -> None:
+        """ Merge all inherited metadata into one metadata file """
+        for f in glob(os.path.join(local_library_path, '*.fmf')):
+            os.remove(f)
+        assert self.path is not None  # narrow type
+        write(
+            path=os.path.join(local_library_path, 'main.fmf'),
+            data=tmt.utils.get_full_metadata(library_path, self.path),
+            quiet=True)
 
     def fetch(self) -> None:
         """ Fetch the library (unless already fetched) """
@@ -231,10 +252,16 @@ class BeakerLib(Library):
                     if self.url in self._nonexistent_url:
                         raise tmt.utils.GitUrlError(
                             f"Already know that '{self.url}' does not exist.")
+                    global DEFAULT_CLONE_DIR
+                    if not DEFAULT_CLONE_DIR:
+                        DEFAULT_CLONE_DIR = os.path.join(
+                            self.parent.workdir, DEFAULT_DESTINATION, 'clone')
+                    clone_dir = os.path.join(DEFAULT_CLONE_DIR, self.hostname, self.repo)
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
-                    tmt.utils.git_clone(self.url, clone_dir, self.parent,
-                                        env={"GIT_ASKPASS": "echo"}, shallow=self.ref is None)
+                    if not os.path.exists(clone_dir):
+                        tmt.utils.git_clone(self.url, clone_dir, self.parent,
+                                            env={"GIT_ASKPASS": "echo"}, shallow=self.ref is None)
 
                     # Detect the default branch from the origin
                     try:
@@ -266,15 +293,16 @@ class BeakerLib(Library):
                     local_library_path: str = os.path.join(directory, os.path.basename(self.path))
                     if not os.path.exists(library_path):
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
-                        shutil.rmtree(clone_dir, ignore_errors=True)
                         raise LibraryError
-
                     tmt.utils.copytree(library_path, local_library_path, dirs_exist_ok=True)
+
+                    # Remove metadata file(s) and create one with full data
+                    self._merge_metadata(library_path, local_library_path)
+
                     # Copy fmf metadata
                     tmt.utils.copytree(
                         os.path.join(clone_dir, '.fmf'), os.path.join(directory, '.fmf'),
                         dirs_exist_ok=True)
-                    shutil.rmtree(clone_dir, ignore_errors=True)
                 else:
                     # Either url or path must be defined
                     assert self.path is not None
@@ -290,6 +318,8 @@ class BeakerLib(Library):
                     # Copy only the required library
                     tmt.utils.copytree(
                         library_path, local_library_path, symlinks=True, dirs_exist_ok=True)
+                    # Remove metadata file(s) and create one with full data
+                    self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
                     tmt.utils.copytree(
                         self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
@@ -323,7 +353,7 @@ class BeakerLib(Library):
             self._library_cache[str(self)] = self
 
         # Get the library node, check require and recommend
-        library_node = self.tree.find(self.name)
+        library_node = self.tree.find(str(self)[str(self).rfind('/'):])
         if not library_node:
             # Fallback to install during the prepare step if in rpm format
             if self.format == 'rpm':
