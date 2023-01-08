@@ -35,6 +35,7 @@ MANIFEST
 # Testing
 .mypy_cache
 .pytest_cache
+.ruff_cache
 
 # Virtual environment
 .env

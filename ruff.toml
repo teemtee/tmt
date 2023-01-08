@@ -1,0 +1,16 @@
+src = ["tmt"]
+
+# select = ["E", "F"]
+select = ["A", "ANN", "ARG", "B", "BLE", "C", "D", "E", "ERA", "F", "FBT", "I", "ICN", "N", "PGH", "PLC", "PLE", "PLR", "PLW", "Q", "RET", "RUF", "S", "T", "TID", "UP", "W", "YTT"]
+ignore = [
+    # Missing type annotation for self in method
+    "ANN101",
+    # Missing type annotation for cls in classmethod
+    "ANN102",
+    # All documentation related checks
+    "D",
+    # Single quotes found but double quotes preferred
+    "Q000",
+]
+target-version = "py36"
+line-length = 99
