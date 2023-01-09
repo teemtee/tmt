@@ -99,7 +99,7 @@ class BeakerLib(Library):
                 f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
             self.format = 'fmf'
             self.url = identifier.url
-            self.path = identifier.path or identifier.name
+            self.path = identifier.path
             # Strip possible trailing slash from path
             if isinstance(self.path, str):
                 self.path = self.path.rstrip('/')
@@ -165,15 +165,20 @@ class BeakerLib(Library):
         """ Get hostname from url or default to local """
         if self.url:
             matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
-            assert matched is not None
-            return matched.group(1)
+            if matched:
+                return matched.group(1)
         return 'local'
+
+    @property
+    def fmf_node_path(self) -> str:
+        """ Path to fmf node """
+        if self.path:
+            return os.path.join(self.path, self.name.strip('/'))
+        return self.name
 
     def __str__(self) -> str:
         """ Use repo/name for string representation """
-        assert self.path is not None
-        libname = self.path if self.url else self.name
-        return f"{self.repo}{libname[libname.rindex('/'):]}"
+        return f"{self.repo}{self.name[self.name.rindex('/'):]}"
 
     @property
     def _library_cache(self) -> Dict[str, 'BeakerLib']:
@@ -196,10 +201,9 @@ class BeakerLib(Library):
         """ Merge all inherited metadata into one metadata file """
         for f in glob(os.path.join(local_library_path, '*.fmf')):
             os.remove(f)
-        assert self.path is not None  # narrow type
         write(
             path=os.path.join(local_library_path, 'main.fmf'),
-            data=tmt.utils.get_full_metadata(library_path, self.path),
+            data=tmt.utils.get_full_metadata(library_path, self.name),
             quiet=True)
 
     def fetch(self) -> None:
@@ -288,9 +292,9 @@ class BeakerLib(Library):
                             raise
 
                     # Copy only the required library
-                    assert self.path is not None
-                    library_path: str = os.path.join(clone_dir, self.path.strip('/'))
-                    local_library_path: str = os.path.join(directory, os.path.basename(self.path))
+                    library_path: str = os.path.join(clone_dir, self.fmf_node_path.strip('/'))
+                    local_library_path: str = os.path.join(
+                        directory, os.path.basename(self.fmf_node_path.strip('/')))
                     if not os.path.exists(library_path):
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
                         raise LibraryError
@@ -306,15 +310,14 @@ class BeakerLib(Library):
                 else:
                     # Either url or path must be defined
                     assert self.path is not None
-                    assert self.name is not None
-                    library_path = os.path.join(self.path, self.name.strip('/'))
+                    library_path = self.fmf_node_path
                     local_library_path = os.path.join(directory, self.name.strip('/'))
                     if not os.path.exists(library_path):
                         self.parent.debug(f"Failed to find library {self} at {self.path}")
                         raise LibraryError
 
                     self.parent.debug(
-                        f"Copy local library '{self.path}' to '{directory}'.", level=3)
+                        f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3)
                     # Copy only the required library
                     tmt.utils.copytree(
                         library_path, local_library_path, symlinks=True, dirs_exist_ok=True)
