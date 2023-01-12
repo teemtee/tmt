@@ -20,7 +20,6 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 # Default beakerlib libraries location and destination directory
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
-DEFAULT_CLONE_DIR = None  # filled on first usage, {discover.workdir}/libs/clone
 
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
@@ -256,11 +255,8 @@ class BeakerLib(Library):
                     if self.url in self._nonexistent_url:
                         raise tmt.utils.GitUrlError(
                             f"Already know that '{self.url}' does not exist.")
-                    global DEFAULT_CLONE_DIR
-                    if not DEFAULT_CLONE_DIR:
-                        DEFAULT_CLONE_DIR = os.path.join(
-                            self.parent.workdir, DEFAULT_DESTINATION, 'clone')
-                    clone_dir = os.path.join(DEFAULT_CLONE_DIR, self.hostname, self.repo)
+                    clone_dir = os.path.join(
+                        self.parent.clone_dirpath, self.hostname, self.repo)
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
                     if not os.path.exists(clone_dir):
