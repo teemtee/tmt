@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, cast
 import fmf
 
 import tmt
+import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils

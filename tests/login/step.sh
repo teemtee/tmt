@@ -25,7 +25,12 @@ rlJournalStart
         rlPhaseStartTest "Selected step ($step)"
             rlRun "$tmt login -c true -s $step 2>&1 >/dev/null | tee output"
             rlAssertGrep "interactive" "output"
-            rlRun "grep '^    $step$' -A4 output | grep -i interactive"
+
+            if [ "$step" = "execute" ]; then
+                rlRun "grep '^    $step$' -A9 output | grep -i interactive"
+            else
+                rlRun "grep '^    $step$' -A4 output | grep -i interactive"
+            fi
         rlPhaseEnd
     done
 

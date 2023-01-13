@@ -1,8 +1,9 @@
+import copy
 import dataclasses
 import re
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
 
 import click
 import fmf
@@ -13,9 +14,9 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.result import Result, ResultGuestData, ResultOutcome
-from tmt.steps import Action, Step, StepData
+from tmt.steps import Action, PhaseOutcome, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -136,6 +137,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
+        self._results: List[tmt.Result] = []
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 
@@ -182,12 +184,26 @@ class ExecutePlugin(tmt.steps.Plugin):
             'exit-first', self.get('exit-first', default=False),
             'green', level=2)
 
+    # TODO: this is an ugly workaround for the fact go() does not accept
+    # a list of tests to run, but uses external dependency, `self.discover`,
+    # to find out what to run.
+    _discover: Optional['tmt.steps.discover.DiscoverPlugin'] = None
+
     @property
-    def discover(self) -> tmt.steps.discover.Discover:
+    def discover(self) -> Union[
+            'tmt.steps.discover.Discover',
+            'tmt.steps.discover.DiscoverPlugin']:
         """ Return discover plugin instance """
         # This is necessary so that upgrade plugin can inject a fake discover
 
+        if self._discover is not None:
+            return self._discover
+
         return self.step.plan.discover
+
+    @discover.setter
+    def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
+        self._discover = plugin
 
     def data_path(
             self,
@@ -569,24 +585,54 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        for guest in self.plan.provision.guests():
-            for phase in self.phases(classes=(Action, ExecutePlugin)):
-                if not phase.enabled_on_guest(guest):
-                    continue
+        from tmt.steps.discover import DiscoverPlugin
 
-                if isinstance(phase, Action):
-                    phase.go()
+        queue_logger = self._logger.descend(logger_name=f'{self}.queue')
+        queue = tmt.steps.PhaseQueue(queue_logger)
 
-                elif isinstance(phase, ExecutePlugin):
-                    # TODO: re-injecting the logger already given to the guest,
-                    # with multihost support heading our way this will change
-                    # to be not so trivial.
-                    phase.go(guest=guest, logger=guest._logger)
+        execute_phases = self.phases(classes=(ExecutePlugin,))
+        assert len(execute_phases) == 1
+        execute_phase = execute_phases[0]
 
-                    self._results.extend(phase.results())
+        for phase in self.phases(classes=(Action, ExecutePlugin)):
+            if isinstance(phase, Action):
+                queue.enqueue(
+                    phase=phase,
+                    guests=[
+                        guest
+                        for guest in self.plan.provision.guests()
+                        if phase.enabled_on_guest(guest)
+                        ])
 
-                else:
-                    raise GeneralError(f'Unexpected phase in execute step: {phase}')
+            else:
+                for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
+                    phase_copy = cast(ExecutePlugin, copy.copy(phase))
+                    phase_copy.discover = discover
+
+                    queue.enqueue(
+                        phase=phase_copy,
+                        guests=[
+                            guest
+                            for guest in self.plan.provision.guests()
+                            if discover.enabled_on_guest(guest)
+                            ])
+
+        failed_phases: List[PhaseOutcome] = []
+
+        for phase_outcome in queue.run():
+            if phase_outcome.exc:
+                phase_outcome.logger.fail(str(phase_outcome.exc))
+
+                failed_phases.append(phase_outcome)
+                continue
+
+        self._results.extend(execute_phase.results())
+
+        if failed_phases:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError('execute step failed')
+
+        self.info('')
 
         # Give a summary, update status and save
         self.summary()

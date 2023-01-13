@@ -9,10 +9,12 @@ import fmf
 import fmf.utils
 
 import tmt
+import tmt.log
 import tmt.steps
 import tmt.steps.provision
-from tmt.steps import Action
-from tmt.utils import GeneralError, uniq
+import tmt.utils
+from tmt.steps import Action, PhaseOutcome, PhaseQueue
+from tmt.utils import uniq
 
 if TYPE_CHECKING:
     import tmt.base
@@ -222,6 +224,8 @@ class Prepare(tmt.steps.Step):
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Prepare guests (including workdir sync)
+        guest_copies: List[tmt.steps.provision.Guest] = []
+
         for guest in self.plan.provision.guests():
             guest.push()
             # Create a guest copy and change its parent so that the
@@ -231,31 +235,43 @@ class Prepare(tmt.steps.Step):
             guest_copy.inject_logger(
                 guest._logger.clone().apply_verbosity_options(**self._options))
             guest_copy.parent = self
-            # Execute each prepare plugin
-            for phase in self.phases(classes=(Action, PreparePlugin)):
-                if not phase.enabled_on_guest(guest_copy):
-                    continue
 
-                if isinstance(phase, Action):
-                    phase.go()
+            guest_copies.append(guest_copy)
 
-                elif isinstance(phase, PreparePlugin):
-                    # TODO: re-injecting the logger already given to the guest,
-                    # with multihost support heading our way this will change
-                    # to be not so trivial.
-                    phase.go(guest=guest_copy, logger=guest_copy._logger)
+        queue_logger = self._logger.descend(logger_name=f'{self}.queue')
+        queue = PhaseQueue(queue_logger)
 
-                    self.preparations_applied += 1
+        for phase in self.phases(classes=(Action, PreparePlugin)):
+            queue.enqueue(
+                phase=phase,  # type: ignore[arg-type]
+                guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
+                )
 
-                else:
-                    raise GeneralError(f'Unexpected phase in prepare step: {phase}')
+        failed_phases: List[PhaseOutcome] = []
 
-                self.info('')
+        for phase_outcome in queue.run():
+            if not isinstance(phase_outcome.queued_phase.phase, PreparePlugin):
+                continue
 
-            # Pull artifacts created in the plan data directory
-            # if there was at least one plugin executed
-            if self.phases():
-                guest_copy.pull(self.plan.data_directory)
+            if phase_outcome.exc:
+                phase_outcome.logger.fail(str(phase_outcome.exc))
+
+                failed_phases.append(phase_outcome)
+                continue
+
+            self.preparations_applied += 1
+
+        if failed_phases:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError('prepare step failed') from failed_phases[0].exc
+
+        self.info('')
+
+        # Pull artifacts created in the plan data directory
+        # if there was at least one plugin executed
+        if self.phases():
+            for guest in guest_copies:
+                guest.pull(self.plan.data_directory)
 
         # Give a summary, update status and save
         self.summary()

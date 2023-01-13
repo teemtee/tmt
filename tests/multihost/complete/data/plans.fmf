@@ -1,0 +1,52 @@
+provision:
+  - how: container
+    name: client-1
+    role: client
+    image: fedora:36
+
+  - how: container
+    name: client-2
+    role: client
+    image: fedora:36
+
+  - how: container
+    name: server
+    role: server
+    image: fedora:36
+
+execute:
+  how: tmt
+
+prepare:
+  - how: shell
+    script:
+      - /bin/true
+    where:
+      - client
+
+  - how: shell
+    script:
+      - /bin/true
+    where:
+      - server
+
+discover:
+  - name: server-setup
+    how: fmf
+    test:
+      - /tests/A
+    where:
+      - server
+
+  - name: tests
+    how: fmf
+    test:
+      - /tests/B
+    where:
+      - server
+      - client
+
+  - name: teardown
+    how: fmf
+    test:
+      - /tests/C

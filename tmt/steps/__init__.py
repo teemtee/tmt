@@ -6,8 +6,9 @@ import re
 import shutil
 import sys
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
-                    Type, TypeVar, Union, cast, overload)
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Generator, List,
+                    Optional, Tuple, Type, TypeVar, Union, cast, overload)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -15,17 +16,20 @@ else:
     from typing_extensions import TypedDict
 
 import click
+import fmf.utils
 from click import echo
 
 import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
-from tmt.utils import Path, field, flatten
+from tmt.utils import EnvironmentType, Path, field, flatten
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
+    import tmt.steps.discover
+    import tmt.steps.execute
     from tmt.base import Plan
     from tmt.steps.provision import Guest
 
@@ -998,6 +1002,9 @@ class BasePlugin(Phase):
     # method from child classes.
     def go_prolog(self, logger: tmt.log.Logger) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
+
+        logger = logger or self._logger
+
         # Show the method
         logger.info('how', self.get('how'), 'magenta')
         # Give summary if provided
@@ -1309,3 +1316,183 @@ class Login(Action):
         """ Check and login after test execution """
         if self._enabled_by_results([result]):
             self._login(cwd, env)
+
+
+@dataclasses.dataclass
+class QueuedPhase:
+    """ A phase to run on one or more guests """
+
+    phase: Union[Action, Plugin]
+    guests: List['Guest']
+
+    @property
+    def phase_name(self) -> str:
+        from tmt.steps.execute import ExecutePlugin
+
+        if isinstance(self.phase, ExecutePlugin):
+            return self.phase.discover.name
+
+        return self.phase.name
+
+    @property
+    def guest_ids(self) -> List[str]:
+        return [guest.full_name for guest in self.guests]
+
+
+@dataclasses.dataclass
+class PhaseOutcome:
+    """
+    Outcome of a phase executed on a guest.
+
+    Bundles together interesting objects related to how the phase has been
+    executed, where and what was the result.
+    """
+
+    queued_phase: QueuedPhase
+    logger: tmt.log.Logger
+    guest: Optional['Guest'] = None
+    exc: Optional[Exception] = None
+
+
+class PhaseQueue(List[QueuedPhase]):
+    """ Queue class for running phases on guests """
+
+    def __init__(self, logger: tmt.log.Logger) -> None:
+        super().__init__()
+
+        self._logger = logger
+
+    def enqueue(
+            self,
+            *,
+            phase: Union[Action, Plugin],
+            guests: List['Guest']) -> None:
+        """
+        Add a phase to queue.
+
+        Phase will be executed on given guests at the same time.
+
+        :param phase: phase to run.
+        :param guests: one or more guests to run the phase on.
+        """
+
+        queue_item = QueuedPhase(
+            phase=phase,
+            guests=guests
+            )
+
+        self.append(queue_item)
+
+        self._logger.info(
+            'queued',
+            f'{queue_item.phase_name} on {fmf.utils.listed(queue_item.guest_ids)}',
+            color='cyan')
+
+    def run(self) -> Generator[PhaseOutcome, None, None]:
+        """
+        Start crunching the queued phases.
+
+        Queued phases are executed in the order, for each phase/guest
+        combination a :py:class:`PhaseOutcome` instance is yielded.
+        """
+
+        for i, queued_phase in enumerate(self):
+            self._logger.info('')
+
+            self._logger.info(
+                f'queue tick #{i}',
+                f'{queued_phase.phase_name} on {fmf.utils.listed(queued_phase.guest_ids)}',
+                color='cyan')
+
+            failed_phases: List[PhaseOutcome] = []
+
+            if isinstance(queued_phase.phase, Action):
+                try:
+                    queued_phase.phase.go()
+
+                except Exception as exc:
+                    # logger.info('finished', color='cyan')
+
+                    outcome = PhaseOutcome(queued_phase, queued_phase.phase._logger, exc=exc)
+                    failed_phases.append(outcome)
+
+                    yield outcome
+
+                else:
+                    # logger.info('finished', color='cyan')
+
+                    yield PhaseOutcome(queued_phase, queued_phase.phase._logger)
+
+            else:
+                environment: Optional[EnvironmentType] = None
+
+                multiple_guests = len(queued_phase.guests) > 1
+
+                if multiple_guests:
+                    # TODO: specify schema for exposing peers to guests (envvar, guests.yaml,
+                    # etc.). Should cover the legacy Beakerlib multihost tests, with their
+                    # SERVERS/CLIENTS envvars.
+                    environment = {
+                        'SERVERS': ' '.join(
+                            guest.guest for guest in queued_phase.guests if guest.guest)
+                        }
+
+                # Pregenerate all loggers first, so we could find out what's the
+                # maximal label length, and ask loggers to pad their labels to
+                # this size to present a well-aligned output.
+                new_loggers: Dict[str, tmt.log.Logger] = {}
+
+                for guest in queued_phase.guests:
+                    new_logger = queued_phase.phase._logger.clone()
+
+                    if multiple_guests:
+                        new_logger.labels.append(guest.full_name)
+
+                    new_loggers[guest.name] = new_logger
+
+                max_label_span = max(new_logger.labels_span for new_logger in new_loggers.values())
+
+                for new_logger in new_loggers.values():
+                    new_logger.labels_padding = max_label_span
+
+                with ThreadPoolExecutor(max_workers=len(queued_phase.guests)) as executor:
+                    futures: Dict[Future[None], Tuple[Guest, tmt.log.Logger]] = {}
+
+                    for guest in queued_phase.guests:
+                        old_logger, new_logger = guest._logger, new_loggers[guest.name]
+                        guest.inject_logger(new_logger)
+
+                        if multiple_guests:
+                            new_logger.info('queued', color='cyan')
+
+                        futures[
+                            executor.submit(
+                                queued_phase.phase.go,
+                                guest=guest,
+                                environment=environment,
+                                logger=new_logger)
+                            ] = (guest, new_logger)
+
+                    for future in as_completed(futures):
+                        guest, new_logger = futures[future]
+
+                        if multiple_guests:
+                            new_logger.info('finished', color='cyan')
+
+                        try:
+                            future.result()
+
+                        except Exception as exc:
+                            outcome = PhaseOutcome(queued_phase, new_logger, guest=guest, exc=exc)
+                            failed_phases.append(outcome)
+
+                            yield outcome
+
+                        else:
+                            yield PhaseOutcome(queued_phase, new_logger, guest=guest)
+
+                        guest.inject_logger(old_logger)
+
+            # TODO: make this optional
+            if failed_phases:
+                return

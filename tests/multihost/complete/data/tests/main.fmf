@@ -1,0 +1,10 @@
+test: |
+  echo "In a test"
+  echo "With data path $TMT_TEST_DATA"
+  exit 0
+
+/A:
+  summary: Dummy test A
+
+/B:
+  summary: Dummy test B

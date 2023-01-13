@@ -12,6 +12,7 @@ from tmt.utils import Path, field
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.provision
+    from tmt.steps.provision import Guest
 
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
@@ -106,7 +107,7 @@ class Result(tmt.utils.SerializableContainer):
             duration: Optional[str] = None,
             ids: Optional[Dict[str, Optional[str]]] = None,
             log: Optional[List[Path]] = None,
-            guest: Optional['tmt.steps.provision.Guest'] = None) -> 'Result':
+            guest: Optional['Guest'] = None) -> 'Result':
         """
         Create a result from a test instance.
 
