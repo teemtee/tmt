@@ -1,5 +1,6 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
+from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Type,
+                    cast)
 
 import click
 from fmf.utils import listed
@@ -75,7 +76,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
 
         return discover
 
-    def tests(self) -> List['tmt.Test']:
+    def tests(
+            self,
+            *,
+            phase_name: Optional[str] = None,
+            enabled: Optional[bool] = None) -> List['tmt.Test']:
         """
         Return discovered tests
 
@@ -133,20 +138,28 @@ class Discover(tmt.steps.Step):
         """ Store supported attributes, check for sanity """
         super().__init__(plan=plan, data=data, logger=logger)
 
-        # List of Test() objects representing discovered tests
-        self._tests: List[tmt.Test] = []
+        # Collection of discovered tests
+        self._tests: Dict[str, List[tmt.Test]] = {}
 
     def load(self) -> None:
         """ Load step data from the workdir """
         super().load()
         try:
             raw_test_data = tmt.utils.yaml_to_list(self.read(Path('tests.yaml')))
-            self._tests = [
-                tmt.Test.from_dict(
+
+            self._tests = {}
+
+            for raw_test_datum in raw_test_data:
+                phase_name = raw_test_datum.pop('discover_phase')
+
+                if phase_name not in self._tests:
+                    self._tests[phase_name] = []
+
+                self._tests[phase_name].append(tmt.Test.from_dict(
                     logger=self._logger,
                     mapping=raw_test_datum,
                     name=raw_test_datum['name'],
-                    skip_validation=True) for raw_test_datum in raw_test_data]
+                    skip_validation=True))
 
         except tmt.utils.FileError:
             self.debug('Discovered tests not found.', level=2)
@@ -156,10 +169,17 @@ class Discover(tmt.steps.Step):
         super().save()
 
         # Create tests.yaml with the full test data
-        raw_test_data = [
-            test._export()
-            for test in self.tests()
-            ]
+        raw_test_data: List['tmt.export._RawExportedInstance'] = []
+
+        for phase_name, phase_tests in self._tests.items():
+            for test in phase_tests:
+                if test.enabled is not True:
+                    continue
+
+                exported_test = test._export()
+                exported_test['discover_phase'] = phase_name
+
+                raw_test_data.append(exported_test)
 
         self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 
@@ -239,10 +259,10 @@ class Discover(tmt.steps.Step):
     def summary(self) -> None:
         """ Give a concise summary of the discovery """
         # Summary of selected tests
-        text = listed(len(self.tests()), 'test') + ' selected'
+        text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
         self.info('summary', text, 'green', shift=1)
         # Test list in verbose mode
-        for test in self.tests():
+        for test in self.tests(enabled=True):
             self.verbose(test.name, color='red', shift=2)
 
     def go(self) -> None:
@@ -257,7 +277,7 @@ class Discover(tmt.steps.Step):
             return
 
         # Perform test discovery, gather discovered tests
-        self._tests = []
+        # self._tests = {}
         for phase in self.phases(classes=(Action, DiscoverPlugin)):
             if isinstance(phase, Action):
                 phase.go()
@@ -266,30 +286,32 @@ class Discover(tmt.steps.Step):
                 # Go and discover tests
                 phase.go()
 
+                self._tests[phase.name] = []
+
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
                 # Check discovered tests, modify test name/path
-                for test in phase.tests():
+                for test in phase.tests(enabled=True):
                     test.name = f"{prefix}{test.name}"
                     test.path = Path(f"/{phase.safe_name}{test.path}")
                     # Update test environment with plan environment
                     test.environment.update(self.plan.environment)
-                    self._tests.append(test)
+                    self._tests[phase.name].append(test)
 
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
-        for test in self._tests:
+        for test in self.tests():
             test.serialnumber = self.plan.draw_test_serial_number(test)
 
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module
         if self.opt('fmf_id'):
-            if self.tests():
+            if self.tests(enabled=True):
                 fmf_id_list = [
                     tmt.utils.dict_to_yaml(
                         test.fmf_id.to_minimal_spec(),
-                        start=True) for test in self.tests() if test.fmf_id.url]
+                        start=True) for test in self.tests(enabled=True) if test.fmf_id.url]
                 click.echo(''.join(fmf_id_list), nl=False)
             return
 
@@ -298,9 +320,29 @@ class Discover(tmt.steps.Step):
         self.status('done')
         self.save()
 
-    def tests(self) -> List['tmt.Test']:
-        """ Return the list of all enabled tests """
-        return [test for test in self._tests if test.enabled]
+    def tests(
+            self,
+            *,
+            phase_name: Optional[str] = None,
+            enabled: Optional[bool] = None) -> List['tmt.Test']:
+        def _iter_all_tests() -> Generator['tmt.Test', None, None]:
+            for phase_tests in self._tests.values():
+                yield from phase_tests
+
+        def _iter_phase_tests() -> Generator['tmt.Test', None, None]:
+            assert phase_name is not None
+
+            yield from self._tests[phase_name]
+
+        if phase_name is None:
+            iterator = _iter_all_tests
+        else:
+            iterator = _iter_phase_tests
+
+        if enabled is None:
+            return list(iterator())
+
+        return [test for test in iterator() if test.enabled is enabled]
 
     def requires(self) -> List['tmt.base.Require']:
         """
@@ -312,8 +354,8 @@ class Discover(tmt.steps.Step):
 
         :returns: a list of requirements, with duplicaties removed.
         """
-        return flatten((test.require for test in self.tests()), unique=True)
+        return flatten((test.require for test in self.tests(enabled=True)), unique=True)
 
     def recommends(self) -> List['tmt.base.Require']:
         """ Return all packages recommended by tests """
-        return flatten((test.recommend for test in self.tests()), unique=True)
+        return flatten((test.recommend for test in self.tests(enabled=True)), unique=True)

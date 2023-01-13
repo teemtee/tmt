@@ -1,0 +1,2 @@
+summary: Dummy test C
+test: ../test.sh

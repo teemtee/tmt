@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import datetime
 import re
@@ -12,10 +13,11 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt.queue import TaskOutcome
 from tmt.result import Result, ResultGuestData, ResultOutcome
-from tmt.steps import Action, Step, StepData
+from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -128,6 +130,9 @@ class ExecutePlugin(tmt.steps.Plugin):
 
     _login_after_test: Optional[tmt.steps.Login] = None
 
+    #: If set, plugin should run tests only from this discover phase.
+    discover_phase: Optional[str] = None
+
     def __init__(
             self,
             *,
@@ -136,6 +141,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
+        self._results: List[tmt.Result] = []
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 
@@ -189,6 +195,10 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         return self.step.plan.discover
 
+    @discover.setter
+    def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
+        self._discover = plugin
+
     def data_path(
             self,
             test: "tmt.Test",
@@ -225,7 +235,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         the aggregated metadata in a file under the test data directory
         and finally return a list of discovered tests.
         """
-        tests: List[tmt.Test] = self.discover.tests()
+        tests: List[tmt.Test] = self.discover.tests(phase_name=self.discover_phase, enabled=True)
         for test in tests:
             metadata_filename = self.data_path(
                 test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)
@@ -585,24 +595,69 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        for guest in self.plan.provision.guests():
-            for phase in self.phases(classes=(Action, ExecutePlugin)):
-                if not phase.enabled_on_guest(guest):
-                    continue
+        from tmt.steps.discover import DiscoverPlugin
 
-                if isinstance(phase, Action):
-                    phase.go()
+        queue = PhaseQueue('execute', self._logger.descend(logger_name=f'{self}.queue'))
 
-                elif isinstance(phase, ExecutePlugin):
-                    # TODO: re-injecting the logger already given to the guest,
-                    # with multihost support heading our way this will change
-                    # to be not so trivial.
-                    phase.go(guest=guest, logger=guest._logger)
+        execute_phases = self.phases(classes=(ExecutePlugin,))
+        assert len(execute_phases) == 1
 
-                    self._results.extend(phase.results())
+        for phase in self.phases(classes=(Action, ExecutePlugin)):
+            if isinstance(phase, Action):
+                queue.enqueue(
+                    phase=phase,
+                    guests=[
+                        guest
+                        for guest in self.plan.provision.guests()
+                        if phase.enabled_on_guest(guest)
+                        ])
 
-                else:
-                    raise GeneralError(f'Unexpected phase in execute step: {phase}')
+            else:
+                # A single execute plugin is expected to process (potentialy)
+                # multiple discover phases. There must be a way to tell the execute
+                # plugin which discover phase to focus on. Unfortunately, the
+                # current way is the execute plugin checking its `discover`
+                # attribute. For each discover phase, we need a copy of the execute
+                # plugin, so we could point it to that discover phase rather than
+                # let is "see" all tests, or test in different discover phase.
+                for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
+                    phase_copy = cast(ExecutePlugin, copy.copy(phase))
+                    phase_copy.discover_phase = discover.name
+
+                    queue.enqueue(
+                        phase=phase_copy,
+                        guests=[
+                            guest
+                            for guest in self.plan.provision.guests()
+                            if discover.enabled_on_guest(guest)
+                            ])
+
+        failed_phases: List[TaskOutcome[QueuedPhase]] = []
+
+        for phase_outcome in queue.run():
+            if phase_outcome.exc:
+                phase_outcome.logger.fail(str(phase_outcome.exc))
+
+                failed_phases.append(phase_outcome)
+                continue
+
+        # Execute plugins do not return results. Instead, plugin collects results
+        # in its internal `_results` list. To accomodate for different discover
+        # phases, we create a copy of the execute phase for each discover phase
+        # we have. All these copies share the `_results` list, and append to it.
+        #
+        # Therefore, avoid collecting results from phases when iterating the
+        # outcomes - such a process would encounter the list multiple times,
+        # which would make results appear several times. Instead, we can reach
+        # into the original plugin, and use it as a singleton "entry point" to
+        # access all collected `_results`.
+        self._results += execute_phases[0].results()
+
+        if failed_phases:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError('execute step failed')
+
+        self.info('')
 
         # Give a summary, update status and save
         self.summary()

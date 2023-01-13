@@ -1,0 +1,11 @@
+/no-guests-for-a-phase:
+  prepare:
+    - how: shell
+      script:
+        - /bin/true
+      # Typo in `where`, there should be no such guest
+      where:
+        - clients
+
+  execute:
+    how: tmt
