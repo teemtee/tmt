@@ -4496,6 +4496,12 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
 FieldCLIOption = Union[str, Sequence[str]]
 
 
+class Deprecated(NamedTuple):
+    """ Version information and hint for obsolete options """
+    since: str
+    hint: Optional[str] = None
+
+
 @overload
 def field(
         *,
@@ -4506,6 +4512,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization - not needed, the field is a boolean
         # flag.
@@ -4527,6 +4534,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4547,6 +4555,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4567,6 +4576,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4594,8 +4604,14 @@ def field(
     :param choices: if provided, the command-line option would accept only
         the listed input values.
         Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
+    :param multiple: accept multiple arguments of the same name.
+        Passed directly to :py:func:`click.option`.
     :param metavar: how the input value is represented in the help page.
         Passed directly to :py:func:`click.option`.
+    :param deprecated: mark the option as deprecated
+        Provide an instance of Deprecated() with version in which the
+        option was obsoleted and an optional hint with the recommended
+        alternative. A warning message will be added to the option help.
     :param help: the help string for the command-line option. Multiline strings
         can be used, :py:func:`textwrap.dedent` is applied before passing
         ``help`` to :py:func:`click.option`.
@@ -4617,6 +4633,16 @@ def field(
 
         if help:
             help = textwrap.dedent(help)
+
+        # Add a deprecation warning for obsoleted options
+        if deprecated:
+            warning = f"The option is deprecated since {deprecated.since}."
+            if not help:
+                help = warning
+            else:
+                help += " " + warning
+            if deprecated.hint:
+                help += " " + deprecated.hint
 
         metadata.option_args = (option,) if isinstance(option, str) else option
         metadata.option_kwargs = {
