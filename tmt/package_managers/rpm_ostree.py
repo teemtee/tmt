@@ -31,7 +31,7 @@ class RpmOstree(tmt.package_managers.PackageManager):
 
         command += Command('rpm-ostree')
 
-        options = Command('--apply-live', '--idempotent', '--allow-inactive')
+        options = Command('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
 
         return (command, options)
 
