@@ -252,7 +252,8 @@ class Library:
                 raise
             # Check out the requested branch
             try:
-                self.parent.run(Command('git', 'checkout', self.ref), cwd=directory)
+                if self.ref is not None:
+                    self.parent.run(Command('git', 'checkout', self.ref), cwd=directory)
             except tmt.utils.RunError:
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':

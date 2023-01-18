@@ -2364,7 +2364,7 @@ def fmf_id(name: str, fmf_root: Path, always_get_ref: bool = False) -> 'tmt.base
     except ValueError:
         remote_name = 'origin'
     remote = run(f"git config --get remote.{remote_name}.url")
-    fmf_id.url = public_git_url(remote)
+    fmf_id.url = public_git_url(remote) if remote else None
 
     # Construct path (if different from git root)
     git_root = Path(run('git rev-parse --show-toplevel'))
@@ -2372,10 +2372,18 @@ def fmf_id(name: str, fmf_root: Path, always_get_ref: bool = False) -> 'tmt.base
         fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
 
     # Get the ref (skip for the default)
-    ref = run('git rev-parse --abbrev-ref HEAD')
     def_branch = default_branch(git_root)
-    if ref != def_branch or always_get_ref:
-        fmf_id.ref = ref
+    if def_branch is None:
+        fmf_id.ref = None
+    else:
+        ref = run('git rev-parse --abbrev-ref HEAD')
+        if ref != def_branch or always_get_ref:
+            fmf_id.ref = ref
+        else:
+            # Note that it is a valid configuration without having a default
+            # branch here. Consumers of returned fmf_id object should check
+            # the fmf_id contains everything they need.
+            fmf_id.ref = None
 
     return fmf_id
 
@@ -2505,8 +2513,13 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository: Path, remote: str = 'origin') -> str:
+def default_branch(repository: Path, remote: str = 'origin') -> Optional[str]:
     """ Detect default branch from given local git repository """
+    # Make sure the '.git/refs/remotes/{remote}' directory is present
+    git_remotes_dir = repository / f'.git/refs/remotes/{remote}'
+    if not git_remotes_dir.exists():
+        return None
+
     head = repository / f'.git/refs/remotes/{remote}/HEAD'
     # Make sure the HEAD reference is available
     if not head.exists():

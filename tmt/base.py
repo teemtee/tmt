@@ -521,7 +521,9 @@ class Core(
             echo(tmt.utils.format('id', self.id, key_color='magenta'))
         echo(tmt.utils.format('sources', self.node.sources, key_color='magenta'))
         self._fmf_id()
-        echo(tmt.utils.format('web', self.web_link(), key_color='magenta', wrap=False))
+        web_link = self.web_link()
+        if web_link is not None:
+            echo(tmt.utils.format('web', web_link, key_color='magenta', wrap=False))
 
     def _fmf_id(self) -> None:
         """ Show fmf identifier """
@@ -538,11 +540,11 @@ class Core(
 
         return tmt.utils.fmf_id(self.name, Path(self.node.root))
 
-    def web_link(self) -> str:
+    def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
         fmf_id = tmt.utils.fmf_id(self.name, Path(self.node.root), always_get_ref=True)
-        assert fmf_id.url is not None
-        assert fmf_id.ref is not None
+        if fmf_id.ref is None or fmf_id.url is None:
+            return None
 
         # Detect relative path of the last source from the metadata tree root
         relative_path = Path(self.node.sources[-1]).relative_to(self.node.root)

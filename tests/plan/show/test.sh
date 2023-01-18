@@ -1,11 +1,61 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
+function dump_fmf_id_block
+{
+    typeset output=${1?"*** output file"}
+    typeset lineno=$(cat -n $output | egrep 'fmf-id' | awk '{print $1}')
+    sed -n "$lineno,$"p $output
+}
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd data"
         rlRun "set -o pipefail"
         rlRun "output=\$(mktemp)"
+        rlRun "show_tmp=\$(mktemp)"
+        rlRun "show_dir1=\$(mktemp -d)"
+        rlRun "show_dir2=\$(mktemp -d)"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in a normal git repo"
+        rlRun -s "tmt plans show -vvv mini"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertGrep "url:" $show_tmp
+        rlAssertGrep "ref:" $show_tmp
+        rlAssertGrep "path:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        rlAssertGrep "web" $show_tmp
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in an empty git repo"
+        rlRun "pushd $show_dir1"
+        rlRun "git init ."
+        rlRun "tmt init -t mini"
+        rlRun -s "tmt plans show -vvv"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertNotGrep "url:" $show_tmp
+        rlAssertNotGrep "ref:" $show_tmp
+        rlAssertNotGrep "path:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        rlAssertNotGrep "web" $show_tmp
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in non-git repo"
+        rlRun "pushd $show_dir2"
+        rlRun "tmt init -t mini"
+        rlRun -s "tmt plans show -vvv"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertNotGrep "url:" $show_tmp
+        rlAssertNotGrep "ref:" $show_tmp
+        rlAssertNotGrep "path:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        rlAssertNotGrep "web" $show_tmp
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a minimal plan"
@@ -90,5 +140,6 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"
+        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2"
     rlPhaseEnd
 rlJournalEnd
