@@ -27,10 +27,9 @@ managing handlers themselves, which would be very messy given the propagation of
 import itertools
 import logging
 import logging.handlers
-import os
 import os.path
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 import click
 
@@ -68,6 +67,65 @@ def _debug_level_from_global_envvar() -> int:
 
     except ValueError:
         raise tmt.utils.GeneralError(f"Invalid debug level '{raw_value}', use an integer.")
+
+
+def decide_colorization(no_color: bool, force_color: bool) -> Tuple[bool, bool]:
+    """
+    Decide whether the output and logging should be colorized.
+
+    Based on values of CLI options, environment variables and output stream
+    properties, a colorization setup is decided. The following inputs are
+    evaluated, in this order:
+
+    * if either of the ``--no-color`` CLI option, ``NO_COLOR`` or
+        ``TMT_NO_COLOR`` environment variables are set, colorization would be
+        disabled.
+    * if either of the ``--force-color`` CLI option or ``TMT_FORCE_COLOR``
+        environment variable are set, colorization would be forcefully
+        enabled.
+
+    If none of the situations above happened, colorization would be enabled for
+    output and logging based on their respective stream TTY status. Output is
+    sent to standard output, logging then to standard error output,
+    colorization would then be the outcome of stream's :py:meth:`file.isatty`
+    method.
+
+    .. note::
+
+       Be aware that "forced enable" is stronger than "forced disable". If
+       ``--force-color`` or ``TMT_FORCE_COLOR`` are set, colors will be enabled
+       despite any disabling options or environment variables.
+
+    .. note::
+
+       All inputs with the exception of ``isatty`` result control both types of
+       output, regular output and logging, and applies to both of them. Only
+       ``isatty`` outcome is specific for each type, and may result in one
+       output type dropping colors while the other would be colorized.
+
+    :param no_color: value of the ``--no-color`` CLI option.
+    :param force_color: value of the `--force-color`` CLI option.
+    :returns: a tuple of two booleans, one for output colorization, the other
+        for logging colorization.
+    """
+
+    # Default values: assume colors & unicorns everywhere.
+    apply_colors_output = apply_colors_logging = True
+
+    # Enforce colors if `--force-color` was used, or `TMT_FORCE_COLOR` envvar is set.
+    if force_color or 'TMT_FORCE_COLOR' in os.environ:
+        apply_colors_output = apply_colors_logging = True
+
+    # Disable coloring if `--no-color` was used, or `NO_COLOR` or `TMT_NO_COLOR` envvar is set.
+    elif no_color or 'NO_COLOR' in os.environ or 'TMT_NO_COLOR' in os.environ:
+        apply_colors_output = apply_colors_logging = False
+
+    # Autodetection, disable colors when not talking to a terminal.
+    else:
+        apply_colors_output = sys.stdout.isatty()
+        apply_colors_logging = sys.stderr.isatty()
+
+    return apply_colors_output, apply_colors_logging
 
 
 def indent(

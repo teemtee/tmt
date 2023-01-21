@@ -348,10 +348,25 @@ TMT_WORKDIR_ROOT
     Path to root directory containing run workdirs. Defaults to
     ``/var/tmp/tmt``.
 
-NO_COLOR
-    Disable colors in the terminal output. Output only plain,
-    non-colored text. See https://no-color.org/ for more
+NO_COLOR, TMT_NO_COLOR
+    Disable colors in the output, both the actual output and
+    logging messages. Output only plain, non-colored text.
+
+    Two variables are accepted, one with the usual ``TMT_``
+    prefix, but tmt accepts also ``NO_COLOR`` to support the
+    NO_COLOR effort, see https://no-color.org/ for more
     information.
+
+TMT_FORCE_COLOR
+    Enforce colors in the output, both the actual output and
+    logging messages. Might come handy when tmt's output streams
+    are not terminal-like, yet its output would be displayed by
+    tools with ANSI color support. This is often the case of
+    various CI systems.
+
+    Note that ``TMT_FORCE_COLOR`` takes priority over ``NO_COLOR``
+    and ``TMT_NO_COLOR``. If user tries both to disable and enable
+    colorization, output would be colorized.
 
 The following environment variables are provided to the environment
 during ``prepare``, ``execute`` and ``finish`` steps:
