@@ -595,11 +595,8 @@ class Core(
         # Handle '.' as an alias for the current working directory
         names = cls._opt('names')
         if names is not None and '.' in names:
-            # FIXME: cast() - https://github.com/teemtee/tmt/pull/1592
-            obj = cast(Optional['tmt.cli.ContextObject'], context.obj)
-            assert obj is not None  # narrow type
-            assert obj.tree.root is not None  # narrow type
-            root = obj.tree.root
+            assert context.obj.tree.root is not None  # narrow type
+            root = context.obj.tree.root
             current = Path.cwd()
             # Handle special case when directly in the metadata root
             if current.resolve() == root.resolve():

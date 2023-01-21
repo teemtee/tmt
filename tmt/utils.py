@@ -575,8 +575,7 @@ class Common(_CommonBase):
         if self._context is None:
             return None
 
-        # FIXME: cast() - https://github.com/teemtee/tmt/pull/1592
-        return cast(Optional['tmt.cli.ContextObject'], self._context.obj)
+        return self._context.obj
 
     def _fmf_context(self) -> FmfContextType:
         """ Return the current fmf context """
