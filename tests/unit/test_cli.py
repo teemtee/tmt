@@ -1,12 +1,18 @@
 # coding: utf-8
 
+import dataclasses
 import os
 import shutil
+import sys
 import tempfile
+from typing import Tuple
 
+import _pytest.monkeypatch
+import pytest
 from click.testing import CliRunner
 
 import tmt.cli
+import tmt.log
 
 # Prepare path to examples
 PATH = os.path.dirname(os.path.realpath(__file__))
@@ -124,3 +130,110 @@ def test_systemd():
         tmt.cli.main, ['--root', example('systemd'), 'plan', 'show'])
     assert result.exit_code == 0
     assert 'Tier two functional tests' in result.output
+
+
+@dataclasses.dataclass
+class DecideColorizationTestcase:
+    """ A single test case for :py:func:`tmt.log.decide_colorization` """
+
+    # Name of the testcase and expected outcome of decide_colorization()
+    name: str
+    expected: Tuple[bool, bool]
+
+    # Testcase environment setup to perform before calling decide_colorization()
+    set_no_color_option: bool = False
+    set_force_color_option: bool = False
+    set_no_color_envvar: bool = False
+    set_tmt_no_color_envvar: bool = False
+    set_tmt_force_color_envvar: bool = False
+    simulate_tty: bool = False
+
+
+_DECIDE_COLORIZATION_TESTCASES = [
+    # With TTY simulated
+    DecideColorizationTestcase(
+        'tty, autodetection',
+        (True, True),
+        simulate_tty=True),
+    DecideColorizationTestcase(
+        'tty, disable with option',
+        (False, False),
+        set_no_color_option=True,
+        simulate_tty=True),
+    DecideColorizationTestcase(
+        'tty, disable with NO_COLOR',
+        (False, False),
+        set_no_color_envvar=True,
+        simulate_tty=True),
+    DecideColorizationTestcase(
+        'tty, disable with TMT_NO_COLOR',
+        (False, False),
+        set_tmt_no_color_envvar=True,
+        simulate_tty=True),
+    DecideColorizationTestcase(
+        'tty, force with option',
+        (True, True),
+        set_force_color_option=True,
+        simulate_tty=True),
+    DecideColorizationTestcase(
+        'tty, force with TMT_FORCE_COLOR',
+        (True, True),
+        set_tmt_force_color_envvar=True,
+        simulate_tty=True),
+
+    # With TTY not simulated, streams are captured
+    DecideColorizationTestcase(
+        'not tty, autodetection',
+        (False, False)),
+    DecideColorizationTestcase(
+        'not tty, disable with option',
+        (False, False),
+        set_no_color_option=True),
+    DecideColorizationTestcase(
+        'not tty, disable with NO_COLOR',
+        (False, False),
+        set_no_color_envvar=True),
+    DecideColorizationTestcase(
+        'not tty, disable with TMT_NO_COLOR',
+        (False, False),
+        set_tmt_no_color_envvar=True),
+    DecideColorizationTestcase(
+        'not tty, force with option',
+        (True, True),
+        set_force_color_option=True),
+    DecideColorizationTestcase(
+        'not tty, force with TMT_FORCE_COLOR',
+        (True, True),
+        set_tmt_force_color_envvar=True),
+    ]
+
+
+@pytest.mark.parametrize(
+    ('testcase',),
+    [(testcase,) for testcase in _DECIDE_COLORIZATION_TESTCASES],
+    ids=[testcase.name for testcase in _DECIDE_COLORIZATION_TESTCASES]
+    )
+def test_decide_colorization(
+        testcase: DecideColorizationTestcase,
+        monkeypatch: _pytest.monkeypatch.MonkeyPatch
+        ) -> None:
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    monkeypatch.delenv('TMT_NO_COLOR', raising=False)
+    monkeypatch.delenv('TMT_FORCE_COLOR', raising=False)
+
+    no_color = True if testcase.set_no_color_option else False
+    force_color = True if testcase.set_force_color_option else False
+
+    if testcase.set_no_color_envvar:
+        monkeypatch.setenv('NO_COLOR', '')
+
+    if testcase.set_tmt_no_color_envvar:
+        monkeypatch.setenv('TMT_NO_COLOR', '')
+
+    if testcase.set_tmt_force_color_envvar:
+        monkeypatch.setenv('TMT_FORCE_COLOR', '')
+
+    monkeypatch.setattr(sys.stdout, 'isatty', lambda: testcase.simulate_tty)
+    monkeypatch.setattr(sys.stderr, 'isatty', lambda: testcase.simulate_tty)
+
+    assert tmt.log.decide_colorization(no_color, force_color) == testcase.expected

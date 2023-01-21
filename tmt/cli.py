@@ -139,7 +139,6 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Main
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 @click.group(invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
 @click.option(
@@ -154,10 +153,20 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 @click.option(
     '--version', is_flag=True,
     help='Show tmt version and commit hash.')
+@click.option(
+    '--no-color', is_flag=True, default=False,
+    help='Forces tmt to not use any colors in the output or logging.'
+    )
+@click.option(
+    '--force-color', is_flag=True, default=False,
+    help='Forces tmt to use colors in the output and logging.'
+    )
 def main(
         click_contex: Context,
         root: str,
         context: List[str],
+        no_color: bool,
+        force_color: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
     # Show current tmt version and exit
@@ -165,15 +174,13 @@ def main(
         print(f"tmt version: {tmt.__version__}")
         raise SystemExit(0)
 
-    # Disable coloring if NO_COLOR is set
-    # TODO: wouldn't it be nice to support --color/--no-color options?
-    apply_colors = sys.stderr.isatty() and 'NO_COLOR' not in os.environ
+    apply_colors_output, apply_colors_logging = tmt.log.decide_colorization(no_color, force_color)
 
     logger = tmt.log.Logger.create(**kwargs)
-    logger.add_console_handler(apply_colors=apply_colors)
+    logger.add_console_handler(apply_colors=apply_colors_logging)
 
     # Propagate color setting to Click as well.
-    click_contex.color = apply_colors
+    click_contex.color = apply_colors_output
 
     # Save click context and fmf context for future use
     tmt.utils.Common._save_context(click_contex)
