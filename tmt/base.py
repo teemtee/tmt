@@ -1975,6 +1975,37 @@ class Tree(tmt.utils.Common):
         self._tree = tree
         self._custom_context = context
 
+    @classmethod
+    def grow(
+            cls,
+            *,
+            path: Path = Path.cwd(),
+            tree: Optional[fmf.Tree] = None,
+            context: Optional[tmt.utils.FmfContextType] = None,
+            logger: Optional[tmt.log.Logger] = None) -> 'Tree':
+        """
+        Initialize tmt tree from directory path or given fmf tree.
+
+        This method serves as an entry point for interactive use of
+        tmt-as-a-library, providing sane defaults.
+
+        .. warning::
+
+           This method has a **very** limited use case, i.e. to help
+           bootstrapping interactive tmt sessions. Using it anywhere
+           outside of this scope should be ruled out.
+        """
+
+        import tmt.plugins
+
+        tmt.plugins.explore()
+
+        return Tree(
+            path=path,
+            tree=tree,
+            context=context,
+            logger=logger or tmt.log.Logger.create())
+
     def _fmf_context(self) -> FmfContextType:
         """ Use custom fmf context if provided, default otherwise """
         if self._custom_context is not None:

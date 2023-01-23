@@ -1559,8 +1559,9 @@ which is not supported by the command line use Python.  Just
 import the ``tmt`` module and create a logger for debugging::
 
     import tmt
-    logger = tmt.log.Logger.create()
-    tree = tmt.Tree(path="/path/to/the/tree", logger=logger)
+    from tmt.utils import Path
+
+    tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
 
     for test in tree.tests():
         print(test.name)
