@@ -347,25 +347,31 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def prepare_ssh_key(self, key_type: Optional[str] = None) -> None:
         """ Prepare ssh key for authentication """
-        # Create ssh key paths
-        key_name = "id_{}".format(key_type if key_type is not None else 'rsa')
         assert self.workdir is not None
-        self.key = [os.path.join(self.workdir, key_name)]
-        self.pubkey = os.path.join(self.workdir, f'{key_name}.pub')
 
-        # Generate ssh key
-        self.debug('Generating an ssh key.')
-        command = Command("ssh-keygen", "-f", self.key[0], "-N", "")
-        if key_type is not None:
-            command += Command("-t", key_type)
-        self.run(command)
-        self.verbose('key', self.key[0], 'green')
-        with open(self.pubkey, 'r') as pubkey:
-            self.config.USER_DATA = USER_DATA.format(
-                user_name=self.user, public_key=pubkey.read())
-        with open(self.pubkey, 'r') as pubkey:
-            self.config.COREOS_DATA = COREOS_DATA.format(
-                user_name=self.user, public_key=pubkey.read())
+        # Use existing key
+        if self.key:
+            self.debug("Extract public key from the provided private one.")
+            command = Command("ssh-keygen", "-f", self.key[0], "-y")
+            public_key = self.run(command).stdout
+        # Generate new ssh key pair
+        else:
+            self.debug('Generating an ssh key.')
+            key_name = "id_{}".format(key_type if key_type is not None else 'rsa')
+            self.key = [os.path.join(self.workdir, key_name)]
+            command = Command("ssh-keygen", "-f", self.key[0], "-N", "")
+            if key_type is not None:
+                command += Command("-t", key_type)
+            self.run(command)
+            self.verbose('key', self.key[0], 'green')
+            with open(os.path.join(self.workdir, f'{key_name}.pub'), 'r') as pubkey_file:
+                public_key = pubkey_file.read()
+
+        # Place public key content into the machine configuration
+        self.config.USER_DATA = USER_DATA.format(
+            user_name=self.user, public_key=public_key)
+        self.config.COREOS_DATA = COREOS_DATA.format(
+            user_name=self.user, public_key=public_key)
 
     def prepare_config(self) -> None:
         """ Prepare common configuration """
@@ -614,6 +620,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                 '-a', '--arch',
                 type=click.Choice(['x86_64', 'aarch64', 's390x', 'ppc64le']),
                 help="What architecture to virtualize, host arch by default."),
+            click.option(
+                '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
+                help='Existing private key for login into the guest system.'),
             ] + super().options(how)
 
     def go(self) -> None:

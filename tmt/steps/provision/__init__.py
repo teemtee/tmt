@@ -530,6 +530,8 @@ class GuestSshData(GuestData):
     password: Optional[str] = None
     ssh_option: List[str] = dataclasses.field(default_factory=list)
 
+    _normalize_key = tmt.utils.NormalizeKeysMixin._normalize_string_list
+
 
 class GuestSsh(Guest):
     """
