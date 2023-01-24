@@ -121,6 +121,7 @@ Generate test results in the JUnit format.
 %package report-polarion
 Summary: Report plugin with support for generating Polarion test runs
 Requires: tmt-report-junit >= %{version}
+Requires: python3-pylero
 
 %description report-polarion
 Generate test results in xUnit format for exporting to Polarion.
