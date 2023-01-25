@@ -970,18 +970,18 @@ class BasePlugin(Phase):
     #
     # Therefore we need a different name, and a way how not to forget to call this
     # method from child classes.
-    def go_prolog(self) -> None:
+    def go_prolog(self, logger: tmt.log.Logger) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
         # Show the method
-        self.info('how', self.get('how'), 'magenta')
+        logger.info('how', self.get('how'), 'magenta')
         # Give summary if provided
         if self.get('summary'):
-            self.info('summary', self.get('summary'), 'magenta')
+            logger.info('summary', self.get('summary'), 'magenta')
         # Show name only if it's not the default one
         if not self.name.startswith(tmt.utils.DEFAULT_NAME):
-            self.info('name', self.name, 'magenta')
+            logger.info('name', self.name, 'magenta')
         # Include order in verbose mode
-        self.verbose('order', str(self.order), 'magenta', level=3)
+        logger.verbose('order', str(self.order), 'magenta', level=3)
 
     def requires(self) -> List[str]:
         """ List of packages required by the plugin on the guest """
@@ -1010,16 +1010,21 @@ class GuestlessPlugin(BasePlugin):
     def go(self) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
 
-        self.go_prolog()
+        self.go_prolog(self._logger)
 
 
 class Plugin(BasePlugin):
     """ Common parent of all step plugins that do work against a particular guest """
 
-    def go(self, guest: 'Guest') -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
 
-        self.go_prolog()
+        self.go_prolog(logger)
 
 
 class Action(Phase):

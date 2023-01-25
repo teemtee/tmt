@@ -314,9 +314,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             return True
         return False
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Execute available tests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
         self._results: List[Result] = []
 
         # Nothing to do in dry mode

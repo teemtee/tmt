@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
 
 import fmf
 
@@ -67,9 +67,14 @@ class FinishShell(tmt.steps.finish.FinishPlugin):
 
     _data_class = FinishShellData
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Perform finishing tasks on given guest """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
         scripts: List[tmt.utils.ShellScript] = self.get('script')

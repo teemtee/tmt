@@ -168,9 +168,14 @@ class ExecutePlugin(tmt.steps.Plugin):
                 help='Stop execution after the first test failure.'),
             ] + super().options(how)
 
-    def go(self, guest: Guest) -> None:
-        super().go(guest)
-        self.verbose(
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
+        super().go(guest=guest, environment=environment, logger=logger)
+        logger.verbose(
             'exit-first', self.get('exit-first', default=False),
             'green', level=2)
 
@@ -499,7 +504,10 @@ class Execute(tmt.steps.Step):
                     phase.go()
 
                 elif isinstance(phase, ExecutePlugin):
-                    phase.go(guest)
+                    # TODO: re-injecting the logger already given to the guest,
+                    # with multihost support heading our way this will change
+                    # to be not so trivial.
+                    phase.go(guest=guest, logger=guest._logger)
 
                     self._results.extend(phase.results())
 

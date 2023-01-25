@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 import sys
-from typing import List, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 import fmf
 
@@ -576,9 +576,14 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
     _data_class = PrepareInstallData
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Perform preparation for the guests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
         if self.opt('dry'):
@@ -588,13 +593,13 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         try:
             guest.execute(Command('stat', '/run/ostree-booted'), silent=True)
             installer: InstallBase = InstallRpmOstree(
-                logger=self._logger, parent=self, guest=guest)
+                logger=logger, parent=self, guest=guest)
         except tmt.utils.RunError:
             try:
                 guest.execute(Command('rpm', '-q', 'dnf'), silent=True)
-                installer = InstallDnf(logger=self._logger, parent=self, guest=guest)
+                installer = InstallDnf(logger=logger, parent=self, guest=guest)
             except tmt.utils.RunError:
-                installer = InstallYum(logger=self._logger, parent=self, guest=guest)
+                installer = InstallYum(logger=logger, parent=self, guest=guest)
 
         # Enable copr repositories and install packages
         installer.enable_copr()

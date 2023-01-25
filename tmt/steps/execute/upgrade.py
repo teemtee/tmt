@@ -9,6 +9,7 @@ import tmt.result
 import tmt.steps
 import tmt.steps.discover.fmf
 import tmt.steps.execute
+import tmt.steps.provision
 import tmt.utils
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
@@ -142,11 +143,16 @@ class ExecuteUpgrade(ExecuteInternal):
         else:
             return self.step.plan.discover
 
-    def go(self, guest: tmt.steps.provision.Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'tmt.steps.provision.Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Execute available tests """
         self._results: List[tmt.result.Result] = []
         # Inform about the how, skip the actual execution
-        ExecutePlugin.go(self, guest)
+        ExecutePlugin.go(self, guest=guest, environment=environment, logger=logger)
 
         self.url = self.get('url')
         self.upgrade_path = self.get('upgrade-path')

@@ -1,9 +1,10 @@
 import dataclasses
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import tmt
 import tmt.steps
 import tmt.steps.prepare
+import tmt.utils
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
@@ -43,15 +44,20 @@ class PrepareMultihost(tmt.steps.prepare.PreparePlugin):
 
     _data_class = PrepareMultihostData
 
-    def go(self, guest: 'Guest') -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Prepare the guests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
-        self.debug('Export roles.', level=2)
+        logger.debug('Export roles.', level=2)
         for role, corresponding_guests in self.get('roles').items():
             formatted_guests = ','.join(corresponding_guests)
             self.step.plan._environment[f"TMT_ROLE_{role}"] = formatted_guests
-        self.debug("Add hosts to '/etc/hosts'.", level=2)
+        logger.debug("Add hosts to '/etc/hosts'.", level=2)
         for host_name, host_address in self.get('hosts').items():
             if host_address:
                 guest.execute(
