@@ -9,6 +9,7 @@ import fmf
 
 import tmt
 import tmt.steps
+import tmt.steps.provision
 from tmt.steps import Action
 from tmt.utils import GeneralError
 
@@ -62,18 +63,23 @@ class PreparePlugin(tmt.steps.Plugin):
 
         return prepare
 
-    def go(self, guest: tmt.steps.provision.Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'tmt.steps.provision.Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Prepare the guest (common actions) """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Show guest name first in multihost scenarios
         if self.step.plan.provision.is_multihost:
-            self.info('guest', guest.name, 'green')
+            logger.info('guest', guest.name, 'green')
 
         # Show requested role if defined
         where = self.get('where')
         if where:
-            self.info('where', where, 'green')
+            logger.info('where', where, 'green')
 
 
 class Prepare(tmt.steps.Step):
@@ -217,7 +223,10 @@ class Prepare(tmt.steps.Step):
                     phase.go()
 
                 elif isinstance(phase, PreparePlugin):
-                    phase.go(guest_copy)
+                    # TODO: re-injecting the logger already given to the guest,
+                    # with multihost support heading our way this will change
+                    # to be not so trivial.
+                    phase.go(guest=guest_copy, logger=guest_copy._logger)
 
                     self.preparations_applied += 1
 

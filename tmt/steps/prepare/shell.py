@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
 
 import fmf
 
@@ -70,17 +70,22 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
 
     _data_class = PrepareShellData
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Prepare the guests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
         scripts: List[tmt.utils.ShellScript] = self.get('script')
         overview = fmf.utils.listed(scripts, 'script')
-        self.info('overview', f'{overview} found', 'green')
+        logger.info('overview', f'{overview} found', 'green')
 
         # Execute each script on the guest (with default shell options)
         for script in scripts:
-            self.verbose('script', str(script), 'green')
+            logger.verbose('script', str(script), 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             guest.execute(script_with_options, cwd=self.step.plan.worktree)

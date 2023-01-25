@@ -96,13 +96,18 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
 
     _data_class = PrepareAnsibleData
 
-    def go(self, guest: Guest) -> None:
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> None:
         """ Prepare the guests """
-        super().go(guest)
+        super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
         for playbook in self.get('playbook'):
-            self.info('playbook', playbook, 'green')
+            logger.info('playbook', playbook, 'green')
 
             lowercased_playbook = playbook.lower()
             playbook_path = playbook
@@ -136,6 +141,6 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
 
                     playbook_path = os.path.relpath(file.name, root_path)
 
-                self.info('playbook-path', playbook_path, 'green')
+                logger.info('playbook-path', playbook_path, 'green')
 
             guest.ansible(playbook_path, self.get('extra-args'))
