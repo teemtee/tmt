@@ -128,6 +128,15 @@ class Guest(tmt.utils.Common):
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
     @property
+    def full_name(self) -> str:
+        """ Return guest's full name, i.e. name and its role """
+
+        if self.role is None:
+            return self.name
+
+        return f'{self.name} ({self.role})'
+
+    @property
     def is_ready(self) -> bool:
         """ Detect guest is ready or not """
 
