@@ -1,6 +1,8 @@
 import logging
+from typing import List, Optional
 
 import _pytest.logging
+import click
 import pytest
 
 from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
@@ -9,24 +11,74 @@ from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
 from . import assert_log
 
 
-def test_sanity(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
-    root_logger.print('this is printed')
-    root_logger.debug('this is a debug message')
-    root_logger.verbose('this is a verbose message')
-    root_logger.info('this is just an info')
-    root_logger.warn('this is a warning')
-    root_logger.fail('this is a failure')
+def _exercise_logger(
+        caplog: _pytest.logging.LogCaptureFixture,
+        logger: Logger,
+        indent_by: str = '',
+        labels: Optional[List[str]] = None) -> None:
+    labels = labels or []
 
-    assert_log(caplog, details_key='this is printed', levelno=logging.INFO)
-    assert_log(caplog, details_key='this is a debug message', levelno=logging.DEBUG)
-    assert_log(caplog, details_key='this is a verbose message', levelno=logging.INFO)
-    assert_log(caplog, details_key='this is just an info', levelno=logging.INFO)
-    assert_log(caplog, details_key='warn', details_value='this is a warning', levelno=logging.WARN)
+    if labels:
+        prefix = ''.join(
+            click.style(f'[{label}]', fg='cyan') for label in labels
+            ) + ' '
+
+    else:
+        prefix = ''
+
+    prefix = f'{indent_by}{prefix}'
+
+    caplog.clear()
+
+    logger.print('this is printed')
+    logger.debug('this is a debug message')
+    logger.verbose('this is a verbose message')
+    logger.info('this is just an info')
+    logger.warn('this is a warning')
+    logger.fail('this is a failure')
+
     assert_log(
         caplog,
+        message=f'{prefix}this is printed',
+        details_key='this is printed',
+        details_logger_labels=labels,
+        levelno=logging.INFO)
+    assert_log(
+        caplog,
+        message=f'{prefix}this is a debug message',
+        details_key='this is a debug message',
+        details_logger_labels=labels,
+        levelno=logging.DEBUG)
+    assert_log(
+        caplog,
+        message=f'{prefix}this is a verbose message',
+        details_key='this is a verbose message',
+        details_logger_labels=labels,
+        levelno=logging.INFO)
+    assert_log(
+        caplog,
+        message=f'{prefix}this is just an info',
+        details_key='this is just an info',
+        details_logger_labels=labels,
+        levelno=logging.INFO)
+    assert_log(
+        caplog,
+        message=f'{prefix}{click.style("warn", fg="yellow")}: this is a warning',
+        details_key='warn',
+        details_value='this is a warning',
+        details_logger_labels=labels,
+        levelno=logging.WARN)
+    assert_log(
+        caplog,
+        message=f'{prefix}{click.style("fail", fg="red")}: this is a failure',
         details_key='fail',
         details_value='this is a failure',
+        details_logger_labels=labels,
         levelno=logging.ERROR)
+
+
+def test_sanity(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
+    _exercise_logger(caplog, root_logger)
 
 
 def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
@@ -41,23 +93,7 @@ def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger
 def test_descend(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
     deeper_logger = root_logger.descend().descend().descend()
 
-    deeper_logger.print('this is printed')
-    deeper_logger.debug('this is a debug message')
-    deeper_logger.verbose('this is a verbose message')
-    deeper_logger.info('this is just an info')
-    deeper_logger.warn('this is a warning')
-    deeper_logger.fail('this is a failure')
-
-    assert_log(caplog, details_key='this is printed', levelno=logging.INFO)
-    assert_log(caplog, details_key='this is a debug message', levelno=logging.DEBUG)
-    assert_log(caplog, details_key='this is a verbose message', levelno=logging.INFO)
-    assert_log(caplog, details_key='this is just an info', levelno=logging.INFO)
-    assert_log(caplog, details_key='warn', details_value='this is a warning', levelno=logging.WARN)
-    assert_log(
-        caplog,
-        details_key='fail',
-        details_value='this is a failure',
-        levelno=logging.ERROR)
+    _exercise_logger(caplog, deeper_logger, indent_by='            ')
 
 
 @pytest.mark.parametrize(
@@ -172,3 +208,15 @@ def test_quietness_filter(levelno: int, filter_outcome: int) -> None:
     assert filter.filter(logging.makeLogRecord({
         'levelno': levelno
         })) == filter_outcome
+
+
+def test_labels(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
+    _exercise_logger(caplog, root_logger, labels=[])
+
+    root_logger.labels += ['foo']
+
+    _exercise_logger(caplog, root_logger, labels=['foo'])
+
+    root_logger.labels += ['bar']
+
+    _exercise_logger(caplog, root_logger, labels=['foo', 'bar'])

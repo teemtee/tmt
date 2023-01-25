@@ -30,7 +30,7 @@ import logging.handlers
 import os
 import os.path
 import sys
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 import click
 
@@ -47,6 +47,8 @@ INDENT = 4
 
 DEFAULT_VERBOSITY_LEVEL = 0
 DEFAULT_DEBUG_LEVEL = 0
+
+LABEL_FORMAT = '[{label}]'
 
 
 def _debug_level_from_global_envvar() -> int:
@@ -68,7 +70,8 @@ def indent(
         key: str,
         value: Optional[str] = None,
         color: Optional[str] = None,
-        level: int = 0) -> str:
+        level: int = 0,
+        labels: Optional[List[str]] = None) -> str:
     """
     Indent a key/value message.
 
@@ -81,7 +84,11 @@ def indent(
     :param color: optional color to apply on ``key``.
     :param level: number of indentation levels. Each level is indented
                   by :py:data:`INDENT` spaces.
+    :param labels: optional list of strings to prepend to each message.
+        Each item would be wrapped within square brackets (``[foo] message...``).
     """
+
+    labels = labels or []
 
     indent = ' ' * INDENT * level
     deeper = ' ' * INDENT * (level + 1)
@@ -90,9 +97,20 @@ def indent(
     if color is not None:
         key = click.style(key, fg=color)
 
+    if labels:
+        prefix = ''.join(
+            # TODO: color here is questionable - it will be removed, but I'd rather not
+            # add it at first place, and it should be configurable.
+            click.style(LABEL_FORMAT.format(label=label), fg='cyan')
+            for label in labels
+            ) + ' '
+
+    else:
+        prefix = ''
+
     # Handle key only
     if value is None:
-        message = key
+        message = f'{prefix}{key}'
 
     # Handle key + value
     else:
@@ -102,7 +120,7 @@ def indent(
             if len(lines) > 1:
                 value = ''.join([f"\n{deeper}{line}" for line in lines])
 
-        message = f'{key}: {value}'
+        message = f'{prefix}{key}: {value}'
 
     return indent + message
 
@@ -115,6 +133,8 @@ class LogRecordDetails(TypedDict, total=False):
 
     color: Optional[str]
     shift: int
+
+    logger_labels: List[str]
 
     logger_verbosity_level: int
     message_verbosity_level: Optional[int]
@@ -275,6 +295,7 @@ class Logger:
             self,
             actual_logger: logging.Logger,
             base_shift: int = 0,
+            labels: Optional[List[str]] = None,
             verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
             debug_level: int = DEFAULT_DEBUG_LEVEL,
             quiet: bool = False
@@ -299,6 +320,8 @@ class Logger:
         self._base_shift = base_shift
 
         self._child_id_counter = itertools.count()
+
+        self.labels = labels or []
 
         self.verbosity_level = verbosity_level
         self.debug_level = debug_level
@@ -469,6 +492,8 @@ class Logger:
         workflow and carrying extra information for our custom filters and handlers.
         """
 
+        details['logger_labels'] = self.labels
+
         details['logger_verbosity_level'] = self.verbosity_level
         details['logger_debug_level'] = self.debug_level
         details['logger_quiet'] = self.quiet
@@ -481,7 +506,8 @@ class Logger:
                 value=details['value'],
                 # Always apply colors - message can be decolorized later.
                 color=details.get('color', None),
-                level=details.get('shift', 0))
+                level=details.get('shift', 0),
+                labels=self.labels)
 
         self._logger._log(level, message, tuple(), extra={'details': details})
 

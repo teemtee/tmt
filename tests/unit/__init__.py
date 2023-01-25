@@ -136,10 +136,10 @@ def _assert_log(
 
         for record in caplog.records:
             for field_getter, field_name, op, expected_value in operators:
-                print(field_name,
-                      field_getter(record, field_name),
-                      expected_value,
-                      op(expected_value, field_getter(record, field_name)))
+                print(f'field={field_name}',
+                      f'current=>>>{field_getter(record, field_name)}<<<',
+                      f'expected=>>>{expected_value}<<<',
+                      f'comparison={op(expected_value, field_getter(record, field_name))}')
 
         assert False, f"""
 {message}:
