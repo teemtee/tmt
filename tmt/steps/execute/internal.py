@@ -15,6 +15,7 @@ import tmt.utils
 from tmt.base import Test
 from tmt.result import Result, ResultOutcome
 from tmt.steps.execute import (SCRIPTS, TEST_OUTPUT_FILENAME,
+                               TEST_POST_DMESG_FILENAME,
                                TMT_FILE_SUBMIT_SCRIPT, TMT_REBOOT_SCRIPT)
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, ShellScript
@@ -238,6 +239,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             self.data_path(test, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
         test.real_duration = self.test_duration(start, end)
+
+        guest.pull_dmesg(self.data_path(test, TEST_POST_DMESG_FILENAME, full=True))
 
     def check(self, test: Test) -> List[Result]:
         """ Check the test result """

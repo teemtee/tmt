@@ -32,6 +32,9 @@ DEFAULT_FRAMEWORK = 'shell'
 # The main test output filename
 TEST_OUTPUT_FILENAME = 'output.txt'
 
+# Filename to which the dmesg output should be saved after the test execution.
+TEST_POST_DMESG_FILENAME = 'tmt-dmesg.txt'
+
 # Scripts source directory
 SCRIPTS_SRC_DIR = pkg_resources.resource_filename(
     'tmt', 'steps/execute/scripts')

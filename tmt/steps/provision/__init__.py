@@ -454,6 +454,20 @@ class Guest(tmt.utils.Common):
 
         return True
 
+    def get_current_dmesg(self) -> tmt.utils.CommandOutput:
+        return self.execute(Command('dmesg'), friendly_command='dmesg')
+
+    def pull_dmesg(self, filepath: str) -> None:
+        """ Run and save the output of ``dmesg`` """
+
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        dmesg_output = self.get_current_dmesg()
+
+        with open(filepath, mode='w') as f:
+            f.write(f'# Acquired at {timestamp}\n')
+            f.write(dmesg_output.stdout or '')
+
     def remove(self) -> None:
         """
         Remove the guest
