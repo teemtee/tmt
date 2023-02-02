@@ -11,56 +11,56 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Certificate"
-        rlRun "$tmt 'rpm|fmf|nick|duplicate' | tee $tmp/output"
-        rlAssertGrep "Fetch library 'openssl/certgen'" $tmp/output
+        rlRun -s "$tmt 'rpm|fmf|nick|duplicate'"
+        rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Apache"
-        rlRun "$tmt apache | tee $tmp/output"
-        rlAssertGrep "Fetch library 'httpd/http'" $tmp/output
-        rlAssertGrep "Fetch library 'openssl/certgen'" $tmp/output
+        rlRun -s "$tmt apache"
+        rlAssertGrep "Fetch library 'httpd/http'" $rlRun_LOG
+        rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Recommend"
-        rlRun "$tmt recommend | tee $tmp/output" 0
-        rlAssertGrep "Fetch library 'openssl/certgen'" $tmp/output
+        rlRun -s "$tmt recommend" 0
+        rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Conflict"
-        rlRun "$tmt conflict 2>&1 | tee $tmp/output" 2
-        rlAssertGrep 'Library.*conflicts' $tmp/output
+        rlRun -s "$tmt conflict" 2
+        rlAssertGrep 'Library.*conflicts' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Destination"
-        rlRun "$tmt destination 2>&1 | tee $tmp/output" 0
-        rlAssertGrep 'Cloning into.*custom/openssl' $tmp/output
+        rlRun -s "$tmt destination" 0
+        rlAssertGrep 'Cloning into.*custom/openssl' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Missing"
-        rlRun "$tmt missing/repository 2>&1 | tee $tmp/output" 2
-        rlAssertGrep 'Authentication failed.*something' $tmp/output
-        rlRun "$tmt missing/library 2>&1 | tee $tmp/output" 2
-        rlAssertGrep 'dnf install.*openssl/wrong' $tmp/output
-        rlRun "$tmt missing/metadata 2>&1 | tee $tmp/output" 2
-        rlAssertGrep 'Repository .* does not contain fmf metadata.' $tmp/output
-        rlRun "$tmt missing/reference 2>&1 | tee $tmp/output" 2
-        rlAssertGrep 'Reference .* not found.' $tmp/output
+        rlRun -s "$tmt missing/repository" 2
+        rlAssertGrep 'Authentication failed.*something' $rlRun_LOG
+        rlRun -s "$tmt missing/library" 2
+        rlAssertGrep 'dnf install.*openssl/wrong' $rlRun_LOG
+        rlRun -s "$tmt missing/metadata" 2
+        rlAssertGrep 'Repository .* does not contain fmf metadata.' $rlRun_LOG
+        rlRun -s "$tmt missing/reference" 2
+        rlAssertGrep 'Reference .* not found.' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Deep"
-        rlRun "$tmt file 2>&1 | tee $tmp/output"
-        rlAssertGrep 'the library is stored deep.' $tmp/output
+        rlRun -s "$tmt file"
+        rlAssertGrep 'the library is stored deep.' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Strip git suffix"
-        rlRun "$tmt strip_git_suffix 2>&1 | tee $tmp/output" 0
-        rlAssertGrep "summary: 3 tests selected" "$tmp/output"
-        rlAssertGrep "/strip_git_suffix/test2" "$tmp/output"
+        rlRun -s "$tmt strip_git_suffix" 0
+        rlAssertGrep "summary: 3 tests selected" $rlRun_LOG
+        rlAssertGrep "/strip_git_suffix/test2" $rlRun_LOG
         rlAssertGrep \
             "Detected library '{'url': 'https://github.com/teemtee/fmf.git'}'." \
-            "$tmp/output"
+            "$rlRun_LOG"
         rlAssertNotGrep 'Library.*conflicts with already fetched library' \
-            "$tmp/output"
+            "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
