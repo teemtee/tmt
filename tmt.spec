@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.20.0
+Version: 1.21.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -219,6 +219,59 @@ chmod 1777 %{buildroot}%{workdir_root}
 
 
 %changelog
+* Fri Feb 03 2023 Lukáš Zachar <lzachar@redhat.com> - 1.21.0-1
+- Fix tmt-reboot without custom command
+- Fix test /discover/libraries
+- Add serialization callbacks to data class fields
+- Use own private key for `provision.virtual`
+- Adds a template-backed export plugin
+- Polarion export fix component upload bug and upload id first
+- Convert story ReST export to use a Jinja2 template
+- Convert export-related code to plugins per format
+- Do not clone the whole remote plan in dry mode
+- Hardcode tmt git URL so test won't fail for PRs
+- Add py.typed marker for 3rd party type annotations
+- Fixes isort 5.10.1 installation issue
+- Improve logging by `tmt.utils.wait()`
+- Check packages are installed via debuginfo-install
+- Always ignore failures for recommended packages
+- Merge report plugins options into step data fields
+- Dynamically find the current Fedora release
+- Suggest using a pull request checklist template
+- Include a simple Python code among the examples
+- Apply normalization callback when updating data with CLI input
+- Bump pre-commit linters - Flake8, Mypy, JSON schema, YAML lint & pygrep
+- Use base implementation of provision plugin requirements
+- Relay 'interactive' value for podman call
+- Update Fedora versions in `upgrade` tests
+- Apply `ShellScript` for the custom reboot command
+- Update the `shell` discover specification
+- Enable to sync git repo to SUT in `shell` discover
+- Increase the default `utils.format()` indent a bit
+- Define pull request Copr build job in Packit config
+- Decouple logging from objects and base classes
+- Enable `url` and `ref` as `shell` discover options
+- Export `TMT_TREE` in other steps as well
+- Add a new key `system` to the `hardware` spec
+- Remove default for the dynamic `ref` evaluation
+- Schema update and test for order in discover step
+- Merge report plugins options into step data fields
+- Add a test for hardware schema coverage
+- Better type annotations of prepare/install scripts
+- Move `jinja2` require to the main `tmt` package
+- Define the new context dimension `initiator`
+- Respect `TMT_WORKDIR_ROOT` variable in `testcloud`
+- Annotate commands, command line elements and shell scripts
+- Adjust the `reportportal` plugin implementation
+- Implement the `reportportal` report plugin
+- Require the latest `testcloud` package
+- Define `srpm_build_deps` in the packit config
+- Include the new web link in verbose `show` mode
+- Add a clickable web link to test to polarion export
+- Enhance `Links` to allow checking for any links at all
+- Drop various guest `wake()` methods in favor of parent class
+- Catch `SystemExit` during module discovery
+
 * Thu Dec 08 2022 Lukáš Zachar <lzachar@redhat.com> - 1.20.0-1
 - Do not prune `html` and `junit` reports
 - Skip extending fmf context if cli context missing

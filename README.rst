@@ -440,8 +440,8 @@ Feenstra, Inessa Vasilevskaya, Štěpán Němec, Robin Hack, Yulia
 Kopkova, Ondrej Moriš, Martin Zelený, Karel Šrot, František
 Zatloukal, Simon Walter, Petr Matyáš, Yariv Rachmani, Pavel
 Cahyna, Martin Litwora, Brian Grech, Vojtěch Eichler, Philip Daly,
-Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín and
-Lukáš Kotek, Daniel Diblík.
+Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín,
+Lukáš Kotek, Daniel Diblík, Laura Barcziova and Marián Konček.
 
 
 Copyright
