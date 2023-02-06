@@ -24,11 +24,14 @@ description: |
 
         /test/one:
             result: OUTCOME
-            log: PATH
+            log:
+              - PATH
 
         /test/two:
             result: OUTCOME
-            log: PATH
+            log:
+              - PATH1
+              - PATH2
             duration: DURATION
 
     Where ``OUTCOME`` is the result of the test execution. It can
@@ -55,11 +58,11 @@ description: |
         fail
             Test execution successfully finished and failed.
 
-    The ``PATH`` is the test log output path, relative to the
-    execute step working directory. It can be a single string
-    or a list of strings when multiple log files available, in
-    which case the first log will be considered as the main one
-    (e.g. presented to the user for inspection).
+    ``PATH`` and ``PATH*`` are the test log output paths, relative
+    to the execute step working directory. ``log`` key is a list
+    of strings, even when there is just a single log, the first
+    log will be considered as the main one (e.g. presented to the
+    user for inspection).
 
     The ``DURATION`` is an optional section stating how long did
     the test run. Its value is in the ``hh:mm:ss`` format.
