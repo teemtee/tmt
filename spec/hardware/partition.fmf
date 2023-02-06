@@ -1,0 +1,37 @@
+summary:
+    Specify disk partitions that need to be created on the disk.
+description:
+    Use the ``type`` key to select the desired type of partition method.
+    Possible methods are ``part`` for classical hard disk partition containing
+    filesystem or ``lvm`` for physical partition with a separate LVM volume
+    group containing a single LVM logical volume containing a filesystem.
+    Default value is ``part``.
+
+    The ``device`` specifies which disk to apply partitioning, if this parameter
+    is omitted it's selected automatically. Use ``fs`` to select
+    desired filesystem (for example ``ext4``, ``xfs`, ``btrfs``).
+
+    Required parameters are: ``device``, ``size``, and ``fs``
+example:
+  - |
+    # Create additional partition
+    partition:
+      - type: part
+        size: 5 GB
+        device: /dev/sdf
+        fs: ext4
+        mount: /var/tmp
+
+  - |
+    # Multiple partitions can be specified as well
+    partition:
+      - type: part
+        size: 5 GB
+        device: /dev/sdf
+        fs: xfs
+        mount: /var/log
+      - type: part
+        size: 200 GB
+        device: /dev/sdg
+        fs: xfs
+        mount: /custom-partition-name

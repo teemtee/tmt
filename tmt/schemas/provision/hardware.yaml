@@ -148,6 +148,46 @@ definitions:
     items:
       "$ref": "#/definitions/network"
 
+  # HW requirements: single `partition` item
+  partition:
+    type: object
+
+    properties:
+      type:
+        type: string
+        enum:
+          - part
+          - lvm
+        default: "part"
+
+      size:
+        anyOf:
+          - type: string
+          - type: integer
+
+      device:
+        type: string
+
+      fs:
+        type: string
+
+      mount:
+        type: string
+
+    additionalProperties: false
+
+    # Enforce the user to fill `size`, `mount` and `fs` properties
+    required:
+      - size
+      - mount
+      - fs
+
+  # HW requirements: `partitions` block
+  partitions:
+    type: array
+    items:
+      "$ref": "#/definitions/partition"
+
   # HW requirements: single `system` item
   system:
     type: object
@@ -232,6 +272,9 @@ definitions:
 
       network:
         "$ref": "#/definitions/networks"
+
+      partition:
+        "$ref": "#/definitions/partitions"
 
       system:
         "$ref": "#/definitions/system"

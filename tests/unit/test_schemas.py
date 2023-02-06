@@ -146,6 +146,15 @@ def test_plans_schema(tree, plan):
             network:
                 - type: eth
                 - type: eth
+            partition:
+                - type: part
+                  size: 5 GB
+                  device: /dev/sdf
+                  fs: xfs
+                  mount: /var/log
+                - size: 200 GB
+                  fs: xfs
+                  mount: /custom-partition-name
             system:
                 vendor: HPE
                 model: ProLiant DL385 Gen10
