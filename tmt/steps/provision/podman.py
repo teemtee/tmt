@@ -9,8 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
-from tmt.utils import Command, Path, ShellScript
+from tmt.utils import Command, Path, ShellScript, field
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -22,11 +21,28 @@ DEFAULT_USER = "root"
 
 @dataclasses.dataclass
 class PodmanGuestData(tmt.steps.provision.GuestData):
-    image: str = DEFAULT_IMAGE
-    user: str = DEFAULT_USER
-    force_pull: bool = False
+    image: str = field(
+        default=DEFAULT_IMAGE,
+        option=('-i', '--image'),
+        metavar='IMAGE',
+        help='Select image to use. Short name or complete url.')
+    user: Optional[str] = field(
+        default=DEFAULT_USER,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all container operations.')
 
-    container: Optional[str] = None
+    force_pull: bool = field(
+        default=False,
+        option=('-p', '--pull', '--force-pull'),
+        is_flag=True,
+        help='Force pulling a fresh container image.')
+
+    container: Optional[str] = field(
+        default=None,
+        option=('-c', '--container'),
+        metavar='NAME',
+        help='Name or id of an existing container to be used.')
 
 
 @dataclasses.dataclass
@@ -269,24 +285,6 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
 
     # Guest instance
     _guest = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for connect """
-        return [
-            option(
-                '-i', '--image', metavar='IMAGE',
-                help='Select image to use. Short name or complete url.'),
-            option(
-                '-c', '--container', metavar='NAME',
-                help='Name or id of an existing container to be used.'),
-            option(
-                '-p', '--pull', 'force_pull', is_flag=True,
-                help='Force pulling a fresh container image.'),
-            option(
-                '-u', '--user', metavar='USER',
-                help='User to use for all container operations.'),
-            *super().options(how)]
 
     def default(self, option: str, default: Any = None) -> Any:
         """ Return default data for given option """

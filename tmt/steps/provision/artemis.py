@@ -1,18 +1,17 @@
 import dataclasses
 import datetime
 import sys
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional, cast
 
-import click
 import requests
 
 import tmt
+import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
-from tmt.utils import ProvisionError, retry_session, updatable_message
+from tmt.utils import ProvisionError, field, retry_session, updatable_message
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -67,37 +66,147 @@ DEFAULT_API_RETRIES = 10
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
 
 
+def _normalize_user_data(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> Dict[str, str]:
+    if isinstance(raw_value, dict):
+        return {
+            str(key).strip(): str(value).strip() for key, value in raw_value.items()
+            }
+
+    if isinstance(raw_value, (list, tuple)):
+        user_data = {}
+
+        for datum in raw_value:
+            try:
+                key, value = datum.split('=', 1)
+
+            except ValueError as exc:
+                raise tmt.utils.NormalizationError(
+                    key_address, datum, 'a KEY=VALUE string') from exc
+
+            user_data[key.strip()] = value.strip()
+
+        return user_data
+
+    raise tmt.utils.NormalizationError(
+        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
+
+
 @dataclasses.dataclass
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
     user: str = DEFAULT_USER
 
     # API
-    api_url: str = DEFAULT_API_URL
-    api_version: str = DEFAULT_API_VERSION
+    api_url: str = field(
+        default=DEFAULT_API_URL,
+        option='--api-url',
+        metavar='URL',
+        help="Artemis API URL.")
+    api_version: str = field(
+        default=DEFAULT_API_VERSION,
+        option='--api-version',
+        metavar='X.Y.Z',
+        help="Artemis API version to use.",
+        choices=SUPPORTED_API_VERSIONS)
 
     # Guest request properties
-    arch: str = DEFAULT_ARCH
-    image: Optional[str] = None
+    arch: str = field(
+        default=DEFAULT_ARCH,
+        option='--arch',
+        metavar='ARCH',
+        help='Architecture to provision.')
+    image: Optional[str] = field(
+        default=None,
+        option='--image',
+        metavar='COMPOSE',
+        help='Image (or "compose" in Artemis terminology) to provision.')
     hardware: Optional[Any] = None
-    pool: Optional[str] = None
-    priority_group: str = DEFAULT_PRIORITY_GROUP
-    keyname: str = DEFAULT_KEYNAME
-    user_data: Dict[str, str] = dataclasses.field(default_factory=dict)
-    kickstart: Dict[str, str] = dataclasses.field(default_factory=dict)
+    pool: Optional[str] = field(
+        default=None,
+        option='--pool',
+        metavar='NAME',
+        help='Pool to enforce.')
+    priority_group: str = field(
+        default=DEFAULT_PRIORITY_GROUP,
+        option='--priority-group',
+        metavar='NAME',
+        help='Provisioning priority group.')
+    keyname: str = field(
+        default=DEFAULT_KEYNAME,
+        option='--keyname',
+        metavar='NAME',
+        help='SSH key name.')
+    user_data: Dict[str, str] = field(
+        default_factory=dict,
+        option='--user-data',
+        metavar='KEY=VALUE',
+        help='Optional data to attach to guest.',
+        multiple=True,
+        normalize=_normalize_user_data)
+    kickstart: Dict[str, str] = field(
+        default_factory=dict,
+        option='--kickstart',
+        metavar='KEY=VALUE',
+        help='Optional Beaker kickstart to use when provisioning the guest.',
+        multiple=True,
+        normalize=_normalize_user_data)
 
     # Provided by Artemis response
     guestname: Optional[str] = None
 
     # Timeouts and deadlines
-    provision_timeout: int = DEFAULT_PROVISION_TIMEOUT
-    provision_tick: int = DEFAULT_PROVISION_TICK
-    api_timeout: int = DEFAULT_API_TIMEOUT
-    api_retries: int = DEFAULT_API_RETRIES
-    api_retry_backoff_factor: int = DEFAULT_RETRY_BACKOFF_FACTOR
+    provision_timeout: int = field(
+        default=DEFAULT_PROVISION_TIMEOUT,
+        option='--provision-timeout',
+        metavar='SECONDS',
+        help='How long to wait for provisioning to complete, '
+        f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.',
+        normalize=tmt.utils.normalize_int)
+    provision_tick: int = field(
+        default=DEFAULT_PROVISION_TICK,
+        option='--provision-tick',
+        metavar='SECONDS',
+        help=f'How often check Artemis API for provisioning status, '
+        f'{DEFAULT_PROVISION_TICK} seconds by default.',
+        normalize=tmt.utils.normalize_int)
+    api_timeout: int = field(
+        default=DEFAULT_API_TIMEOUT,
+        option='--api-timeout',
+        metavar='SECONDS',
+        help=f'How long to wait for API operations to complete, '
+        f'{DEFAULT_API_TIMEOUT} seconds by default.',
+        normalize=tmt.utils.normalize_int)
+    api_retries: int = field(
+        default=DEFAULT_API_RETRIES,
+        option='--api-retries',
+        metavar='COUNT',
+        help=f'How many attempts to use when talking to API, '
+        f'{DEFAULT_API_RETRIES} by default.',
+        normalize=tmt.utils.normalize_int)
+    api_retry_backoff_factor: int = field(
+        default=DEFAULT_RETRY_BACKOFF_FACTOR,
+        option='--api-retry-backoff-factor',
+        metavar='COUNT',
+        help=f'A factor for exponential API retry backoff, '
+        f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
+        normalize=tmt.utils.normalize_int)
     # Artemis core already contains default values
-    watchdog_dispatch_delay: Optional[int] = None
-    watchdog_period_delay: Optional[int] = None
+    watchdog_dispatch_delay: Optional[int] = field(
+        default=cast(Optional[int], None),
+        option='--watchdog-dispatch-delay',
+        metavar='SECONDS',
+        help='How long (seconds) before the guest "is-alive" watchdog is dispatched. '
+        'The dispatch timer starts once the guest is successfully provisioned.',
+        normalize=tmt.utils.normalize_optional_int)
+    watchdog_period_delay: Optional[int] = field(
+        default=cast(Optional[int], None),
+        option='--watchdog-period-delay',
+        metavar='SECONDS',
+        help='How often (seconds) check that the guest "is-alive".',
+        normalize=tmt.utils.normalize_optional_int)
 
 
 @dataclasses.dataclass
@@ -442,7 +551,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
     Note that the actual value of "image" depends on what images - or
     "composes" as Artemis calls them - supports and can deliver.
 
-    Note that "api-url" can be also given via ARTEMIS_API_URL
+    Note that "api-url" can be also given via TMT_PLUGIN_PROVISION_ARTEMIS_API_URL
     environment variable.
 
     Full configuration example:
@@ -482,84 +591,6 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
 
     # Guest instance
     _guest = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for Artemis """
-        return [
-            option(
-                '--api-url', metavar='URL',
-                help="Artemis API URL.",
-                envvar='ARTEMIS_API_URL'
-                ),
-            option(
-                '--api-version', metavar='x.y.z',
-                help="Artemis API version to use.",
-                type=click.Choice(SUPPORTED_API_VERSIONS),
-                envvar='ARTEMIS_API_VERSION'
-                ),
-            option(
-                '--arch', metavar='ARCH',
-                help='Architecture to provision.'
-                ),
-            option(
-                '--image', metavar='COMPOSE',
-                help='Image (or "compose" in Artemis terminology) '
-                     'to provision.'
-                ),
-            option(
-                '--pool', metavar='NAME',
-                help='Pool to enforce.'
-                ),
-            option(
-                '--priority-group', metavar='NAME',
-                help='Provisioning priority group.'
-                ),
-            option(
-                '--keyname', metavar='NAME',
-                help='SSH key name.'
-                ),
-            option(
-                '--user-data', metavar='KEY=VALUE',
-                help='Optional data to attach to guest.',
-                multiple=True,
-                default=[]
-                ),
-            option(
-                '--provision-timeout', metavar='SECONDS',
-                help=f'How long to wait for provisioning to complete, '
-                     f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.'
-                ),
-            option(
-                '--provision-tick', metavar='SECONDS',
-                help=f'How often check Artemis API for provisioning status, '
-                     f'{DEFAULT_PROVISION_TICK} seconds by default.',
-                ),
-            option(
-                '--api-timeout', metavar='SECONDS',
-                help=f'How long to wait for API operations to complete, '
-                     f'{DEFAULT_API_TIMEOUT} seconds by default.',
-                ),
-            option(
-                '--api-retries', metavar='COUNT',
-                help=f'How many attempts to use when talking to API, '
-                     f'{DEFAULT_API_RETRIES} by default.',
-                ),
-            option(
-                '--api-retry-backoff-factor', metavar='COUNT',
-                help=f'A factor for exponential API retry backoff, '
-                     f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
-                ),
-            option(
-                '--watchdog-dispatch-delay', metavar='SECONDS',
-                help='How long (seconds) before the guest "is-alive" watchdog is dispatched. '
-                     'The dispatch timer starts once the guest is successfully provisioned.'
-                ),
-            option(
-                '--watchdog-period-delay', metavar='SECONDS',
-                help='How often (seconds) check that the guest "is-alive".'
-                ),
-            *super().options(how)]
 
     def go(self) -> None:
         """ Provision the guest """
