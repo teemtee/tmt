@@ -12,55 +12,56 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Perfect"
-        rlRun "tmt test lint perfect | tee output"
-        rlAssertGrep 'pass' output
-        rlAssertGrep 'pass correct attributes are used' output
-        rlAssertNotGrep 'warn' output
-        rlAssertNotGrep 'fail' output
+        rlRun -s "tmt test lint perfect"
+        rlAssertGrep 'pass' $rlRun_LOG
+        rlAssertGrep 'pass T001 correct keys are used' $rlRun_LOG
+        rlAssertNotGrep 'warn' $rlRun_LOG
+        rlAssertNotGrep 'fail' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Good"
-        rlRun "tmt test lint good | tee output"
-        rlAssertGrep 'pass' output
-        rlAssertGrep 'warn' output
-        rlAssertNotGrep 'fail' output
+        rlRun -s "tmt test lint good"
+        rlAssertGrep 'pass' $rlRun_LOG
+        rlAssertGrep 'warn' $rlRun_LOG
+        rlAssertNotGrep 'fail' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Old yaml"
-        if rlRun "tmt test lint old-yaml 2>&1 | tee output" 0,2; then
+        if rlRun -s "tmt test lint old-yaml" 0,2; then
             # Before fmf-1.0 we give just a warning
-            rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" output
+            rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" $rlRun_LOG
+            rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
         else
             # Since fmf-1.0 old format is no more supported
-            rlAssertGrep 'Invalid.*enabled.*in test' output
+            rlAssertGrep 'Invalid.*enabled.*in test' $rlRun_LOG
         fi
     rlPhaseEnd
 
     rlPhaseStartTest "Bad"
-        rlRun "tmt test lint empty 2>&1 | tee output" 2
-        rlAssertGrep "must be defined" output
-        rlRun "tmt test lint bad-path | tee output" 1
-        rlAssertGrep 'fail directory path must exist' output
-        rlRun "tmt test lint bad-not-absolute | tee output" 1
-        rlAssertGrep 'fail directory path must be absolute' output
-        rlAssertGrep 'fail directory path must exist' output
-        rlRun "tmt test lint relevancy | tee output" 1
-        rlAssertGrep 'fail relevancy has been obsoleted' output
+        rlRun -s "tmt test lint empty" 2
+        rlAssertGrep "must be defined" $rlRun_LOG
+        rlRun -s "tmt test lint bad-path" 1
+        rlAssertGrep "fail T004 test path '.*/data/not-a-path' does not exist" $rlRun_LOG
+        rlRun -s "tmt test lint bad-not-absolute" 1
+        rlAssertGrep 'fail T003 directory path is not absolute' $rlRun_LOG
+        rlAssertGrep "fail T004 test path '.*/data/not-absolute' does not exist" $rlRun_LOG
+        rlRun -s "tmt test lint relevancy" 1
+        rlAssertGrep 'fail T005 relevancy has been obsoleted by adjust' $rlRun_LOG
         # There should be no change without --fix
         for format in list text; do
             rlAssertGrep 'relevancy' "relevancy-$format.fmf"
             rlAssertNotGrep 'adjust:' "relevancy-$format.fmf"
         done
-        rlRun "tmt test lint bad-attribute | tee output" 1
-        rlAssertGrep "fail unknown attribute 'requires' is used" output
-        rlRun "tmt test lint coverage | tee output" 1
-        rlAssertGrep "fail coverage has been obsoleted by link" output
+        rlRun -s "tmt test lint bad-attribute" 1
+        rlAssertGrep "fail T001 unknown key \"requires\" is used" $rlRun_LOG
+        rlRun -s "tmt test lint coverage" 1
+        rlAssertGrep "fail T006 the 'coverage' field has been obsoleted by 'link'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Fix"
         # With --fix relevancy should be converted
-        rlRun "tmt test lint --fix relevancy | tee output"
-        rlAssertGrep 'relevancy converted into adjust' output
+        rlRun -s "tmt test lint --fix relevancy"
+        rlAssertGrep 'fix  T005 relevancy converted into adjust' $rlRun_LOG
         for format in list text; do
             rlAssertNotGrep 'relevancy' "relevancy-$format.fmf"
             rlIsFedora && rlAssertGrep '#comment' "relevancy-$format.fmf"
@@ -71,40 +72,41 @@ rlJournalStart
 
     rlPhaseStartTest "Manual test"
         # Correct syntax
-        rlRun "tmt test lint /manual_true/correct_path/pass | tee output"
-        rlAssertGrep 'pass correct manual test syntax' output
+        rlRun -s "tmt test lint /manual_true/correct_path/pass"
+        rlAssertGrep 'pass T008 correct manual test syntax' $rlRun_LOG
 
         # Wrong test path
-        rlRun "tmt test lint /manual/manual_true/wrong_path | tee output" 1
-        rlAssertGrep "fail file 'wrong_path.md' does not exist" output
+        rlRun -s "tmt test lint /manual/manual_true/wrong_path" 1
+        rlAssertGrep "fail T007 manual test path \".*/manual_test_passed/wrong_path.md\" does not exist" $rlRun_LOG
+        rlAssertGrep "fail T008 cannot open the manual test path: Unable to open '.*/manual_test_passed/wrong_path.md'." $rlRun_LOG
 
         # If manual=false - don't check test attribute
-        rlRun "tmt test lint /manual/manual_false | tee output"
-        rlAssertNotGrep 'pass correct manual test syntax' output
+        rlRun -s "tmt test lint /manual/manual_false"
+        rlAssertGrep 'skip T008 not a manual test' $rlRun_LOG
 
         # Unknown headings
-        rlRun "tmt test lint /manual_true/correct_path/fail1 | tee output" 1
-        fail="fail unknown html heading"
-        rlAssertGrep "$fail \"<h2>Test</h2>\" is used" output
-        rlAssertGrep "$fail \"<h3>Unknown heading begin</h3>\" is used" output
-        rlAssertGrep "$fail \"<h2>Unknown heading end</h2>\" is used" output
+        rlRun -s "tmt test lint /manual_true/correct_path/fail1" 0
+        fail="warn T008"
+        rlAssertGrep "$fail unknown html heading \"<h2>Test</h2>\" is used" $rlRun_LOG
+        rlAssertGrep "$fail unknown html heading "<h2>Unknown heading end</h2>" is used" $rlRun_LOG
+        rlAssertGrep "$fail unknown html heading "<h3>Unknown heading begin</h3>" is used" $rlRun_LOG
 
         # Warn if 2 or more # Setup or # Cleanup are used
-        rlAssertGrep 'fail 2 headings "<h1>Setup</h1>" are used' output
-        rlAssertGrep 'fail 3 headings "<h1>Cleanup</h1>" are used' output
+        rlAssertGrep "$fail 2 headings \"<h1>Setup</h1>\" are used" $rlRun_LOG
+        rlAssertGrep "$fail 3 headings \"<h1>Cleanup</h1>\" are used" $rlRun_LOG
 
         # Step is used outside of test sections.
-        rlAssertGrep "outside of Test sections" output
+        rlAssertGrep "$fail Heading \"<h2>Step</h2>\" from the section \"Step\" is used outside of Test sections." $rlRun_LOG
 
         # Unexpected headings
-        rlAssertGrep "fail Headings .* aren't expected in the section" output
+        rlAssertGrep "$fail Headings \".*\" aren't expected in the section \"<h1>Test</h1>\"" $rlRun_LOG
 
         # Step isn't in pair with Expect
-        rlAssertGrep "doesn't equal to the number of headings" output
+        rlAssertGrep "$fail The number of headings from the section \"Step\" - 2 doesn't equal to the number of headings from the section \"Expect\" - 1 in the test section \"<h1>Test two</h1>\"" $rlRun_LOG
 
         # Required section doesn't exist
-        rlRun "tmt test lint /manual_true/correct_path/fail2 | tee output" 1
-        rlAssertGrep "fail \"Test\" section doesn't exist" output
+        rlRun -s "tmt test lint /manual_true/correct_path/fail2" 0
+        rlAssertGrep "warn T008 \"Test\" section doesn't exist in the Markdown file" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Lint by modified source files"

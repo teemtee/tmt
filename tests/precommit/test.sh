@@ -74,7 +74,7 @@ EOF
         rlRun -s "git commit -m wrong" "1"
         # Test uses invalid attribute
         rlAssertGrep "$expected_command.*Failed" $rlRun_LOG
-        rlAssertGrep 'fail unknown attribute' $rlRun_LOG
+        rlAssertGrep 'fail .001 unknown key "foo" is used' $rlRun_LOG
 
         # Force broken test into repo
         rlRun -s "git commit --no-verify -m wrong" "0"

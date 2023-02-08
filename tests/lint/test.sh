@@ -33,18 +33,31 @@ rlJournalStart
         rlAssertGrep "plans/bad" $rlRun_LOG
         rlAssertGrep "stories/bad" $rlRun_LOG
         # linting story
-        rlAssertGrep "warn summary should not exceed 50 characters" $rlRun_LOG
-        rlAssertGrep "fail unknown attribute 'exampleee' is used" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"exampleee\" not recognized by schema /schemas/story" $rlRun_LOG
+        rlAssertGrep "warn C001 summary should not exceed 50 characters" $rlRun_LOG
+        rlAssertGrep "fail S001 unknown key \"exampleee\" is used" $rlRun_LOG
+        rlAssertGrep "pass S002 story key is defined" $rlRun_LOG
         # linting test
-        rlAssertGrep "pass test script must be defined" $rlRun_LOG
-        rlAssertGrep "pass directory path must be absolute" $rlRun_LOG
-        rlAssertGrep "pass directory path must exist" $rlRun_LOG
-        rlAssertGrep "warn summary is very useful for quick inspection"   \
-            $rlRun_LOG
-        rlAssertGrep "fail unknown attribute 'summarrry' is used" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"summarrry\" not recognized by schema, and does not match \"^extra-\" pattern" $rlRun_LOG
+        rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
+        rlAssertGrep "fail T001 unknown key \"summarrry\" is used" $rlRun_LOG
+        rlAssertGrep "pass T002 test script is defined" $rlRun_LOG
+        rlAssertGrep "pass T003 directory path is absolute" $rlRun_LOG
+        rlAssertGrep "pass T004 test path '.*/tests/lint/data/tests/bad' does exist" $rlRun_LOG
+        rlAssertGrep "skip T005 legacy relevancy not detected" $rlRun_LOG
+        rlAssertGrep "skip T006 legacy 'coverage' field not detected" $rlRun_LOG
+        rlAssertGrep "skip T007 not a manual test" $rlRun_LOG
+        rlAssertGrep "skip T008 not a manual test" $rlRun_LOG
         #linting plan
-        rlAssertGrep "fail unknown attribute 'discovery' is used" $rlRun_LOG
-        rlAssertGrep "fail unknown attribute 'prepareahoj' is used" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"discovery\" not recognized by schema /schemas/plan" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"prepareahoj\" not recognized by schema /schemas/plan" $rlRun_LOG
+        rlAssertGrep "pass C001 summary key is set and is reasonably long" $rlRun_LOG
+        rlAssertGrep "fail P001 unknown key \"discovery\" is used" $rlRun_LOG
+        rlAssertGrep "fail P001 unknown key \"prepareahoj\" is used" $rlRun_LOG
+        rlAssertGrep "pass P002 execute step defined with \"how\"" $rlRun_LOG
+        rlAssertGrep "pass P003 execute step methods are all known" $rlRun_LOG
+        rlAssertGrep "skip P004 discover step is not defined" $rlRun_LOG
+        rlAssertGrep "skip P005 no remote fmf ids defined" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Check --fix for tests"

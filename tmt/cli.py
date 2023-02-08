@@ -6,7 +6,8 @@ import collections
 import dataclasses
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, DefaultDict, List, Optional, Set
+from typing import (TYPE_CHECKING, Any, DefaultDict, List, Optional, Set,
+                    Tuple, Type, Union)
 
 import click
 import fmf
@@ -18,6 +19,7 @@ import tmt.base
 import tmt.convert
 import tmt.export
 import tmt.identifier
+import tmt.lint
 import tmt.log
 import tmt.options
 import tmt.plugins
@@ -134,6 +136,7 @@ filter_options_long = create_options_decorator(tmt.options.FILTER_OPTIONS_LONG)
 fmf_source_options = create_options_decorator(tmt.options.FMF_SOURCE_OPTIONS)
 story_flags_filter_options = create_options_decorator(tmt.options.STORY_FLAGS_FILTER_OPTIONS)
 remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
+lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,6 +360,90 @@ def finito(
         click_context.obj.run.go()
 
 
+def _lint_class(
+        context: Context,
+        klass: Union[Type[tmt.base.Test], Type[tmt.base.Plan], Type[tmt.base.Story]],
+        failed_only: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        outcomes: List[tmt.lint.LinterOutcome],
+        **kwargs: Any) -> int:
+    """ Lint a single class of objects """
+
+    # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
+    context.params.update(**kwargs)
+    klass._save_cli_context(context)
+
+    exit_code = 0
+
+    for lintable in klass.from_tree(context.obj.tree):
+        valid, rulings = lintable.lint(
+            enable_checks=enable_checks or None,
+            disable_checks=disable_checks or None,
+            enforce_checks=enforce_checks or None)
+
+        # If the object pass the checks, and we're asked to show only the failed
+        # ones, display nothing.
+        if valid and failed_only:
+            continue
+
+        # Find out what rulings were allowed by user. By default, it's all, but
+        # user might be interested in "warn" only, for example. Reduce the list
+        # of rulings, and if we end up with an empty list *and* user constrained
+        # us to just a subset of rulings, display nothing.
+        allowed_rulings = list(tmt.lint.filter_allowed_checks(rulings, outcomes=outcomes))
+
+        if not allowed_rulings and outcomes:
+            continue
+
+        lintable.ls()
+
+        echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+
+        if not valid:
+            exit_code = 1
+
+        echo()
+
+    return exit_code
+
+
+def do_lint(
+        context: Context,
+        klasses: List[Union[Type[tmt.base.Test], Type[tmt.base.Plan], Type[tmt.base.Story]]],
+        list_checks: bool,
+        failed_only: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        outcomes: List[tmt.lint.LinterOutcome],
+        **kwargs: Any) -> int:
+    """ Core of all ``lint`` commands """
+
+    if list_checks:
+        for klass in klasses:
+            klass_label = 'stories' if klass is tmt.base.Story else f'{klass.__name__.lower()}s'
+            echo(f'Linters available for {klass_label}')
+            echo(klass.format_linters())
+            echo()
+
+        return 0
+
+    return max(
+        _lint_class(
+            context,
+            klass,
+            failed_only,
+            enable_checks,
+            disable_checks,
+            enforce_checks,
+            outcomes,
+            **kwargs)
+        for klass in klasses
+        )
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Test
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -414,23 +501,36 @@ def tests_show(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @filter_options
 @fmf_source_options
+@lint_options
 @fix_options
 @verbosity_options
-def tests_lint(context: Context, **kwargs: Any) -> None:
+def tests_lint(
+        context: Context,
+        list_checks: bool,
+        failed_only: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        outcome_only: Tuple[str, ...],
+        **kwargs: Any) -> None:
     """
     Check tests against the L1 metadata specification.
 
     Regular expression can be used to filter tests for linting.
     Use '.' to select tests under the current working directory.
     """
-    # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
-    context.params.update(**kwargs)
-    tmt.Test._save_cli_context(context)
-    exit_code = 0
-    for test in context.obj.tree.tests():
-        if not test.lint():
-            exit_code = 1
-        echo()
+
+    exit_code = do_lint(
+        context,
+        [tmt.base.Test],
+        list_checks,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        **kwargs)
+
     raise SystemExit(exit_code)
 
 
@@ -775,22 +875,36 @@ def plans_show(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @filter_options
 @fmf_source_options
+@lint_options
+@fix_options
 @verbosity_options
-def plans_lint(context: Context, **kwargs: Any) -> None:
+def plans_lint(
+        context: Context,
+        list_checks: bool,
+        failed_only: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        outcome_only: Tuple[str, ...],
+        **kwargs: Any) -> None:
     """
     Check plans against the L2 metadata specification.
 
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
-    # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
-    context.params.update(**kwargs)
-    tmt.Plan._save_cli_context(context)
-    exit_code = 0
-    for plan in context.obj.tree.plans():
-        if not plan.lint():
-            exit_code = 1
-        echo()
+
+    exit_code = do_lint(
+        context,
+        [tmt.base.Plan],
+        list_checks,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        **kwargs)
+
     raise SystemExit(exit_code)
 
 
@@ -1152,22 +1266,36 @@ def stories_export(
 @click.pass_context
 @filter_options
 @fmf_source_options
+@lint_options
+@fix_options
 @verbosity_options
-def stories_lint(context: Context, **kwargs: Any) -> None:
+def stories_lint(
+        context: Context,
+        list_checks: bool,
+        failed_only: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        outcome_only: Tuple[str, ...],
+        **kwargs: Any) -> None:
     """
     Check stories against the L3 metadata specification.
 
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
-    # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
-    context.params.update(**kwargs)
-    tmt.Story._save_cli_context(context)
-    exit_code = 0
-    for story in context.obj.tree.stories():
-        if not story.lint():
-            exit_code = 1
-        echo()
+
+    exit_code = do_lint(
+        context,
+        [tmt.base.Story],
+        list_checks,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        **kwargs)
+
     raise SystemExit(exit_code)
 
 
@@ -1502,9 +1630,18 @@ def clean_images(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @filter_options
 @fmf_source_options
+@lint_options
 @fix_options
 @verbosity_options
-def lint(context: Context, **kwargs: Any) -> None:
+def lint(
+        context: Context,
+        list_checks: bool,
+        enable_checks: List[str],
+        disable_checks: List[str],
+        enforce_checks: List[str],
+        failed_only: bool,
+        outcome_only: Tuple[str, ...],
+        **kwargs: Any) -> None:
     """
     Check all the present metadata against the specification.
 
@@ -1515,20 +1652,19 @@ def lint(context: Context, **kwargs: Any) -> None:
     Use '.' to select tests, plans and stories under the current
     working directory.
     """
-    exit_code = 0
-    for command in (tests_lint, plans_lint, stories_lint):
-        try:
-            context.forward(command)
-        except SystemExit as e:
-            # SystemExit.code is Union[str, int, None], because that's all accepted by
-            # `sys.exit()` (see https://docs.python.org/3.9/library/sys.html#sys.exit).
-            # Our code is sane, returns either zero or another integer, so let's add
-            # a check & raise an error should we run into an unexpected type. It'd mean
-            # subcommands suddenly started returning non-integer exit code, and why would
-            # they do anything like that??
-            if not isinstance(e.code, int):
-                raise tmt.utils.GeneralError(f"Unexpected non-integer exit code '{e.code}'.")
-            exit_code |= e.code
+
+    exit_code = do_lint(
+        context,
+        [tmt.base.Test, tmt.base.Plan, tmt.base.Story],
+        list_checks,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        **kwargs
+        )
+
     raise SystemExit(exit_code)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
