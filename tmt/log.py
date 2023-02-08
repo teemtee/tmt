@@ -609,3 +609,29 @@ class Logger:
                 'shift': shift
                 }
             )
+
+    _bootstrap_logger: Optional['Logger'] = None
+
+    @classmethod
+    def get_boostrap_logger(cls) -> 'Logger':
+        """
+        Create a logger designed for tmt startup time.
+
+        .. warning::
+
+        This logger has a **very** limited use case span, i.e. before tmt can
+        digest its command-line options and create a proper logger. This happens
+        inside :py:funs:`tmt.cli.main` function, but there are some actions taken
+        by tmt code before this function is called by Click, actions that need
+        to emit logging messages. Using it anywhere outside of this brief time
+        in tmt's runtime should be ruled out.
+        """
+
+        if cls._bootstrap_logger is None:
+            # Stay away of our future main logger
+            actual_logger = Logger._normalize_logger(logging.getLogger('_tmt_bootstrap'))
+
+            cls._bootstrap_logger = Logger.create(actual_logger=actual_logger)
+            cls._bootstrap_logger.add_console_handler()
+
+        return cls._bootstrap_logger
