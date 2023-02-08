@@ -367,7 +367,8 @@ class Step(tmt.utils.Common):
             self.debug('Successfully loaded step data.', level=2)
 
             self.data = [
-                StepData.unserialize(raw_datum) for raw_datum in raw_step_data['data']
+                StepData.unserialize(raw_datum, self._logger)
+                for raw_datum in raw_step_data['data']
                 ]
             self.status(raw_step_data['status'])
         except tmt.utils.GeneralError:

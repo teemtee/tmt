@@ -9,9 +9,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check the TMT_DEBUG variable"
-        rlRun -s "TMT_DEBUG=3 tmt plan show 2>&1 >/dev/null"
+        rlRun -s "TMT_DEBUG=3 tmt plan show"
         rlAssertGrep "Using the 'DiscoverFmf' plugin" $rlRun_LOG
-        rlRun -s "TMT_DEBUG=weird tmt plan show 2>&1 >/dev/null" 2
+        rlRun -s "TMT_DEBUG=weird tmt plan show" 2
         rlAssertGrep "Invalid debug level" $rlRun_LOG
     rlPhaseEnd
 

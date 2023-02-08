@@ -1,9 +1,16 @@
 #!/usr/bin/python
 
-import tmt.cli
-import tmt.utils
-
 try:
+    # Cover imports with try/except, to handle errors raised while importing
+    # tmt packages. Some may perform actions in import-time, and may raise
+    # exceptions.
+
+    # Import utils first, before CLI gets a chance to spawn a logger. Without
+    # tmt.utils, we would not be able to intercept the exception below.
+    import tmt.utils
+
+    import tmt.cli  # isort: skip
+
     tmt.cli.main()
 
 # Basic error message for general errors

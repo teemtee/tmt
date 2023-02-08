@@ -67,7 +67,7 @@ STORIES = itertools.chain.from_iterable(_iter_stories_in_tree(tree) for tree in 
 
 
 def validate_node(tree, node, schema, label, name):
-    errors = tmt.utils.validate_fmf_node(node, schema)
+    errors = tmt.utils.validate_fmf_node(node, schema, LOGGER)
 
     if errors:
         print(f"""A node in tree loaded from {str(_tree_path(tree))} failed validation

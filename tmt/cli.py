@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     import tmt.steps.execute
 
 # Explore available plugins (need to detect all supported methods first)
-tmt.plugins.explore()
+tmt.plugins.explore(tmt.log.Logger.get_bootstrap_logger())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Click Context Object Container

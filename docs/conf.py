@@ -17,6 +17,7 @@ import sys
 from unittest.mock import Mock as MagicMock
 
 import tmt.plugins
+import tmt.utils
 from tmt.utils import Path
 
 try:
@@ -254,11 +255,14 @@ class Mock(MagicMock):
 MOCK_MODULES = ['testcloud', 'testcloud.image', 'testcloud.instance']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
+# We will need a logger...
+logger = tmt.Logger.create()
+
 # Explore available *export* plugins - do not import other plugins, we don't need them.
-tmt.plugins._explore_export_directory()
+tmt.plugins.explore_export_package(logger)
 
 # Generate stories
-tree = tmt.Tree(logger=tmt.Logger.create(), path=Path.cwd())
+tree = tmt.Tree(logger=logger, path=Path.cwd())
 
 areas = {
     '/stories/docs': 'Documentation',

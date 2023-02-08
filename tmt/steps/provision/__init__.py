@@ -1228,7 +1228,7 @@ class Provision(tmt.steps.Step):
             raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
 
             self._guest_data = {
-                name: tmt.utils.SerializableContainer.unserialize(guest_data)
+                name: tmt.utils.SerializableContainer.unserialize(guest_data, self._logger)
                 for name, guest_data in raw_guest_data.items()
                 }
 

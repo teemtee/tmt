@@ -23,6 +23,7 @@ from ruamel.yaml.error import MarkedYAMLError
 import tmt.export
 import tmt.identifier
 import tmt.log
+import tmt.plugins
 import tmt.steps
 import tmt.steps.discover
 import tmt.steps.execute
@@ -1583,7 +1584,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
         self.ls()
 
         # Explore all available plugins
-        tmt.plugins.explore()
+        tmt.plugins.explore(self._logger)
 
         invalid_keys = self.lint_keys(
             list(self.step_names(enabled=True, disabled=True)) +
@@ -2010,7 +2011,9 @@ class Tree(tmt.utils.Common):
 
         import tmt.plugins
 
-        tmt.plugins.explore()
+        logger = logger or tmt.log.Logger.create()
+
+        tmt.plugins.explore(logger)
 
         return Tree(
             path=path,

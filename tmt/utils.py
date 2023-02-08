@@ -2224,7 +2224,8 @@ class SerializableContainer(DataContainer):
     # silence mypy about the missing actual type.
     @staticmethod
     def unserialize(
-            serialized: Dict[str, Any]
+            serialized: Dict[str, Any],
+            logger: tmt.log.Logger
             ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
         """
         Convert from a serialized form loaded from a file.
@@ -2254,7 +2255,10 @@ class SerializableContainer(DataContainer):
                 "Use 'tmt clean runs' to clean up old runs.")
 
         klass_info = serialized.pop('__class__')
-        klass = import_member(klass_info['module'], klass_info['name'])
+        klass = import_member(
+            module_name=klass_info['module'],
+            member_name=klass_info['name'],
+            logger=logger)
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
@@ -3771,7 +3775,7 @@ def load_schema_store() -> SchemaStore:
     return store
 
 
-def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
+def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Logger) -> fmf.Tree:
     """
     Apply the minimal possible normalization steps to nodes before validating them with schemas.
 
@@ -3837,7 +3841,10 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
         step_module_name = f'tmt.steps.{step_name}'
         step_class_name = step_name.capitalize()
 
-        step_class = import_member(step_module_name, step_class_name)
+        step_class = import_member(
+            module_name=step_module_name,
+            member_name=step_class_name,
+            logger=logger)
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(
@@ -3879,10 +3886,12 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
 
 
 def validate_fmf_node(
-        node: fmf.Tree, schema_name: str) -> List[Tuple[jsonschema.ValidationError, str]]:
+        node: fmf.Tree,
+        schema_name: str,
+        logger: tmt.log.Logger) -> List[Tuple[jsonschema.ValidationError, str]]:
     """ Validate a given fmf node """
 
-    node = _prenormalize_fmf_node(node, schema_name)
+    node = _prenormalize_fmf_node(node, schema_name, logger)
 
     result = node.validate(load_schema(Path(schema_name)), schema_store=load_schema_store())
 
@@ -4024,7 +4033,7 @@ class ValidateFmfMixin(_CommonBase):
         """ Validate a given fmf node """
 
         errors = validate_fmf_node(
-            node, f'{self.__class__.__name__.lower()}.yaml')
+            node, f'{self.__class__.__name__.lower()}.yaml', logger)
 
         if errors:
             if raise_on_validation_error:

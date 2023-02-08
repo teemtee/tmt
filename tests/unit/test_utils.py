@@ -869,24 +869,31 @@ def test_wait_success_but_too_late(root_logger):
         wait(Common(logger=root_logger), check, datetime.timedelta(seconds=1))
 
 
-def test_import_member():
-    klass = tmt.plugins.import_member('tmt.steps.discover', 'Discover')
+def test_import_member(root_logger):
+    klass = tmt.plugins.import_member(
+        module_name='tmt.steps.discover', member_name='Discover', logger=root_logger)
 
     assert klass is tmt.steps.discover.Discover
 
 
-def test_import_member_no_such_module():
+def test_import_member_no_such_module(root_logger):
     with pytest.raises(
             tmt.utils.GeneralError,
             match=r"Failed to import module 'tmt\.steps\.nope_does_not_exist'."):
-        tmt.plugins.import_member('tmt.steps.nope_does_not_exist', 'Discover')
+        tmt.plugins.import_member(
+            module_name='tmt.steps.nope_does_not_exist',
+            member_name='Discover',
+            logger=root_logger)
 
 
-def test_import_member_no_such_class():
+def test_import_member_no_such_class(root_logger):
     with pytest.raises(
             tmt.utils.GeneralError,
             match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'."):
-        tmt.plugins.import_member('tmt.steps.discover', 'NopeDoesNotExist')
+        tmt.plugins.import_member(
+            module_name='tmt.steps.discover',
+            member_name='NopeDoesNotExist',
+            logger=root_logger)
 
 
 def test_common_base_inheritance(root_logger):
