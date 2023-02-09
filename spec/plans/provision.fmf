@@ -17,6 +17,11 @@ description: |
     See the :ref:`/spec/hardware` specification section for
     details.
 
+    As part of the provision step it is also possible to specify
+    kickstart file used during the installation.
+    See the :ref:`/spec/plans/provision/kickstart` specification
+    section for details.
+
 example: |
     # Provision a local virtual machine with the latest Fedora
     provision:

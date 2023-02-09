@@ -1,0 +1,40 @@
+---
+
+#
+# JSON Schema definition for kickstart specification
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#kickstart
+#
+
+$id: /schemas/provision/kickstart
+$schema: http://json-schema.org/draft-07/schema
+
+definitions:
+  kickstart:
+    type: object
+
+    properties:
+
+      kernel-options:
+        type: string
+
+      kernel-options-post:
+        type: string
+
+      metadata:
+        type: string
+
+      post-install:
+        type: string
+
+      pre-install:
+        type: string
+
+      script:
+        type: string
+
+    additionalProperties: false
+
+    # Enforce at least one property - we don't care which one, but we don't want
+    # empty `kickstart`.
+    minProperties: 1

@@ -201,3 +201,61 @@ def test_hw_schema_examples(hw: str, request) -> None:
         'HW requirements',
         request.node.callspec.id
         )
+
+
+#
+# Exercise the KS requirement schema with some real examples
+#
+@pytest.mark.parametrize(
+    ('ks',),
+    [
+        (
+            """
+            ---
+
+            pre-install: |
+                %pre --log=/tmp/kickstart_pre.log
+                echo "Pre-install ks script"
+                %end
+            post-install: |
+                %post --nochroot
+                umount --recursive /mnt/sysimage
+                %end
+            script: |
+                lang en_US.UTF-8
+                keyboard us
+                part /boot --fstype="xfs" --size=200
+                part swap --fstype="swap" --size=4096
+                part / --fstype="xfs" --size=10000 --grow
+            metadata: |
+                "no-autopart harness=restraint"
+            kernel-options: "ksdevice=eth1"
+            kernel-options-post: "quiet"
+            """,
+            ),
+        ],
+    ids=[
+        'all-properties',
+        ]
+    )
+def test_ks_schema_examples(ks: str, request) -> None:
+    tree = tmt.Tree(logger=LOGGER)
+
+    # Our kickstart schema is supposed to be referenced from provision plugin schemas.
+    # Instead of cutting it out, we can use a provision plugin schema & prepare the
+    # fmf node correctly, to pretend it comes from `provision` step. The only required
+    # field is usually `how`.
+    node = fmf.Tree(
+        {
+            'how': 'artemis',
+            'kickstart': tmt.utils.yaml_to_dict(textwrap.dedent(ks), yaml_type='safe')
+            }
+        )
+
+    validate_node(
+        tree,
+        node,
+        os.path.join('provision', 'artemis.yaml'),
+        'Kickstart requirements',
+        request.node.callspec.id
+        )

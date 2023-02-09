@@ -168,6 +168,12 @@ WorkdirType = Optional[Path]
 # Option to skip to initialize work tree in plan
 PLAN_SKIP_WORKTREE_INIT = 'plan_skip_worktree_init'
 
+# List of schemas that need to be ignored in a plan
+PLAN_SCHEMA_IGNORED_IDS: List[str] = [
+    '/schemas/provision/hardware',
+    '/schemas/provision/kickstart'
+    ]
+
 
 class BaseLoggerFnType(Protocol):
     def __call__(
@@ -3415,7 +3421,7 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
         step_schema_prefix = f'/schemas/{step}/'
 
         step_plugin_schema_ids = [schema_id for schema_id in store.keys() if schema_id.startswith(
-            step_schema_prefix) and schema_id != '/schemas/provision/hardware']
+            step_schema_prefix) and schema_id not in PLAN_SCHEMA_IGNORED_IDS]
 
         refs: List[Schema] = [
             {'$ref': schema_id} for schema_id in step_plugin_schema_ids
