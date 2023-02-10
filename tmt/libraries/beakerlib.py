@@ -290,7 +290,7 @@ class BeakerLib(Library):
                     # Copy only the required library
                     library_path: str = os.path.join(clone_dir, self.fmf_node_path.strip('/'))
                     local_library_path: str = os.path.join(
-                        directory, os.path.basename(self.fmf_node_path.strip('/')))
+                        directory, self.fmf_node_path.strip('/'))
                     if not os.path.exists(library_path):
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
                         raise LibraryError
@@ -352,7 +352,7 @@ class BeakerLib(Library):
             self._library_cache[str(self)] = self
 
         # Get the library node, check require and recommend
-        library_node = self.tree.find(str(self)[str(self).rfind('/'):])
+        library_node = self.tree.find(self.name)
         if not library_node:
             # Fallback to install during the prepare step if in rpm format
             if self.format == 'rpm':
