@@ -1,5 +1,5 @@
 # TODO: Make also this test working - JSON scheme needs to be defined for
-# ResultData to prevent invalid key 'foo'
+# Result to prevent invalid key 'foo'
 #
 #- name: /test/wrong-key
 #  result: pass

@@ -89,17 +89,7 @@ properties:
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
   result:
-    type: string
-
-    enum:
-      - respect
-      - xfail
-      - pass
-      - info
-      - warn
-      - error
-      - fail
-      - custom
+    $ref: "/schemas/common#/definitions/result_interpret"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
   summary:

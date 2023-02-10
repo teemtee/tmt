@@ -12,7 +12,7 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
-from tmt.result import Result, ResultData, ResultOutcome
+from tmt.result import Result, ResultOutcome
 from tmt.steps import Action, Step, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
@@ -255,25 +255,37 @@ class ExecutePlugin(tmt.steps.Plugin):
                 note = 'timeout'
                 self.timeout_hint(test)
 
-        data = ResultData(result=result, log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
-                          note=note, duration=test.real_duration)
-        return [tmt.Result(data=data, test=test)]
+        return [tmt.Result.from_test(
+            test=test,
+            result=result,
+            log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
+            note=note,
+            duration=test.real_duration
+            )]
 
     def check_beakerlib(self, test: "tmt.Test") -> List["tmt.Result"]:
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
-        data = ResultData(result=ResultOutcome.ERROR, duration=test.real_duration)
-        for log in [TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if self.data_path(test, log, full=True).is_file():
-                data.log.append(self.data_path(test, log))
+        note: Optional[str] = None
+        log: List[Path] = []
+        for filename in [TEST_OUTPUT_FILENAME, 'journal.txt']:
+            if self.data_path(test, filename, full=True).is_file():
+                log.append(self.data_path(test, filename))
+
         # Check beakerlib log for the result
         try:
             beakerlib_results_file = self.data_path(test, 'TestResults', full=True)
             results = self.read(beakerlib_results_file, level=3)
         except tmt.utils.FileError:
             self.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
-            data.note = 'beakerlib: TestResults FileError'
-            return [tmt.Result(data=data, test=test)]
+            note = 'beakerlib: TestResults FileError'
+
+            return [tmt.Result.from_test(
+                test=test,
+                result=ResultOutcome.ERROR,
+                note=note,
+                log=log,
+                duration=test.real_duration)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
         # States are: started, incomplete and complete
@@ -284,25 +296,34 @@ class ExecutePlugin(tmt.steps.Plugin):
             self.debug(
                 f"No result or state found in '{beakerlib_results_file}'.",
                 level=3)
-            data.note = 'beakerlib: Result/State missing'
-            return [tmt.Result(data=data, test=test)]
+            note = 'beakerlib: Result/State missing'
+            return [tmt.Result.from_test(
+                test=test,
+                result=ResultOutcome.ERROR,
+                note=note,
+                log=log,
+                duration=test.real_duration)]
 
         result = search_result.group(1)
         state = search_state.group(1)
 
         # Check if it was killed by timeout (set by tmt executor)
+        actual_result = ResultOutcome.ERROR
         if test.returncode == tmt.utils.PROCESS_TIMEOUT:
-            data.result = ResultOutcome.ERROR
-            data.note = 'timeout'
+            note = 'timeout'
             self.timeout_hint(test)
         # Test results should be in complete state
         elif state != 'complete':
-            data.result = ResultOutcome.ERROR
-            data.note = f"beakerlib: State '{state}'"
+            note = f"beakerlib: State '{state}'"
         # Finally we have a valid result
         else:
-            data.result = ResultOutcome.from_spec(result.lower())
-        return [tmt.Result(data=data, test=test)]
+            actual_result = ResultOutcome.from_spec(result.lower())
+        return [tmt.Result.from_test(
+            test=test,
+            result=actual_result,
+            note=note,
+            log=log,
+            duration=test.real_duration)]
 
     def check_result_file(self, test: "tmt.Test") -> List["tmt.Result"]:
         """
@@ -320,11 +341,6 @@ class ExecutePlugin(tmt.steps.Plugin):
         if not report_result_path.exists():
             raise tmt.utils.FileError(f"Results file '{report_result_path}' does not exist.")
 
-        # Prepare the log path and duration
-        data = ResultData(result=ResultOutcome.ERROR,
-                          log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
-                          duration=test.real_duration)
-
         # Check the test result
         self.debug("The report-result output file detected.", level=3)
         with open(report_result_path) as result_file:
@@ -335,15 +351,23 @@ class ExecutePlugin(tmt.steps.Plugin):
         result = result_list[0].split("=")[1].strip()
 
         # Map the restraint result to the corresponding tmt value
+        actual_result = ResultOutcome.ERROR
+        note: Optional[str] = None
+
         try:
-            data.result = ResultOutcome(result.lower())
+            actual_result = ResultOutcome(result.lower())
         except ValueError:
             if result == 'SKIP':
-                data.result = ResultOutcome.INFO
+                actual_result = ResultOutcome.INFO
             else:
-                data.result = ResultOutcome.ERROR
-                data.note = f"invalid test result '{result}' in result file"
-        return [tmt.Result(data=data, test=test)]
+                note = f"invalid test result '{result}' in result file"
+
+        return [tmt.Result.from_test(
+            test=test,
+            result=actual_result,
+            log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
+            duration=test.real_duration,
+            note=note)]
 
     def check_custom_results(self, test: "tmt.Test") -> List["tmt.Result"]:
         """
@@ -357,12 +381,11 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         if not custom_results_path.exists():
             # Missing results.yaml means error result, but tmt contines with other tests
-            return [tmt.Result(
-                data=ResultData(
-                    note=f"custom results file '{custom_results_path}' not found",
-                    result=ResultOutcome.ERROR
-                    ),
-                test=test)]
+            return [tmt.Result.from_test(
+                test=test,
+                note=f"custom results file '{custom_results_path}' not found",
+                result=ResultOutcome.ERROR
+                )]
 
         with open(custom_results_path) as custom_results_file:
             results = tmt.utils.yaml_to_list(custom_results_file)
@@ -432,15 +455,15 @@ class Execute(tmt.steps.Step):
         """ Load test results """
         super().load()
         try:
-            results = tmt.utils.yaml_to_dict(self.read(Path('results.yaml')))
-            self._results = [Result.from_serialized(data) for data in results.values()]
+            results = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
+            self._results = [Result.from_serialized(data) for data in results]
         except tmt.utils.FileError:
             self.debug('Test results not found.', level=2)
 
     def save(self) -> None:
         """ Save test results to the workdir """
         super().save()
-        results = {result.name: result.to_serialized() for result in self.results()}
+        results = [result.to_serialized() for result in self.results()]
         self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(results))
 
     def wake(self) -> None:

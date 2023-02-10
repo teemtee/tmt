@@ -334,3 +334,26 @@ definitions:
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#multihost
   where:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
+
+  result_outcome:
+    type: string
+    enum:
+      - pass
+      - fail
+      - info
+      - warn
+      - error
+
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
+  result_interpret:
+    type: string
+
+    enum:
+      - respect
+      - xfail
+      - pass
+      - info
+      - warn
+      - error
+      - fail
+      - custom

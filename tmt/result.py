@@ -1,7 +1,7 @@
 import dataclasses
 import enum
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 import click
 import fmf
@@ -64,32 +64,16 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
 
 
 @dataclasses.dataclass
-class ResultData(tmt.utils.SerializableContainer):
-    """
-    Formal data class containing information about result of the test
-    """
-    result: ResultOutcome = field(
-        default=ResultOutcome.PASS,
-        serialize=lambda result: result.value,
-        unserialize=ResultOutcome.from_spec
-        )
-    log: List[Path] = field(
-        default_factory=list,
-        serialize=lambda logs: [str(log) for log in logs],
-        unserialize=lambda value: [Path(log) for log in value])
-    note: Optional[str] = None
-    duration: Optional[str] = None
-    ids: Dict[str, Optional[str]] = field(default_factory=dict)
+class ResultGuestData(tmt.utils.SerializableContainer):
+    """ Describes what tmt knows about a guest the result was produced on """
+
+    name: Optional[str] = None
+    role: Optional[str] = None
 
 
-@dataclasses.dataclass(init=False)
+@dataclasses.dataclass
 class Result(tmt.utils.SerializableContainer):
-    """
-    Test result
-
-    Required parameter 'data' needs to be type of ResultData.
-    Required parameter 'test' or 'name' should contain a test reference.
-    """
+    """ Describes what tmt knows about a single test result """
 
     name: str
     result: ResultOutcome = field(
@@ -104,70 +88,111 @@ class Result(tmt.utils.SerializableContainer):
         default_factory=list,
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
+    guest: ResultGuestData = field(
+        default_factory=ResultGuestData,
+        serialize=lambda value: value.to_serialized(),  # type: ignore[attr-defined]
+        unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
+        )
 
-    def __init__(
-            self,
+    @classmethod
+    def from_test(
+            cls,
             *,
-            data: ResultData,
-            name: Optional[str] = None,
-            test: Optional['tmt.base.Test'] = None) -> None:
-        """ Initialize test result data """
+            test: 'tmt.base.Test',
+            result: ResultOutcome,
+            note: Optional[str] = None,
+            duration: Optional[str] = None,
+            ids: Optional[Dict[str, Optional[str]]] = None,
+            log: Optional[List[Path]] = None,
+            guest: Optional[ResultGuestData] = None) -> 'Result':
+        """
+        Create a result from a test instance.
+
+        A simple helper for extracting interesting data from a given test. While
+        it's perfectly possible to go directly through ``Result(...)``, when
+        holding a :py:class:`tmt.base.Test` instance, this method would
+        initialize the ``Result`` instance with the following:
+
+        * test name
+        * test identifier (``id`` key) and ``extra-*`` IDs
+
+        Result would be interpreted according to test's ``result`` key
+        (see https://tmt.readthedocs.io/en/stable/spec/tests.html#result).
+        """
 
         from tmt.base import Test
-        super().__init__()
 
-        # Save the test name and optional note
-        if not test and not name:
-            raise tmt.utils.SpecificationError(
-                "Either name or test have to be specified")
-        if test and not isinstance(test, Test):
+        if not isinstance(test, Test):
             raise tmt.utils.SpecificationError(f"Invalid test '{test}'.")
-        if name and not isinstance(name, str):
-            raise tmt.utils.SpecificationError(f"Invalid test name '{name}'.")
 
-        # ignore[union-attr]: either `name` or `test` is set, we just
-        # made sure of it above, but mypy won't realize that.
-        self.name = name or test.name  # type: ignore[union-attr]
-        self.note = data.note
-        self.duration = data.duration
-        if test:
-            # Saving identifiable information for each test case so we can match them
-            # to Polarion/Nitrate/other cases and report run results there
-            # TODO: would an exception be better? Can test.id be None?
-            self.ids = {tmt.identifier.ID_KEY: test.id}
-            for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-                self.ids[key] = test.node.get(key)
-            interpret = ResultInterpret(test.result) if test.result else ResultInterpret.RESPECT
+        # Saving identifiable information for each test case so we can match them
+        # to Polarion/Nitrate/other cases and report run results there
+        # TODO: would an exception be better? Can test.id be None?
+        ids = ids or {}
+        default_ids = {
+            tmt.identifier.ID_KEY: test.id
+            }
+
+        for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
+            default_ids[key] = test.node.get(key)
+
+        default_ids.update(ids)
+        ids = default_ids
+
+        _result = Result(
+            name=test.name,
+            result=result,
+            note=note,
+            duration=duration,
+            ids=ids,
+            log=log or [],
+            guest=guest or ResultGuestData()
+            )
+
+        return _result.interpret_result(
+            ResultInterpret(test.result) if test.result else ResultInterpret.RESPECT)
+
+    def interpret_result(self, interpret: ResultInterpret) -> 'Result':
+        """
+        Interpret result according to a given interpretation instruction.
+
+        Inspect and possibly modify :py:attr:`result` and :py:attr:`note`
+        attributes, following the ``interpret`` value.
+
+        :param interpret: how to interpret current result.
+        :returns: :py:class:`Result` instance containing the updated result.
+        """
+
+        if interpret in (ResultInterpret.RESPECT, ResultInterpret.CUSTOM):
+            return self
+
+        # Extend existing note or set a new one
+        if self.note and isinstance(self.note, str):
+            self.note += f', original result: {self.result.value}'
+
+        elif self.note is None:
+            self.note = f'original result: {self.result.value}'
+
         else:
-            self.ids = data.ids
-            interpret = ResultInterpret.RESPECT
+            raise tmt.utils.SpecificationError(
+                f"Test result note '{self.note}' must be a string.")
 
-        self.result = data.result
-        self.log = data.log
+        if interpret == ResultInterpret.XFAIL:
+            # Swap just fail<-->pass, keep the rest as is (info, warn,
+            # error)
+            self.result = {
+                ResultOutcome.FAIL: ResultOutcome.PASS,
+                ResultOutcome.PASS: ResultOutcome.FAIL
+                }.get(self.result, self.result)
 
-        # Handle alternative result interpretation
-        if interpret not in (ResultInterpret.RESPECT, ResultInterpret.CUSTOM):
-            # Extend existing note or set a new one
-            if self.note and isinstance(self.note, str):
-                self.note += f', original result: {self.result.value}'
-            elif self.note is None:
-                self.note = f'original result: {self.result.value}'
-            else:
-                raise tmt.utils.SpecificationError(
-                    f"Test result note '{self.note}' must be a string.")
+        elif ResultInterpret.is_result_outcome(interpret):
+            self.result = ResultOutcome(interpret.value)
 
-            if interpret == ResultInterpret.XFAIL:
-                # Swap just fail<-->pass, keep the rest as is (info, warn,
-                # error)
-                self.result = {
-                    ResultOutcome.FAIL: ResultOutcome.PASS,
-                    ResultOutcome.PASS: ResultOutcome.FAIL
-                    }.get(self.result, self.result)
-            elif ResultInterpret.is_result_outcome(interpret):
-                self.result = ResultOutcome(interpret.value)
-            else:
-                raise tmt.utils.SpecificationError(
-                    f"Invalid result '{interpret.value}' in test '{self.name}'.")
+        else:
+            raise tmt.utils.SpecificationError(
+                f"Invalid result '{interpret.value}' in test '{self.name}'.")
+
+        return self
 
     @staticmethod
     def total(results: List['Result']) -> Dict[ResultOutcome, int]:
@@ -207,21 +232,6 @@ class Result(tmt.utils.SerializableContainer):
         colored = click.style(result, fg=RESULT_OUTCOME_COLORS[self.result])
         note = f" ({self.note})" if self.note else ''
         return f"{colored} {self.name}{note}"
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'Result':
-        # TODO: from_serialized() should trust the input. We should add its
-        # clone to read serialized-but-from-possibly-untrustworthy-source data -
-        # that's the place where the schema validation would happen in the
-        # future.
-
-        # Our special key may or may not be present, depending on who
-        # calls this method.  In any case, it is not needed, because we
-        # already know what class to restore: this one.
-        serialized.pop('__class__', None)
-
-        name = serialized.pop('name')
-        return cls(data=ResultData.from_serialized(serialized), name=name)
 
     @staticmethod
     def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:

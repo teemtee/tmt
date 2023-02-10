@@ -4,14 +4,10 @@
 rlJournalStart
     function check_duration() {
         local result_file=$1
-        local results=$2
-        DURATION_REGEXP="^(((([0-1][0-9])|(2[0-3])):?[0-5][0-9]:?[0-5][0-9]+$))"
-        DURATION=$(grep -A5 "$results" "$result_file" | grep "duration:" | awk '{print $2}')
-        if [[ "$DURATION" =~ $DURATION_REGEXP ]]; then
-          rlRun "true" 0 "duration is in HH:MM:SS format"
-        else
-          rlRun "false" 0 "duration isn't in HH:MM:SS format"
-        fi
+        local test_name=$2
+
+        rlRun "yq -ery '.[] | select(.name == \"$test_name\") | .duration | test(\"^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]$\")' $result_file" \
+            0 "duration is in HH:MM:SS format"
     }
 
     rlPhaseStartSetup
@@ -38,40 +34,40 @@ rlJournalStart
     rlPhaseStartTest "Check shell results"
         results="$run/plan/shell/execute/results.yaml"
 
-        rlRun "grep -Pzo '(?sm)^/test/shell/good:$.*?^ *result: pass$' $results" 0 "Check pass"
-        check_duration "$results" "good:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\" and .result == \"pass\")' $results" 0 "Check pass"
+        check_duration "$results" "/test/shell/good"
 
-        rlRun "grep -Pzo '(?sm)^/test/shell/weird:$.*?^ *result: error$' $results" 0 "Check error"
-        check_duration "$results" "weird:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/shell/weird\" and .result == \"error\")' $results" 0 "Check error"
+        check_duration "$results" "/test/shell/weird"
 
-        rlRun "grep -Pzo '(?sm)^/test/shell/bad:$.*?^ *result: fail$' $results" 0 "Check fail"
-        check_duration "$results" "bad:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/shell/bad\" and .result == \"fail\")' $results" 0 "Check fail"
+        check_duration "$results" "/test/shell/bad"
 
         # Check log file exists
-        rlRun "grep -Pzo '(?sm)^/test/shell/good:$.*?^ +log:$.*?^ +- data/.+?$' $results | grep output.txt" \
+        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\") | .log | .[] | test(\"^data/.+/output.txt$\")' $results" \
             0 "Check output.txt log exists in $results"
     rlPhaseEnd
 
     rlPhaseStartTest "Check beakerlib results"
         results="$run/plan/beakerlib/execute/results.yaml"
 
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/good:$.*?^ *result: pass$' $results" 0 "Check pass"
-        check_duration "$results" "good:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\" and .result == \"pass\")' $results" 0 "Check pass"
+        check_duration "$results" "/test/beakerlib/good"
 
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/need:$.*?^ *result: warn$' $results" 0 "Check warn"
-        check_duration "$results" "need:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/need\" and .result == \"warn\")' $results" 0 "Check warn"
+        check_duration "$results" "/test/beakerlib/need"
 
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/weird:$.*?^ *result: error$' $results" 0 "Check error"
-        check_duration "$results" "weird:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/weird\" and .result == \"error\")' $results" 0 "Check error"
+        check_duration "$results" "/test/beakerlib/weird"
 
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/bad:$.*?^ *result: fail$' $results" 0 "Check fail"
-        check_duration "$results" "bad:"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/bad\" and .result == \"fail\")' $results" 0 "Check fail"
+        check_duration "$results" "/test/beakerlib/bad"
 
         # Check log files exist
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/good:$.*^ +log:$.*?^ +- data/.+?$' $results | grep output.txt" \
-            0 "Check output.txt log exists"
-        rlRun "grep -Pzo '(?sm)^/test/beakerlib/good:$.*^ +log:$.*?^ +- data/.+?$' $results | grep journal.txt" \
-            0 "Check journal.txt log exists"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/output.txt$\"))' $results" \
+            0 "Check output.txt log exists in $results"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/journal.txt$\"))' $results" \
+            0 "Check journal.txt log exists in $results"
     rlPhaseEnd
 
     rlPhaseStartCleanup
