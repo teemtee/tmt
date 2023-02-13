@@ -146,6 +146,28 @@ rlJournalStart
         rlRun 'popd'
     rlPhaseEnd
 
+    rlPhaseStartTest "Target run having a single line"
+        rlRun 'pushd $tmp/data/parent/single-line-run'
+        rlRun -s 'tmt test import --makefile --no-nitrate --no-purpose' '0'
+        rlAssertExists "main.fmf"
+        rlRun -s 'cat main.fmf'
+        rlAssertGrep 'test: bash -x runtest.sh' "main.fmf"
+        rlRun 'popd'
+    rlPhaseEnd
+
+    rlPhaseStartTest "Target run having multiple lines"
+        rlRun 'pushd $tmp/data/parent/multiple-lines-run'
+        rlRun -s 'tmt test import --makefile --no-nitrate --no-purpose' '0'
+        rlAssertExists "main.fmf"
+        rlRun -s 'cat main.fmf'
+        rlAssertGrep 'test: |-' "main.fmf"
+        rlAssertGrep '( export PS4=.* \\' "main.fmf"
+        rlAssertGrep 'chmod +x runtest.sh; \\' "main.fmf"
+        rlAssertGrep './runtest.sh; \\' "main.fmf"
+        rlAssertGrep 'chmod -x runtest.sh )' "main.fmf"
+        rlRun 'popd'
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
         rlRun 'popd'

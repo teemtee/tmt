@@ -222,6 +222,12 @@ def read_datafile(
         regex_recommend = r'softDependencies=[ \t]*(.*)$'
         rec_separator = ';'
 
+    # Join those lines having '\\\n' for futher matching test script
+    newline_stub = '_XXX_NEWLINE_0x734'
+    datafile_test = datafile
+    if '\\\n' in datafile:
+        datafile_test = re.sub(r'\\\n', newline_stub, datafile)
+
     if testinfo is None:
         testinfo = datafile
 
@@ -241,7 +247,7 @@ def read_datafile(
         echo(style('summary: ', fg='green') + data['summary'])
 
     # Test script
-    search_result = re.search(regex_test, datafile, re.M)
+    search_result = re.search(regex_test, datafile_test, re.M)
     if search_result is None:
         if filename == 'metadata':
             # entry_point property is optional. When absent 'make run' is used.
@@ -250,6 +256,9 @@ def read_datafile(
             raise ConvertError("Makefile is missing the 'run' target.")
     else:
         data['test'] = search_result.group(1).strip()
+        # Restore '\\\n' as it was replaced before matching
+        if '\\\n' in datafile:
+            data['test'] = re.sub(newline_stub, '\\\n', data['test'])
         echo(style('test: ', fg='green') + data['test'])
 
     # Detect framework
@@ -506,10 +515,28 @@ def read(
         beaker_task, data = \
             read_datafile(path, filename, datafile, types, testinfo)
 
-        # Warn if makefile has extra lines in run and build targets
-        def target_content(target: str) -> List[str]:
-            """ Extract lines from the target content """
-            regexp = rf"^{target}:.*\n((?:\t[^\n]*\n?)*)"
+        # Warn if makefile has extra lines in run target
+        def target_content_run() -> List[str]:
+            """ Extract lines from the run content """
+            newline_stub = '_XXX_NEWLINE_0x734'
+            datafile_test = datafile
+            if '\\\n' in datafile:
+                datafile_test = re.sub(r'\\\n', newline_stub, datafile)
+            regexp = r'^run:.*\n\t(.*)$'
+            search_result = re.search(regexp, datafile_test, re.M)
+            if search_result is None:
+                # Target not found in the Makefile
+                return []
+            target = search_result.group(1)
+            if '\\\n' in datafile:
+                target = re.sub(newline_stub, '\\\n', target)
+                return [target]
+            return [line.strip('\t') for line in target.splitlines()]
+
+        # Warn if makefile has extra lines in build target
+        def target_content_build() -> List[str]:
+            """ Extract lines from the build content """
+            regexp = r'^build:.*\n((?:\t[^\n]*\n?)*)'
             search_result = re.search(regexp, datafile, re.M)
             if search_result is None:
                 # Target not found in the Makefile
@@ -517,7 +544,7 @@ def read(
             target = search_result.group(1)
             return [line.strip('\t') for line in target.splitlines()]
 
-        run_target_list = target_content("run")
+        run_target_list = target_content_run()
         run_target_list.remove(data["test"])
         if run_target_list:
             echo(style(
@@ -526,7 +553,7 @@ def read(
             for line in run_target_list:
                 echo(f"    {line}")
 
-        build_target_list = target_content("build")
+        build_target_list = target_content_build()
         if len(build_target_list) > 1:
             echo(style(
                 "warn: Multiple lines detected in the 'build' target:",
