@@ -18,22 +18,24 @@ Basic
 
 The ``Common`` class is the parent of most of the available
 classes, it provides common methods for logging, running commands
-and workdir handling. The ``Core`` class together with its child
-classes ``Test``, ``Plan`` and ``Story`` cover the
-:ref:`specification`::
+and workdir handling. The ``_CommonBase`` class is an actual root
+of the class tree, makes sure the inheritance works correctly.
+The ``Core`` class together with its child classes ``Test``,
+``Plan`` and ``Story`` cover the :ref:`specification`::
 
-    Common
-    ├── Core
-    │   ├── Plan
-    │   ├── Story
-    │   └── Test
-    ├── Clean
-    ├── Guest
-    ├── Phase
-    ├── Run
-    ├── Status
-    ├── Step
-    └── Tree
+    _CommonBase
+    └── Common
+        ├── Core
+        │   ├── Plan
+        │   ├── Story
+        │   └── Test
+        ├── Clean
+        ├── Guest
+        ├── Phase
+        ├── Run
+        ├── Status
+        ├── Step
+        └── Tree
 
 
 Phases

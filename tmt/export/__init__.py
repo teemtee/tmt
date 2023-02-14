@@ -64,7 +64,7 @@ class Exporter(Protocol):
         pass
 
 
-class Exportable(Generic[ExportableT]):
+class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
     """ Mixin class adding support for exportability of class instances """
 
     # Declare export plugin registry as a class variable, but do not initialize it. If initialized
