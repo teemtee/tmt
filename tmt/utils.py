@@ -406,7 +406,48 @@ class CommandOutput(NamedTuple):
     stderr: Optional[str]
 
 
-class Common:
+class _CommonBase:
+    """
+    A base class for **all** classes contributing to "common" tree of classes.
+
+    All classes derived from :py:class:`Common` or mixin classes used to enhance
+    classes derived from :py:class:`Common` need to have this class as one of
+    its most distant ancestors. They should not descend directly from ``object``
+    class, ``_CommonBase`` needs to be used instead.
+
+    Our classes and mixins use keyword-only arguments, and with mixins in play,
+    we do not have a trivial single-inheritance tree, therefore it's not simple
+    to realize when a ``super().__init__`` belongs to ``object``. To deliver
+    arguments to all classes, our ``__init__()`` methods must accept all
+    parameters, even those they have no immediate use for, and propagate them
+    via ``**kwargs``. Sooner or later, one of the classes would try to call
+    ``object.__init__(**kwargs)``, but this particular ``__init__()`` accepts
+    no keyword arguments, which would lead to an exception.
+
+    ``_CommonBase`` sits at the root of the inheritance tree, and is responsible
+    for calling ``object.__init__()`` *with no arguments*. Thanks to method
+    resolution order, all "branches" of our tree of common classes should lead
+    to ``_CommonBase``, making sure the call to ``object`` is correct. To behave
+    correctly, ``_CommonBase`` needs to check which class is the next in the MRO
+    sequence, and stop propagating arguments.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        mro = type(self).__mro__
+        # ignore[name-defined]: mypy does not recognize __class__, but it
+        # exists and it's documented.
+        # https://peps.python.org/pep-3135/
+        # https://github.com/python/mypy/issues/4177
+        parent = mro[mro.index(__class__) + 1]  # type: ignore[name-defined]
+
+        if parent is object:
+            super().__init__()
+
+        else:
+            super().__init__(**kwargs)
+
+
+class Common(_CommonBase):
     """
     Common shared stuff
 
@@ -458,6 +499,15 @@ class Common:
         Store command line context and options for future use
         if context is provided.
         """
+
+        super().__init__(
+            parent=parent,
+            name=name,
+            workdir=workdir,
+            context=context,
+            relative_indent=relative_indent,
+            logger=logger,
+            **kwargs)
 
         # Use lowercase class name as the default name
         self.name = name or self.__class__.__name__.lower()
@@ -3668,7 +3718,7 @@ def wait(
             continue
 
 
-class ValidateFmfMixin:
+class ValidateFmfMixin(_CommonBase):
     """
     Mixin adding validation of an fmf node.
 
@@ -3707,11 +3757,7 @@ class ValidateFmfMixin:
         if not skip_validation:
             self._validate_fmf_node(node, raise_on_validation_error, logger)
 
-        # ignore[call-arg]: pypy is not aware of this class being a
-        # mixin, therefore it cannot allow keyword arguments, because
-        # object.__init__() allows none. But it's fine, as we will never
-        # instantiate this class itself.
-        super().__init__(node=node, logger=logger, **kwargs)  # type: ignore[call-arg]
+        super().__init__(node=node, logger=logger, **kwargs)
 
 
 # A type representing compatible sources of keys and values.
@@ -3882,7 +3928,7 @@ def normalize_shell_script_list(
         f"Field can be either string or list of strings, '{type(value).__name__}' found.")
 
 
-class NormalizeKeysMixin:
+class NormalizeKeysMixin(_CommonBase):
     """
     Mixin adding support for loading fmf keys into object attributes.
 

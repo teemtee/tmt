@@ -19,7 +19,7 @@ import tmt.steps.discover
 import tmt.utils
 from tmt.utils import (Command, Common, GeneralError, Path, ShellScript,
                        StructuredField, StructuredFieldError,
-                       WaitingIncomplete, WaitingTimedOutError,
+                       WaitingIncomplete, WaitingTimedOutError, _CommonBase,
                        duration_to_seconds, listify, public_git_url,
                        validate_git_status, wait)
 
@@ -860,3 +860,49 @@ def test_import_member_no_such_class():
             tmt.utils.GeneralError,
             match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'."):
         tmt.plugins.import_member('tmt.steps.discover', 'NopeDoesNotExist')
+
+
+def test_common_base_inheritance(root_logger):
+    """ Make sure multiple inheritance of ``Common`` works across all branches """
+
+    class Mixin(_CommonBase):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            assert kwargs['foo'] == 'bar'
+
+    # Common first, then the mixin class...
+    class ClassA(Common, Mixin):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            assert kwargs['foo'] == 'bar'
+
+    # and also the mixin first, then the common.
+    class ClassB(Mixin, Common):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            assert kwargs['foo'] == 'bar'
+
+    # Make sure both "branches" of inheritance tree are listed,
+    # in the correct order.
+    assert ClassA.__mro__ == (
+        ClassA,
+        Common,
+        Mixin,
+        _CommonBase,
+        object
+        )
+
+    assert ClassB.__mro__ == (
+        ClassB,
+        Mixin,
+        Common,
+        _CommonBase,
+        object
+        )
+
+    # And that both classes can be instantiated.
+    ClassA(logger=root_logger, foo='bar')
+    ClassB(logger=root_logger, foo='bar')
