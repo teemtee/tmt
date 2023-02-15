@@ -2,12 +2,15 @@ test: /bin/false
 
 require:
   - ref: branch-or-tag-ref
+    type: library
 
   # commit, an obviously hexadecimal one
   - ref: 8deadbeaf8
+    type: library
 
   # Add one pure string requirement for good measure
   - some-package
 
   # commit, but one that looks like an integer
   - ref: 12345678
+    type: library

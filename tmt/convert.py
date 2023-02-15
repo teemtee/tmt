@@ -1025,7 +1025,7 @@ def adjust_runtest(path: Path) -> None:
             "Could not make '{0}' executable.".format(path))
 
 
-def write(path: Path, data: NitrateDataType) -> None:
+def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
     """ Write gathered metadata in the fmf format """
     # Put keys into a reasonable order
     extra_keys = [
@@ -1044,8 +1044,9 @@ def write(path: Path, data: NitrateDataType) -> None:
             fmf_file.write(tmt.utils.dict_to_yaml(sorted_data))
     except IOError:
         raise ConvertError("Unable to write '{0}'".format(path))
-    echo(style(
-        "Metadata successfully stored into '{0}'.".format(path), fg='magenta'))
+    if not quiet:
+        echo(style(
+            "Metadata successfully stored into '{0}'.".format(path), fg='magenta'))
 
 
 def relevancy_to_adjust(

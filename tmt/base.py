@@ -311,14 +311,16 @@ class RequireSimple(str):
 class _RawRequireFmfId(_RawFmfId):
     destination: Optional[str]
     nick: Optional[str]
+    type: Optional[str]
 
 
 @dataclasses.dataclass
 class RequireFmfId(FmfId):
-    VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick']
+    VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick', 'type']
 
     destination: Optional[Path] = None
     nick: Optional[str] = None
+    type: Optional[str] = None
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -370,7 +372,7 @@ class RequireFmfId(FmfId):
 
         fmf_id = RequireFmfId()
 
-        for key in ('url', 'ref', 'name', 'nick'):
+        for key in ('url', 'ref', 'name', 'nick', 'type'):
             setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
 
         for key in ('path', 'destination'):
@@ -380,10 +382,100 @@ class RequireFmfId(FmfId):
         return fmf_id
 
 
-_RawRequireItem = Union[str, _RawRequireFmfId]
+class _RawRequireFile(TypedDict):
+    type: Optional[str]
+    pattern: Optional[List[str]]
+
+
+@dataclasses.dataclass
+class RequireFile(
+        tmt.utils.SpecBasedContainer,
+        tmt.utils.SerializableContainer,
+        tmt.export.Exportable['RequireFile']):
+    VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
+
+    type: Optional[str] = None
+    pattern: List[str] = tmt.utils.field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_dict(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Return keys and values in the form of a dictionary """
+        return cast(_RawRequireFile, super().to_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_dict(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to a mapping with unset keys omitted """
+        return cast(_RawRequireFile, super().to_minimal_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_spec(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to a form suitable for saving in a specification file """
+        return self.to_dict()
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_spec(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to specification, skip default values """
+        return cast(_RawRequireFile, super().to_minimal_spec())
+
+    # ignore[override]: expected, we do want to accept and return more
+    # specific types than those declared in superclass.
+    @classmethod
+    def from_spec(cls, raw: _RawRequireFile) -> 'RequireFile':
+        """ Convert from a specification file or from a CLI option """
+        require_file = RequireFile()
+
+        require_file.type = raw.get('type', None)
+
+        patterns: List[Optional[str]] = []
+        raw_patterns = raw.get('pattern', [])
+        if not raw_patterns:
+            raise tmt.utils.SpecificationError(f'Missing pattern for file require: {raw}')
+        if isinstance(raw_patterns, str):
+            patterns.append(raw_patterns)
+        else:
+            for pattern in raw_patterns:
+                patterns.append(str(pattern))
+        require_file.pattern = cast(List[str], patterns)
+
+        return require_file
+
+    @staticmethod
+    def validate() -> Tuple[bool, str]:
+        """
+        Validate file requirement and return a human readable error
+
+        There is no way to check validity of type or pattern string at
+        this time. Return a tuple (boolean, message) as the result of
+        validation. The boolean specifies the validation result and the
+        message the validation error. In case the file requirement is
+        valid, return an empty string as the message.
+        """
+        return True, ''
+
+
+_RawRequireItem = Union[str, _RawRequireFmfId, _RawRequireFile]
 _RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
 
-Require = Union[RequireSimple, RequireFmfId]
+Require = Union[RequireSimple, RequireFmfId, RequireFile]
+
+
+def require_factory(require: Optional[_RawRequireItem]) -> Require:
+    """ Select the correct require class """
+    if isinstance(require, dict):
+        require_type = require.get('type', 'library')
+        if require_type == 'library':  # can't use isinstance check with TypedDict
+            return RequireFmfId.from_spec(require)  # type: ignore[arg-type]
+        if require_type == 'file':
+            return RequireFile.from_spec(require)  # type: ignore[arg-type]
+
+    assert isinstance(require, str)  # check type
+    return RequireSimple.from_spec(require)
 
 
 def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger) -> List[Require]:
@@ -399,17 +491,10 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
     if raw_require is None:
         return []
 
-    if isinstance(raw_require, str):
-        return [RequireSimple.from_spec(raw_require)]
+    if isinstance(raw_require, str) or isinstance(raw_require, dict):
+        return [require_factory(raw_require)]
 
-    if isinstance(raw_require, dict):
-        return [RequireFmfId.from_spec(raw_require)]
-
-    return [
-        RequireSimple.from_spec(require)
-        if isinstance(require, str) else RequireFmfId.from_spec(require)
-        for require in raw_require
-        ]
+    return [require_factory(require) for require in raw_require]
 
 
 def assert_simple_requirements(
@@ -1219,6 +1304,31 @@ class Test(
             return
 
         yield LinterOutcome.PASS, 'correct manual test syntax'
+
+    def lint_require_type_field(self) -> LinterReturn:
+        """ T009: require fields should have type field """
+
+        filename = self.node.sources[-1]
+        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        missing_type = []
+
+        # Check require items have type field
+        for require in metadata.get('require', []):
+            if isinstance(require, dict) and not require.get('type'):
+                missing_type.append(require)
+
+        if missing_type and not self.opt('fix'):
+            yield LinterOutcome.FAIL, 'requirements should specify type, library or file'
+            return
+
+        if missing_type:
+            for require in missing_type:
+                require['type'] = 'file' if require.get('pattern') else 'library'
+            self.write(filename, tmt.utils.dict_to_yaml(metadata))
+            yield LinterOutcome.FIXED, 'added type to requirements'
+            return
+
+        yield LinterOutcome.PASS, 'all requirements have type field'
 
 
 class Plan(
