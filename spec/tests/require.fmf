@@ -1,9 +1,9 @@
-summary: Packages or libraries required for test execution
+summary: Packages, libraries, files or directories required for test execution
 
 story:
-    As a tester I want to specify packages and libraries which are
-    required by the test and need to be installed on the system so
-    that the test can be successfully executed.
+    As a tester I want to specify packages, libraries, files and directories
+    which are required by the test and need to be installed on/copied over to
+    the system so that the test can be successfully executed.
 
 description: |
     In order to execute the test, additional packages may need to
@@ -22,6 +22,15 @@ description: |
     both the backward-compatible syntax ``library(repo/lib)``
     which fetches libraries from the `default location`__ as well
     as provide a ``dictionary`` with a full `fmf identifier`__.
+
+    When referencing local files or directories you can define list of paths
+    relative to fmf root directory, these can be regular expressions
+    to match multiple files/directories or just a single file or directory.
+    By default everything under ``Test.path`` is copied over to the system.
+
+    For the libraries defined by fmf identifier and local files or directories
+    it is important to use ``type`` key, otherwise library type will be used.
+    Values are ``library`` and ``file`` respectively.
 
     By default, fetched repositories are stored in the discover
     step workdir under the ``libs`` directory. Use optional key
@@ -78,6 +87,23 @@ example:
         ref: devel
         nick: openssl
         name: /certgen
+        type: library
+
+  - |
+    # Require local files needed for the library or test
+    require:
+      - type: file
+        pattern:
+          - /include
+          - /Library/common/helper.sh
+          - /files/photos/IMG.*
+
+  - |
+    # Require whole fmf tree
+    require:
+      - type: file
+        pattern:
+          - /
 
 link:
   - implemented-by: /tmt/base.py
