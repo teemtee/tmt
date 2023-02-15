@@ -140,13 +140,13 @@ class Discover(tmt.steps.Step):
         """ Load step data from the workdir """
         super().load()
         try:
-            raw_test_data = tmt.utils.yaml_to_dict(self.read(Path('tests.yaml')))
+            raw_test_data = tmt.utils.yaml_to_list(self.read(Path('tests.yaml')))
             self._tests = [
                 tmt.Test.from_dict(
                     logger=self._logger,
-                    mapping=data,
-                    name=name,
-                    skip_validation=True) for name, data in raw_test_data.items()]
+                    mapping=raw_test_datum,
+                    name=raw_test_datum['name'],
+                    skip_validation=True) for raw_test_datum in raw_test_data]
 
         except tmt.utils.FileError:
             self.debug('Discovered tests not found.', level=2)
@@ -156,10 +156,10 @@ class Discover(tmt.steps.Step):
         super().save()
 
         # Create tests.yaml with the full test data
-        raw_test_data = {
-            test.name: test._export()
+        raw_test_data = [
+            test._export()
             for test in self.tests()
-            }
+            ]
 
         self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 

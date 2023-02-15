@@ -11,9 +11,9 @@ description: |
 
     Store the list of aggregated tests with their corresponding
     metadata in the ``tests.yaml`` file. The format must be a
-    dictionary of dictionaries structured in the following way::
+    list of dictionaries structured in the following way::
 
-        /test/one:
+          - name: /test/one
             summary: Short test summary.
             description: Long test description.
             contact: Petr Šplíchal <psplicha@redhat.com>
@@ -31,7 +31,7 @@ description: |
             tag: [tag]
             tier: 1
 
-        /test/two:
+          - name: /test/two
             summary: Short test summary.
             description: Long test description.
             ...
