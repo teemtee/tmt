@@ -5,10 +5,15 @@ import _pytest.logging
 import click
 import pytest
 
+<<<<<<< HEAD
 from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
                      VerbosityLevelFilter, indent, render_labels)
+=======
+from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter, Topic,
+                     VerbosityLevelFilter, indent)
+>>>>>>> 0e4dec13 (Support logging "topics" to allow lower unnecessary verbosity)
 
-from . import assert_log
+from . import assert_log, assert_not_log
 
 
 def _exercise_logger(
@@ -297,3 +302,49 @@ def test_indent(key, value, color, level, labels, labels_padding, expected):
         level=level,
         labels=labels,
         labels_padding=labels_padding) == expected
+
+
+def test_topics(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
+    root_logger.debug(
+        'this is a debug message for a topic, ignored',
+        topic=Topic.KEY_NORMALIZATION)
+    root_logger.verbose(
+        'this is a verbose message for a topic, ignored',
+        topic=Topic.KEY_NORMALIZATION)
+
+    _exercise_logger(caplog, root_logger)
+
+    assert_not_log(
+        caplog,
+        message='this is a debug message for a topic, ignored',
+        details_key='this is a debug message for a topic, ignored',
+        details_message_topic=Topic.KEY_NORMALIZATION,
+        levelno=logging.DEBUG)
+    assert_not_log(
+        caplog,
+        message='this is a verbose message for a topic, ignored',
+        details_key='this is a verbose message for a topic, ignored',
+        details_message_topic=Topic.KEY_NORMALIZATION,
+        levelno=logging.INFO)
+
+    root_logger.topics.add(Topic.KEY_NORMALIZATION)
+
+    _exercise_logger(caplog, root_logger)
+
+    root_logger.debug('this is a debug message for a topic, logged', topic=Topic.KEY_NORMALIZATION)
+    root_logger.verbose(
+        'this is a verbose message for a topic, logged',
+        topic=Topic.KEY_NORMALIZATION)
+
+    assert_log(
+        caplog,
+        message='this is a debug message for a topic, logged',
+        details_key='this is a debug message for a topic, logged',
+        details_message_topic=Topic.KEY_NORMALIZATION,
+        levelno=logging.DEBUG)
+    assert_log(
+        caplog,
+        message='this is a verbose message for a topic, logged',
+        details_key='this is a verbose message for a topic, logged',
+        details_message_topic=Topic.KEY_NORMALIZATION,
+        levelno=logging.INFO)

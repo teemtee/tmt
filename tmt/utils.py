@@ -3955,17 +3955,37 @@ def dataclass_normalize_field(
         logger.debug(
             'field normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
-            level=4)
+            level=4,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         with_getattr = getattr(container, keyname, None)
         with_dict = container.__dict__.get(keyname, None)
 
-        logger.debug('value', str(value), level=4, shift=1)
-        logger.debug('current value (getattr)', str(with_getattr), level=4, shift=1)
-        logger.debug('current value (__dict__)', str(with_dict), level=4, shift=1)
+        logger.debug(
+            'value',
+            str(value),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (getattr)',
+            str(with_getattr),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (__dict__)',
+            str(with_dict),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         if value != with_getattr or with_getattr != with_dict:
-            logger.debug('known values do not match', level=4, shift=2)
+            logger.debug(
+                'known values do not match',
+                level=4,
+                shift=2,
+                topic=tmt.log.Topic.KEY_NORMALIZATION)
 
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause re-use of mutable values by other instances.
@@ -4216,8 +4236,16 @@ class NormalizeKeysMixin(_CommonBase):
 
         LOG_SHIFT, LOG_LEVEL = 2, 4
 
-        debug_intro = functools.partial(logger.debug, shift=LOG_SHIFT - 1, level=LOG_LEVEL)
-        debug = functools.partial(logger.debug, shift=LOG_SHIFT, level=LOG_LEVEL)
+        debug_intro = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT - 1,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        debug = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         debug_intro('key source')
         for k, v in key_source.items():
