@@ -75,7 +75,8 @@ extras_require = {
         'python-coveralls',
         'requre',
         'pre-commit',
-        'mypy'
+        'mypy',
+        'yq'
         ],
     'provision': ['testcloud>=0.8.2'],
     'convert': [
