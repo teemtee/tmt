@@ -1,9 +1,9 @@
-import os.path
 from typing import Any, List, Optional
 
 import tmt.base
 import tmt.export
 import tmt.utils
+from tmt.utils import Path
 
 
 @tmt.base.Story.provides_export('template')
@@ -12,15 +12,13 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def render_template(
             cls,
             *,
-            template_filepath: Optional[str] = None,
+            template_filepath: Optional[Path] = None,
             default_template_filename: str,
             keys: Optional[List[str]] = None,
             **variables: Any
             ) -> str:
         return tmt.utils.render_template_file(
-            template_filepath or os.path.join(
-                tmt.export.TEMPLATES_DIRECTORY,
-                default_template_filename),
+            template_filepath or tmt.export.TEMPLATES_DIRECTORY / default_template_filename,
             KEYS=keys,
             **variables
             )
@@ -29,7 +27,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_fmfid_collection(cls,
                                 fmf_ids: List[tmt.base.FmfId],
                                 keys: Optional[List[str]] = None,
-                                template: Optional[str] = None,
+                                template: Optional[Path] = None,
                                 **kwargs: Any) -> str:
         return '\n\n'.join([
             cls.render_template(
@@ -44,7 +42,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_test_collection(cls,
                                tests: List[tmt.base.Test],
                                keys: Optional[List[str]] = None,
-                               template: Optional[str] = None,
+                               template: Optional[Path] = None,
                                **kwargs: Any) -> str:
         return '\n\n'.join([
             cls.render_template(
@@ -59,7 +57,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_plan_collection(cls,
                                plans: List[tmt.base.Plan],
                                keys: Optional[List[str]] = None,
-                               template: Optional[str] = None,
+                               template: Optional[Path] = None,
                                **kwargs: Any) -> str:
         return '\n\n'.join([
             cls.render_template(
@@ -74,7 +72,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def export_story_collection(cls,
                                 stories: List[tmt.base.Story],
                                 keys: Optional[List[str]] = None,
-                                template: Optional[str] = None,
+                                template: Optional[Path] = None,
                                 include_title: bool = True,
                                 **kwargs: Any) -> str:
         return '\n\n'.join([

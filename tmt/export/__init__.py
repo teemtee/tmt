@@ -32,7 +32,7 @@ from tmt.utils import Path
 if TYPE_CHECKING:
     import tmt.base
 
-TEMPLATES_DIRECTORY = pkg_resources.resource_filename('tmt', 'export/templates')
+TEMPLATES_DIRECTORY = Path(pkg_resources.resource_filename('tmt', 'export/templates'))
 
 bugzilla: Optional[types.ModuleType] = None
 

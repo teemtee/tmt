@@ -673,14 +673,14 @@ def tests_export(
         echo(tmt.base.FmfId.export_collection(
             collection=[test.fmf_id for test in context.obj.tree.tests()],
             format=how,
-            template=template
+            template=Path(template) if template else None
             ))
 
     else:
         echo(tmt.Test.export_collection(
             collection=context.obj.tree.tests(),
             format=how,
-            template=template
+            template=Path(template) if template else None
             ))
 
 
@@ -870,7 +870,7 @@ def plans_export(
     echo(tmt.Plan.export_collection(
         collection=context.obj.tree.plans(),
         format=how,
-        template=template
+        template=Path(template) if template else None
         ))
 
 
@@ -1131,7 +1131,10 @@ def stories_export(
                         undocumented, uncovered)
         ]
 
-    echo(tmt.Story.export_collection(collection=stories, format=how, template=template))
+    echo(tmt.Story.export_collection(
+        collection=stories,
+        format=how,
+        template=Path(template) if template else None))
 
 
 @stories.command(name='lint')

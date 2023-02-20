@@ -4331,7 +4331,7 @@ def default_template_environment() -> jinja2.Environment:
 
 
 def render_template_file(
-        template_filepath: str,
+        template_filepath: Path,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:
@@ -4340,8 +4340,7 @@ def render_template_file(
     environment = environment or default_template_environment()
 
     try:
-        with open(template_filepath, 'r') as f:
-            template = environment.from_string(f.read())
+        template = environment.from_string(template_filepath.read_text())
 
         return cast(str, template.render(**variables).strip())
 
