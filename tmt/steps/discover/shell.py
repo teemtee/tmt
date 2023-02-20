@@ -1,6 +1,5 @@
 import copy
 import dataclasses
-import os
 import shutil
 from typing import Any, Dict, List, Optional, Type, TypeVar, cast
 
@@ -337,8 +336,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         if not url:
             assert self.step.plan.worktree  # narrow type
 
-            relative_path = os.path.relpath(self.step.plan.worktree, self.workdir)
-            os.symlink(relative_path, testdir)
+            relative_path = self.step.plan.worktree.relative_to(self.workdir)
+            testdir.symlink_to(relative_path)
 
         if dist_git_source:
             assert self.step.plan.my_run is not None  # narrow type
