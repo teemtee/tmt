@@ -1,11 +1,11 @@
 import dataclasses
-import os
 import re
 import shutil
 import sys
 from typing import List, Optional, Tuple, cast
 
 import fmf
+import fmf.utils
 
 import tmt
 import tmt.log
@@ -41,13 +41,15 @@ class InstallBase(tmt.utils.Common):
     skip_missing: bool = False
 
     packages: List[str]
-    directories: List[str]
+    directories: List[Path]
     exclude: List[str]
 
-    local_packages: List[str]
+    local_packages: List[Path]
     remote_packages: List[str]
     debuginfo_packages: List[str]
     repository_packages: List[str]
+
+    rpms_directory: Path
 
     def __init__(
             self,
@@ -65,7 +67,7 @@ class InstallBase(tmt.utils.Common):
         parent = cast(tmt.steps.prepare.PreparePlugin, self.parent)
 
         self.packages = parent.get("package", [])
-        self.directories = parent.get("directory", [])
+        self.directories = cast(List[Path], parent.get("directory", []))
         self.exclude = parent.get("exclude", [])
 
         if not self.packages and not self.directories:
@@ -94,7 +96,7 @@ class InstallBase(tmt.utils.Common):
             if re.match(r"^http(s)?://", package):
                 self.remote_packages.append(package)
             elif package.endswith(".rpm"):
-                self.local_packages.append(package)
+                self.local_packages.append(Path(package))
             elif re.search(r"-debug(info|source)(\.|$)", package):
                 # Strip the '-debuginfo' string from package name
                 # (installing with it doesn't work on RHEL7)
@@ -105,13 +107,13 @@ class InstallBase(tmt.utils.Common):
 
         # Check rpm packages in local directories
         for directory in self.directories:
-            self.info('directory', directory, 'green')
-            if not os.path.isdir(directory):
+            self.info('directory', str(directory), 'green')
+            if not directory.is_dir():
                 raise tmt.utils.PrepareError(f"Packages directory '{directory}' not found.")
-            for filename in os.listdir(directory):
-                if filename.endswith('.rpm'):
-                    self.debug(f"Found rpm '{filename}'.", level=3)
-                    self.local_packages.append(os.path.join(directory, filename))
+            for filepath in directory.iterdir():
+                if filepath.suffix == '.rpm':
+                    self.debug(f"Found rpm '{filepath}'.", level=3)
+                    self.local_packages.append(filepath)
 
     def _test_sudo(self) -> bool:
         """ Check if sudo is needed for installation """
@@ -244,12 +246,12 @@ class InstallBase(tmt.utils.Common):
         workdir = cast(tmt.steps.prepare.PreparePlugin, self.parent).step.workdir
         if not workdir:
             raise tmt.utils.GeneralError('workdir should not be empty')
-        self.rpms_directory = os.path.join(workdir, 'rpms')
-        os.makedirs(self.rpms_directory)
+        self.rpms_directory = workdir / 'rpms'
+        self.rpms_directory.mkdir(parents=True)
 
         # Copy local packages into workdir, push to guests
         for package in self.local_packages:
-            self.verbose(os.path.basename(package), shift=1)
+            self.verbose(package.name, shift=1)
             self.debug(f"Copy '{package}' to '{self.rpms_directory}'.", level=3)
             shutil.copy(package, self.rpms_directory)
         self.guest.push()
@@ -324,7 +326,7 @@ class InstallDnf(InstallBase):
             """
             ))
 
-        summary = fmf.utils.listed(self.local_packages, 'local package')
+        summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
@@ -445,7 +447,7 @@ class InstallRpmOstree(InstallBase):
             try:
                 self.perform_operation(
                     Command('install'),
-                    Command(f'{self.rpms_directory}/{os.path.basename(package)}')
+                    Command(f'{self.rpms_directory / package.name}')
                     )
                 local_packages_installed.append(package)
             except tmt.utils.RunError as error:
@@ -490,13 +492,13 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         normalize=tmt.utils.normalize_string_list
         )
 
-    directory: List[str] = field(
+    directory: List[Path] = field(
         default_factory=list,
         option=('-D', '--directory'),
         metavar='PATH',
         multiple=True,
         help='Path to a local directory with rpm packages.',
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_path_list
         )
 
     copr: List[str] = field(

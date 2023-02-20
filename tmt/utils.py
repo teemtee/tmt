@@ -3808,6 +3808,43 @@ def normalize_string_list(
     return [value] if isinstance(value, str) else value
 
 
+def normalize_path_list(
+        value: Union[None, str, List[str]],
+        logger: tmt.log.Logger) -> List[Path]:
+    """
+    Normalize a path-or-list-of-paths input value.
+
+    This is a fairly common input format present mostly in fmf nodes where
+    tmt, to make things easier for humans, allows this:
+
+    .. code-block:: yaml
+
+       foo: /foo/bar
+
+       foo:
+         - /foo/bar
+         - /baz
+
+    Internally, we should stick to one type only, and make sure whatever we get
+    on the input, a list of strings would be the output.
+
+    :param value: input value from key source.
+    """
+
+    if value is None:
+        return []
+
+    if isinstance(value, str):
+        return [Path(value)]
+
+    if isinstance(value, (list, tuple)):
+        return [Path(path) for path in value]
+
+    # TODO: propagate field name down to normalization callbacks for better exceptions
+    raise SpecificationError(
+        f"Field can be either path or list of paths, '{type(value).__name__}' found.")
+
+
 def normalize_shell_script_list(
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[ShellScript]:
