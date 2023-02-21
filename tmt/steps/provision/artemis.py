@@ -354,6 +354,10 @@ class GuestArtemis(tmt.GuestSsh):
                         seconds=self.provision_timeout), tick=self.provision_tick)
 
             except tmt.utils.WaitingTimedOutError:
+                # The provisioning chain has been already started, make sure we
+                # remove the guest.
+                self.remove()
+
                 raise ProvisionError(
                     f'Failed to provision in the given amount '
                     f'of time (--provision-timeout={self.provision_timeout}).')
