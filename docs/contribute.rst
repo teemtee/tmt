@@ -67,7 +67,7 @@ In order to experiment, play with the latest bits and develop
 improvements it is best to use a virtual environment. Make sure
 that you have all required packages installed on your box::
 
-    sudo dnf install gcc make git python3-docutils {python3,libvirt,krb5,libpq}-devel
+    sudo dnf install gcc make git python3-docutils {python3,libvirt,krb5,libpq}-devel jq
 
 In case you're using Centos Stream 9 system you need to enable CRB
 repository first to make all the necessary packages available::
