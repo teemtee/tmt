@@ -30,7 +30,7 @@ import logging.handlers
 import os
 import os.path
 import sys
-from typing import Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 import click
 
@@ -38,6 +38,10 @@ if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
+
+
+if TYPE_CHECKING:
+    import tmt.utils
 
 # Log in workdir
 LOG_FILENAME = 'log.txt'
@@ -147,7 +151,7 @@ class LogRecordDetails(TypedDict, total=False):
 
 
 class LogfileHandler(logging.FileHandler):
-    def __init__(self, filepath: str) -> None:
+    def __init__(self, filepath: 'tmt.utils.Path') -> None:
         super().__init__(filepath, mode='a')
 
 
@@ -390,7 +394,7 @@ class Logger:
             quiet=self.quiet
             )
 
-    def add_logfile_handler(self, filepath: str) -> None:
+    def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
         """ Attach a log file handler to this logger """
 
         handler = LogfileHandler(filepath)

@@ -1022,7 +1022,7 @@ class Common(_CommonBase):
         # incorrect logger, and we may modify 3rd party app logger. The solution
         # to our little logging problem would probably be related to refactoring
         # of workdir creation some day in the future.
-        self._logger.add_logfile_handler(os.path.join(workdir, tmt.log.LOG_FILENAME))
+        self._logger.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
         self._workdir = workdir
 
     def _workdir_name(self) -> Optional[Path]:
