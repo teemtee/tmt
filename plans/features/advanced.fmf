@@ -6,7 +6,7 @@ description:
 discover:
     how: fmf
     filter: 'tier: 3'
-adjust:
+adjust+:
 -   when: distro == centos-stream, rhel
     because: pre-commit is not available from epel, use pip instead
     prepare+:
