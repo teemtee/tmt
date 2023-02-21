@@ -545,7 +545,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     original_require=test.require,
                     original_recommend=test.recommend,
                     parent=self,
-                    logger=self._logger)
+                    logger=self._logger,
+                    # TODO: change me with pruning for tests
+                    source_location=self.workdir / 'tests',
+                    target_location=self.workdir / 'tests')
+
+        # Cleanup clone directories
+        if os.path.exists(self.clone_dirpath):
+            shutil.rmtree(self.clone_dirpath, ignore_errors=True)
 
         # Add TMT_SOURCE_DIR variable for each test
         if dist_git_source:

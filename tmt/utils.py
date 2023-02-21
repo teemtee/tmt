@@ -1200,6 +1200,15 @@ class Common(_CommonBase):
 
         return self._workdir
 
+    @property
+    def clone_dirpath(self) -> Path:
+        """
+        Path for cloning into
+        Used internally for picking specific libraries (or anything else) from cloned repos
+        for filtering purposes, it is removed at the end of relevant step
+        """
+        return Path('/tmp/tmtclonedir')
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1484,6 +1493,7 @@ def copytree(
     if rsync_dst[-1] == '/':
         rsync_dst = rsync_dst[:-1]
 
+    os.makedirs(dst, exist_ok=dirs_exist_ok)
     command = ["rsync", "-r"]
     if symlinks:
         command.append('-l')
@@ -1500,6 +1510,44 @@ def copytree(
             [f"Unable to copy '{src}' into '{dst}' using rsync.",
              outcome.returncode, outcome.stdout])
     return dst
+
+
+def get_full_metadata(fmf_tree_path: str, node_path: str) -> Any:
+    """
+    Get full metadata for a node in any fmf tree
+    Go through fmf tree nodes using given relative node path
+    and return full data as dictionary
+    """
+    return fmf.Tree(fmf_tree_path).find(node_path).data
+
+
+def filter_paths(
+        directory: Path, searching: List[str],
+        files_only: bool = False) -> List[Optional[Path]]:
+    """
+    Filter files for specific paths we are searching for inside a directory
+    Returns list of matching paths
+    """
+    allfiles = list(directory.rglob('*'))
+    alldirs = [d for d in allfiles if d.is_dir()]
+    allfiles = [f for f in allfiles if not f.is_dir()]
+    allfiles = list(map(str, allfiles))
+    alldirs = list(map(str, alldirs))
+    found_paths = []
+
+    for search_string in searching:
+        regex = re.compile(search_string)
+
+        if not files_only:
+            # Search in directories first to reduce amount of copying later
+            matches = list(filter(regex.search, alldirs))
+            if matches:
+                found_paths += matches
+                continue
+
+        # Search through all files
+        found_paths += list(filter(regex.search, allfiles))
+    return list(map(Path, found_paths))
 
 
 # These two are helpers for shell_to_dict and environment_to_dict -

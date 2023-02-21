@@ -311,14 +311,16 @@ class RequireSimple(str):
 class _RawRequireFmfId(_RawFmfId):
     destination: Optional[str]
     nick: Optional[str]
+    type: Optional[str]
 
 
 @dataclasses.dataclass
 class RequireFmfId(FmfId):
-    VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick']
+    VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick', 'type']
 
     destination: Optional[Path] = None
     nick: Optional[str] = None
+    type: Optional[str] = None
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -380,10 +382,101 @@ class RequireFmfId(FmfId):
         return fmf_id
 
 
-_RawRequireItem = Union[str, _RawRequireFmfId]
+class _RawRequireFile(TypedDict):
+    type: Optional[str]
+    pattern: Optional[List[str]]
+
+
+@dataclasses.dataclass
+class RequireFile(
+        tmt.utils.SpecBasedContainer,
+        tmt.utils.SerializableContainer,
+        tmt.export.Exportable['RequireFile']):
+    VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
+
+    type: Optional[str] = None
+    pattern: Optional[List[str]] = None
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_dict(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Return keys and values in the form of a dictionary """
+        return cast(_RawRequireFile, super().to_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_dict(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to a mapping with unset keys omitted """
+        return cast(_RawRequireFile, super().to_minimal_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_spec(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to a form suitable for saving in a specification file """
+        return self.to_dict()
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_spec(self) -> _RawRequireFile:  # type: ignore[override]
+        """ Convert to specification, skip default values """
+        return cast(_RawRequireFile, super().to_minimal_spec())
+
+    # ignore[override]: expected, we do want to accept and return more
+    # specific types than those declared in superclass.
+    @classmethod
+    def from_spec(cls, raw: _RawRequireFile) -> 'RequireFile':
+        """ Convert from a specification file or from a CLI option """
+        return RequireFile(
+            **{key: cast(Optional[str], raw.get(key, None)) for key in cls.VALID_KEYS})
+
+    def validate(self) -> Tuple[bool, str]:
+        """
+        Validate file requirement and return a human readable error
+
+        Return a tuple (boolean, message) as the result of validation.
+        The boolean specifies the validation result and the message
+        the validation error. In case the file requirement is valid, return an empty
+        string as the message.
+        """
+        if self.type and self.type not in ['library', 'file']:
+            return False, 'Type must be library or file'
+        if self.pattern:
+            if not isinstance(self.pattern, str) and not isinstance(self.pattern, list):
+                return False, 'Pattern must be single string or list'
+            if isinstance(self.pattern, list):
+                for path in self.pattern:
+                    if not isinstance(path, str):
+                        return False, f'Path {path} must be string'
+        return True, ''
+
+    # cast: expected, we do want to return more specific type than the one returned by the
+    # existing serialization.
+    def _export(
+            self,
+            *,
+            keys: Optional[List[str]] = None
+            ) -> tmt.export._RawExportedInstance:
+        return cast(tmt.export._RawExportedInstance, self.to_minimal_dict())
+
+
+_RawRequireItem = Union[str, _RawRequireFmfId, _RawRequireFile]
 _RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
 
-Require = Union[RequireSimple, RequireFmfId]
+Require = Union[RequireSimple, RequireFmfId, RequireFile]
+
+
+def select_require(require: Optional[_RawRequireItem]) -> Require:
+    """
+    Select correct require class
+    """
+    if isinstance(require, dict):
+        require_type = require.get('type')
+        if not require_type or require_type == 'library':
+            return RequireFmfId.from_spec(require)
+        elif require_type and require_type == 'file':
+            return RequireFile.from_spec(require)
+
+    return RequireSimple.from_spec(require)
 
 
 def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger) -> List[Require]:
@@ -399,17 +492,10 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
     if raw_require is None:
         return []
 
-    if isinstance(raw_require, str):
-        return [RequireSimple.from_spec(raw_require)]
+    if isinstance(raw_require, str) or isinstance(raw_require, dict):
+        return [select_require(raw_require)]
 
-    if isinstance(raw_require, dict):
-        return [RequireFmfId.from_spec(raw_require)]
-
-    return [
-        RequireSimple.from_spec(require)
-        if isinstance(require, str) else RequireFmfId.from_spec(require)
-        for require in raw_require
-        ]
+    return [select_require(require) for require in raw_require]
 
 
 def assert_simple_requirements(
