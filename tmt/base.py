@@ -161,8 +161,8 @@ class FmfId(
         # TODO: with mandatory validation, this can go away.
         ref = raw.get('ref', None)
         if not isinstance(ref, (type(None), str)):
-            raise tmt.utils.SpecificationError(
-                f"The 'ref' field must be a string, got '{type(ref).__name__}'.")
+            # TODO: deliver better key address
+            raise tmt.utils.NormalizationError('ref', ref, 'not set or string')
 
         fmf_id = FmfId()
 
@@ -374,8 +374,8 @@ class DependencyFmfId(FmfId):
         # TODO: with mandatory validation, this can go away.
         ref = raw.get('ref', None)
         if not isinstance(ref, (type(None), str)):
-            raise tmt.utils.SpecificationError(
-                f"The 'ref' field must be a string, got '{type(ref).__name__}'.")
+            # TODO: deliver better key address
+            raise tmt.utils.NormalizationError('ref', ref, 'not set or string')
 
         fmf_id = DependencyFmfId()
 
@@ -486,6 +486,7 @@ def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependen
 
 
 def normalize_require(
+        key_address: str,
         raw_require: Optional[_RawDependency],
         logger: tmt.log.Logger) -> List[Dependency]:
     """
@@ -537,7 +538,7 @@ def assert_simple_dependencies(
 CoreT = TypeVar('CoreT', bound='Core')
 
 
-def _normalize_link(value: _RawLinks, logger: tmt.log.Logger) -> 'Links':
+def _normalize_link(key_address: str, value: _RawLinks, logger: tmt.log.Logger) -> 'Links':
     return Links(data=value)
 
 
@@ -560,7 +561,8 @@ class Core(
     enabled: bool = True
     order: int = field(
         default=DEFAULT_ORDER,
-        normalize=lambda raw_value, logger: DEFAULT_ORDER if raw_value is None else int(raw_value))
+        normalize=lambda key_address, raw_value, logger: 
+            DEFAULT_ORDER if raw_value is None else int(raw_value))
     link: Optional['Links'] = field(
         default=None,
         normalize=_normalize_link)
@@ -570,10 +572,11 @@ class Core(
         normalize=tmt.utils.normalize_string_list)
     tier: Optional[str] = field(
         default=None,
-        normalize=lambda raw_value, logger: None if raw_value is None else str(raw_value))
+        normalize=lambda key_address, raw_value, logger:
+            None if raw_value is None else str(raw_value))
     adjust: Optional[List[_RawAdjustRule]] = field(
         default_factory=list,
-        normalize=lambda raw_value, logger: [] if raw_value is None
+        normalize=lambda key_address, raw_value, logger: [] if raw_value is None
         else ([raw_value] if not isinstance(raw_value, list) else raw_value))
 
     _KEYS_SHOW_ORDER = [
@@ -902,10 +905,12 @@ class Test(
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
     test: Optional[ShellScript] = field(
         default=None,
-        normalize=lambda raw_value, logger: None if raw_value is None else ShellScript(raw_value))
+        normalize=lambda key_address, raw_value, logger:
+            None if raw_value is None else ShellScript(raw_value))
     path: Optional[Path] = field(
         default=None,
-        normalize=lambda raw_value, logger: None if raw_value is None else Path(raw_value))
+        normalize=lambda key_address, raw_value, logger:
+            None if raw_value is None else Path(raw_value))
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
@@ -1496,9 +1501,8 @@ class Plan(
         # Environment variables from files
         environment_files = node.get("environment-file") or []
         if not isinstance(environment_files, list):
-            raise tmt.utils.SpecificationError(
-                f"The 'environment-file' should be a list. "
-                f"Received '{type(environment_files).__name__}'.")
+            raise tmt.utils.NormalizationError(
+                f'{self.name}:environment-file', environment_files, 'list of paths')
         combined = tmt.utils.environment_files_to_dict(
             filenames=environment_files,
             root=Path(node.root) if node.root else None,
@@ -2045,8 +2049,8 @@ class Story(
     title: Optional[str] = None
     priority: Optional[StoryPriority] = field(
         default=None,
-        normalize=lambda raw_value,
-        logger: None if raw_value is None else StoryPriority(raw_value))
+        normalize=lambda key_address, raw_value, logger:
+            None if raw_value is None else StoryPriority(raw_value))
 
     _KEYS_SHOW_ORDER = [
         'summary',
@@ -3483,10 +3487,9 @@ class Links(tmt.utils.SpecBasedContainer):
 
         # TODO: this should not happen with mandatory validation
         if data is not None and not isinstance(data, (str, dict, list)):
-            raise tmt.utils.SpecificationError(
-                "Invalid link specification "
-                "(should be a string, fmf id or list of their combinations), "
-                f"got '{type(data).__name__}'.")
+            # TODO: deliver better key address, needs to know the parent
+            raise tmt.utils.NormalizationError(
+                'link', data, 'string, fmf id or list of their commbinations')
 
         # Nothing to do if no data provided
         if data is None:

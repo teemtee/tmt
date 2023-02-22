@@ -265,9 +265,9 @@ class BeakerLib(Library):
             raise tmt.utils.GeneralError(
                 f"Library '{self.name}' not found in '{self.repo}'.")
         self.require = tmt.base.normalize_require(
-            library_node.get('require', []), self.parent._logger)
+            f'{self.name}:require', library_node.get('require', []), self.parent._logger)
         self.recommend = tmt.base.normalize_require(
-            library_node.get('recommend', []), self.parent._logger)
+            f'{self.name}:recommend', library_node.get('recommend', []), self.parent._logger)
 
         # Create a symlink if the library is deep in the structure
         # FIXME: hot fix for https://github.com/beakerlib/beakerlib/pull/72

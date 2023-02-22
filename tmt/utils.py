@@ -1326,6 +1326,39 @@ class SpecificationError(MetadataError):
         self.validation_errors = validation_errors
 
 
+class NormalizationError(SpecificationError):
+    """ Raised when a key normalization fails """
+
+    def __init__(
+            self,
+            key_address: str,
+            raw_value: Any,
+            expected_type: str,
+            *args: Any,
+            **kwargs: Any) -> None:
+        """
+        Raised when a key normalization fails.
+
+        A subclass of :py:class:`SpecificationError`, but describing errors
+        that appear in a very specific point of key loading in a unified manner.
+
+        :param key_address: the key in question, preferrably with detailed location,
+            e.g. ``/plans/foo:discover[0].tests``.
+        :param raw_value: input value, the one that failed the normalization.
+        :param expected_type: string description of expected, allowed types, as
+            a hint in the error message.
+        """
+
+        super().__init__(
+            f"Field '{key_address}' can be {expected_type}, '{type(raw_value).__name__}' found.",
+            *args,
+            **kwargs)
+
+        self.key_address = key_address
+        self.raw_value = raw_value
+        self.expected_type = expected_type
+
+
 class ConvertError(MetadataError):
     """ Metadata conversion error """
 
@@ -4203,11 +4236,12 @@ class ValidateFmfMixin(_CommonBase):
 # A type representing compatible sources of keys and values.
 KeySource = Union[Dict[str, Any], fmf.Tree]
 
-NormalizeCallback = Callable[[Any, tmt.log.Logger], T]
+NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
 
 
 def dataclass_normalize_field(
         container: Any,
+        key_address: str,
         keyname: str,
         raw_value: Any,
         logger: tmt.log.Logger) -> Any:
@@ -4231,7 +4265,7 @@ def dataclass_normalize_field(
         normalize_callback = getattr(container, f'_normalize_{keyname}', None)
 
     if normalize_callback:
-        value = normalize_callback(raw_value, logger)
+        value = normalize_callback(key_address, raw_value, logger)
 
     else:
         value = raw_value
@@ -4244,7 +4278,7 @@ def dataclass_normalize_field(
     # Keep for debugging purposes, as long as normalization settles down.
     if value is None or value == [] or value == ():
         logger.debug(
-            'field normalized to false-ish value',
+            f'field "{key_address}" normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
             level=4,
             topic=tmt.log.Topic.KEY_NORMALIZATION)
@@ -4286,6 +4320,7 @@ def dataclass_normalize_field(
 
 
 def normalize_string_list(
+        key_address: str,
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[str]:
     """
@@ -4315,6 +4350,7 @@ def normalize_string_list(
 
 
 def normalize_path_list(
+        key_address: str,
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[Path]:
     """
@@ -4346,12 +4382,11 @@ def normalize_path_list(
     if isinstance(value, (list, tuple)):
         return [Path(path) for path in value]
 
-    # TODO: propagate field name down to normalization callbacks for better exceptions
-    raise SpecificationError(
-        f"Field can be either path or list of paths, '{type(value).__name__}' found.")
+    raise NormalizationError(key_address, value, 'path or list of paths')
 
 
 def normalize_shell_script_list(
+        key_address: str,
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[ShellScript]:
     """
@@ -4383,12 +4418,11 @@ def normalize_shell_script_list(
     if isinstance(value, (list, tuple)):
         return [ShellScript(str(item)) for item in value]
 
-    # TODO: propagate field name down to normalization callbacks for better exceptions
-    raise SpecificationError(
-        f"Field can be either string or list of strings, '{type(value).__name__}' found.")
+    raise NormalizationError(key_address, value, 'string or list of strings')
 
 
 def normalize_fmf_context(
+        key_address: str,
         value: Optional[Dict[Any, Any]],
         logger: tmt.log.Logger) -> FmfContextType:
     if value is None:
@@ -4433,6 +4467,7 @@ class NormalizeKeysMixin(_CommonBase):
     # It would require a clone of dataclass.field() though.
     def _normalize_string_list(
             self,
+            key_address: str,
             value: Union[None, str, List[str]],
             logger: tmt.log.Logger) -> List[str]:
         if value is None:
@@ -4444,11 +4479,11 @@ class NormalizeKeysMixin(_CommonBase):
         if isinstance(value, (list, tuple)):
             return [item for item in value]
 
-        raise SpecificationError(
-            f"Field can be either string or list of strings, '{type(value).__name__}' found.")
+        raise NormalizationError(key_address, value, 'string or list of strings')
 
     def _normalize_environment(
             self,
+            key_address: str,
             value: Optional[Dict[str, Any]],
             logger: tmt.log.Logger) -> EnvironmentType:
         if value is None:
@@ -4460,11 +4495,12 @@ class NormalizeKeysMixin(_CommonBase):
 
     def _normalize_script(
             self,
+            key_address: str,
             value: Union[None, str, List[str]],
             logger: tmt.log.Logger) -> List[ShellScript]:
         """ Normalize inputs to a list of shell scripts """
 
-        return normalize_shell_script_list(value, logger)
+        return normalize_shell_script_list(key_address, value, logger)
 
     @classmethod
     def _iter_key_annotations(cls) -> Generator[Tuple[str, Any], None, None]:
@@ -4610,7 +4646,7 @@ class NormalizeKeysMixin(_CommonBase):
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))
 
-            value = dataclass_normalize_field(self, keyname, value, logger)
+            value = dataclass_normalize_field(self, key_address, keyname, value, logger)
 
             debug('final value', str(value))
             debug('final value type', str(type(value)))

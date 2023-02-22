@@ -473,11 +473,10 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         multiple=True,
         help='Package name or path to rpm to be installed.',
         # PrepareInstall supports *simple* requirements only
-        normalize=lambda value, logger: tmt.base.assert_simple_dependencies(
-            tmt.base.normalize_require(value, logger),
+        normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
+            tmt.base.normalize_require(key_address, value, logger),
             "'install' plugin support simple packages only, no fmf links are allowed",
-            logger
-            ),
+            logger),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
             tmt.base.DependencySimple.from_spec(package)
@@ -522,7 +521,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         )
 
 
-@tmt.steps.provides_method('install')
+@ tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin):
     """
     Install packages on the guest

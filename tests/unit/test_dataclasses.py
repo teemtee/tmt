@@ -16,7 +16,7 @@ def test_sanity():
 
 
 def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
-    def _normalize_foo(raw_value: Any, logger: tmt.log.Logger) -> int:
+    def _normalize_foo(key_address: str, raw_value: Any, logger: tmt.log.Logger) -> int:
         if raw_value is None:
             return None
 
@@ -24,9 +24,8 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
             return int(raw_value)
 
         except ValueError as exc:
-            raise tmt.utils.SpecificationError(
-                "Field 'foo' can be either unset or integer,"
-                f" '{type(raw_value).__name__}' found.") from exc
+            raise tmt.utils.NormalizationError(key_address, raw_value, 'not set or integer') \
+                from exc
 
     @dataclasses.dataclass
     class DummyContainer(SerializableContainer):
@@ -39,25 +38,25 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
     data = DummyContainer()
     assert data.foo == 1
 
-    dataclass_normalize_field(data, 'foo', None, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', None, root_logger)
     assert data.foo is None
 
-    dataclass_normalize_field(data, 'foo', 2, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', 2, root_logger)
     assert data.foo == 2
 
-    dataclass_normalize_field(data, 'foo', '3', root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', '3', root_logger)
     assert data.foo == 3
 
     with pytest.raises(
             tmt.utils.SpecificationError,
-            match=r"Field 'foo' can be either unset or integer, 'str' found."):
-        dataclass_normalize_field(data, 'foo', 'will crash', root_logger)
+            match=r"Field ':foo' can be not set or integer, 'str' found."):
+        dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
     assert data.foo == 3
 
 
 def test_field_normalize_special_method(root_logger: tmt.log.Logger) -> None:
-    def normalize_foo(cls, raw_value: Any, logger: tmt.log.Logger) -> int:
+    def normalize_foo(cls, key_address: str, raw_value: Any, logger: tmt.log.Logger) -> int:
         if raw_value is None:
             return None
 
@@ -65,9 +64,8 @@ def test_field_normalize_special_method(root_logger: tmt.log.Logger) -> None:
             return int(raw_value)
 
         except ValueError as exc:
-            raise tmt.utils.SpecificationError(
-                "Field 'foo' can be either unset or integer,"
-                f" '{type(raw_value).__name__}' found.") from exc
+            raise tmt.utils.NormalizationError(key_address, raw_value, 'not set or integer') \
+                from exc
 
     @dataclasses.dataclass
     class DummyContainer(SerializableContainer):
@@ -81,19 +79,19 @@ def test_field_normalize_special_method(root_logger: tmt.log.Logger) -> None:
     data = DummyContainer()
     assert data.foo == 1
 
-    dataclass_normalize_field(data, 'foo', None, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', None, root_logger)
     assert data.foo is None
 
-    dataclass_normalize_field(data, 'foo', 2, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', 2, root_logger)
     assert data.foo == 2
 
-    dataclass_normalize_field(data, 'foo', '3', root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', '3', root_logger)
     assert data.foo == 3
 
     with pytest.raises(
             tmt.utils.SpecificationError,
-            match=r"Field 'foo' can be either unset or integer, 'str' found."):
-        dataclass_normalize_field(data, 'foo', 'will crash', root_logger)
+            match=r"Field ':foo' can be not set or integer, 'str' found."):
+        dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
     assert data.foo == 3
 
@@ -110,9 +108,9 @@ def test_normalize_callback_preferred(root_logger: tmt.log.Logger) -> None:
 
     foo_metadata.normalize_callback = MagicMock()
 
-    dataclass_normalize_field(data, 'foo', 'will crash', root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
-    foo_metadata.normalize_callback.assert_called_once_with('will crash', root_logger)
+    foo_metadata.normalize_callback.assert_called_once_with(':foo', 'will crash', root_logger)
     data._normalize_foo.assert_not_called()
 
 

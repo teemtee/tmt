@@ -14,7 +14,7 @@ rlJournalStart
 
         rlRun -s "tmt plan -vvvv show /plan-with-invalid-ref" 2
         rlAssertGrep "warn: /plan-with-invalid-ref:discover .* is not valid under any of the given schemas" $rlRun_LOG
-        rlAssertGrep "Failed to load step data for DiscoverFmfStepData: The 'ref' field must be a string, got 'int'." $rlRun_LOG
+        rlAssertGrep "Failed to load step data for DiscoverFmfStepData: Field 'DiscoverFmfStepData:ref' can be string, 'int' found." $rlRun_LOG
 
         rlRun -s "tmt plan -vvvv show /remote-plan-with-valid-ref"
 
@@ -28,7 +28,8 @@ rlJournalStart
         rlAssertGrep "some-package" $rlRun_LOG
 
         rlRun -s "tmt test -vvvv show /test-with-invalid-ref" 2
-        rlAssertGrep "The 'ref' field must be a string, got 'int'." $rlRun_LOG
+        rlAssertGrep "warn: /test-with-invalid-ref:require .* is not valid under any of the given schemas" $rlRun_LOG
+        rlAssertGrep "Field 'ref' can be not set or string, 'int' found." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

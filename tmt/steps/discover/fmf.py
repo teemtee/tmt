@@ -50,14 +50,14 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     # TODO: with mandatory validation, this can go away.
     def _normalize_ref(
             self,
+            key_address: str,
             value: Optional[Any],
             logger: tmt.log.Logger) -> Optional[str]:
         if value is None:
             return None
 
         if not isinstance(value, str):
-            raise tmt.utils.SpecificationError(
-                f"The 'ref' field must be a string, got '{type(value).__name__}'.")
+            raise tmt.utils.NormalizationError(key_address, value, 'string')
 
         return value
 
