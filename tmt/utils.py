@@ -1206,8 +1206,12 @@ class Common(_CommonBase):
         Path for cloning into
         Used internally for picking specific libraries (or anything else) from cloned repos
         for filtering purposes, it is removed at the end of relevant step
+        Environment variable TMT_CLONE_DIR is used for the path if provided
         """
-        return Path('/tmp/tmtclonedir')
+        try:
+            return Path(os.environ['TMT_CLONE_DIR'])
+        except KeyError:
+            return Path('/tmp/tmt_clone_dir')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
@@ -1493,7 +1497,7 @@ def copytree(
     if rsync_dst[-1] == '/':
         rsync_dst = rsync_dst[:-1]
 
-    os.makedirs(dst, exist_ok=dirs_exist_ok)
+    dst.mkdir(exist_ok=dirs_exist_ok)
     command = ["rsync", "-r"]
     if symlinks:
         command.append('-l')
@@ -1523,7 +1527,7 @@ def get_full_metadata(fmf_tree_path: str, node_path: str) -> Any:
 
 def filter_paths(
         directory: Path, searching: List[str],
-        files_only: bool = False) -> List[Optional[Path]]:
+        files_only: bool = False) -> List[Path]:
     """
     Filter files for specific paths we are searching for inside a directory
     Returns list of matching paths
@@ -1531,8 +1535,8 @@ def filter_paths(
     allfiles = list(directory.rglob('*'))
     alldirs = [d for d in allfiles if d.is_dir()]
     allfiles = [f for f in allfiles if not f.is_dir()]
-    allfiles = list(map(str, allfiles))
-    alldirs = list(map(str, alldirs))
+    allfiles = list(map(str, allfiles))  # type: ignore[arg-type]
+    alldirs = list(map(str, alldirs))  # type: ignore[arg-type]
     found_paths = []
 
     for search_string in searching:
@@ -1540,14 +1544,14 @@ def filter_paths(
 
         if not files_only:
             # Search in directories first to reduce amount of copying later
-            matches = list(filter(regex.search, alldirs))
+            matches = list(filter(regex.search, alldirs))  # type: ignore[arg-type]
             if matches:
                 found_paths += matches
                 continue
 
         # Search through all files
-        found_paths += list(filter(regex.search, allfiles))
-    return list(map(Path, found_paths))
+        found_paths += list(filter(regex.search, allfiles))  # type: ignore[arg-type]
+    return list(map(Path, found_paths))  # type: ignore[arg-type]
 
 
 # These two are helpers for shell_to_dict and environment_to_dict -

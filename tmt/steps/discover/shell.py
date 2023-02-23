@@ -102,7 +102,7 @@ class TestDescription(
         normalize=tmt.base.normalize_require,
         serialize=lambda requires: [require.to_spec() for require in requires],
         unserialize=lambda serialized_requires: [
-            tmt.base.select_require(require) for require in serialized_requires
+            tmt.base.require_factory(require) for require in serialized_requires
             ]
         )
     recommend: List[tmt.base.Require] = field(

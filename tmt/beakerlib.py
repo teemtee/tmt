@@ -163,7 +163,6 @@ class Library:
 
         # File import
         elif isinstance(identifier, tmt.base.RequireFile):
-            assert identifier.pattern is not None
             assert source_location is not None
             assert target_location is not None  # narrow type
             self.identifier = identifier
@@ -218,9 +217,10 @@ class Library:
         """ Fetch the library (unless already fetched) """
         if self.format == 'file':
             self.parent.debug(
-                f'Searching for patterns: {", ".join(self.pattern)} '
+                'Searching for patterns: '
+                f'{", ".join(pattern for pattern in self.pattern if pattern)} '
                 f'in directory {str(self.source_location)}')
-            files: List[Optional[Path]] = tmt.utils.filter_paths(
+            files: List[Path] = tmt.utils.filter_paths(
                 self.source_location, self.pattern)
             if not files:
                 self.parent.debug('No files found')
@@ -233,7 +233,7 @@ class Library:
                 if path.is_dir():
                     tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
                 else:
-                    os.makedirs(target_path, exist_ok=True)
+                    target_path.mkdir(exist_ok=True)
                     target_path = target_path / path.name
                     if not target_path.exists():
                         shutil.copyfile(path, target_path)

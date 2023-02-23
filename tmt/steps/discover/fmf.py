@@ -551,7 +551,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     target_location=self.workdir / 'tests')
 
         # Cleanup clone directories
-        if os.path.exists(self.clone_dirpath):
+        if self.clone_dirpath.exists():
             shutil.rmtree(self.clone_dirpath, ignore_errors=True)
 
         # Add TMT_SOURCE_DIR variable for each test

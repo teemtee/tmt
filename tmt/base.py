@@ -395,7 +395,9 @@ class RequireFile(
     VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
 
     type: Optional[str] = None
-    pattern: Optional[List[str]] = None
+    pattern: List[str] = tmt.utils.field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -426,8 +428,18 @@ class RequireFile(
     @classmethod
     def from_spec(cls, raw: _RawRequireFile) -> 'RequireFile':
         """ Convert from a specification file or from a CLI option """
-        return RequireFile(
-            **{key: cast(Optional[str], raw.get(key, None)) for key in cls.VALID_KEYS})
+        require_file = RequireFile()
+
+        setattr(require_file, 'type', raw.get('type', None))
+
+        patterns: List[Optional[str]] = []
+        raw_patterns = raw.get('pattern', [])
+        assert raw_patterns is not None  # narrow type
+        for pattern in raw_patterns:
+            patterns.append(str(pattern))
+        setattr(require_file, 'pattern', cast(Optional[List[str]], patterns))
+
+        return require_file
 
     def validate(self) -> Tuple[bool, str]:
         """
@@ -439,7 +451,7 @@ class RequireFile(
         string as the message.
         """
         if self.type and self.type not in ['library', 'file']:
-            return False, 'Type must be library or file'
+            return False, 'Type must be "library" or "file"'
         if self.pattern:
             if not isinstance(self.pattern, str) and not isinstance(self.pattern, list):
                 return False, 'Pattern must be single string or list'
@@ -449,15 +461,6 @@ class RequireFile(
                         return False, f'Path {path} must be string'
         return True, ''
 
-    # cast: expected, we do want to return more specific type than the one returned by the
-    # existing serialization.
-    def _export(
-            self,
-            *,
-            keys: Optional[List[str]] = None
-            ) -> tmt.export._RawExportedInstance:
-        return cast(tmt.export._RawExportedInstance, self.to_minimal_dict())
-
 
 _RawRequireItem = Union[str, _RawRequireFmfId, _RawRequireFile]
 _RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
@@ -465,18 +468,18 @@ _RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
 Require = Union[RequireSimple, RequireFmfId, RequireFile]
 
 
-def select_require(require: Optional[_RawRequireItem]) -> Require:
+def require_factory(require: Optional[_RawRequireItem]) -> Require:
     """
     Select correct require class
     """
     if isinstance(require, dict):
-        require_type = require.get('type')
-        if not require_type or require_type == 'library':
-            return RequireFmfId.from_spec(require)
-        elif require_type and require_type == 'file':
-            return RequireFile.from_spec(require)
+        require_type = require.get('type', 'library')
+        if require_type == 'library':
+            return RequireFmfId.from_spec(require)  # type: ignore[arg-type]
+        if require_type == 'file':
+            return RequireFile.from_spec(require)  # type: ignore[arg-type]
 
-    return RequireSimple.from_spec(require)
+    return RequireSimple.from_spec(require)  # type: ignore[arg-type]
 
 
 def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger) -> List[Require]:
@@ -493,9 +496,9 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
         return []
 
     if isinstance(raw_require, str) or isinstance(raw_require, dict):
-        return [select_require(raw_require)]
+        return [require_factory(raw_require)]
 
-    return [select_require(require) for require in raw_require]
+    return [require_factory(require) for require in raw_require]
 
 
 def assert_simple_requirements(
