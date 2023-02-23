@@ -695,7 +695,7 @@ def tests_import(
         tmt.convert.adjust_runtest(path / 'runtest.sh')
 
 
-_test_export_formats = list(tmt.Test.get_export_plugin_registry().keys())
+_test_export_formats = list(tmt.Test.get_export_plugin_registry().iter_plugin_ids())
 _test_export_default = 'yaml'
 
 
@@ -962,7 +962,7 @@ def plans_create(
     tmt.Plan.create(name, template, context.obj.tree.root, force)
 
 
-_plan_export_formats = list(tmt.Plan.get_export_plugin_registry().keys())
+_plan_export_formats = list(tmt.Plan.get_export_plugin_registry().iter_plugin_ids())
 _plan_export_default = 'yaml'
 
 
@@ -1211,7 +1211,7 @@ def stories_coverage(
     echo()
 
 
-_story_export_formats = list(tmt.Story.get_export_plugin_registry().keys())
+_story_export_formats = list(tmt.Story.get_export_plugin_registry().iter_plugin_ids())
 _story_export_default = 'yaml'
 
 

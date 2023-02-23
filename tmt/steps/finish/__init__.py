@@ -8,6 +8,7 @@ import fmf
 import tmt
 import tmt.steps
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.steps import (Action, Method, PhaseQueue, PullTask, QueuedPhase,
                        TaskOutcome, sync_with_guests)
 from tmt.steps.provision import Guest
@@ -26,8 +27,8 @@ class FinishPlugin(tmt.steps.Plugin):
 
     _data_class = FinishStepData
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[Method] = PluginRegistry()
 
     @classmethod
     def base_command(

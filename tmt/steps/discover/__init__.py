@@ -16,6 +16,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import Command, GeneralError, Path, flatten
 
@@ -43,8 +44,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
 
     _data_class = DiscoverStepData
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[tmt.steps.Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
 
     @classmethod
     def base_command(

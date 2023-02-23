@@ -6,7 +6,8 @@ import importlib
 import os
 import pkgutil
 import sys
-from typing import Any, Generator, List, Optional, Tuple
+from typing import (Any, Dict, Generator, Generic, List, Optional, Tuple,
+                    TypeVar)
 
 if sys.version_info < (3, 9):
     from importlib_metadata import entry_points
@@ -14,6 +15,7 @@ else:
     from importlib.metadata import entry_points
 
 import tmt
+import tmt.utils
 from tmt.log import Logger
 from tmt.steps import STEPS
 from tmt.utils import Path
@@ -219,3 +221,77 @@ def explore_export_package(logger: Logger) -> None:
     """ Import all plugins bundled into tmt.export package """
 
     _explore_package('tmt.export', _TMT_ROOT / 'export', logger.descend())
+
+
+RegisterableT = TypeVar('RegisterableT')
+
+
+class PluginRegistry(Generic[RegisterableT]):
+    """
+    A container for plugins of shared purpose.
+
+    A fancy wrapper for a dictionary at its core, but allows for nicer
+    annotations and more visible semantics.
+    """
+
+    _plugins: Dict[str, RegisterableT]
+
+    def __init__(self) -> None:
+        self._plugins = {}
+
+    def register_plugin(
+            self,
+            *,
+            plugin_id: str,
+            plugin: RegisterableT,
+            raise_on_conflict: bool = True,
+            logger: Logger) -> None:
+        """
+        Register a plugin with this registry.
+
+        :param plugin_id: id of the plugin. Works as a label or name, and must
+            may not be used in this registry yet.
+        :param plugin: a plugin to register.
+        :param raise_on_conflict: if set, an exception would be raised when
+            id was already used.
+
+            .. note::
+
+               As of now, only a warning is logged, no exception is raised.
+               Plugin discovery often happens in import time, and it is hard
+               to manage it correctly without more changes in code.
+        :param logger: used for logging.
+        """
+
+        if plugin_id in self._plugins and raise_on_conflict:
+            # TODO: would be raising an exception better? Probably, but since
+            # plugin discovery happens in import time, it's very hard to manage
+            # it. For now, report a warning, but do not raise an exception yet.
+            logger.warn(
+                f"Registering plugin '{plugin.__module__}' collides"
+                f" with an already registered id '{plugin_id}'"
+                f" of plugin '{self._plugins[plugin_id]}'.")
+
+            # raise tmt.utils.GeneralError(
+            #     f"Registering plugin '{plugin.__module__}' collides"
+            #     f" with an already registered id '{plugin_id}'"
+            #     f" of plugin '{self._plugins[plugin_id]}'.")
+
+        self._plugins[plugin_id] = plugin
+
+        logger.debug(f"Registered plugin '{plugin}' with id '{plugin_id}'.")
+
+    def get_plugin(self, plugin_id: str) -> Optional[RegisterableT]:
+        """
+        Find a plugin by its id.
+
+        :returns: plugin or ``None`` if no such id has been registered.
+        """
+
+        return self._plugins.get(plugin_id, None)
+
+    def iter_plugin_ids(self) -> Generator[str, None, None]:
+        yield from self._plugins.keys()
+
+    def iter_plugins(self) -> Generator[RegisterableT, None, None]:
+        yield from self._plugins.values()

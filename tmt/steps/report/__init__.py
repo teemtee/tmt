@@ -1,11 +1,13 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Type, Union, cast
 
 import click
 
 import tmt
+import tmt.plugins
 import tmt.steps
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 
 if TYPE_CHECKING:
@@ -25,8 +27,8 @@ class ReportPlugin(tmt.steps.GuestlessPlugin):
     # Default implementation for report is display
     how = 'display'
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[tmt.steps.Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
 
     @classmethod
     def base_command(

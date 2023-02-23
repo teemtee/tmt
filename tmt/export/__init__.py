@@ -26,7 +26,9 @@ import pkg_resources
 from click import echo, style
 
 import tmt
+import tmt.log
 import tmt.utils
+from tmt.plugins import PluginRegistry
 from tmt.utils import Path
 
 if TYPE_CHECKING:
@@ -69,8 +71,9 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
 
     # Declare export plugin registry as a class variable, but do not initialize it. If initialized
     # here, the mapping would be shared by all classes, which is not a desirable attribute.
-    # Instead, mapping will be created by provides_*_export decorators.
-    _export_plugin_registry: ClassVar[Dict[str, ExportClass]]
+    # Instead, mapping will be created by get_export_plugin_registry() method when called for the
+    # first time.
+    _export_plugin_registry: ClassVar[PluginRegistry[ExportClass]]
 
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -78,11 +81,11 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
 
     # Cannot use @property as this must remain classmethod
     @classmethod
-    def get_export_plugin_registry(cls) -> Dict[str, ExportClass]:
+    def get_export_plugin_registry(cls) -> PluginRegistry[ExportClass]:
         """ Return - or initialize - export plugin registry """
 
         if not hasattr(cls, '_export_plugin_registry'):
-            cls._export_plugin_registry = {}
+            cls._export_plugin_registry = PluginRegistry()
 
         return cls._export_plugin_registry
 
@@ -95,7 +98,10 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
         """
 
         def _provides_export(export_cls: ExportClass) -> ExportClass:
-            cls.get_export_plugin_registry()[format] = export_cls
+            cls.get_export_plugin_registry().register_plugin(
+                plugin_id=format,
+                plugin=export_cls,
+                logger=tmt.log.Logger.get_bootstrap_logger())
 
             return export_cls
 
@@ -116,7 +122,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
             format.
         """
 
-        exporter_class = cls.get_export_plugin_registry().get(format, None)
+        exporter_class = cls.get_export_plugin_registry().get_plugin(format)
 
         if exporter_class is None:
             raise tmt.utils.GeneralError(

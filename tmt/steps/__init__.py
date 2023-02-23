@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
     import tmt.base
     import tmt.cli
+    import tmt.plugins
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
@@ -653,7 +654,11 @@ def provides_method(
         plugin_method = Method(name, class_=cls, doc=doc, order=order)
 
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
-        cast('BasePlugin', cls.__bases__[0])._supported_methods.append(plugin_method)
+        cast('BasePlugin', cls.__bases__[0])._supported_methods \
+            .register_plugin(
+                plugin_id=name,
+                plugin=plugin_method,
+                logger=tmt.log.Logger.get_bootstrap_logger())
 
         return cls
 
@@ -671,8 +676,14 @@ class BasePlugin(Phase):
     # except for provision (virtual) and report (display)
     how: str = 'shell'
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    #
+    # The field is declared here, in a base class of all plugin classes, and
+    # each step-specific base plugin class assignes it a value as a class-level
+    # attribute. This guarantees steps would not share a registry instance while
+    # the declaration below make the name and type visible across all
+    # subclasses.
+    _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
     _data_class: Type[StepData] = StepData
     data: StepData
@@ -791,7 +802,7 @@ class BasePlugin(Phase):
     @classmethod
     def methods(cls) -> List[Method]:
         """ Return all supported methods ordered by priority """
-        return sorted(cls._supported_methods, key=lambda method: method.order)
+        return sorted(cls._supported_methods.iter_plugins(), key=lambda method: method.order)
 
     @classmethod
     def delegate(

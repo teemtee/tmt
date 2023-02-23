@@ -23,6 +23,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.utils
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript, field
 
@@ -1335,8 +1336,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
     # Default implementation for provision is a virtual machine
     how = 'virtual'
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[tmt.steps.Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
 
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None

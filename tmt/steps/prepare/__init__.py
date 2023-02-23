@@ -14,6 +14,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
 from tmt.steps import (Action, PhaseQueue, PullTask, PushTask, QueuedPhase,
                        sync_with_guests)
@@ -45,8 +46,8 @@ class PreparePlugin(tmt.steps.Plugin):
 
     _data_class = PrepareStepData
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[tmt.steps.Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
 
     @classmethod
     def base_command(

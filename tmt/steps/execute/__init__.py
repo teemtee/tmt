@@ -14,6 +14,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.options import option
+from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
 from tmt.result import Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
@@ -121,8 +122,8 @@ class ExecutePlugin(tmt.steps.Plugin):
 
     _data_class = ExecuteStepData
 
-    # List of all supported methods aggregated from all plugins of the same step.
-    _supported_methods: List[tmt.steps.Method] = []
+    # Methods ("how: ..." implementations) registered for the same step.
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
 
     # Internal executor is the default implementation
     how = 'tmt'
