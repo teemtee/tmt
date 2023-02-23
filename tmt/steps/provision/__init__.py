@@ -1187,7 +1187,7 @@ class Provision(tmt.steps.Step):
 
     _plugin_base_class = ProvisionPlugin
 
-    _preserved_files = ['step.yaml', 'guests.yaml']
+    _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
     def __init__(
             self,

@@ -1741,13 +1741,20 @@ class Plan(Core, tmt.export.Exportable['Plan']):
 
     def prune(self) -> None:
         """ Remove all uninteresting files from the plan workdir """
-        self.verbose(
-            "prune", f"Prune plan workdir '{self.workdir}'.", color="magenta", level=3, shift=2)
+
+        logger = self._logger.descend(extra_shift=2)
+
+        logger.verbose(
+            f"Prune '{self.name}' plan workdir '{self.workdir}'.",
+            color="magenta",
+            level=3)
+
         if self.worktree:
-            self.debug(f"Prune worktree '{self.worktree}'.", level=3, shift=2)
+            logger.debug(f"Prune '{self.name}' worktree '{self.worktree}'.", level=3)
             shutil.rmtree(self.worktree)
+
         for step in self.steps(disabled=True):
-            step.prune()
+            step.prune(logger)
 
 
 class StoryPriority(enum.Enum):

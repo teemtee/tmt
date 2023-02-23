@@ -122,7 +122,7 @@ class Discover(tmt.steps.Step):
     """ Gather information about test cases to be executed. """
 
     _plugin_base_class = DiscoverPlugin
-    _preserved_files = ['step.yaml', 'tests.yaml']
+    _preserved_workdir_members = ['step.yaml', 'tests.yaml']
 
     def __init__(
             self,
