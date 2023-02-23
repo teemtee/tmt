@@ -11,8 +11,10 @@ rlJournalStart
     # would be set by TMT_TEST_DATA
     tmt_test_data="plans/default/execute/data/data"
 
-    rlPhaseStartTest
-        rlRun "tmt run -vfi $tmp -a provision -h container"
+for provision_method in ${PROVISION_METHODS:-local container}; do
+
+    rlPhaseStartTest "Provision: $provision_method"
+        rlRun "tmt run -vfi $tmp -a provision -h $provision_method"
         FILE_PATH=$tmp/$tmt_test_data/this_file.txt
         BUNDLE_PATH=$tmp/$tmt_test_data/tmp-bundle_name.tar.gz
 
@@ -28,6 +30,8 @@ rlJournalStart
         # FIXME - Present this information somehow to the user
         # (that they have some files...)
     rlPhaseEnd
+
+done
 
     rlPhaseStartCleanup
         rlRun "popd"

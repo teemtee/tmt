@@ -44,6 +44,11 @@ example: |
         directly on the localhost. Note that for some actions like
         installing additional packages you need root permission or
         enabled sudo.
+
+        Commands ``tmt-abort``, ``tmt-file-submit`` and ``tmt-report-result``
+        can be used only if created manually or if tmt is installed from the rpm.
+
+        The ``tmt-reboot`` command is not supported and restraint aliases are not provided.
     example: |
         provision:
             how: local

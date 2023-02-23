@@ -16,6 +16,7 @@ URL: https://github.com/teemtee/tmt
 Source0: https://github.com/teemtee/tmt/releases/download/%{version}/tmt-%{version}.tar.gz
 
 %define workdir_root /var/tmp/tmt
+%define usr_local_bin /usr/local/bin
 
 # Hint for shebang fixer, otherwise uses /usr/bin/python3
 # which can be changed by user
@@ -167,6 +168,11 @@ install -pm 644 bin/complete %{buildroot}/etc/bash_completion.d/tmt
 mkdir -p %{buildroot}%{workdir_root}
 chmod 1777 %{buildroot}%{workdir_root}
 
+mkdir -p %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-file-submit  %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-abort  %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-report-result  %{buildroot}%{usr_local_bin}
+
 %check
 %{__python3} -m pytest -vv -m 'not web' --ignore=tests/integration
 
@@ -177,6 +183,9 @@ chmod 1777 %{buildroot}%{workdir_root}
 %files
 %{_mandir}/man1/*
 %{_bindir}/%{name}
+%{usr_local_bin}/tmt-file-submit
+%{usr_local_bin}/tmt-abort
+%{usr_local_bin}/tmt-report-result
 %doc README.rst examples
 %license LICENSE
 /etc/bash_completion.d/tmt
