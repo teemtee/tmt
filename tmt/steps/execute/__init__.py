@@ -1,7 +1,6 @@
 import copy
 import dataclasses
 import datetime
-import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
@@ -258,105 +257,12 @@ class ExecutePlugin(tmt.steps.Plugin):
                     options=["-p", "--chmod=755"],
                     superuser=guest.facts.is_superuser is not True)
 
-    def check_shell(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
-        """ Check result of a shell test """
-        assert test.returncode is not None
-        assert test.real_duration is not None
-        note = None
-
-        try:
-            # Process the exit code and prepare the log path
-            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[test.returncode]
-        except KeyError:
-            result = ResultOutcome.ERROR
-            # Add note about the exceeded duration
-            if test.returncode == tmt.utils.PROCESS_TIMEOUT:
-                note = 'timeout'
-                self.timeout_hint(test, guest)
-
-        return [tmt.Result.from_test(
-            test=test,
-            result=result,
-            log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
-            note=note,
-            guest=guest)]
-
-    def check_beakerlib(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
-        """ Check result of a beakerlib test """
-        # Initialize data, prepare log paths
-        note: Optional[str] = None
-        log: List[Path] = []
-        for filename in [TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if self.data_path(test, guest, filename, full=True).is_file():
-                log.append(self.data_path(test, guest, filename))
-
-        # Check beakerlib log for the result
-        try:
-            beakerlib_results_file = self.data_path(test, guest, 'TestResults', full=True)
-            results = self.read(beakerlib_results_file, level=3)
-        except tmt.utils.FileError:
-            self.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
-            note = 'beakerlib: TestResults FileError'
-
-            return [tmt.Result.from_test(
-                test=test,
-                result=ResultOutcome.ERROR,
-                note=note,
-                log=log,
-                guest=guest)]
-
-        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
-        # States are: started, incomplete and complete
-        # FIXME In quotes until beakerlib/beakerlib/pull/92 is merged
-        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', results)
-
-        if search_result is None or search_state is None:
-            # Same outcome but make it easier to debug
-            if search_result is None:
-                missing_piece = 'TESTRESULT_RESULT_STRING='
-                hint = ''
-            else:
-                missing_piece = 'TESTRESULT_STATE='
-                hint = ', possibly outdated beakerlib (requires 1.23+)'
-            self.debug(
-                f"No '{missing_piece}' found in '{beakerlib_results_file}'{hint}.",
-                level=3)
-            note = 'beakerlib: Result/State missing'
-            return [tmt.Result.from_test(
-                test=test,
-                result=ResultOutcome.ERROR,
-                note=note,
-                log=log,
-                guest=guest)]
-
-        result = search_result.group(1)
-        state = search_state.group(1)
-
-        # Check if it was killed by timeout (set by tmt executor)
-        actual_result = ResultOutcome.ERROR
-        if test.returncode == tmt.utils.PROCESS_TIMEOUT:
-            note = 'timeout'
-            self.timeout_hint(test, guest)
-        # Test results should be in complete state
-        elif state != 'complete':
-            note = f"beakerlib: State '{state}'"
-        # Finally we have a valid result
-        else:
-            actual_result = ResultOutcome.from_spec(result.lower())
-        return [tmt.Result.from_test(
-            test=test,
-            result=actual_result,
-            note=note,
-            log=log,
-            guest=guest)]
-
-    def check_result_file(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
+    def load_tmt_report_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
-        Check result file created by tmt-report-result
+        Load results from a file created by ``tmt-report-result`` script.
 
-        Extract the test result from the result file if it exists and
-        return a Result instance. Raise the FileError exception when no
-        test result file is found.
+        :returns: list of :py:class:`tmt.Result` instances loaded from the file,
+            or an empty list if the file does not exist.
         """
         report_result_path = self.data_path(test, guest, full=True) \
             / tmt.steps.execute.TEST_DATA \
@@ -364,10 +270,12 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         # Nothing to do if there's no result file
         if not report_result_path.exists():
-            raise tmt.utils.FileError(f"Results file '{report_result_path}' does not exist.")
+            self.debug(f"tmt-report-results file '{report_result_path}' does not exist.")
+            return []
 
         # Check the test result
-        self.debug("The report-result output file detected.", level=3)
+        self.debug(f"tmt-report-results file '{report_result_path} detected.")
+
         with open(report_result_path) as result_file:
             result_list = [line for line in result_file.readlines() if "TESTRESULT" in line]
         if not result_list:
@@ -394,12 +302,10 @@ class ExecutePlugin(tmt.steps.Plugin):
             note=note,
             guest=guest)]
 
-    def check_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
+    def load_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
         Process custom results.yaml file created by the test itself.
         """
-        self.debug("Processing custom 'results.yaml' file created by the test itself.")
-
         test_data_path = self.data_path(test, guest, full=True) \
             / tmt.steps.execute.TEST_DATA
 
@@ -482,6 +388,21 @@ class ExecutePlugin(tmt.steps.Plugin):
             custom_results.append(partial_result)
 
         return custom_results
+
+    def extract_results(
+            self,
+            test: "tmt.Test",
+            guest: Guest,
+            logger: tmt.log.Logger) -> List[Result]:
+        """ Check the test result """
+
+        self.debug(f"Extract results of '{test.name}'.")
+
+        if test.result == 'custom':
+            return self.load_custom_results(test, guest)
+
+        return self.load_tmt_report_results(test, guest) \
+            + test.test_framework.extract_results(self, test, guest, logger)
 
     def check_abort_file(self, test: "tmt.Test", guest: Guest) -> bool:
         """

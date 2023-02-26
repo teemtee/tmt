@@ -38,6 +38,7 @@ from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.export
+import tmt.frameworks
 import tmt.identifier
 import tmt.lint
 import tmt.log
@@ -1183,6 +1184,15 @@ class Test(
         assert self.path
 
         return Path(self.node.root) / self.path.unrooted() / str(self.test)
+
+    @property
+    def test_framework(self) -> tmt.frameworks.TestFrameworkClass:
+        framework = tmt.frameworks._FRAMEWORK_PLUGIN_REGISTRY.get_plugin(self.framework)
+
+        if framework is None:
+            raise tmt.utils.SpecificationError(f"Unknown framework '{self.framework}'.")
+
+        return framework
 
     def show(self) -> None:
         """ Show test details """

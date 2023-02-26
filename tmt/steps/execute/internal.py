@@ -20,7 +20,6 @@ from tmt.result import Result, ResultOutcome
 from tmt.steps.execute import (
     SCRIPTS,
     TEST_OUTPUT_FILENAME,
-    TMT_FILE_SUBMIT_SCRIPT,
     TMT_REBOOT_SCRIPT,
     )
 from tmt.steps.provision import Guest
@@ -124,9 +123,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
     def _test_environment(
             self,
+            *,
             test: Test,
             guest: Guest,
-            extra_environment: Optional[EnvironmentType] = None) -> EnvironmentType:
+            extra_environment: Optional[EnvironmentType] = None,
+            logger: tmt.log.Logger) -> EnvironmentType:
         """ Return test environment """
 
         extra_environment = extra_environment or {}
@@ -148,11 +149,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = str(test._reboot_count)
-        # Variables related to beakerlib tests
-        if test.framework == 'beakerlib':
-            environment['BEAKERLIB_DIR'] = str(data_directory)
-            environment['BEAKERLIB_COMMAND_SUBMIT_LOG'] = (
-                f"bash {TMT_FILE_SUBMIT_SCRIPT.path}")
+
+        # Add variables the framework wants to expose
+        environment.update(test.test_framework.get_environment_variables(
+            self, test, guest, logger))
 
         return environment
 
@@ -184,7 +184,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         logger.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
-        environment = self._test_environment(test, guest, extra_environment)
+        environment = self._test_environment(
+            test=test,
+            guest=guest,
+            extra_environment=extra_environment,
+            logger=logger)
 
         # tmt wrapper filename *must* be "unique" - the plugin might be handling
         # the same `discover` phase for different guests at the same time, and
@@ -195,15 +199,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         logger.debug('test wrapper', str(test_wrapper_filepath))
 
-        # Prepare the test command (use default options for shell tests)
-        # TODO: `test` is mandatory, but it's defined after attributes with default
-        # values. Try to find a way how to drop the need for a dummy default.
-        assert test.test is not None
-        if test.framework == "shell":
-            test_command = ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {test.test}")
-        else:
-            test_command = test.test
-        logger.debug('Test script', str(test_command), level=3)
+        # Prepare the test command
+        test_command = test.test_framework.get_test_command(self, test, guest, logger)
+        self.debug('Test script', str(test_command), level=3)
 
         # Prepare the wrapper, push to guest
         self.write(test_wrapper_filepath, str(test_command), 'w')
@@ -276,18 +274,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test.starttime = self.format_timestamp(starttime)
         test.endtime = self.format_timestamp(endtime)
         test.real_duration = self.format_duration(endtime - starttime)
-
-    def check(self, test: Test, guest: Guest) -> List[Result]:
-        """ Check the test result """
-        self.debug(f"Check result of '{test.name}'.")
-        if test.result == 'custom':
-            return self.check_custom_results(test, guest)
-        if test.framework == 'beakerlib':
-            return self.check_beakerlib(test, guest)
-        try:
-            return self.check_result_file(test, guest)
-        except tmt.utils.FileError:
-            return self.check_shell(test, guest)
 
     def _will_reboot(self, test: Test, guest: Guest) -> bool:
         """ True if reboot is requested """
@@ -395,18 +381,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 extra_environment=extra_environment,
                 logger=logger)
 
-            # Pull test logs from the guest, exclude beakerlib backups
-            if test.framework == "beakerlib":
-                exclude = [
-                    "--exclude",
-                    str(self.data_path(test, guest, "backup*", full=True))]
-            else:
-                exclude = None
             guest.pull(
                 source=self.data_path(test, guest, full=True),
-                extend_options=exclude)
+                extend_options=test.test_framework.get_pull_options(self, test, guest, logger))
 
-            results = self.check(test, guest)  # Produce list of results
+            results = self.extract_results(test, guest, logger)  # Produce list of results
             assert test.real_duration is not None  # narrow type
             duration = click.style(test.real_duration, fg='cyan')
             shift = 1 if self.verbosity_level < 2 else 2
@@ -455,7 +434,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 self._login_after_test.after_test(
                     result,
                     cwd=cwd,
-                    env=self._test_environment(test, guest, extra_environment),
+                    env=self._test_environment(
+                        test=test,
+                        guest=guest,
+                        extra_environment=extra_environment,
+                        logger=logger),
                     )
         # Overwrite the progress bar, the test data is irrelevant
         self._show_progress('', '', True)
