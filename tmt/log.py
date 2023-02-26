@@ -1,5 +1,28 @@
 """
-tmt's logging subsystem.
+tmt's logging and output printing subsystem.
+
+Output
+======
+
+To support transparent output colorization, all regular output, i.e. not logging messages, should
+go through the :py:meth:`Console.echo` method. It uses :py:func:`click.style` to handle the
+formatting, and it's configured to honor colorization setup requested by the user.
+
+.. code-block:: python
+
+   # Instead of using raw Click echo/secho/style:
+   from click import echo, secho, style
+
+   echo(style('foo', fg='red'), color=True)
+   click.secho('foo', fg='red')
+
+   # use Console class:
+   from tmt.log import Console
+
+   Console.echo('foo', fg='red')
+
+Logging
+=======
 
 Adds a layer on top of Python's own :py:mod:`logging` subsystem. This layer implements the desired
 verbosity and debug levels, colorization, formatting, verbosity inheritance and other features used
@@ -30,7 +53,7 @@ import logging.handlers
 import os
 import os.path
 import sys
-from typing import Any, Optional, Tuple, cast
+from typing import Any, Callable, Optional, Tuple, cast
 
 import click
 
@@ -638,3 +661,37 @@ class Logger:
                 'shift': shift
                 }
             )
+
+
+class Console:
+    """
+    A console output entry point.
+
+    Provides actual methods for emitting output, with trasparent colorization
+    handling.
+    """
+
+    # Emit with...
+    @classmethod
+    def _colorized(cls, message: str, fg: Optional[str] = None) -> str:
+        return click.style(message, fg=fg)
+
+    # ... or without colors.
+    @classmethod
+    def _not_colorized(cls, message: str, fg: Optional[str] = None) -> str:
+        return message
+
+    # Start with colors disabled, it's a sane default, but it's expected
+    # CLI - or any other tmt bootstrap process - would switch this if colors
+    # were requested.
+    style: Callable[[str, Optional[str]], str] = _not_colorized
+
+    @classmethod
+    def setup_colorization(cls, apply_colors: bool) -> None:
+        """ Setup output colorization by enabling or disabling colors """
+
+        cls.style = cls._colorized if apply_colors else cls._not_colorized
+
+    @classmethod
+    def echo(cls, message: str, fg: Optional[str] = None) -> None:
+        print(cls.style(message, fg=fg))

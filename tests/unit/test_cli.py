@@ -237,3 +237,24 @@ def test_decide_colorization(
     monkeypatch.setattr(sys.stderr, 'isatty', lambda: testcase.simulate_tty)
 
     assert tmt.log.decide_colorization(no_color, force_color) == testcase.expected
+
+
+@pytest.mark.parametrize(
+    ('apply_colors', 'expected'),
+    [
+        (False, 'dummy output'),
+        (True, '\x1b[31mdummy output\x1b[0m')
+        ], ids=[
+        'colors disabled',
+        'colors enabled'
+        ])
+def test_console_style(
+        apply_colors: bool,
+        expected: str
+        ) -> None:
+    class Console(tmt.log.Console):
+        pass
+
+    Console.setup_colorization(apply_colors)
+
+    assert Console.style('dummy output', fg='red') == expected

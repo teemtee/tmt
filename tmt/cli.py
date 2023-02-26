@@ -176,6 +176,8 @@ def main(
 
     apply_colors_output, apply_colors_logging = tmt.log.decide_colorization(no_color, force_color)
 
+    tmt.log.Console.setup_colorization(apply_colors_output)
+
     logger = tmt.log.Logger.create(**kwargs)
     logger.add_console_handler(apply_colors=apply_colors_logging)
 
