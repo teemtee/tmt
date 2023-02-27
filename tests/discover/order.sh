@@ -49,9 +49,9 @@ rlJournalStart
 /tests/no-order-2
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/tests/no-order-0-1
-/tests/no-order-1-2
-/tests/no-order-2-3
+/guest/default-0/tests/no-order-0-1
+/guest/default-0/tests/no-order-1-2
+/guest/default-0/tests/no-order-2-3
 EOF
     run_test
 
@@ -63,9 +63,9 @@ EOF
 /tests/no-order-2
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/tests/no-order-0-1
-/tests/no-order-1-2
-/tests/no-order-2-3
+/guest/default-0/tests/no-order-0-1
+/guest/default-0/tests/no-order-1-2
+/guest/default-0/tests/no-order-2-3
 EOF
     run_test
 
@@ -77,9 +77,9 @@ EOF
 /tests/no-order-1
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/tests/no-order-2-1
-/tests/no-order-0-2
-/tests/no-order-1-3
+/guest/default-0/tests/no-order-2-1
+/guest/default-0/tests/no-order-0-2
+/guest/default-0/tests/no-order-1-3
 EOF
     run_test
 
@@ -92,10 +92,10 @@ EOF
 /tests/no-order-1
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/tests/no-order-2-1
-/tests/order-80-2
-/tests/no-order-0-3
-/tests/no-order-1-4
+/guest/default-0/tests/no-order-2-1
+/guest/default-0/tests/order-80-2
+/guest/default-0/tests/no-order-0-3
+/guest/default-0/tests/no-order-1-4
 EOF
     run_test
 
@@ -109,11 +109,11 @@ EOF
 /tests/order-80
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/tests/order-10-1
-/tests/no-order-0-2
-/tests/no-order-1-3
-/tests/no-order-2-4
-/tests/order-80-5
+/guest/default-0/tests/order-10-1
+/guest/default-0/tests/no-order-0-2
+/guest/default-0/tests/no-order-1-3
+/guest/default-0/tests/no-order-2-4
+/guest/default-0/tests/order-80-5
 EOF
     run_test
 
@@ -133,17 +133,17 @@ EOF
 /third/order-default
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/enumerate-and-order/tests/no-order-2-1
-/enumerate-and-order/tests/order-80-2
-/enumerate-and-order/tests/no-order-0-3
-/enumerate-and-order/tests/no-order-1-4
-/by-order-attribute/tests/order-10-5
-/by-order-attribute/tests/no-order-0-6
-/by-order-attribute/tests/no-order-1-7
-/by-order-attribute/tests/no-order-2-8
-/by-order-attribute/tests/order-80-9
-/third/order-20-10
-/third/order-default-11
+/guest/default-0/enumerate-and-order/tests/no-order-2-1
+/guest/default-0/enumerate-and-order/tests/order-80-2
+/guest/default-0/enumerate-and-order/tests/no-order-0-3
+/guest/default-0/enumerate-and-order/tests/no-order-1-4
+/guest/default-0/by-order-attribute/tests/order-10-5
+/guest/default-0/by-order-attribute/tests/no-order-0-6
+/guest/default-0/by-order-attribute/tests/no-order-1-7
+/guest/default-0/by-order-attribute/tests/no-order-2-8
+/guest/default-0/by-order-attribute/tests/order-80-9
+/guest/default-0/third/order-20-10
+/guest/default-0/third/order-default-11
 EOF
     run_test
 
@@ -163,17 +163,17 @@ EOF
 /order-80/tests/no-order-1
 EOF
     cat > $tmp/EXPECTED-EXECUTION <<EOF
-/order-10/tests/order-10-1
-/order-10/tests/no-order-0-2
-/order-10/tests/no-order-1-3
-/order-10/tests/no-order-2-4
-/order-10/tests/order-80-5
-/order-default/order-20-6
-/order-default/order-default-7
-/order-80/tests/no-order-2-8
-/order-80/tests/order-80-9
-/order-80/tests/no-order-0-10
-/order-80/tests/no-order-1-11
+/guest/default-0/order-10/tests/order-10-1
+/guest/default-0/order-10/tests/no-order-0-2
+/guest/default-0/order-10/tests/no-order-1-3
+/guest/default-0/order-10/tests/no-order-2-4
+/guest/default-0/order-10/tests/order-80-5
+/guest/default-0/order-default/order-20-6
+/guest/default-0/order-default/order-default-7
+/guest/default-0/order-80/tests/no-order-2-8
+/guest/default-0/order-80/tests/order-80-9
+/guest/default-0/order-80/tests/no-order-0-10
+/guest/default-0/order-80/tests/no-order-1-11
 EOF
     run_test
 
