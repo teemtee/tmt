@@ -1525,9 +1525,7 @@ def get_full_metadata(fmf_tree_path: str, node_path: str) -> Any:
     return fmf.Tree(fmf_tree_path).find(node_path).data
 
 
-def filter_paths(
-        directory: Path, searching: List[str],
-        files_only: bool = False) -> List[Path]:
+def filter_paths(directory: Path, searching: List[str], files_only: bool = False) -> List[Path]:
     """
     Filter files for specific paths we are searching for inside a directory
     Returns list of matching paths

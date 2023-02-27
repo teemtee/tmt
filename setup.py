@@ -33,6 +33,7 @@ __pkgdir__: Dict[str, str] = {}
 __pkgs__ = [
     'tmt',
     'tmt/export',
+    'tmt/libraries',
     'tmt/plugins',
     'tmt/steps',
     'tmt/steps/discover',

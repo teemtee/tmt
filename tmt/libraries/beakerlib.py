@@ -1,27 +1,15 @@
-""" Handle BeakerLib Libraries """
-
 import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, Optional, cast
 
 import fmf
 
 import tmt
-import tmt.base
-import tmt.utils
 from tmt.utils import Command, Path
 
-# A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
-BeakerlibIdentifierType = Union[
-    tmt.base.RequireSimple, tmt.base.RequireFmfId, tmt.base.RequireFile]
-ImportedIdentifiersType = Optional[List[BeakerlibIdentifierType]]
-
-# A type for Beakerlib dependencies
-LibraryDependenciesType = Tuple[
-    List[tmt.base.Require], List[tmt.base.Require], List['Library']
-    ]
+from . import Library, LibraryError, LibraryIdentifierType
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -39,14 +27,10 @@ STRIP_SUFFIX_FORGES = [
 
 
 class CommonWithLibraryCache(tmt.utils.Common):
-    _library_cache: Dict[str, 'Library']
+    _library_cache: Dict[str, 'BeakerLib']
 
 
-class LibraryError(Exception):
-    """ Used when library cannot be parsed from the identifier """
-
-
-class Library:
+class BeakerLib(Library):
     """
     A beakerlib library
 
@@ -77,22 +61,15 @@ class Library:
     def __init__(
             self,
             *,
-            identifier: BeakerlibIdentifierType,
+            identifier: LibraryIdentifierType,
             parent: Optional[tmt.utils.Common] = None,
-            logger: tmt.log.Logger,
-            source_location: Optional[Path],
-            target_location: Optional[Path]) -> None:
-        """ Process the library identifier and fetch the library """
-        # Use an empty common class if parent not provided (for logging, cache)
-        self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
+            logger: tmt.log.Logger) -> None:
+
+        super().__init__(parent=parent, logger=logger)
 
         # Default branch is detected from the origin after cloning
         self.default_branch: Optional[str] = None
 
-        self._logger: tmt.log.Logger = logger
-
-        self.identifier: BeakerlibIdentifierType
-        # The 'library(repo/lib)' format
         if isinstance(identifier, tmt.base.RequireSimple):
             identifier = tmt.base.RequireSimple(identifier.strip())
             self.identifier = identifier
@@ -161,51 +138,8 @@ class Library:
                             f"Unable to parse repository name from '{self.path}'.")
             self.repo = Path(repo)
 
-        # File import
-        elif isinstance(identifier, tmt.base.RequireFile):
-            assert source_location is not None
-            assert target_location is not None  # narrow type
-            self.identifier = identifier
-            self.format = identifier.type or 'file'
-            self.repo = Path(target_location.name)
-            self.name = '/files'
-            self.pattern: List[str] = identifier.pattern
-            self.source_location = source_location
-            self.target_location = target_location
-
-        # Something weird
-        else:
-            raise LibraryError
-
-        # Fetch the library
-        try:
-            self.fetch()
-        except fmf.utils.RootError:
-            raise tmt.utils.SpecificationError(
-                f"Repository '{self.url}' does not contain fmf metadata.")
-
     @property
-    def hostname(self) -> str:
-        """ Get hostname from url or default to local """
-        if hasattr(self, 'url') and self.url:
-            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
-            if matched:
-                return matched.group(1)
-        return 'local'
-
-    @property
-    def fmf_node_path(self) -> Path:
-        """ Path to fmf node """
-        if hasattr(self, 'path') and self.path:
-            return self.path / self.name.strip('/')
-        return Path(self.name)
-
-    def __str__(self) -> str:
-        """ Use repo/name for string representation """
-        return f"{self.repo}{self.name}"
-
-    @property
-    def _library_cache(self) -> Dict[str, 'Library']:
+    def _library_cache(self) -> Dict[str, 'BeakerLib']:
         # Initialize library cache (indexed by the repository name)
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         if not hasattr(self.parent, '_library_cache'):
@@ -215,29 +149,6 @@ class Library:
 
     def fetch(self) -> None:
         """ Fetch the library (unless already fetched) """
-        if self.format == 'file':
-            self.parent.debug(
-                'Searching for patterns: '
-                f'{", ".join(pattern for pattern in self.pattern if pattern)} '
-                f'in directory {str(self.source_location)}')
-            files: List[Path] = tmt.utils.filter_paths(
-                self.source_location, self.pattern)
-            if not files:
-                self.parent.debug('No files found')
-                raise LibraryError
-            self.parent.debug(f'Found paths: {", ".join([str(f) for f in files])}')
-            for path in files:
-                assert path is not None  # narrow type
-                local_path = path.relative_to(self.source_location).parent
-                target_path = Path(self.target_location) / local_path
-                if path.is_dir():
-                    tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
-                else:
-                    target_path.mkdir(exist_ok=True)
-                    target_path = target_path / path.name
-                    if not target_path.exists():
-                        shutil.copyfile(path, target_path)
-            return
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self.repo)]
@@ -354,78 +265,3 @@ class Library:
                 self.parent.warn(
                     f"Unable to create a '{link}' symlink "
                     f"for a deep library ({error}).")
-
-
-def dependencies(
-        *,
-        original_require: List[tmt.base.Require],
-        original_recommend: Optional[List[tmt.base.Require]] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        imported_lib_ids: ImportedIdentifiersType = None,
-        logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None) -> LibraryDependenciesType:
-    """
-    Check dependencies for possible beakerlib libraries
-
-    Fetch all identified libraries, check their required and recommended
-    packages. Return tuple (requires, recommends, libraries) containing
-    list of regular rpm package names aggregated from all fetched
-    libraries, list of aggregated recommended packages and a list of
-    gathered libraries (instances of the Library class).
-
-    Avoid infinite recursion by keeping track of imported library identifiers
-    and not trying to fetch those again.
-    """
-    # Initialize lists, use set for require & recommend
-    processed_require = set()
-    processed_recommend = set()
-    imported_lib_ids = imported_lib_ids or []
-    gathered_libraries = []
-    original_require = original_require or []
-    original_recommend = original_recommend or []
-
-    # Cut circular dependencies to avoid infinite recursion
-    def already_fetched(lib: BeakerlibIdentifierType) -> bool:
-        if not imported_lib_ids:
-            return True
-        return lib not in imported_lib_ids
-
-    to_fetch = original_require + original_recommend
-    for dependency in filter(already_fetched, to_fetch):
-        # Library require/recommend
-        try:
-            library = Library(
-                logger=logger, identifier=dependency, parent=parent,
-                source_location=source_location, target_location=target_location)
-            gathered_libraries.append(library)
-            imported_lib_ids.append(library.identifier)
-            assert parent is not None  # narrow type
-            if library.hostname == 'local':
-                library_path = library.fmf_node_path
-            else:
-                library_path = parent.clone_dirpath / library.hostname / library.repo
-
-            if library.format != 'file':
-                # Recursively check for possible dependent libraries
-                assert parent.workdir is not None  # narrow type
-                requires, recommends, libraries = dependencies(
-                    original_require=library.require,
-                    original_recommend=library.recommend,
-                    parent=parent,
-                    imported_lib_ids=imported_lib_ids,
-                    logger=logger,
-                    source_location=library_path,
-                    target_location=parent.workdir / library.dest / library.repo)
-                processed_require.update(set(requires))
-                processed_recommend.update(set(recommends))
-                gathered_libraries.extend(libraries)
-        # Regular package require/recommend
-        except LibraryError:
-            if dependency in original_require:
-                processed_require.add(dependency)
-            if dependency in original_recommend:
-                processed_recommend.add(dependency)
-
-    # Convert to list and return the results
-    return list(processed_require), list(processed_recommend), gathered_libraries

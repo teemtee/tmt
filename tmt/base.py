@@ -435,30 +435,26 @@ class RequireFile(
         patterns: List[Optional[str]] = []
         raw_patterns = raw.get('pattern', [])
         assert raw_patterns is not None  # narrow type
-        for pattern in raw_patterns:
-            patterns.append(str(pattern))
+        if isinstance(raw_patterns, str):
+            patterns.append(raw_patterns)
+        else:
+            for pattern in raw_patterns:
+                patterns.append(str(pattern))
         setattr(require_file, 'pattern', cast(Optional[List[str]], patterns))
 
         return require_file
 
-    def validate(self) -> Tuple[bool, str]:
+    @staticmethod
+    def validate() -> Tuple[bool, str]:
         """
         Validate file requirement and return a human readable error
+        There is no way to check validity of type or pattern string at this time
 
         Return a tuple (boolean, message) as the result of validation.
         The boolean specifies the validation result and the message
         the validation error. In case the file requirement is valid, return an empty
         string as the message.
         """
-        if self.type and self.type not in ['library', 'file']:
-            return False, 'Type must be "library" or "file"'
-        if self.pattern:
-            if not isinstance(self.pattern, str) and not isinstance(self.pattern, list):
-                return False, 'Pattern must be single string or list'
-            if isinstance(self.pattern, list):
-                for path in self.pattern:
-                    if not isinstance(path, str):
-                        return False, f'Path {path} must be string'
         return True, ''
 
 
