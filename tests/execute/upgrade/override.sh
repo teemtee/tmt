@@ -23,10 +23,10 @@ rlJournalStart
             rlAssertGrep "3 tests passed" $rlRun_LOG
             # Check that the IN_PLACE_UPGRADE variable was set
             data="$run/plan/path/execute/data"
-            rlAssertGrep "IN_PLACE_UPGRADE=old" "$data/old/test-1/output.txt"
-            rlAssertGrep "IN_PLACE_UPGRADE=new" "$data/new/test-1/output.txt"
+            rlAssertGrep "IN_PLACE_UPGRADE=old" "$data/guest/default-0/old/test-1/output.txt"
+            rlAssertGrep "IN_PLACE_UPGRADE=new" "$data/guest/default-0/new/test-1/output.txt"
             # Environment of plan was passed
-            rlAssertGrep "VERSION_ID=$PREVIOUS_VERSION" "$data/upgrade/tasks/prepare-0/output.txt"
+            rlAssertGrep "VERSION_ID=$PREVIOUS_VERSION" "$data/guest/default-0/upgrade/tasks/prepare-0/output.txt"
         rlPhaseEnd
     done
 

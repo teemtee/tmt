@@ -10,7 +10,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun "tmt run -vi $tmp"
-        metadata="$tmp/plan/execute/data/test-1/metadata.yaml"
+        metadata="$tmp/plan/execute/data/guest/default-0/test-1/metadata.yaml"
         rlRun "cat $metadata" 0 "Check metadata.yaml content"
         rlAssertGrep "name: /test" $metadata
         rlAssertGrep "summary: Simple test" $metadata

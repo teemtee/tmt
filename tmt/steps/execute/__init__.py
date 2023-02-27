@@ -192,6 +192,7 @@ class ExecutePlugin(tmt.steps.Plugin):
     def data_path(
             self,
             test: "tmt.Test",
+            guest: Guest,
             filename: Optional[str] = None,
             full: bool = False,
             create: bool = False) -> Path:
@@ -206,6 +207,8 @@ class ExecutePlugin(tmt.steps.Plugin):
         assert self.step.workdir is not None  # narrow type
         directory = self.step.workdir \
             / TEST_DATA \
+            / 'guest' \
+            / guest.name \
             / f'{test.name.lstrip("/") or "default"}-{test.serialnumber}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
@@ -214,7 +217,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         path = directory / filename
         return path if full else path.relative_to(self.step.workdir)
 
-    def prepare_tests(self) -> List["tmt.Test"]:
+    def prepare_tests(self, guest: Guest) -> List["tmt.Test"]:
         """
         Prepare discovered tests for testing
 
@@ -225,7 +228,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         tests: List[tmt.Test] = self.discover.tests()
         for test in tests:
             metadata_filename = self.data_path(
-                test, filename=TEST_METADATA_FILENAME, full=True, create=True)
+                test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)
             self.write(
                 metadata_filename, tmt.utils.dict_to_yaml(test._metadata))
         return tests
@@ -244,7 +247,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                     destination=dest,
                     options=["-p", "--chmod=755"])
 
-    def check_shell(self, test: "tmt.Test") -> List["tmt.Result"]:
+    def check_shell(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a shell test """
         assert test.returncode is not None
         assert test.real_duration is not None
@@ -258,28 +261,28 @@ class ExecutePlugin(tmt.steps.Plugin):
             # Add note about the exceeded duration
             if test.returncode == tmt.utils.PROCESS_TIMEOUT:
                 note = 'timeout'
-                self.timeout_hint(test)
+                self.timeout_hint(test, guest)
 
         return [tmt.Result.from_test(
             test=test,
             result=result,
-            log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
+            log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             note=note,
             duration=test.real_duration
             )]
 
-    def check_beakerlib(self, test: "tmt.Test") -> List["tmt.Result"]:
+    def check_beakerlib(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
         note: Optional[str] = None
         log: List[Path] = []
         for filename in [TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if self.data_path(test, filename, full=True).is_file():
-                log.append(self.data_path(test, filename))
+            if self.data_path(test, guest, filename, full=True).is_file():
+                log.append(self.data_path(test, guest, filename))
 
         # Check beakerlib log for the result
         try:
-            beakerlib_results_file = self.data_path(test, 'TestResults', full=True)
+            beakerlib_results_file = self.data_path(test, guest, 'TestResults', full=True)
             results = self.read(beakerlib_results_file, level=3)
         except tmt.utils.FileError:
             self.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
@@ -316,7 +319,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         actual_result = ResultOutcome.ERROR
         if test.returncode == tmt.utils.PROCESS_TIMEOUT:
             note = 'timeout'
-            self.timeout_hint(test)
+            self.timeout_hint(test, guest)
         # Test results should be in complete state
         elif state != 'complete':
             note = f"beakerlib: State '{state}'"
@@ -330,7 +333,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             log=log,
             duration=test.real_duration)]
 
-    def check_result_file(self, test: "tmt.Test") -> List["tmt.Result"]:
+    def check_result_file(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
         Check result file created by tmt-report-result
 
@@ -338,7 +341,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         return a Result instance. Raise the FileError exception when no
         test result file is found.
         """
-        report_result_path = self.data_path(test, full=True) \
+        report_result_path = self.data_path(test, guest, full=True) \
             / tmt.steps.execute.TEST_DATA \
             / TMT_REPORT_RESULT_SCRIPT.created_file
 
@@ -370,17 +373,17 @@ class ExecutePlugin(tmt.steps.Plugin):
         return [tmt.Result.from_test(
             test=test,
             result=actual_result,
-            log=[self.data_path(test, TEST_OUTPUT_FILENAME)],
+            log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             duration=test.real_duration,
             note=note)]
 
-    def check_custom_results(self, test: "tmt.Test") -> List["tmt.Result"]:
+    def check_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
         Process custom results.yaml file created by the test itself.
         """
         self.debug("Processing custom 'results.yaml' file created by the test itself.")
 
-        custom_results_path = self.data_path(test, full=True) \
+        custom_results_path = self.data_path(test, guest, full=True) \
             / tmt.steps.execute.TEST_DATA \
             / 'results.yaml'
 
@@ -407,7 +410,11 @@ class ExecutePlugin(tmt.steps.Plugin):
 
             # Fix log paths as user provides relative path to TMT_TEST_DATA
             # but Result has to point relative to the execute workdir
-            log_path_base = self.data_path(test, full=False, filename=tmt.steps.execute.TEST_DATA)
+            log_path_base = self.data_path(
+                test,
+                guest,
+                full=False,
+                filename=tmt.steps.execute.TEST_DATA)
             partial_result.log = [log_path_base / log for log in partial_result.log]
 
             # TODO: this might need more care: the test has been assigned a serial
@@ -429,13 +436,13 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         return custom_results
 
-    def check_abort_file(self, test: "tmt.Test") -> bool:
+    def check_abort_file(self, test: "tmt.Test", guest: Guest) -> bool:
         """
         Check for an abort file created by tmt-abort
 
         Returns whether an abort file is present (i.e. abort occurred).
         """
-        return self.data_path(test, full=True).joinpath(
+        return self.data_path(test, guest, full=True).joinpath(
             tmt.steps.execute.TEST_DATA,
             TMT_ABORT_SCRIPT.created_file).exists()
 
@@ -444,9 +451,9 @@ class ExecutePlugin(tmt.steps.Plugin):
         """ Convert duration to a human readable format """
         return time.strftime("%H:%M:%S", time.gmtime(end - start))
 
-    def timeout_hint(self, test: "tmt.Test") -> None:
+    def timeout_hint(self, test: "tmt.Test", guest: Guest) -> None:
         """ Append a duration increase hint to the test output """
-        output = self.data_path(test, TEST_OUTPUT_FILENAME, full=True)
+        output = self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True)
         self.write(
             output,
             f"\nMaximum test time '{test.duration}' exceeded.\n"

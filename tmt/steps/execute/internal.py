@@ -134,12 +134,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
     def _test_environment(
             self,
             test: Test,
+            guest: Guest,
             extra_environment: Optional[EnvironmentType] = None) -> EnvironmentType:
         """ Return test environment """
 
         extra_environment = extra_environment or {}
 
-        data_directory = self.data_path(test, full=True, create=True)
+        data_directory = self.data_path(test, guest, full=True, create=True)
 
         environment = extra_environment.copy()
         environment.update(test.environment)
@@ -186,7 +187,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         self.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
-        environment = self._test_environment(test, extra_environment)
+        environment = self._test_environment(test, guest, extra_environment)
 
         test_wrapper_filepath = workdir / TEST_WRAPPER_FILENAME
 
@@ -237,30 +238,30 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 self.debug(f"Test duration '{test.duration}' exceeded.")
         end = time.time()
         self.write(
-            self.data_path(test, TEST_OUTPUT_FILENAME, full=True),
+            self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
         test.real_duration = self.test_duration(start, end)
 
-    def check(self, test: Test) -> List[Result]:
+    def check(self, test: Test, guest: Guest) -> List[Result]:
         """ Check the test result """
         self.debug(f"Check result of '{test.name}'.")
         if test.result == 'custom':
-            return self.check_custom_results(test)
+            return self.check_custom_results(test, guest)
         if test.framework == 'beakerlib':
-            return self.check_beakerlib(test)
+            return self.check_beakerlib(test, guest)
         else:
             try:
-                return self.check_result_file(test)
+                return self.check_result_file(test, guest)
             except tmt.utils.FileError:
-                return self.check_shell(test)
+                return self.check_shell(test, guest)
 
-    def _will_reboot(self, test: Test) -> bool:
+    def _will_reboot(self, test: Test, guest: Guest) -> bool:
         """ True if reboot is requested """
-        return self._reboot_request_path(test).exists()
+        return self._reboot_request_path(test, guest).exists()
 
-    def _reboot_request_path(self, test: Test) -> Path:
+    def _reboot_request_path(self, test: Test, guest: Guest) -> Path:
         """ Return reboot_request """
-        return self.data_path(test, full=True) \
+        return self.data_path(test, guest, full=True) \
             / tmt.steps.execute.TEST_DATA \
             / TMT_REBOOT_SCRIPT.created_file
 
@@ -273,12 +274,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         REBOOTCOUNT variable, reset it to 0 if no reboot was requested
         (going forward to the next test). Return whether reboot was done.
         """
-        if self._will_reboot(test):
+        if self._will_reboot(test, guest):
             test._reboot_count += 1
             self.debug(f"Reboot during test '{test}' "
                        f"with reboot count {test._reboot_count}.")
-            reboot_request_path = self._reboot_request_path(test)
-            test_data = self.data_path(test, full=True) / tmt.steps.execute.TEST_DATA
+            reboot_request_path = self._reboot_request_path(test, guest)
+            test_data = self.data_path(test, guest, full=True) / tmt.steps.execute.TEST_DATA
             with open(reboot_request_path, 'r') as reboot_file:
                 reboot_data = json.loads(reboot_file.read())
             reboot_command = None
@@ -336,7 +337,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         """ Execute tests on provided guest """
 
         # Prepare tests and helper scripts, check options
-        tests = self.prepare_tests()
+        tests = self.prepare_tests(guest)
         exit_first = self.get('exit-first', default=False)
 
         # Prepare scripts, except localhost guest
@@ -361,20 +362,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             if test.framework == "beakerlib":
                 exclude = [
                     "--exclude",
-                    str(self.data_path(test, "backup*", full=True))]
+                    str(self.data_path(test, guest, "backup*", full=True))]
             else:
                 exclude = None
             guest.pull(
-                source=self.data_path(test, full=True),
+                source=self.data_path(test, guest, full=True),
                 extend_options=exclude)
 
-            results = self.check(test)  # Produce list of results
+            results = self.check(test, guest)  # Produce list of results
             assert test.real_duration is not None  # narrow type
             duration = click.style(test.real_duration, fg='cyan')
             shift = 1 if self.opt('verbose') < 2 else 2
 
             # Handle reboot, abort, exit-first
-            if self._will_reboot(test):
+            if self._will_reboot(test, guest):
                 # Output before the reboot
                 self.verbose(
                     f"{duration} {test.name} [{progress}]", shift=shift)
@@ -385,7 +386,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                     for result in results:
                         result.result = ResultOutcome.ERROR
                         result.note = 'reboot timeout'
-            abort = self.check_abort_file(test)
+            abort = self.check_abort_file(test, guest)
             if abort:
                 for result in results:
                     # In case of aborted all results in list will be aborted
@@ -416,7 +417,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 self._login_after_test.after_test(
                     result,
                     cwd=cwd,
-                    env=self._test_environment(test, extra_environment),
+                    env=self._test_environment(test, guest, extra_environment),
                     )
         # Overwrite the progress bar, the test data is irrelevant
         self._show_progress('', '', True)

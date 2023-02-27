@@ -15,10 +15,10 @@ rlJournalStart
 
             # Check output and extra logs in the test data directory
             data="$run/plan/execute/data"
-            rlAssertGrep "ok" "$data/test/good-3/output.txt"
-            rlAssertGrep "ko" "$data/test/bad-1/output.txt"
-            rlAssertGrep "extra good" "$data/test/good-3/data/extra.log"
-            rlAssertGrep "extra bad" "$data/test/bad-1/data/extra.log"
+            rlAssertGrep "ok" "$data/guest/default-0/test/good-3/output.txt"
+            rlAssertGrep "ko" "$data/guest/default-0/test/bad-1/output.txt"
+            rlAssertGrep "extra good" "$data/guest/default-0/test/good-3/data/extra.log"
+            rlAssertGrep "extra bad" "$data/guest/default-0/test/bad-1/data/extra.log"
 
             # Check logs in the plan data directory
             rlAssertGrep "common good" "$run/plan/data/log.txt"
@@ -31,14 +31,14 @@ rlJournalStart
             # Check beakerlib's backup directory pull
             if [[ "$method" =~ local|container ]]; then
                 # No pull happened so it shoud be present
-                rlAssertExists "$data/test/beakerlib-2/backup"
-                rlAssertExists "$data/test/beakerlib-2/backup-NS1"
-                rlAssertNotEquals "any backup dir is present" "$(eval 'echo $data/test/beakerlib-2/backup*')" "$data/test/beakerlib-2/backup*"
+                rlAssertExists "$data/guest/default-0/test/beakerlib-2/backup"
+                rlAssertExists "$data/guest/default-0/test/beakerlib-2/backup-NS1"
+                rlAssertNotEquals "any backup dir is present" "$(eval 'echo $data/guest/default-0/test/beakerlib-2/backup*')" "$data/guest/default-0/test/beakerlib-2/backup*"
             else
                 # Should be ignored
-                rlAssertNotExists "$data/test/beakerlib-2/backup"
-                rlAssertNotExists "$data/test/beakerlib-2/backup-NS1"
-                rlAssertEquals "no backup dir is present" "$(eval 'echo $data/test/beakerlib-2/backup*')" "$data/test/beakerlib-2/backup*"
+                rlAssertNotExists "$data/guest/default-0/test/beakerlib-2/backup"
+                rlAssertNotExists "$data/guest/default-0/test/beakerlib-2/backup-NS1"
+                rlAssertEquals "no backup dir is present" "$(eval 'echo $data/guest/default-0/test/beakerlib-2/backup*')" "$data/guest/default-0/test/beakerlib-2/backup*"
             fi
         rlPhaseEnd
     done
