@@ -200,8 +200,10 @@ class ExecutePlugin(tmt.steps.Plugin):
         filename not provided) or to the given data file otherwise.
         """
         # Prepare directory path, create if requested
-        assert self.step.workdir is not None
-        directory = self.step.workdir / TEST_DATA / test.name.lstrip('/')
+        assert self.step.workdir is not None  # narrow type
+        directory = self.step.workdir \
+            / TEST_DATA \
+            / f'{test.name.lstrip("/")}-{test.serial_number}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:

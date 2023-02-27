@@ -128,7 +128,7 @@ def assert_xml(actual_filepath, expected):
 class TestStateMapping:
     def test_pass(self, report_fix):
         report, results, out_file_path = report_fix
-        results.append(Result(result=ResultOutcome.PASS, name="/pass"))
+        results.append(Result(result=ResultOutcome.PASS, name="/pass", serial_number=1))
 
         report.go()
 
@@ -142,7 +142,7 @@ class TestStateMapping:
 
     def test_info(self, report_fix):
         report, results, out_file_path = report_fix
-        results.append(Result(result=ResultOutcome.INFO, name="/info"))
+        results.append(Result(result=ResultOutcome.INFO, name="/info", serial_number=1))
         report.go()
 
         assert_xml(out_file_path, """<?xml version="1.0" ?>
@@ -157,7 +157,7 @@ class TestStateMapping:
 
     def test_warn(self, report_fix):
         report, results, out_file_path = report_fix
-        results.append(Result(result=ResultOutcome.WARN, name="/warn"))
+        results.append(Result(result=ResultOutcome.WARN, name="/warn", serial_number=1))
         report.go()
 
         assert_xml(out_file_path, """<?xml version="1.0" ?>
@@ -172,7 +172,7 @@ class TestStateMapping:
 
     def test_error(self, report_fix):
         report, results, out_file_path = report_fix
-        results.append(Result(result=ResultOutcome.ERROR, name="/error"))
+        results.append(Result(result=ResultOutcome.ERROR, name="/error", serial_number=1))
         report.go()
 
         assert_xml(out_file_path, """<?xml version="1.0" ?>
@@ -187,7 +187,7 @@ class TestStateMapping:
 
     def test_fail(self, report_fix):
         report, results, out_file_path = report_fix
-        results.append(Result(result=ResultOutcome.FAIL, name="/fail"))
+        results.append(Result(result=ResultOutcome.FAIL, name="/fail", serial_number=1))
         report.go()
 
         assert_xml(out_file_path, """<?xml version="1.0" ?>

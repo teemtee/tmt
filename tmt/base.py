@@ -3,14 +3,15 @@
 import copy
 import dataclasses
 import enum
+import itertools
 import os
 import re
 import shutil
 import sys
 import time
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generator,
-                    Iterable, List, Optional, Sequence, Tuple, TypeVar, Union,
-                    cast)
+                    Iterable, Iterator, List, Optional, Sequence, Tuple,
+                    TypeVar, Union, cast)
 
 import fmf
 import fmf.base
@@ -702,6 +703,8 @@ class Test(Core, tmt.export.Exportable['Test']):
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
 
+    serial_number: int = 0
+
     returncode: Optional[int] = None
     real_duration: Optional[str] = None
     _reboot_count: int = 0
@@ -1176,6 +1179,22 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             for i, item in enumerate(data):
                 data[i] = self._expand_node_data(item, fmf_context)
         return data
+
+    # TODO: better, more elaborete ways of assigning serial numbers to tests
+    # can be devised - starting with a really trivial one: each test gets
+    # one, starting with `1`.
+    #
+    # For now, the test itself is not important, and it's part of the method
+    # signature to leave the door open for more sophisticated methods that
+    # might depend on the actual test properties. Our simple "increment by 1"
+    # method does not need it.
+    _test_serial_number_generator: Optional[Iterator[int]] = None
+
+    def draw_test_serial_number(self, test: Test) -> int:
+        if self._test_serial_number_generator is None:
+            self._test_serial_number_generator = itertools.count(start=1, step=1)
+
+        return next(self._test_serial_number_generator)
 
     @property
     def environment(self) -> EnvironmentType:

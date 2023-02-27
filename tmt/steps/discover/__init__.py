@@ -279,6 +279,9 @@ class Discover(tmt.steps.Step):
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
+        for test in self._tests:
+            test.serial_number = self.plan.draw_test_serial_number(test)
+
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module
         if self.opt('fmf_id'):
