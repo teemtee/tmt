@@ -19,13 +19,20 @@ description: |
     grouped under a common parent, for example ``cores`` or
     ``model`` under the :ref:`/spec/hardware/cpu` key.
 
-    Operators
-    ---------
+    Comparison operators
+    --------------------
 
     The ``value`` part of the constraint follows the schema ``[operator] actual-value``.
     The ``operator`` is optional, it may be any of the following: ``=``, ``!=``,
     ``>``, ``>=``, ``<``, ``>=``, ``~`` (regex match), and ``!~`` (regex *not*
     matches). When operator is omitted, ``=`` is assumed.
+
+    .. note::
+
+       It is **highly** recommended to wrap values with single or double quotes,
+       i.e. ``memory: '>= 8 GiB'`` rather than ``memory: >= 8 GiB``. This should
+       prevent any unexpected processing by parsers loading the fmf content.
+       Without explicit quotes, some operators might lead to unexpected outcome.
 
         # This...
         memory: '8 GB'
