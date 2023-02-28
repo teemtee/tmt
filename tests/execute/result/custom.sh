@@ -26,7 +26,7 @@ rlJournalStart
     testName="/test/missing-custom-results"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test does not provide 'results.yaml' file"
-        rlAssertGrep "custom results file '/tmp/.*/plans/default/execute/data/test/missing-custom-results/data/results.yaml' not found" $rlRun_LOG
+        rlAssertGrep "custom results file '/tmp/.*/plans/default/execute/data/test/missing-custom-results-1/data/results.yaml' not found" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/empty-custom-results-file"

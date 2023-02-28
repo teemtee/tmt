@@ -14,7 +14,7 @@ rlJournalStart
         rlAssertNotExists $tmp1/plan/discover/default-0
         rlAssertNotExists $tmp1/plan/discover/default-1
         rlAssertExists $tmp1/plan/data/out-plan.txt
-        rlAssertExists $tmp1/plan/execute/data/default-2/write/test-data/data/out-test.txt
+        rlAssertExists $tmp1/plan/execute/data/default-2/write/test-data-3/data/out-test.txt
         for step in discover execute finish prepare provision report; do
             rlAssertExists $tmp1/plan/$step/step.yaml
         done
@@ -37,7 +37,7 @@ rlJournalStart
         rlAssertExists $tmp2/plan/discover/default-0
         rlAssertExists $tmp2/plan/discover/default-1
         rlAssertExists $tmp2/plan/data/out-plan.txt
-        rlAssertExists $tmp2/plan/execute/data/default-2/write/test-data/data/out-test.txt
+        rlAssertExists $tmp2/plan/execute/data/default-2/write/test-data-3/data/out-test.txt
         for step in discover execute finish prepare provision report; do
             rlAssertExists $tmp2/plan/$step/step.yaml
         done
