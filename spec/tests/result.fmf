@@ -23,8 +23,9 @@ description: |
         test needs to create it's own ``results.yaml`` file in the
         ``${TMT_TEST_DATA}`` directory. The ``results.yaml`` contains list of
         dictionaries. Each dictionary must contain at least ``name`` and
-        ``result`` keys. Optional keys are ``log`` (contains paths to log
-        files), ``duration`` (in HH:MM:SS format) and ``note``.
+        ``result`` keys. Optional keys are ``log`` (a list of paths to log
+        files, each path must be relative to path in ``$TMT_TEST_DATA``
+        environment variable), ``duration`` (in HH:MM:SS format) and ``note``.
 
 example:
   - |

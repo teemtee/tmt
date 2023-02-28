@@ -58,9 +58,9 @@ description: |
         fail
             Test execution successfully finished and failed.
 
-    ``PATH`` and ``PATH*`` are the test log output paths, relative
-    to the execute step working directory. ``log`` key is a list
-    of strings, even when there is just a single log, the first
+    ``PATH`` or each ``PATH*`` are the test log output paths,
+    relative to the execute step working directory. ``log`` key
+    is a list of strings, even when there is just a single log, the first
     log will be considered as the main one (e.g. presented to the
     user for inspection).
 
