@@ -1497,7 +1497,7 @@ def copytree(
     if rsync_dst[-1] == '/':
         rsync_dst = rsync_dst[:-1]
 
-    dst.mkdir(exist_ok=dirs_exist_ok)
+    dst.mkdir(parents=True, exist_ok=dirs_exist_ok)
     command = ["rsync", "-r"]
     if symlinks:
         command.append('-l')
@@ -1530,26 +1530,24 @@ def filter_paths(directory: Path, searching: List[str], files_only: bool = False
     Filter files for specific paths we are searching for inside a directory
     Returns list of matching paths
     """
-    allfiles = list(directory.rglob('*'))
-    alldirs = [d for d in allfiles if d.is_dir()]
-    allfiles = [f for f in allfiles if not f.is_dir()]
-    allfiles = list(map(str, allfiles))  # type: ignore[arg-type]
-    alldirs = list(map(str, alldirs))  # type: ignore[arg-type]
-    found_paths = []
+    all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
+    alldirs = [str(dir) for dir in all_paths if dir.is_dir()]
+    allfiles = [str(file) for file in all_paths if not file.is_dir()]
+    found_paths: List[str] = []
 
     for search_string in searching:
         regex = re.compile(search_string)
 
         if not files_only:
             # Search in directories first to reduce amount of copying later
-            matches = list(filter(regex.search, alldirs))  # type: ignore[arg-type]
+            matches = list(filter(regex.search, alldirs))
             if matches:
                 found_paths += matches
                 continue
 
         # Search through all files
-        found_paths += list(filter(regex.search, allfiles))  # type: ignore[arg-type]
-    return list(map(Path, found_paths))  # type: ignore[arg-type]
+        found_paths += list(filter(regex.search, allfiles))
+    return list(map(Path, set(found_paths)))  # return all matching unique paths as Path's
 
 
 # These two are helpers for shell_to_dict and environment_to_dict -

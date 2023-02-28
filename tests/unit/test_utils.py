@@ -22,8 +22,8 @@ import tmt.utils
 from tmt.utils import (Command, Common, GeneralError, Path, ShellScript,
                        StructuredField, StructuredFieldError,
                        WaitingIncomplete, WaitingTimedOutError, _CommonBase,
-                       duration_to_seconds, listify, public_git_url,
-                       validate_git_status, wait)
+                       duration_to_seconds, filter_paths, listify,
+                       public_git_url, validate_git_status, wait)
 
 run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
@@ -1001,3 +1001,16 @@ def test_format_duration(duration, expected):
     from tmt.steps.execute import ExecutePlugin
 
     assert ExecutePlugin.format_duration(duration) == expected
+
+
+def test_filter_paths(source_dir):
+    """ Test if path filtering works correctly """
+    paths = filter_paths(source_dir, ['/library'])
+    assert len(paths) == 1
+    assert paths[0] == source_dir / 'library'
+
+    paths = filter_paths(source_dir, ['bz[235]'])
+    assert len(paths) == 3
+
+    paths = filter_paths(source_dir, ['bz[235]', '/tests/bz5'])
+    assert len(paths) == 3

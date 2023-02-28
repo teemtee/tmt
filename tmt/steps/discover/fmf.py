@@ -546,7 +546,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     original_recommend=test.recommend,
                     parent=self,
                     logger=self._logger,
-                    # TODO: change me with pruning for tests
+                    # TODO: Change with pruning for tests
                     source_location=self.workdir / 'tests',
                     target_location=self.workdir / 'tests')
 

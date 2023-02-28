@@ -49,20 +49,22 @@ class File(Library):
             'Searching for patterns: '
             f'{", ".join(pattern for pattern in self.pattern if pattern)} '
             f'in directory {str(self.source_location)}')
-        files: List[Path] = tmt.utils.filter_paths(
-            self.source_location, self.pattern)
+        files: List[Path] = tmt.utils.filter_paths(self.source_location, self.pattern)
         if not files:
             self.parent.debug('No files found')
             raise LibraryError
         self.parent.debug(f'Found paths: {", ".join([str(f) for f in files])}')
         for path in files:
             assert path is not None  # narrow type
-            local_path = path.relative_to(self.source_location).parent
+            if path.is_dir():
+                local_path = path.relative_to(self.source_location)
+            else:
+                local_path = path.relative_to(self.source_location).parent
             target_path = Path(self.target_location) / local_path
             if path.is_dir():
                 tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
             else:
-                target_path.mkdir(exist_ok=True)
+                target_path.mkdir(parents=True, exist_ok=True)
                 target_path = target_path / path.name
                 if not target_path.exists():
                     shutil.copyfile(path, target_path)

@@ -9,7 +9,7 @@ from tmt.utils import Path
 
 
 @pytest.mark.web
-def test_library(root_logger):
+def test_basic(root_logger):
     """ Fetch a beakerlib library with/without providing a parent """
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     library_with_parent = tmt.libraries.library_factory(
@@ -36,7 +36,7 @@ def test_library(root_logger):
         ('https://github.com/beakerlib/httpd', '/http', 'master'),
         ('https://github.com/beakerlib/example', '/file', 'main')
         ])
-def test_library_from_fmf(url, name, default_branch, root_logger):
+def test_require_from_fmf(url, name, default_branch, root_logger):
     """ Fetch beakerlib library referenced by fmf identifier """
     library = tmt.libraries.library_factory(
         logger=root_logger,

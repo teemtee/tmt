@@ -470,12 +470,13 @@ def require_factory(require: Optional[_RawRequireItem]) -> Require:
     """
     if isinstance(require, dict):
         require_type = require.get('type', 'library')
-        if require_type == 'library':
+        if require_type == 'library':  # can't use isinstance check with TypedDict
             return RequireFmfId.from_spec(require)  # type: ignore[arg-type]
         if require_type == 'file':
             return RequireFile.from_spec(require)  # type: ignore[arg-type]
 
-    return RequireSimple.from_spec(require)  # type: ignore[arg-type]
+    assert isinstance(require, str)  # check type
+    return RequireSimple.from_spec(require)
 
 
 def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger) -> List[Require]:

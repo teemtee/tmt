@@ -17,6 +17,8 @@ LibraryIdentifierType = Union[
 ImportedIdentifiersType = Optional[List[LibraryIdentifierType]]
 
 # A Library type, can be Beakerlib or File
+# undefined references are ignored due to cyclic dependencies of these files,
+# only imported in runtime where needed
 LibraryType = Union['BeakerLib', 'File']  # type: ignore[name-defined] # noqa: F821
 
 # A type for Beakerlib dependencies
@@ -156,8 +158,8 @@ def dependencies(
             assert parent is not None  # narrow type
             if library.hostname == 'local':
                 library_path = library.fmf_node_path
-            else:
-                library_path = parent.clone_dirpath / library.hostname / library.repo
+            else:  # TODO: Change with pruning for libraries
+                library_path = parent.workdir / library.dest / library.repo
 
             from .beakerlib import BeakerLib
             if isinstance(library, BeakerLib):
