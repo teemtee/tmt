@@ -1180,7 +1180,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
                 data[i] = self._expand_node_data(item, fmf_context)
         return data
 
-    # TODO: better, more elaborete ways of assigning serial numbers to tests
+    # TODO: better, more elaborate ways of assigning serial numbers to tests
     # can be devised - starting with a really trivial one: each test gets
     # one, starting with `1`.
     #
