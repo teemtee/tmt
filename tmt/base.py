@@ -409,7 +409,7 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
 
 
 def assert_simple_requirements(
-        requires: List[Require],
+        requirements: List[Require],
         error_message: str,
         logger: tmt.log.Logger) -> List[RequireSimple]:
     """
@@ -424,11 +424,11 @@ def assert_simple_requirements(
 
     non_simple_requirements = list(filter(
         lambda require: not isinstance(require, RequireSimple),
-        requires
+        requirements
         ))
 
     if not non_simple_requirements:
-        return cast(List[RequireSimple], requires)
+        return cast(List[RequireSimple], requirements)
 
     for require in non_simple_requirements:
         logger.fail(f'Invalid requirement: {require}')
