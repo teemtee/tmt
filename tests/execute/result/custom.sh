@@ -18,6 +18,9 @@ rlJournalStart
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
         rlAssertGrep "         pass /test/custom-results \[1/1\]" $rlRun_LOG
         rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
+
+        rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *fail_log: \(.\+\)/\1/p' $rlRun_LOG)"
     rlPhaseEnd
 
     testName="/test/missing-custom-results"
