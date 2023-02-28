@@ -398,6 +398,10 @@ class ExecutePlugin(tmt.steps.Plugin):
                 partial_result.name = test.name
             else:
                 partial_result.name = test.name + partial_result.name
+            # Fix log paths as user provides relative path to TMT_TEST_DATA
+            # but Result has to point relative to the execute workdir
+            log_path_base = self.data_path(test, full=False, filename=tmt.steps.execute.TEST_DATA)
+            partial_result.log = [log_path_base / log for log in partial_result.log]
             custom_results.append(partial_result)
 
         return custom_results
