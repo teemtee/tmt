@@ -182,6 +182,11 @@ which tars sources to the expected location::
     cd tests/full
     make test
 
+Similar as above but run only tests which don't run for merge requests::
+
+    cd tests/full
+    make test-complement
+
 To run unit tests using pytest and generate coverage report::
 
     coverage run --source=tmt -m py.test tests

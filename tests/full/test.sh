@@ -23,6 +23,9 @@ PRE_RELEASE="${PRE_RELEASE:-0}"
 # Set to `test <options>` for test filtering
 TEST_CMD="${TEST_CMD:-}"
 
+# Run whole test suite ('all') or just scope not covered by CI ('complement')
+SCOPE="${SCOPE:-all}"
+
 set -o pipefail
 
 
@@ -145,10 +148,22 @@ EOF
             echo 'enabled: false' >> $USER_HOME/tmt${t}/main.fmf
         done
 
+        if [[ $SCOPE =~ 'complement' ]]; then
+            rlLog "Patch $USER_HOME/tmt/plans/features/main.fmf"
+            cat <<EOF >> $USER_HOME/tmt/plans/features/main.fmf
+  - discover+:
+      filter+: ' & tag:additional_coverage'
+    tag+: [additional_coverage]
+EOF
+       fi
+
         # Make all local changes visible in the log
         rlRun "git diff | cat"
         if [ -z "$PLANS" ]; then
-            rlRun "su -l -c 'cd $USER_HOME/tmt; tmt -c how=full plans ls --filter=enabled:true > $USER_HOME/enabled_plans' $USER"
+            if [[ $SCOPE =~ 'complement' ]]; then
+                FILTER="--filter tag:additional_coverage"
+            fi
+            rlRun "su -l -c 'cd $USER_HOME/tmt; NO_COLOR=1 tmt -c how=full plans ls --enabled $FILTER > $USER_HOME/enabled_plans' $USER"
             PLANS="$(echo $(cat $USER_HOME/enabled_plans))"
         fi
     rlPhaseEnd
