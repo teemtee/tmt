@@ -6,3 +6,4 @@ adjust:
   duration: 10m
   when: how == full
   because: this can be run only with a full virtualization
+  tag+: [additional_coverage]

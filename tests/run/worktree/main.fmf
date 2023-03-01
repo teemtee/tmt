@@ -21,3 +21,4 @@ adjust:
     result: xfail # issue 964
     duration: 10m
     when: how == full
+    tag+: [additional_coverage]

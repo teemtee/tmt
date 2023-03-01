@@ -12,3 +12,4 @@ adjust:
     environment:
         PROVISION_METHODS: container virtual local
     because: local/virtual provision needs root/full virtualization
+    tag+: [additional_coverage]

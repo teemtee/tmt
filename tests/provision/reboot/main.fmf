@@ -3,3 +3,4 @@ adjust:
   - when: how == full
     environment:
         PROVISION_METHODS: container virtual
+    tag+: [additional_coverage]

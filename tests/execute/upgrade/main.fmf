@@ -10,6 +10,7 @@ duration: 10m
     adjust:
     - enabled: true
       when: how == full
+      tag+: [additional_coverage]
     tier: 3
 
 /simple:

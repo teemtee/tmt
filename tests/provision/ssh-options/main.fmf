@@ -3,3 +3,4 @@ enabled: false
 adjust:
   - when: how == full
     enabled: true
+    tag+: [additional_coverage]

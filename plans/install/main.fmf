@@ -6,3 +6,4 @@ enabled: false
 adjust:
   - enabled: true
     when: how == full or trigger == commit
+    tag+: [additional_coverage]

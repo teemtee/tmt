@@ -9,3 +9,4 @@ adjust:
     environment:
         PROVISION_METHODS: local container virtual
     when: how == full
+    tag+: [additional_coverage]
