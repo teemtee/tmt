@@ -203,7 +203,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         assert self.step.workdir is not None  # narrow type
         directory = self.step.workdir \
             / TEST_DATA \
-            / f'{test.name.lstrip("/") or "default"}-{test.serial_number}'
+            / f'{test.name.lstrip("/") or "default"}-{test.serialnumber}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:
@@ -420,7 +420,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             # data directories, they are all confined into its parent test's
             # directory. And the serial number correspondence in results.yaml
             # can be useful, for grouping results that belong to the same tests.
-            partial_result.serial_number = test.serial_number
+            partial_result.serialnumber = test.serialnumber
 
             custom_results.append(partial_result)
 

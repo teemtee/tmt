@@ -30,7 +30,7 @@ description: |
             result: respect
             tag: [tag]
             tier: 1
-            serial_number: 1
+            serialnumber: 1
 
           - name: /test/two
             summary: Short test summary.

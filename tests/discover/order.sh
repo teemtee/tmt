@@ -6,14 +6,14 @@
 function assert_execution_order(){
     local input_file="$tmp/run/plans${plan}/data/execution_order"
     sed -n 's;^.*execute/data\(.\+\)/data;\1;p' "$input_file" > $tmp/outcome
-    rlRun "diff -pu $tmp/outcome $tmp/EXPECTED"
+    rlRun "diff -pu $tmp/outcome $tmp/EXPECTED-EXECUTION" 0 "Verify execution order"
 }
 
 function assert_discover_order(){
     local input_file="$rlRun_LOG"
     # Discovered tests are printed with leading spaces
     sed -n 's;^ \+\(/.\+\);\1;p' "$input_file" > $tmp/outcome
-    rlRun "diff -pu $tmp/outcome $tmp/EXPECTED"
+    rlRun "diff -pu $tmp/outcome $tmp/EXPECTED-DISCOVERY" 0 "Verify discovery order"
 }
 
 function run_test(){
@@ -43,55 +43,83 @@ rlJournalStart
 
     ### New test begins
     plan="/single-without-order-tag"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /tests/no-order-0
 /tests/no-order-1
 /tests/no-order-2
+EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/tests/no-order-0-1
+/tests/no-order-1-2
+/tests/no-order-2-3
 EOF
     run_test
 
     ### New test begins
     plan="/single-without-order-name"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /tests/no-order-0
 /tests/no-order-1
 /tests/no-order-2
+EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/tests/no-order-0-1
+/tests/no-order-1-2
+/tests/no-order-2-3
 EOF
     run_test
 
     ### New test begins
     plan="/single-enumerate"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /tests/no-order-2
 /tests/no-order-0
 /tests/no-order-1
+EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/tests/no-order-2-1
+/tests/no-order-0-2
+/tests/no-order-1-3
 EOF
     run_test
 
     ### New test begins
     plan="/single-enumerate-and-order"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /tests/no-order-2
 /tests/order-80
 /tests/no-order-0
 /tests/no-order-1
 EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/tests/no-order-2-1
+/tests/order-80-2
+/tests/no-order-0-3
+/tests/no-order-1-4
+EOF
     run_test
 
     ### New test begins
     plan="/single-order"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /tests/order-10
 /tests/no-order-0
 /tests/no-order-1
 /tests/no-order-2
 /tests/order-80
 EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/tests/order-10-1
+/tests/no-order-0-2
+/tests/no-order-1-3
+/tests/no-order-2-4
+/tests/order-80-5
+EOF
     run_test
 
     ### New test begins
     plan="/multiple-by-enumerate"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /enumerate-and-order/tests/no-order-2
 /enumerate-and-order/tests/order-80
 /enumerate-and-order/tests/no-order-0
@@ -104,11 +132,24 @@ EOF
 /third/order-20
 /third/order-default
 EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/enumerate-and-order/tests/no-order-2-1
+/enumerate-and-order/tests/order-80-2
+/enumerate-and-order/tests/no-order-0-3
+/enumerate-and-order/tests/no-order-1-4
+/by-order-attribute/tests/order-10-5
+/by-order-attribute/tests/no-order-0-6
+/by-order-attribute/tests/no-order-1-7
+/by-order-attribute/tests/no-order-2-8
+/by-order-attribute/tests/order-80-9
+/third/order-20-10
+/third/order-default-11
+EOF
     run_test
 
     ### New test begins
     plan="/multiple-by-order"
-    cat > $tmp/EXPECTED <<EOF
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
 /order-10/tests/order-10
 /order-10/tests/no-order-0
 /order-10/tests/no-order-1
@@ -120,6 +161,19 @@ EOF
 /order-80/tests/order-80
 /order-80/tests/no-order-0
 /order-80/tests/no-order-1
+EOF
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/order-10/tests/order-10-1
+/order-10/tests/no-order-0-2
+/order-10/tests/no-order-1-3
+/order-10/tests/no-order-2-4
+/order-10/tests/order-80-5
+/order-default/order-20-6
+/order-default/order-default-7
+/order-80/tests/no-order-2-8
+/order-80/tests/order-80-9
+/order-80/tests/no-order-0-10
+/order-80/tests/no-order-1-11
 EOF
     run_test
 
