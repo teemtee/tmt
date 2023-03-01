@@ -10,5 +10,5 @@
     - fail_log
   duration: 00:22:33
   note: fail result
-- name: /test/no_keys
+- name: /
   result: pass

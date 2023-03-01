@@ -16,7 +16,7 @@ rlJournalStart
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.yaml' file by itself"
         rlAssertGrep "00:11:22 pass /test/custom-results/test/passing" $rlRun_LOG
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
-        rlAssertGrep "         pass /test/custom-results/test/no_keys \[1/1\]" $rlRun_LOG
+        rlAssertGrep "         pass /test/custom-results \[1/1\]" $rlRun_LOG
         rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
     rlPhaseEnd
 
