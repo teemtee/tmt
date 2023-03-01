@@ -2008,6 +2008,12 @@ class Plan(
             self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger.descend())
             self._imported_plan._original_plan = self
 
+            self._imported_plan.environment.update(self.environment)
+            with tmt.utils.modify_environ(self.environment):
+                self._expand_node_data(node.data, {
+                    key: ','.join(value)
+                    for (key, value) in self._fmf_context.items()})
+
         return self._imported_plan
 
     def prune(self) -> None:

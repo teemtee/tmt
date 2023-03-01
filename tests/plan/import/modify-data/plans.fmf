@@ -1,0 +1,18 @@
+/must-be-imported-and-modified:
+    summary: Test of correct environment variable expansion of ${VARIABLE}
+    provision:
+        how: local
+    execute:
+        script: test "${VARIABLE}" == "foobar"
+
+# TODO: Delete 'ref' specification once merged to 'main'
+/importing-other-plan-and-modify-environment:
+    summary: Import plan and modify it with environment variable
+    environment:
+        VARIABLE: foobar
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            path: /tests/plan/import/modify-data
+            name: /plans/must-be-imported-and-modified
+            ref: mzeleny-modification-imported-plans
