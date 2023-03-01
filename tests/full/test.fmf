@@ -1,15 +1,22 @@
 summary: Run the full tmt test suite in an external system
 description: |
     To check local changes without pushing to git:
-    make test
+      make test
+
+    To run only tests which will not run in merge request:
+      make test-complement
 
     Run under a local virtual machine:
-    tmt run -vvv -e BRANCH=<tested branch>
+      tmt run -vvv -e BRANCH=<tested branch>
+    Run just tests not run in a merge request:
+      tmt run -vvv -e BRANCH=<tested branch> -e SCOPE=complement
 
     Schedule a job using workflow-tomorrow:
-    tmt test export --fmf-id | wow fedora-35 x86_64 --fmf-id - --taskparam=BRANCH=<branch>
+      tmt test export --fmf-id | wow fedora-37 x86_64 --fmf-id - --taskparam=BRANCH=<branch>
+    Again just test not run in a merge request
+      tmt test export --fmf-id | wow fedora-37 x86_64 --fmf-id - --taskparam=SCOPE=complement --taskparam=BRANCH=<branch>
 
-    See head of the test.sh for future information
+    See head of the test.sh for further information
 
 test: ./test.sh
 framework: beakerlib

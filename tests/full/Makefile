@@ -4,6 +4,8 @@
 # to the VM
 test: bundle
 	tmt run -vvv -e COPY_IN=1
+test-complement: bundle
+	tmt run -vvv -e COPY_IN=1 -e SCOPE=complement
 bundle: clean
 	tar czf ./repo_copy.tgz --exclude repo_copy.tgz -C $(shell git rev-parse --show-toplevel) .
 clean:
