@@ -162,6 +162,31 @@ EOF
             # Upload file so one can review ASAP
             rlRun "tar czf /tmp/$RUN.tgz  --exclude *.qcow2 $USER_HOME/$RUN"
             rlFileSubmit /tmp/$RUN.tgz && rm -f /tmp/$RUN.tgz
+
+            # Report individual test results to the beaker journal to make it visible
+            # Run report display first
+            rlRun -s "su -l -c 'cd $USER_HOME/tmt; tmt -c how=full run --id $USER_HOME/$RUN report -h display -v plans --name $plan $TEST_CMD' $USER"
+            rlLog "Results of tests ran in this plan:"
+            # Parse the output
+            sed -n 's/^ *\(errr\|fail\|info\|pass\|warn\)/\1/p' "$rlRun_LOG" | while read -r RESULT TEXT; do
+                case $RESULT in
+                    errr)
+                        rlLogError "$TEXT"
+                        ;;
+                    fail)
+                        rlFail "$TEXT"
+                        ;;
+                    info)
+                        rlLog "$TEXT"
+                        ;;
+                    pass)
+                        rlPass "$TEXT"
+                        ;;
+                    warn)
+                        rlLogWarning "$TEXT"
+                        ;;
+                esac
+            done
         rlPhaseEnd
     done
 
