@@ -9,3 +9,4 @@ adjust:
         PROVISION_METHODS: "local container virtual"
     duration: 30m
     because: with full virtualization more methods can be tested
+    tag+: [additional_coverage]

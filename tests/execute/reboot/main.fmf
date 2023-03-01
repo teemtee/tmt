@@ -27,6 +27,7 @@ duration: 20m
         enabled: true
         when: how == full
         because: this can be run only with full virtualization
+        tag+: [additional_coverage]
 
 
 /reuse_provision:
@@ -38,3 +39,4 @@ duration: 20m
         enabled: true
         when: how == full
         because: this can be run only with full virtualization
+        tag+: [additional_coverage]

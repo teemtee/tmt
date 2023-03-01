@@ -11,4 +11,5 @@ enabled: false
 adjust:
   - enabled: true
     when: how == full
+    tag+: [additional_coverage]
 tier: null
