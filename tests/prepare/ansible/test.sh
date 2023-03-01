@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         for plan in local remote; do
             rlPhaseStartTest "Test $plan playbook ($method)"
                 rlRun "tmt run -arv provision -h $method plan -n /$plan"

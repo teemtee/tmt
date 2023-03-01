@@ -2,7 +2,7 @@
 # vim: dict+=/usr/share/beakerlib/dictionary.vim cpt=.,w,b,u,t,i,k
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-METHODS=${METHODS:-container}
+PROVISION_METHODS=${PROVISION_METHODS:-container}
 
 rlJournalStart
     rlPhaseStartSetup
@@ -14,7 +14,7 @@ rlJournalStart
         rlRun "tmt plan create -t mini plan"
     rlPhaseEnd
 
-    if [[ "$METHODS" =~ container ]]; then
+    if [[ "$PROVISION_METHODS" =~ container ]]; then
         rlPhaseStartTest "Container"
             rlRun "tmt run -i $run provision -h container"
 
@@ -26,7 +26,7 @@ rlJournalStart
         rlPhaseEnd
     fi
 
-    if [[ "$METHODS" =~ virtual ]]; then
+    if [[ "$PROVISION_METHODS" =~ virtual ]]; then
         rlPhaseStartTest "Virtual"
             rlRun "tmt run --scratch -i $run provision -h virtual"
 

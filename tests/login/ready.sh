@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-virtual}; do
+    for method in ${PROVISION_METHODS:-virtual}; do
         rlPhaseStartTest "Positive login test for ($method)"
             rlRun -s "tmt run -a provision -h $method login -c exit" 0-255
             rlAssertGrep "login: Starting interactive shell" "$rlRun_LOG"

@@ -11,13 +11,13 @@ description:
 require+: [tmt-provision-container]
 
 environment:
-    METHODS: 'container'
+    PROVISION_METHODS: 'container'
 adjust:
   - environment:
-        METHODS: 'container local'
+        PROVISION_METHODS: 'container local'
     when: trigger == commit
   - environment:
-        METHODS: 'container local virtual'
+        PROVISION_METHODS: 'container local virtual'
     result: xfail # issue 964
     duration: 10m
     when: how == full

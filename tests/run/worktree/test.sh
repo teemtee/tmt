@@ -2,7 +2,7 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 rlJournalStart
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         rlPhaseStartTest "Simple ($method)"
             rlRun "pushd data/simple"
             rlRun "tmt run -ar provision -h $method report -vvv"

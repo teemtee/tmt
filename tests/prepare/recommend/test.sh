@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         tmt="tmt run --all --remove provision --how $method"
         basic="plan --name 'mixed|weird'"
         debuginfo="plan --name debuginfo"

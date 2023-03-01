@@ -203,6 +203,12 @@ or pip::
    fixtures, see https://docs.pytest.org/en/7.1.x/how-to/unittest.html for
    details.
 
+.. note::
+
+   Tests which try various provision methods should use ``PROVISION_METHODS``
+   environment variable to select which provision methods they can utilize
+   during their execution. This variable is likely to have default ``container``
+   or ``local`` and use ``adjust`` rule for ``how=full`` to add ``virtual`` method.
 
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

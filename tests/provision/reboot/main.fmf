@@ -2,4 +2,4 @@ summary: Check that the reboot command works
 adjust:
   - when: how == full
     environment:
-        METHODS: container virtual
+        PROVISION_METHODS: container virtual

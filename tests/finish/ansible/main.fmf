@@ -8,13 +8,13 @@ description:
 
 # By default we run under a container only
 environment:
-    METHODS: container
+    PROVISION_METHODS: container
 adjust:
   - when: trigger == commit
     environment:
-        METHODS: container local
+        PROVISION_METHODS: container local
     because: the pipeline does not support nested virtualization
   - when: how == full
     environment:
-        METHODS: container virtual local
+        PROVISION_METHODS: container virtual local
     because: local/virtual provision needs root/full virtualization

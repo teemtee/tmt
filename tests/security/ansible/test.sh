@@ -9,7 +9,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         rlPhaseStartTest "Test ($method)"
             rlRun -s "tmt run --id $run -avvvddd provision -h $method" 1-3
             rlAssertNotGrep "revealed" $rlRun_LOG

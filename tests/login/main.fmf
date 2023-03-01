@@ -22,8 +22,8 @@
     summary: Try to log into guest to verify property is_ready
     test: ./ready.sh
     environment:
-        METHODS: local container
+        PROVISION_METHODS: local container
     adjust:
       - when: how == full
         environment:
-            METHODS: local container virtual
+            PROVISION_METHODS: local container virtual

@@ -7,8 +7,8 @@ framework: beakerlib
 tag-: [container, virtual]
 
 environment:
-    METHODS: local container
+    PROVISION_METHODS: local container
 adjust:
   - when: how == full
     environment:
-        METHODS: container virtual local
+        PROVISION_METHODS: container virtual local

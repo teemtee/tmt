@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-local}; do
+    for method in ${PROVISION_METHODS:-local}; do
         rlPhaseStartTest "With $method provision method"
             rlRun -s "tmt run -avvvvddd provision -h $method"
 
