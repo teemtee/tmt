@@ -393,7 +393,11 @@ class ExecutePlugin(tmt.steps.Plugin):
         custom_results = []
         for partial_result_data in results:
             partial_result = tmt.Result.from_serialized(partial_result_data)
-            partial_result.name = test.name + partial_result.name
+            # Name '/' means the test itself
+            if partial_result.name == '/':
+                partial_result.name = test.name
+            else:
+                partial_result.name = test.name + partial_result.name
             custom_results.append(partial_result)
 
         return custom_results
