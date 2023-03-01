@@ -7,8 +7,8 @@ link:
   - verifies: https://github.com/teemtee/tmt/issues/1011
 
 environment:
-    METHODS: container local
+    PROVISION_METHODS: container local
 adjust:
   - when: how == full
     environment:
-        METHODS: container virtual local
+        PROVISION_METHODS: container virtual local

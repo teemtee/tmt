@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${METHODS:-local}; do
+    for method in ${PROVISION_METHODS:-local}; do
         rlPhaseStartTest "Test $method"
             # Run the plan, check for expected results
             rlRun -s "tmt run -av --scratch --id $run provision -h $method" 1

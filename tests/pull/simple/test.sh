@@ -8,7 +8,7 @@ rlJournalStart
         rlRun "pushd $tmp"
     rlPhaseEnd
 
-    for method in ${METHODS:-local}; do
+    for method in ${PROVISION_METHODS:-local}; do
         rlPhaseStartTest "Test one step ($method)"
             rlRun "tmt run -i $run --scratch provision -h $method finish"
         rlPhaseEnd

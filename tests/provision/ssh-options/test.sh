@@ -2,7 +2,7 @@
 # vim: dict+=/usr/share/beakerlib/dictionary.vim cpt=.,w,b,u,t,i,k
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-METHODS=${METHODS:-virtual}
+PROVISION_METHODS=${PROVISION_METHODS:-virtual}
 
 rlJournalStart
     rlPhaseStartSetup
@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    for provision_method in $METHODS; do
+    for provision_method in $PROVISION_METHODS; do
         rlPhaseStartTest "Test with provision $provision_method"
             rlRun "tmt run --scratch -vvi $run -a provision -h $provision_method --ssh-option ServerAliveCountMax=123456789"
             rlAssertGrep "Run command: ssh .*-oServerAliveCountMax=123456789" "$run/log.txt"

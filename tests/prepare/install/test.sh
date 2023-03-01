@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     # Run basic tests against all enabled provision methods
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         provision="provision --how $method"
 
         rlPhaseStartTest "Install an existing package ($method)"

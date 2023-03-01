@@ -5,8 +5,8 @@ description:
     directory content is synced back.
 
 environment:
-    METHODS: container local
+    PROVISION_METHODS: container local
 adjust:
   - when: how == full
     environment:
-        METHODS: container virtual local
+        PROVISION_METHODS: container virtual local

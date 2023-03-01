@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
     rlPhaseEnd
 
-    for method in ${METHODS:-container}; do
+    for method in ${PROVISION_METHODS:-container}; do
         rlPhaseStartTest "Test ($method)"
             # Prepare common options, run given method
             tmt="tmt run -i $run --scratch"

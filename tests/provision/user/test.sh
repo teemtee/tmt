@@ -1,7 +1,7 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-METHODS=${METHODS:-container}
+PROVISION_METHODS=${PROVISION_METHODS:-container}
 
 rlJournalStart
     rlPhaseStartSetup
@@ -15,7 +15,7 @@ rlJournalStart
         rlRun "tmt plan create test --template mini $STEPS"
     rlPhaseEnd
 
-    if [[ "$METHODS" =~ container ]]; then
+    if [[ "$PROVISION_METHODS" =~ container ]]; then
         rlPhaseStartTest "Container, default user root"
             rlRun -s "tmt run -i $run -a provision -h container report -vvv"
             rlAssertGrep "uid=0(root) gid=0(root) groups=0(root)" $rlRun_LOG

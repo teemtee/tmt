@@ -1,7 +1,7 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-METHODS=${METHODS:-virtual.testcloud}
+PROVISION_METHODS=${PROVISION_METHODS:-virtual.testcloud}
 
 SRC_PLAN="$(pwd)/data/plan.fmf"
 

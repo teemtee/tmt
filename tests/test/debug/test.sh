@@ -11,7 +11,7 @@ rlJournalStart
         rlRun "tmt test create --template shell /test"
     rlPhaseEnd
 
-    for method in ${METHODS:-local}; do
+    for method in ${PROVISION_METHODS:-local}; do
         rlPhaseStartTest "Test $method"
             # Run until execute
             tmt="tmt run --id $run --verbose"
