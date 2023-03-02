@@ -15,7 +15,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.steps import Action
-from tmt.utils import Command, GeneralError, Path
+from tmt.utils import Command, GeneralError, Path, flatten
 
 
 @dataclasses.dataclass
@@ -302,18 +302,18 @@ class Discover(tmt.steps.Step):
         """ Return the list of all enabled tests """
         return [test for test in self._tests if test.enabled]
 
-    def requires(self) -> List[str]:
-        """ Return all tests' requires """
-        requires = set()
-        for test in self.tests():
-            for value in getattr(test, 'require', []):
-                requires.add(value)
-        return list(requires)
+    def requires(self) -> List['tmt.base.Require']:
+        """
+        Collect all test requirements of all discovered tests in this step.
 
-    def recommends(self) -> List[str]:
+        Puts together a list of requirements which need to be installed on the
+        provisioned guest so that all discovered tests of this step can be
+        successfully executed.
+
+        :returns: a list of requirements, with duplicaties removed.
+        """
+        return flatten((test.require for test in self.tests()), unique=True)
+
+    def recommends(self) -> List['tmt.base.Require']:
         """ Return all packages recommended by tests """
-        recommends = set()
-        for test in self.tests():
-            for value in getattr(test, 'recommend', []):
-                recommends.add(value)
-        return list(recommends)
+        return flatten((test.recommend for test in self.tests()), unique=True)

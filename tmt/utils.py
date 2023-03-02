@@ -1203,6 +1203,27 @@ class FinishError(GeneralError):
 #  Utilities
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+def uniq(values: List[T]) -> List[T]:
+    """ Return a list of all unique items from ``values`` """
+    return list(set(values))
+
+
+def flatten(lists: Generator[List[T], None, None], unique: bool = False) -> List[T]:
+    """
+    "Flatten" a list of lists into a single-level list.
+
+    :param lists: an iterable of lists to flatten.
+    :param unique: if set, duplicate items would be removed, leaving only
+        a single instance in the final list.
+    :returns: list of items from all given lists.
+    """
+
+    flattened: List[T] = sum(lists, [])
+
+    return uniq(flattened) if unique else flattened
+
+
 def quote(string: str) -> str:
     """ Surround a string with double quotes """
     return f'"{string}"'

@@ -22,7 +22,7 @@ import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
-from tmt.utils import Path
+from tmt.utils import Path, flatten
 
 if TYPE_CHECKING:
     import tmt.base
@@ -551,6 +551,21 @@ class Step(tmt.utils.Common):
             except OSError as error:
                 self.warn(f"Unable to remove '{full_path}': {error}", shift=1)
 
+    def requires(self) -> List['tmt.base.Require']:
+        """
+        Collect all requirements of all enabled plugins in this step.
+
+        Puts together a list of requirements which need to be installed on the
+        provisioned guest so that all enabled plugins of this step can be
+        successfully executed.
+
+        :returns: a list of requirements, with duplicaties removed.
+        """
+        return flatten(
+            (plugin.requires() for plugin in self.phases(classes=self._plugin_base_class)),
+            unique=True
+            )
+
 
 class Method:
     """ Step implementation method """
@@ -985,8 +1000,8 @@ class BasePlugin(Phase):
         # Include order in verbose mode
         logger.verbose('order', str(self.order), 'magenta', level=3)
 
-    def requires(self) -> List[str]:
-        """ List of packages required by the plugin on the guest """
+    def requires(self) -> List['tmt.base.Require']:
+        """ All requirements of the plugin on the guest """
         return []
 
     def prune(self) -> None:

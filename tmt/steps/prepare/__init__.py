@@ -11,9 +11,10 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 from tmt.steps import Action
-from tmt.utils import GeneralError
+from tmt.utils import GeneralError, uniq
 
 if TYPE_CHECKING:
+    import tmt.base
     import tmt.cli
     from tmt.base import Plan
 
@@ -161,15 +162,17 @@ class Prepare(tmt.steps.Step):
             self.actions()
             return
 
+        import tmt.base
+
         # Required packages
-        requires = set(
-            self.plan.discover.requires() +
-            self.plan.provision.requires() +
-            self.plan.prepare.requires() +
-            self.plan.execute.requires() +
-            self.plan.report.requires() +
-            self.plan.finish.requires()
-            )
+        requires = uniq([
+            *self.plan.discover.requires(),
+            *self.plan.provision.requires(),
+            *self.plan.prepare.requires(),
+            *self.plan.execute.requires(),
+            *self.plan.report.requires(),
+            *self.plan.finish.requires()
+            ])
 
         if requires:
             data: _RawPrepareStepData = dict(
@@ -177,18 +180,30 @@ class Prepare(tmt.steps.Step):
                 name='requires',
                 summary='Install required packages',
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                package=list(requires))
+                package=[
+                    require.to_spec()
+                    for require in tmt.base.assert_simple_requirements(
+                        requires,
+                        'After beakerlib processing, tests may have only simple requirements',
+                        self._logger)
+                    ])
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Recommended packages
-        recommends = self.plan.discover.recommends()
+        recommends = uniq(self.plan.discover.recommends())
         if recommends:
             data = dict(
                 how='install',
                 name='recommends',
                 summary='Install recommended packages',
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                package=recommends,
+                package=[
+                    recommend.to_spec()
+                    for recommend in tmt.base.assert_simple_requirements(
+                        recommends,
+                        'After beakerlib processing, tests may have only simple requirements',
+                        self._logger)
+                    ],
                 missing='skip')
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
@@ -244,16 +259,3 @@ class Prepare(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def requires(self) -> List[str]:
-        """
-        Packages required by all enabled prepare plugins
-
-        Return a list of packages which need to be installed on the
-        provisioned guest so that the preparation tasks work well.
-        Used by the prepare step.
-        """
-        requires = set()
-        for plugin in self.phases(classes=PreparePlugin):
-            requires.update(plugin.requires())
-        return list(requires)

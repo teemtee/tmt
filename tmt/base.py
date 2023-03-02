@@ -408,6 +408,34 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
         ]
 
 
+def assert_simple_requirements(
+        requirements: List[Require],
+        error_message: str,
+        logger: tmt.log.Logger) -> List[RequireSimple]:
+    """
+    Make sure the list of requirements consists of simple ones.
+
+    :param requires: the list of requires.
+    :param error_message: used for a raised exception.
+    :param logger: used for logging.
+    :raises GeneralError: when there is a requirement on the list which
+        is not a subclass of :py:class:`tmt.base.RequireSimple`.
+    """
+
+    non_simple_requirements = list(filter(
+        lambda require: not isinstance(require, RequireSimple),
+        requirements
+        ))
+
+    if not non_simple_requirements:
+        return cast(List[RequireSimple], requirements)
+
+    for require in non_simple_requirements:
+        logger.fail(f'Invalid requirement: {require}')
+
+    raise tmt.utils.GeneralError(error_message)
+
+
 CoreT = TypeVar('CoreT', bound='Core')
 
 

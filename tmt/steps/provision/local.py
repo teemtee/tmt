@@ -2,6 +2,7 @@ import dataclasses
 from typing import Any, List, Optional, Union
 
 import tmt
+import tmt.base
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils

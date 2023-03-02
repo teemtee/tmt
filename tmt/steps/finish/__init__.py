@@ -144,16 +144,3 @@ class Finish(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def requires(self) -> List[str]:
-        """
-        Packages required by all enabled finish plugins
-
-        Return a list of packages which need to be installed on the
-        provisioned guest so that the finishing tasks work well.
-        Used by the prepare step.
-        """
-        requires = set()
-        for plugin in self.phases(classes=FinishPlugin):
-            requires.update(plugin.requires())
-        return list(requires)

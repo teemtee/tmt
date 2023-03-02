@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, cast
 import click
 
 import tmt
+import tmt.base
 import tmt.options
 import tmt.steps
 import tmt.steps.execute
@@ -425,6 +426,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         """ Return test results """
         return self._results
 
-    def requires(self) -> List[str]:
-        """ Return list of required packages """
+    def requires(self) -> List[tmt.base.Require]:
+        """ All requirements of the plugin on the guest """
         return []
