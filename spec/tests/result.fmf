@@ -22,8 +22,10 @@ description: |
     custom
         test needs to create it's own ``results.yaml`` file in the
         ``${TMT_TEST_DATA}`` directory. The ``results.yaml`` contains list of
-        dictionaries. Each dictionary must contain at least ``name`` and
-        ``result`` keys. Optional keys are ``log`` (a list of paths to log
+        dictionaries. Each dictionary must contain at least a ``name`` key,
+        whose value would be appended to the original test name (a special
+        value ``name: "/"`` sets result for the test itself) and a ``result``
+        key. Optional keys are ``log`` (a list of paths to log
         files, each path must be relative to path in ``$TMT_TEST_DATA``
         environment variable), ``duration`` (in HH:MM:SS format) and ``note``.
 
