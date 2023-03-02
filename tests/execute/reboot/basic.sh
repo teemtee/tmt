@@ -22,7 +22,7 @@ rlJournalStart
             # Check that the whole output log is kept
             # The test output is not stored in log in interactive mode
             if [ -z "$interactive" ]; then
-                rlRun "log=$run/plan/execute/data/test/output.txt"
+                rlRun "log=$run/plan/execute/data/test-1/output.txt"
                 rlAssertGrep "After first reboot" $log
                 rlAssertGrep "After second reboot" $log
                 rlAssertGrep "After third reboot" $log

@@ -1,0 +1,29 @@
+execute:
+    how: tmt
+provision:
+    how: local
+
+/single-discover:
+    discover:
+        how: fmf
+
+/multiple-discover:
+    discover:
+        - how: fmf
+        - how: fmf
+        - how: fmf
+
+/multiple-plans:
+    /plan1:
+        discover:
+          - how: fmf
+          - how: fmf
+
+    /plan2:
+        discover:
+          how: fmf
+
+    /plan3:
+        discover:
+          - how: fmf
+          - how: fmf

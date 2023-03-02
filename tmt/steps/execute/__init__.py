@@ -200,8 +200,10 @@ class ExecutePlugin(tmt.steps.Plugin):
         filename not provided) or to the given data file otherwise.
         """
         # Prepare directory path, create if requested
-        assert self.step.workdir is not None
-        directory = self.step.workdir / TEST_DATA / test.name.lstrip('/')
+        assert self.step.workdir is not None  # narrow type
+        directory = self.step.workdir \
+            / TEST_DATA \
+            / f'{test.name.lstrip("/") or "default"}-{test.serialnumber}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:
@@ -393,15 +395,33 @@ class ExecutePlugin(tmt.steps.Plugin):
         custom_results = []
         for partial_result_data in results:
             partial_result = tmt.Result.from_serialized(partial_result_data)
+
             # Name '/' means the test itself
             if partial_result.name == '/':
                 partial_result.name = test.name
             else:
                 partial_result.name = test.name + partial_result.name
+
             # Fix log paths as user provides relative path to TMT_TEST_DATA
             # but Result has to point relative to the execute workdir
             log_path_base = self.data_path(test, full=False, filename=tmt.steps.execute.TEST_DATA)
             partial_result.log = [log_path_base / log for log in partial_result.log]
+
+            # TODO: this might need more care: the test has been assigned a serial
+            # number, which is now part of its data directory path. Now, the test
+            # produced custom results, with possibly many, many results. What
+            # is the serial number of a test they belong to?
+            #
+            # A naive implementation assigns them the serial number of the test
+            # that spawned them, but it can be argued the test may effectively
+            # create results for virtual tests, would they deserve their own
+            # serial numbers? On the hand, there's no risk of on-disk collision
+            # as these tests do not really exist, they do not have their own
+            # data directories, they are all confined into its parent test's
+            # directory. And the serial number correspondence in results.yaml
+            # can be useful, for grouping results that belong to the same tests.
+            partial_result.serialnumber = test.serialnumber
+
             custom_results.append(partial_result)
 
         return custom_results

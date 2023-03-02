@@ -76,6 +76,7 @@ class Result(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a single test result """
 
     name: str
+    serialnumber: int = 0
     result: ResultOutcome = field(
         default=ResultOutcome.PASS,
         serialize=lambda result: result.value,
@@ -141,6 +142,7 @@ class Result(tmt.utils.SerializableContainer):
 
         _result = Result(
             name=test.name,
+            serialnumber=test.serialnumber,
             result=result,
             note=note,
             duration=duration,

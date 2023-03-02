@@ -20,10 +20,10 @@ rlJournalStart
         rlAssertGrep "3 tests passed" $rlRun_LOG
         # Check that the IN_PLACE_UPGRADE variable was set
         data="$run/plan/no-path/execute/data"
-        rlAssertGrep "IN_PLACE_UPGRADE=old" "$data/old/test/output.txt"
-        rlAssertGrep "IN_PLACE_UPGRADE=new" "$data/new/test/output.txt"
+        rlAssertGrep "IN_PLACE_UPGRADE=old" "$data/old/test-1/output.txt"
+        rlAssertGrep "IN_PLACE_UPGRADE=new" "$data/new/test-1/output.txt"
         # No upgrade path -> no environment variable
-        rlAssertNotGrep "VERSION_ID=$PREVIOUS_VERSION" "$data/upgrade/tasks/prepare/output.txt"
+        rlAssertNotGrep "VERSION_ID=$PREVIOUS_VERSION" "$data/upgrade/tasks/prepare-0/output.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup

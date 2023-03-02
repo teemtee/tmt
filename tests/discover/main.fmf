@@ -56,3 +56,7 @@
 /force:
     summary: Force run of discover finds tests
     test: ./force.sh
+
+/serial-number:
+    summary: Test test serial number assignment
+    test: ./serial-number.sh
