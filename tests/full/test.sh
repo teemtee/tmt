@@ -117,6 +117,24 @@ rlJournalStart
             rlRun "virt-customize -a $qcow --run-command 'dnf makecache'" 0 "pre-fetch dnf cache in the image"
         done
 
+        # Some plans install tmt into provisioned guests however host might not be the same version
+        # check and compile rpms for guests if necessary
+        rlRun -s "su -l -c 'podman run --rm fedora cat /etc/os-release | grep CPE_NAME=' $USER"
+        image_cpe_name="$(cat $rlRun_LOG)"
+
+        if [[ "$image_cpe_name" != "$(grep CPE_NAME= /etc/os_release)" ]]; then
+            rlLog "Host OS differs from default image OS, compile new rpms"
+            CONTAINER=BUILDER_$$
+            rlRun "podman run --rm -v $USER_HOME/tmt:/tmp/tmt:Z -itd --name $CONTAINER fedora"
+            rlRun "podman exec $CONTAINER dnf install -y 'dnf-command(builddep)' make rpm-build python3-docutils"
+            rlRun "podman exec -w /tmp/tmt $CONTAINER  dnf builddep -y tmt.spec"
+            rlRun "podman exec -w /tmp/tmt $CONTAINER make rpm"
+            rlRun "podman kill $CONTAINER"
+        else
+            rlLog "Host OS is the same as default image OS, no need to compile rpms"
+        fi
+
+
         rlRun "su -l -c 'tmt run --id $CONNECT_RUN plans --default provision -h virtual' $USER"
         CONNECT_TO=$CONNECT_RUN/plans/default/provision/guests.yaml
         rlAssertExists $CONNECT_TO
