@@ -146,6 +146,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
 
+        environment["TMT_TEST_NAME"] = test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
         environment["TMT_REBOOT_REQUEST"] = str(
             data_directory / tmt.steps.execute.TEST_DATA / TMT_REBOOT_SCRIPT.created_file)
