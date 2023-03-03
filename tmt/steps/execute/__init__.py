@@ -32,6 +32,9 @@ DEFAULT_FRAMEWORK = 'shell'
 # The main test output filename
 TEST_OUTPUT_FILENAME = 'output.txt'
 
+# Metadata file with details about the current test
+TEST_METADATA_FILENAME = 'metadata.yaml'
+
 # Scripts source directory
 SCRIPTS_SRC_DIR = Path(pkg_resources.resource_filename(
     'tmt', 'steps/execute/scripts'))
@@ -216,13 +219,13 @@ class ExecutePlugin(tmt.steps.Plugin):
         Prepare discovered tests for testing
 
         Check which tests have been discovered, for each test prepare
-        the aggregated metadata in a 'metadata.yaml' file under the test
-        data directory and finally return a list of discovered tests.
+        the aggregated metadata in a file under the test data directory
+        and finally return a list of discovered tests.
         """
         tests: List[tmt.Test] = self.discover.tests()
         for test in tests:
             metadata_filename = self.data_path(
-                test, filename='metadata.yaml', full=True, create=True)
+                test, filename=TEST_METADATA_FILENAME, full=True, create=True)
             self.write(
                 metadata_filename, tmt.utils.dict_to_yaml(test._metadata))
         return tests
