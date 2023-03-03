@@ -665,6 +665,20 @@ using both the attribute and the option, the value from the
 
     $ tmt run -e REPO=tmt
 
+Variables can be also utilized to pick tests from specific discovery phase.
+The command line (``tmt run tests --name ...``) applies for the whole discovery
+step and would select more tests than required in the case the test names are not unique::
+
+    discover:
+      - how: fmf
+        url: https://github.com/teemtee/tmt.git
+        test: ${PICK_TMT}
+      - how: fmf
+        url: https://github.com/teemtee/fmf.git
+        test: ${PICK_FMF}
+
+    $ tmt run -e PICK_TMT='^/tests/core/ls$' -e PICK_FMF='^/tests/(unit|basic/ls)$'
+
 For :ref:`context</spec/context>` parametrization the syntax is
 ``$@dimension`` or ``$@{dimension}``. The values are set according
 to the defined context specified using ``--context`` command line
@@ -678,6 +692,7 @@ option and the ``context`` plan attribute::
         ref: $@{branch}
 
     $ tmt -c branch=tmt run
+
 
 Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------

@@ -13,6 +13,7 @@ rlJournalStart
     plan_ctx='plan -n parametrize/context'
     plan_combined='plan -n parametrize/combined'
     plan_conflict='plan -n parametrize/conflict'
+    plan_testselect='plan -n parametrize/testselect'
     steps='discover finish'
 
     rlPhaseStartTest 'From environment attribute'
@@ -73,6 +74,18 @@ rlJournalStart
         rlRun "tmt run -r $plan_conflict $steps 2>&1 >/dev/null | tee output" 2
         rlAssertGrep 'url: https://github.com/teemtee/foobar' 'output'
     rlPhaseEnd
+
+    rlPhaseStartTest 'Using context and variable to select tests'
+        rlRun -s "tmt -c PICK_FMF='^/tests/(unit|basic/ls)$' \
+            run -e PICK_TMT='^/tests/core/ls$' \
+             -r $plan_testselect discover -v finish > /dev/null"
+
+        rlAssertGrep "tests: ^/tests/core/ls$" "$rlRun_LOG" -F
+        rlAssertGrep "tests: ^/tests/(unit|basic/ls)$" "$rlRun_LOG" -F
+        rlAssertGrep " 3 tests selected" "$rlRun_LOG" -F
+        rlAssertGrep "/TMT/tests/core/ls" "$rlRun_LOG" -F
+        rlAssertGrep "/FMF/tests/basic/ls" "$rlRun_LOG" -F
+        rlAssertGrep "/FMF/tests/unit" "$rlRun_LOG" -F
 
     rlPhaseStartCleanup
         rlRun 'rm -f output' 0 'Removing tmp file'
