@@ -370,11 +370,19 @@ TMT_PLAN_DATA
 The following environment variables are provided to the test
 during the execution:
 
+TMT_TEST_NAME
+    The test name, as a resolved FMF object name starting with ``/``
+    from the root of the hierarchy.
+
 TMT_TEST_DATA
     Path to the directory where test can store logs and other
     artifacts generated during its execution. These will be pulled
     back from the guest and available for inspection after the
     test execution is finished.
+
+TMT_TEST_METADATA
+    Path to a YAML-formatted file with test metadata collected
+    during the ``discover`` step.
 
 TMT_SOURCE_DIR
     Path to directory with downloaded and extracted sources if
