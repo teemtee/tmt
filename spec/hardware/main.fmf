@@ -19,6 +19,33 @@ description: |
     grouped under a common parent, for example ``cores`` or
     ``model`` under the :ref:`/spec/hardware/cpu` key.
 
+    Comparison operators
+    --------------------
+
+    The ``value`` part of the constraint follows the schema ``[operator] actual-value``.
+    The ``operator`` is optional, it may be any of the following: ``=``, ``!=``,
+    ``>``, ``>=``, ``<``, ``>=``, ``~`` (regex match), and ``!~`` (regex *not*
+    matches). When operator is omitted, ``=`` is assumed.
+
+    .. note::
+
+       It is **highly** recommended to wrap values with single or double quotes,
+       i.e. ``memory: '>= 8 GiB'`` rather than ``memory: >= 8 GiB``. This should
+       prevent any unexpected processing by parsers loading the fmf content.
+       Without explicit quotes, some operators might lead to unexpected outcome.
+
+        # This...
+        memory: '8 GB'
+        # ... is the same as this:
+        memory: '= 8 GB'
+
+        # Optional operators at the start of the value
+        memory: '!= 8 GB'
+        memory: '> 8 GB'
+        memory: '>= 8 GB'
+        memory: '< 8 GB'
+        memory: '<= 8 GB'
+
     Search
     ------
 
@@ -40,8 +67,8 @@ description: |
         # Select guests with a non-matching hostname
         hostname: "!~ kvm-01.*"
 
-    Operators
-    ---------
+    Logic operators
+    ---------------
 
     When multiple environment requirements are provided the
     provision implementation should attempt to satisfy all of
@@ -50,12 +77,6 @@ description: |
     individual requirements. When the ``or`` operator is used, any
     of the alternatives provided in the list should be
     sufficient::
-
-        # Optional operators at the start of the value
-        memory: '> 8 GB'
-        memory: '>= 8 GB'
-        memory: '< 8 GB'
-        memory: '<= 8 GB'
 
         # By default exact value expected, these are equivalent:
         cpu:
