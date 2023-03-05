@@ -220,3 +220,7 @@ def test_labels(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) 
     root_logger.labels += ['bar']
 
     _exercise_logger(caplog, root_logger, labels=['foo', 'bar'])
+
+
+def test_bootstrap_logger(caplog: _pytest.logging.LogCaptureFixture) -> None:
+    _exercise_logger(caplog, Logger.get_boostrap_logger())
