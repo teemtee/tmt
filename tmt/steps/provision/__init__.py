@@ -2,6 +2,7 @@ import collections
 import dataclasses
 import datetime
 import enum
+import functools
 import os
 import random
 import re
@@ -10,8 +11,8 @@ import string
 import subprocess
 import tempfile
 from shlex import quote
-from typing import (TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type,
-                    Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
+                    Type, Union, cast, overload)
 
 import click
 import fmf
@@ -22,7 +23,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.utils
 from tmt.steps import Action
-from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
+from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -59,6 +60,232 @@ class CheckRsyncOutcome(enum.Enum):
     INSTALLED = 'installed'
 
 
+_FactQuery = Callable[['GuestFacts', 'Guest'], Optional[str]]
+_SafeFactQuery = Callable[['GuestFacts', 'Guest'], str]
+
+
+def raise_on_none(family: str) -> Callable[[_FactQuery], _SafeFactQuery]:
+    def outer(fn: _FactQuery) -> _SafeFactQuery:
+        @functools.wraps(fn)
+        def inner(self: 'GuestFacts', guest: 'Guest') -> str:
+            fact = fn(self, guest)
+
+            if fact is not None:
+                return fact
+
+            raise tmt.utils.GeneralError(
+                f'Failed to identify {family} of guest "{guest}".')
+
+        return inner
+
+    return outer
+
+
+@dataclasses.dataclass
+class GuestFacts(tmt.utils.SerializableContainer):
+    """
+    Contains interesting facts about the guest.
+
+    Inspired by Ansible or Puppeteer facts, interesting guest facts tmt
+    discovers while managing the guest are stored in this container, plus the
+    code performing the discovery of these facts.
+    """
+
+    #: Set to ``True`` by the first call to :py:meth:`sync`.
+    in_sync: bool = False
+
+    arch: Optional[str] = None
+    distro: Optional[str] = None
+    kernel_release: Optional[str] = None
+    package_manager: Optional[str] = None
+
+    os_release_content: Dict[str, str] = field(default_factory=dict)
+    lsb_release_content: Dict[str, str] = field(default_factory=dict)
+
+    # TODO nothing but a fancy helper, to check for some special errors that
+    # may appear this soon in provisioning. But, would it make sense to put
+    # this detection into the `GuestSsh.execute()` method?
+    def _execute(
+            self,
+            guest: 'Guest',
+            command: Command) -> Optional[tmt.utils.CommandOutput]:
+        """
+        Run a command on the given guest.
+
+        On top of the basic :py:meth:`Guest.execute`, this helper is able to
+        detect a common issue with guest access. Facts are the first info tmt
+        fetches from the guest, and would raise the error as soon as possible.
+
+        :returns: command output if the command quit with a zero exit code,
+            ``None`` otherwise.
+        :raises tmt.units.GeneralError: when logging into the guest fails
+            because of a username mismatch.
+        """
+
+        try:
+            return guest.execute(command, silent=True)
+
+        except tmt.utils.RunError as exc:
+            if exc.stdout and 'Please login as the user' in exc.stdout:
+                raise tmt.utils.GeneralError(f'Login to the guest failed.\n{exc.stdout}') from exc
+
+        return None
+
+    def _fetch_keyval_file(self, guest: 'Guest', filepath: Path) -> Dict[str, str]:
+        """
+        Load key/value pairs from a file on the given guest.
+
+        Converts file with ``key=value`` pairs into a mapping. Some values might
+        be wrapped with quotes.
+
+        .. code:: shell
+
+           $ cat /etc/os-release
+           NAME="Ubuntu"
+           VERSION="20.04.5 LTS (Focal Fossa)"
+           ID=ubuntu
+           ID_LIKE=debian
+           ...
+
+        :returns: mapping with key/value pairs loaded from ``filepath``, or an
+            empty mapping if it was impossible to load the content.
+        """
+
+        content: Dict[str, str] = {}
+
+        output = self._execute(guest, Command('cat', str(filepath)))
+
+        if not output or not output.stdout:
+            return content
+
+        for line in output.stdout.splitlines(keepends=False):
+            line = line.strip()
+            if not line:
+                continue
+
+            key, value = line.split('=', 1)
+
+            if value.startswith('"'):
+                value = value[1:]
+            if value.endswith('"'):
+                value = value[:-1]
+
+            content[key] = value
+
+        return content
+
+    def _probe(
+            self,
+            guest: 'Guest',
+            probes: List[Tuple[Command, str]]) -> Optional[str]:
+        """
+        Find a first successfull command.
+
+        :param guest: the guest to run commands on.
+        :param probes: list of command/mark pairs.
+        :returns: "mark" corresponding to the first command to quit with
+            a zero exit code.
+        :raises tmt.utils.GeneralError: when no command succeeded.
+        """
+
+        for command, outcome in probes:
+            if self._execute(guest, command):
+                return outcome
+
+        return None
+
+    def _query(
+            self,
+            guest: 'Guest',
+            probes: List[Tuple[Command, str]]) -> Optional[str]:
+        """
+        Find a first successfull command, and extract info from its output.
+
+        :param guest: the guest to run commands on.
+        :param probes: list of command/pattenr pairs.
+        :returns: substring extracted by the first matching pattern.
+        :raises tmt.utils.GeneralError: when no command succeeded, or when no
+            pattern matched.
+        """
+
+        for command, pattern in probes:
+            output = self._execute(guest, command)
+
+            if not output:
+                continue
+
+            if not output.stdout:
+                guest.debug('command produced no usable output')
+
+                continue
+
+            match = re.search(pattern, output.stdout)
+
+            if not match:
+                guest.debug('command produced no usable output')
+
+                continue
+
+            return match.group(1)
+
+        return None
+
+    def _query_arch(self, guest: 'Guest') -> Optional[str]:
+        return self._query(
+            guest,
+            [
+                (Command('arch'), r'(.+)')
+                ])
+
+    def _query_distro(self, guest: 'Guest') -> Optional[str]:
+        # Try some low-hanging fruits first. We already might have the answer,
+        # provided by some standardized locations.
+        if 'PRETTY_NAME' in self.os_release_content:
+            return self.os_release_content['PRETTY_NAME']
+
+        if 'DISTRIB_DESCRIPTION' in self.lsb_release_content:
+            return self.lsb_release_content['DISTRIB_DESCRIPTION']
+
+        # Nope, inspect more files.
+        return self._query(
+            guest,
+            [
+                (Command('cat', '/etc/redhat-release'), r'(.*)'),
+                (Command('cat', '/etc/fedora-release'), r'(.*)')
+                ])
+
+    def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
+        return self._query(
+            guest,
+            [
+                (Command('uname', '-r'), r'(.+)')
+                ])
+
+    def _query_package_manager(self, guest: 'Guest') -> Optional[str]:
+        return self._probe(
+            guest,
+            [
+                (Command('stat', '/run/ostree-booted'), 'rpm-ostree'),
+                (Command('rpm', '-q', 'dnf'), 'dnf'),
+                (Command('rpm', '-q', 'yum'), 'yum'),
+                # And, one day, we'd follow up on this with...
+                # (Command('dpkg', '-l', 'apt'), 'apt')
+                ])
+
+    def sync(self, guest: 'Guest') -> None:
+        """ Update stored facts to reflect the given guest """
+
+        self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
+        self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
+
+        self.arch = self._query_arch(guest)
+        self.distro = self._query_distro(guest)
+        self.kernel_release = self._query_kernel_release(guest)
+        self.package_manager = self._query_package_manager(guest)
+
+        self.in_sync = True
+
+
 @dataclasses.dataclass
 class GuestData(tmt.utils.SerializableContainer):
     """
@@ -71,6 +298,12 @@ class GuestData(tmt.utils.SerializableContainer):
     role: Optional[str] = None
     # hostname or ip address
     guest: Optional[str] = None
+
+    facts: GuestFacts = field(
+        default_factory=GuestFacts,
+        serialize=lambda facts: facts.to_serialized(),  # type: ignore[attr-defined]
+        unserialize=lambda serialized: GuestFacts.from_serialized(serialized)
+        )
 
 
 class Guest(tmt.utils.Common):
@@ -96,6 +329,8 @@ class Guest(tmt.utils.Common):
 
     role: Optional[str]
     guest: Optional[str]
+
+    # facts: GuestFacts
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -200,6 +435,30 @@ class Guest(tmt.utils.Common):
         """
         self.debug(f"Doing nothing to start guest '{self.guest}'.")
 
+    # A bit of Python magic: we want to run `sync()` when first accessing
+    # `self.facts`. But the field might be already initialized because
+    # of how guest data => guest key loading works. Also, we can't afford
+    # to have an extra member, like ``_facts``, to store ``None``until facts
+    # are loaded, because such a field would not be serialized, and we want
+    # to save the facts we found already, to save time.
+    #
+    # Therefore we overshadow the ``facts`` member here, with a property,
+    # and when accessed, we call the method. The only issue is, we need to
+    # make sure to not access ``self.facts`` directly because fo recursion,
+    # but we can update it via ``self.__dict__``.
+    @property
+    def facts(self) -> GuestFacts:
+        facts = cast(GuestFacts, self.__dict__['facts'])
+
+        if not facts.in_sync:
+            facts.sync(self)
+
+        return facts
+
+    @facts.setter
+    def facts(self, facts: Dict[str, Any]) -> None:
+        self.__dict__['facts'] = GuestFacts.from_serialized(facts)
+
     def details(self) -> None:
         """ Show guest details such as distro and kernel """
 
@@ -209,60 +468,10 @@ class Guest(tmt.utils.Common):
         if self.opt('dry'):
             return
 
-        # A small helper to make the repeated run & extract combo easier on eyes.
-        def _fetch_detail(command: Command, pattern: str) -> str:
-            output = self.execute(command, silent=True)
-
-            if not output.stdout:
-                raise tmt.utils.RunError(
-                    'command produced no usable output',
-                    command,
-                    0,
-                    output.stdout,
-                    output.stderr)
-
-            match = re.search(pattern, output.stdout)
-
-            if not match:
-                raise tmt.utils.RunError(
-                    'command produced no usable output',
-                    command,
-                    0,
-                    output.stdout,
-                    output.stderr)
-
-            return match.group(1)
-
-        # Distro
-        distro_commands: List[Tuple[Command, str]] = [
-            # Check os-release first
-            (Command('cat', '/etc/os-release'), r'PRETTY_NAME="(.*)"'),
-            # Check for lsb-release
-            (Command('cat', '/etc/lsb-release'), r'DISTRIB_DESCRIPTION="(.*)"'),
-            # Check for redhat-release
-            (Command('cat', '/etc/redhat-release'), r'(.*)')
-            ]
-
-        for command, pattern in distro_commands:
-            try:
-                distro: Optional[str] = _fetch_detail(command, pattern)
-                break
-            except tmt.utils.RunError:
-                continue
-        else:
-            distro = None
-
-        # Handle standard cloud images message when connecting
-        if distro is not None and 'Please login as the user' in distro:
-            raise tmt.utils.GeneralError(
-                f'Login to the guest failed.\n{distro}')
-
-        if distro:
-            self.info('distro', distro, 'green')
-
-        # Kernel
-        kernel = _fetch_detail(Command('uname', '-r'), r'(.+)')
-        self.verbose('kernel', kernel, 'green')
+        self.info('arch', self.facts.arch, 'green')
+        self.info('distro', self.facts.distro, 'green')
+        self.verbose('kernel', self.facts.kernel_release, 'green')
+        self.verbose('package manager', self.facts.package_manager, 'green')
 
     def _ansible_verbosity(self) -> List[str]:
         """ Prepare verbose level based on the --debug option count """

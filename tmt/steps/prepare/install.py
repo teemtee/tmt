@@ -603,16 +603,20 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
             return
 
         # Pick the right implementation
-        try:
-            guest.execute(Command('stat', '/run/ostree-booted'), silent=True)
-            installer: InstallBase = InstallRpmOstree(
-                logger=logger, parent=self, guest=guest)
-        except tmt.utils.RunError:
-            try:
-                guest.execute(Command('rpm', '-q', 'dnf'), silent=True)
-                installer = InstallDnf(logger=logger, parent=self, guest=guest)
-            except tmt.utils.RunError:
-                installer = InstallYum(logger=logger, parent=self, guest=guest)
+        # TODO: it'd be nice to use a "plugin registry" and make the implementations
+        # discovered as any other plugins.
+        if guest.facts.package_manager == 'rpm-ostree':
+            installer: InstallBase = InstallRpmOstree(logger=logger, parent=self, guest=guest)
+
+        elif guest.facts.package_manager == 'dnf':
+            installer = InstallDnf(logger=logger, parent=self, guest=guest)
+
+        elif guest.facts.package_manager == 'yum':
+            installer = InstallYum(logger=logger, parent=self, guest=guest)
+
+        else:
+            raise tmt.utils.PrepareError(
+                f'Package manager "{guest.facts.package_manager}" is not supported.')
 
         # Enable copr repositories and install packages
         installer.enable_copr()
