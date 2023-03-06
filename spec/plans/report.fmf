@@ -122,7 +122,8 @@ description:
                     tests:
                         /test/one:
                             result: TEST_RESULT
-                            log: LOG_PATH
+                            log:
+                              - LOG_PATH
 
                         /test/two:
                             result: TEST_RESULT
@@ -134,7 +135,8 @@ description:
                     result: PLAN_RESULT
                         /test/one:
                             result: TEST_RESULT
-                            log: LOG_PATH
+                            log:
+                              - LOG_PATH
 
         Where ``OVERALL_RESULT`` is the overall result of all plan
         results. It is counted the same way as ``PLAN_RESULT``.
@@ -165,6 +167,6 @@ description:
               plan result will be error
 
         Where ``LOG_PATH`` is the test log output path, relative
-        to the execute step plan run directory.  The log can be a
-        single log path or a list of log paths, in case the test
-        has produced more log files.
+        to the execute step plan run directory. The ``log`` key
+        will be a list of such paths, even if there is just a single
+        log.
