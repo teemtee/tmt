@@ -176,8 +176,7 @@ class BaseLoggerFnType(Protocol):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1,
-            err: bool = False) -> None:
+            level: int = 1) -> None:
         pass
 
 
@@ -187,8 +186,7 @@ class LevelessLoggerFnType(Protocol):
             key: str,
             value: Optional[str] = None,
             color: Optional[str] = None,
-            shift: int = 0,
-            err: bool = False) -> None:
+            shift: int = 0) -> None:
         pass
 
 
@@ -655,8 +653,7 @@ class Common(_CommonBase):
             key: str,
             value: Optional[str] = None,
             color: Optional[str] = None,
-            shift: int = 0,
-            err: bool = False) -> None:
+            shift: int = 0) -> None:
         """ Print a message regardless the quiet mode """
         self._logger.print(key, value=value, color=color, shift=shift)
 
@@ -665,8 +662,7 @@ class Common(_CommonBase):
             key: str,
             value: Optional[str] = None,
             color: Optional[str] = None,
-            shift: int = 0,
-            err: bool = False) -> None:
+            shift: int = 0) -> None:
         """ Show a message unless in quiet mode """
         self._logger.info(key, value=value, color=color, shift=shift)
 
@@ -676,8 +672,7 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1,
-            err: bool = False) -> None:
+            level: int = 1) -> None:
         """
         Show message if in requested verbose mode level
 
@@ -691,8 +686,7 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1,
-            err: bool = False) -> None:
+            level: int = 1) -> None:
         """
         Show message if in requested debug mode level
 
@@ -714,15 +708,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 1,
-            level: int = 3,
-            err: bool = False) -> None:
+            level: int = 3) -> None:
         """
         Reports the executed command in verbose mode.
 
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level, err=err)
+        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
     def _run(self,
              command: Command,
