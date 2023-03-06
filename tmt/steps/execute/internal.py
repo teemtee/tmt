@@ -170,10 +170,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 2,
-            level: int = 3,
-            err: bool = False) -> None:
+            level: int = 3) -> None:
         """ Custom logger for test output with shift 2 and level 3 defaults """
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level, err=err)
+        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
     def execute(self, test: Test, guest: Guest,
                 extra_environment: Optional[EnvironmentType] = None) -> None:
