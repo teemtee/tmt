@@ -566,11 +566,12 @@ class Core(
     def fmf_id(self) -> FmfId:
         """ Return full fmf identifier of the node """
 
-        return tmt.utils.fmf_id(self.name, Path(self.node.root))
+        return tmt.utils.fmf_id(self.name, Path(self.node.root), self._logger)
 
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
-        fmf_id = tmt.utils.fmf_id(self.name, Path(self.node.root), always_get_ref=True)
+        fmf_id = tmt.utils.fmf_id(self.name, Path(self.node.root), self._logger,
+                                  always_get_ref=True)
         if fmf_id.ref is None or fmf_id.url is None:
             return None
 

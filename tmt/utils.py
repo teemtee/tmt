@@ -2459,43 +2459,45 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
 
 
 @lru_cache(maxsize=None)
-def fmf_id(name: str, fmf_root: Path, always_get_ref: bool = False) -> 'tmt.base.FmfId':
+def fmf_id(name: str, fmf_root: Path, logger: tmt.log.Logger,
+           always_get_ref: bool = False) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
-    def run(command: str) -> str:
+    def run(command: Command) -> str:
         """ Run command, return output """
-        cwd = fmf_root
-        result = subprocess.run(
-            command.split(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            cwd=cwd)
-        return result.stdout.strip().decode("utf-8")
+        try:
+            result = run_command(command=command, cwd=fmf_root, logger=logger)
+            if result.stdout is None:
+                return ""
+            return result.stdout.strip()
+        except BaseException:
+            # Always return an empty string in case 'git' command is run in a non-git repo
+            return ""
 
     from tmt.base import FmfId
 
     fmf_id = FmfId(name=name)
 
     # Prepare url (for now handle just the most common schemas)
-    branch = run("git rev-parse --abbrev-ref --symbolic-full-name @{u}")
+    branch = run(Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"))
     try:
         remote_name = branch[:branch.index('/')]
     except ValueError:
         remote_name = 'origin'
-    remote = run(f"git config --get remote.{remote_name}.url")
+    remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
     fmf_id.url = public_git_url(remote) if remote else None
 
     # Construct path (if different from git root)
-    git_root = Path(run('git rev-parse --show-toplevel'))
+    git_root = Path(run(Command("git", "rev-parse", "--show-toplevel")))
     if git_root.resolve() != fmf_root.resolve():
         fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
 
     # Get the ref (skip for the default)
-    def_branch = default_branch(git_root)
+    def_branch = default_branch(git_root, logger)
     if def_branch is None:
         fmf_id.ref = None
     else:
-        ref = run('git rev-parse --abbrev-ref HEAD')
+        ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
         if ref != def_branch or always_get_ref:
             fmf_id.ref = ref
         else:
@@ -2632,18 +2634,47 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository: Path, remote: str = 'origin') -> Optional[str]:
+def default_branch(repository: Path, logger: tmt.log.Logger,
+                   remote: str = 'origin') -> Optional[str]:
     """ Detect default branch from given local git repository """
+    # Make sure '.git' (which is a file or a directory) is present
+    dot_git = repository / '.git'
+    if not dot_git.exists():
+        return None
+
+    if not dot_git.is_file() and not dot_git.is_dir():
+        return None
+
+    work_repo = repository
+    if dot_git.is_file():
+        # Get the parent path of the worktree and the .git file looks like:
+        #     gitdir: /tmp/foo/REPRO/.git/worktrees/TREE
+        command = Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir")
+        try:
+            result = run_command(command=command, cwd=Path(repository), logger=logger)
+        except BaseException:
+            return None
+        if result.stdout is None:
+            return None
+        git_parent_path = result.stdout.strip().replace('/.git', '')
+
+        # Should get the default branch of its parent
+        work_repo = Path(git_parent_path)
+
     # Make sure the '.git/refs/remotes/{remote}' directory is present
-    git_remotes_dir = repository / f'.git/refs/remotes/{remote}'
+    git_remotes_dir = work_repo / f'.git/refs/remotes/{remote}'
     if not git_remotes_dir.exists():
         return None
 
-    head = repository / f'.git/refs/remotes/{remote}/HEAD'
+    head = git_remotes_dir / 'HEAD'
     # Make sure the HEAD reference is available
     if not head.exists():
-        subprocess.run(
-            f'git remote set-head {remote} --auto'.split(), cwd=repository)
+        command = Command('git', 'remote', 'set-head', f'{remote}', '--auto')
+        try:
+            run_command(command=command, cwd=Path(work_repo), logger=logger)
+        except BaseException:
+            return None
+
     # The ref format is 'ref: refs/remotes/origin/main'
     with open(head) as ref:
         return ref.read().strip().split('/')[-1]

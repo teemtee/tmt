@@ -16,6 +16,7 @@ rlJournalStart
         rlRun "show_tmp=\$(mktemp)"
         rlRun "show_dir1=\$(mktemp -d)"
         rlRun "show_dir2=\$(mktemp -d)"
+        rlRun "show_dir3=\$(mktemp -d)"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in a normal git repo"
@@ -55,6 +56,30 @@ rlJournalStart
         rlAssertNotGrep "path:" $show_tmp
         rlAssertGrep "name:" $show_tmp
         rlAssertNotGrep "web" $show_tmp
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in work tree"
+        local_repo="$show_dir3/tmt"
+        plan="/plans/sanity/lint"
+        worktree="TREE"
+        ref="myref"
+
+        rlRun "git clone https://github.com/teemtee/tmt $local_repo"
+        rlRun "pushd $local_repo"
+        rlRun "git branch $ref"
+        rlRun "git worktree add $worktree $ref"
+        rlRun -s "tmt plan show $plan -vvv"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertNotGrep "ref:" $show_tmp
+        rlRun "popd"
+
+        rlRun "pushd $local_repo/$worktree"
+        rlRun -s "tmt plan show $plan -vvv"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertGrep "ref:.*$ref" $show_tmp
         rlRun "popd"
     rlPhaseEnd
 
@@ -140,6 +165,6 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"
-        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2"
+        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2 $show_dir3"
     rlPhaseEnd
 rlJournalEnd
