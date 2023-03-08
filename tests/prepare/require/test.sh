@@ -17,18 +17,18 @@ rlJournalStart
         fi
 
         rlPhaseStartTest "Require an available package ($image)"
-            rlRun "$tmt plan --name available 2>&1 >/dev/null | tee output"
-            rlAssertGrep '1 preparation applied' output
+            rlRun -s "$tmt plan --name available"
+            rlAssertGrep '1 preparation applied' $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "Require a missing package ($image)"
-            rlRun "$tmt plan --name missing | tee output" 2
-            rlAssertGrep "$error" output
+            rlRun -s "$tmt plan --name missing" 2
+            rlAssertGrep "$error" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "Require both available and missing ($image)"
-            rlRun "$tmt plan --name mixed | tee output" 2
-            rlAssertGrep "$error" output
+            rlRun -s "$tmt plan --name mixed" 2
+            rlAssertGrep "$error" $rlRun_LOG
         rlPhaseEnd
     done
 
