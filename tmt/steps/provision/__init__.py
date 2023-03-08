@@ -200,6 +200,8 @@ class Guest(tmt.utils.Common):
         if self.opt('dry'):
             return
 
+        self.info('full name', self.full_name, 'green')
+
         # A small helper to make the repeated run & extract combo easier on eyes.
         def _fetch_detail(command: Command, pattern: str) -> str:
             output = self.execute(command, silent=True)
