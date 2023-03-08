@@ -156,17 +156,17 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
 """  # noqa: E501
 
 # VM defaults
-DEFAULT_BOOT_TIMEOUT = 60      # seconds
+DEFAULT_BOOT_TIMEOUT = 120     # seconds
 DEFAULT_CONNECT_TIMEOUT = 60   # seconds
-NON_KVM_ADDITIONAL_WAIT = 10       # seconds
-NON_KVM_TIMEOUT_COEF = 10          # times
+NON_KVM_ADDITIONAL_WAIT = 20   # seconds
+NON_KVM_TIMEOUT_COEF = 10      # times
 
 # SSH key type, set None for ssh-keygen default one
 SSH_KEYGEN_TYPE = "ecdsa"
 
 DEFAULT_USER = 'root'
-DEFAULT_MEMORY = 2048
-DEFAULT_DISK = 10
+DEFAULT_MEMORY = 2048          # MB
+DEFAULT_DISK = 40              # GB (maximum size allowed)
 DEFAULT_IMAGE = 'fedora'
 DEFAULT_CONNECTION = 'session'
 DEFAULT_ARCH = platform.machine()
