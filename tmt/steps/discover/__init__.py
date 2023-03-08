@@ -19,7 +19,7 @@ from tmt.utils import Command, GeneralError, Path, flatten
 
 
 @dataclasses.dataclass
-class DiscoverStepData(tmt.steps.StepData):
+class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     dist_git_source: bool = tmt.utils.field(
         default=False,
         option='--dist-git-source',
