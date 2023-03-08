@@ -80,5 +80,8 @@ properties:
   sync-repo:
     type: boolean
 
+  where:
+    $ref: "/schemas/common#/definitions/where"
+
 required:
   - how

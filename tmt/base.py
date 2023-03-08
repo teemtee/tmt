@@ -730,6 +730,8 @@ class Test(Core, tmt.export.Exportable['Test']):
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
 
+    where: List[str] = []
+
     serialnumber: int = 0
 
     returncode: Optional[int] = None

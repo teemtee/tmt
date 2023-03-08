@@ -22,7 +22,7 @@ import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
-from tmt.utils import Path, flatten
+from tmt.utils import Path, field, flatten
 
 if TYPE_CHECKING:
     import tmt.base
@@ -172,7 +172,10 @@ class WhereableStepData:
     2. https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-where
     """
 
-    where: Optional[str] = None
+    where: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
 
 
 class Step(tmt.utils.Common):
@@ -916,10 +919,14 @@ class BasePlugin(Phase):
 
     def enabled_on_guest(self, guest: 'Guest') -> bool:
         """ Check if the plugin is enabled on the specific guest """
-        where: str = self.get('where')
+
+        # FIXME: cast() - typeless "dispatcher" method
+        where = cast(List[str], self.get('where'))
+
         if not where:
             return True
-        return where in (guest.name, guest.role)
+
+        return any(destination in (guest.name, guest.role) for destination in where)
 
     def _update_data_from_options(self, keys: Optional[List[str]] = None) -> None:
         """

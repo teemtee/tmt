@@ -526,8 +526,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
         # Prefix tests and handle library requires
         for test in self._tests:
-            # Prefix test path with 'tests' and possible 'path' prefix
+            # Propagate `where` key
+            test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
 
+            # Prefix test path with 'tests' and possible 'path' prefix
             assert test.path is not None  # narrow type
             test.path = prefix_path / test.path.unrooted()
             # Check for possible required beakerlib libraries

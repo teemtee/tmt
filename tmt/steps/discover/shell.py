@@ -369,5 +369,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
             tree=tests).tests(
             conditions=["manual is False"])
 
+        # Propagate `where` key
+        for test in self._tests:
+            test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
+
     def tests(self) -> List[tmt.base.Test]:
         return self._tests

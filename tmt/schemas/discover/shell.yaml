@@ -40,6 +40,9 @@ properties:
   keep-git-metadata:
     type: boolean
 
+  where:
+    $ref: "/schemas/common#/definitions/where"
+
   tests:
     type: array
     items:

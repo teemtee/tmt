@@ -6,6 +6,7 @@ from typing import (TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional,
 
 import click
 import fmf
+import fmf.utils
 
 import tmt
 import tmt.steps
@@ -78,9 +79,10 @@ class PreparePlugin(tmt.steps.Plugin):
             logger.info('guest', guest.name, 'green')
 
         # Show requested role if defined
-        where = self.get('where')
+        # FIXME: cast() - typeless "dispatcher" method
+        where = cast(List[str], self.get('where'))
         if where:
-            logger.info('where', where, 'green')
+            logger.info('where', fmf.utils.listed(where), 'green')
 
 
 class Prepare(tmt.steps.Step):
