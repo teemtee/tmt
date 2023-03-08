@@ -153,12 +153,12 @@ def indent(
     labels = labels or []
 
     indent = ' ' * INDENT * level
-    deeper = ' ' * INDENT * (level + 1)
 
     # Colorize
     if color is not None:
         key = click.style(key, fg=color)
 
+    # Prepare prefix if labels provided
     if labels:
         prefix = ''.join(
             # TODO: color here is questionable - it will be removed, but I'd rather not
@@ -166,25 +166,30 @@ def indent(
             click.style(LABEL_FORMAT.format(label=label), fg='cyan')
             for label in labels
             ) + ' '
-
     else:
         prefix = ''
 
     # Handle key only
     if value is None:
-        message = f'{prefix}{key}'
+        return f'{prefix}{indent}{key}'
 
-    # Handle key + value
-    else:
-        # Multiline content indented deeper
-        if isinstance(value, str):
-            lines = value.splitlines()
-            if len(lines) > 1:
-                value = ''.join([f"\n{deeper}{line}" for line in lines])
+    # Key + non-string values
+    if not isinstance(value, str):
+        return f'{prefix}{indent}{key}: {value}'
 
-        message = f'{prefix}{key}: {value}'
+    # If there's just a single line (or less...), emit just that line,
+    # with prefix and indentation, of course.
+    lines = value.splitlines()
+    if len(lines) <= 1:
+        return f'{prefix}{indent}{key}: {value}'
 
-    return indent + message
+    # If we have multiple lines to emit, a key is emitted on its own line,
+    # and all lines of the value are emitted below the key, all with an
+    # extra bit of indentation ("deeper").
+    deeper = ' ' * INDENT
+
+    return f'{prefix}{indent}{key}:\n' \
+        + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
 
 
 class LogRecordDetails(TypedDict, total=False):

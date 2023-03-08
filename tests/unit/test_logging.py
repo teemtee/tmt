@@ -6,7 +6,7 @@ import click
 import pytest
 
 from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
-                     VerbosityLevelFilter)
+                     VerbosityLevelFilter, indent)
 
 from . import assert_log
 
@@ -21,12 +21,10 @@ def _exercise_logger(
     if labels:
         prefix = ''.join(
             click.style(f'[{label}]', fg='cyan') for label in labels
-            ) + ' '
+            ) + indent_by + ' '
 
     else:
-        prefix = ''
-
-    prefix = f'{indent_by}{prefix}'
+        prefix = indent_by
 
     caplog.clear()
 
@@ -224,3 +222,38 @@ def test_labels(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) 
 
 def test_bootstrap_logger(caplog: _pytest.logging.LogCaptureFixture) -> None:
     _exercise_logger(caplog, Logger.get_bootstrap_logger())
+
+
+@pytest.mark.parametrize(
+    ('key', 'value', 'color', 'level', 'labels', 'expected'),
+    [
+        ('dummy-key', None, None, 0, None, 'dummy-key'),
+        ('dummy-key', 'dummy-value', None, 0, None, 'dummy-key: dummy-value'),
+        (
+            'dummy-key',
+            'dummy\nmultiline\nvalue',
+            None,
+            0,
+            None,
+            'dummy-key:\n    dummy\n    multiline\n    value'),
+
+        ('dummy-key', None, None, 2, None, '        dummy-key'),
+        ('dummy-key', 'dummy-value', None, 2, None, '        dummy-key: dummy-value'),
+        (
+            'dummy-key',
+            'dummy\nmultiline\nvalue',
+            None,
+            2,
+            None,
+            '        dummy-key:\n            dummy\n            multiline\n            value')
+        ], ids=[
+        'key only',
+        'key and value',
+        'key and multiline value',
+        'key only, indented',
+        'key and value, indented',
+        'key and multiline value, indented',
+        ]
+    )
+def test_indent(key, value, color, level, labels, expected):
+    assert indent(key, value=value, color=color, level=level, labels=labels) == expected
