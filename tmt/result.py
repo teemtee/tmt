@@ -11,6 +11,7 @@ from tmt.utils import Path, field
 
 if TYPE_CHECKING:
     import tmt.base
+    import tmt.steps.provision
 
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
@@ -105,7 +106,7 @@ class Result(tmt.utils.SerializableContainer):
             duration: Optional[str] = None,
             ids: Optional[Dict[str, Optional[str]]] = None,
             log: Optional[List[Path]] = None,
-            guest: Optional[ResultGuestData] = None) -> 'Result':
+            guest: Optional['tmt.steps.provision.Guest'] = None) -> 'Result':
         """
         Create a result from a test instance.
 
@@ -140,6 +141,9 @@ class Result(tmt.utils.SerializableContainer):
         default_ids.update(ids)
         ids = default_ids
 
+        guest_data = ResultGuestData(name=guest.name, role=guest.role) if guest is not None \
+            else ResultGuestData()
+
         _result = Result(
             name=test.name,
             serialnumber=test.serialnumber,
@@ -148,8 +152,7 @@ class Result(tmt.utils.SerializableContainer):
             duration=duration,
             ids=ids,
             log=log or [],
-            guest=guest or ResultGuestData()
-            )
+            guest=guest_data)
 
         return _result.interpret_result(
             ResultInterpret(test.result) if test.result else ResultInterpret.RESPECT)

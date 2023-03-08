@@ -268,8 +268,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             note=note,
-            duration=test.real_duration
-            )]
+            duration=test.real_duration,
+            guest=guest)]
 
     def check_beakerlib(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a beakerlib test """
@@ -293,7 +293,8 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration)]
+                duration=test.real_duration,
+                guest=guest)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
         # States are: started, incomplete and complete
@@ -310,7 +311,8 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration)]
+                duration=test.real_duration,
+                guest=guest)]
 
         result = search_result.group(1)
         state = search_state.group(1)
@@ -331,7 +333,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=actual_result,
             note=note,
             log=log,
-            duration=test.real_duration)]
+            duration=test.real_duration,
+            guest=guest)]
 
     def check_result_file(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
@@ -375,7 +378,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=actual_result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             duration=test.real_duration,
-            note=note)]
+            note=note,
+            guest=guest)]
 
     def check_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
@@ -392,8 +396,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             return [tmt.Result.from_test(
                 test=test,
                 note=f"custom results file '{custom_results_path}' not found",
-                result=ResultOutcome.ERROR
-                )]
+                result=ResultOutcome.ERROR,
+                guest=guest)]
 
         with open(custom_results_path) as custom_results_file:
             results = tmt.utils.yaml_to_list(custom_results_file)
