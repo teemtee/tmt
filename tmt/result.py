@@ -68,7 +68,7 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
 class ResultGuestData(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a guest the result was produced on """
 
-    name: Optional[str] = None
+    name: str = f'{tmt.utils.DEFAULT_NAME}-0'
     role: Optional[str] = None
 
 
@@ -231,12 +231,27 @@ class Result(tmt.utils.SerializableContainer):
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
-    def show(self) -> str:
+    def show(self, display_guest: bool = True) -> str:
         """ Return a nicely colored result with test name (and note) """
+
+        from tmt.steps.provision import format_guest_full_name
+
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
-        colored = click.style(result, fg=RESULT_OUTCOME_COLORS[self.result])
-        note = f" ({self.note})" if self.note else ''
-        return f"{colored} {self.name}{note}"
+
+        components: List[str] = [
+            click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
+            self.name
+            ]
+
+        if display_guest and self.guest:
+            assert self.guest.name  # narrow type
+
+            components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
+
+        if self.note:
+            components.append(f'({self.note})')
+
+        return ' '.join(components)
 
     @staticmethod
     def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:

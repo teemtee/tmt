@@ -45,6 +45,15 @@ DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links",
 DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
 
 
+def format_guest_full_name(name: str, role: Optional[str]) -> str:
+    """ Render guest's full name, i.e. name and its role """
+
+    if role is None:
+        return name
+
+    return f'{name} ({role})'
+
+
 class CheckRsyncOutcome(enum.Enum):
     ALREADY_INSTALLED = 'already-installed'
     INSTALLED = 'installed'
@@ -132,10 +141,7 @@ class Guest(tmt.utils.Common):
     def multihost_name(self) -> str:
         """ Return guest's multihost name, i.e. name and its role """
 
-        if self.role is None:
-            return self.name
-
-        return f'{self.name} ({self.role})'
+        return format_guest_full_name(self.name, self.role)
 
     @property
     def is_ready(self) -> bool:

@@ -1,0 +1,22 @@
+/test:
+    summary: Run command 'true'
+    test: 'true'
+
+/singlehost:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/multihost:
+    discover:
+        how: fmf
+    provision:
+        - name: guest-1
+          how: container
+        - name: guest-2
+          how: container
+    execute:
+        how: tmt
