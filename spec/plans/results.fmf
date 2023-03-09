@@ -1,0 +1,133 @@
+summary: Define format of on-disk storage of results
+title: Results Format
+order: 90
+
+description: |
+    The following text defines a YAML file structure tmt uses for storing
+    results. tmt itself will use it when saving results of ``execute`` step,
+    and custom test results are required to follow it when creating their
+    ``results.yaml`` file.
+
+    Results are saved as a YAML file, containing a single list of mappings,
+    one mapping describing a single test result.
+
+    .. code-block::
+
+       # String, name of the test.
+       name: /test/one
+
+       # String, outcome of the test execution.
+       result: "pass"|"fail"|"info"|"warn"|"error"
+
+       # String, optional comment to report with the result.
+       note: "Things were great."
+
+       # List of strings, paths to file logs.
+       log:
+         - path/to/log1
+         - path/to/log1
+           ...
+
+       # Mapping, collection of various test IDs, if there are any to track.
+       ids:
+         some-id: foo
+         another-id: bar
+
+       # String, how long did the test run.
+       duration: hh:mm:ss
+
+       # Integer, serial number of the test in the sequence of all tests of a plan.
+       serialnumber: 1
+
+       # Mapping, describes the guest on which the test was executed.
+       guest:
+         name: client-1
+         role: clients
+
+    The ``result`` key can have the following values:
+
+    pass
+        Test execution successfully finished and passed.
+
+    info
+        Test finished but only produced an informational
+        message. Represents a soft pass, used for skipped
+        tests and for tests with the :ref:`/spec/tests/result`
+        attribute set to ``ignore``. Automation must treat
+        this as a passed test.
+
+    warn
+        A problem appeared during test execution which does
+        not affect test results but might be worth checking
+        and fixing. For example test cleanup phase failed.
+        Automation must treat this as a failed test.
+
+    error
+        Undefined problem encountered during test execution.
+        Human inspection is needed to investigate whether it
+        was a test bug, infrastructure error or a real test
+        failure. Automation must treat it as a failed test.
+
+    fail
+        Test execution successfully finished and failed.
+
+    The ``name`` and ``result`` keys are required. Custom result files
+    may omit all other keys, although tmt plugins will strive to provide
+    as many keys as possible.
+
+    The ``log`` key must list **relative** paths. Paths in the custom
+    results file are treated as relative to ``${TMT_TEST_DATA}`` path.
+    Paths in the final results file, saved by the execute step, will be
+    relative to the location of the results file itself.
+
+    The first ``log`` item is considered to be the "main" log, presented
+    to the user by default.
+
+    The ``serialnumber`` and ``guest`` keys, if present in the custom
+    results file, will be overwritten by tmt during their import after
+    test completes. This happens on purpose, to assure this vital
+    information is correct.
+
+    See also the complete `JSON schema`__.
+
+    __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
+
+example:
+  - |
+    # Example content of results.yaml
+
+    - name: /test/passing
+      result: pass
+      serialnumber: 1
+      log:
+        - pass_log
+      duration: 00:11:22
+      note: good result
+      ids:
+        extra-nitrate: some-nitrate-id
+      guest:
+        name: default-0
+
+    - name: /test/failing
+      result: fail
+      serialnumber: 2
+      log:
+        - fail_log
+        - another_log
+      duration: 00:22:33
+      note: fail result
+      guest:
+        name: default-0
+
+  - |
+    # Example of a perfectly valid, yet stingy custom results file
+
+    - name: /test/passing
+      result: pass
+
+    - name: /test/failing
+      result: fail
+
+link:
+  - verified-by: /tests/execute/result
+  - implemented-by: /tmp/result.py

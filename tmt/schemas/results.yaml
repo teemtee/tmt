@@ -33,6 +33,9 @@ items:
       type: string
       pattern: "^/.*"
 
+    serialnumber:
+      type: integer
+
     result:
       $ref: "/schemas/common#/definitions/result_outcome"
 
