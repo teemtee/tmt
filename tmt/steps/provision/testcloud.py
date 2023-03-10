@@ -469,7 +469,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare ssh key
         # TODO: Maybe... some better way to do this?
-        if "coreos" in self.image.lower():
+        if re.search('coreos|rhcos', self.image.lower()):
             self._instance.coreos = True
             # prepare_ssh_key() writes key directly to COREOS_DATA
             self._instance.ssh_path = []
@@ -638,6 +638,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             for key in TestcloudGuestData.keys()
             })
 
+        # rhcos does not allow root login, set default user core
+        if 'rhcos' in data.image.lower() and data.user == TestcloudGuestData._default('user'):
+            data.user = 'core'
         # Once plan schema is enforced this won't be necessary
         # click enforces int for cmdline and schema validation
         # will make sure 'int' gets from plan data.
