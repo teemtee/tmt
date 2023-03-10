@@ -16,7 +16,8 @@ rlJournalStart
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.yaml' file by itself"
         rlAssertGrep "00:11:22 pass /test/custom-results/test/passing" $rlRun_LOG
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
-        rlAssertGrep "00:33:55 pass /test/custom-results (on default-0) \[1/1\]" $rlRun_LOG
+        # The duration of the main result is replaced with the duration measured by tmt for the whole test.
+        rlAssertGrep "00:00:00 pass /test/custom-results (on default-0) \[1/1\]" $rlRun_LOG
         rlAssertGrep "00:55:44 pass /test/custom-results/without-leading-slash.*name should start with '/'" $rlRun_LOG
         rlAssertGrep "total: 3 tests passed and 1 test failed" $rlRun_LOG
 
@@ -37,7 +38,8 @@ rlJournalStart
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.json' file by itself"
         rlAssertGrep "00:12:23 pass /test/custom-json-results/test/passing" $rlRun_LOG
         rlAssertGrep "00:23:34 fail /test/custom-json-results/test/failing" $rlRun_LOG
-        rlAssertGrep "00:34:56 pass /test/custom-json-results .* \[1/1\]" $rlRun_LOG
+        # The duration of the main result is replaced with the duration measured by tmt for the whole test.
+        rlAssertGrep "00:00:00 pass /test/custom-json-results .* \[1/1\]" $rlRun_LOG
         rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
 
         rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"

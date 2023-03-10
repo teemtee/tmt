@@ -37,6 +37,12 @@ description: |
          some-id: foo
          another-id: bar
 
+       # String, when the test started, in an ISO 8601 format.
+       starttime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
+       # String, when the test finished, in an ISO 8601 format.
+       endtime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
        # String, how long did the test run.
        duration: hh:mm:ss
 
@@ -97,6 +103,13 @@ description: |
     test completes. This happens on purpose, to assure this vital
     information is correct.
 
+    Similarly, the ``duration``, ``starttime`` and ``endtime`` keys, if
+    present in the special custom result, representing the original test
+    itself - ``name: /`` -, will be overwritten by tmt with actual
+    observed values. This also happens on purpose: while tmt cannot
+    tell how long it took to produce various custom results, it is still
+    able to report the duration of the whole test.
+
     See also the complete `JSON schema`__.
 
     For custom results files in JSON format, the same rules and schema
@@ -112,7 +125,9 @@ example:
       serialnumber: 1
       log:
         - pass_log
-      duration: 00:11:22
+      starttime: "2023-03-10T09:44:14.439120+00:00"
+      endtime: "2023-03-10T09:44:24.242227+00:00"
+      duration: 00:00:09
       note: good result
       ids:
         extra-nitrate: some-nitrate-id
@@ -125,7 +140,9 @@ example:
       log:
         - fail_log
         - another_log
-      duration: 00:22:33
+      starttime: "2023-03-10T09:44:14.439120+00:00"
+      endtime: "2023-03-10T09:44:24.242227+00:00"
+      duration: 00:00:09
       note: fail result
       guest:
         name: default-0

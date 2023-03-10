@@ -739,6 +739,8 @@ class Test(Core, tmt.export.Exportable['Test']):
     serialnumber: int = 0
 
     returncode: Optional[int] = None
+    starttime: Optional[str] = None
+    endtime: Optional[str] = None
     real_duration: Optional[str] = None
     _reboot_count: int = 0
 

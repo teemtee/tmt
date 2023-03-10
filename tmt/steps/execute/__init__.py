@@ -1,6 +1,6 @@
 import dataclasses
+import datetime
 import re
-import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
@@ -269,7 +269,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             note=note,
-            duration=test.real_duration,
             guest=guest)]
 
     def check_beakerlib(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
@@ -294,7 +293,6 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration,
                 guest=guest)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
@@ -312,7 +310,6 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration,
                 guest=guest)]
 
         result = search_result.group(1)
@@ -334,7 +331,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=actual_result,
             note=note,
             log=log,
-            duration=test.real_duration,
             guest=guest)]
 
     def check_result_file(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
@@ -378,7 +374,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             test=test,
             result=actual_result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
-            duration=test.real_duration,
             note=note,
             guest=guest)]
 
@@ -416,6 +411,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             # Name '/' means the test itself
             if partial_result.name == '/':
                 partial_result.name = test.name
+
             else:
                 if not partial_result.name.startswith('/'):
                     if partial_result.note and isinstance(partial_result.note, str):
@@ -452,6 +448,13 @@ class ExecutePlugin(tmt.steps.Plugin):
             # Enforce the correct guest info
             partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
 
+            # For the result representing the test itself, set the duration
+            # and timestamps to what tmt measured.
+            if partial_result.name == test.name:
+                partial_result.starttime = test.starttime
+                partial_result.endtime = test.endtime
+                partial_result.duration = test.real_duration
+
             custom_results.append(partial_result)
 
         return custom_results
@@ -467,9 +470,22 @@ class ExecutePlugin(tmt.steps.Plugin):
             TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
-    def test_duration(start: float, end: float) -> str:
+    def format_timestamp(timestamp: datetime.datetime) -> str:
+        """ Convert timestamp to a human readable format """
+
+        return timestamp.isoformat()
+
+    @staticmethod
+    def format_duration(duration: datetime.timedelta) -> str:
         """ Convert duration to a human readable format """
-        return time.strftime("%H:%M:%S", time.gmtime(end - start))
+
+        # A helper variable to hold the duration while we cut away days, hours and seconds.
+        counter = int(duration.total_seconds())
+
+        hours, counter = divmod(counter, 3600)
+        minutes, seconds = divmod(counter, 60)
+
+        return f'{hours:02}:{minutes:02}:{seconds:02}'
 
     def timeout_hint(self, test: "tmt.Test", guest: Guest) -> None:
         """ Append a duration increase hint to the test output """

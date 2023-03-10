@@ -8,6 +8,7 @@ import threading
 import time
 import unittest
 import unittest.mock
+from datetime import timedelta
 from typing import Any, List, Tuple
 
 import py
@@ -985,3 +986,18 @@ def test_uniq(values: List[Any], expected: List[Any]) -> None:
     )
 def test_flatten(lists: List[List[Any]], unique: bool, expected: List[Any]) -> None:
     assert tmt.utils.flatten(lists, unique=unique) == expected
+
+
+@pytest.mark.parametrize(
+    ('duration', 'expected'),
+    (
+        (timedelta(seconds=8), '00:00:08'),
+        (timedelta(minutes=6, seconds=8), '00:06:08'),
+        (timedelta(hours=4, minutes=6, seconds=8), '04:06:08'),
+        (timedelta(days=15, hours=4, minutes=6, seconds=8), '364:06:08'),
+        )
+    )
+def test_format_duration(duration, expected):
+    from tmt.steps.execute import ExecutePlugin
+
+    assert ExecutePlugin.format_duration(duration) == expected
