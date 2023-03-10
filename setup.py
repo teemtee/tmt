@@ -78,7 +78,7 @@ extras_require = {
         'mypy',
         'yq'
         ],
-    'provision': ['testcloud>=0.8.2'],
+    'provision': ['testcloud>=0.9.2'],
     'convert': [
         'nitrate',
         'markdown',
