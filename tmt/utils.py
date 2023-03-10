@@ -410,6 +410,249 @@ class CommandOutput(NamedTuple):
     stderr: Optional[str]
 
 
+def _run_command(
+        *,
+        command: Command,
+        cwd: Optional[Path],
+        shell: bool,
+        env: Optional[EnvironmentType],
+        log: Optional[BaseLoggerFnType],
+        join: bool = False,
+        interactive: bool = False,
+        timeout: Optional[int] = None,
+        caller: Optional['Common'] = None,
+        logger: tmt.log.Logger) -> CommandOutput:
+    """
+    Run command, give message, handle errors.
+
+    :param command: a command to execute.
+    :param cwd: if set, command would be executed in the given directory,
+        otherwise the current working directory is used.
+    :param shell: if set, the command would be executed in a shell.
+    :param env: environment variables to combine with the current environment
+        before running the command.
+    :param interactive: if set, the command would be executed in an interactive
+        manner, i.e. with stdout and stdout connected to terminal for live
+        interaction with user.
+    :param join: if set, stdout and stderr of the command would be merged into
+        a single output text.
+    :param log: a logging function to use for logging of command output. By
+        default, ``logger.debug`` is used.
+    :param timeout: if set, command would be interrupted, if still running,
+        after this many seconds.
+    :param caller: optional "parent" of the command execution, used for better
+        linked exceptions.
+    :param logger: logger to use for logging.
+    :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
+    """
+
+    # By default command ouput is logged using debug
+    if not log:
+        log = logger.debug
+    # Prepare the environment
+    if env:
+        if not isinstance(env, dict):
+            raise GeneralError(f"Invalid environment '{env}'.")
+        # Do not modify current process environment
+        environment = os.environ.copy()
+        environment.update(env)
+    else:
+        environment = None
+    logger.debug('environment', pprint.pformat(environment), level=4)
+
+    # Set only for shell=True as it would affect command
+    executable = DEFAULT_SHELL if shell else None
+
+    # Run the command in interactive mode if requested
+    if interactive:
+        try:
+            subprocess.run(
+                command.to_popen(),
+                cwd=cwd, shell=shell, env=environment, check=True,
+                executable=executable)
+        except subprocess.CalledProcessError:
+            # Interactive mode can return non-zero if the last command
+            # failed, ignore errors here
+            pass
+        finally:
+            return CommandOutput(None, None)
+
+    # Create the process
+    try:
+        process = subprocess.Popen(
+            command.to_popen(),
+            cwd=cwd, shell=shell, env=environment,
+            start_new_session=True,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT if join else subprocess.PIPE,
+            executable=executable)
+    except FileNotFoundError as error:
+        raise RunError(
+            f"File '{error.filename}' not found.",
+            command,
+            127,
+            caller=caller)
+
+    stdout_thread = StreamLogger(
+        process.stdout,
+        log_header='out',
+        logger=log,
+        click_context=click.get_current_context(silent=True))
+    stderr_thread = stdout_thread
+    if not join:
+        stderr_thread = StreamLogger(
+            process.stderr,
+            log_header='err',
+            logger=log,
+            click_context=click.get_current_context(silent=True))
+    stdout_thread.start()
+    if not join:
+        stderr_thread.start()
+
+    # A bit of logging helpers for debugging duration behavior
+    start_timestamp = time.monotonic()
+
+    def _event_timestamp() -> str:
+        return f'{time.monotonic() - start_timestamp:.4}'
+
+    def log_event(msg: str) -> None:
+        logger.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
+
+    try:
+        process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        log_event(f'duration "{timeout}" exceeded')
+
+        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        log_event('sent SIGKILL signal')
+
+        process.wait()
+        log_event('kill confirmed')
+
+        process.returncode = PROCESS_TIMEOUT
+
+    log_event('waiting for stream readers')
+
+    stdout_thread.join()
+    log_event('stdout reader done')
+
+    if not join:
+        stderr_thread.join()
+        log_event('stderr reader done')
+
+    # Handle the exit code, return output
+    if process.returncode != 0:
+        raise RunError(
+            message=f"Command returned '{process.returncode}'.",
+            command=command,
+            returncode=process.returncode,
+            stdout=stdout_thread.get_output(),
+            stderr=stderr_thread.get_output(),
+            caller=caller)
+    if join:
+        return CommandOutput(
+            stdout_thread.get_output(), None)
+    else:
+        return CommandOutput(
+            stdout_thread.get_output(), stderr_thread.get_output())
+
+
+def run_command(
+        *,
+        command: Command,
+        friendly_command: Optional[str] = None,
+        message: Optional[str] = None,
+        silent: bool = False,
+        cwd: Optional[Path] = None,
+        dry: bool = False,
+        shell: bool = False,
+        env: Optional[EnvironmentType] = None,
+        interactive: bool = False,
+        join: bool = False,
+        log: Optional[BaseLoggerFnType] = None,
+        timeout: Optional[int] = None,
+        caller: Optional['Common'] = None,
+        logger: tmt.log.Logger) -> CommandOutput:
+    """
+    Run command, give message, handle errors.
+
+    :param command: a command to execute.
+    :param friendly_command: if set, it would be logged instead of the
+        command itself, to improve visibility of the command in logging output.
+    :param message: if set, it would be logged for more friendly logging.
+    :param silent: if set, logging of steps taken by this function would be
+        reduced.
+    :param cwd: if set, command would be executed in the given directory,
+        otherwise the current working directory is used.
+    :param dry: if set, the command would not be actually executed.
+    :param shell: if set, the command would be executed in a shell.
+    :param env: environment variables to combine with the current environment
+        before running the command.
+    :param interactive: if set, the command would be executed in an interactive
+        manner, i.e. with stdout and stdout connected to terminal for live
+        interaction with user.
+    :param join: if set, stdout and stderr of the command would be merged into
+        a single output text.
+    :param log: a logging function to use for logging of command output. By
+        default, ``logger.debug`` is used.
+    :param timeout: if set, command would be interrupted, if still running,
+        after this many seconds.
+    :param caller: optional "parent" of the command execution, used for better
+        linked exceptions.
+    :param logger: logger to use for logging.
+    :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
+    """
+
+    # A bit of logging - command, default message, error message for later...
+    # for debug output we want to rather print actual command rather than
+    # the provided printable command
+    if isinstance(command, (list, tuple)):
+        full_command_string = ' '.join(shlex.quote(s) for s in command)
+    else:
+        full_command_string = command
+
+    if message:
+        logger.verbose(message, level=2)
+
+    # Add full command to the debug log, short version to verbose/custom log
+    logger.debug(f'Run command: {full_command_string}', level=2)
+    if not silent and friendly_command:
+        (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+
+    # Nothing more to do in dry mode
+    if dry:
+        return CommandOutput(None, None)
+
+    # Fail nicely if the working directory does not exist
+    if cwd and not cwd.exists():
+        raise GeneralError(
+            f"The working directory '{cwd}' does not exist.")
+
+    try:
+        return _run_command(
+            command=command,
+            cwd=cwd,
+            shell=shell,
+            env=env,
+            log=log if not silent else None,
+            join=join,
+            interactive=interactive,
+            timeout=timeout,
+            caller=caller,
+            logger=logger
+            )
+
+    except RunError as error:
+        logger.debug(error.message, level=3)
+        raise RunError(
+            f"Failed to run command: {friendly_command} Reason: {error.message}",
+            error.command,
+            error.returncode,
+            error.stdout,
+            error.stderr,
+            caller=caller)
+
+
 class _CommonBase:
     """
     A base class for **all** classes contributing to "common" tree of classes.
@@ -722,139 +965,13 @@ class Common(_CommonBase):
         """
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
-    def _run(self,
-             command: Command,
-             cwd: Optional[Path],
-             shell: bool,
-             env: Optional[EnvironmentType],
-             log: Optional[BaseLoggerFnType],
-             join: bool = False,
-             interactive: bool = False,
-             timeout: Optional[int] = None) -> CommandOutput:
-        """
-        Run command, capture the output
-
-        By default stdout and stderr are captured separately.
-        Use join=True to merge stderr into stdout.
-        Use timeout=<seconds> to finish process after given time
-        """
-        # By default command ouput is logged using debug
-        if not log:
-            log = self.debug
-        # Prepare the environment
-        if env:
-            if not isinstance(env, dict):
-                raise GeneralError(f"Invalid environment '{env}'.")
-            # Do not modify current process environment
-            environment = os.environ.copy()
-            environment.update(env)
-        else:
-            environment = None
-        self.debug('environment', pprint.pformat(environment), level=4)
-
-        # Set only for shell=True as it would affect command
-        executable = DEFAULT_SHELL if shell else None
-
-        # Run the command in interactive mode if requested
-        if interactive:
-            try:
-                subprocess.run(
-                    command.to_popen(),
-                    cwd=cwd, shell=shell, env=environment, check=True,
-                    executable=executable)
-            except subprocess.CalledProcessError:
-                # Interactive mode can return non-zero if the last command
-                # failed, ignore errors here
-                pass
-            finally:
-                return CommandOutput(None, None)
-
-        # Create the process
-        try:
-            process = subprocess.Popen(
-                command.to_popen(),
-                cwd=cwd, shell=shell, env=environment,
-                start_new_session=True,
-                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT if join else subprocess.PIPE,
-                executable=executable)
-        except FileNotFoundError as error:
-            raise RunError(
-                f"File '{error.filename}' not found.",
-                command,
-                127,
-                caller=self)
-
-        stdout_thread = StreamLogger(
-            process.stdout,
-            log_header='out',
-            logger=log,
-            click_context=click.get_current_context(silent=True))
-        stderr_thread = stdout_thread
-        if not join:
-            stderr_thread = StreamLogger(
-                process.stderr,
-                log_header='err',
-                logger=log,
-                click_context=click.get_current_context(silent=True))
-        stdout_thread.start()
-        if not join:
-            stderr_thread.start()
-
-        # A bit of logging helpers for debugging duration behavior
-        start_timestamp = time.monotonic()
-
-        def _event_timestamp() -> str:
-            return f'{time.monotonic() - start_timestamp:.4}'
-
-        def log_event(msg: str) -> None:
-            self.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
-
-        try:
-            process.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            log_event(f'duration "{timeout}" exceeded')
-
-            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-            log_event('sent SIGKILL signal')
-
-            process.wait()
-            log_event('kill confirmed')
-
-            process.returncode = PROCESS_TIMEOUT
-
-        log_event('waiting for stream readers')
-
-        stdout_thread.join()
-        log_event('stdout reader done')
-
-        if not join:
-            stderr_thread.join()
-            log_event('stderr reader done')
-
-        # Handle the exit code, return output
-        if process.returncode != 0:
-            raise RunError(
-                message=f"Command returned '{process.returncode}'.",
-                command=command,
-                returncode=process.returncode,
-                stdout=stdout_thread.get_output(),
-                stderr=stderr_thread.get_output(),
-                caller=self)
-        if join:
-            return CommandOutput(
-                stdout_thread.get_output(), None)
-        else:
-            return CommandOutput(
-                stdout_thread.get_output(), stderr_thread.get_output())
-
     def run(self,
             command: Command,
             friendly_command: Optional[str] = None,
             silent: bool = False,
             message: Optional[str] = None,
             cwd: Optional[Path] = None,
-            dry: bool = False,
+            ignore_dry: bool = False,
             shell: bool = False,
             env: Optional[EnvironmentType] = None,
             interactive: bool = False,
@@ -865,7 +982,7 @@ class Common(_CommonBase):
         Run command, give message, handle errors
 
         Command is run in the workdir be default.
-        In dry mode commands are not executed unless dry=True.
+        In dry mode commands are not executed unless ignore_dry=True.
         Environment is updated with variables from the 'env' dictionary.
 
         Output is logged using self.debug() or custom 'log' function.
@@ -875,44 +992,27 @@ class Common(_CommonBase):
         Returns named tuple CommandOutput.
         """
 
-        # A bit of logging - command, default message, error message for later...
-        # for debug output we want to rather print actual command rather than
-        # the provided printable command
-        if isinstance(command, (list, tuple)):
-            full_command_string = ' '.join(shlex.quote(s) for s in command)
-        else:
-            full_command_string = command
+        dryrun_actual = self.opt('dry')
 
-        if message:
-            self.verbose(message, level=2)
+        if ignore_dry:
+            dryrun_actual = False
 
-        # Add full command to the debug log, short version to verbose/custom log
-        self.debug(f'Run command: {full_command_string}', level=2)
-        if not silent and friendly_command:
-            logger = log or self.verbose
-            logger("cmd", friendly_command, color="yellow", level=2)
-
-        # Nothing more to do in dry mode (unless requested)
-        if self.opt('dry') and not dry:
-            return CommandOutput(None, None)
-
-        # Run the command, handle the exit code
-        cwd = cwd or self.workdir
-
-        # Fail nicely if the working directory does not exist
-        if cwd and not cwd.exists():
-            raise GeneralError(
-                f"The working directory '{cwd}' does not exist.")
-
-        try:
-            return self._run(
-                command, cwd, shell, env, log if not silent else None, join, interactive, timeout)
-        except RunError as error:
-            self.debug(error.message, level=3)
-            message = f"Failed to run command: {friendly_command} Reason: {error.message}"
-            raise RunError(
-                message, error.command, error.returncode,
-                error.stdout, error.stderr, caller=self)
+        return run_command(
+            command=command,
+            friendly_command=friendly_command,
+            silent=silent,
+            message=message,
+            cwd=cwd or self.workdir,
+            dry=dryrun_actual,
+            shell=shell,
+            env=env,
+            interactive=interactive,
+            join=join,
+            log=log,
+            timeout=timeout,
+            caller=self,
+            logger=self._logger
+            )
 
     def read(self, path: Path, level: int = 2) -> str:
         """ Read a file from the workdir """

@@ -260,7 +260,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 "the `--dist-git-merge` option.")
 
         def get_git_root(dir: Path) -> Path:
-            stdout, _ = self.run(Command("git", "rev-parse", "--show-toplevel"), cwd=dir, dry=True)
+            stdout, _ = self.run(
+                Command("git", "rev-parse", "--show-toplevel"),
+                cwd=dir,
+                ignore_dry=True)
             assert stdout is not None
             return Path(stdout.strip("\n"))
 

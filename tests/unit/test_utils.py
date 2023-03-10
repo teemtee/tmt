@@ -21,7 +21,7 @@ from tmt.utils import (Command, Common, GeneralError, Path, ShellScript,
                        StructuredField, StructuredFieldError,
                        WaitingIncomplete, WaitingTimedOutError, _CommonBase,
                        duration_to_seconds, listify, public_git_url,
-                       validate_git_status, wait)
+                       run_command, validate_git_status, wait)
 
 run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
@@ -521,62 +521,75 @@ class test_structured_field(unittest.TestCase):
 
 
 def test_run_interactive_not_joined(tmpdir, root_logger):
-    stdout, stderr = Common(logger=root_logger)._run(
-        "echo abc; echo def >2", shell=True, interactive=True, cwd=str(tmpdir), env={}, log=None)
+    stdout, stderr = run_command(
+        command=ShellScript("echo abc; echo def >2").to_shell_command(),
+        shell=True,
+        interactive=True,
+        cwd=Path(str(tmpdir)),
+        env={},
+        log=None,
+        logger=root_logger)
     assert stdout is None
     assert stderr is None
 
 
 def test_run_interactive_joined(tmpdir, root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        "echo abc; echo def >2",
+    stdout, _ = run_command(
+        command=ShellScript("echo abc; echo def >2").to_shell_command(),
         shell=True,
         interactive=True,
-        cwd=str(tmpdir),
+        cwd=Path(str(tmpdir)),
         env={},
         join=True,
-        log=None)
+        log=None,
+        logger=root_logger)
     assert stdout is None
 
 
 def test_run_not_joined_stdout(root_logger):
-    stdout, _ = Common(
-        logger=root_logger)._run(
-        Command(
-            "ls", "/"), shell=False, cwd=".", env={}, log=None)
+    stdout, _ = run_command(
+        command=Command("ls", "/"),
+        shell=False,
+        cwd=Path.cwd(),
+        env={},
+        log=None,
+        logger=root_logger)
     assert "sbin" in stdout
 
 
 def test_run_not_joined_stderr(root_logger):
-    _, stderr = Common(logger=root_logger)._run(
-        ShellScript("ls non_existing || true").to_shell_command(),
+    _, stderr = run_command(
+        command=ShellScript("ls non_existing || true").to_shell_command(),
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
-        log=None)
+        log=None,
+        logger=root_logger)
     assert "ls: cannot access" in stderr
 
 
 def test_run_joined(root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        ShellScript("ls non_existing / || true").to_shell_command(),
+    stdout, _ = run_command(
+        command=ShellScript("ls non_existing / || true").to_shell_command(),
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
         log=None,
-        join=True)
+        join=True,
+        logger=root_logger)
     assert "ls: cannot access" in stdout
     assert "sbin" in stdout
 
 
 def test_run_big(root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        ShellScript("""for NUM in {1..100}; do LINE="$LINE n"; done; for NUM in {1..1000}; do echo $LINE; done""").to_shell_command(),  # noqa: E501
+    stdout, _ = run_command(
+        command=ShellScript("""for NUM in {1..100}; do LINE="$LINE n"; done; for NUM in {1..1000}; do echo $LINE; done""").to_shell_command(),  # noqa: E501
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
         log=None,
-        join=True)
+        join=True,
+        logger=root_logger)
     assert "n n" in stdout
     assert len(stdout) == 200000
 
