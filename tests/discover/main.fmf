@@ -61,3 +61,7 @@
 /serial-number:
     summary: Test test serial number assignment
     test: ./serial-number.sh
+
+/sanitize-metadata-name:
+    summary: Test for plan/test name having control character
+    test: ./sanitize-metadata-name.sh

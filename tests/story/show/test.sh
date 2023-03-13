@@ -77,6 +77,14 @@ rlJournalStart
         rlAssertGrep "enabled false" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Sanitize story name"
+        story_name="/stories/mini"
+        rlRun -s "tmt stories show $story_name"
+        rlAssertGrep "enabled" $rlRun_LOG
+        rlRun -s "tmt stories show $(printf '\x1b[31m'$story_name'\x1b[0m')" "1-255"
+        rlAssertGrep "Invalid name.*$story_name" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
