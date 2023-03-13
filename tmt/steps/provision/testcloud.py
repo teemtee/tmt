@@ -93,6 +93,20 @@ passwd:
     - name: {user_name}
       ssh_authorized_keys:
         - {public_key}
+systemd:
+  units:
+    - name: ssh_root_login.service
+      enabled: true
+      contents: |
+        [Unit]
+        Before=sshd.service
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/sed -i \
+                  "s|^PermitRootLogin no$|PermitRootLogin yes|g" \
+                  /etc/ssh/sshd_config
+        [Install]
+        WantedBy=multi-user.target
 """
 
 # Libvirt domain XML template related variables
@@ -638,9 +652,6 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             for key in TestcloudGuestData.keys()
             })
 
-        # rhcos does not allow root login, set default user core
-        if 'rhcos' in data.image.lower() and data.user == TestcloudGuestData._default('user'):
-            data.user = 'core'
         # Once plan schema is enforced this won't be necessary
         # click enforces int for cmdline and schema validation
         # will make sure 'int' gets from plan data.
