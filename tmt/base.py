@@ -2033,6 +2033,13 @@ class Tree(tmt.utils.Common):
             result.append(node)
         return result
 
+    def sanitize_cli_names(self, names: List[str]) -> List[str]:
+        """ Sanitize CLI names in case name includes control character """
+        for name in names:
+            if not name.isprintable():
+                raise tmt.utils.GeneralError(f"Invalid name {repr(name)} as it's not printable.")
+        return names
+
     @property
     def tree(self) -> fmf.Tree:
         """ Initialize tree only when accessed """
@@ -2088,6 +2095,9 @@ class Tree(tmt.utils.Common):
         excludes = (excludes or []) + list(Test._opt('exclude', []))
         # Used in: tmt run test --name NAME, tmt test ls NAME...
         cmd_line_names: List[str] = list(Test._opt('names', []))
+
+        # Sanitize test names to make sure no name includes control character
+        cmd_line_names = self.sanitize_cli_names(cmd_line_names)
 
         def name_filter(nodes: Iterable[fmf.Tree]) -> List[fmf.Tree]:
             """ Filter nodes based on names provided on the command line """
@@ -2164,6 +2174,9 @@ class Tree(tmt.utils.Common):
             ]
         excludes = (excludes or []) + list(Plan._opt('exclude', []))
 
+        # Sanitize plan names to make sure no name includes control character
+        names = self.sanitize_cli_names(names)
+
         # Append post filter to support option --enabled or --disabled
         if Plan._opt('enabled'):
             filters.append('enabled:true')
@@ -2230,6 +2243,9 @@ class Tree(tmt.utils.Common):
             for value in cast(List[str], Story._opt('links', []))
             ]
         excludes = (excludes or []) + list(Story._opt('exclude', []))
+
+        # Sanitize story names to make sure no name includes control character
+        names = self.sanitize_cli_names(names)
 
         # Append post filter to support option --enabled or --disabled
         if Story._opt('enabled'):
