@@ -245,7 +245,8 @@ class ExecutePlugin(tmt.steps.Plugin):
                 guest.push(
                     source=source,
                     destination=dest,
-                    options=["-p", "--chmod=755"])
+                    options=["-p", "--chmod=755"],
+                    superuser=True)
 
     def check_shell(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a shell test """
