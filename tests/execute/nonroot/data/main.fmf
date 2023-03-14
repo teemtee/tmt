@@ -1,0 +1,17 @@
+/plan:
+  execute:
+    how: tmt
+  provision:
+    how: virtual
+    image: fedora-coreos
+    user: core
+  discover:
+    how: fmf
+
+/test:
+  /command_found:
+    test: command -v tmt-file-submit
+  /full_path_exists:
+    test: test -e /usr/local/bin/tmt-file-submit
+  /command_works:
+    test: tmt-file-submit XXXX main.fmf

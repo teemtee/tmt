@@ -377,7 +377,8 @@ class Guest(tmt.utils.Common):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None) -> None:
+             options: Optional[List[str]] = None,
+             superuser: bool = False) -> None:
         """
         Push files to the guest
         """
@@ -763,7 +764,8 @@ class GuestSsh(Guest):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None) -> None:
+             options: Optional[List[str]] = None,
+             superuser: bool = False) -> None:
         """
         Push files to the guest
 
@@ -771,6 +773,9 @@ class GuestSsh(Guest):
         on the guest. Use the 'source' and 'destination' to sync custom
         location and the 'options' parametr to modify default options
         which are '-Rrz --links --safe-links --delete'.
+
+        Set 'superuser' if rsync command has to run as root or passwordless
+        sudo on the Guest (e.g. pushing to r/o destination)
         """
         # Abort if guest is unavailable
         if self.guest is None:
@@ -799,8 +804,12 @@ class GuestSsh(Guest):
             assert source
             assert destination
 
+            cmd = ['rsync']
+            if superuser and self.user != 'root':
+                cmd += ['--rsync-path', 'sudo rsync']
+
             self.run(Command(
-                "rsync",
+                *cmd,
                 *options,
                 "-e", self._ssh_command().to_element(),
                 str(source),

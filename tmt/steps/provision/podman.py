@@ -206,7 +206,8 @@ class GuestContainer(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None) -> None:
+            options: Optional[List[str]] = None,
+            superuser: bool = False) -> None:
         """ Make sure that the workdir has a correct selinux context """
         if not self.is_ready:
             return
