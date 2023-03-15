@@ -11,7 +11,7 @@ import tmt.convert
 import tmt.export
 import tmt.utils
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
-from tmt.utils import ConvertError
+from tmt.utils import ConvertError, Path
 
 PolarionException: Any = None
 PolarionTestCase: Any = None
@@ -135,13 +135,13 @@ def get_polarion_case(
         return None
 
 
-def create_polarion_case(summary: str, project_id: str) -> PolarionTestCase:
+def create_polarion_case(summary: str, project_id: str, path: Path) -> PolarionTestCase:
     """ Create new polarion case """
     import tmt.export.nitrate
 
     # Create the new test case
     testcase = PolarionTestCase.create(project_id, summary, summary)
-    testcase.tcmscategory = tmt.export.nitrate.get_category()
+    testcase.tcmscategory = tmt.export.nitrate.get_category(path)
     testcase.update()
     echo(style(f"Test case '{testcase.work_item_id}' created.", fg='blue'))
     return testcase
@@ -164,6 +164,8 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     if not duplicate:
         polarion_case = get_polarion_case(test.node, project_id)
     summary = tmt.export.nitrate.prepare_extra_summary(test)
+    assert test.path is not None  # narrow type
+    test_path = test.node.root / test.path.unrooted()
 
     if not polarion_case:
         if create:
@@ -173,7 +175,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
                     "Polarion project to use for this test case.")
             if not dry_mode:
                 polarion_case = create_polarion_case(
-                    summary, project_id=project_id)
+                    summary, project_id=project_id, path=test_path)
             else:
                 echo(style(
                     f"Test case '{summary}' created.", fg='blue'))

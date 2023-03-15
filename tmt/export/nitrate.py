@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 
 NITRATE_TRACKER_ID = 69  # ID of nitrate in RH's bugzilla
+DEFAULT_NITRATE_CATEGORY = 'Sanity'
 
 WARNING = """
 Test case has been migrated to git. Any changes made here might be overwritten.
@@ -257,11 +258,11 @@ def return_markdown_file() -> Optional[Path]:
     return None
 
 
-def get_category() -> str:
+def get_category(path: Path) -> str:
     """ Get category from Makefile """
-    category = 'Sanity'
+    category = DEFAULT_NITRATE_CATEGORY
     try:
-        with open('Makefile', encoding='utf-8') as makefile_file:
+        with open(path / 'Makefile', encoding='utf-8') as makefile_file:
             makefile = makefile_file.read()
         category_search = re.search(
             r'echo\s+"Type:\s*(.*)"', makefile, re.M)
@@ -273,11 +274,11 @@ def get_category() -> str:
     return category
 
 
-def create_nitrate_case(summary: str) -> NitrateTestCase:
+def create_nitrate_case(summary: str, category: str) -> NitrateTestCase:
     """ Create new nitrate case """
     # Create the new test case
     assert nitrate
-    category = nitrate.Category(name=get_category(), product=DEFAULT_PRODUCT)
+    category = nitrate.Category(name=category, product=DEFAULT_PRODUCT)
     testcase: NitrateTestCase = nitrate.TestCase(summary=summary, category=category)
     echo(style(f"Test case '{testcase.identifier}' created.", fg='blue'))
     return testcase
@@ -404,8 +405,10 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             if not nitrate_case:
                 # Summary for TCMS case
                 extra_summary = prepare_extra_summary(test)
+                assert test.path is not None  # narrow type
+                category = get_category(test.node.root / test.path.unrooted())
                 if not dry_mode:
-                    nitrate_case = create_nitrate_case(extra_summary)
+                    nitrate_case = create_nitrate_case(extra_summary, category)
                 else:
                     echo(style(
                         f"Test case '{extra_summary}' created.", fg='blue'))
