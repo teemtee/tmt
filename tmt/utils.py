@@ -4443,8 +4443,9 @@ def field(
         Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
     :param metavar: how the input value is represented in the help page.
         Passed directly to :py:func:`click.option`.
-    :param help: the help string for the command-line option.
-        Passed directly to :py:func:`click.option`.
+    :param help: the help string for the command-line option. Multiline strings
+        can be used, :py:func:`textwrap.dedent` is applied before passing
+        ``help`` to :py:func:`click.option`.
     :param normalize: a callback for normalizing the input value. Consumed by
         :py:class:`NormalizeKeysMixin`.
     :param serialize: a callback for custom serialization of the field value.
@@ -4460,6 +4461,9 @@ def field(
 
     if option:
         assert is_flag is False or isinstance(default, bool)
+
+        if help:
+            help = textwrap.dedent(help)
 
         metadata.option_args = (option,) if isinstance(option, str) else option
         metadata.option_kwargs = {
