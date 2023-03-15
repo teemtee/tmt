@@ -36,7 +36,9 @@ class DiscoverStepData(tmt.steps.StepData):
         )
 
 
-class DiscoverPlugin(tmt.steps.GuestlessPlugin):
+# DiscoverFmf must be able to accept Execute step as its parent as a part
+# of the upgrade plugin, therefore Step is used here instead of Discover.
+class DiscoverPlugin(tmt.steps.GuestlessPlugin[tmt.steps.Step]):
     """ Common parent of discover plugins """
 
     _data_class = DiscoverStepData

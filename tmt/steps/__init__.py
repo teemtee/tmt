@@ -7,8 +7,8 @@ import re
 import shutil
 import sys
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
-                    Type, TypeVar, Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Generic, List,
+                    Optional, Tuple, Type, TypeVar, Union, cast, overload)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -638,14 +638,17 @@ def provides_method(
         plugin_method = Method(name, class_=cls, doc=doc, order=order)
 
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
-        cast('BasePlugin', cls.__bases__[0])._supported_methods.append(plugin_method)
+        cast('BasePlugin[Step]', cls.__bases__[0])._supported_methods.append(plugin_method)
 
         return cls
 
     return _method
 
 
-class BasePlugin(Phase):
+StepT = TypeVar('StepT', bound=Step)
+
+
+class BasePlugin(Phase, Generic[StepT]):
     """ Common parent of all step plugins """
 
     # Deprecated, use @provides_method(...) instead. left for backward
@@ -672,7 +675,7 @@ class BasePlugin(Phase):
     def __init__(
             self,
             *,
-            step: Step,
+            step: StepT,
             data: StepData,
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
@@ -746,7 +749,7 @@ class BasePlugin(Phase):
             cls,
             step: Step,
             data: Optional[StepData] = None,
-            raw_data: Optional[_RawStepData] = None) -> 'BasePlugin':
+            raw_data: Optional[_RawStepData] = None) -> 'BasePlugin[StepT]':
         """
         Return plugin instance implementing the data['how'] method
 
@@ -1021,7 +1024,7 @@ class BasePlugin(Phase):
             self.warn(f"Unable to remove '{self.workdir}': {error}")
 
 
-class GuestlessPlugin(BasePlugin):
+class GuestlessPlugin(BasePlugin[StepT]):
     """ Common parent of all step plugins that do not work against a particular guest """
 
     def go(self) -> None:
@@ -1030,7 +1033,7 @@ class GuestlessPlugin(BasePlugin):
         self.go_prolog(self._logger)
 
 
-class Plugin(BasePlugin):
+class Plugin(BasePlugin[StepT]):
     """ Common parent of all step plugins that do work against a particular guest """
 
     def go(

@@ -33,7 +33,7 @@ class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
     summary: str
 
 
-class PreparePlugin(tmt.steps.Plugin):
+class PreparePlugin(tmt.steps.Plugin['Prepare']):
     """ Common parent of prepare plugins """
 
     _data_class = PrepareStepData
