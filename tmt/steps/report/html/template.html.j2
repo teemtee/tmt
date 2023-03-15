@@ -88,6 +88,19 @@
         }
     </style>
 </head>
+
+{% macro emit_guest(guest) %}
+{% if display_guest %}
+  {% if guest %}
+    {% if guest.role %}
+      {{ guest.name }} ({{ guest.role }})
+    {% else %}
+      {{ guest.name }}
+    {% endif %}
+  {% endif %}
+{% endif %}
+{% endmacro %}
+
 <body>
 <div>
 <h1>{{ plan.name }}</h1>
@@ -98,6 +111,9 @@
         <tr>
             <th>Result</th>
             <th>Test</th>
+{% if display_guest %}
+            <th>Guest</th>
+{% endif %}
             <th>Logs</th>
         </tr>
     </thead>
@@ -105,6 +121,9 @@
     <tr class="result {{ loop.cycle('odd', 'even') }}">
         <td class="result {{ result.result.value|e }}">{{ result.result.value|e }}</td>
         <td class="name">{{ result.name|e }}</td>
+{% if display_guest %}
+        <td class="guest">{{ emit_guest(result.guest) | trim | e }}</td>
+{% endif %}
         <td class="log">
         {% for log in result.log %}
             <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
