@@ -613,18 +613,19 @@ class Logger:
     _bootstrap_logger: Optional['Logger'] = None
 
     @classmethod
-    def get_boostrap_logger(cls) -> 'Logger':
+    def get_bootstrap_logger(cls) -> 'Logger':
         """
         Create a logger designed for tmt startup time.
 
         .. warning::
 
-        This logger has a **very** limited use case span, i.e. before tmt can
-        digest its command-line options and create a proper logger. This happens
-        inside :py:funs:`tmt.cli.main` function, but there are some actions taken
-        by tmt code before this function is called by Click, actions that need
-        to emit logging messages. Using it anywhere outside of this brief time
-        in tmt's runtime should be ruled out.
+            This logger has a **very** limited use case span, i.e.
+            before tmt can digest its command-line options and create a
+            proper logger. This happens inside :py:func:`tmt.cli.main`
+            function, but there are some actions taken by tmt code
+            before this function is called by Click, actions that need
+            to emit logging messages. Using it anywhere outside of this
+            brief time in tmt's runtime should be ruled out.
         """
 
         if cls._bootstrap_logger is None:
