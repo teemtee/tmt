@@ -1,4 +1,10 @@
 prepare+:
+  - how: shell
+    script:
+      - for repofile in $(ls -1 /etc/yum.repos.d/); do echo "# vvvvv $repofile vvvvv vvvvv"; cat "/etc/yum.repos.d/$repofile"; echo "# ^^^^^ ^^^^^ ^^^^^ ^^^^^"; echo ""; done
+      - yum -q repolist
+      - rpm -qa
+
   # Install jq and yq for cleaner tests
   - how: install
     package:
