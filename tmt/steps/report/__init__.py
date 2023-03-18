@@ -16,7 +16,7 @@ class ReportStepData(tmt.steps.StepData):
     pass
 
 
-class ReportPlugin(tmt.steps.GuestlessPlugin):
+class ReportPlugin(tmt.steps.GuestlessPlugin['Report']):
     """ Common parent of report plugins """
 
     _data_class = ReportStepData

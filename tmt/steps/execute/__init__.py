@@ -13,7 +13,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.result import Result, ResultOutcome
-from tmt.steps import Action, Step, StepData
+from tmt.steps import Action, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
 
@@ -113,7 +113,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     exit_first: bool = False
 
 
-class ExecutePlugin(tmt.steps.Plugin):
+class ExecutePlugin(tmt.steps.Plugin['Execute']):
     """ Common parent of execute plugins """
 
     _data_class = ExecuteStepData
@@ -131,7 +131,7 @@ class ExecutePlugin(tmt.steps.Plugin):
     def __init__(
             self,
             *,
-            step: Step,
+            step: 'Execute',
             data: StepData,
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:

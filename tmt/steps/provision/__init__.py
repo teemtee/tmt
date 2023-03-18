@@ -1058,7 +1058,7 @@ class ProvisionStepData(tmt.steps.StepData):
     pass
 
 
-class ProvisionPlugin(tmt.steps.GuestlessPlugin):
+class ProvisionPlugin(tmt.steps.GuestlessPlugin['Provision']):
     """ Common parent of provision plugins """
 
     _data_class = ProvisionStepData

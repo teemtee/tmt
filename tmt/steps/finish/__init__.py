@@ -19,7 +19,7 @@ class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
 
-class FinishPlugin(tmt.steps.Plugin):
+class FinishPlugin(tmt.steps.Plugin['Finish']):
     """ Common parent of finish plugins """
 
     _data_class = FinishStepData
