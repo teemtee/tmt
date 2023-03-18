@@ -519,7 +519,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         if self.opt('dry'):
             self._tests = []
             return
-        tree = tmt.Tree(logger=self._logger, path=tree_path, context=self.step.plan._fmf_context())
+        tree = tmt.Tree(
+            logger=self._logger,
+            path=tree_path,
+            fmf_context=self.step.plan._fmf_context)
         self._tests = tree.tests(
             filters=filters,
             names=names,

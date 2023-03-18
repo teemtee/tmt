@@ -327,7 +327,7 @@ extra-task: /tmt/integration
         tree_f36_intel = tmt.Tree(
             logger=tmt.log.Logger.create(),
             path='.',
-            context={
+            fmf_context={
                 'distro': ['fedora-36'],
                 'arch': ['x86_64']})
 
@@ -341,7 +341,7 @@ extra-task: /tmt/integration
         tree_f35_intel = tmt.Tree(
             logger=tmt.log.Logger.create(),
             path='.',
-            context={
+            fmf_context={
                 'distro': ['fedora-35'],
                 'arch': ['x86_64']})
 

@@ -592,9 +592,9 @@ class Core(
         return tmt.utils.web_git_url(fmf_id.url, fmf_id.ref, relative_path)
 
     @classmethod
-    def _save_context(cls, context: 'tmt.cli.Context') -> None:
+    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
         """ Save provided command line context for future use """
-        super(Core, cls)._save_context(context)
+        super(Core, cls)._save_cli_context(context)
 
         # Handle '.' as an alias for the current working directory
         names = cls._opt('names')
@@ -609,8 +609,7 @@ class Core(
             else:
                 # Prevent matching common prefix from other directories
                 pattern = f"{current.relative_to(root)}(/|$)"
-            assert cls._context is not None  # narrow type
-            cls._context.params['names'] = tuple(
+            cls._cli_options['names'] = tuple(
                 pattern if name == '.' else name for name in names)
 
     def name_and_summary(self) -> str:
@@ -1132,7 +1131,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
         with tmt.utils.modify_environ(self.environment):
             self._expand_node_data(node.data, {
                 key: ','.join(value)
-                for (key, value) in self._fmf_context().items()})
+                for (key, value) in self._fmf_context.items()})
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
@@ -1308,12 +1307,14 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
 
+    @property
     def _fmf_context(self) -> tmt.utils.FmfContextType:
         """ Return combined context from plan data and command line """
-        combined = self.context.copy()
 
-        if self._context_object is not None:
-            combined.update(self._context_object.fmf_context)
+        combined = {}
+
+        combined.update(self.context)
+        combined.update(self._cli_fmf_context)
 
         return combined
 
@@ -1466,9 +1467,9 @@ class Plan(Core, tmt.export.Exportable['Plan']):
         if self.environment:
             echo(tmt.utils.format(
                 'environment', self.environment, key_color='blue'))
-        if self._fmf_context():
+        if self._fmf_context:
             echo(tmt.utils.format(
-                'context', self._fmf_context(), key_color='blue'))
+                'context', self._fmf_context, key_color='blue'))
 
         # The rest
         echo(tmt.utils.format('enabled', self.enabled, key_color='cyan'))
@@ -1612,7 +1613,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
         self.debug('info', color='cyan', shift=0, level=3)
         # TODO: something better than str()?
         self.debug('environment', str(self.environment), 'magenta', level=3)
-        self.debug('context', str(self._fmf_context()), 'magenta', level=3)
+        self.debug('context', str(self._fmf_context), 'magenta', level=3)
 
         # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
@@ -1650,8 +1651,8 @@ class Plan(Core, tmt.export.Exportable['Plan']):
                 f'with the given options is not compatible: '
                 f'{fmf.utils.listed(standalone)}.')
         elif standalone:
-            assert self._context_object is not None  # narrow type
-            self._context_object.steps = standalone
+            assert self._cli_context_object is not None  # narrow type
+            self._cli_context_object.steps = standalone
             self.debug(
                 f"Running the '{list(standalone)[0]}' step as standalone.")
 
@@ -1975,7 +1976,7 @@ class Tree(tmt.utils.Common):
                  *,
                  path: Path = Path.cwd(),
                  tree: Optional[fmf.Tree] = None,
-                 context: Optional[tmt.utils.FmfContextType] = None,
+                 fmf_context: Optional[tmt.utils.FmfContextType] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 
@@ -1984,7 +1985,7 @@ class Tree(tmt.utils.Common):
 
         self._path = path
         self._tree = tree
-        self._custom_context = context
+        self._custom_fmf_context = fmf_context or {}
 
     @classmethod
     def grow(
@@ -1992,7 +1993,7 @@ class Tree(tmt.utils.Common):
             *,
             path: Path = Path.cwd(),
             tree: Optional[fmf.Tree] = None,
-            context: Optional[tmt.utils.FmfContextType] = None,
+            fmf_context: Optional[tmt.utils.FmfContextType] = None,
             logger: Optional[tmt.log.Logger] = None) -> 'Tree':
         """
         Initialize tmt tree from directory path or given fmf tree.
@@ -2014,14 +2015,13 @@ class Tree(tmt.utils.Common):
         return Tree(
             path=path,
             tree=tree,
-            context=context,
+            fmf_context=fmf_context,
             logger=logger or tmt.log.Logger.create())
 
+    @property
     def _fmf_context(self) -> FmfContextType:
         """ Use custom fmf context if provided, default otherwise """
-        if self._custom_context is not None:
-            return self._custom_context
-        return super()._fmf_context()
+        return self._custom_fmf_context or super()._fmf_context
 
     def _filters_conditions(
             self,
@@ -2094,7 +2094,7 @@ class Tree(tmt.utils.Common):
             except fmf.utils.FileError as error:
                 raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}")
             # Adjust metadata for current fmf context
-            self._tree.adjust(fmf.context.Context(**self._fmf_context()))
+            self._tree.adjust(fmf.context.Context(**self._fmf_context))
         return self._tree
 
     @tree.setter
@@ -2237,7 +2237,7 @@ class Tree(tmt.utils.Common):
                 logger=logger.descend(
                     logger_name=plan.get('name', None),
                     extra_shift=0
-                    ).apply_verbosity_options(**Plan._options),
+                    ).apply_verbosity_options(**Plan._cli_options),
                 run=run) for plan in [
                 *
                 self.tree.prune(
@@ -2392,24 +2392,24 @@ class Run(tmt.utils.Common):
                  *,
                  id_: Optional[Path] = None,
                  tree: Optional[Tree] = None,
-                 context: Optional['tmt.cli.Context'] = None,
+                 cli_context: Optional['tmt.cli.Context'] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
         self.config = tmt.utils.Config()
-        if context is not None:
-            if context.params.get('last'):
+        if cli_context is not None:
+            if cli_context.params.get('last'):
                 id_ = self.config.last_run
                 if id_ is None:
                     raise tmt.utils.GeneralError(
                         "No last run id found. Have you executed any run?")
-            if context.params.get('follow') and id_ is None:
+            if cli_context.params.get('follow') and id_ is None:
                 raise tmt.utils.GeneralError(
                     "Run id has to be specified in order to use --follow.")
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(context=context, logger=logger)
+        super().__init__(cli_context=cli_context, logger=logger)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree = tree
         self._plans: Optional[List[Plan]] = None
@@ -2479,11 +2479,11 @@ class Run(tmt.utils.Common):
     def save(self) -> None:
         """ Save list of selected plans and enabled steps """
         assert self.tree is not None  # narrow type
-        assert self._context_object is not None  # narrow type
+        assert self._cli_context_object is not None  # narrow type
         data = RunData(
             root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
-            steps=list(self._context_object.steps),
+            steps=list(self._cli_context_object.steps),
             environment=self.environment,
             remove=self.remove
             )
@@ -2506,8 +2506,8 @@ class Run(tmt.utils.Common):
             self.debug('Run data not found.')
             return
         self._environment_from_workdir = data.environment
-        assert self._context_object is not None  # narrow type
-        self._context_object.steps = set(data.steps)
+        assert self._cli_context_object is not None  # narrow type
+        self._cli_context_object.steps = set(data.steps)
 
         self._plans = []
 
@@ -2556,9 +2556,9 @@ class Run(tmt.utils.Common):
         # Initialize steps only if not selected on the command line
         step_options = 'all since until after before skip'.split()
         selected = any(self.opt(option) for option in step_options)
-        assert self._context_object is not None  # narrow type
-        if not selected and not self._context_object.steps:
-            self._context_object.steps = set(data.steps)
+        assert self._cli_context_object is not None  # narrow type
+        if not selected and not self._cli_context_object.steps:
+            self._cli_context_object.steps = set(data.steps)
 
         # Store loaded environment
         self._environment_from_workdir = data.environment
@@ -2667,13 +2667,13 @@ class Run(tmt.utils.Common):
         # Propagate dry mode from provision to prepare, execute and finish
         # (basically nothing can be done if there is no guest provisioned)
         if tmt.steps.provision.Provision._opt("dry"):
-            tmt.steps.prepare.Prepare._options["dry"] = True
-            tmt.steps.execute.Execute._options["dry"] = True
-            tmt.steps.finish.Finish._options["dry"] = True
+            tmt.steps.prepare.Prepare._cli_options["dry"] = True
+            tmt.steps.execute.Execute._cli_options["dry"] = True
+            tmt.steps.finish.Finish._cli_options["dry"] = True
 
         # Enable selected steps
-        assert self._context_object is not None  # narrow type
-        enabled_steps = self._context_object.steps
+        assert self._cli_context_object is not None  # narrow type
+        enabled_steps = self._cli_context_object.steps
         all_steps = self.opt('all') or not enabled_steps
         since = self.opt('since')
         until = self.opt('until')
@@ -2853,14 +2853,14 @@ class Status(tmt.utils.Common):
         id_ = cast(str, self.opt('id'))
         root_path = Path(self.opt('workdir-root'))
         self.print_header()
-        assert self._context_object is not None  # narrow type
-        assert self._context_object.tree is not None  # narrow type
+        assert self._cli_context_object is not None  # narrow type
+        assert self._cli_context_object.tree is not None  # narrow type
         for abs_path in tmt.utils.generate_runs(root_path, id_):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
-                tree=self._context_object.tree,
-                context=self._context)
+                tree=self._cli_context_object.tree,
+                cli_context=self._cli_context)
             self.process_run(run)
 
 
@@ -2875,7 +2875,7 @@ class Clean(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  name: Optional[str] = None,
                  workdir: tmt.utils.WorkdirArgumentType = None,
-                 context: Optional['tmt.cli.Context'] = None,
+                 cli_context: Optional['tmt.cli.Context'] = None,
                  logger: tmt.log.Logger) -> None:
         """
         Initialize name and relation with the parent object
@@ -2883,9 +2883,14 @@ class Clean(tmt.utils.Common):
         Always skip to initialize the work tree.
         """
         # Set the option to skip to initialize the work tree
-        if context:
-            context.params[tmt.utils.PLAN_SKIP_WORKTREE_INIT] = True
-        super().__init__(logger=logger, parent=parent, name=name, workdir=workdir, context=context)
+        if cli_context:
+            cli_context.params[tmt.utils.PLAN_SKIP_WORKTREE_INIT] = True
+        super().__init__(
+            logger=logger,
+            parent=parent,
+            name=name,
+            workdir=workdir,
+            cli_context=cli_context)
 
     def images(self) -> bool:
         """ Clean images of provision plugins """
@@ -2930,9 +2935,8 @@ class Clean(tmt.utils.Common):
                         self.verbose(f"Stopping guests in run '{run.workdir}' "
                                      f"plan '{plan.name}'.", shift=1)
                         # Set --quiet to avoid finish logging to terminal
-                        assert self._context is not None  # narrow type
-                        quiet = self._context.params['quiet']
-                        self._context.params['quiet'] = True
+                        quiet = self._cli_options['quiet']
+                        self._cli_options['quiet'] = True
                         try:
                             plan.finish.go()
                         except tmt.utils.GeneralError as error:
@@ -2940,7 +2944,7 @@ class Clean(tmt.utils.Common):
                                       f"'{run.workdir}': {error}.", shift=1)
                             successful = False
                         finally:
-                            self._context.params['quiet'] = quiet
+                            self._cli_options['quiet'] = quiet
         return successful
 
     def guests(self) -> bool:
@@ -2952,15 +2956,16 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
-            return self._stop_running_guests(Run(logger=self._logger, context=self._context))
+            return self._stop_running_guests(
+                Run(logger=self._logger, cli_context=self._cli_context))
         successful = True
-        assert self._context_object is not None  # narrow type
+        assert self._cli_context_object is not None  # narrow type
         for abs_path in tmt.utils.generate_runs(root_path, id_):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
-                tree=self._context_object.tree,
-                context=self._context)
+                tree=self._cli_context_object.tree,
+                cli_context=self._cli_context)
             if not self._stop_running_guests(run):
                 successful = False
         return successful
@@ -2987,7 +2992,7 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
-            last_run = Run(logger=self._logger, context=self._context)
+            last_run = Run(logger=self._logger, cli_context=self._cli_context)
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
@@ -3304,7 +3309,7 @@ def resolve_dynamic_ref(
         raise tmt.utils.FileError(f"Failed to read '{ref_filepath}'.") from error
     # Build a dynamic reference tree, adjust ref based on the context
     reference_tree = fmf.Tree(data=data)
-    reference_tree.adjust(fmf.context.Context(**plan._fmf_context()))
+    reference_tree.adjust(fmf.context.Context(**plan._fmf_context))
     # Also temporarily build a plan so that env and context variables are expanded
     Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
     ref = reference_tree.get("ref")

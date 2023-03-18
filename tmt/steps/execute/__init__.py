@@ -158,7 +158,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             help='Use specified method for test execution.')
         def execute(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('execute')
-            Execute._save_context(context)
+            Execute._save_cli_context(context)
 
         return execute
 

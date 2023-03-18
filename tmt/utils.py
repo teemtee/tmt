@@ -673,11 +673,28 @@ class Common(_CommonBase):
     Provides the run() method for easy command execution.
     """
 
-    # Command line context, options and workdir
-    _context: Optional['tmt.cli.Context'] = None
+    # CLI context and options it carries are saved for later use. This happens
+    # when Click subcommand (or "group" command) runs, and saves its context
+    # in a class corresponding to the subcommand/group. For example, in command
+    # like `tmt run report -h foo --bar=baz`, `report` subcommand would save
+    # its context inside `tmt.steps.report.Report` class.
+    #
+    # The context can be also saved on the instance level, for more fine-grained
+    # context tracking.
+    #
+    # The "later use" means the context is often used when looking for options
+    # like --how, --dry or --verbose.
+    #
+    # TODO: Unfortunately, there's just a single "slot", and there can be only
+    # one saved context on class level. This prevents repeated use of
+    # subcommands, i.e. create multiple phases of a step via CLI. While it's
+    # perfectly fine to define multiple report plugins in plan's fmf data,
+    # doing so via CLI - `report -h display report -h html` - is not supported.
+    _cli_context: Optional['tmt.cli.Context'] = None
+    _cli_options: Dict[str, Any] = {}
+
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
-    _options: Dict[str, Any] = dict()
     _workdir: WorkdirType = None
 
     # TODO: must be declared outside of __init__(), because it must exist before
@@ -703,7 +720,7 @@ class Common(_CommonBase):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
-            context: Optional['tmt.cli.Context'] = None,
+            cli_context: Optional['tmt.cli.Context'] = None,
             relative_indent: int = 1,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
@@ -720,7 +737,7 @@ class Common(_CommonBase):
             parent=parent,
             name=name,
             workdir=workdir,
-            context=context,
+            cli_context=cli_context,
             relative_indent=relative_indent,
             logger=logger,
             **kwargs)
@@ -730,8 +747,8 @@ class Common(_CommonBase):
         self.parent = parent
 
         # Store command line context
-        if context:
-            self._save_context_to_instance(context)
+        if cli_context:
+            self._save_cli_context_to_instance(cli_context)
 
             # TODO: not needed here, apparently, it's applied elsewhere, not to
             # each and every Common child.
@@ -755,15 +772,77 @@ class Common(_CommonBase):
         return self.name
 
     @classmethod
-    def _save_context(cls, context: 'tmt.cli.Context') -> None:
-        """ Save provided command line context and options for future use """
-        cls._context = context
-        cls._options = context.params
+    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
+        """
+        Save a CLI context and options it carries for later use.
 
-    def _save_context_to_instance(self, context: 'tmt.cli.Context') -> None:
-        """ Save provided command line context and options to the instance """
-        self._context = context
-        self._options = context.params
+        .. warning::
+
+           The given context is saved into a class variable, therefore it will
+           function as a "default" context for instances on which
+           :py:meth:`_save_cli_context_to_instance` has not been called.
+
+        .. warning::
+
+           The given context will overwrite any previously saved context.
+
+        :param context: CLI context to save.
+        """
+
+        cls._cli_context = context
+        cls._cli_options = cls._cli_context.params
+
+    def _save_cli_context_to_instance(self, context: 'tmt.cli.Context') -> None:
+        """
+        Save a CLI context and options it carries for later use.
+
+        .. warning::
+
+           The given context will overwrite any previously saved context.
+
+        :param context: CLI context to save.
+        """
+
+        self._cli_context = context
+        self._cli_options = self._cli_context.params
+
+    @property
+    def _cli_context_object(self) -> Optional['tmt.cli.ContextObject']:
+        """
+        A CLI context object with tmt info relevant for command execution.
+
+        :returns: CLI context object, or ``None`` if the CLI context itself
+            has not been set.
+        """
+
+        # TODO: can this even happen? Common._save_cli_context() is called
+        # from tmt.cli:main(), would this act as an initializer for all
+        # derived classes?
+        if self._cli_context is None:
+            return None
+
+        return self._cli_context.obj
+
+    @property
+    def _cli_fmf_context(self) -> FmfContextType:
+        """ An fmf context set for this object via CLI """
+
+        # TODO: can this even happen? Common._save_cli_context() is called
+        # from tmt.cli:main(), would this act as an initializer for all
+        # derived classes?
+        if self._cli_context_object is None:
+            return {}
+
+        return self._cli_context_object.fmf_context
+
+    @property
+    def _fmf_context(self) -> FmfContextType:
+        """ An fmf context set for this object. """
+
+        # By default, the only fmf context available is one provided via CLI.
+        # But some derived classes can and will override this, because fmf
+        # context can exist in fmf nodes, too.
+        return self._cli_fmf_context
 
     @overload
     @classmethod
@@ -780,21 +859,7 @@ class Common(_CommonBase):
         """ Get an option from the command line context (class version) """
         if cls.ignore_class_options:
             return default
-        return cls._options.get(option, default)
-
-    @property
-    def _context_object(self) -> Optional['tmt.cli.ContextObject']:
-        if self._context is None:
-            return None
-
-        return self._context.obj
-
-    def _fmf_context(self) -> FmfContextType:
-        """ Return the current fmf context """
-        if self._context_object is None:
-            return dict()
-
-        return self._context_object.fmf_context
+        return cls._cli_options.get(option, default)
 
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
         """
@@ -826,7 +891,7 @@ class Common(_CommonBase):
                 pass
 
         # Get local option
-        local = self._options.get(option, default)
+        local = self._cli_options.get(option, default)
         # Check parent option
         parent = None
         if self.parent:

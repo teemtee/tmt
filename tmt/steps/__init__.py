@@ -216,7 +216,7 @@ class Step(tmt.utils.Common):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Initialize and check the step data """
-        logger.apply_verbosity_options(**self.__class__._options)
+        logger.apply_verbosity_options(**self.__class__._cli_options)
 
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
 
@@ -295,10 +295,10 @@ class Step(tmt.utils.Common):
     @property
     def enabled(self) -> Optional[bool]:
         """ True if the step is enabled """
-        if self.plan.my_run is None or self.plan.my_run._context_object is None:
+        if self.plan.my_run is None or self.plan.my_run._cli_context_object is None:
             return None
 
-        return self.name in self.plan.my_run._context_object.steps
+        return self.name in self.plan.my_run._cli_context_object.steps
 
     @property
     def plugins_in_standalone_mode(self) -> int:
@@ -682,7 +682,7 @@ class BasePlugin(Phase):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Store plugin name, data and parent step """
-        logger.apply_verbosity_options(**self.__class__._options)
+        logger.apply_verbosity_options(**self.__class__._cli_options)
 
         # Store name, data and parent step
         super().__init__(
@@ -1154,7 +1154,7 @@ class Reboot(Action):
             help='Hard reboot of the machine. Unsaved data may be lost.')
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """ Reboot the guest. """
-            Reboot._save_context(context)
+            Reboot._save_cli_context(context)
             Reboot._enabled = True
 
         return reboot
@@ -1242,7 +1242,7 @@ class Login(Action):
             the tests finished with given result (pass, info, fail,
             warn, error).
             """
-            Login._save_context(context)
+            Login._save_cli_context(context)
             Login._enabled = True
 
         return login
