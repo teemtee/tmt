@@ -213,9 +213,11 @@ class GuestContainer(tmt.Guest):
 
         self.debug("Update selinux context of the run workdir.", level=3)
         assert self.parent.plan.workdir is not None  # narrow type
-        self.run(Command(
-            "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
-            ), shell=False)
+        # Relabel workdir to container_file_t if SELinux supported
+        if tmt.utils.is_selinux_supported():
+            self.run(Command(
+                "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
+                ), shell=False)
         # In case explicit destination is given, use `podman cp` to copy data
         # to the container
         if source and destination:
