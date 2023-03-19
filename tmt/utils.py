@@ -4382,3 +4382,14 @@ def render_template_file(
 
     except jinja2.exceptions.TemplateError as exc:
         raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
+
+
+@lru_cache(maxsize=None)
+def is_selinux_supported() -> bool:
+    """
+    Returns ``true`` if SELinux filesystem is supported by the kernel, ``false`` otherwise.
+
+    For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
+    """
+    with open('/proc/filesystems', 'r') as file:
+        return any('selinuxfs' in line for line in file)
