@@ -24,6 +24,8 @@ ENTRY_POINT_NAME = 'tmt.plugin'
 # Directories with module in environment variable
 ENVIRONMENT_NAME = 'TMT_PLUGINS'
 
+# Make a note when plugins have been already explored
+ALREADY_EXPLORED = False
 
 _TMT_ROOT = Path(tmt.__file__).resolve().parent
 
@@ -146,12 +148,25 @@ def _explore_entry_points(logger: Logger) -> None:
     _explore_entry_point(ENTRY_POINT_NAME, logger.descend())
 
 
-def explore(logger: Logger) -> None:
-    """ Explore all available plugin locations """
+def explore(logger: Logger, again: bool = False) -> None:
+    """
+    Explore all available plugin locations
+
+    By default plugins are explored only once to save time. Repeated
+    call does not have any effect. Use ``again=True`` to force plugin
+    exploration even if it has been already completed before.
+    """
+
+    # Nothing to do if already explored
+    global ALREADY_EXPLORED
+    if ALREADY_EXPLORED and not again:
+        return
 
     _explore_packages(logger)
     _explore_directories(logger)
     _explore_entry_points(logger)
+
+    ALREADY_EXPLORED = True
 
 
 def import_(*, module: str, path: Optional[Path] = None, logger: Logger) -> None:

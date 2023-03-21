@@ -1579,20 +1579,19 @@ Coding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to perform more advanced processing of the metadata
-which is not supported by the command line use Python.  Just
-import the ``tmt`` module and create a logger for debugging::
+which is not supported by the command line use Python. To get
+quickly started just import the ``tmt`` module and grow a new
+``tmt.Tree`` object::
 
     import tmt
-    from tmt.utils import Path
 
-    tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
+    tree = tmt.Tree.grow()
 
     for test in tree.tests():
         print(test.name)
 
-You might also want to explore all available plugins if you need
-to work with metadata export::
+Use the ``tmt.utils.Path`` class when specifying paths::
 
-    tmt.plugins.explore()
-    for plan in tree.plans():
-        print(plan.export(format="yaml"))
+    from tmt.utils import Path
+
+    tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
