@@ -60,50 +60,53 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         # create launch and its items
         launch_id = service.start_launch(name=launch_name,
                                          start_time=timestamp(),
-                                         #  rerun=False,
-                                         #  rerunOf=None,
-                                         #  attributes={"attr1": "val1", "attr2": "val2"},
+                                         rerun=False,
+                                         rerunOf=None,
+                                         attributes={"attr1": "val1", "attr2": "val2"},
                                          description="Testing RP API")
 
         suite_id = service.start_test_item(name="Suite",
                                            start_time=timestamp(),
                                            item_type="SUITE",
-                                           #    attributes={"attr1": "val1", "attr2": "val2"},
+                                           attributes={"attr1": "val1", "attr2": "val2"},
                                            description="Some Test Plan")
 
         test_id = service.start_test_item(name="Test Case",
                                           start_time=timestamp(),
                                           item_type="TEST",
-                                          #   parent_item_id=suite_id,
-                                          #   test_case_id="xx123",
-                                          #   code_ref="12345xxx",
+                                          parent_item_id=suite_id,
+                                          test_case_id="xx123",
+                                          code_ref="12345xxx",
                                           parameters={"key1": "val1", "key2": "val2"},
-                                          #   attributes={"attr1": "val1", "attr2": "val2"},
+                                          attributes={"attr1": "val1", "attr2": "val2"},
                                           description="Some Test Case")
-        # print("URL:         " + service.get_launch_ui_url())
-        # print("LAUNCH UIID: " + str(service.get_launch_ui_id()))
+        print("URL:         " + service.get_launch_ui_url())
+        print("LAUNCH UIID: " + str(service.get_launch_ui_id()))
         print("LAUNCH ID:   " + launch_id)
         print("SUITE ID:    " + suite_id)
         print("TEST ID:     " + test_id)
 
         # report the logs
-        service.log(
-            time=timestamp(),
-            message="Hello World!",
-            level="INFO")        # item_id=test_id
+        service.log(item_id=test_id,
+                    time=timestamp(),
+                    message="Hello World!",
+                    level="INFO")
         log = "/var/tmp/tmt/run-341/plans/default/execute/data/test/output.txt"
-        service.log(
-            time=timestamp(),
-            message=Path(log).read_text(),
-            level="INFO")  # item_id=test_id
-        # service.log(item_id=test_id,time=timestamp(),message="Adding log attachment",
-        #             level="INFO",attachment={"name": "output.txt",
-        #                                      "data": Path(log).read_text(),
-        #                                      "mime": "text/plain"})  # usecase?
+        service.log(item_id=test_id,
+                    time=timestamp(),
+                    message=Path(log).read_text(),
+                    level="INFO")
+        service.log(item_id=test_id,
+                    time=timestamp(),
+                    message="Adding log attachment",
+                    level="INFO",
+                    attachment={"name": "output.txt",
+                                "data": Path(log).read_text(),
+                                "mime": "text/plain"})
 
         # finnish reporting
-        service.finish_test_item(end_time=timestamp(), status="PASSED")     # item_id=test_id
-        service.finish_test_item(end_time=timestamp(), status="PASSED")     # item_id=suite_id
+        service.finish_test_item(item_id=test_id, end_time=timestamp(), status="PASSED")
+        service.finish_test_item(item_id=suite_id, end_time=timestamp(), status="PASSED")
         service.finish_launch(end_time=timestamp())
         service.terminate()
 # # # # # # # # #
