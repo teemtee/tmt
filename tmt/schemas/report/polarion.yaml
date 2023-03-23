@@ -25,11 +25,38 @@ properties:
   project-id:
     type: string
 
-  testrun-title:
+  title:
     type: string
 
   upload:
     type: boolean
+
+  planned-in:
+    type: string
+
+  assignee:
+    type: string
+
+  pool-team:
+    type: string
+
+  arch:
+    type: string
+
+  platform:
+    type: string
+
+  build:
+    type: string
+
+  sample-image:
+    type: string
+
+  logs:
+    type: string
+
+  composeid:
+    type: string
 
 required:
   - how
