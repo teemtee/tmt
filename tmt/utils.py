@@ -4008,6 +4008,75 @@ def dataclass_normalize_field(
     return value
 
 
+# TODO: wouldn't it be nice if typing would support some kind of `typeof(...)`
+# helper? it doesn't, yet. https://github.com/python/typing/issues/769
+class OptionGetter(Protocol):
+    def __call__(self, option: str, default: Optional[Any] = None) -> Any:
+        pass
+
+
+def dataclass_normalize_options(
+        *,
+        container: Any,
+        option_getter: OptionGetter,
+        keys: Optional[List[str]] = None,
+        preserve_modified: bool = True,
+        logger: tmt.log.Logger,
+        ) -> None:
+    """
+    Normalize and assign values from CLI options to container fields.
+
+    :param container: container to update.
+    :param option_getter: a callable to provide a value for a given option.
+        It is called once for each option name, with an optional default
+        to return if the option was not specified.
+    :param keys: optional list of keys to update. If not set, all keys
+        are considered.
+    :param preserve_modified: if set, only options whose value is not equal
+        to field's default value would be saved in the container.
+    """
+
+    keys = keys or list(container.keys())
+
+    for keyname in keys:
+        # Checks below try to prevent default options of CLI options from
+        # overwriting values already consumed from fmf nodes.This is no
+        # simple task, since options have defaults, they are always present
+        # in the set of options provided by Click, therefore we have no way
+        # how to check whether the option was specified or not. Instead, we
+        # are "guessing", and ignoring default-ish values.
+
+        # Some keys are not even changeable via command line. Filter those
+        # out first. With a special default value, we can detect options
+        # that were never seen by Click.
+        value = option_getter(tmt.utils.key_to_option(keyname), default=dataclasses.MISSING)
+
+        if value is dataclasses.MISSING:
+            continue
+
+        if preserve_modified:
+            # If the value we get for an option is the default value, good,
+            # no need to bother - as such, it's either already stored in
+            # `self.data`, or it has been replaced with whatever came from an
+            # fmf node.
+            if value == container._default(keyname):
+                continue
+
+            # Finally, there are `multiple=True` options: even if they do
+            # specify their default as `[]`, Click uses `()` instead. Empty
+            # tuple is therefore the default-ish value.
+            if value == ():
+                continue
+
+        else:
+            # If saved values are not to be preserved, we need to convert the
+            # Click's tuples into empty lists, to match the field default.
+            if value == ():
+                value = []
+
+        dataclass_normalize_field(container, keyname, value, logger)
+
+
 def normalize_string_list(
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[str]:
@@ -4470,8 +4539,14 @@ def field(
             }
         metadata.option_choices = choices
 
-        if default is not dataclasses.MISSING and not is_flag:
+        if is_flag is True:
             metadata.option_kwargs['default'] = default
+
+        elif default is not dataclasses.MISSING:
+            metadata.option_kwargs['default'] = default
+
+        elif default_factory is not dataclasses.MISSING:
+            metadata.option_kwargs['default'] = default_factory()
 
     if normalize:
         metadata.normalize_callback = normalize

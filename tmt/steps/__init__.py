@@ -938,19 +938,12 @@ class BasePlugin(Phase):
         :param keys: if specified, only the listed keys would be affected.
         """
 
-        keys = keys or list(self.data.keys())
-
-        for keyname in keys:
-            value = self.opt(tmt.utils.key_to_option(keyname))
-
-            # TODO: this test is incorrect. It should not test for false-ish values,
-            # but rather check whether the value returned by `self.opt()` is or is
-            # not option default. And that's apparently not trivial with current CLI
-            # handling.
-            if value is None or value == [] or value == () or value is False:
-                continue
-
-            tmt.utils.dataclass_normalize_field(self.data, keyname, value, self._logger)
+        tmt.utils.dataclass_normalize_options(
+            container=self.data,
+            option_getter=self.opt,
+            keys=keys,
+            logger=self._logger
+            )
 
     def wake(self) -> None:
         """
