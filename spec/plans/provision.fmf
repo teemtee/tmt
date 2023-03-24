@@ -80,15 +80,17 @@ example: |
 /beaker:
     summary: Provision a machine in Beaker
     description: |
-        Reserve a machine from the Beaker pool using mrack plugin.
-        `mrack`__ is a multicloud provisioning library supporting
-        multiple cloud services including Beaker.
+        Reserve a machine from the Beaker pool using the ``mrack``
+        plugin.  `mrack`__ is a multicloud provisioning library
+        supporting multiple cloud services including Beaker.
 
-        Two files are used for configuration: ``mrack.conf``
-        (basic configuration) and ``provisioning-config.yaml``
-        file (configuration per supported provider). These files
-        are shipped in the ``/tmt/steps/provision/mrack/``
-        directory.
+        The following two files are used for configuration:
+
+        /etc/tmt/mrack.conf
+            for basic configuration
+
+        /etc/tmt/provisioning-config.yaml
+            configuration per supported provider
 
         Beaker installs distribution specified by the ``image``
         key. If the image can not be translated using the
@@ -99,6 +101,13 @@ example: |
         the one in the example below.
 
         __ https://github.com/neoave/mrack
+
+        .. note::
+
+            The beaker provision plugin is not available for
+            ``rhel-8`` or ``centos-stream-8``.
+
+        .. versionadded:: 1.22
 
     example:
       - |
