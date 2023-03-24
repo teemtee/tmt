@@ -1,0 +1,17 @@
+test: ./runtest.sh
+summary: "Test timeout in "
+duration: 2s
+setup:
+  - ./setup_apache.sh
+cleanup:
+  - ./stop_server.sh
+
+/setup-timeout:
+  summary+: setup
+  setup+:
+    - ./sleep_10.sh
+
+/cleanup-timeout:
+  summary+: cleanup
+  cleanup+:
+    - ./sleep_10.sh

@@ -1,0 +1,15 @@
+test: ./runtest.sh
+summary: "Test curl against "
+cleanup:
+  - ./stop_server.sh
+
+/apache:
+  summary+: apache
+  setup: ./setup_apache.sh
+/ngnix:
+  summary+: ngnix
+  setup:
+    - ./setup_ngnix.sh
+    - ./setup_usera.sh
+  cleanup+:
+    - ./remove_users.sh
