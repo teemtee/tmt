@@ -1,0 +1,22 @@
+summary: "wget test from: "
+
+link:
+  setup-by:  # fmf id
+    url: https://github.com/teemtee/tmt
+    ref: atomasov-setup-cleanup-test
+    path: tests/test/setup-cleanup/data
+    name: /tests/network/add-ip
+  cleanup-by:  # fmf id
+    url: https://github.com/teemtee/tmt
+    ref: atomasov-setup-cleanup-test
+    path: tests/test/setup-cleanup/data
+    name:
+      - /tests/network/del-ip
+
+/google:
+  summary+: google
+  test: wget https://google.com
+
+/localhost:
+  summary+: localhost
+  test: wget localhost

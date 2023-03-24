@@ -1,0 +1,7 @@
+/local-script:
+  summary: Verify setup and cleanup functionality using local scripts
+  test: local.sh
+
+/remote-test:
+  summary: Verify setup and cleanup functionality using remote tests
+  test: remote.sh

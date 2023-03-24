@@ -1,0 +1,7 @@
+enabled: false
+
+/add-ip:
+  test: echo Adding IPs
+
+/del-ip:
+  test: echo Deleting IPs
