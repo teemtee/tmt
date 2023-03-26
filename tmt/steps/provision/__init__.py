@@ -129,8 +129,8 @@ class Guest(tmt.utils.Common):
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
     @property
-    def full_name(self) -> str:
-        """ Return guest's full name, i.e. name and its role """
+    def multihost_name(self) -> str:
+        """ Return guest's multihost name, i.e. name and its role """
 
         if self.role is None:
             return self.name
@@ -200,7 +200,7 @@ class Guest(tmt.utils.Common):
         if self.opt('dry'):
             return
 
-        self.info('full name', self.full_name, 'green')
+        self.info('multihost name', self.multihost_name, 'green')
 
         # A small helper to make the repeated run & extract combo easier on eyes.
         def _fetch_detail(command: Command, pattern: str) -> str:
