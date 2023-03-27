@@ -53,6 +53,11 @@ rlJournalStart
         rlAssertGrep "Status: implemented" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Export with a custom template"
+        rlRun -s "tmt story export mini --how=template --template=../story-template.j2"
+        rlAssertGrep "This is a test template, it should have access to the story: \"/mini\" means \"As a user I want this and that\"." "$rlRun_LOG"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
