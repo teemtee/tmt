@@ -159,6 +159,9 @@ Requires: tmt-report-html >= %{version}
 Requires: tmt-report-junit >= %{version}
 Requires: tmt-report-polarion >= %{version}
 Requires: tmt-report-reportportal >= %{version}
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+Requires: tmt-provision-beaker >= %{version}
+%endif
 
 %description all
 All extra dependencies of the Test Management Tool. Install this
