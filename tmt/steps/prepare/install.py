@@ -14,7 +14,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
-from tmt.steps.provision import Guest
+from tmt.steps.provision import Guest, GuestPackageManager
 from tmt.utils import Command, Path, ShellScript, field
 
 if sys.version_info >= (3, 8):
@@ -605,13 +605,13 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         # Pick the right implementation
         # TODO: it'd be nice to use a "plugin registry" and make the implementations
         # discovered as any other plugins.
-        if guest.facts.package_manager == 'rpm-ostree':
+        if guest.facts.package_manager == GuestPackageManager.RPM_OSTREE:
             installer: InstallBase = InstallRpmOstree(logger=logger, parent=self, guest=guest)
 
-        elif guest.facts.package_manager == 'dnf':
+        elif guest.facts.package_manager == GuestPackageManager.DNF:
             installer = InstallDnf(logger=logger, parent=self, guest=guest)
 
-        elif guest.facts.package_manager == 'yum':
+        elif guest.facts.package_manager == GuestPackageManager.YUM:
             installer = InstallYum(logger=logger, parent=self, guest=guest)
 
         else:

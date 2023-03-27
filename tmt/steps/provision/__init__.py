@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 from shlex import quote
 from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
-                    Type, Union, cast, overload)
+                    Type, TypeVar, Union, cast, overload)
 
 import click
 import fmf
@@ -60,14 +60,21 @@ class CheckRsyncOutcome(enum.Enum):
     INSTALLED = 'installed'
 
 
-_FactQuery = Callable[['GuestFacts', 'Guest'], Optional[str]]
-_SafeFactQuery = Callable[['GuestFacts', 'Guest'], str]
+class GuestPackageManager(enum.Enum):
+    DNF = 'dnf'
+    YUM = 'yum'
+    RPM_OSTREE = 'rpm-ostree'
 
 
-def raise_on_none(family: str) -> Callable[[_FactQuery], _SafeFactQuery]:
-    def outer(fn: _FactQuery) -> _SafeFactQuery:
+T = TypeVar('T')
+_FactQuery = Callable[['GuestFacts', 'Guest'], Optional[T]]
+_SafeFactQuery = Callable[['GuestFacts', 'Guest'], T]
+
+
+def raise_on_none(family: str) -> Callable[[_FactQuery[T]], _SafeFactQuery[T]]:
+    def outer(fn: _FactQuery[T]) -> _SafeFactQuery[T]:
         @functools.wraps(fn)
-        def inner(self: 'GuestFacts', guest: 'Guest') -> str:
+        def inner(self: 'GuestFacts', guest: 'Guest') -> T:
             fact = fn(self, guest)
 
             if fact is not None:
@@ -97,7 +104,7 @@ class GuestFacts(tmt.utils.SerializableContainer):
     arch: Optional[str] = None
     distro: Optional[str] = None
     kernel_release: Optional[str] = None
-    package_manager: Optional[str] = None
+    package_manager: Optional[GuestPackageManager] = None
 
     os_release_content: Dict[str, str] = field(default_factory=dict)
     lsb_release_content: Dict[str, str] = field(default_factory=dict)
@@ -177,7 +184,7 @@ class GuestFacts(tmt.utils.SerializableContainer):
     def _probe(
             self,
             guest: 'Guest',
-            probes: List[Tuple[Command, str]]) -> Optional[str]:
+            probes: List[Tuple[Command, T]]) -> Optional[T]:
         """
         Find a first successfull command.
 
@@ -261,13 +268,13 @@ class GuestFacts(tmt.utils.SerializableContainer):
                 (Command('uname', '-r'), r'(.+)')
                 ])
 
-    def _query_package_manager(self, guest: 'Guest') -> Optional[str]:
+    def _query_package_manager(self, guest: 'Guest') -> Optional[GuestPackageManager]:
         return self._probe(
             guest,
             [
-                (Command('stat', '/run/ostree-booted'), 'rpm-ostree'),
-                (Command('rpm', '-q', 'dnf'), 'dnf'),
-                (Command('rpm', '-q', 'yum'), 'yum'),
+                (Command('stat', '/run/ostree-booted'), GuestPackageManager.RPM_OSTREE),
+                (Command('rpm', '-q', 'dnf'), GuestPackageManager.DNF),
+                (Command('rpm', '-q', 'yum'), GuestPackageManager.YUM),
                 # And, one day, we'd follow up on this with...
                 # (Command('dpkg', '-l', 'apt'), 'apt')
                 ])
@@ -471,7 +478,10 @@ class Guest(tmt.utils.Common):
         self.info('arch', self.facts.arch, 'green')
         self.info('distro', self.facts.distro, 'green')
         self.verbose('kernel', self.facts.kernel_release, 'green')
-        self.verbose('package manager', self.facts.package_manager, 'green')
+        self.verbose(
+            'package manager',
+            self.facts.package_manager.value if self.facts.package_manager else 'unknown',
+            'green')
 
     def _ansible_verbosity(self) -> List[str]:
         """ Prepare verbose level based on the --debug option count """
