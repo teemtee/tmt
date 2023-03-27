@@ -104,7 +104,12 @@ class GuestFacts(tmt.utils.SerializableContainer):
     arch: Optional[str] = None
     distro: Optional[str] = None
     kernel_release: Optional[str] = None
-    package_manager: Optional[GuestPackageManager] = None
+    package_manager: Optional[GuestPackageManager] = field(
+        # cast: since the default is None, mypy cannot infere the full type,
+        # and reports `package_manager` parameter to be `object`.
+        default=cast(Optional[GuestPackageManager], None),
+        serialize=lambda package_manager: package_manager.value if package_manager else None,
+        unserialize=lambda raw_value: GuestPackageManager(raw_value) if raw_value else None)
 
     os_release_content: Dict[str, str] = field(default_factory=dict)
     lsb_release_content: Dict[str, str] = field(default_factory=dict)
