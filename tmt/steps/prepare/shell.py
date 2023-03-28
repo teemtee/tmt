@@ -20,8 +20,9 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         multiple=True,
         metavar='SCRIPT',
         help='Shell script to be executed. Can be used multiple times.',
-        normalize=tmt.utils.normalize_shell_script_list
-        )
+        normalize=tmt.utils.normalize_shell_script_list,
+        serialize=lambda value: [str(script) for script in value],
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized])
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -30,22 +31,6 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         data['script'] = [str(script) for script in self.script]
 
         return data
-
-    def to_serialized(self) -> Dict[str, Any]:
-        data = super().to_serialized()
-
-        data['script'] = [str(script) for script in self.script]
-
-        return data
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'PrepareShellData':
-        """ Convert from a serialized form loaded from a file """
-
-        obj = super().from_serialized(serialized)
-        obj.script = [ShellScript(script) for script in serialized['script']]
-
-        return obj
 
 
 # TODO: drop ignore once type annotations between modules enabled
