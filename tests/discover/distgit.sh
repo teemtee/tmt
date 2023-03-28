@@ -162,7 +162,7 @@ done
 
 
 
-    rlPhaseStartTest "signature files in sources are ignored"
+    rlPhaseStartTest "non-tar files in sources are ignored"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'pushd $tmp'
 
@@ -170,12 +170,14 @@ done
         rlRun "tmt init" # should has fmf tree
 
         # https://github.com/teemtee/tmt/issues/1055
+        # https://github.com/teemtee/tmt/issues/1949
 
         (
             echo simple-1.tgz
             echo IGNORED file.tgz.asc
             echo IGNORED file.key
             echo IGNORED file.sign
+            echo IGNORED cockpit.css.gz
         ) > $MOCK_SOURCES_FILENAME
         # only simple-1.tgz should be downloaded so all other would fail with
         # File not found for url: http://localhost:9000/IGNORED
