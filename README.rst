@@ -268,12 +268,21 @@ easily inside a container::
     podman run -it --rm quay.io/testing-farm/tmt bash
     podman run -it --rm quay.io/testing-farm/tmt-all bash
 
+.. _pip_install:
+
 When installing using ``pip`` you might need to install additional
 packages on your system::
 
     sudo dnf install gcc redhat-rpm-config
     sudo dnf install {python3,libvirt,krb5,libpq}-devel
     pip install --user tmt
+
+On other distributions than Fedora or RHEL the package names might
+be different. For example on Ubuntu to install all packages to
+have provision plugins working::
+
+    sudo apt install libkrb5-dev pkg-config libvirt-dev genisoimage qemu-kvm libvirt-daemon-system
+    pip install --user "tmt[provision]"
 
 Note: You can omit the ``--user`` flag if in a virtual environment.
 
