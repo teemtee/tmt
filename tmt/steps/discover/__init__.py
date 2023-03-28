@@ -104,7 +104,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         else:
             handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
         for url, source_name in handler.url_and_name(distgit_dir):
-            if handler.re_ignore_extensions.search(source_name):
+            if not handler.re_supported_extensions.search(source_name):
                 continue
             self.debug(f"Download sources from '{url}'.")
             with tmt.utils.retry_session() as session:
