@@ -3152,7 +3152,9 @@ class DistGitHandler:
 
     usage_name: str  # Name to use for dist-git-type
     re_source: Pattern[str]
-    re_ignore_extensions: Pattern[str] = re.compile(r'\.(sign|asc|key)$')
+    # https://www.gnu.org/software/tar/manual/tar.html#auto_002dcompress
+    re_supported_extensions: Pattern[str] = re.compile(
+        r'\.((tar\.(gz|Z|bz2|lz|lzma|lzo|xz|zst))|tgz|taz|taZ|tz2|tbz2|tbz|tlz|tzst)$')
     lookaside_server: str
     remote_substring: Pattern[str]
 
