@@ -1,6 +1,5 @@
 import dataclasses
 import os
-from pathlib import Path
 from time import time
 from typing import Optional
 
@@ -10,7 +9,7 @@ import tmt.steps.report
 import tmt.utils
 
 
-def timestamp() -> None:
+def timestamp() -> str:
     return str(int(time() * 1000))
 
 
@@ -55,20 +54,22 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         service = ReportPortalService(endpoint=endpoint, project=project, token=token)
 
+        attributes = {k: v[0] for k, v in self.step.plan._fmf_context().items()}
         # create launch and its items
         launch_id = service.start_launch(name=launch_name,
                                          start_time=timestamp(),
                                          rerun=False,
                                          rerunOf=None,
-                                         attributes={"attr1": "val1", "attr2": "val2"},
+                                         attributes=attributes,
                                          description="Testing RP API")
 
         suite_id = service.start_test_item(name="Suite",
                                            start_time=timestamp(),
                                            item_type="SUITE",
-                                           attributes={"attr1": "val1", "attr2": "val2"},
+                                           attributes=attributes,
                                            description="Some Test Plan")
 
+        attributes['contact'] = self.step.plan.discover.tests()[0].contact[0]
         test_id = service.start_test_item(name="Test Case",
                                           start_time=timestamp(),
                                           item_type="TEST",
@@ -76,7 +77,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                                           test_case_id="xx123",
                                           code_ref="12345xxx",
                                           parameters={"key1": "val1", "key2": "val2"},
-                                          attributes={"attr1": "val1", "attr2": "val2"},
+                                          attributes=attributes,
                                           description="Some Test Case")
 
         print("URL:         " + str(service.get_launch_ui_url()))
@@ -86,22 +87,18 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         print("TEST ID:     " + str(test_id))
 
         # report the logs
-        service.log(item_id=test_id,
-                    time=timestamp(),
-                    message="Hello World!",
-                    level="INFO")
-        log = "/var/tmp/tmt/run-341/plans/default/execute/data/test/output.txt"
-        service.log(item_id=test_id,
-                    time=timestamp(),
-                    message=Path(log).read_text(),
-                    level="INFO")
-        service.log(item_id=test_id,
-                    time=timestamp(),
-                    message="Adding log attachment",
-                    level="INFO",
-                    attachment={"name": "output.txt",
-                                "data": Path(log).read_text(),
-                                "mime": "text/plain"})
+        for result in self.step.plan.execute.results():
+            for log_path in result.log:
+                try:
+                    log = self.step.plan.execute.read(log_path)
+                except (IndexError, AttributeError):
+                    log = None
+
+                print("LOG: " + str(log_path))
+                service.log(item_id=test_id,
+                            time=timestamp(),
+                            message=str(os.path.basename(log_path)) + ":\n" + log,
+                            level="INFO")
 
         # finnish reporting
         service.finish_test_item(item_id=test_id, end_time=timestamp(), status="PASSED")
