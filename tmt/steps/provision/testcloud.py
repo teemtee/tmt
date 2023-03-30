@@ -7,7 +7,7 @@ import platform
 import re
 import time
 import types
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 import click
 import requests
@@ -33,6 +33,18 @@ if TYPE_CHECKING:
 libvirt: Optional[types.ModuleType] = None
 testcloud: Optional[types.ModuleType] = None
 
+# To silence mypy
+DomainConfiguration: Any
+X86_64ArchitectureConfiguration: Any
+AArch64ArchitectureConfiguration: Any
+S390xArchitectureConfiguration: Any
+Ppc64leArchitectureConfiguration: Any
+SystemNetworkConfiguration: Any
+UserNetworkConfiguration: Any
+QCow2StorageDevice: Any
+RawStorageDevice: Any
+TPMConfiguration: Any
+
 
 def import_testcloud() -> None:
     """
@@ -42,14 +54,36 @@ def import_testcloud() -> None:
     """
     global testcloud
     global libvirt
+    global DomainConfiguration
+    global X86_64ArchitectureConfiguration
+    global AArch64ArchitectureConfiguration
+    global S390xArchitectureConfiguration
+    global Ppc64leArchitectureConfiguration
+    global SystemNetworkConfiguration
+    global UserNetworkConfiguration
+    global QCow2StorageDevice
+    global RawStorageDevice
+    global TPMConfiguration
     try:
         import libvirt
         import testcloud.image
         import testcloud.instance
         import testcloud.util
-    except ImportError:
+        from testcloud.domain_configuration import (
+            AArch64ArchitectureConfiguration,
+            DomainConfiguration,
+            Ppc64leArchitectureConfiguration,
+            QCow2StorageDevice,
+            RawStorageDevice,
+            S390xArchitectureConfiguration,
+            SystemNetworkConfiguration,
+            TPMConfiguration,
+            UserNetworkConfiguration,
+            X86_64ArchitectureConfiguration,
+            )
+    except ImportError as error:
         raise ProvisionError(
-            "Install 'testcloud' to provision using this method.")
+            "Install 'testcloud' to provision using this method.") from error
 
 
 # Testcloud cache to our tmt's workdir root
@@ -113,65 +147,6 @@ systemd:
                   /etc/ssh/sshd_config
         [Install]
         WantedBy=multi-user.target
-"""
-
-# Libvirt domain XML template related variables
-DOMAIN_TEMPLATE_NAME = 'domain-template.jinja'
-DOMAIN_TEMPLATE_FILE = TESTCLOUD_DATA / DOMAIN_TEMPLATE_NAME
-DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
-  <name>{{ domain_name }}</name>
-  <uuid>{{ uuid }}</uuid>
-  <memory unit='KiB'>{{ memory }}</memory>
-  <currentMemory unit='KiB'>{{ memory }}</currentMemory>
-  <vcpu placement='static'>2</vcpu>
-  <os>
-    <type arch='{{ arch }}' machine='{{ model }}'>hvm</type>
-    {{ uefi_loader }}
-    <boot dev='hd'/>
-  </os>
-  {{ cpu }}
-  {{ extra_specs }}
-  <clock offset='utc'>
-    <timer name='rtc' tickpolicy='catchup'/>
-    <timer name='pit' tickpolicy='delay'/>
-    <timer name='hpet' present='no'/>
-  </clock>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>restart</on_crash>
-  <devices>
-    <emulator>{{ emulator_path }}</emulator>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2' cache='unsafe'/>
-      <source file="{{ disk }}"/>
-      <target dev='vda' bus='virtio'/>
-    </disk>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='raw'/>
-      <source file="{{ seed }}"/>
-      <target dev='vdb' bus='virtio'/>
-    </disk>
-    {{ additional_disks }}
-    <interface type='{{ network_type }}'>
-      <mac address="{{ mac_address }}"/>
-      {{ network_source }}
-      {{ ip_setup }}
-      <model type='virtio'/>
-    </interface>
-    <serial type='pty'>
-      <target port='0'/>
-    </serial>
-    <console type='pty'>
-      <target type='serial' port='0'/>
-    </console>
-    <input type="keyboard" bus="virtio"/>
-    {{ tpm }}
-    <rng model='virtio'>
-      <backend model='random'>/dev/urandom</backend>
-    </rng>
-  </devices>
-  {{ qemu_args }}
-</domain>
 """
 
 # VM defaults
@@ -290,6 +265,8 @@ class GuestTestcloud(tmt.GuestSsh):
     # FIXME: ignore[name-defined]: https://github.com/teemtee/tmt/issues/1616
     _image: Optional['testcloud.image.Image'] = None  # type: ignore[name-defined]
     _instance: Optional['testcloud.instance.Instance'] = None  # type: ignore[name-defined]
+    _domain: Optional[  # type: ignore[name-defined]
+        'testcloud.domain_configuration.DomainConfiguration'] = None
 
     @property
     def is_ready(self) -> bool:
@@ -351,13 +328,6 @@ class GuestTestcloud(tmt.GuestSsh):
         if not url:
             raise ProvisionError(f"Could not map '{name}' to compose.")
         return url
-
-    @staticmethod
-    def _create_template() -> None:
-        """ Create libvirt domain template """
-        # Write always to ovewrite possible outdated version
-        with open(DOMAIN_TEMPLATE_FILE, 'w') as template:
-            template.write(DOMAIN_TEMPLATE)
 
     def wake(self) -> None:
         """ Wake up the guest """
@@ -428,9 +398,6 @@ class GuestTestcloud(tmt.GuestSsh):
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
-        # Make sure libvirt domain template exists
-        GuestTestcloud._create_template()
-
         # Prepare config
         self.prepare_config()
 
@@ -468,35 +435,77 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Create instance
         self.instance_name = self._tmt_name()
+
+        # Prepare DomainConfiguration object before Instance object
+        self._domain = DomainConfiguration(self.instance_name)
+        self._domain.memory_size = self.memory * 1024
+        self._domain.cpu_count = 2  # Make configurable
+
+        # Is the combination of host-requested architecture kvm capable?
+        kvm = bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
+
+        # Is this el <= 7?
+        legacy_os = testcloud.util.needs_legacy_net(self._image.name)
+
+        # Is this a CoreOS?
+        self._domain.coreos = bool(re.search('coreos|rhcos', self.image.lower()))
+
+        if self.arch == "x86_64":
+            self._domain.system_architecture = X86_64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Configurable
+                model="q35" if not legacy_os else "pc")
+        elif self.arch == "aarch64":
+            self._domain.system_architecture = AArch64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=True,  # Always enabled
+                model="virt")
+        elif self.arch == "ppc64le":
+            self._domain.system_architecture = Ppc64leArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="pseries")
+        elif self.arch == "s390x":
+            self._domain.system_architecture = S390xArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="s390-ccw-virtio")
+        else:
+            raise tmt.utils.ProvisionError("Unknown architecture requested.")
+
+        mac_address = testcloud.util.generate_mac_address()
+        if f"qemu:///{self.connection}" == "qemu:///system":
+            self._domain.network_configuration = SystemNetworkConfiguration(
+                mac_address=mac_address)
+        elif f"qemu:///{self.connection}" == "qemu:///session":
+            device_type = "virtio-net-pci" if not legacy_os else "e1000"
+            self._domain.network_configuration = UserNetworkConfiguration(
+                mac_address=mac_address,
+                port=testcloud.util.spawn_instance_port_file(self.instance_name),
+                device_type=device_type)
+        else:
+            raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
+
+        image = QCow2StorageDevice(self._domain.local_disk, self.disk)
+        self._domain.storage_devices.append(image)
+
+        if not self._domain.coreos:
+            seed_disk = RawStorageDevice(self._domain.seed_path)
+            self._domain.storage_devices.append(seed_disk)
+
         self._instance = testcloud.instance.Instance(
-            name=self.instance_name,
             hostname=hostname,
             image=self._image,
             connection=f"qemu:///{self.connection}",
-            desired_arch=self.arch)
+            domain_configuration=self._domain)
         self.verbose('name', self.instance_name, 'green')
 
         # Decide if we want to multiply timeouts when emulating an architecture
-        time_coeff = NON_KVM_TIMEOUT_COEF if not self._instance.kvm else 1
-
-        # Decide which networking setup to use
-        # Autodetect works with libguestfs python bindings
-        # We fall back to basic heuristics based on file name
-        # without that installed (eg. from pypi).
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1075594
-        try:
-            import guestfs  # noqa: F401
-        except ImportError:
-            match_legacy = re.search(
-                r'(rhel|centos)\D+(6\.|7\.).*', self.image_url.lower())
-            if match_legacy:
-                self._instance.pci_net = "e1000"
-            else:
-                self._instance.pci_net = "virtio-net-pci"
+        time_coeff = NON_KVM_TIMEOUT_COEF if not kvm else 1
 
         # Prepare ssh key
         # TODO: Maybe... some better way to do this?
-        if re.search('coreos|rhcos', self.image.lower()):
+        if self._domain.coreos:
             self._instance.coreos = True
             # prepare_ssh_key() writes key directly to COREOS_DATA
             self._instance.ssh_path = []
@@ -504,8 +513,6 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
-        self._instance.ram = self.memory
-        self._instance.disk_size = self.disk
         assert libvirt is not None
         try:
             self._instance.prepare()

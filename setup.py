@@ -75,7 +75,7 @@ extras_require = {
         'yq==3.1.1'  # frozen to be able to install on el8
         ],
     'provision': [
-        'testcloud>=0.9.2',
+        'testcloud>=0.9.10',
         'mrack>=1.12.1',
         ],
     'convert': [

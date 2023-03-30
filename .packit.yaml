@@ -28,8 +28,11 @@ jobs:
   - job: copr_build
     trigger: pull_request
     targets:
-      - fedora-all
-      - epel-9
+        fedora-all: {}
+        epel-9: {}
+        fedora-39:
+            additional_repos:
+              - https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-39-x86_64/
     enable_net: False
 
   # Test pull requests
