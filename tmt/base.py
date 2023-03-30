@@ -372,7 +372,7 @@ class RequireFmfId(FmfId):
 
         fmf_id = RequireFmfId()
 
-        for key in ('url', 'ref', 'name', 'nick'):
+        for key in ('url', 'ref', 'name', 'nick', 'type'):
             setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
 
         for key in ('path', 'destination'):
@@ -1305,6 +1305,31 @@ class Test(
             return
 
         yield LinterOutcome.PASS, 'correct manual test syntax'
+
+    def lint_require_type_field(self) -> LinterReturn:
+        """ T009: require fields should have type field """
+
+        filename = self.node.sources[-1]
+        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        missing_type = []
+
+        # Check require items have type field
+        for req in metadata.get('require', []):
+            if isinstance(req, dict) and not req.get('type'):
+                missing_type.append(req)
+
+        if missing_type and not self.opt('fix'):
+            yield LinterOutcome.FAIL, f'requirements should specify type, library or file'
+            return
+
+        if missing_type:
+            for req in missing_type:
+                req['type'] = 'file' if req.get('pattern') else 'library'
+            self.write(filename, tmt.utils.dict_to_yaml(metadata))
+            yield LinterOutcome.FIXED, f'added type to requirements'
+            return
+
+        yield LinterOutcome.PASS, 'all requirements have type field'
 
 
 class Plan(

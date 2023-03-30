@@ -23,8 +23,8 @@ rlJournalStart
 
         rlRun -s "tmt test -vvvv show /test-with-valid-ref"
         rlAssertNotGrep "warn:" $rlRun_LOG
-        rlAssertGrep "{'ref': 'branch-or-tag-ref'}" $rlRun_LOG
-        rlAssertGrep "{'ref': '8deadbeaf8'}" $rlRun_LOG
+        rlAssertGrep "{'ref': 'branch-or-tag-ref', 'type': 'library'}" $rlRun_LOG
+        rlAssertGrep "{'ref': '8deadbeaf8', 'type': 'library'}" $rlRun_LOG
         rlAssertGrep "some-package" $rlRun_LOG
 
         rlRun -s "tmt test -vvvv show /test-with-invalid-ref" 2

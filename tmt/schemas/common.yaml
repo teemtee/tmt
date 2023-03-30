@@ -55,7 +55,7 @@ definitions:
 
   # List of all available require types
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
-  type:
+  require_type:
     type: string
     enum:
       - library
@@ -96,7 +96,10 @@ definitions:
         type: string
 
       type:
-        $ref: "/schemas/common#/definitions/type"
+        $ref: "/schemas/common#/definitions/require_type"
+
+    required:
+      - type
 
     # This would have been the easy way, understandable by newer jsonschema
     # packages.
@@ -203,7 +206,11 @@ definitions:
           - $ref: "/schemas/common#/definitions/array_of_strings"
 
       type:
-        $ref: "/schemas/common#/definitions/type"
+        $ref: "/schemas/common#/definitions/require_type"
+
+    required:
+      - type
+      - pattern
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#link
   # helper for one link

@@ -35,10 +35,9 @@ class File(Library):
         super().__init__(parent=parent, logger=logger)
 
         self.identifier = identifier
-        self.format: str = identifier.type if (
-            hasattr(identifier, 'type') and isinstance(identifier.type, str)) else 'file'
-        self.repo: Path = Path(target_location.name)
-        self.name: Path = Path("/files")
+        self.format = 'file'
+        self.repo = Path(target_location.name)
+        self.name = "/files"
         self.pattern: List[str] = identifier.pattern if hasattr(identifier, 'pattern') else []
         self.source_location: Path = source_location
         self.target_location: Path = target_location
@@ -53,16 +52,18 @@ class File(Library):
         if not files:
             self.parent.debug('No files found')
             raise LibraryError
-        self.parent.debug(f'Found paths: {", ".join([str(f) for f in files])}')
+        self.parent.debug(f'Found paths: {", ".join(str(f) for f in files)}')
         for path in files:
-            assert path is not None  # narrow type
             if path.is_dir():
                 local_path = path.relative_to(self.source_location)
             else:
                 local_path = path.relative_to(self.source_location).parent
             target_path = Path(self.target_location) / local_path
             if path.is_dir():
-                tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
+                try:
+                    tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
+                except shutil.Error as exc:  # ignore individual files exist error
+                    self.parent.debug(str(exc))
             else:
                 target_path.mkdir(parents=True, exist_ok=True)
                 target_path = target_path / path.name

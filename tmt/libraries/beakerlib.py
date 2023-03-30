@@ -78,9 +78,9 @@ class BeakerLib(Library):
                 raise LibraryError
             self.parent.debug(
                 f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
-            self.format: str = 'rpm'
-            self.repo: Path = Path(matched.groups()[0])
-            self.name: str = matched.groups()[1]
+            self.format = 'rpm'
+            self.repo = Path(matched.groups()[0])
+            self.name = matched.groups()[1]
             self.url: Optional[str] = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
             self.path: Optional[Path] = None
             self.ref: Optional[str] = None
@@ -137,6 +137,22 @@ class BeakerLib(Library):
                         raise tmt.utils.GeneralError(
                             f"Unable to parse repository name from '{self.path}'.")
             self.repo = Path(repo)
+
+    @property
+    def hostname(self) -> str:
+        """ Get hostname from url or default to local """
+        if self.url:
+            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
+            if matched:
+                return matched.group(1)
+        return super().hostname
+
+    @property
+    def fmf_node_path(self) -> Path:
+        """ Path to fmf node """
+        if self.path:
+            return Path(self.path / self.name.strip('/'))
+        return super().fmf_node_path
 
     @property
     def _library_cache(self) -> Dict[str, 'BeakerLib']:

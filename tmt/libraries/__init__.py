@@ -1,6 +1,5 @@
 """ Handle libraries """
 
-import re
 from typing import List, Optional, Tuple, Union
 
 import fmf
@@ -49,28 +48,22 @@ class Library:
         self._logger: tmt.log.Logger = logger
 
         self.identifier: LibraryIdentifierType
+        self.format: str
+        self.repo: Path
+        self.name: str
 
     @property
     def hostname(self) -> str:
         """ Get hostname from url or default to local """
-        if hasattr(self, 'url') and self.url:
-            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
-            if matched:
-                return matched.group(1)
         return 'local'
 
     @property
     def fmf_node_path(self) -> Path:
         """ Path to fmf node """
-        assert hasattr(self, 'name')  # type check
-        if hasattr(self, 'path') and self.path:
-            return Path(self.path / self.name.strip('/'))
-        return Path(self.name)
+        return Path(self.name.strip('/'))
 
     def __str__(self) -> str:
         """ Use repo/name for string representation """
-        assert hasattr(self, 'repo')
-        assert hasattr(self, 'name')  # type check
         return f"{self.repo}{self.name}"
 
 
@@ -103,10 +96,11 @@ def library_factory(
     # Fetch the library
     try:
         library.fetch()
-    except fmf.utils.RootError:
-        assert hasattr(library, 'url')  # type check
-        raise tmt.utils.SpecificationError(
-            f"Repository '{library.url}' does not contain fmf metadata.")
+    except fmf.utils.RootError as exc:
+        if hasattr(library, 'url'):
+            raise tmt.utils.SpecificationError(
+                f"Repository '{library.url}' does not contain fmf metadata.") from exc
+        raise exc
 
     return library
 

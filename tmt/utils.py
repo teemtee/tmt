@@ -17,6 +17,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import unicodedata
@@ -696,6 +697,7 @@ class Common(_CommonBase):
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
     _workdir: WorkdirType = None
+    _clone_dirpath: Optional[Path] = None
 
     # TODO: must be declared outside of __init__(), because it must exist before
     # __init__() gets called to allow logging helpers work correctly when used
@@ -1208,10 +1210,14 @@ class Common(_CommonBase):
         for filtering purposes, it is removed at the end of relevant step
         Environment variable TMT_CLONE_DIR is used for the path if provided
         """
-        try:
-            return Path(os.environ['TMT_CLONE_DIR'])
-        except KeyError:
-            return Path('/tmp/tmt_clone_dir')
+        if not self._clone_dirpath:
+            try:
+                self._clone_dirpath = Path(tempfile.TemporaryDirectory(
+                    dir=os.environ['TMT_CLONE_DIR']).name)
+            except KeyError:
+                self._clone_dirpath = Path(tempfile.TemporaryDirectory().name)
+
+        return self._clone_dirpath
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
