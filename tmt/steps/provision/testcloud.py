@@ -84,8 +84,7 @@ runcmd:
   systemctl restart systemd-networkd; fi']
   - [sh, -c, 'if cat /etc/os-release |
   grep -q platform:el8; then systemctl restart sshd; fi']
-  - [sh, -c, 'if cat /etc/os-release |
-  grep -q ID=ubuntu; then dhclient; fi']
+  - [sh, -c, 'dhclient || :']
 """
 
 COREOS_DATA = """variant: fcos
