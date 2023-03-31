@@ -12,7 +12,7 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
-from tmt.result import Result, ResultOutcome
+from tmt.result import Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, Step, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
@@ -435,6 +435,9 @@ class ExecutePlugin(tmt.steps.Plugin):
             # directory. And the serial number correspondence in results.yaml
             # can be useful, for grouping results that belong to the same tests.
             partial_result.serialnumber = test.serialnumber
+
+            # Enforce the correct guest info
+            partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
 
             custom_results.append(partial_result)
 
