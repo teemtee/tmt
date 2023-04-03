@@ -25,6 +25,8 @@ else:
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: added Kickstart specification
+    '0.0.53',
     # NEW: added missing cpu.processors constraint
     '0.0.47',
     # NEW: added new CPU constraints
@@ -78,6 +80,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     priority_group: str = DEFAULT_PRIORITY_GROUP
     keyname: str = DEFAULT_KEYNAME
     user_data: Dict[str, str] = dataclasses.field(default_factory=dict)
+    kickstart: Dict[str, str] = dataclasses.field(default_factory=dict)
 
     # Provided by Artemis response
     guestname: Optional[str] = None
@@ -250,6 +253,7 @@ class GuestArtemis(tmt.GuestSsh):
     priority_group: str
     keyname: str
     user_data: Dict[str, str]
+    kickstart: Dict[str, str]
 
     # Provided by Artemis response
     guestname: Optional[str]
@@ -287,6 +291,12 @@ class GuestArtemis(tmt.GuestSsh):
                 'compose': self.image
                 }
             }
+
+        if self.api_version >= "0.0.53":
+            environment['kickstart'] = self.kickstart
+
+        elif self.kickstart:
+            raise ProvisionError(f"API version '{self.api_version}' does not support kickstart.")
 
         data: Dict[str, Any] = {
             'environment': environment,
@@ -554,6 +564,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             arch=self.get('arch'),
             image=self.get('image'),
             hardware=self.get('hardware'),
+            kickstart=self.get('kickstart'),
             pool=self.get('pool'),
             priority_group=self.get('priority-group'),
             keyname=self.get('keyname'),
