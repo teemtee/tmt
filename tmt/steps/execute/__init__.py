@@ -388,20 +388,26 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         self.debug("Processing custom 'results.yaml' file created by the test itself.")
 
-        custom_results_path = self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / 'results.yaml'
+        test_data_path = self.data_path(test, guest, full=True) \
+            / tmt.steps.execute.TEST_DATA
 
-        if not custom_results_path.exists():
-            # Missing results.yaml means error result, but tmt contines with other tests
+        custom_results_path_yaml = test_data_path / 'results.yaml'
+        custom_results_path_json = test_data_path / 'results.json'
+
+        if custom_results_path_yaml.exists():
+            with open(custom_results_path_yaml) as results_file:
+                results = tmt.utils.yaml_to_list(results_file)
+
+        elif custom_results_path_json.exists():
+            with open(custom_results_path_json) as results_file:
+                results = tmt.utils.json_to_list(results_file)
+
+        else:
             return [tmt.Result.from_test(
                 test=test,
-                note=f"custom results file '{custom_results_path}' not found",
+                note=f"custom results file not found in '{test_data_path}'",
                 result=ResultOutcome.ERROR,
                 guest=guest)]
-
-        with open(custom_results_path) as custom_results_file:
-            results = tmt.utils.yaml_to_list(custom_results_file)
 
         custom_results = []
         for partial_result_data in results:

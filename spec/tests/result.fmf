@@ -20,13 +20,14 @@ description: |
         ignore the actual test result and always report provided
         value instead
     custom
-        test needs to create it's own ``results.yaml`` file in the
-        ``${TMT_TEST_DATA}`` directory. The format of the file is
-        documented at :ref:`/spec/plans/results`. When importing results
-        from the custom file, each test name, referenced in the file via
-        ``name`` key, would be prefixed by the original test name. A
-        special case, ``name: /``, sets the result for the original test
-        itself.
+        test needs to create it's own ``results.yaml`` or
+        ``results.json`` file in the ``${TMT_TEST_DATA}``
+        directory. The format of the file is documented at
+        :ref:`/spec/plans/results`. When importing results from
+        the custom file, each test name, referenced in the file
+        via ``name`` key, would be prefixed by the original test
+        name. A special case, ``name: /``, sets the result for the
+        original test itself.
 
 example:
   - |
@@ -54,6 +55,17 @@ example:
 
     - name: /test/no_keys
       result: pass
+  - |
+    # Example content of results.json
+    [
+    {
+    "name": "/test/passing",
+    "result": "pass",
+    "log": ["pass_log"],
+    "duration": "00:11:22",
+    "note": "good result"
+    }
+    ]
 
 link:
   - implemented-by: /tmt/base.py

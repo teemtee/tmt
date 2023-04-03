@@ -32,15 +32,34 @@ rlJournalStart
         rlAssertGrep "/test/custom-results/without-leading-slash 1 pass default-0" $rlRun_LOG
     rlPhaseEnd
 
+    testName="/test/custom-json-results"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.json' file by itself"
+        rlAssertGrep "00:12:23 pass /test/custom-json-results/test/passing" $rlRun_LOG
+        rlAssertGrep "00:23:34 fail /test/custom-json-results/test/failing" $rlRun_LOG
+        rlAssertGrep "00:34:56 pass /test/custom-json-results .* \[1/1\]" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
+
+        rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *fail_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
+    rlPhaseEnd
+
     testName="/test/missing-custom-results"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test does not provide 'results.yaml' file"
-        rlAssertGrep "custom results file '/tmp/.*/plans/default/execute/data/guest/default-0/test/missing-custom-results-1/data/results.yaml' not found" $rlRun_LOG
+        rlAssertGrep "custom results file not found in '/tmp/.*/plans/default/execute/data/guest/default-0/test/missing-custom-results-1/data" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/empty-custom-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 3 "Test provides empty 'results.yaml' file"
+        rlAssertGrep "total: no results found" $rlRun_LOG
+    rlPhaseEnd
+
+    testName="/test/empty-custom-results-json"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 3 "Test provides empty 'results.json' file"
         rlAssertGrep "total: no results found" $rlRun_LOG
     rlPhaseEnd
 
@@ -50,10 +69,22 @@ rlJournalStart
         rlAssertGrep "Expected list in yaml data, got 'dict'." $rlRun_LOG
     rlPhaseEnd
 
+    testName="/test/wrong-json-results-file"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.json' in valid JSON but wrong results format"
+        rlAssertGrep "Expected list in json data, got 'dict'." $rlRun_LOG
+    rlPhaseEnd
+
     testName="/test/invalid-yaml-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.yaml' not in YAML format"
         rlAssertGrep "Invalid yaml syntax:" $rlRun_LOG
+    rlPhaseEnd
+
+    testName="/test/invalid-json-results-file"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.json' not in JSON format"
+        rlAssertGrep "Invalid json syntax:" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/wrong-yaml-content"

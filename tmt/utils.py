@@ -7,6 +7,7 @@ import dataclasses
 import datetime
 import functools
 import io
+import json
 import os
 import pathlib
 import pprint
@@ -1751,6 +1752,21 @@ def yaml_to_list(data: Any,
     if not isinstance(loaded_data, list):
         raise GeneralError(
             f"Expected list in yaml data, "
+            f"got '{type(loaded_data).__name__}'.")
+    return loaded_data
+
+
+def json_to_list(data: Any) -> List[Any]:
+    """ Convert json into list """
+
+    try:
+        loaded_data = json.load(data)
+    except json.decoder.JSONDecodeError as error:
+        raise GeneralError(f"Invalid json syntax: {error}")
+
+    if not isinstance(loaded_data, list):
+        raise GeneralError(
+            f"Expected list in json data, "
             f"got '{type(loaded_data).__name__}'.")
     return loaded_data
 

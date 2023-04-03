@@ -1,0 +1,55 @@
+[
+  {
+    "name": "/test/passing",
+    "result": "pass",
+    "note": "good result",
+    "log": [
+      "pass_log"
+    ],
+    "ids": {
+      "some-id": "foo1",
+      "another-id": "bar1"
+    },
+    "duration": "00:12:23",
+    "serialnumber": 1,
+    "guest": {
+      "name": "client-1",
+      "role": "clients"
+    }
+  },
+  {
+    "name": "/test/failing",
+    "result": "fail",
+    "log": [
+      "fail_log"
+    ],
+    "ids": {
+      "some-id": "foo2",
+      "another-id": "bar2"
+    },
+    "duration": "00:23:34",
+    "note": "fail result",
+    "serialnumber": 2,
+    "guest": {
+      "name": "client-1",
+      "role": "clients"
+    }
+  },
+  {
+    "name": "/",
+    "result": "pass",
+    "log": [
+      "another_log"
+    ],
+    "ids": {
+      "some-id": "foo3",
+      "another-id": "bar3"
+    },
+    "duration": "00:34:56",
+    "serialnumber": 3,
+    "guest": {
+      "name": "client-2",
+      "role": "clients"
+    }
+  }
+]
