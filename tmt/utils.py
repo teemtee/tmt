@@ -4034,13 +4034,14 @@ def dataclass_normalize_options(
         are considered.
     :param preserve_modified: if set, only options whose value is not equal
         to field's default value would be saved in the container.
+    :param logger: used for logging.
     """
 
     keys = keys or list(container.keys())
 
     for keyname in keys:
         # Checks below try to prevent default options of CLI options from
-        # overwriting values already consumed from fmf nodes.This is no
+        # overwriting values already consumed from fmf nodes. This is no
         # simple task, since options have defaults, they are always present
         # in the set of options provided by Click, therefore we have no way
         # how to check whether the option was specified or not. Instead, we
