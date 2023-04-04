@@ -272,12 +272,12 @@ class ExecuteUpgrade(ExecuteInternal):
                 # Create a fake discover from the data in the upgrade path
                 plan = self._get_plan(self._discover_upgrade.testdir)
                 data = self._prepare_remote_discover_data(plan)
-                # Unset `url` because we don't want discover step to perform clone.
-                # Instead, we want it to re-use existing, already cloned path.
-                # ignore[typeddict-item]: data is _RwStepData, we do not have more detailed type
-                # for raw step data of internal/upgrade plugins, it would be pretty verbose.
-                data['url'] = None  # type: ignore[typeddict-item]
-                data['path'] = self._discover_upgrade.testdir  # type: ignore[typeddict-item]
+                # Unset `url` because we don't want discover step to perform clone. Instead,
+                # we want it to re-use existing, already cloned path.
+                # ignore[typeddict-unknown-key]: data is _RwStepData, we do not have more detailed
+                # type for raw step data of internal/upgrade plugins, it would be pretty verbose.
+                data['url'] = None   # type: ignore[typeddict-unknown-key]
+                data['path'] = self._discover_upgrade.testdir  # type:ignore[typeddict-unknown-key]
                 # FIXME: cast() - https://github.com/teemtee/tmt/issues/1599
                 self._discover_upgrade = cast(DiscoverFmf, DiscoverPlugin.delegate(
                     self.step, raw_data=data))

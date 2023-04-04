@@ -2,42 +2,14 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: 'v1.7.0'
+    rev: 'v2.0.2'
     hooks:
       - id: autopep8
-        args:
-          - --recursive
-          - --in-place
-          - --aggressive
-          - --aggressive
-          - --hang-closing
-          - --max-line-length=99
 
   - repo: https://github.com/PyCQA/isort
     rev: "5.12.0"
     hooks:
       - id: isort
-
-  - repo: https://github.com/pycqa/flake8
-    rev: "6.0.0"
-    hooks:
-      - id: flake8
-        args:
-          - --config
-          - .flake8
-        # The list of directories and files to check - matches flake8
-        # configuration in setup.cfg, but has a slightly different
-        # purpose. setup.cfg tells flake8 what to check when called e.g.
-        # by pre-commit or IDE linter integration, the list below tells
-        # *pre-commit* to which files to apply flake8 check.
-        files: >
-          (?x)^(
-            bin/.*|
-            examples/.*|
-            tests/.*|
-            tmt/.*|
-            setup.py
-          )$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.4.0"
@@ -47,46 +19,39 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.991"
+    rev: "v1.2.0"
     hooks:
       - id: mypy
         # Do not install *types-click* - it's not recommended with Click 8 & newer,
         # which is the version a developer encounters given the requirements are not
         # frozen.
-        additional_dependencies: [click]
+        additional_dependencies:
+          - click
+          - types-Markdown
+          - types-requests
+          - types-setuptools
+          - types-jsonschema
+          - types-urllib3
+          - ruamel.yaml
+          - types-jinja2
         pass_filenames: false
-        args:
-          - --config-file
-          - mypy.ini
+        args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.20.0"
+    rev: "0.22.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.29.0
+    rev: v1.30.0
     hooks:
       - id: yamllint
         files: ^tmt/schemas/.*\.yaml
 
-  # Yet another static analysis - these hooks use regular expressions to
-  # process Python code, and offer interesting "metalinters", checks for
-  # what we do to appease flake8 and mypy linters.
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.261
     hooks:
-      # Enforce `noqa` and `type: ignore` to always appear with specific
-      # error code(s).
-      - id: python-check-blanket-noqa
-      - id: python-check-blanket-type-ignore
-
-      # Other potentially useful hooks for future consideration:
-      #
-      # - id: python-check-mock-methods
-      # - id: python-no-eval
-      # - id: python-no-log-warn
-      # - id: python-use-type-annotations
-      # - id: text-unicode-replacement-char
+      - id: ruff
+        args: [--fix]

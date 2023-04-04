@@ -36,8 +36,8 @@ import jsonschema
 import pkg_resources
 import requests
 import requests.adapters
-import requests.packages.urllib3.util.retry
 import urllib3.exceptions
+import urllib3.util.retry
 from click import echo, style, wrap_text
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
@@ -77,11 +77,7 @@ class Path(pathlib.PosixPath):
     # implementation considers to not be relative to each other. Therefore, we
     # need to override `is_relative_to()` even for other Python versions, to not
     # depend on `ValueError` raised by the original `relative_to()`.
-    #
-    # ignore[override]: does not match the signature on purpose, our use is
-    # slightly less generic that what pathlib supports, to be usable with
-    # os.path.relpath.
-    def is_relative_to(self, other: 'Path') -> bool:  # type: ignore[override]
+    def is_relative_to(self, other: 'Path') -> bool:
         # NOTE: the following is not perfect, but it should be enough for
         # what tmt needs to know about its paths.
 
@@ -1337,10 +1333,12 @@ def copytree(
         ) -> Path:
     """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
     # No need to reimplement for newer python or if argument is not requested
+    # ignore[call-arg] needed when running type-checks with Python < 3.8
     if not dirs_exist_ok or sys.version_info >= (3, 8):
         return cast(
             Path,
-            shutil.copytree(src=src, dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok))
+            shutil.copytree(src=src, dst=dst, symlinks=symlinks,
+                            dirs_exist_ok=dirs_exist_ok))  # type: ignore[call-arg]
     # Choice was to either copy python implementation and change ONE line
     # or use rsync (or cp with shell)
     # We need to copy CONTENT of src into dst
@@ -1664,8 +1662,10 @@ def dict_to_yaml(
     yaml.default_flow_style = False
     yaml.allow_unicode = True
     yaml.encoding = 'utf-8'
-    yaml.width = width
-    yaml.explicit_start = start
+    # ignore[assignment]: ruamel bug workaround, see stackoverflow.com/questions/58083562,
+    # sourceforge.net/p/ruamel-yaml/tickets/322/
+    yaml.width = width  # type: ignore[assignment]
+    yaml.explicit_start = start  # type: ignore[assignment]
 
     # For simpler dumping of well-known classes
     def _represent_path(representer: Representer, data: Path) -> Any:
@@ -2518,14 +2518,12 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-# ignore[misc]: the package *does* exist, and Retry class as well, it's
-# somehow opaque to mypy.
-class RetryStrategy(requests.packages.urllib3.util.retry.Retry):  # type: ignore[misc]
+class RetryStrategy(urllib3.util.retry.Retry):
     def increment(
             self,
             *args: Any,
             **kwargs: Any
-            ) -> requests.packages.urllib3.util.retry.Retry:
+            ) -> urllib3.util.retry.Retry:
         error = cast(Optional[Exception], kwargs.get('error', None))
 
         # Detect a subset of exception we do not want to follow with a retry.
@@ -4497,7 +4495,7 @@ def render_template_file(
     try:
         template = environment.from_string(template_filepath.read_text())
 
-        return cast(str, template.render(**variables).strip())
+        return template.render(**variables).strip()
 
     except jinja2.exceptions.TemplateSyntaxError as exc:
         raise GeneralError(

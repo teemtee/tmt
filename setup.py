@@ -51,6 +51,7 @@ install_requires = [
     'fmf>=1.2.1',
     'click',
     'requests',
+    'urllib3',
     'ruamel.yaml',
     'jinja2',
     ]

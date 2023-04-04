@@ -168,7 +168,7 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
   </devices>
   {{ qemu_args }}
 </domain>
-"""  # noqa: E501
+"""
 
 # VM defaults
 DEFAULT_BOOT_TIMEOUT = 120     # seconds
