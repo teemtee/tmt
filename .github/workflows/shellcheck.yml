@@ -21,6 +21,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone beakerlib repository
+        run: git clone --depth=1 https://github.com/beakerlib/beakerlib.git
+
+      - name: Build and install beakerlib
+        run: cd beakerlib && sudo make && sudo make install && cd -
+
       - id: ShellCheck
         name: Differential ShellCheck
         uses: redhat-plumbers-in-action/differential-shellcheck@v4
