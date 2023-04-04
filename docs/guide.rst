@@ -91,22 +91,27 @@ answer all your questions ;-)
 Checking data validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is easy to introduce a syntax error to one of the fmf files and make the whole tree broken.
-You should run ``tmt lint`` before pushing changes, ideally even before you commit your changes.
+It is easy to introduce a syntax error to one of the fmf files and
+make the whole tree broken. You should run ``tmt lint`` before
+pushing changes, ideally even before you commit your changes.
 
-You can set up `pre-commit`__ to do it for you. Add to your repository's ``.pre-commit-config.yaml``::
+You can set up `pre-commit`__ to do it for you. Add to your
+repository's ``.pre-commit-config.yaml``::
 
     repos:
     - repo: https://github.com/teemtee/tmt.git
-      rev: main
+      rev: 1.21.0
       hooks:
       - id: tmt-lint
 
 This will run ``tmt lint --source`` for all modified fmf files.
-There are hooks to just check tests ``tmt-tests-lint``, plans ``tmt-plans-lint``
-or stories ``tmt-stories-lint`` explicitly.
+There are hooks to just check tests ``tmt-tests-lint``, plans
+``tmt-plans-lint`` or stories ``tmt-stories-lint`` explicitly.
+From time to time you might want to run ``pre-commit autoupdate``
+to refresh config to the latest version.
 
 __ https://pre-commit.com/#install
+
 
 Under The Hood
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
