@@ -377,11 +377,6 @@ TMT_FORCE_COLOR
     and ``TMT_NO_COLOR``. If user tries both to disable and enable
     colorization, output would be colorized.
 
-TMT_CLONE_DIR
-    Path for directory to clone repositories into, mainly used
-    for cloning repos before pruning, content is removed after
-    the relevant files are moved into workdir.
-
 The following environment variables are provided to the environment
 during ``prepare``, ``execute`` and ``finish`` steps:
 

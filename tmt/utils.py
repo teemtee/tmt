@@ -1208,14 +1208,9 @@ class Common(_CommonBase):
         Path for cloning into
         Used internally for picking specific libraries (or anything else) from cloned repos
         for filtering purposes, it is removed at the end of relevant step
-        Environment variable TMT_CLONE_DIR is used for the path if provided
         """
         if not self._clone_dirpath:
-            try:
-                self._clone_dirpath = Path(tempfile.TemporaryDirectory(
-                    dir=os.environ['TMT_CLONE_DIR']).name)
-            except KeyError:
-                self._clone_dirpath = Path(tempfile.TemporaryDirectory().name)
+            self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
         return self._clone_dirpath
 
