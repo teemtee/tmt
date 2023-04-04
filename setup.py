@@ -77,7 +77,7 @@ extras_require = {
         'requre',
         'pre-commit',
         'mypy',
-        'yq'
+        'yq==3.1.1'  # frozen to be able to install on el8
         ],
     'provision': [
         'testcloud>=0.9.2',
