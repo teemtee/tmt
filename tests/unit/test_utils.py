@@ -225,8 +225,18 @@ def test_duration_to_seconds():
     assert duration_to_seconds('5m') == 300
     assert duration_to_seconds('5h') == 18000
     assert duration_to_seconds('5d') == 432000
+    assert duration_to_seconds('5d') == 432000
+    # `man sleep` says: Given two or more arguments, pause for the amount of time
+    # specified by the sum of their values.
+    assert duration_to_seconds('1s 2s') == 3
+    assert duration_to_seconds('1h 2 3m') == 3600 + 2 + 180
+    # Divergence from 'sleep' as that expects space separated arguments
+    assert duration_to_seconds('1s2s') == 3
+    assert duration_to_seconds('1 m2   m') == 180
     with pytest.raises(tmt.utils.SpecificationError):
         duration_to_seconds('bad')
+    with pytest.raises(tmt.utils.SpecificationError):
+        duration_to_seconds('1sm')
 
 
 class test_structured_field(unittest.TestCase):

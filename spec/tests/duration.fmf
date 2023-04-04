@@ -24,6 +24,18 @@ example:
     # One day
     duration: 1d
 
+  - |
+    # Combination & repetition of time suffixes (total 4h 2m 3s)
+    duration: 1h 3h 2m 3
+
+  - |
+    # Use context adjust to extend duration for given arch
+    duration: 5m
+    adjust:
+        duration+: 15m
+        when: arch == aarch64
+
+
 link:
   - implemented-by: /tmt/base
   - verified-by: /tests/discover/duration

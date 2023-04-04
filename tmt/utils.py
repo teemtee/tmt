@@ -2191,14 +2191,12 @@ def duration_to_seconds(duration: str) -> int:
         'h': 60 * 60,
         'd': 60 * 60 * 24,
         }
-    try:
-        match = re.match(r'^(\d+)([smhd]?)$', str(duration))
-        if match is None:
-            raise SpecificationError(f"Invalid duration '{duration}'.")
-        number, suffix = match.groups()
-        return int(number) * units.get(suffix, 1)
-    except (ValueError, AttributeError):
+    if re.match(r'^(\d+ *?[smhd]? *)+$', str(duration)) is None:
         raise SpecificationError(f"Invalid duration '{duration}'.")
+    total_time = 0
+    for number, suffix in re.findall(r'(\d+) *([smhd]?)', str(duration)):
+        total_time += int(number) * units.get(suffix, 1)
+    return total_time
 
 
 @overload
