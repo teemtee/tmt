@@ -1312,6 +1312,15 @@ combining the above-mentioned commands on a single line::
 
     tmt run provision login finish
 
+Login can be used to run an arbitrary script on a provisioned
+guest. This can be handy if you want to run arbitrary scripts between
+steps for example. This is currently used in the Testing Farm's
+`tmt reproducer`__::
+
+    tmt run --last login < script.sh
+
+__ https://docs.testing-farm.io/general/0.1/test-results.html#_tmt_reproducer
+
 Have you heard already that using command abbreviation is possible
 as well? It might save you some typing::
 
