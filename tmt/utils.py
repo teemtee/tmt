@@ -268,12 +268,15 @@ class StreamLogger(Thread):
     https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10
     """
 
-    def __init__(self,
-                 stream: Optional[IO[bytes]],
-                 log_header: str,
-                 logger: BaseLoggerFnType,
-                 click_context: Optional[click.Context]) -> None:
+    def __init__(
+            self,
+            log_header: str,
+            *,
+            stream: Optional[IO[bytes]] = None,
+            logger: Optional[BaseLoggerFnType] = None,
+            click_context: Optional[click.Context] = None) -> None:
         super().__init__(daemon=True)
+
         self.stream = stream
         self.output: List[str] = []
         self.log_header = log_header
@@ -282,6 +285,9 @@ class StreamLogger(Thread):
 
     def run(self) -> None:
         if self.stream is None:
+            return
+
+        if self.logger is None:
             return
 
         if self.click_context is not None:
@@ -297,8 +303,28 @@ class StreamLogger(Thread):
                     level=3)
             self.output.append(line)
 
-    def get_output(self) -> str:
+    def get_output(self) -> Optional[str]:
         return "".join(self.output)
+
+
+class UnusedStreamLogger(StreamLogger):
+    """
+    Special variant of :py:class:`StreamLogger` that records no data.
+
+    It is designed to make the implementation of merged streams easier in
+    :py:meth:`Command.run`. Instance of this class is created to log ``stderr``
+    when, in fact, ``stderr`` is merged into ``stdout``. This class returns
+    values compatible with :py:class:`CommandOutput` notion of "no output".
+    """
+
+    def __init__(self, log_header: str) -> None:
+        super().__init__(log_header)
+
+    def run(self) -> None:
+        pass
+
+    def get_output(self) -> Optional[str]:
+        return None
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -309,6 +335,11 @@ CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
 
 #: A single element of command-line.
 _CommandElement = str
+
+
+class CommandOutput(NamedTuple):
+    stdout: Optional[str]
+    stderr: Optional[str]
 
 
 class ShellScript:
@@ -405,253 +436,193 @@ class Command:
 
         return list(self._command)
 
+    def run(
+            self,
+            *,
+            cwd: Optional[Path],
+            shell: bool = False,
+            env: Optional[EnvironmentType] = None,
+            dry: bool = False,
+            join: bool = False,
+            interactive: bool = False,
+            timeout: Optional[int] = None,
+            # Logging
+            message: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[BaseLoggerFnType] = None,
+            silent: bool = False,
+            caller: Optional['Common'] = None,
+            logger: tmt.log.Logger) -> CommandOutput:
+        """
+        Run command, give message, handle errors.
 
-class CommandOutput(NamedTuple):
-    stdout: Optional[str]
-    stderr: Optional[str]
+        :param cwd: if set, command would be executed in the given directory,
+            otherwise the current working directory is used.
+        :param shell: if set, the command would be executed in a shell.
+        :param env: environment variables to combine with the current environment
+            before running the command.
+        :param dry: if set, the command would not be actually executed.
+        :param join: if set, stdout and stderr of the command would be merged into
+            a single output text.
+        :param interactive: if set, the command would be executed in an interactive
+            manner, i.e. with stdout and stdout connected to terminal for live
+            interaction with user.
+        :param timeout: if set, command would be interrupted, if still running,
+            after this many seconds.
+        :param message: if set, it would be logged for more friendly logging.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        :param caller: optional "parent" of the command execution, used for better
+            linked exceptions.
+        :param logger: logger to use for logging.
+        :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
+        """
 
+        # A bit of logging - command, default message, error message for later...
 
-def _run_command(
-        *,
-        command: Command,
-        cwd: Optional[Path],
-        shell: bool,
-        env: Optional[EnvironmentType],
-        log: Optional[BaseLoggerFnType],
-        join: bool = False,
-        interactive: bool = False,
-        timeout: Optional[int] = None,
-        caller: Optional['Common'] = None,
-        logger: tmt.log.Logger) -> CommandOutput:
-    """
-    Run command, give message, handle errors.
+        # First, if we were given a message, emit it.
+        if message:
+            logger.verbose(message, level=2)
 
-    :param command: a command to execute.
-    :param cwd: if set, command would be executed in the given directory,
-        otherwise the current working directory is used.
-    :param shell: if set, the command would be executed in a shell.
-    :param env: environment variables to combine with the current environment
-        before running the command.
-    :param interactive: if set, the command would be executed in an interactive
-        manner, i.e. with stdout and stdout connected to terminal for live
-        interaction with user.
-    :param join: if set, stdout and stderr of the command would be merged into
-        a single output text.
-    :param log: a logging function to use for logging of command output. By
-        default, ``logger.debug`` is used.
-    :param timeout: if set, command would be interrupted, if still running,
-        after this many seconds.
-    :param caller: optional "parent" of the command execution, used for better
-        linked exceptions.
-    :param logger: logger to use for logging.
-    :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
-    """
+        # For debugging, we want to save somewhere the actual command rather
+        # than the provided "friendly". Emit the actual command to the debug
+        # log, and the friendly one to the verbose/custom log
+        logger.debug(f'Run command: {str(self)}', level=2)
 
-    # By default command ouput is logged using debug
-    if not log:
-        log = logger.debug
-    # Prepare the environment
-    if env:
-        if not isinstance(env, dict):
-            raise GeneralError(f"Invalid environment '{env}'.")
-        # Do not modify current process environment
-        environment = os.environ.copy()
-        environment.update(env)
-    else:
-        environment = None
-    logger.debug('environment', pprint.pformat(environment), level=4)
+        # The friendly command version would be emitted only when we were not
+        # asked to be quiet.
+        if not silent and friendly_command:
+            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
 
-    # Set only for shell=True as it would affect command
-    executable = DEFAULT_SHELL if shell else None
-
-    # Run the command in interactive mode if requested
-    if interactive:
-        try:
-            subprocess.run(
-                command.to_popen(),
-                cwd=cwd, shell=shell, env=environment, check=True,
-                executable=executable)
-        except subprocess.CalledProcessError:
-            # Interactive mode can return non-zero if the last command
-            # failed, ignore errors here
-            pass
-        finally:
+        # Nothing more to do in dry mode
+        if dry:
             return CommandOutput(None, None)
 
-    # Create the process
-    try:
-        process = subprocess.Popen(
-            command.to_popen(),
-            cwd=cwd, shell=shell, env=environment,
-            start_new_session=True,
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT if join else subprocess.PIPE,
-            executable=executable)
-    except FileNotFoundError as error:
-        raise RunError(
-            f"File '{error.filename}' not found.",
-            command,
-            127,
-            caller=caller)
+        # Fail nicely if the working directory does not exist
+        if cwd and not cwd.exists():
+            raise GeneralError(f"The working directory '{cwd}' does not exist.")
 
-    stdout_thread = StreamLogger(
-        process.stdout,
-        log_header='out',
-        logger=log,
-        click_context=click.get_current_context(silent=True))
-    stderr_thread = stdout_thread
-    if not join:
-        stderr_thread = StreamLogger(
-            process.stderr,
-            log_header='err',
-            logger=log,
+        # For command output logging, use either the given logging callback, or
+        # use the given logger & emit to debug log.
+        output_logger = (log or logger.debug) if not silent else logger.debug
+
+        # Prepare the environment: use the current process environment, but do
+        # not modify it if caller wants something extra, make a copy.
+        actual_env: Optional[EnvironmentType] = None
+
+        # Do not modify current process environment
+        if env is not None:
+            actual_env = os.environ.copy()
+            actual_env.update(env)
+
+        logger.debug('environment', pprint.pformat(actual_env), level=4)
+
+        # Set special executable only when shell was requested
+        executable = DEFAULT_SHELL if shell else None
+
+        # Run the command in an interactive mode if requested
+        if interactive:
+            try:
+                subprocess.run(
+                    self.to_popen(),
+                    cwd=cwd,
+                    shell=shell,
+                    env=actual_env,
+                    check=True,
+                    executable=executable)
+
+            except subprocess.CalledProcessError:
+                # Interactive mode can return non-zero if the last command
+                # failed, ignore errors here
+                pass
+
+            finally:
+                return CommandOutput(None, None)
+
+        # Spawn the child process
+        try:
+            process = subprocess.Popen(
+                self.to_popen(),
+                cwd=cwd,
+                shell=shell,
+                env=actual_env,
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT if join else subprocess.PIPE,
+                executable=executable)
+
+        except FileNotFoundError as exc:
+            raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
+
+        # Create and start stream loggers
+        stdout_logger = StreamLogger(
+            'out',
+            stream=process.stdout,
+            logger=output_logger,
             click_context=click.get_current_context(silent=True))
-    stdout_thread.start()
-    if not join:
-        stderr_thread.start()
 
-    # A bit of logging helpers for debugging duration behavior
-    start_timestamp = time.monotonic()
+        if join:
+            stderr_logger: StreamLogger = UnusedStreamLogger('err')
 
-    def _event_timestamp() -> str:
-        return f'{time.monotonic() - start_timestamp:.4}'
+        else:
+            stderr_logger = StreamLogger(
+                'err',
+                stream=process.stderr,
+                logger=output_logger,
+                click_context=click.get_current_context(silent=True))
 
-    def log_event(msg: str) -> None:
-        logger.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
+        stdout_logger.start()
+        stderr_logger.start()
 
-    try:
-        process.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        log_event(f'duration "{timeout}" exceeded')
+        # A bit of logging helpers for debugging duration behavior
+        start_timestamp = time.monotonic()
 
-        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-        log_event('sent SIGKILL signal')
+        def _event_timestamp() -> str:
+            return f'{time.monotonic() - start_timestamp:.4}'
 
-        process.wait()
-        log_event('kill confirmed')
+        def log_event(msg: str) -> None:
+            logger.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
 
-        process.returncode = PROCESS_TIMEOUT
+        try:
+            process.wait(timeout=timeout)
 
-    log_event('waiting for stream readers')
+        except subprocess.TimeoutExpired:
+            log_event(f'duration "{timeout}" exceeded')
 
-    stdout_thread.join()
-    log_event('stdout reader done')
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            log_event('sent SIGKILL signal')
 
-    if not join:
-        stderr_thread.join()
+            process.wait()
+            log_event('kill confirmed')
+
+            process.returncode = PROCESS_TIMEOUT
+
+        log_event('waiting for stream readers')
+
+        stdout_logger.join()
+        log_event('stdout reader done')
+
+        stderr_logger.join()
         log_event('stderr reader done')
 
-    # Handle the exit code, return output
-    if process.returncode != 0:
-        raise RunError(
-            message=f"Command returned '{process.returncode}'.",
-            command=command,
-            returncode=process.returncode,
-            stdout=stdout_thread.get_output(),
-            stderr=stderr_thread.get_output(),
-            caller=caller)
-    if join:
-        return CommandOutput(
-            stdout_thread.get_output(), None)
-    else:
-        return CommandOutput(
-            stdout_thread.get_output(), stderr_thread.get_output())
+        # Handle the exit code, return output
+        if process.returncode != 0:
+            logger.debug(f"Command returned '{process.returncode}'.", level=3)
 
+            raise RunError(
+                f"Command '{friendly_command or str(self)}' returned {process.returncode}.",
+                self,
+                process.returncode,
+                stdout=stdout_logger.get_output(),
+                stderr=stderr_logger.get_output(),
+                caller=caller)
 
-def run_command(
-        *,
-        command: Command,
-        friendly_command: Optional[str] = None,
-        message: Optional[str] = None,
-        silent: bool = False,
-        cwd: Optional[Path] = None,
-        dry: bool = False,
-        shell: bool = False,
-        env: Optional[EnvironmentType] = None,
-        interactive: bool = False,
-        join: bool = False,
-        log: Optional[BaseLoggerFnType] = None,
-        timeout: Optional[int] = None,
-        caller: Optional['Common'] = None,
-        logger: tmt.log.Logger) -> CommandOutput:
-    """
-    Run command, give message, handle errors.
-
-    :param command: a command to execute.
-    :param friendly_command: if set, it would be logged instead of the
-        command itself, to improve visibility of the command in logging output.
-    :param message: if set, it would be logged for more friendly logging.
-    :param silent: if set, logging of steps taken by this function would be
-        reduced.
-    :param cwd: if set, command would be executed in the given directory,
-        otherwise the current working directory is used.
-    :param dry: if set, the command would not be actually executed.
-    :param shell: if set, the command would be executed in a shell.
-    :param env: environment variables to combine with the current environment
-        before running the command.
-    :param interactive: if set, the command would be executed in an interactive
-        manner, i.e. with stdout and stdout connected to terminal for live
-        interaction with user.
-    :param join: if set, stdout and stderr of the command would be merged into
-        a single output text.
-    :param log: a logging function to use for logging of command output. By
-        default, ``logger.debug`` is used.
-    :param timeout: if set, command would be interrupted, if still running,
-        after this many seconds.
-    :param caller: optional "parent" of the command execution, used for better
-        linked exceptions.
-    :param logger: logger to use for logging.
-    :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
-    """
-
-    # A bit of logging - command, default message, error message for later...
-    # for debug output we want to rather print actual command rather than
-    # the provided printable command
-    if isinstance(command, (list, tuple)):
-        full_command_string = ' '.join(shlex.quote(s) for s in command)
-    else:
-        full_command_string = command
-
-    if message:
-        logger.verbose(message, level=2)
-
-    # Add full command to the debug log, short version to verbose/custom log
-    logger.debug(f'Run command: {full_command_string}', level=2)
-    if not silent and friendly_command:
-        (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
-
-    # Nothing more to do in dry mode
-    if dry:
-        return CommandOutput(None, None)
-
-    # Fail nicely if the working directory does not exist
-    if cwd and not cwd.exists():
-        raise GeneralError(
-            f"The working directory '{cwd}' does not exist.")
-
-    try:
-        return _run_command(
-            command=command,
-            cwd=cwd,
-            shell=shell,
-            env=env,
-            log=log if not silent else None,
-            join=join,
-            interactive=interactive,
-            timeout=timeout,
-            caller=caller,
-            logger=logger
-            )
-
-    except RunError as error:
-        logger.debug(error.message, level=3)
-        raise RunError(
-            f"Failed to run command: {friendly_command} Reason: {error.message}",
-            error.command,
-            error.returncode,
-            error.stdout,
-            error.stderr,
-            caller=caller)
+        return CommandOutput(stdout_logger.get_output(), stderr_logger.get_output())
 
 
 class _CommonBase:
@@ -998,8 +969,7 @@ class Common(_CommonBase):
         if ignore_dry:
             dryrun_actual = False
 
-        return run_command(
-            command=command,
+        return command.run(
             friendly_command=friendly_command,
             silent=silent,
             message=message,
@@ -2484,7 +2454,7 @@ def fmf_id(
     def run(command: Command) -> str:
         """ Run command, return output """
         try:
-            result = run_command(command=command, cwd=fmf_root, logger=logger)
+            result = command.run(cwd=fmf_root, logger=logger)
             if result.stdout is None:
                 return ""
             return result.stdout.strip()
@@ -2668,8 +2638,7 @@ def default_branch(
     # Detect the original repository path if worktree is provided
     if dot_git.is_file():
         try:
-            result = run_command(
-                command=Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir"),
+            result = Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir").run(
                 cwd=repository,
                 logger=logger)
         except RunError:
@@ -2687,8 +2656,7 @@ def default_branch(
     head = git_remotes_dir / 'HEAD'
     if not head.exists():
         try:
-            run_command(
-                command=Command('git', 'remote', 'set-head', f'{remote}', '--auto'),
+            Command('git', 'remote', 'set-head', f'{remote}', '--auto').run(
                 cwd=repository,
                 logger=logger)
         except BaseException:
