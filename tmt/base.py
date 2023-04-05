@@ -1701,7 +1701,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
 
             # Clone the whole git repository if executing tests (run is attached)
-            if self.my_run and not self.my_run.opt('dry'):
+            if self.my_run and not self.my_run.opt('dry') and not self.opt('dry'):
                 assert self.parent is not None  # narrow type
                 assert self.parent.workdir is not None  # narrow type
                 destination = self.parent.workdir / "import" / self.name.lstrip("/")
