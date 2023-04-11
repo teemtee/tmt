@@ -940,7 +940,7 @@ class BasePlugin(Phase):
 
         tmt.utils.dataclass_normalize_options(
             container=self.data,
-            option_getter=self.opt,
+            option_getter=self._click_opt,
             keys=keys,
             logger=self._logger
             )
