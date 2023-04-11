@@ -501,7 +501,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.run(Command('git', 'fetch', 'reference'), cwd=self.testdir)
         if modified_only:
             modified_ref = self.get(
-                'modified-ref', tmt.utils.default_branch(self.testdir, self._logger))
+                'modified-ref',
+                tmt.utils.default_branch(repository=self.testdir, logger=self._logger))
             self.info('modified-ref', modified_ref, 'green')
             output = self.run(
                 Command(

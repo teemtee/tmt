@@ -2459,8 +2459,12 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
 
 
 @lru_cache(maxsize=None)
-def fmf_id(name: str, fmf_root: Path, logger: tmt.log.Logger,
-           always_get_ref: bool = False) -> 'tmt.base.FmfId':
+def fmf_id(
+        *,
+        name: str,
+        fmf_root: Path,
+        always_get_ref: bool = False,
+        logger: tmt.log.Logger) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
     def run(command: Command) -> str:
@@ -2470,7 +2474,7 @@ def fmf_id(name: str, fmf_root: Path, logger: tmt.log.Logger,
             if result.stdout is None:
                 return ""
             return result.stdout.strip()
-        except BaseException:
+        except RunError:
             # Always return an empty string in case 'git' command is run in a non-git repo
             return ""
 
@@ -2493,7 +2497,7 @@ def fmf_id(name: str, fmf_root: Path, logger: tmt.log.Logger,
         fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
 
     # Get the ref (skip for the default)
-    def_branch = default_branch(git_root, logger)
+    def_branch = default_branch(repository=git_root, logger=logger)
     if def_branch is None:
         fmf_id.ref = None
     else:
@@ -2634,50 +2638,50 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository: Path, logger: tmt.log.Logger,
-                   remote: str = 'origin') -> Optional[str]:
+def default_branch(
+        *,
+        repository: Path,
+        remote: str = 'origin',
+        logger: tmt.log.Logger) -> Optional[str]:
     """ Detect default branch from given local git repository """
-    # Make sure '.git' (which is a file or a directory) is present
+    # Make sure '.git' is present and it is a file or a directory
     dot_git = repository / '.git'
     if not dot_git.exists():
         return None
-
     if not dot_git.is_file() and not dot_git.is_dir():
         return None
 
-    work_repo = repository
+    # Detect the original repository path if worktree is provided
     if dot_git.is_file():
-        # Get the parent path of the worktree and the .git file looks like:
-        #     gitdir: /tmp/foo/REPRO/.git/worktrees/TREE
-        command = Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir")
         try:
-            result = run_command(command=command, cwd=Path(repository), logger=logger)
-        except BaseException:
+            result = run_command(
+                command=Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir"),
+                cwd=repository,
+                logger=logger)
+        except RunError:
             return None
         if result.stdout is None:
             return None
-        git_parent_path = result.stdout.strip().replace('/.git', '')
-
-        # Should get the default branch of its parent
-        work_repo = Path(git_parent_path)
+        repository = Path(result.stdout.strip().replace("/.git", ""))
 
     # Make sure the '.git/refs/remotes/{remote}' directory is present
-    git_remotes_dir = work_repo / f'.git/refs/remotes/{remote}'
+    git_remotes_dir = repository / f'.git/refs/remotes/{remote}'
     if not git_remotes_dir.exists():
         return None
 
-    head = git_remotes_dir / 'HEAD'
     # Make sure the HEAD reference is available
+    head = git_remotes_dir / 'HEAD'
     if not head.exists():
-        command = Command('git', 'remote', 'set-head', f'{remote}', '--auto')
         try:
-            run_command(command=command, cwd=Path(work_repo), logger=logger)
+            run_command(
+                command=Command('git', 'remote', 'set-head', f'{remote}', '--auto'),
+                cwd=repository,
+                logger=logger)
         except BaseException:
             return None
 
     # The ref format is 'ref: refs/remotes/origin/main'
-    with open(head) as ref:
-        return ref.read().strip().split('/')[-1]
+    return head.read_text().strip().split('/')[-1]
 
 
 def parse_dotenv(content: str) -> EnvironmentType:

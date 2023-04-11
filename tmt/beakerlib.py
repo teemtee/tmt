@@ -236,7 +236,8 @@ class Library:
                     shutil.copytree(self.path, directory, symlinks=True)
                 # Detect the default branch from the origin
                 try:
-                    self.default_branch = tmt.utils.default_branch(directory, self._logger)
+                    self.default_branch = tmt.utils.default_branch(
+                        repository=directory, logger=self._logger)
                 except OSError:
                     raise tmt.utils.GeneralError(
                         f"Unable to detect default branch for '{directory}'. "
