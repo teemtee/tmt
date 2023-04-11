@@ -38,3 +38,16 @@
   guest:
     name: client-2
     role: clients
+
+- name: without-leading-slash
+  result: pass
+  log:
+    - slash_log
+  ids:
+    some-id: foo4
+    another-id: bar4
+  duration: 00:55:44
+  serialnumber: 4
+  guest:
+    name: client-1
+    role: clients

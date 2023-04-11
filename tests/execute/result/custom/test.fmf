@@ -2,7 +2,7 @@ result: custom
 
 /custom-results:
     summary: Test provides custom results
-    test: cp results.yaml ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,fail,another}_log
+    test: cp results.yaml ${TMT_TEST_DATA}; touch ${TMT_TEST_DATA}/{pass,fail,another,slash}_log
 /missing-custom-results:
     summary: Test provides custom results but results.yaml is not present
     test: 'true'

@@ -17,16 +17,19 @@ rlJournalStart
         rlAssertGrep "00:11:22 pass /test/custom-results/test/passing" $rlRun_LOG
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
         rlAssertGrep "00:33:55 pass /test/custom-results (on default-0) \[1/1\]" $rlRun_LOG
-        rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
+        rlAssertGrep "00:55:44 pass /test/custom-results/without-leading-slash.*name should start with '/'" $rlRun_LOG
+        rlAssertGrep "total: 3 tests passed and 1 test failed" $rlRun_LOG
 
         rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *fail_log: \(.\+\)/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *slash_log: \(.\+\)/\1/p' $rlRun_LOG)"
 
         rlRun -s "yq -er '.[] | \"\\(.name) \\(.serialnumber) \\(.result) \\(.guest.name)\"' $run/plans/default/execute/results.yaml"
         rlAssertGrep "/test/custom-results/test/passing 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG
+        rlAssertGrep "/test/custom-results/without-leading-slash 1 pass default-0" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/missing-custom-results"

@@ -411,6 +411,12 @@ class ExecutePlugin(tmt.steps.Plugin):
             if partial_result.name == '/':
                 partial_result.name = test.name
             else:
+                if not partial_result.name.startswith('/'):
+                    if partial_result.note and isinstance(partial_result.note, str):
+                        partial_result.note += ", custom test result name should start with '/'"
+                    else:
+                        partial_result.note = "custom test result name should start with '/'"
+                    partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
 
             # Fix log paths as user provides relative path to TMT_TEST_DATA
