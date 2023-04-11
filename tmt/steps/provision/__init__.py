@@ -111,6 +111,8 @@ class GuestFacts(tmt.utils.SerializableContainer):
         serialize=lambda package_manager: package_manager.value if package_manager else None,
         unserialize=lambda raw_value: GuestPackageManager(raw_value) if raw_value else None)
 
+    has_selinux: Optional[bool] = None
+
     os_release_content: Dict[str, str] = field(default_factory=dict)
     lsb_release_content: Dict[str, str] = field(default_factory=dict)
 
@@ -284,6 +286,18 @@ class GuestFacts(tmt.utils.SerializableContainer):
                 # (Command('dpkg', '-l', 'apt'), 'apt')
                 ])
 
+    def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
+        """
+        For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
+        """
+
+        output = self._execute(guest, Command('cat', '/proc/filesystems'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        return 'selinux' in output.stdout
+
     def sync(self, guest: 'Guest') -> None:
         """ Update stored facts to reflect the given guest """
 
@@ -294,6 +308,7 @@ class GuestFacts(tmt.utils.SerializableContainer):
         self.distro = self._query_distro(guest)
         self.kernel_release = self._query_kernel_release(guest)
         self.package_manager = self._query_package_manager(guest)
+        self.has_selinux = self._query_has_selinux(guest)
 
         self.in_sync = True
 
@@ -487,6 +502,7 @@ class Guest(tmt.utils.Common):
             'package manager',
             self.facts.package_manager.value if self.facts.package_manager else 'unknown',
             'green')
+        self.verbose('selinux', 'yes' if self.facts.has_selinux else 'no', 'green')
 
     def _ansible_verbosity(self) -> List[str]:
         """ Prepare verbose level based on the --debug option count """
