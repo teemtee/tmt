@@ -1268,6 +1268,72 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
+def render_run_exception(exception: RunError) -> str:
+    """ Render detailed output upon command execution errors for printing """
+
+    lines: List[str] = []
+
+    # Check verbosity level used during raising exception,
+    # Supported way to correctly get verbosity is
+    # tmt.util.Common.opt('verbose')
+    if isinstance(exception.caller, Common):
+        verbose = exception.caller.opt('verbose')
+    else:
+        verbose = 0
+    for name, output in (('stdout', exception.stdout), ('stderr', exception.stderr)):
+        if not output:
+            continue
+        output_lines = output.strip().split('\n')
+        # Show all lines in verbose mode, limit to maximum otherwise
+        if verbose > 0:
+            line_summary = f"{len(output_lines)}"
+        else:
+            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
+            output_lines = output_lines[-OUTPUT_LINES:]
+
+        lines += [
+            f'{name} ({line_summary} lines)',
+            OUTPUT_WIDTH * '~'
+            ] + output_lines + [
+            OUTPUT_WIDTH * '~',
+            ''
+            ]
+
+    return '\n'.join(lines)
+
+
+def render_exception(exception: BaseException) -> str:
+    """ Render the exception and its causes for printing """
+
+    lines = [
+        click.style(str(exception), fg='red')
+        ]
+
+    if isinstance(exception, RunError):
+        lines += [
+            '',
+            render_run_exception(exception)
+            ]
+
+    # Follow the chain
+    if exception.__cause__:
+        lines += [
+            '',
+            'The exception was caused by the previous exception:',
+            '',
+            render_exception(exception.__cause__)
+            ]
+
+    return '\n'.join(lines)
+
+
+def show_exception(exception: BaseException) -> None:
+    """ Display the exception and its causes """
+
+    print('', file=sys.stderr)
+    print(render_exception(exception), file=sys.stderr)
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Utilities
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
