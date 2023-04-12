@@ -25,7 +25,9 @@ jobs:
         name: Differential ShellCheck
         uses: redhat-plumbers-in-action/differential-shellcheck@v4
         with:
-          severity: error
+          exclude-path: |
+            tests/**
+            examples/**/test.sh
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - if: ${{ always() }}
