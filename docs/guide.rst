@@ -88,60 +88,6 @@ Go on and explore. Don't be shy and ask, ``--help`` is eager to
 answer all your questions ;-)
 
 
-.. _lint:
-
-Checking data validity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is easy to introduce a syntax error to one of the fmf files and
-make the whole tree broken. ``tmt lint`` is here for you, and offers
-a broad variety of options to control what checks are applied on tests,
-plans and stories:
-
-.. code-block:: console
-
-    # Lint everything, everywhere
-    tmt lint
-
-    # Lint just selected plans
-    tmt lint /plans/features
-    tmt plans lint /plans/features
-
-    # Change the set of checks applied - enable some, disable others
-    tmt lint --enable-check T001 --disable-check C002
-
-To find out what checks are available, use ``--list-checks`` option:
-
-.. code-block:: console
-
-    # All checks tmt has for tests, plans and stories
-    tmt lint --list-checks
-
-    # All checks tmt has for tests
-    tmt test lint --list-checks
-
-For the full list of options, see ``tmt lint --help``. Available
-checks are documented at :ref:`lint-checks`.
-
-You should run ``tmt lint`` before pushing changes, ideally even
-before you commit your changes. You can set up `pre-commit`__ to
-do it for you. Add to your repository's ``.pre-commit-config.yaml``::
-
-    repos:
-    - repo: https://github.com/teemtee/tmt.git
-      rev: 1.23.0
-      hooks:
-      - id: tmt-lint
-
-This will run ``tmt lint --source`` for all modified fmf files.
-There are hooks to just check tests ``tmt-tests-lint``, plans
-``tmt-plans-lint`` or stories ``tmt-stories-lint`` explicitly.
-From time to time you might want to run ``pre-commit autoupdate``
-to refresh config to the latest version.
-
-__ https://pre-commit.com/#install
-
-
 Under The Hood
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -152,6 +98,9 @@ a ``yaml`` format extended with a couple of nice features like
 even large data efficiently without unnecessary duplication.
 
 .. _tree:
+
+Trees
+------------------------------------------------------------------
 
 The data are organized into `trees`__. Similarly as with ``git``,
 there is a special ``.fmf`` directory which marks the root of the
@@ -320,9 +269,370 @@ attributes ``description`` and ``link``::
 
 Last but not least, the core attribute :ref:`/spec/core/adjust`
 provides a flexible way to adjust metadata based on the
-:ref:`/spec/context`.  But this is rather a large topic, so let's
-keep it for another time. In the next chapter we'll learn how to
-comfortably create new tests and plans.
+:ref:`/spec/context`. But this is rather a large topic, so let's
+keep it for another time.
+
+
+Organize Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the previous chapter we've learned what :ref:`/spec/tests`,
+:ref:`/spec/plans` and :ref:`/spec/stories` are used for. Now the
+time has come to learn how to efficiently organize them in your
+repository. First we'll describe how to easily :ref:`create` new
+tests, plans and stories, how to use :ref:`lint` to verify that
+all metadata have correct syntax. Finally, we'll dive into
+:ref:`inheritance` and :ref:`elasticity` which can substantially
+help you to minimize data duplication.
+
+.. _create:
+
+Create
+------------------------------------------------------------------
+
+When working on the test coverage, one of the most common actions
+is creating new tests. Use ``tmt test create`` to simply create a
+new test based on a template::
+
+    $ tmt test create /tests/smoke
+    Template (shell or beakerlib): shell
+    Directory '/home/psss/git/tmt/tests/smoke' created.
+    Test metadata '/home/psss/git/tmt/tests/smoke/main.fmf' created.
+    Test script '/home/psss/git/tmt/tests/smoke/test.sh' created.
+
+As for now there are two templates available, ``shell`` for simple
+scripts written in shell and ``beakerlib`` with a basic skeleton
+demonstrating essential functions of this shell-level testing
+framework. If you want to be faster, specify the desired template
+directly on the command line using ``-t`` or ``--template``::
+
+    $ tmt test create --template shell /tests/smoke
+    $ tmt test create --t beakerlib /tests/smoke
+
+In a similar way, the ``tmt plan create`` command can be used to
+create a new plan with templates::
+
+    tmt plans create --template mini /plans/smoke
+    tmt plans create --t full /plans/features
+
+When creating many plans, for example when migrating the whole
+test coverage from a different tooling, it might be handy to
+override default template content directly from the command line.
+For this use individual step options such as ``--discover`` and
+provide desired data in the ``yaml`` format::
+
+    tmt plan create /plans/custom --template mini \
+        --discover '{how: "fmf", name: "internal", url: "https://internal/repo"}' \
+        --discover '{how: "fmf", name: "external", url: "https://external/repo"}'
+
+Now it will be no surprise for you that for creating a new story
+the ``tmt story create`` command can be used with the very same
+possibility to choose the right template::
+
+    tmt story create --template full /stories/usability
+
+Sometimes you forget something, or just things may go wrong and
+you need another try. In such case add ``-f`` or ``--force`` to
+quickly overwrite existing files with the right content.
+
+.. _lint:
+
+Lint
+------------------------------------------------------------------
+
+It is easy to introduce a syntax error to one of the fmf files and
+make the whole tree broken. The ``tmt lint`` command performs a
+set of :ref:`lint-checks` which compare the stored metadata
+against the specification and reports anything suspicious:
+
+.. code-block:: shell
+
+    $ tmt lint /tests/execute/basic
+    /tests/execute/basic
+    pass C000 fmf node passes schema validation
+    warn C001 summary should not exceed 50 characters
+    pass T001 correct keys are used
+    pass T002 test script is defined
+    pass T003 directory path is absolute
+    pass T004 test path '/home/psss/git/tmt/tests/execute/basic' does exist
+    skip T005 legacy relevancy not detected
+    skip T006 legacy 'coverage' field not detected
+    skip T007 not a manual test
+    skip T008 not a manual test
+    pass T009 all requirements have type field
+
+There is a broad variety of options to control what checks are
+applied on tests, plans and stories:
+
+.. code-block:: shell
+
+    # Lint everything, everywhere
+    tmt lint
+
+    # Lint just selected plans
+    tmt lint /plans/features
+    tmt plans lint /plans/features
+
+    # Change the set of checks applied - enable some, disable others
+    tmt lint --enable-check T001 --disable-check C002
+
+See the :ref:`lint-checks` page for the list of available checks
+or use the ``--list-checks`` option. For the full list of options,
+see ``tmt lint --help``.
+
+.. code-block:: shell
+
+    # All checks tmt has for tests, plans and stories
+    tmt lint --list-checks
+
+    # All checks tmt has for tests
+    tmt test lint --list-checks
+
+You should run ``tmt lint`` before pushing changes, ideally even
+before you commit your changes. You can set up `pre-commit`__ to
+do it for you. Add to your repository's ``.pre-commit-config.yaml``:
+
+.. code-block:: yaml
+
+    repos:
+    - repo: https://github.com/teemtee/tmt.git
+      rev: 1.23.0
+      hooks:
+      - id: tmt-lint
+
+This will run ``tmt lint --source`` for all modified fmf files.
+There are hooks to just check tests ``tmt-tests-lint``, plans
+``tmt-plans-lint`` or stories ``tmt-stories-lint`` explicitly.
+From time to time you might want to run ``pre-commit autoupdate``
+to refresh config to the latest version.
+
+__ https://pre-commit.com/#install
+
+.. _inheritance:
+
+Inheritance
+------------------------------------------------------------------
+
+The ``fmf`` format provides a nice flexibility regarding the file
+location. Tests, plans and stories can be placed arbitrarily in
+the repo. You can pick the location which best fits your project.
+However, it makes sense to group similar or closely related
+objects together. A thoughtful structure will not only make it
+easier to find things and more quickly understand the content, it
+also allows to prevent duplication of common metadata which would
+be otherwise repeated many times.
+
+Let's have a look at some tangible example. We create separate
+directories for tests and plans. Under each of them there is an
+additional level to group related tests or plans together::
+
+    ├── plans
+    │   ├── features
+    │   ├── install
+    │   ├── integration
+    │   ├── provision
+    │   ├── remote
+    │   └── sanity
+    └── tests
+       ├── core
+       ├── full
+       ├── init
+       ├── lint
+       ├── login
+       ├── run
+       ├── steps
+       └── unit
+
+Vast majority of the tests is executed using a ``./test.sh``
+script which is written in ``beakerlib`` framework and almost all
+tests require ``tmt`` package to be installed on the system. So
+the following test metadata are common:
+
+.. code-block:: yaml
+
+    test: ./test.sh
+    framework: beakerlib
+    require: [tmt]
+
+Instead of repating this information again and again for each test
+we place a ``main.fmf`` file at the top of the ``tests`` tree::
+
+    tests
+    ├── main.fmf
+    ├── core
+    ├── full
+    ├── init
+    ...
+
+.. _virtual-tests:
+
+Virtual Tests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it might be useful to reuse test code by providing
+different parameter or an environment variable to the same test
+script. In such cases inheritance allows to easily share the
+common setup:
+
+.. code-block:: yaml
+
+    test: ./test.sh
+    require: curl
+
+    /fast:
+        summary: Quick smoke test
+        tier: 1
+        duration: 1m
+        environment:
+            MODE: fast
+
+    /full:
+        summary: Full test set
+        tier: 2
+        duration: 10m
+        environment:
+            MODE: full
+
+In the example above, two tests are defined, both executing the
+same ``test.sh`` script but providing a different environment
+variable which instructs the test to perform a different set of
+actions.
+
+.. _inherit-plans:
+
+Inherit Plans
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If several plans share similar content it is possible to use
+inheritance to prevent unnecessary duplication of the data:
+
+.. code-block:: yaml
+
+    discover:
+        how: fmf
+        url: https://github.com/teemtee/tmt
+    prepare:
+        how: ansible
+        playbook: ansible/packages.yml
+    execute:
+        how: tmt
+
+    /basic:
+        summary: Quick set of basic functionality tests
+        discover+:
+            filter: tier:1
+
+    /features:
+        summary: Detailed tests for individual features
+        discover+:
+            filter: tier:2
+
+Note that a ``+`` sign should be used if you want to extend the
+parent data instead of replacing them. See the `fmf features`_
+documentation for a detailed description of the hierarchy,
+inheritance and merging attributes.
+
+.. _fmf features: https://fmf.readthedocs.io/en/latest/features.html
+
+.. _elasticity:
+
+Elasticity
+------------------------------------------------------------------
+
+Depending on the size of your project you can choose to store all
+configuration in just a single file or rather use multiple files
+to store each test, plan or story separately. For example, you can
+combine both the plan and tests like this:
+
+.. code-block:: yaml
+
+    /plan:
+        summary:
+            Verify that plugins are working
+        discover:
+            how: fmf
+        provision:
+            how: container
+        prepare:
+            how: install
+            package: did
+        execute:
+            how: tmt
+
+    /tests:
+        /bugzilla:
+            test: did --bugzilla
+        /github:
+            test: did --github
+        /koji:
+            test: did --koji
+
+Or you can put the plan in one file and tests into another one:
+
+.. code-block:: yaml
+
+    # plan.fmf
+    summary:
+        Verify that plugins are working
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: install
+        package: did
+    execute:
+        how: tmt
+
+    # tests.fmf
+    /bugzilla:
+        test: did --bugzilla
+    /github:
+        test: did --github
+    /koji:
+        test: did --koji
+
+Or even each test can be defined in a separate file:
+
+.. code-block:: yaml
+
+    # tests/bugzilla.fmf
+    test: did --bugzilla
+
+    # tests/github.fmf
+    test: did --github
+
+    # tests/koji.fmf
+    test: did --koji
+
+You can start with a single file when the project is still small.
+When some branch of the config grows too much, you can easily
+extract the large content into a new separate file.
+
+The :ref:`tree` built from the scattered files stay identical if
+the same name is used for the file or directory containing the
+data. For example, the ``/tests/koji`` test from the top
+``main.fmf`` config could be moved to any of the following
+locations without any change to the resulting `fmf` tree:
+
+.. code-block:: yaml
+
+    # tests.fmf
+    /koji:
+        test: did --koji
+
+    # tests/main.fmf
+    /koji:
+        test: did --koji
+
+    # tests/koji.fmf
+    test: did --koji
+
+    # tests/koji/main.fmf
+    test: did --koji
+
+This gives you a nice flexibility to extend the metadata when and
+where needed as your project organically grows.
 
 
 Multihost Testing
