@@ -202,11 +202,12 @@ class Guest(tmt.utils.Common):
 
     def details(self) -> None:
         """ Show guest details such as distro and kernel """
+
+        self.info('multihost name', self.multihost_name, 'green')
+
         # Skip distro & kernel check in dry mode
         if self.opt('dry'):
             return
-
-        self.info('multihost name', self.multihost_name, 'green')
 
         # A small helper to make the repeated run & extract combo easier on eyes.
         def _fetch_detail(command: Command, pattern: str) -> str:
