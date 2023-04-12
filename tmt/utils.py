@@ -663,7 +663,19 @@ class _CommonBase:
             super().__init__(**kwargs)
 
 
-class Common(_CommonBase):
+class CopyOptionsMeta(type):
+    """
+    The metaclass creates a copy of _options dictionary to ensure that each class has
+    a distinct copy of the dictionary. The _context parameter is None by default and
+    setup by different classes; thus, it does not need to be copied.
+    """
+    def __new__(cls: Any, name: str, bases: Tuple[type], dct: Dict[str, Any]) -> Any:
+        x = super().__new__(cls, name, bases, dct)
+        x._options = x._options.copy()
+        return x
+
+
+class Common(_CommonBase, metaclass=CopyOptionsMeta):
     """
     Common shared stuff
 
