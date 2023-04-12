@@ -412,6 +412,9 @@ class GuestBeaker(tmt.GuestSsh):
             'group': 'linux',
             }
 
+        if self.arch is not None:
+            data["arch"] = self.arch
+
         try:
             response = self.api.create(data)
         except ProvisioningError as mrack_provisioning_err:
