@@ -232,7 +232,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
     hardware: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     # Provided in Beaker job
-    guestname: Optional[str] = None
+    job_id: Optional[str] = None
 
     # Timeouts and deadlines
     provision_timeout: int = DEFAULT_PROVISION_TIMEOUT
@@ -359,7 +359,7 @@ class GuestBeaker(tmt.GuestSsh):
     hardware: Dict[str, Any] = {}
 
     # Provided in Beaker response
-    guestname: Optional[str]
+    job_id: Optional[str]
 
     # Timeouts and deadlines
     provision_timeout: int
@@ -377,7 +377,7 @@ class GuestBeaker(tmt.GuestSsh):
     @property
     def is_ready(self) -> bool:
         """ Check if provisioning of machine is done """
-        if self.guestname is None:
+        if self.job_id is None:
             return False
 
         assert mrack is not None
@@ -425,8 +425,8 @@ class GuestBeaker(tmt.GuestSsh):
             raise ProvisionError(
                 f"Failed to create, response: '{response}'.")
 
-        self.guestname = response["id"] if not response["system"] else response["system"]
-        self.info('guestname', self.guestname, 'green')
+        self.job_id = response["id"] if not response["system"] else response["system"]
+        self.info('job id', self.job_id, 'green')
 
         with updatable_message(
                 "status", indent_level=self._level()) as progress_message:
@@ -484,7 +484,7 @@ class GuestBeaker(tmt.GuestSsh):
         load() is completed so all guest data should be available.
         """
 
-        if self.guestname is None or self.guest is None:
+        if self.job_id is None or self.guest is None:
             self._create(self._tmt_name())
 
     def stop(self) -> None:
@@ -495,7 +495,7 @@ class GuestBeaker(tmt.GuestSsh):
     def remove(self) -> None:
         """ Remove the guest """
 
-        if self.guestname is None:
+        if self.job_id is None:
             return
 
         self.api.delete()
