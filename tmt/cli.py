@@ -143,7 +143,7 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 @click.pass_context
 @click.option(
     '-r', '--root', metavar='PATH', show_default=True, default='.',
-    help="Path to the tree root, '.' by default.")
+    help="Path to the metadata tree root, '.' used by default.")
 @click.option(
     '-c', '--context', metavar='DATA', multiple=True,
     help='Set the fmf context. Use KEY=VAL or KEY=VAL1,VAL2... format '
