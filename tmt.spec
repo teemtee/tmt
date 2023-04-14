@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.21.0
+Version: 1.22.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -250,6 +250,96 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Fri Apr 14 2023 Petr Šplíchal <psplicha@redhat.com> - 1.22.0-1
+- Change help text of the `tmt --root` option
+- Add support for `results.json` in custom results
+- Proper support for the test `duration` format
+- Prepend '/' to custom test result name if missing
+- Document necessary packages for pip install on Ubuntu
+- Tag cloud resources to `tmt` in Testing Farm
+- Display guest multihost name even in dry run (#1982)
+- Pass the `arch` option to the Beaker provider
+- Use `job-id` instead of `guestname` in Beaker class
+- Adjust the fix for the default branch handling
+- Add support to get `ref` under the git worktree
+- Fix dry mode handling when running a remote plan
+- Enable the external `polarion` plugin tests
+- Extract "run a command" functionality into a stand-alone helper
+- Increase minimal severity of `ShellCheck` defects
+- Display guest full name in `display` plugin report
+- Push using `sudo rsync` when necessary
+- Avoid warning from installing tmt as pre-commit
+- Add test checking repeated test execution results
+- Freeze the `yq` version to fix `el8` installation
+- Update the `CODEOWNERS` file with more granularity
+- Document current workaround for running scripts
+- Install `beakerlib` before the `ShellCheck`
+- Rename `Guest.full_name` to `Guest.multihost_name`
+- Display guest full name in `html` plugin report
+- Add test for template-based export plugin
+- Add `kickstart` to the `artemis` provision plugin
+- Extract just tar files in dist-git-source
+- Add missing fields to custom results test
+- Add shell linter `Differential ShellCheck`
+- Always try to run dhclient in cloud-init in virtual provision
+- Fix polarion report pruning and add or fix arguments
+- Run `chcon` only if SELinux fs supported
+- Require `beaker` provision in `tmt-all`
+- Adjust the new `mrack` plugin spec, test and plan
+- Add `beaker` provision plugin using `mrack`
+- Adjust pip install to always upgrade to the latest
+- Move `testcloud` url guessing logic out of `tmt`
+- Hotfix Ubuntu with virtual provision
+- Detect correct category when export to nitrate
+- Add an entrypoint for interactive `tmt` sessions
+- Fix internal handling of the `where` key
+- Move logging labels to the beginning of lines
+- Refactor CLI error reporting to improve readability
+- Remove no longer needed cast around our custom Click context
+- Display guest full name when showing its details
+- Add `kickstart` section as a new specification key
+- Add more controls for output colorization
+- Rephrase `results.yaml` documentation and examples
+- Fix `get_bootstrap_logger` name and docstring typo
+- Expose guest info in results
+- Enable `root` login and disable default `core` for rhcos
+- Sanitize plan/test/story names before filtering
+- Set default user `core` for rhcos in testcloud
+- Remove no longer used "err" parameter of logging methods
+- testcloud: Raise default limits
+- Update log key content of results.yaml examples (#1834)
+- Include guest name in execute phase data paths
+- Adds "bootstrap logger" for logging before CLI options are recognized (#1839)
+- Export `TMT_TEST_NAME` and `TMT_TEST_METADATA` (#1888)
+- List supported operators in hardware requirement docs (#1867)
+- Build tmt usable in inner guests for tests/full
+- Target test-complement for tests/full
+- Tag tests which are affected by how=full
+- Use PROVISION_METHODS in tests
+- Report individual test results in tests/full
+- Use Require* classes for collection & installation of plugin requirements (#1766)
+- Disable tracebacks if default branch is not found
+- Assign a data path and serial number to each test in discover (#1876)
+- Convert log path for results:custom
+- Allow report result for itself in results:custom
+- Support to import Makefile having '\\\n'
+- Require `pylero` for the `polarion` subpackage
+- Fix forgotten guest when Artemis provisioning times out
+- Turn `tests.yaml` into a list of tests
+- Simplify the `Result` class implementation
+- Use `Path` instead of `os.path` in export code
+- Use `Path` when working with logfile path
+- Fix use of old `os.path.symlink()` in discover/shell
+- Add /root/.local/bin to PATH on Centos Stream 8 in CI
+- Install jq/yq for more readable tests in tmt test suite
+- Fix Common class ignoring other branches of multiple inheritance tree
+- Use Path instead of os.path in prepare/install plugin
+- Convert path-like strings to `pathlib.Path` objects
+- Change `Plugin.go()` to accept logger and extra environment
+- Artemis API version may contain multiple integers
+- Add logging `labels` used for prefixing messages
+- Adds "full name" guest property for multihost logging
+
 * Fri Feb 03 2023 Lukáš Zachar <lzachar@redhat.com> - 1.21.0-1
 - Fix tmt-reboot without custom command
 - Fix test /discover/libraries
