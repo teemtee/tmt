@@ -36,7 +36,7 @@ rlJournalStart
             rlRun "rm $rlRun_LOG"
 
             # Check that the whole output log is kept
-            rlRun "log=$run/plan/execute/data/test/output.txt"
+            rlRun "log=$run/plan/execute/data/guest/default-0/test-1/output.txt"
             rlAssertGrep "After first reboot" $log
             rlAssertGrep "After second reboot" $log
             rlAssertGrep "After third reboot" $log
