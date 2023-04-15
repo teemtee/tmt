@@ -8,8 +8,12 @@ description: |
     and custom test results are required to follow it when creating their
     ``results.yaml`` file.
 
-    Results are saved as a YAML file, containing a single list of mappings,
-    one mapping describing a single test result.
+    Tests may choose JSON instead of YAML for their custom results file and
+    create ``results.json`` file, but tmt itself will always stick to YAML,
+    the final results would be provided in ``results.yaml`` file in any case.
+
+    Results are saved as a single list of dictionaries, each describing
+    a single test result.
 
     .. code-block::
 
@@ -75,6 +79,11 @@ description: |
     may omit all other keys, although tmt plugins will strive to provide
     as many keys as possible.
 
+    When importing the :ref:`custom results file </spec/tests/result>`, each
+    test name referenced in the file by the ``name`` key would be prefixed by
+    the original test name. A special case, ``name: /``, sets the result for
+    the original test itself.
+
     The ``log`` key must list **relative** paths. Paths in the custom
     results file are treated as relative to ``${TMT_TEST_DATA}`` path.
     Paths in the final results file, saved by the execute step, will be
@@ -90,12 +99,14 @@ description: |
 
     See also the complete `JSON schema`__.
 
+    For custom results files in JSON format, the same rules and schema
+    apply.
+
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 
 example:
   - |
     # Example content of results.yaml
-
     - name: /test/passing
       result: pass
       serialnumber: 1
@@ -120,13 +131,43 @@ example:
         name: default-0
 
   - |
-    # Example of a perfectly valid, yet stingy custom results file
+    # Example content of custom results file
+    - name: /test/passing
+      result: pass
+      log:
+        - pass_log
+      duration: 00:11:22
+      note: good result
+      ids:
+        extra-nitrate: some-nitrate-id
 
+    - name: /test/failing
+      result: fail
+      log:
+        - fail_log
+        - another_log
+      duration: 00:22:33
+      note: fail result
+
+  - |
+    # Example of a perfectly valid, yet stingy custom results file
     - name: /test/passing
       result: pass
 
     - name: /test/failing
       result: fail
+
+  - |
+    # Example content of custom results.json
+    [
+      {
+        "name": "/test/passing",
+        "result": "pass",
+        "log": ["pass_log"],
+        "duration": "00:11:22",
+        "note": "good result"
+      }
+    ]
 
 link:
   - verified-by: /tests/execute/result
