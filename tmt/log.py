@@ -524,6 +524,8 @@ class Logger:
 
         handler.setFormatter(LogfileFormatter())
 
+        handler.addFilter(TopicFilter())
+
         self._logger.addHandler(handler)
 
     def add_console_handler(self, apply_colors: bool = False) -> None:
