@@ -234,6 +234,9 @@ definitions:
       relates:
         $ref: "/schemas/common#/definitions/url_path_or_fmf_id"
 
+      test-script:
+        $ref: "/schemas/common#/definitions/url_path_or_fmf_id"
+
       note:
         type: string
 
@@ -264,6 +267,8 @@ definitions:
           - child
       - required:
           - relates
+      - required:
+          - test-script
 
   # helper for specifying an object with string properties
   object_with_string_properties:

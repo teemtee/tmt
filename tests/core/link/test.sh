@@ -14,6 +14,7 @@ rlJournalStart
         rlAssertGrep 'verifies /stories/covered' output
         rlAssertGrep 'verifies /stories/verified' output
         rlAssertGrep 'relates https://github.com' output
+        rlAssertGrep 'test-script https://github.com/teemtee/tmt/tree/main/tests/core/link/test.sh' output
     rlPhaseEnd
 
     rlPhaseStartTest "tmt plan show"

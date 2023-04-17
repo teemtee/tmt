@@ -239,7 +239,7 @@ _RawLinkRelationName = Literal[
     'blocks', 'blocked-by',
     'duplicates', 'duplicated-by',
     'parent', 'child',
-    'relates',
+    'relates', 'test-script',
     # Special case: not a relation, but it can appear where relations appear in
     # link data structures.
     'note'
@@ -3182,7 +3182,7 @@ class Links(tmt.utils.SpecBasedContainer):
         'blocks', 'blocked-by',
         'duplicates', 'duplicated-by',
         'parent', 'child',
-        'relates',
+        'relates', 'test-script',
         ]
 
     _links: List[Link]
@@ -3240,7 +3240,8 @@ class Links(tmt.utils.SpecBasedContainer):
         """ Format a list of links with their relations """
         for link in self._links:
             # TODO: needs a format for fmf id target
-            echo(tmt.utils.format(link.relation.rstrip('-by'), f"{link.target}", key_color='cyan'))
+            echo(tmt.utils.format(
+                link.relation.rstrip('-by'), f"{link.target}", key_color='cyan', wrap=False))
 
     def has_link(self, needle: Optional[LinkNeedle] = None) -> bool:
         """

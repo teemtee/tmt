@@ -214,11 +214,15 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     assert test.fmf_id.url is not None  # narrow type
     if test.node.get('extra-task'):
         automation_script = test.node.get('extra-task')
-        automation_script += ' ' + test.fmf_id.url
+        automation_script += f'<br/>{test.fmf_id.url}'
     else:
         automation_script = test.fmf_id.url
     if not dry_mode:
         polarion_case.caseautomation = 'automated'
+        if test.link:
+            for link in test.link.get(relation='test-script'):
+                automation_script += f'<br/>{link.target}'
+                polarion_case.add_hyperlink(link.target, 'testscript')
         polarion_case.automation_script = automation_script
         polarion_case.add_hyperlink(test.web_link(), 'testscript')
     echo(style('script: ', fg='green') + automation_script)
