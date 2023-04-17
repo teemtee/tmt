@@ -324,11 +324,19 @@ def test_indent(key, value, color, level, labels, labels_padding, expected):
             Topic.KEY_NORMALIZATION,
             True
             ),
+        (
+            {Topic.KEY_NORMALIZATION},
+            None,
+            True
+            ),
         ],
     ids=(
         'no logger topics, no message topic',
         'no logger topics, message has topic',
-        'message for enabled topic'
+        'message for enabled topic',
+        'logger topic, no message topic'
+        # TODO: enable once we have more than one topic
+        # 'message for disabled topic'
         )
     )
 def test_topic_filter(
