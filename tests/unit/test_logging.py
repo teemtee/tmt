@@ -1,26 +1,22 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import _pytest.logging
 import click
 import pytest
 
-<<<<<<< HEAD
-from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
-                     VerbosityLevelFilter, indent, render_labels)
-=======
 from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter, Topic,
-                     VerbosityLevelFilter, indent)
->>>>>>> 0e4dec13 (Support logging "topics" to allow lower unnecessary verbosity)
+                     TopicFilter, VerbosityLevelFilter, indent, render_labels)
 
-from . import assert_log, assert_not_log
+from . import assert_log
 
 
 def _exercise_logger(
         caplog: _pytest.logging.LogCaptureFixture,
         logger: Logger,
         indent_by: str = '',
-        labels: Optional[List[str]] = None) -> None:
+        labels: Optional[List[str]] = None,
+        reset: bool = True) -> None:
     labels = labels or []
 
     if labels:
@@ -29,7 +25,8 @@ def _exercise_logger(
     else:
         prefix = indent_by
 
-    caplog.clear()
+    if reset:
+        caplog.clear()
 
     logger.print('this is printed')
     logger.debug('this is a debug message')
@@ -304,47 +301,46 @@ def test_indent(key, value, color, level, labels, labels_padding, expected):
         labels_padding=labels_padding) == expected
 
 
-def test_topics(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
-    root_logger.debug(
-        'this is a debug message for a topic, ignored',
-        topic=Topic.KEY_NORMALIZATION)
-    root_logger.verbose(
-        'this is a verbose message for a topic, ignored',
-        topic=Topic.KEY_NORMALIZATION)
+@pytest.mark.parametrize(
+    ('logger_topics', 'message_topic', 'filter_outcome'),
+    [
+        # (
+        #     logger topics,
+        #     message topic,
+        #   expected outcome of `QietnessFilter.filter()`
+        # )
+        (
+            set(),
+            None,
+            True
+            ),
+        (
+            set(),
+            Topic.KEY_NORMALIZATION,
+            False
+            ),
+        (
+            {Topic.KEY_NORMALIZATION},
+            Topic.KEY_NORMALIZATION,
+            True
+            ),
+        ],
+    ids=(
+        'no logger topics, no message topic',
+        'no logger topics, message has topic',
+        'message for enabled topic'
+        )
+    )
+def test_topic_filter(
+        logger_topics: Set[Topic],
+        message_topic: Optional[Topic],
+        filter_outcome: bool) -> None:
+    filter = TopicFilter()
 
-    _exercise_logger(caplog, root_logger)
-
-    assert_not_log(
-        caplog,
-        message='this is a debug message for a topic, ignored',
-        details_key='this is a debug message for a topic, ignored',
-        details_message_topic=Topic.KEY_NORMALIZATION,
-        levelno=logging.DEBUG)
-    assert_not_log(
-        caplog,
-        message='this is a verbose message for a topic, ignored',
-        details_key='this is a verbose message for a topic, ignored',
-        details_message_topic=Topic.KEY_NORMALIZATION,
-        levelno=logging.INFO)
-
-    root_logger.topics.add(Topic.KEY_NORMALIZATION)
-
-    _exercise_logger(caplog, root_logger)
-
-    root_logger.debug('this is a debug message for a topic, logged', topic=Topic.KEY_NORMALIZATION)
-    root_logger.verbose(
-        'this is a verbose message for a topic, logged',
-        topic=Topic.KEY_NORMALIZATION)
-
-    assert_log(
-        caplog,
-        message='this is a debug message for a topic, logged',
-        details_key='this is a debug message for a topic, logged',
-        details_message_topic=Topic.KEY_NORMALIZATION,
-        levelno=logging.DEBUG)
-    assert_log(
-        caplog,
-        message='this is a verbose message for a topic, logged',
-        details_key='this is a verbose message for a topic, logged',
-        details_message_topic=Topic.KEY_NORMALIZATION,
-        levelno=logging.INFO)
+    assert filter.filter(logging.makeLogRecord({
+        'levelno': logging.INFO,
+        'details': {
+            'logger_topics': logger_topics,
+            'message_topic': message_topic
+            }
+        })) == filter_outcome

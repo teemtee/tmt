@@ -56,7 +56,7 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
         metavar=f'[{"|".join(topic.value for topic in tmt.log.Topic)}]',
         multiple=True,
         type=str,
-        help='If specified, --debug and --verbose would emit logs only for these topics.')
+        help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
 # Force and dry actions
