@@ -510,7 +510,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     ), cwd=self.testdir)[0]
             if output:
                 directories = [os.path.dirname(name) for name in output.split('\n')]
-                modified = set(f"^/{re.escape(name)}" for name in directories if name)
+                modified = {f"^/{re.escape(name)}" for name in directories if name}
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
                 names.extend(modified)
 
