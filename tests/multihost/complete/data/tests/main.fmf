@@ -1,7 +1,4 @@
-test: |
-  echo "In a test"
-  echo "With data path $TMT_TEST_DATA"
-  exit 0
+test: ./test.sh
 
 /A:
   summary: Dummy test A

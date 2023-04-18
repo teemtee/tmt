@@ -34,24 +34,47 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Execute"
-        rlRun -s "tmt -vv run --scratch --id $run discover provision execute"
+        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute"
 
         rlRun "grep '^        queued: server-setup on server (server)' $rlRun_LOG"
         rlRun "grep '^        queued: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
         rlRun "grep '^        queued: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
 
         rlRun "grep '^        queue tick #0: server-setup on server (server)' $rlRun_LOG"
-        rlRun "grep '^                00:00:00 pass /server-setup/tests/A \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^                00:00:00 pass /server-setup/tests/A (on server (server)) \\[1/1\\]' $rlRun_LOG"
 
-        rlRun "grep '^        queue tick #1: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
-        rlRun "grep '^\\[client-1 (client)\\]                 ..:..:.. pass /tests/tests/B \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[client-2 (client)\\]                 ..:..:.. pass /tests/tests/B \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[server (server)\\]                   ..:..:.. pass /tests/tests/B \\[1/1\\]' $rlRun_LOG"
+        rlRun "egrep '^                out: TMT_GUEST_HOSTNAME=[a-zA-Z0-9\-]+' $rlRun_LOG"
+        rlRun "grep  '^                out: TMT_GUEST_ROLE=server' $rlRun_LOG"
+
+        rlRun "grep  '^        queue tick #1: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
+        rlRun "grep  '^\\[client-1 (client)\\]                 ..:..:.. pass /tests/tests/B (on client-1 (client)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep  '^\\[client-2 (client)\\]                 ..:..:.. pass /tests/tests/B (on client-2 (client)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep  '^\\[server (server)\\]                   ..:..:.. pass /tests/tests/B (on server (server)) \\[1/1\\]' $rlRun_LOG"
 
         rlRun "grep '^        queue tick #2: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
-        rlRun "grep '^\\[server (server)\\]                   00:00:00 pass /teardown/tests/C \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[client-1 (client)\\]                 00:00:00 pass /teardown/tests/C \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[client-2 (client)\\]                 00:00:00 pass /teardown/tests/C \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[server (server)\\]                   00:00:00 pass /teardown/tests/C (on server (server)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[client-1 (client)\\]                 00:00:00 pass /teardown/tests/C (on client-1 (client)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[client-2 (client)\\]                 00:00:00 pass /teardown/tests/C (on client-2 (client)) \\[1/1\\]' $rlRun_LOG"
+
+        client1_hostname="$(yq -r '."client-1" | .container' $run/plans/provision/guests.yaml)"
+        client2_hostname="$(yq -r '."client-2" | .container' $run/plans/provision/guests.yaml)"
+        server_hostname="$(yq -r '."server" | .container' $run/plans/provision/guests.yaml)"
+
+        # Make sure all guests see roles and the corresponding guests
+        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
+
+        # Make sure each guest is notified about its own hostname and role
+        rlRun "egrep '^\\[client-1 \\(client\\)\\]                 out: TMT_GUEST_HOSTNAME=$client1_hostname' $rlRun_LOG"
+        rlRun "egrep '^\\[client-1 \\(client\\)\\]                 out: TMT_GUEST_ROLE=client' $rlRun_LOG"
+        rlRun "egrep '^\\[client-2 \\(client\\)\\]                 out: TMT_GUEST_HOSTNAME=$client2_hostname' $rlRun_LOG"
+        rlRun "egrep '^\\[client-2 \\(client\\)\\]                 out: TMT_GUEST_ROLE=client' $rlRun_LOG"
+        rlRun "egrep '^\\[server \\(server\\)\\]                   out: TMT_GUEST_HOSTNAME=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '^\\[server \\(server\\)\\]                   out: TMT_GUEST_ROLE=server' $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup

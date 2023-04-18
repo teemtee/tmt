@@ -1336,7 +1336,7 @@ class QueuedPhase:
 
     @property
     def guest_ids(self) -> List[str]:
-        return [guest.full_name for guest in self.guests]
+        return [guest.multihost_name for guest in self.guests]
 
 
 @dataclasses.dataclass
@@ -1424,18 +1424,27 @@ class PhaseQueue(List[QueuedPhase]):
                     yield PhaseOutcome(queued_phase, queued_phase.phase._logger)
 
             else:
-                environment: Optional[EnvironmentType] = None
+                environment: EnvironmentType = {}
 
                 multiple_guests = len(queued_phase.guests) > 1
 
                 if multiple_guests:
-                    # TODO: specify schema for exposing peers to guests (envvar, guests.yaml,
-                    # etc.). Should cover the legacy Beakerlib multihost tests, with their
-                    # SERVERS/CLIENTS envvars.
-                    environment = {
-                        'SERVERS': ' '.join(
-                            guest.guest for guest in queued_phase.guests if guest.guest)
-                        }
+                    # TODO: Somewhat legacy variable, just a temporary solution.
+                    environment['SERVERS'] = ' '.join(
+                        guest.guest for guest in queued_phase.guests if guest.guest
+                        )
+
+                    # TODO: More stable proposal, one environment variable for each role.
+                    _roles = [
+                        guest.role for guest in queued_phase.guests if guest.role is not None
+                        ]
+
+                    for role in _roles:
+                        environment[f'TMT_ROLE_{role.upper()}'] = ' '.join(
+                            guest.guest
+                            for guest in queued_phase.guests
+                            if guest.role == role and guest.guest
+                            )
 
                 # Pregenerate all loggers first, so we could find out what's the
                 # maximal label length, and ask loggers to pad their labels to
@@ -1446,7 +1455,7 @@ class PhaseQueue(List[QueuedPhase]):
                     new_logger = queued_phase.phase._logger.clone()
 
                     if multiple_guests:
-                        new_logger.labels.append(guest.full_name)
+                        new_logger.labels.append(guest.multihost_name)
 
                     new_loggers[guest.name] = new_logger
 
@@ -1465,11 +1474,15 @@ class PhaseQueue(List[QueuedPhase]):
                         if multiple_guests:
                             new_logger.info('queued', color='cyan')
 
+                        guest_environment = environment.copy()
+                        guest_environment['TMT_GUEST_ROLE'] = guest.role or ''
+                        guest_environment['TMT_GUEST_HOSTNAME'] = guest.guest or ''
+
                         futures[
                             executor.submit(
                                 queued_phase.phase.go,
                                 guest=guest,
-                                environment=environment,
+                                environment=guest_environment,
                                 logger=new_logger)
                             ] = (guest, new_logger)
 
