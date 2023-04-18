@@ -27,9 +27,9 @@ rlJournalStart
         rlAssertGrep "title: A Concise Title" $rlRun_LOG
         rlAssertGrep "priority: must have" $rlRun_LOG
         rlAssertNotGrep " _" $rlRun_LOG
-        rlRun "grep -A1 '^    link:' $rlRun_LOG | grep -- ' - implemented-by: /some/code.py'"
-        rlRun "grep -A1 '^    tag:' $rlRun_LOG | grep -- '- foo'"
-        rlRun "grep -A1 '^    example:' $rlRun_LOG | grep -- '- An inspiring example'"
+        rlRun "yq .[].link[] $rlRun_LOG | grep -- 'implemented-by\": \"/some/code.py'"
+        rlRun "yq .[].tag[] $rlRun_LOG | grep -- 'foo'"
+        rlRun "yq .[].example[] $rlRun_LOG | grep -- 'An inspiring example'"
     rlPhaseEnd
 
     rlPhaseStartTest "Export to rst (minimal story)"

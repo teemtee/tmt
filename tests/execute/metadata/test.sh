@@ -17,7 +17,7 @@ rlJournalStart
         rlAssertGrep "library(epel/epel)" $metadata
         rlAssertGrep "weather: nice" $metadata
         rlAssertGrep "duration: 5m" $metadata
-        rlRun "grep -A1 recommend $metadata | grep forest" \
+        rlRun "yq .recommend[] $metadata | grep forest" \
             0 "Recommend should be converted to a list"
     rlPhaseEnd
 
