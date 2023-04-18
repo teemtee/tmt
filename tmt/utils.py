@@ -1689,7 +1689,7 @@ def shell_to_dict(variables: Union[str, List[str]]) -> EnvironmentType:
     """
     if not isinstance(variables, (list, tuple)):
         variables = [variables]
-    result: EnvironmentType = dict()
+    result: EnvironmentType = {}
     for variable in variables:
         if variable is None:
             continue
@@ -1728,7 +1728,7 @@ def environment_to_dict(
 
     if not isinstance(variables, (list, tuple)):
         variables = [variables]
-    result: EnvironmentType = dict()
+    result: EnvironmentType = {}
 
     for variable in variables:
         if variable is None:
@@ -1966,7 +1966,7 @@ def yaml_to_dict(data: Any,
     yaml = YAML(typ=yaml_type)
     loaded_data = yaml.load(data)
     if loaded_data is None:
-        return dict()
+        return {}
     if not isinstance(loaded_data, dict):
         raise GeneralError(
             f"Expected dictionary in yaml data, "
@@ -1984,7 +1984,7 @@ def yaml_to_list(data: Any,
         raise GeneralError(f"Invalid yaml syntax: {error}")
 
     if loaded_data is None:
-        return list()
+        return []
     if not isinstance(loaded_data, list):
         raise GeneralError(
             f"Expected list in yaml data, "
@@ -2964,7 +2964,7 @@ def parse_yaml(content: str) -> EnvironmentType:
     yaml_as_dict = YAML(typ="safe").load(content)
     # Handle empty file as an empty environment
     if yaml_as_dict is None:
-        return dict()
+        return {}
     if any(isinstance(val, dict) for val in yaml_as_dict.values()):
         raise GeneralError(
             "Can't set the environment from the nested yaml config. The "

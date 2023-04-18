@@ -740,7 +740,7 @@ class Core(
             keys = self._keys()
 
         # Always include node name, add requested keys, ignore adjust
-        data: Dict[str, Any] = dict(name=self.name)
+        data: Dict[str, Any] = {'name': self.name}
         for key in keys:
             # TODO: provide more mature solution for https://github.com/teemtee/tmt/issues/1688
             # Until that, do not export fields that start with an underscore, to avoid leaking
@@ -1145,7 +1145,7 @@ class Test(
                     [dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)]
                     ))
                 continue
-            if value not in [None, list(), dict()]:
+            if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
         if self.opt('verbose'):
             self._show_additional_keys()
@@ -1156,7 +1156,7 @@ class Test(
                 if key in self._keys():
                     continue
                 value = self.node.get(key)
-                if value not in [None, list(), dict()]:
+                if value not in [None, [], {}]:
                     echo(tmt.utils.format(key, value, key_color='blue'))
 
     # FIXME - Make additional attributes configurable
@@ -1517,7 +1517,7 @@ class Plan(
         # Environment variables from key, make sure that values are string
         environment = {
             key: str(value) for key, value
-            in node.get('environment', dict()).items()}
+            in node.get('environment', {}).items()}
 
         # Combine both sources into one ('environment' key takes precendence)
         combined.update(environment)
@@ -2709,7 +2709,7 @@ class Run(tmt.utils.Common):
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree = tree
         self._plans: Optional[List[Plan]] = None
-        self._environment_from_workdir: EnvironmentType = dict()
+        self._environment_from_workdir: EnvironmentType = {}
         self._environment_from_options: Optional[EnvironmentType] = None
         self.remove = self.opt('remove')
 
@@ -2755,7 +2755,7 @@ class Run(tmt.utils.Common):
         # Gather environment variables from options only once
         if self._environment_from_options is None:
             assert self.tree is not None  # narrow type
-            self._environment_from_options = dict()
+            self._environment_from_options = {}
             # Variables gathered from 'environment-file' options
             self._environment_from_options.update(
                 tmt.utils.environment_files_to_dict(

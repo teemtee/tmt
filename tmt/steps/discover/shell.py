@@ -281,7 +281,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
     def go(self) -> None:
         """ Discover available tests """
         super(DiscoverShell, self).go()
-        tests = fmf.Tree(dict(summary='tests'))
+        tests = fmf.Tree({'summary': 'tests'})
 
         assert self.workdir is not None
         testdir = self.workdir / "tests"

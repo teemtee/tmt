@@ -16,7 +16,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
-from tmt.steps import (Action, PhaseQueue, PullTask, PushTask, QueuedPhase,
+from tmt.steps import (Action, GuestSyncTaskT, PhaseQueue, PullTask, PushTask, QueuedPhase,
                        sync_with_guests)
 from tmt.steps.provision import Guest
 from tmt.utils import uniq
@@ -184,36 +184,36 @@ class Prepare(tmt.steps.Step):
             ])
 
         if requires:
-            data: _RawPrepareStepData = dict(
-                how='install',
-                name='requires',
-                summary='Install required packages',
-                order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                package=[
+            data: _RawPrepareStepData = {
+                'how': 'install',
+                'name': 'requires',
+                'summary': 'Install required packages',
+                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
+                'package': [
                     require.to_spec()
                     for require in tmt.base.assert_simple_dependencies(
                         requires,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger)
-                    ])
+                    ]}
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Recommended packages
         recommends = uniq(self.plan.discover.recommends())
         if recommends:
-            data = dict(
-                how='install',
-                name='recommends',
-                summary='Install recommended packages',
-                order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                package=[
+            data = {
+                'how': 'install',
+                'name': 'recommends',
+                'summary': 'Install recommended packages',
+                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
+                'package': [
                     recommend.to_spec()
                     for recommend in tmt.base.assert_simple_dependencies(
                         recommends,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger)
                     ],
-                missing='skip')
+                'missing': 'skip'}
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Prepare guests (including workdir sync)

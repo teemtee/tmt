@@ -171,7 +171,7 @@ def write_markdown(path: Path, content: Dict[str, str]) -> None:
 def add_link(target: str, data: NitrateDataType,
              system: int = SYSTEM_BUGZILLA, type_: str = 'relates') -> None:
     """ Add relevant link into data under the 'link' key """
-    new_link = dict()
+    new_link = {}
     if system == SYSTEM_BUGZILLA:
         new_link[type_] = f"{BUGZILLA_URL}{target}"
     elif system == SYSTEM_JIRA:
@@ -201,7 +201,7 @@ def read_datafile(
     Returns task name and a dictionary of the collected values.
     """
 
-    data: NitrateDataType = dict()
+    data: NitrateDataType = {}
     makefile_regex_test = r'^run:.*\n\t(.*)$'
     if filename == 'Makefile':
         regex_task = r'Name:[ \t]*(.*)$'
@@ -701,8 +701,8 @@ def read_nitrate(
         echo("Multiple test cases found for '{0}'.".format(beaker_task))
 
     # Process individual test cases
-    individual_data = list()
-    md_content = dict()
+    individual_data = []
+    md_content = {}
     for testcase in testcases:
         # Testcase data must be fetched due to
         # https://github.com/psss/python-nitrate/issues/24
@@ -1119,7 +1119,7 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
         'adjust', 'extra-nitrate',
         'extra-summary', 'extra-task',
         'extra-hardware', 'extra-pepa']
-    sorted_data = dict()
+    sorted_data = {}
     for key in tmt.base.Test._keys() + extra_keys:
         try:
             sorted_data[key] = data[key]
@@ -1144,8 +1144,8 @@ def relevancy_to_adjust(
     Expects a string or list of strings with relevancy rules.
     Returns a list of dictionaries with adjust rules.
     """
-    rules = list()
-    rule = dict()
+    rules = []
+    rule = {}
     if isinstance(relevancy, list):
         relevancy = '\n'.join(str(line) for line in relevancy)
 
@@ -1177,7 +1177,7 @@ def relevancy_to_adjust(
                     f"Invalid test case relevancy decision '{decision}'.")
 
         # Adjust condition syntax
-        expressions = list()
+        expressions = []
         for expression in re.split(r'\s*&&?\s*', condition):
             search_result = re.search(RELEVANCY_EXPRESSION, expression)
             if search_result is None:
@@ -1220,6 +1220,6 @@ def relevancy_to_adjust(
         rule['when'] = ' and '.join(expressions)
         rule['continue'] = False
         rules.append(rule)
-        rule = dict()
+        rule = {}
 
     return rules

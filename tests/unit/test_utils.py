@@ -112,8 +112,8 @@ def test_listify():
     assert listify('abc') == ['abc']
     assert listify('a b c') == ['a b c']
     assert listify('a b c', split=True) == ['a', 'b', 'c']
-    assert listify(dict(a=1, b=2)) == dict(a=[1], b=[2])
-    assert listify(dict(a=1, b=2), keys=['a']) == dict(a=[1], b=2)
+    assert listify({'a': 1, 'b': 2}) == {'a': [1], 'b': [2]}
+    assert listify({'a': 1, 'b': 2}, keys=['a']) == {'a': [1], 'b': 2}
 
 
 def test_config():

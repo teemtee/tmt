@@ -33,17 +33,17 @@ def test_invalid_yaml_syntax():
 
 def test_test_defaults(root_logger):
     """ Test default test attributes """
-    test = tmt.Test.from_dict(logger=root_logger, mapping=dict(test='./test.sh'), name='/smoke')
+    test = tmt.Test.from_dict(logger=root_logger, mapping={'test': './test.sh'}, name='/smoke')
     assert test.name == '/smoke'
-    assert test.component == list()
+    assert test.component == []
     assert str(test.test) == './test.sh'
     assert test.path == Path('/')
-    assert test.require == list()
-    assert test.environment == dict()
+    assert test.require == []
+    assert test.environment == {}
     assert test.duration == '5m'
     assert test.enabled is True
     assert test.result == 'respect'
-    assert test.tag == list()
+    assert test.tag == []
 
 
 def test_test_invalid(root_logger):
@@ -100,20 +100,20 @@ def test_link():
     assert Links(data=['one', 'two']).get() == [
         Link(relation='relates', target='one'), Link(relation='relates', target='two')]
     # Multiple string mixed relation
-    assert Links(data=['implicit', dict(duplicates='explicit')]).get() == [
+    assert Links(data=['implicit', {'duplicates': 'explicit'}]).get() == [
         Link(relation='relates', target='implicit'),
         Link(relation='duplicates', target='explicit')]
     # Multiple strings (explicit relation)
-    assert Links(data=[dict(parent='mom'), dict(child='son')]).get() == [
+    assert Links(data=[{'parent': 'mom'}, {'child': 'son'}]).get() == [
         Link(relation='parent', target='mom'), Link(relation='child', target='son')]
 
     # Single dictionary (default relation)
-    assert Links(data=dict(name='foo')).get() == [
+    assert Links(data={'name': 'foo'}).get() == [
         Link(relation='relates', target=FmfId(name='foo'))]
     # Single dictionary (explicit relation)
-    assert Links(data=dict(verifies='foo')).get() == [Link(relation='verifies', target='foo')]
+    assert Links(data={'verifies': 'foo'}).get() == [Link(relation='verifies', target='foo')]
     # Multiple dictionaries
-    family = [dict(parent='mom', note='foo'), dict(child='son')]
+    family = [{'parent': 'mom', 'note': 'foo'}, {'child': 'son'}]
     assert Links(data=family).get() == [
         Link(relation='parent', target='mom', note='foo'), Link(relation='child', target='son')
         ]
@@ -145,12 +145,12 @@ def test_link():
                   " 'int' found."):
         Links(data=123)
     with pytest.raises(SpecificationError, match='Multiple relations'):
-        Links(data=dict(verifies='one', blocks='another'))
+        Links(data={'verifies': 'one', 'blocks': 'another'})
     with pytest.raises(SpecificationError, match='Invalid link relation'):
-        Links(data=dict(depends='other'))
+        Links(data={'depends': 'other'})
 
     # Searching for links
-    links = Links(data=[dict(parent='mom', note='foo'), dict(child='son', note='bar')])
+    links = Links(data=[{'parent': 'mom', 'note': 'foo'}, {'child': 'son', 'note': 'bar'}])
     assert links.has_link()
     assert links.has_link(needle=LinkNeedle())
     assert links.has_link(needle=LinkNeedle(relation=r'.*', target=r'.*'))

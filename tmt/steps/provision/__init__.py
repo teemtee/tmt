@@ -415,7 +415,7 @@ class Guest(tmt.utils.Common):
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """
-        return list()
+        return []
 
     def load(self, data: GuestData) -> None:
         """
@@ -563,8 +563,8 @@ class Guest(tmt.utils.Common):
         """ Prepare dict of environment variables """
         # Prepare environment variables so they can be correctly passed
         # to shell. Create a copy to prevent modifying source.
-        environment: tmt.utils.EnvironmentType = dict()
-        environment.update(execute_environment or dict())
+        environment: tmt.utils.EnvironmentType = {}
+        environment.update(execute_environment or {})
         # Plan environment and variables provided on the command line
         # override environment provided to execute().
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372

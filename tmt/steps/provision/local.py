@@ -53,7 +53,7 @@ class GuestLocal(tmt.Guest):
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute command on localhost """
         # Prepare the environment (plan/cli variables override)
-        environment: tmt.utils.EnvironmentType = dict()
+        environment: tmt.utils.EnvironmentType = {}
         environment.update(env or {})
         environment.update(self.parent.plan.environment)
 

@@ -73,7 +73,7 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
         print("go() called")
 
         # Data dictionary is used to pass information among classes.
-        data = dict(what='Another default what. Object variable can be used.')
+        data = {'what': 'Another default what. Object variable can be used.'}
 
         for opt in ['what', 'switch']:
             val = self.get(opt)

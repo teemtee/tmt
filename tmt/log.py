@@ -667,7 +667,7 @@ class Logger:
                 labels=self.labels,
                 labels_padding=self.labels_padding)
 
-        self._logger._log(level, message, tuple(), extra={'details': details})
+        self._logger._log(level, message, (), extra={'details': details})
 
     def print(
             self,

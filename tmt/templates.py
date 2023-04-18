@@ -10,8 +10,8 @@ INIT_TEMPLATES = ['mini', 'base', 'full']
 #  Test Templates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST: Dict[str, str] = dict()
-TEST_METADATA: Dict[str, str] = dict()
+TEST: Dict[str, str] = {}
+TEST_METADATA: Dict[str, str] = {}
 
 TEST_METADATA['shell'] = """
 summary: Concise summary describing what the test does
@@ -70,7 +70,7 @@ DEFAULT_PLAN = f"""
         how: tmt
 """.lstrip()
 
-PLAN: Dict[str, str] = dict()
+PLAN: Dict[str, str] = {}
 
 PLAN['mini'] = """
 summary:
@@ -106,7 +106,7 @@ execute:
 #  Story Templates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-STORY: Dict[str, str] = dict()
+STORY: Dict[str, str] = {}
 
 STORY['mini'] = """
 story: As a user I want to do this and that.

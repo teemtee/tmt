@@ -143,7 +143,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
                 break
 
     def concatenate_headings_content(headings: Tuple[str, ...]) -> HeadingsType:
-        content = list()
+        content = []
         for v in headings:
             content += sections_headings[v]
         return content

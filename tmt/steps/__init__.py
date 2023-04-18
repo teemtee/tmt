@@ -1142,7 +1142,7 @@ class Action(Phase):
     @classmethod
     def _parse_phases(cls, step: Step) -> Dict[str, List[int]]:
         """ Parse options and store phase order """
-        phases = dict()
+        phases = {}
         options: List[str] = cls._opt('step', default=[])
 
         # Use the end of the last enabled step if no --step given
@@ -1182,7 +1182,7 @@ class Action(Phase):
                 # Convert 'start' and 'end' aliases
                 try:
                     phase = cast(Dict[str, int],
-                                 dict(start=PHASE_START, end=PHASE_END))[phase]
+                                 {'start': PHASE_START, 'end': PHASE_END})[phase]
                 except KeyError:
                     raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
             # Store the phase for given step

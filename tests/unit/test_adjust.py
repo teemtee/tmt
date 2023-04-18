@@ -37,7 +37,7 @@ def check(condition, expected):
 
 def test_empty():
     """ Empty relevancy """
-    assert relevancy_to_adjust('') == list()
+    assert relevancy_to_adjust('') == []
 
 
 def test_comments(full):
