@@ -165,7 +165,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             os.getenv(
                 'TMT_PLUGIN_REPORT_POLARION_TITLE',
                 self.step.plan.name.rsplit('/', 1)[1] +
-                datetime.datetime.now().strftime("%Y%m%d%H%M%S")))
+                # Polarion server running with UTC timezone
+                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")))
         title = title.replace('-', '_')
         project_id = self.get('project-id', os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID'))
         upload = self.get('upload')
