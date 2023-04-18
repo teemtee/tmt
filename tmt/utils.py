@@ -4466,7 +4466,7 @@ class NormalizeKeysMixin(_CommonBase):
             return [value]
 
         if isinstance(value, (list, tuple)):
-            return [item for item in value]
+            return list(value)
 
         raise NormalizationError(key_address, value, 'a string or a list of strings')
 

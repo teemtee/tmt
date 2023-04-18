@@ -98,7 +98,6 @@ select = [
     "RUF",  # ruff
 ]
 ignore = [
-    "C416",  # Unnecessary `list` comprehension (rewrite using `list()`)
     "C401",  # Unnecessary generator (rewrite as a `set` comprehension)
     "C405",  # Unnecessary `list` literal (rewrite as a `set` literal)
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...

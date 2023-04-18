@@ -486,7 +486,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Remove unexpected general plans
     if general and nitrate_case:
         # Remove also all general plans linked to testcase
-        for nitrate_plan in [plan for plan in nitrate_case.testplans]:
+        for nitrate_plan in list(nitrate_case.testplans):
             if (nitrate_plan.type.name == "General"
                     and nitrate_plan not in expected_general_plans):
                 echo(style(
