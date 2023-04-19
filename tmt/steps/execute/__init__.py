@@ -241,7 +241,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         the aggregated metadata in a file under the test data directory
         and finally return a list of discovered tests.
         """
-        tests: List[tmt.Test] = self.discover.tests()
+        tests: List[tmt.Test] = self.discover.tests(enabled=True)
         for test in tests:
             metadata_filename = self.data_path(
                 test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)

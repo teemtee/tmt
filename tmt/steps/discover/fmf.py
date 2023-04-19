@@ -549,6 +549,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             for test in self._tests:
                 test.environment['TMT_SOURCE_DIR'] = str(sourcedir)
 
-    def tests(self) -> List[tmt.base.Test]:
+    def tests(self, enabled: Optional[bool] = None) -> List[tmt.base.Test]:
         """ Return all discovered tests """
-        return self._tests
+
+        if enabled is None:
+            return self._tests
+
+        return [test for test in self._tests if test.enabled is enabled]

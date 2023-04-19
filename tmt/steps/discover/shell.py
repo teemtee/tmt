@@ -373,5 +373,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         for test in self._tests:
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
 
-    def tests(self) -> List[tmt.base.Test]:
-        return self._tests
+    def tests(self, enabled: Optional[bool] = None) -> List[tmt.base.Test]:
+        if enabled is None:
+            return self._tests
+
+        return [test for test in self._tests if test.enabled is enabled]
