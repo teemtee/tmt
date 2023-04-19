@@ -238,8 +238,7 @@ class Prepare(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
-        queue_logger = self._logger.descend(logger_name=f'{self}.queue')
-        queue = PhaseQueue(queue_logger)
+        queue = PhaseQueue(self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, PreparePlugin)):
             queue.enqueue(

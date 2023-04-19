@@ -580,8 +580,7 @@ class Execute(tmt.steps.Step):
         # Execute the tests, store results
         from tmt.steps.discover import DiscoverPlugin
 
-        queue_logger = self._logger.descend(logger_name=f'{self}.queue')
-        queue = tmt.steps.PhaseQueue(queue_logger)
+        queue = tmt.steps.PhaseQueue(self._logger.descend(logger_name=f'{self}.queue'))
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
