@@ -394,8 +394,7 @@ class GuestBeaker(tmt.GuestSsh):
 
             if state == 'Reserved':
                 return True
-            else:
-                return False
+            return False
 
         except mrack.errors.MrackError:
             return False

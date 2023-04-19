@@ -119,7 +119,7 @@ class CustomGroup(click.Group):
                    if command.startswith(cmd_name)]
         if not matches:
             return None
-        elif len(matches) == 1:
+        if len(matches) == 1:
             return click.Group.get_command(self, context, matches[0])
         context.fail('Did you mean {}?'.format(
             listed(sorted(matches), join='or')))
@@ -659,9 +659,8 @@ def tests_import(
         if not (case or plan):
             raise tmt.utils.GeneralError(
                 "Option --case or --plan is mandatory when using --manual.")
-        else:
-            tmt.convert.read_manual(plan, case, disabled, with_script)
-            return
+        tmt.convert.read_manual(plan, case, disabled, with_script)
+        return
 
     if not paths:
         paths = ['.']

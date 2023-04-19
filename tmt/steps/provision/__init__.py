@@ -521,16 +521,14 @@ class Guest(tmt.utils.Common):
         """ Prepare verbose level based on the --debug option count """
         if self.opt('debug') < 3:
             return []
-        else:
-            return ['-' + (self.opt('debug') - 2) * 'v']
+        return ['-' + (self.opt('debug') - 2) * 'v']
 
     @staticmethod
     def _ansible_extra_args(extra_args: Optional[str]) -> List[str]:
         """ Prepare extra arguments for ansible-playbook"""
         if extra_args is None:
             return []
-        else:
-            return shlex.split(str(extra_args))
+        return shlex.split(str(extra_args))
 
     def _ansible_summary(self, output: Optional[str]) -> None:
         """ Check the output for ansible result summary numbers """

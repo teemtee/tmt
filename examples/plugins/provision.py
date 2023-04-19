@@ -206,8 +206,7 @@ class GuestExample(tmt.Guest):
 
         print("execute() called. This is an optional overload...")
 
-        output = ["Fedora", "whatever"]
-        return output
+        return ["Fedora", "whatever"]
 
     def delete(self):
         """ Remove the example instance """

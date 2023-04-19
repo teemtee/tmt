@@ -29,8 +29,7 @@ def locate_key(node: fmf.Tree, key: str) -> Optional[fmf.Tree]:
     # Return node only if the key is defined
     if node.get(key) is None:
         return None
-    else:
-        return node
+    return node
 
 
 def key_defined_in_leaf(node: fmf.Tree, key: str) -> bool:

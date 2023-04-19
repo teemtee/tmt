@@ -144,8 +144,7 @@ class ExecuteUpgrade(ExecuteInternal):
         # discover plugin.
         if self._discover_upgrade:
             return self._discover_upgrade
-        else:
-            return self.step.plan.discover
+        return self.step.plan.discover
 
     @discover.setter
     def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
@@ -203,7 +202,7 @@ class ExecuteUpgrade(ExecuteInternal):
         if len(plans) == 0:
             raise tmt.utils.ExecuteError(
                 f"No matching upgrade path found for '{self.upgrade_path}'.")
-        elif len(plans) > 1:
+        if len(plans) > 1:
             names = [plan.name for plan in plans]
             raise tmt.utils.ExecuteError(
                 f"Ambiguous upgrade path reference, found plans "

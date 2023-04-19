@@ -413,8 +413,7 @@ def check_md_file_respects_spec(md_path: Path) -> List[str]:
             warnings_list.append(
                 warn_required_section_is_absent.format(section_name))
             return 0
-        else:
-            return len(res)
+        return len(res)
 
     # Required sections don't exist
     if not required_section_exists(html_headings_from_file,

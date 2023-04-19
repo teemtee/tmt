@@ -726,8 +726,7 @@ class Core(
         """ Node name and optional summary """
         if self.summary:
             return f'{self.name} ({self.summary})'
-        else:
-            return self.name
+        return self.name
 
     def ls(self, summary: bool = False) -> None:
         """ List node """
@@ -1461,7 +1460,7 @@ class Plan(
             # and we need to help with an explicit cast().
             return cast(T, ''.join(expanded_ctx))
 
-        elif isinstance(data, dict):
+        if isinstance(data, dict):
             for key, value in data.items():
                 data[key] = self._expand_node_data(value, fmf_context)
         elif isinstance(data, list):
@@ -1499,8 +1498,7 @@ class Plan(
                 combined["TMT_TREE"] = str(self.worktree)
 
             return combined
-        else:
-            return self._environment
+        return self._environment
 
     def _get_environment_vars(self, node: fmf.Tree) -> EnvironmentType:
         """ Get variables from 'environment' and 'environment-file' keys """
@@ -1920,7 +1918,7 @@ class Plan(
                 f'These steps require running on their own, their combination '
                 f'with the given options is not compatible: '
                 f'{fmf.utils.listed(standalone)}.')
-        elif standalone:
+        if standalone:
             assert self._cli_context_object is not None  # narrow type
             self._cli_context_object.steps = standalone
             self.debug(
@@ -2552,8 +2550,7 @@ class Tree(tmt.utils.Common):
             filters, conditions, links, excludes)
         if Plan._opt('shallow'):
             return plans
-        else:
-            return [plan.import_plan() or plan for plan in plans]
+        return [plan.import_plan() or plan for plan in plans]
 
     def stories(
             self,
@@ -3032,8 +3029,7 @@ class Status(tmt.utils.Common):
                 if i + 1 == len(steps):
                     # Last enabled step, consider the whole plan done
                     return 'done'
-                else:
-                    return step_names[i]
+                return step_names[i]
         return 'todo'
 
     def plan_matches_filters(self, plan: Plan) -> bool:
@@ -3052,8 +3048,7 @@ class Status(tmt.utils.Common):
         """ Add color to a status column """
         if 'done' in content:
             return style(content, fg='green')
-        else:
-            return style(content, fg='yellow')
+        return style(content, fg='yellow')
 
     @classmethod
     def pad_with_spaces(cls, string: str) -> str:
@@ -3081,7 +3076,7 @@ class Status(tmt.utils.Common):
             plan_status = self.get_overall_plan_status(plan)
             if plan_status == 'done':
                 continue
-            elif plan_status == 'todo':
+            if plan_status == 'todo':
                 # If plan has no steps done, consider the whole run not done
                 earliest_step_index = -1
                 break
@@ -3609,4 +3604,5 @@ def resolve_dynamic_ref(
     Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
     ref = reference_tree.get("ref")
 
-    return ref
+    # RET504: Unnecessary variable assignment before `return` statement. Keeping for readability.
+    return ref  # noqa: RET504

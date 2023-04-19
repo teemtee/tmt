@@ -35,7 +35,7 @@ def find_value(data, key):
                 return find_value(value, key)
             except ValueError:
                 pass
-    return
+    return None
 
 
 if __name__ == "__main__":

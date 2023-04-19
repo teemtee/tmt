@@ -419,7 +419,7 @@ def read(
     if not makefile and not restraint and not polarion:
         raise ConvertError(
             "Please specify either a Makefile or a Restraint file or a Polarion case ID.")
-    elif makefile and restraint:
+    if makefile and restraint:
         if 'metadata' in filenames:
             filename = 'metadata'
             restraint_file = True
@@ -433,17 +433,15 @@ def read(
     elif makefile:
         if 'Makefile' not in filenames:
             raise ConvertError("Unable to find Makefile")
-        else:
-            filename = 'Makefile'
-            makefile_file = True
-            echo(style('Makefile ', fg='blue'), nl=False)
+        filename = 'Makefile'
+        makefile_file = True
+        echo(style('Makefile ', fg='blue'), nl=False)
     elif restraint:
         if 'metadata' not in filenames:
             raise ConvertError("Unable to find restraint metadata file")
-        else:
-            filename = 'metadata'
-            restraint_file = True
-            echo(style('Restraint ', fg='blue'), nl=False)
+        filename = 'metadata'
+        restraint_file = True
+        echo(style('Restraint ', fg='blue'), nl=False)
 
     if filename is None and not polarion:
         raise GeneralError('Filename is not defined and there is no import from Polarion')
@@ -694,7 +692,7 @@ def read_nitrate(
         echo("No {}testcase found for '{}'.".format(
             '' if disabled else 'non-disabled ', beaker_task))
         return common_data, []
-    elif len(testcases) > 1:
+    if len(testcases) > 1:
         echo(f"Multiple test cases found for '{beaker_task}'.")
 
     # Process individual test cases

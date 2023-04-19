@@ -900,20 +900,18 @@ class Common(_CommonBase):
             return parent if parent else local
         # Special handling for counting options (child overrides the
         # parent if it was defined)
-        elif option in ['debug', 'verbose']:
+        if option in ['debug', 'verbose']:
             winner = local if local else parent
             if winner is None:
                 winner = 0
             return winner
-        else:
-            return parent if parent is not None else local
+        return parent if parent is not None else local
 
     def _level(self) -> int:
         """ Hierarchy level """
         if self.parent is None:
             return -1
-        else:
-            return self.parent._level() + self._relative_indent
+        return self.parent._level() + self._relative_indent
 
     def _indent(
             self,
@@ -3452,8 +3450,7 @@ class StructuredField:
         """ Convert the StructuredField into a string """
         if self.version() == 0:
             return self._save_version_zero()
-        else:
-            return self._save()
+        return self._save()
 
     def header(self, content: Optional[str] = None) -> str:
         """ Get or set the header content """

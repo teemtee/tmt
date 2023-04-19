@@ -144,7 +144,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         if not response.ok:
             raise tmt.utils.ReportError(
                 f"Received non-ok status code from ReportPortal, response text is: {message}")
-        else:
-            self.debug(f"Response code from the server: {response.status_code}")
-            self.debug(f"Message from the server: {message}")
-            self.info("report", "Successfully uploaded.", "yellow")
+
+        self.debug(f"Response code from the server: {response.status_code}")
+        self.debug(f"Message from the server: {message}")
+        self.info("report", "Successfully uploaded.", "yellow")

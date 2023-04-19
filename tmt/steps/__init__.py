@@ -358,7 +358,7 @@ class Step(tmt.utils.Common):
             if status not in ['todo', 'done']:
                 raise tmt.utils.GeneralError(f"Invalid status '{status}'.")
             # Show status only if changed
-            elif self._status != status:
+            if self._status != status:
                 self._status = status
                 self.debug('status', status, color='yellow', level=2)
         # Return status

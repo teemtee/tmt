@@ -66,7 +66,7 @@ select = [
 #    "S",  # flake8-bandit
 #    "ISC",  # flake8-implicit-str-concat
     "PT",   # flake8-pytest-style
-#    "RET",  # flake8-return
+    "RET",  # flake8-return
 #    "SIM",  # flake8-simplify
 #    "ARG",  # flake8-unused-arguments
 #    "BLE",  # flake8-blind-except
