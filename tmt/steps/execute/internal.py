@@ -430,10 +430,19 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             # --test" option is provided
             if self._login_after_test:
                 assert test.path is not None  # narrow type
-                if self.discover.workdir is None:
+
+                # TODO: get rid of this as soon as we get rid of patching phase.discover
+                if isinstance(self.discover, tmt.steps.discover.Discover):
+                    parent_workdir = self.discover.workdir
+                else:
+                    assert self.discover.parent is not None  # narrow type
+
+                    parent_workdir = self.discover.parent.workdir
+
+                if parent_workdir is None:
                     cwd = test.path.unrooted()
                 else:
-                    cwd = self.discover.workdir / test.path.unrooted()
+                    cwd = parent_workdir / test.path.unrooted()
                 self._login_after_test.after_test(
                     result,
                     cwd=cwd,
