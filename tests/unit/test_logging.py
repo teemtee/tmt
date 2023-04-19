@@ -19,11 +19,7 @@ def _exercise_logger(
         reset: bool = True) -> None:
     labels = labels or []
 
-    if labels:
-        prefix = render_labels(labels) + indent_by + ' '
-
-    else:
-        prefix = indent_by
+    prefix = render_labels(labels) + indent_by + ' ' if labels else indent_by
 
     if reset:
         caplog.clear()

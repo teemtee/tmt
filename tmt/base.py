@@ -502,7 +502,7 @@ def normalize_require(
     if raw_require is None:
         return []
 
-    if isinstance(raw_require, str) or isinstance(raw_require, dict):
+    if isinstance(raw_require, (str, dict)):
         return [dependency_factory(raw_require)]
 
     if isinstance(raw_require, list):
@@ -690,10 +690,7 @@ class Core(
 
         # Detect relative path of the last source from the metadata tree root
         relative_path = Path(self.node.sources[-1]).relative_to(self.node.root)
-        if str(relative_path) == '.':
-            relative_path = Path('/')
-        else:
-            relative_path = Path('/') / relative_path
+        relative_path = Path('/') if str(relative_path) == '.' else Path('/') / relative_path
 
         # Add fmf path if the tree is nested deeper in the git repo
         if fmf_id.path:
@@ -774,7 +771,7 @@ class Core(
     def _lint_keys(self, additional_keys: List[str]) -> List[str]:
         """ Return list of invalid keys used, empty when all good """
         known_keys = additional_keys + self._keys()
-        return [key for key in self.node.get().keys() if key not in known_keys]
+        return [key for key in self.node.get() if key not in known_keys]
 
     def lint_validate(self) -> LinterReturn:
         """ C000: fmf node should pass the schema validation """
@@ -1021,10 +1018,7 @@ class Test(
         try:
             directory = Path(node.sources[-1]).parent
             relative_path = directory.relative_to(Path(node.root))
-            if relative_path == Path('.'):
-                default_path = Path('/')
-            else:
-                default_path = Path('/') / relative_path
+            default_path = Path('/') if relative_path == Path('.') else Path('/') / relative_path
         except (AttributeError, IndexError):
             default_path = Path('/')
 
@@ -1057,7 +1051,8 @@ class Test(
                     dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)
                     ]
 
-            elif key == 'test' and isinstance(value, ShellScript):
+            # Combining `if` branches using `or` here would result in long, complex line.
+            elif key == 'test' and isinstance(value, ShellScript):  # noqa: SIM114
                 data[key] = str(value)
 
             elif key == 'path' and isinstance(value, Path):
@@ -2914,20 +2909,20 @@ class Run(tmt.utils.Common):
     def follow(self) -> None:
         """ Periodically check for new lines in the log. """
         assert self.workdir is not None  # narrow type
-        logfile = open(self.workdir / tmt.log.LOG_FILENAME)
-        # Move to the end of the file
-        logfile.seek(0, os.SEEK_END)
-        # Rewind some lines back to show more context
-        location = logfile.tell()
-        read_lines = 0
-        while location >= 0:
-            logfile.seek(location)
-            location -= 1
-            current_char = logfile.read(1)
-            if current_char == '\n':
-                read_lines += 1
-            if read_lines > FOLLOW_LINES:
-                break
+        with open(self.workdir / tmt.log.LOG_FILENAME) as logfile:
+            # Move to the end of the file
+            logfile.seek(0, os.SEEK_END)
+            # Rewind some lines back to show more context
+            location = logfile.tell()
+            read_lines = 0
+            while location >= 0:
+                logfile.seek(location)
+                location -= 1
+                current_char = logfile.read(1)
+                if current_char == '\n':
+                    read_lines += 1
+                if read_lines > FOLLOW_LINES:
+                    break
 
         while True:
             line = logfile.readline()
@@ -3212,30 +3207,30 @@ class Clean(tmt.utils.Common):
         # Clean guests if provision is done but finish is not done
         successful = True
         for plan in run.plans:
-            if plan.provision.status() == 'done':
-                if plan.finish.status() != 'done':
-                    # Wake up provision to load the active guests
-                    plan.provision.wake()
-                    if not self._matches_how(plan):
-                        continue
-                    if self.opt('dry'):
-                        self.verbose(
-                            f"Would stop guests in run '{run.workdir}'"
-                            f" plan '{plan.name}'.", shift=1)
-                    else:
-                        self.verbose(f"Stopping guests in run '{run.workdir}' "
-                                     f"plan '{plan.name}'.", shift=1)
-                        # Set --quiet to avoid finish logging to terminal
-                        quiet = self._cli_options['quiet']
-                        self._cli_options['quiet'] = True
-                        try:
-                            plan.finish.go()
-                        except tmt.utils.GeneralError as error:
-                            self.warn(f"Could not stop guest in run "
-                                      f"'{run.workdir}': {error}.", shift=1)
-                            successful = False
-                        finally:
-                            self._cli_options['quiet'] = quiet
+            if plan.provision.status() == 'done' and plan.finish.status() != 'done':
+                # Wake up provision to load the active guests
+                plan.provision.wake()
+                if not self._matches_how(plan):
+                    continue
+                if self.opt('dry'):
+                    self.verbose(
+                        f"Would stop guests in run '{run.workdir}'"
+                        f" plan '{plan.name}'.", shift=1)
+                else:
+                    self.verbose(f"Stopping guests in run '{run.workdir}' "
+                                 f"plan '{plan.name}'.", shift=1)
+                    # Set --quiet to avoid finish logging to terminal
+
+                    quiet = self._cli_options['quiet']
+                    self._cli_options['quiet'] = True
+                    try:
+                        plan.finish.go()
+                    except tmt.utils.GeneralError as error:
+                        self.warn(f"Could not stop guest in run "
+                                  f"'{run.workdir}': {error}.", shift=1)
+                        successful = False
+                    finally:
+                        self._cli_options['quiet'] = quiet
         return successful
 
     def guests(self) -> bool:

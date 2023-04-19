@@ -380,11 +380,7 @@ def format_rulings(rulings: Iterable[LinterRuling]) -> Generator[str, None, None
                 _OUTCOME_TO_MARK[eventual_outcome],
                 fg=_OUTCOME_TO_COLOR[eventual_outcome])
 
-            if actual_outcome == eventual_outcome:
-                eventual = ' ' * 8
-
-            else:
-                eventual = f' -> {eventual_status}'
+            eventual = ' ' * 8 if actual_outcome == eventual_outcome else f' -> {eventual_status}'
 
         else:
             eventual = ''

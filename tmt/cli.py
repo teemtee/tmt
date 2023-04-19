@@ -1723,7 +1723,8 @@ def setup_completion(shell: str, install: bool) -> None:
     else:
         script = Path(config.path) / f'{COMPLETE_SCRIPT}.{shell}'
 
-    out = open(script, 'w') if install else sys.stdout
+    # SIM115: Use context handler for opening files. Would not reduce complexity here.
+    out = open(script, 'w') if install else sys.stdout  # noqa: SIM115
     subprocess.run(f'{COMPLETE_VARIABLE}={shell}_source tmt',
                    shell=True, stdout=out)
 

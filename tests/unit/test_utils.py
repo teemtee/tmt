@@ -661,10 +661,7 @@ class TestValidateGitStatus:
 
         # In local repo:
         # Init tmt and add test
-        if use_path:
-            fmf_root = mine / 'fmf_root'
-        else:
-            fmf_root = mine
+        fmf_root = mine / 'fmf_root' if use_path else mine
         tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
         fmf_root.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript(f'git add {fmf_root} {fmf_root / "main.fmf"}').to_shell_command(),
@@ -733,10 +730,7 @@ class TestValidateGitStatus:
             root_logger):
         origin, mine = origin_and_local_git_repo
 
-        if use_path:
-            fmf_root = origin / 'fmf_root'
-        else:
-            fmf_root = origin
+        fmf_root = origin / 'fmf_root' if use_path else origin
         tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
         fmf_root.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript('git add -A').to_shell_command(), cwd=origin)

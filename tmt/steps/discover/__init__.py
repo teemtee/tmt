@@ -327,10 +327,7 @@ class Discover(tmt.steps.Step):
 
             yield from self._tests[phase_name]
 
-        if phase_name is None:
-            iterator = _iter_all_tests
-        else:
-            iterator = _iter_phase_tests
+        iterator = _iter_all_tests if phase_name is None else _iter_phase_tests
 
         if enabled is None:
             return list(iterator())

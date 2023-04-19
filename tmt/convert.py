@@ -6,6 +6,7 @@ import pprint
 import re
 import shlex
 import subprocess
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
@@ -628,9 +629,8 @@ def filter_common_data(
     if len(individual_data) > 1:
         for testcase in individual_data[1:]:
             for key, value in testcase.items():
-                if key in common_candidates:
-                    if value != common_candidates[key]:
-                        common_candidates.pop(key)
+                if key in common_candidates and value != common_candidates[key]:
+                    common_candidates.pop(key)
                 if key in histogram:
                     histogram[key] += 1
 
@@ -858,7 +858,7 @@ def read_polarion_case(
         echo(style('description: ', fg='green') + current_data['description'])
 
     # Update status
-    status = True if polarion_case.status == 'approved' else False
+    status = polarion_case.status == 'approved'
     if not current_data.get('enabled') or current_data['enabled'] != status:
         current_data['enabled'] = status
         echo(style('enabled: ', fg='green') + str(current_data['enabled']))
@@ -1116,10 +1116,9 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
         'extra-hardware', 'extra-pepa']
     sorted_data = {}
     for key in tmt.base.Test._keys() + extra_keys:
-        try:
+        with suppress(KeyError):
             sorted_data[key] = data[key]
-        except KeyError:
-            pass
+
     # Store metadata into a fmf file
     try:
         with open(path, 'w', encoding='utf-8') as fmf_file:

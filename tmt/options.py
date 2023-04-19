@@ -1,6 +1,7 @@
 """ Common options and the MethodCommand class """
 
 import re
+
 import textwrap
 from typing import (TYPE_CHECKING, Any, Callable, Dict, List, NamedTuple,
                     Optional, Type, Union)
@@ -10,6 +11,7 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
+import contextlib
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
 # we need to define FC on our own.
@@ -446,10 +448,8 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
 
                 return None
 
-            try:
+            with contextlib.suppress(IndexError):
                 how = _find_how(args[:])
-            except IndexError:
-                pass
 
             # Find method with the first matching prefix
             if how is not None:

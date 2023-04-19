@@ -57,11 +57,7 @@ class GuestLocal(tmt.Guest):
         environment.update(env or {})
         environment.update(self.parent.plan.environment)
 
-        if isinstance(command, Command):
-            actual_command = command
-
-        else:
-            actual_command = command.to_shell_command()
+        actual_command = command if isinstance(command, Command) else command.to_shell_command()
 
         if friendly_command is None:
             friendly_command = str(actual_command)

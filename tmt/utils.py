@@ -22,6 +22,7 @@ import time
 import unicodedata
 import urllib.parse
 from collections import OrderedDict
+from contextlib import suppress
 from functools import lru_cache
 from threading import Thread
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Generic,
@@ -200,10 +201,8 @@ class Config:
     def last_run(self, workdir: Path) -> None:
         """ Set the last run to the given run workdir """
 
-        try:
+        with suppress(OSError):
             self._last_run_symlink.unlink()
-        except OSError:
-            pass
 
         try:
             self._last_run_symlink.symlink_to(workdir)
@@ -492,7 +491,8 @@ class Command:
 
         # Run the command in an interactive mode if requested
         if interactive:
-            try:
+            # Interactive mode can return non-zero if the last command failed, ignore errors here.
+            with suppress(subprocess.CalledProcessError):
                 subprocess.run(
                     self.to_popen(),
                     cwd=cwd,
@@ -500,11 +500,6 @@ class Command:
                     env=actual_env,
                     check=True,
                     executable=executable)
-
-            except subprocess.CalledProcessError:
-                # Interactive mode can return non-zero if the last command
-                # failed, ignore errors here
-                pass
 
             return CommandOutput(None, None)
 
@@ -1097,11 +1092,7 @@ class Common(_CommonBase):
         # Prepare the workdir name from given id or path
         if isinstance(id_, Path):
             # Use provided directory if full path given
-            if '/' in str(id_):
-                workdir = id_
-            # Construct directory name under workdir root
-            else:
-                workdir = workdir_root / id_
+            workdir = id_ if '/' in str(id_) else workdir_root / id_
             # Resolve any relative paths
             workdir = workdir.resolve()
         # Weird workdir id
@@ -1178,10 +1169,9 @@ class Common(_CommonBase):
     def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
         """ Clean up the work directory """
         directory = path or self._workdir_name()
-        if directory is not None:
-            if directory.is_dir():
-                self.debug(f"Clean up workdir '{directory}'.", level=2)
-                shutil.rmtree(directory)
+        if directory is not None and directory.is_dir():
+            self.debug(f"Clean up workdir '{directory}'.", level=2)
+            shutil.rmtree(directory)
         self._workdir = None
 
     @property
@@ -1402,10 +1392,7 @@ def render_run_exception(exception: RunError) -> List[str]:
     # Check verbosity level used during raising exception,
     # Supported way to correctly get verbosity is
     # tmt.util.Common.opt('verbose')
-    if isinstance(exception.caller, Common):
-        verbose = exception.caller.opt('verbose')
-    else:
-        verbose = 0
+    verbose = exception.caller.opt('verbose') if isinstance(exception.caller, Common) else 0
     for name, output in (('stdout', exception.stdout), ('stderr', exception.stderr)):
         if not output:
             continue
@@ -2265,8 +2252,9 @@ class SerializableContainer(DataContainer):
         """ Extract keys from given object, and save them in a container """
 
         data = cls()
-
-        for key in cls.keys():
+        # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
+        # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
+        for key in cls.keys():  # noqa: SIM118
             value = getattr(obj, key)
             if value is not None:
                 setattr(data, key, value)
@@ -2289,7 +2277,7 @@ class SerializableContainer(DataContainer):
 
         fields = self.to_dict()
 
-        for name in fields.keys():
+        for name in fields:
             field: dataclasses.Field[Any] = dataclass_field_by_name(self, name)
             serialize_callback = dataclass_field_metadata(field).serialize_callback
 
@@ -2422,7 +2410,7 @@ def shell_variables(
     """
 
     # Convert from list/tuple
-    if isinstance(data, list) or isinstance(data, tuple):
+    if isinstance(data, (list, tuple)):
         converted_data = []
         for item in data:
             splitted_item = item.split('=')
@@ -2802,7 +2790,9 @@ class RetryStrategy(urllib3.util.retry.Retry):
         error = cast(Optional[Exception], kwargs.get('error', None))
 
         # Detect a subset of exception we do not want to follow with a retry.
-        if error is not None:
+        # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
+        # readibility.
+        if error is not None:  # noqa: SIM102
             # Failed certificate verification - this issue will probably not get any better
             # should we try again.
             if isinstance(error, urllib3.exceptions.SSLError) \
@@ -3816,7 +3806,7 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
     for step in ('discover', 'execute', 'finish', 'prepare', 'provision', 'report'):
         step_schema_prefix = f'/schemas/{step}/'
 
-        step_plugin_schema_ids = [schema_id for schema_id in store.keys() if schema_id.startswith(
+        step_plugin_schema_ids = [schema_id for schema_id in store if schema_id.startswith(
             step_schema_prefix) and schema_id not in PLAN_SCHEMA_IGNORED_IDS]
 
         refs: List[Schema] = [
@@ -4225,11 +4215,7 @@ def dataclass_normalize_field(
     if not normalize_callback:
         normalize_callback = getattr(container, f'_normalize_{keyname}', None)
 
-    if normalize_callback:
-        value = normalize_callback(key_address, raw_value, logger)
-
-    else:
-        value = raw_value
+    value = normalize_callback(key_address, raw_value, logger) if normalize_callback else raw_value
 
     # As mentioned in BasePlugin._update_data_from_options, the test
     # performed there is questionable. To gain more visibility into how
@@ -4539,8 +4525,9 @@ class NormalizeKeysMixin(_CommonBase):
         Yields:
             pairs of key name and its value.
         """
-
-        for keyname in self.keys():
+        # SIM118 Use `{key} in {dict}` instead of `{key} in {dict}.keys().
+        # "Type[SerializableContainerDerivedType]" has no attribute "__iter__" (not iterable)
+        for keyname in self.keys():  # noqa: SIM118
             yield (keyname, getattr(self, keyname))
 
     # TODO: exists for backward compatibility for the transition period. Once full

@@ -2,6 +2,7 @@ import email.utils
 import os
 import re
 import types
+from contextlib import suppress
 from functools import lru_cache
 from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple,
                     Union, cast)
@@ -113,7 +114,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     html = tmt.utils.markdown_to_html(test_md)
     html_splitlines = html.splitlines()
 
-    for key in sections_headings.keys():
+    for key in sections_headings:
         result: HeadingsType = []
         i = 0
         while html_splitlines:
@@ -398,11 +399,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             # Check for existing Nitrate tests with the same fmf id
             if not duplicate:
                 testcases = _nitrate_find_fmf_testcases(test)
-                try:
-                    # Select the first found testcase if any
+                with suppress(StopIteration):
                     nitrate_case = next(testcases)
-                except StopIteration:
-                    pass
             if not nitrate_case:
                 # Summary for TCMS case
                 extra_summary = prepare_extra_summary(test, append_summary)
@@ -572,10 +570,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         }
     for section, attribute in section_to_attr.items():
         if attribute is None:
-            try:
+            with suppress(tmt.utils.StructuredFieldError):
                 struct_field.remove(section)
-            except tmt.utils.StructuredFieldError:
-                pass
         else:
             struct_field.set(section, attribute)
             echo(style(section + ': ', fg='green') + attribute.strip())
@@ -644,9 +640,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             nitrate_case.identifier), fg='magenta'))
 
     # Optionally link Bugzilla to Nitrate case
-    if link_bugzilla and verifies_bug_ids:
-        if not dry_mode:
-            tmt.export.bz_set_coverage(verifies_bug_ids, nitrate_case.id, NITRATE_TRACKER_ID)
+    if link_bugzilla and verifies_bug_ids and not dry_mode:
+        tmt.export.bz_set_coverage(verifies_bug_ids, nitrate_case.id, NITRATE_TRACKER_ID)
 
 
 @tmt.base.Test.provides_export('nitrate')

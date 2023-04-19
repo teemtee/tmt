@@ -113,7 +113,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         # Zip the report
         bytestream = io.BytesIO()
-        with zipfile.ZipFile(bytestream, "w", compression=zipfile.ZIP_DEFLATED,
+        # SIM117: Use a single `with` statement with multiple contexts instead of nested `with`
+        # statements. Here, `zipstream` is being used in the second nested context.
+        with zipfile.ZipFile(bytestream, "w", compression=zipfile.ZIP_DEFLATED,  # noqa: SIM117
                              compresslevel=1) as zipstream:
             # XML file names are irrelevant to ReportPortal
             with zipstream.open("tests.xml", "w") as entry:

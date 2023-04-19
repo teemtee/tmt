@@ -181,10 +181,7 @@ def indent(
         key = click.style(key, fg=color)
 
     # Prepare prefix if labels provided
-    if labels:
-        prefix = render_labels(labels).ljust(labels_padding) + ' '
-    else:
-        prefix = ''
+    prefix = render_labels(labels).ljust(labels_padding) + ' ' if labels else ''
 
     # Handle key only
     if value is None:
@@ -290,7 +287,9 @@ class _Formatter(logging.Formatter):
         # Original code from Formatter.format() - hard to inherit when overriding
         # Formatter.format()...
         s = self._decolorize(self.formatMessage(record))
-        if record.exc_info:
+        # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
+        # readability.
+        if record.exc_info:  # noqa: SIM102
             # Cache the traceback text to avoid converting it multiple times
             # (it's constant anyway)
             if not record.exc_text:
@@ -331,7 +330,7 @@ class VerbosityLevelFilter(logging.Filter):
         if message_verbosity_level is None:
             return True
 
-        return True if details['logger_verbosity_level'] >= message_verbosity_level else False
+        return details['logger_verbosity_level'] >= message_verbosity_level
 
 
 class DebugLevelFilter(logging.Filter):
@@ -349,7 +348,7 @@ class DebugLevelFilter(logging.Filter):
         if message_debug_level is None:
             return True
 
-        return True if details['logger_debug_level'] >= message_debug_level else False
+        return details['logger_debug_level'] >= message_debug_level
 
 
 class QuietnessFilter(logging.Filter):
@@ -563,10 +562,7 @@ class Logger:
         """
 
         verbosity_level = cast(Optional[int], kwargs.get('verbose', None))
-        if verbosity_level is None:
-            pass
-
-        elif verbosity_level == 0:
+        if verbosity_level is None or verbosity_level == 0:
             pass
 
         else:
@@ -580,10 +576,7 @@ class Logger:
         else:
             debug_level_from_option = cast(Optional[int], kwargs.get('debug', None))
 
-            if debug_level_from_option is None:
-                pass
-
-            elif debug_level_from_option == 0:
+            if debug_level_from_option is None or debug_level_from_option == 0:
                 pass
 
             else:

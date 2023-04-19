@@ -241,8 +241,8 @@ def test_decide_colorization(
     monkeypatch.delenv('TMT_NO_COLOR', raising=False)
     monkeypatch.delenv('TMT_FORCE_COLOR', raising=False)
 
-    no_color = True if testcase.set_no_color_option else False
-    force_color = True if testcase.set_force_color_option else False
+    no_color = bool(testcase.set_no_color_option)
+    force_color = bool(testcase.set_force_color_option)
 
     if testcase.set_no_color_envvar:
         monkeypatch.setenv('NO_COLOR', '')

@@ -841,10 +841,7 @@ class GuestSsh(Guest):
         if not self._ssh_socket_path:
             # Use '/run/user/uid' if it exists, '/tmp' otherwise
             run_dir = Path(f"/run/user/{os.getuid()}")
-            if run_dir.is_dir():
-                socket_dir = run_dir / "tmt"
-            else:
-                socket_dir = Path("/tmp")
+            socket_dir = run_dir / "tmt" if run_dir.is_dir() else Path("/tmp")
             socket_dir.mkdir(exist_ok=True)
             self._ssh_socket_path = Path(tempfile.mktemp(dir=socket_dir))
         return self._ssh_socket_path
@@ -963,9 +960,8 @@ class GuestSsh(Guest):
         """
 
         # Abort if guest is unavailable
-        if self.guest is None:
-            if not self.opt('dry'):
-                raise tmt.utils.GeneralError('The guest is not available.')
+        if self.guest is None and not self.opt('dry'):
+            raise tmt.utils.GeneralError('The guest is not available.')
 
         ssh_command: tmt.utils.Command = self._ssh_command()
 
@@ -1036,9 +1032,8 @@ class GuestSsh(Guest):
         sudo on the Guest (e.g. pushing to r/o destination)
         """
         # Abort if guest is unavailable
-        if self.guest is None:
-            if not self.opt('dry'):
-                raise tmt.utils.GeneralError('The guest is not available.')
+        if self.guest is None and not self.opt('dry'):
+            raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the push command
         options = options or DEFAULT_RSYNC_PUSH_OPTIONS
@@ -1104,9 +1099,8 @@ class GuestSsh(Guest):
         and 'extend_options' to extend them (e.g. by exclude).
         """
         # Abort if guest is unavailable
-        if self.guest is None:
-            if not self.opt('dry'):
-                raise tmt.utils.GeneralError('The guest is not available.')
+        if self.guest is None and not self.opt('dry'):
+            raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the pull command
         options = options or DEFAULT_RSYNC_PULL_OPTIONS

@@ -116,10 +116,9 @@ def _compare_xml_node(tree_path: List[str], expected: xml.dom.Node, actual: xml.
 
 
 def assert_xml(actual_filepath, expected):
-    with open(actual_filepath) as f:
-        with xml.dom.minidom.parse(f) as actual_dom:
-            with xml.dom.minidom.parseString(expected) as expected_dom:
-                assert _compare_xml_node([expected_dom.nodeName], expected_dom, actual_dom)
+    with open(actual_filepath) as f, xml.dom.minidom.parse(f) as actual_dom, \
+            xml.dom.minidom.parseString(expected) as expected_dom:
+        assert _compare_xml_node([expected_dom.nodeName], expected_dom, actual_dom)
 
 
 @pytest.mark.skipif(pytest.__version__.startswith('3'),
