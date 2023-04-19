@@ -21,7 +21,7 @@ import tmt.steps.discover
 import tmt.utils
 from tmt.utils import (Command, Common, GeneralError, Path, ShellScript,
                        StructuredField, StructuredFieldError,
-                       WaitingIncomplete, WaitingTimedOutError, _CommonBase,
+                       WaitingIncompleteError, WaitingTimedOutError, _CommonBase,
                        duration_to_seconds, filter_paths, listify,
                        public_git_url, validate_git_status, wait)
 
@@ -250,7 +250,7 @@ def test_duration_to_seconds():
         duration_to_seconds('1sm')
 
 
-class test_structured_field(unittest.TestCase):
+class TestStructuredField(unittest.TestCase):
     """ Self Test """
 
     def setUp(self):
@@ -645,7 +645,7 @@ def test_get_distgit_handler_explicit():
     assert instance.__class__.__name__ == 'RedHatGitlab'
 
 
-def test_FedoraDistGit(tmpdir):
+def test_fedora_dist_git(tmpdir):
     # Fake values, production hash is too long
     path = Path(str(tmpdir))
     path.joinpath('sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
@@ -655,7 +655,8 @@ def test_FedoraDistGit(tmpdir):
             "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=path)
 
 
-class Test_validate_git_status:
+class TestValidateGitStatus:
+    @classmethod
     @pytest.mark.parametrize("use_path",
                              [False, True], ids=["without path", "with path"])
     def test_all_good(
@@ -684,6 +685,7 @@ class Test_validate_git_status:
         validation = validate_git_status(test)
         assert validation == (True, '')
 
+    @classmethod
     def test_no_remote(cls, local_git_repo: Path, root_logger):
         tmpdir = local_git_repo
         tmt.Tree.init(logger=root_logger, path=tmpdir, template=None, force=None)
@@ -698,6 +700,7 @@ class Test_validate_git_status:
         assert not val
         assert "Failed to get remote branch" in msg
 
+    @classmethod
     def test_untracked_fmf_root(cls, local_git_repo: Path, root_logger):
         # local repo is enough since this can't get passed 'is pushed' check
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
@@ -713,6 +716,7 @@ class Test_validate_git_status:
         validate = validate_git_status(test)
         assert validate == (False, 'Uncommitted changes in .fmf/version')
 
+    @classmethod
     def test_untracked_sources(cls, local_git_repo: Path, root_logger):
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
         local_git_repo.joinpath('main.fmf').write_text('test: echo')
@@ -727,6 +731,7 @@ class Test_validate_git_status:
         validate = validate_git_status(test)
         assert validate == (False, 'Uncommitted changes in main.fmf')
 
+    @classmethod
     @pytest.mark.parametrize("use_path",
                              [False, True], ids=["without path", "with path"])
     def test_local_changes(
@@ -764,6 +769,7 @@ class Test_validate_git_status:
         assert validation_result == (
             False, "Uncommitted changes in " + ('fmf_root/' if use_path else '') + "main.fmf")
 
+    @classmethod
     def test_not_pushed(cls, origin_and_local_git_repo: Tuple[Path, Path], root_logger):
         # No need for original repo (it is required just to have remote in
         # local clone)
@@ -834,7 +840,7 @@ def test_wait(root_logger):
 
         ticks.pop()
 
-        raise WaitingIncomplete()
+        raise WaitingIncompleteError()
 
     # We want to reach end of our list, give enough time budget.
     r = wait(Common(logger=root_logger), check, datetime.timedelta(seconds=3600), tick=0.01)
@@ -851,7 +857,7 @@ def test_wait_timeout(root_logger):
 
     check = unittest.mock.MagicMock(
         __name__='mock_check',
-        side_effect=WaitingIncomplete)
+        side_effect=WaitingIncompleteError)
 
     # We want to reach end of time budget before reaching end of the list.
     with pytest.raises(WaitingTimedOutError):

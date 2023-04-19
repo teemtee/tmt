@@ -19,8 +19,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.options import option
-from tmt.utils import (WORKDIR_ROOT, Command, Path, ProvisionError,
-                       ShellScript, retry_session)
+from tmt.utils import WORKDIR_ROOT, Command, Path, ProvisionError, ShellScript, retry_session
 
 if TYPE_CHECKING:
     import tmt.base
@@ -250,7 +249,7 @@ class GuestTestcloud(tmt.GuestSsh):
             # Note the type of variable 'state' is 'Any'. Hence, we don't use:
             #     return state == 'running'
             # to avoid error from type checking.
-            return True if state == 'running' else False
+            return bool(state == "running")
         except libvirt.libvirtError:
             return False
 
@@ -268,7 +267,7 @@ class GuestTestcloud(tmt.GuestSsh):
             except requests.RequestException:
                 pass
             finally:
-                raise tmt.utils.WaitingIncomplete()
+                raise tmt.utils.WaitingIncompleteError
 
         try:
             return tmt.utils.wait(
@@ -339,7 +338,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 command += Command("-t", key_type)
             self.run(command)
             self.verbose('key', str(self.key[0]), 'green')
-            with open(self.workdir / f'{key_name}.pub', 'r') as pubkey_file:
+            with open(self.workdir / f'{key_name}.pub') as pubkey_file:
                 public_key = pubkey_file.read()
 
         # Place public key content into the machine configuration
@@ -624,7 +623,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
         # Give info about provided data
         data = TestcloudGuestData(**{
             key: self.get(key)
-            for key in TestcloudGuestData.keys()
+            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+            # "Type[TestcloudGuestData]" has no attribute "__iter__" (not iterable)
+            for key in TestcloudGuestData.keys()  # noqa: SIM118
             })
 
         # Once plan schema is enforced this won't be necessary

@@ -1334,7 +1334,7 @@ class StructuredFieldError(GeneralError):
     """ StructuredField parsing error """
 
 
-class WaitingIncomplete(GeneralError):
+class WaitingIncompleteError(GeneralError):
     """ Waiting incomplete """
 
     def __init__(self) -> None:
@@ -2830,7 +2830,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
 # ignore[type-arg]: base class is a generic class, but we cannot list
 # its parameter type, because in Python 3.6 the class "is not subscriptable".
-class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]
+class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
     """
     Context manager for requests.Session() with retries and timeout
     """
@@ -3681,7 +3681,7 @@ def git_clone(
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
 # in Python 3.6 the class "is not subscriptable".
-class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type-arg]
+class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
     """ Updatable message suitable for progress-bar-like reporting """
 
     def __init__(
@@ -4096,9 +4096,9 @@ def wait(
     if tick <= 0:
         raise GeneralError('Tick must be a positive integer')
 
-    NOW = time.monotonic
+    monotomic_clock = time.monotonic
 
-    deadline = NOW() + timeout.total_seconds()
+    deadline = monotomic_clock() + timeout.total_seconds()
 
     parent.debug(
         'wait',
@@ -4107,7 +4107,7 @@ def wait(
         f" checking every {tick:.2f} seconds")
 
     while True:
-        now = NOW()
+        now = monotomic_clock()
 
         if now > deadline:
             parent.debug(
@@ -4122,7 +4122,7 @@ def wait(
 
             # Perform one extra check: if `check()` succeeded, but took more time than
             # allowed, it should be recognized as a failed waiting too.
-            now = NOW()
+            now = monotomic_clock()
 
             if now > deadline:
                 parent.debug(
@@ -4139,10 +4139,10 @@ def wait(
 
             return ret
 
-        except WaitingIncomplete:
+        except WaitingIncompleteError:
             # Update timestamp for more accurate logging - check() could have taken minutes
             # to complete, using the pre-check timestamp for logging would be misleading.
-            now = NOW()
+            now = monotomic_clock()
 
             parent.debug(
                 'wait',
@@ -4563,17 +4563,17 @@ class NormalizeKeysMixin(_CommonBase):
             logger: tmt.log.Logger) -> None:
         """ Extract values for class-level attributes, and verify they match declared types. """
 
-        LOG_SHIFT, LOG_LEVEL = 2, 4
+        log_shift, log_level = 2, 4
 
         debug_intro = functools.partial(
             logger.debug,
-            shift=LOG_SHIFT - 1,
-            level=LOG_LEVEL,
+            shift=log_shift - 1,
+            level=log_level,
             topic=tmt.log.Topic.KEY_NORMALIZATION)
         debug = functools.partial(
             logger.debug,
-            shift=LOG_SHIFT,
-            level=LOG_LEVEL,
+            shift=log_shift,
+            level=log_level,
             topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         debug_intro('key source')
@@ -4596,7 +4596,7 @@ class NormalizeKeysMixin(_CommonBase):
             value: Any = None
 
             # Verbose, let's hide it a bit deeper.
-            debug('dict', self.__dict__, level=LOG_LEVEL + 1)
+            debug('dict', self.__dict__, level=log_level + 1)
 
             if hasattr(self, keyname):
                 # If the key exists as instance's attribute already, it is because it's been

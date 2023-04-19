@@ -1339,7 +1339,7 @@ class Plan(
     _original_plan: Optional['Plan'] = None
     _remote_plan_fmf_id: Optional[FmfId] = None
 
-    _extra_L2_keys = [
+    _extra_l2_keys = [
         'context',
         'environment',
         'environment-file',
@@ -1761,7 +1761,7 @@ class Plan(
         """ P001: all keys are known """
 
         invalid_keys = self._lint_keys(
-            list(self.step_names(enabled=True, disabled=True)) + self._extra_L2_keys)
+            list(self.step_names(enabled=True, disabled=True)) + self._extra_l2_keys)
 
         if invalid_keys:
             for key in invalid_keys:
@@ -1948,7 +1948,7 @@ class Plan(
     def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys)
 
-        for key in self._extra_L2_keys:
+        for key in self._extra_l2_keys:
             value = self.node.data.get(key)
             if value:
                 data[key] = value

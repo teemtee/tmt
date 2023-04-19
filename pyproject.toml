@@ -57,7 +57,7 @@ select = [
     "W",  # pycodestyle
 #    "C90",  # mccabe
 #    "I",  # isort
-#    "N",  # pep8-naming
+    "N",  # pep8-naming
 #    "UP",  # pyupgrade
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions

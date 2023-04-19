@@ -458,7 +458,7 @@ class GuestBeaker(tmt.GuestSsh):
                 if state == 'Reserved':
                     return current
 
-                raise tmt.utils.WaitingIncomplete()
+                raise tmt.utils.WaitingIncompleteError()
 
             try:
                 guest_info = tmt.utils.wait(

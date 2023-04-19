@@ -711,7 +711,7 @@ class Guest(tmt.utils.Common):
                 self.execute(Command('whoami'), silent=True)
 
             except tmt.utils.RunError:
-                raise tmt.utils.WaitingIncomplete()
+                raise tmt.utils.WaitingIncompleteError()
 
         try:
             tmt.utils.wait(
@@ -1248,11 +1248,11 @@ class GuestSsh(Guest):
                     return
 
                 # Same boot time, reboot didn't happen yet, retrying
-                raise tmt.utils.WaitingIncomplete()
+                raise tmt.utils.WaitingIncompleteError()
 
             except tmt.utils.RunError:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.WaitingIncomplete()
+                raise tmt.utils.WaitingIncompleteError()
 
         timeout = timeout or CONNECTION_TIMEOUT
 

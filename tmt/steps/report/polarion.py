@@ -1,8 +1,8 @@
 import dataclasses
 import datetime
 import os
-import xml.etree.ElementTree as ET
 from typing import Optional
+from xml.etree import ElementTree
 
 from requests import post
 
@@ -176,7 +176,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             'logs', 'compose_id']
 
         junit_suite = make_junit_xml(self)
-        xml_tree = ET.fromstring(junit_suite.to_xml_string([junit_suite]))
+        xml_tree = ElementTree.fromstring(junit_suite.to_xml_string([junit_suite]))
 
         properties = {
             'polarion-project-id': project_id,
@@ -192,9 +192,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         if use_facts:
             properties['polarion_custom_hostname'] = self.step.plan.provision.guests()[0].guest
             properties['polarion_custom_arch'] = self.step.plan.provision.guests()[0].facts.arch
-        testsuites_properties = ET.SubElement(xml_tree, 'properties')
+        testsuites_properties = ElementTree.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
-            ET.SubElement(testsuites_properties, 'property', attrib={
+            ElementTree.SubElement(testsuites_properties, 'property', attrib={
                 'name': name, 'value': value})
 
         testsuite = xml_tree.find('testsuite')
@@ -224,16 +224,16 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             assert testsuite is not None
             test_case = testsuite.find(f"*[@name='{result.name}']")
             assert test_case is not None
-            properties_elem = ET.SubElement(test_case, 'properties')
+            properties_elem = ElementTree.SubElement(test_case, 'properties')
             for name, value in test_properties.items():
-                ET.SubElement(properties_elem, 'property', attrib={
+                ElementTree.SubElement(properties_elem, 'property', attrib={
                     'name': name, 'value': value})
 
         assert self.workdir is not None
 
         f_path = self.get("file", self.workdir / DEFAULT_NAME)
         with open(f_path, 'wb') as fw:
-            ET.ElementTree(xml_tree).write(fw)
+            ElementTree.ElementTree(xml_tree).write(fw)
 
         if upload:
             server_url = str(PolarionWorkItem._session._server.url)
@@ -246,7 +246,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
             response = post(
                 polarion_import_url, auth=auth,
-                files={'file': ('xunit.xml', ET.tostring(xml_tree))})
+                files={'file': ('xunit.xml', ElementTree.tostring(xml_tree))})
             self.info(
                 f'Response code is {response.status_code} with text: {response.text}')
         else:
