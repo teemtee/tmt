@@ -324,7 +324,7 @@ class DependencyFmfId(FmfId):
     several extra keys.
     """
 
-    VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick', 'type']
+    VALID_KEYS: ClassVar[List[str]] = [*FmfId.VALID_KEYS, 'destination', 'nick', 'type']
 
     destination: Optional[Path] = None
     nick: Optional[str] = None
@@ -3406,7 +3406,7 @@ class Link(tmt.utils.SpecBasedContainer):
 
         # Count how many relations are stored in spec.
         relations = [cast(_RawLinkRelationName, key)
-                     for key in spec if key not in (FmfId.VALID_KEYS + ['note'])]
+                     for key in spec if key not in ([*FmfId.VALID_KEYS, 'note'])]
 
         # If there are no relations, spec must be an fmf id, representing
         # a target.

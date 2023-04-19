@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import sys
+from contextlib import suppress
 from typing import Any, Dict, List, Optional, cast
 
 import click
@@ -17,8 +18,12 @@ import tmt.utils
 from tmt.base import Test
 from tmt.options import option
 from tmt.result import Result, ResultOutcome
-from tmt.steps.execute import (SCRIPTS, TEST_OUTPUT_FILENAME,
-                               TMT_FILE_SUBMIT_SCRIPT, TMT_REBOOT_SCRIPT)
+from tmt.steps.execute import (
+    SCRIPTS,
+    TEST_OUTPUT_FILENAME,
+    TMT_FILE_SUBMIT_SCRIPT,
+    TMT_REBOOT_SCRIPT,
+    )
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, field
 
@@ -79,8 +84,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             # Disable interactive progress bar
             option(
                 '--no-progress-bar', is_flag=True,
-                help='Disable interactive progress bar showing the current test.')
-            ] + super().options(how)
+                help='Disable interactive progress bar showing the current test.'),
+            *super().options(how)]
 
     # TODO: consider switching to utils.updatable_message() - might need more
     # work, since use of _show_progress is split over several methods.
@@ -283,11 +288,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             return self.check_custom_results(test, guest)
         if test.framework == 'beakerlib':
             return self.check_beakerlib(test, guest)
-        else:
-            try:
-                return self.check_result_file(test, guest)
-            except tmt.utils.FileError:
-                return self.check_shell(test, guest)
+        try:
+            return self.check_result_file(test, guest)
+        except tmt.utils.FileError:
+            return self.check_shell(test, guest)
 
     def _will_reboot(self, test: Test, guest: Guest) -> bool:
         """ True if reboot is requested """
@@ -314,14 +318,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                        f"with reboot count {test._reboot_count}.")
             reboot_request_path = self._reboot_request_path(test, guest)
             test_data = self.data_path(test, guest, full=True) / tmt.steps.execute.TEST_DATA
-            with open(reboot_request_path, 'r') as reboot_file:
+            with open(reboot_request_path) as reboot_file:
                 reboot_data = json.loads(reboot_file.read())
             reboot_command = None
             if reboot_data.get('command'):
-                try:
+                with suppress(TypeError):
                     reboot_command = ShellScript(reboot_data.get('command'))
-                except TypeError:
-                    pass
+
             try:
                 timeout = int(reboot_data.get('timeout'))
             except ValueError:

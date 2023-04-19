@@ -561,7 +561,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
                 '--watchdog-period-delay', metavar='SECONDS',
                 help='How often (seconds) check that the guest "is-alive".'
                 ),
-            ] + super().options(how)
+            *super().options(how)]
 
     def go(self) -> None:
         """ Provision the guest """

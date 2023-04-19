@@ -1420,13 +1420,11 @@ def render_run_exception(exception: RunError) -> List[str]:
             line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
             output_lines = output_lines[-OUTPUT_LINES:]
 
-        lines += [
-            f'{name} ({line_summary} lines)',
-            OUTPUT_WIDTH * '~'
-            ] + output_lines + [
-            OUTPUT_WIDTH * '~',
-            ''
-            ]
+        lines += [f'{name} ({line_summary} lines)',
+                  OUTPUT_WIDTH * '~',
+                  *output_lines,
+                  OUTPUT_WIDTH * '~',
+                  '']
 
     return lines
 
@@ -2984,8 +2982,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
 
     When all checks pass returns (True, '').
     """
-    sources = test.node.sources + \
-        [os.path.join(test.node.root, '.fmf', 'version')]
+    sources = [*test.node.sources, os.path.join(test.node.root, '.fmf', 'version')]
 
     # Use tmt's run instead of subprocess.run
     run = Common(logger=test._logger).run
@@ -3832,14 +3829,14 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
             ]
 
         schema['properties'][step] = {
-            'oneOf': refs + [
-                {
-                    'type': 'array',
-                    'items': {
-                        'anyOf': refs
-                        }
-                    }
-                ]
+            'oneOf': [*refs,
+                      {
+                          'type': 'array',
+                          'items': {
+                              'anyOf': refs
+                              }
+                          }
+                      ]
             }
 
 

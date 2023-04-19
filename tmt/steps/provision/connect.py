@@ -76,7 +76,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
             option(
                 '-p', '--password', metavar='PASSWORD',
                 help='Password for login into the guest system.'),
-            ] + super().options(how)
+            *super().options(how)]
 
     def go(self) -> None:
         """ Prepare the connection """

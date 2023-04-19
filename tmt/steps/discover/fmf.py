@@ -225,7 +225,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                      'supported. Defaults to the top fmf root if it is '
                      'present, otherwise top directory (shortcut "/").'
                 ),
-            ] + super().options(how)
+            *super().options(how)]
 
     @property
     def is_in_standalone_mode(self) -> bool:

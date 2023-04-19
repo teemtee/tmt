@@ -1355,7 +1355,7 @@ def stories_id(
 @click.argument('path', default='.')
 @option(
     '-t', '--template', default='empty', metavar='TEMPLATE',
-    type=click.Choice(['empty'] + tmt.templates.INIT_TEMPLATES),
+    type=click.Choice(['empty', *tmt.templates.INIT_TEMPLATES]),
     help='Template ({}).'.format(
         listed(tmt.templates.INIT_TEMPLATES, join='or')))
 @verbosity_options

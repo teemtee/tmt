@@ -34,8 +34,8 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
                 help="Example how to pass value."),
             option(
                 '-s', '--switch', is_flag=True,
-                help="Example how to enable something.")
-            ] + super().options(how)
+                help="Example how to enable something."),
+            *super().options(how)]
 
     def default(self, option, default=None):
         """ Return the default value for the given option """

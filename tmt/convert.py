@@ -612,7 +612,7 @@ def read(
     parent_name = str(Path('/') / parent_path.relative_to(tree.root))
     parent = tree.find(parent_name)
     if parent:
-        for test in [common_data] + individual_data:
+        for test in [common_data, *individual_data]:
             for key in list(test):
                 if parent.get(key) == test[key]:
                     test.pop(key)

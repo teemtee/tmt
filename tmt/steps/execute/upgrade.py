@@ -132,8 +132,8 @@ class ExecuteUpgrade(ExecuteInternal):
             tmt.steps.discover.fmf.REF_OPTION,
             tmt.steps.discover.fmf.TEST_OPTION,
             tmt.steps.discover.fmf.FILTER_OPTION,
-            tmt.steps.discover.fmf.EXCLUDE_OPTION
-            ] + super().options(how)
+            tmt.steps.discover.fmf.EXCLUDE_OPTION,
+            *super().options(how)]
 
     @property  # type:ignore[override]
     def discover(self) -> Union[

@@ -545,7 +545,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
                 help=f'How often check Beaker for provisioning status, '
                      f'{DEFAULT_PROVISION_TICK} seconds by default.',
                 ),
-            ] + super().options(how)
+            *super().options(how)]
 
     # data argument should be a "Optional[GuestData]" type but we would like to use
     # BeakerGuestData created here ignoring the override will make mypy calm

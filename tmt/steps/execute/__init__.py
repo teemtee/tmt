@@ -177,7 +177,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             option(
                 '-x', '--exit-first', is_flag=True,
                 help='Stop execution after the first test failure.'),
-            ] + super().options(how)
+            *super().options(how)]
 
     def go(
             self,
@@ -253,7 +253,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         for script in self.scripts:
             source = SCRIPTS_SRC_DIR / script.path.name
 
-            for dest in [script.path] + script.aliases:
+            for dest in [script.path, *script.aliases]:
                 guest.push(
                     source=source,
                     destination=dest,

@@ -608,7 +608,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             option(
                 '--list-local-images', is_flag=True,
                 help="List locally available images."),
-            ] + super().options(how)
+            *super().options(how)]
 
     def go(self) -> None:
         """ Provision the testcloud instance """

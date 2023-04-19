@@ -285,8 +285,8 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
                 help='Force pulling a fresh container image.'),
             option(
                 '-u', '--user', metavar='USER',
-                help='User to use for all container operations.')
-            ] + super().options(how)
+                help='User to use for all container operations.'),
+            *super().options(how)]
 
     def default(self, option: str, default: Any = None) -> Any:
         """ Return default data for given option """

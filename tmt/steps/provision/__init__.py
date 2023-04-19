@@ -909,11 +909,11 @@ class GuestSsh(Guest):
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to SSH-capable guests """
-        return super().options(how=how) + [
-            option('--ssh-option', metavar="OPTION", multiple=True, default=[],
-                   help="Specify additional SSH option. "
-                   "Value is passed to SSH's -o option, see ssh_config(5) for "
-                   "supported options. Can be specified multiple times.")]
+        return [*super().options(how=how),
+                option('--ssh-option', metavar="OPTION", multiple=True, default=[],
+                       help="Specify additional SSH option. "
+                       "Value is passed to SSH's -o option, see ssh_config(5) for "
+                       "supported options. Can be specified multiple times.")]
 
     def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """

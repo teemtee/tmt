@@ -107,8 +107,7 @@ def _compare_xml_node(tree_path: List[str], expected: xml.dom.Node, actual: xml.
 
     return all(
         _compare_xml_node(
-            tree_path + [
-                expected_child.nodeName],
+            [*tree_path, expected_child.nodeName],
             expected_child,
             actual_child) for expected_child,
         actual_child in zip(

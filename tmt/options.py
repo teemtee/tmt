@@ -140,8 +140,8 @@ DRY_OPTIONS: List[ClickOptionDecoratorType] = [
 FORCE_DRY_OPTIONS: List[ClickOptionDecoratorType] = [
     option(
         '-f', '--force', is_flag=True,
-        help='Overwrite existing files and step data.')
-    ] + DRY_OPTIONS
+        help='Overwrite existing files and step data.'),
+    *DRY_OPTIONS]
 
 
 # Fix action
