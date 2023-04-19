@@ -1556,14 +1556,20 @@ class Plan(Core, tmt.export.Exportable['Plan']):
 
         return correct
 
-    @staticmethod
-    def _lint_discover_fmf(discover: tmt.steps._RawStepData) -> bool:
+    def _lint_discover_fmf(self, discover: tmt.steps._RawStepData) -> bool:
         """ Lint fmf discover method """
         # Validate remote id and translate to human readable errors
         fmf_id_data = cast(
             _RawFmfId,
             {key: value for key, value in discover.items() if key in ['url', 'ref', 'path']}
             )
+        # If no specific fmf is passed, use the current context
+        if not fmf_id_data:
+            fmf_id_data = dict(
+                url=self.fmf_id.url,
+                ref=self.fmf_id.ref,
+                path=self.fmf_id.path,
+                )
 
         # Skipping `name` on purpose - that belongs to the whole step,
         # it's not treated as part of fmf id.
