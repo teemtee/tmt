@@ -1,3 +1,12 @@
+-   id: tmt
+    name: tmt
+    entry: tmt
+    files: '.*\.fmf$'
+    verbose: true
+    pass_filenames: true
+    language: python
+    language_version: python3
+
 -   id: tmt-lint
     name: tmt lint
     entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt lint --failed-only --source $@" PAD
