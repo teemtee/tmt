@@ -15,7 +15,8 @@ def test_basic(root_logger, source_dir, target_dir):
         identifier=tmt.base.DependencyFile(type='file', pattern=['lib.*']),
         source_location=source_dir,
         target_location=target_dir)
-    assert target_dir.exists() and target_dir.is_dir()
+    assert target_dir.exists()
+    assert target_dir.is_dir()
     target_content = list(target_dir.iterdir())
     assert target_dir / 'library' in target_content
     assert target_dir / 'lib_folder' in target_content

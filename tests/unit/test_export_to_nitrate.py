@@ -20,7 +20,7 @@ class NitrateExportAutomated(TestCase):
         os.chdir(self.tmp_dir / self.dir_name)
         files = os.listdir()
         file_name = 'test.md'
-        self.assertIn(file_name, files)
+        assert file_name in files
 
         step = convert_manual_to_nitrate(file_name)[0]
         html_generated = """<b>Test</b>\
@@ -38,13 +38,13 @@ tmt init</code></p>
 <b>Test two</b><p>Step 6.</p><p>description for step 2-1</p>
 <p>Step 7.</p><p>description for step 2-2</p>
 """
-        self.assertEqual(step, html_generated)
+        assert step == html_generated
 
     def test_export_to_nitrate_expect(self):
         os.chdir(self.tmp_dir / self.dir_name)
         files = os.listdir()
         file_name = 'test.md'
-        self.assertIn(file_name, files)
+        assert file_name in files
 
         expect = convert_manual_to_nitrate(file_name)[1]
         html_generated = """<b>Test</b>\
@@ -71,31 +71,31 @@ base or full.</code></li>
 <b>Test two</b><p>Step 6.</p><p>description for result 2-1</p>
 <p>Step 7.</p><p>description for Expected Result 2-2</p>
 """
-        self.assertEqual(expect, html_generated)
+        assert expect == html_generated
 
     def test_export_to_nitrate_empty_file(self):
         os.chdir(self.tmp_dir / self.dir_name)
         files = os.listdir()
         file_name = 'test_empty.md'
-        self.assertIn(file_name, files)
+        assert file_name in files
         html = convert_manual_to_nitrate(file_name)
         html_generated = ('', '', '', '')
-        self.assertEqual(html, html_generated)
+        assert html == html_generated
 
     def test_export_to_nitrate_setup_doesnt_exist(self):
         os.chdir(self.tmp_dir / self.dir_name)
         files = os.listdir()
         file_name = 'test.md'
-        self.assertIn(file_name, files)
+        assert file_name in files
         cleanup = convert_manual_to_nitrate(file_name)[2]
         html_generated = ''
-        self.assertEqual(cleanup, html_generated)
+        assert cleanup == html_generated
 
     def test_export_to_nitrate_cleanup_latest_heading(self):
         os.chdir(self.tmp_dir / self.dir_name)
         files = os.listdir()
         file_name = 'test.md'
-        self.assertIn(file_name, files)
+        assert file_name in files
 
         cleanup = convert_manual_to_nitrate(file_name)[3]
         html_generated = """<p>Optionally remove temporary directory created \
@@ -103,7 +103,7 @@ in the first step
 2 line of cleanup
 3 line of cleanup</p>
 """
-        self.assertEqual(cleanup, html_generated)
+        assert cleanup == html_generated
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)

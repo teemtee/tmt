@@ -10,7 +10,7 @@ from tmt.steps.report.junit import ReportJUnit, ReportJUnitData
 from tmt.utils import Path
 
 
-@pytest.fixture
+@pytest.fixture()
 def report_fix(tmpdir, root_logger):
     # need to provide genuine workdir paths - mock would break os.path.* calls
     step_mock = MagicMock(workdir=str(tmpdir))
@@ -78,10 +78,10 @@ def _compare_xml_node(tree_path: List[str], expected: xml.dom.Node, actual: xml.
 
     for (expected_name, expected_value), (actual_name, actual_value) in zip(
             expected_attributes, actual_attributes):
-        assert expected_name == actual_name and expected_value == actual_value, \
-            f"Attribute mismatch at {tree_path_joined}: " \
-            f"expected {expected_name}=\"{expected_value}\", " \
-            f"found {actual_name}=\"{actual_value}\""
+        assert expected_name == actual_name, f"Attribute mismatch at {tree_path_joined}: " \
+                                             f"expected {expected_name}=\"{expected_value}\""
+        assert expected_value == actual_value, f"Attribute mismatch at {tree_path_joined}: " \
+                                               f"found {actual_name}=\"{actual_value}\""
 
     # Hooray, attributes match. Dig deeper, how about children?
     # To compare children, use this very function to compare each child with

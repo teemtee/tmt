@@ -229,8 +229,8 @@ _DECIDE_COLORIZATION_TESTCASES = [
 
 
 @pytest.mark.parametrize(
-    ('testcase',),
-    [(testcase,) for testcase in _DECIDE_COLORIZATION_TESTCASES],
+    'testcase',
+    list(_DECIDE_COLORIZATION_TESTCASES),
     ids=[testcase.name for testcase in _DECIDE_COLORIZATION_TESTCASES]
     )
 def test_decide_colorization(

@@ -8,7 +8,7 @@ import tmt.libraries
 from tmt.utils import Path
 
 
-@pytest.mark.web
+@pytest.mark.web()
 def test_basic(root_logger):
     """ Fetch a beakerlib library with/without providing a parent """
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
@@ -30,9 +30,9 @@ def test_basic(root_logger):
         shutil.rmtree(library.parent.workdir)
 
 
-@pytest.mark.web
+@pytest.mark.web()
 @pytest.mark.parametrize(
-    'url, name, default_branch', [
+    ('url', 'name', 'default_branch'), [
         ('https://github.com/beakerlib/httpd', '/http', 'master'),
         ('https://github.com/beakerlib/example', '/file', 'main')
         ])
@@ -53,7 +53,7 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
     shutil.rmtree(library.parent.workdir)
 
 
-@pytest.mark.web
+@pytest.mark.web()
 def test_invalid_url_conflict(root_logger):
     """ Saner check if url mismatched for translated library """
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
@@ -74,7 +74,7 @@ def test_invalid_url_conflict(root_logger):
     shutil.rmtree(parent.workdir)
 
 
-@pytest.mark.web
+@pytest.mark.web()
 def test_dependencies(root_logger):
     """ Check requires for possible libraries """
     parent = tmt.utils.Common(logger=root_logger, workdir=True)

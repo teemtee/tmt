@@ -1239,7 +1239,8 @@ class Reboot(Action):
         """ Reboot the guest(s) """
         self.info('reboot', 'Rebooting guest', color='yellow')
         assert isinstance(self.parent, Step)
-        assert hasattr(self.parent, 'plan') and self.parent.plan is not None
+        assert hasattr(self.parent, 'plan')
+        assert self.parent.plan is not None
         for guest in self.parent.plan.provision.guests():
             guest.reboot(hard=self.opt('hard'))
         self.info('reboot', 'Reboot finished', color='yellow')

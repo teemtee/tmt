@@ -16,7 +16,7 @@ class PolarionExport(Base):
 
     def test_create(self):
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
-        self.assertNotIn(ID_KEY, fmf_node.data)
+        assert ID_KEY not in fmf_node.data
 
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
@@ -25,11 +25,11 @@ class PolarionExport(Base):
             "RHIVOS", "--create", "."])
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
-        self.assertIn(ID_KEY, fmf_node.data)
+        assert ID_KEY in fmf_node.data
 
     def test_create_dryrun(self):
         fmf_node_before = Tree(self.tmpdir).find("/new_testcase")
-        self.assertNotIn(ID_KEY, fmf_node_before.data)
+        assert ID_KEY not in fmf_node_before.data
 
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
@@ -38,15 +38,13 @@ class PolarionExport(Base):
             ["test", "export", "--how", "polarion", "--create", "--dry", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
-        self.assertNotIn(ID_KEY, fmf_node.data)
-        self.assertEqual(fmf_node_before.data, fmf_node.data)
-        self.assertIn(
-            "title: tmt /new_testcase - This i",
-            self.runner_output.output)
+        assert ID_KEY not in fmf_node.data
+        assert fmf_node_before.data == fmf_node.data
+        assert "title: tmt /new_testcase - This i" in self.runner_output.output
 
     def test_existing(self):
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
-        self.assertEqual(fmf_node.data["extra-nitrate"], "TC#0609686")
+        assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
@@ -55,11 +53,11 @@ class PolarionExport(Base):
             "RHIVOS", "--create", "."])
 
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
-        self.assertEqual(fmf_node.data["extra-nitrate"], "TC#0609686")
+        assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
     def test_existing_dryrun(self):
         fmf_node = Tree(self.tmpdir).find("/existing_dryrun_testcase")
-        self.assertEqual(fmf_node.data["extra-nitrate"], "TC#0609686")
+        assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
         runner = CliRunner()
@@ -68,13 +66,11 @@ class PolarionExport(Base):
             ["test", "export", "--how", "polarion", "--debug", "--dry",
              "--bugzilla", "."],
             catch_exceptions=False)
-        self.assertIn(
-            "title: tmt /existing_dryrun_testcase - ABCDEF",
-            self.runner_output.output)
+        assert "title: tmt /existing_dryrun_testcase - ABCDEF" in self.runner_output.output
 
     def test_coverage_bugzilla(self):
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
-        self.assertEqual(fmf_node.data["extra-nitrate"], "TC#0609686")
+        assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()

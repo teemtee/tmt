@@ -81,7 +81,7 @@ Detailed validation error:
 {textwrap.indent(str(error), '  ')}
 """)
 
-        raise AssertionError(f"{label} {name} fails validation")
+        pytest.fail(f"{label} {name} fails validation")
 
 
 def _tree_path(tree):
@@ -114,10 +114,9 @@ def test_plans_schema(tree, plan):
 # Exercise the HW requirement schema with some interesting examples
 #
 @pytest.mark.parametrize(
-    ('hw',),
+    'hw',
     [
-        (
-            """
+        """
             ---
 
             arch: x86_64
@@ -157,9 +156,7 @@ def test_plans_schema(tree, plan):
                 is-virtualized: false
                 hypervisor: xen
             """,
-            ),
-        (
-            """
+        """
             ---
 
             and:
@@ -172,8 +169,7 @@ def test_plans_schema(tree, plan):
                       is-supported: true
                   - virtualization:
                       is-supported: false
-            """,
-            )
+            """
         ],
     ids=[
         'all-requirements',
@@ -207,10 +203,9 @@ def test_hw_schema_examples(hw: str, request) -> None:
 # Exercise the KS requirement schema with some real examples
 #
 @pytest.mark.parametrize(
-    ('ks',),
+    'ks',
     [
-        (
-            """
+        """
             ---
 
             pre-install: |
@@ -231,9 +226,7 @@ def test_hw_schema_examples(hw: str, request) -> None:
                 "no-autopart harness=restraint"
             kernel-options: "ksdevice=eth1"
             kernel-options-post: "quiet"
-            """,
-            ),
-        ],
+            """],
     ids=[
         'all-properties',
         ]

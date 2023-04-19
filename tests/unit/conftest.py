@@ -22,7 +22,7 @@ def source_dir(tmpdir_factory):
         test_path = source_location / f'tests/bz{num}'
         test_path.mkdir()
         (test_path / 'runtests.sh').touch()
-    yield source_location
+    return source_location
 
 
 @pytest.fixture()
