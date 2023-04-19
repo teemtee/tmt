@@ -371,7 +371,7 @@ class GuestArtemis(tmt.GuestSsh):
                 if state == 'ready':
                     return current
 
-                raise tmt.utils.WaitingIncompleteError()
+                raise tmt.utils.WaitingIncompleteError
 
             try:
                 guest_info = tmt.utils.wait(

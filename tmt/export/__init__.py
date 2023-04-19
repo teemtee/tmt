@@ -137,7 +137,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
         position.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def export(self, *, format: str, keys: Optional[List[str]] = None, **kwargs: Any) -> str:
         """ Export this instance in a given format """
@@ -178,7 +178,7 @@ class ExportPlugin:
     @classmethod
     def export_fmfid_collection(cls, fmf_ids: List['tmt.base.FmfId'], **kwargs: Any) -> str:
         """ Export collection of fmf ids """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def export_test_collection(cls,
@@ -186,7 +186,7 @@ class ExportPlugin:
                                keys: Optional[List[str]] = None,
                                **kwargs: Any) -> str:
         """ Export collection of tests """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def export_plan_collection(cls,
@@ -194,7 +194,7 @@ class ExportPlugin:
                                keys: Optional[List[str]] = None,
                                **kwargs: Any) -> str:
         """ Export collection of plans """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def export_story_collection(cls,
@@ -202,7 +202,7 @@ class ExportPlugin:
                                 keys: Optional[List[str]] = None,
                                 **kwargs: Any) -> str:
         """ Export collection of stories """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 # It's tempting to make this the default implementation of `ExporterPlugin` class,
 # but that would mean the `ExportPlugin` would suddenly not raise `NotImplementedError`

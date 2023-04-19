@@ -410,7 +410,7 @@ class Guest(tmt.utils.Common):
     def is_ready(self) -> bool:
         """ Detect guest is ready or not """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
@@ -583,7 +583,7 @@ class Guest(tmt.utils.Common):
     def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @overload
     def execute(self,
@@ -630,7 +630,7 @@ class Guest(tmt.utils.Common):
         :param friendly_command: nice, human-friendly representation of the command.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def push(self,
              source: Optional[Path] = None,
@@ -641,7 +641,7 @@ class Guest(tmt.utils.Common):
         Push files to the guest
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def pull(self,
              source: Optional[Path] = None,
@@ -652,7 +652,7 @@ class Guest(tmt.utils.Common):
         Pull files from the guest
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def stop(self) -> None:
         """
@@ -663,7 +663,7 @@ class Guest(tmt.utils.Common):
         necessary to store the instance status to disk.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def reboot(
             self,
@@ -684,7 +684,7 @@ class Guest(tmt.utils.Common):
         wait for the guest to come back up after rebooting.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def reconnect(
             self,
@@ -709,7 +709,7 @@ class Guest(tmt.utils.Common):
                 self.execute(Command('whoami'), silent=True)
 
             except tmt.utils.RunError:
-                raise tmt.utils.WaitingIncompleteError()
+                raise tmt.utils.WaitingIncompleteError
 
         try:
             tmt.utils.wait(
@@ -1240,11 +1240,11 @@ class GuestSsh(Guest):
                     return
 
                 # Same boot time, reboot didn't happen yet, retrying
-                raise tmt.utils.WaitingIncompleteError()
+                raise tmt.utils.WaitingIncompleteError
 
             except tmt.utils.RunError:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.WaitingIncompleteError()
+                raise tmt.utils.WaitingIncompleteError
 
         timeout = timeout or CONNECTION_TIMEOUT
 
@@ -1396,7 +1396,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
         Each ProvisionPlugin has to implement this method.
         Should return a provisioned Guest() instance.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def requires(self) -> List['tmt.base.Dependency']:
         """

@@ -1193,7 +1193,7 @@ class Action(Phase):
         return phases
 
     def go(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class Reboot(Action):

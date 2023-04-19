@@ -2192,7 +2192,7 @@ class SpecBasedContainer(DataContainer):
         See :py:meth:`to_spec` for its counterpart.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def to_spec(self) -> Dict[str, Any]:
         """

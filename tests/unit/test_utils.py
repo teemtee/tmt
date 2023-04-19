@@ -826,7 +826,7 @@ def test_wait(root_logger):
 
         ticks.pop()
 
-        raise WaitingIncompleteError()
+        raise WaitingIncompleteError
 
     # We want to reach end of our list, give enough time budget.
     r = wait(Common(logger=root_logger), check, datetime.timedelta(seconds=3600), tick=0.01)
