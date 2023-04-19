@@ -1330,7 +1330,7 @@ class QueuedPhase:
         from tmt.steps.execute import ExecutePlugin
 
         if isinstance(self.phase, ExecutePlugin):
-            return self.phase.discover.name
+            return self.phase.discover_phase or self.phase.discover.name
 
         return self.phase.name
 
