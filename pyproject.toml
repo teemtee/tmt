@@ -98,7 +98,6 @@ select = [
     "RUF",  # ruff
 ]
 ignore = [
-    "C405",  # Unnecessary `list` literal (rewrite as a `set` literal)
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "B00",   # B00{1..9}
     "B011",  # Do not `assert False` (`python -O` removes these calls), raise `AssertionError()`

@@ -20,7 +20,7 @@ PolarionWorkItem: Any = None
 
 POLARION_TRACKER_ID = 117  # ID of polarion in RH's bugzilla
 RE_POLARION_URL = r'.*/polarion/#/project/.*/workitem\?id=(.*)'
-LEGACY_POLARION_PROJECTS = set(['RedHatEnterpriseLinux7'])
+LEGACY_POLARION_PROJECTS = {'RedHatEnterpriseLinux7'}
 
 # TODO: why this exists?
 log = fmf.utils.Logging('tmt').logger
