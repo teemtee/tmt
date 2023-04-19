@@ -2081,3 +2081,62 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     Setup shell completions for fish.
     """
     setup_completion('fish', install)
+
+
+@click.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+    ))
+@click.pass_context
+@click.option(
+    '-r', '--root', metavar='PATH', show_default=True, default='.',
+    help='Variable passed to tmt main. See `tmt --help`')
+@click.option(
+    '-v', '--verbose', count=True, default=0,
+    help='Variable passed to tmt main. See `tmt --help`')
+@click.option(
+    '--version', is_flag=True,
+    help="Variable passed to tmt main. See `tmt --help`")
+@click.option(
+    '--lint-type', default=None,
+    type=click.Choice(['tests', 'plans', 'stories']),
+    help='tmt types to lint')
+def pre_commit(
+        context: Context,
+        root: str,
+        verbose: int,
+        version: bool,
+        lint_type: Optional[str]) -> None:
+    """
+    Cli wrapper of tmt lint for
+    """
+    # Special handling for --version
+    if version:
+        main(['--version'])
+
+    # Check that .fmf/version file is present for the specific root requested
+    git_root = subprocess.check_output(
+        args=[
+            'git',
+            'rev-parse',
+            '--show-toplevel'],
+        text=True).strip()
+    subprocess.check_call(
+        args=[
+            'git',
+            'ls-files',
+            '--error-unmatch',
+            f"{git_root}/{root}/.fmf/version"])
+
+    # Construct the arguments for main cli
+    args = ['--root', f"{git_root}/{root}"]
+    if verbose:
+        args += ['-' + 'v' * verbose]
+    if lint_type:
+        args += [lint_type]
+    args += ['lint', '--source']
+    # Get everything else
+    if '--source' in context.args:
+        context.args.remove('--source')
+    args += context.args
+    main(args)
