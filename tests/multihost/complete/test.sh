@@ -41,7 +41,7 @@ rlJournalStart
         rlRun "grep '^        queued: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
 
         rlRun "grep '^        queue tick #0: server-setup on server (server)' $rlRun_LOG"
-        rlRun "grep '^                00:00:00 pass /server-setup/tests/A (on server (server)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^                ..:..:.. pass /server-setup/tests/A (on server (server)) \\[1/1\\]' $rlRun_LOG"
 
         rlRun "egrep '^                out: TMT_GUEST_HOSTNAME=[a-zA-Z0-9\-]+' $rlRun_LOG"
         rlRun "grep  '^                out: TMT_GUEST_ROLE=server' $rlRun_LOG"
@@ -52,9 +52,9 @@ rlJournalStart
         rlRun "grep  '^\\[server (server)\\]                   ..:..:.. pass /tests/tests/B (on server (server)) \\[1/1\\]' $rlRun_LOG"
 
         rlRun "grep '^        queue tick #2: teardown on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
-        rlRun "grep '^\\[server (server)\\]                   00:00:00 pass /teardown/tests/C (on server (server)) \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[client-1 (client)\\]                 00:00:00 pass /teardown/tests/C (on client-1 (client)) \\[1/1\\]' $rlRun_LOG"
-        rlRun "grep '^\\[client-2 (client)\\]                 00:00:00 pass /teardown/tests/C (on client-2 (client)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[server (server)\\]                   ..:..:.. pass /teardown/tests/C (on server (server)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[client-1 (client)\\]                 ..:..:.. pass /teardown/tests/C (on client-1 (client)) \\[1/1\\]' $rlRun_LOG"
+        rlRun "grep '^\\[client-2 (client)\\]                 ..:..:.. pass /teardown/tests/C (on client-2 (client)) \\[1/1\\]' $rlRun_LOG"
 
         client1_hostname="$(yq -r '."client-1" | .container' $run/plans/provision/guests.yaml)"
         client2_hostname="$(yq -r '."client-2" | .container' $run/plans/provision/guests.yaml)"
