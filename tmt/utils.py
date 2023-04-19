@@ -179,7 +179,8 @@ class BaseLoggerFnType(Protocol):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         pass
 
 
@@ -888,13 +889,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested verbose mode level
 
         In quiet mode verbose messages are not displayed.
         """
-        self._logger.verbose(key, value=value, color=color, shift=shift, level=level)
+        self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def debug(
             self,
@@ -902,13 +904,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested debug mode level
 
         In quiet mode debug messages are not displayed.
         """
-        self._logger.debug(key, value=value, color=color, shift=shift, level=level)
+        self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def warn(self, message: str, shift: int = 0) -> None:
         """ Show a yellow warning message on info level, send to stderr """
@@ -924,14 +927,15 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 1,
-            level: int = 3) -> None:
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Reports the executed command in verbose mode.
 
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
+        self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def run(self,
             command: Command,
