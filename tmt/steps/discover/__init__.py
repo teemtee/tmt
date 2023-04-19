@@ -76,7 +76,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
 
         return discover
 
-    def tests(self, enabled: Optional[bool] = None) -> List['tmt.Test']:
+    def tests(
+            self,
+            *,
+            phase_name: Optional[str] = None,
+            enabled: Optional[bool] = None) -> List['tmt.Test']:
         """
         Return discovered tests
 

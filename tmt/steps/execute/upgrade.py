@@ -274,6 +274,8 @@ class ExecuteUpgrade(ExecuteInternal):
             guest: tmt.steps.provision.Guest,
             logger: tmt.log.Logger) -> None:
         """ Perform a system upgrade """
+        original_discover_phase = self.discover_phase
+
         try:
             self._fetch_upgrade_tasks()
             extra_environment = None
@@ -294,11 +296,13 @@ class ExecuteUpgrade(ExecuteInternal):
                 self._run_discover_upgrade()
                 # Pass in the path-specific env variables
                 extra_environment = plan.environment
-            for test in self._discover_upgrade.tests():
+            for test in self._discover_upgrade.tests(enabled=True):
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
+            self.discover_phase = self._discover_upgrade.name
             self._run_tests(guest=guest, extra_environment=extra_environment, logger=logger)
         finally:
             self._discover_upgrade = None
+            self.discover_phase = original_discover_phase
 
     def _run_test_phase(
             self,
@@ -313,12 +317,12 @@ class ExecuteUpgrade(ExecuteInternal):
         The prefix is also set as IN_PLACE_UPGRADE environment variable.
         """
         names_backup = []
-        for test in self.discover.tests():
+        for test in self.discover.tests(enabled=True):
             names_backup.append(test.name)
             test.name = f'/{prefix}/{test.name.lstrip("/")}'
 
         self._run_tests(guest=guest, extra_environment={STATUS_VARIABLE: prefix}, logger=logger)
 
-        tests = self.discover.tests()
+        tests = self.discover.tests(enabled=True)
         for i, test in enumerate(tests):
             test.name = names_backup[i]

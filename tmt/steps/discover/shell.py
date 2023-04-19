@@ -373,7 +373,15 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         for test in self._tests:
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
 
-    def tests(self, enabled: Optional[bool] = None) -> List[tmt.base.Test]:
+    def tests(
+            self,
+            *,
+            phase_name: Optional[str] = None,
+            enabled: Optional[bool] = None) -> List['tmt.Test']:
+
+        if phase_name is not None and phase_name != self.name:
+            return []
+
         if enabled is None:
             return self._tests
 

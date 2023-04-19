@@ -585,7 +585,7 @@ class Execute(tmt.steps.Step):
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
-        execute_phase = execute_phases[0]
+        execute_phases[0]
 
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):
@@ -619,7 +619,8 @@ class Execute(tmt.steps.Step):
                 failed_phases.append(phase_outcome)
                 continue
 
-        self._results.extend(execute_phase.results())
+            if isinstance(phase_outcome.queued_phase.phase, ExecutePlugin):
+                self._results.extend(phase_outcome.queued_phase.phase.results())
 
         if failed_phases:
             # TODO: needs a better message...
