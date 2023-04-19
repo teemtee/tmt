@@ -2268,7 +2268,7 @@ class Tree(tmt.utils.Common):
 
     def __init__(self,
                  *,
-                 path: Path = Path.cwd(),
+                 path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
                  fmf_context: Optional[tmt.utils.FmfContextType] = None,
                  logger: tmt.log.Logger) -> None:
@@ -2277,7 +2277,7 @@ class Tree(tmt.utils.Common):
         # TODO: not calling parent __init__ on purpose?
         self.inject_logger(logger)
 
-        self._path = path
+        self._path = path or Path.cwd()
         self._tree = tree
         self._custom_fmf_context = fmf_context or {}
 
@@ -2285,7 +2285,7 @@ class Tree(tmt.utils.Common):
     def grow(
             cls,
             *,
-            path: Path = Path.cwd(),
+            path: Optional[Path] = None,
             tree: Optional[fmf.Tree] = None,
             fmf_context: Optional[tmt.utils.FmfContextType] = None,
             logger: Optional[tmt.log.Logger] = None) -> 'Tree':
@@ -2309,7 +2309,7 @@ class Tree(tmt.utils.Common):
         tmt.plugins.explore(logger)
 
         return Tree(
-            path=path,
+            path=path or Path.cwd(),
             tree=tree,
             fmf_context=fmf_context,
             logger=logger or tmt.log.Logger.create())

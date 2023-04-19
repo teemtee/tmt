@@ -99,10 +99,6 @@ select = [
 ]
 ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
-    "B00",   # B00{1..9}
-    "B011",  # Do not `assert False` (`python -O` removes these calls), raise `AssertionError()`
-    "B012",  # return` inside `finally` blocks cause exceptions to be silenced
-    "B018",  # Found useless expression. Either assign it to a variable or remove it.
     "COM812",  # Trailing comma missing
     "RUF005",  # collection-literal-concatenation - Consider {expr} instead of concatenation
 ]

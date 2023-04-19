@@ -150,7 +150,7 @@ def test_last_run_race(tmpdir, monkeypatch):
         t.join()
 
     all_good = True
-    for t in threads:
+    for _ in threads:
         value = results.get()
         if isinstance(value, Exception):
             # Print exception for logging
@@ -216,7 +216,7 @@ def test_workdir_root_race(tmpdir, monkeypatch, root_logger):
 
     all_good = True
     unique_workdirs = set()
-    for t in threads:
+    for _ in threads:
         value = results.get()
         if isinstance(value, Path):
             unique_workdirs.add(value)
@@ -619,7 +619,7 @@ def test_run_big(root_logger):
 
 
 def test_get_distgit_handler():
-    for wrong_remotes in [[], ["blah"]]:
+    for _wrong_remotes in [[], ["blah"]]:
         with pytest.raises(tmt.utils.GeneralError):
             tmt.utils.get_distgit_handler([])
     # Fedora detection

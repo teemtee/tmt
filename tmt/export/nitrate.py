@@ -389,7 +389,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     try:
         nitrate_id = test.node.get('extra-nitrate')[3:]
         nitrate_case: NitrateTestCase = nitrate.TestCase(int(nitrate_id))
-        nitrate_case.summary  # Make sure we connect to the server now
+        nitrate_case.summary  # noqa: B018 - Make sure we connect to the server now
         echo(style(f"Test case '{nitrate_case.identifier}' found.", fg='blue'))
     except TypeError:
         # Create a new nitrate test case

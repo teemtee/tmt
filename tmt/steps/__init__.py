@@ -595,7 +595,7 @@ class Method:
             ) -> None:
         """ Store method data """
 
-        doc = (doc or getattr(class_, '__doc__') or '').strip()
+        doc = (doc or class_.__doc__ or '').strip()
 
         if not doc:
             if class_:

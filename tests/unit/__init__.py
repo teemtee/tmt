@@ -4,6 +4,7 @@ import re
 from typing import Any, Callable, Iterable, List, Tuple
 
 import _pytest.logging
+import pytest
 
 
 class PatternMatching:
@@ -141,11 +142,11 @@ def _assert_log(
                       f'expected=>>>{expected_value}<<<',
                       f'comparison={op(expected_value, field_getter(record, field_name))}')
 
-        assert False, f"""
+        pytest.fail(f"""
 {message}:
 
 {chr(10).join(formatted_fields)}
-"""
+""")
 
     # Cannot find log record with these properties
 

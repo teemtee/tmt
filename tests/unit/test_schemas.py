@@ -81,7 +81,7 @@ Detailed validation error:
 {textwrap.indent(str(error), '  ')}
 """)
 
-        assert False, f'{label} {name} fails validation'
+        raise AssertionError(f"{label} {name} fails validation")
 
 
 def _tree_path(tree):

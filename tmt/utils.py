@@ -507,8 +507,7 @@ class Command:
                 # failed, ignore errors here
                 pass
 
-            finally:
-                return CommandOutput(None, None)
+            return CommandOutput(None, None)
 
         # Spawn the child process
         try:
