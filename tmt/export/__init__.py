@@ -10,8 +10,21 @@ import sys
 import traceback
 import types
 import xmlrpc.client
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generic,
-                    List, Optional, Tuple, Type, TypeVar, Union, cast)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    )
 
 if sys.version_info >= (3, 8):
     from typing import Protocol

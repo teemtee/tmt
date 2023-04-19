@@ -9,8 +9,15 @@ import tmt
 import tmt.steps
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.steps import (Action, Method, PhaseQueue, PullTask, QueuedPhase,
-                       TaskOutcome, sync_with_guests)
+from tmt.steps import (
+    Action,
+    Method,
+    PhaseQueue,
+    PullTask,
+    QueuedPhase,
+    TaskOutcome,
+    sync_with_guests,
+    )
 from tmt.steps.provision import Guest
 
 if TYPE_CHECKING:

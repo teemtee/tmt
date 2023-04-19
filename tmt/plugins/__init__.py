@@ -4,8 +4,7 @@ import importlib
 import os
 import pkgutil
 import sys
-from typing import (Any, Dict, Generator, Generic, List, Optional, Tuple,
-                    TypeVar)
+from typing import Any, Dict, Generator, Generic, List, Optional, Tuple, TypeVar
 
 if sys.version_info < (3, 9):
     from importlib_metadata import entry_points

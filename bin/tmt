@@ -7,9 +7,9 @@ try:
 
     # Import utils first, before CLI gets a chance to spawn a logger. Without
     # tmt.utils, we would not be able to intercept the exception below.
-    import tmt.utils
+    import tmt.utils  # noqa: I001
 
-    import tmt.cli  # isort: skip
+    import tmt.cli
 
     tmt.cli.main()
 

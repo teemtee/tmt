@@ -68,8 +68,19 @@ import dataclasses
 import enum
 import re
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Generator, Generic,
-                    Iterable, List, Optional, Tuple, TypeVar)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generator,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    )
 
 from click import style
 

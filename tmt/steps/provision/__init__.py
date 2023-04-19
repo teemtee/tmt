@@ -11,8 +11,20 @@ import string
 import subprocess
 import tempfile
 from shlex import quote
-from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple,
-                    Type, TypeVar, Union, cast, overload)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+    )
 
 import click
 import fmf

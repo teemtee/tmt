@@ -6,9 +6,13 @@ import pytest
 
 import tmt.log
 import tmt.utils
-from tmt.utils import (SerializableContainer, dataclass_field_by_name,
-                       dataclass_field_metadata, dataclass_normalize_field,
-                       field)
+from tmt.utils import (
+    SerializableContainer,
+    dataclass_field_by_name,
+    dataclass_field_metadata,
+    dataclass_normalize_field,
+    field,
+    )
 
 
 def test_sanity():

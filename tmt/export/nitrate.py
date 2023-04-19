@@ -4,8 +4,7 @@ import re
 import types
 from contextlib import suppress
 from functools import lru_cache
-from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple,
-                    Union, cast)
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, cast
 
 import fmf.context
 from click import echo, style

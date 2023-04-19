@@ -7,9 +7,22 @@ import re
 import shutil
 import sys
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Generator,
-                    List, Optional, Tuple, Type, TypeVar, Union, cast,
-                    overload)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+    )
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict

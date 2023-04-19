@@ -6,8 +6,7 @@ import collections
 import dataclasses
 import subprocess
 import sys
-from typing import (TYPE_CHECKING, Any, DefaultDict, List, Optional, Set,
-                    Tuple, Type, Union)
+from typing import TYPE_CHECKING, Any, DefaultDict, List, Optional, Set, Tuple, Type, Union
 
 import click
 import fmf

@@ -5,8 +5,16 @@ import _pytest.logging
 import click
 import pytest
 
-from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter, Topic,
-                     TopicFilter, VerbosityLevelFilter, indent, render_labels)
+from tmt.log import (
+    DebugLevelFilter,
+    Logger,
+    QuietnessFilter,
+    Topic,
+    TopicFilter,
+    VerbosityLevelFilter,
+    indent,
+    render_labels,
+    )
 
 from . import assert_log
 

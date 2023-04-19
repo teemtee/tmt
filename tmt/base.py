@@ -9,9 +9,24 @@ import re
 import shutil
 import sys
 import time
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generator,
-                    Iterable, Iterator, List, Optional, Sequence, Tuple, Type,
-                    TypeVar, Union, cast)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    )
 
 import fmf
 import fmf.base
@@ -37,9 +52,17 @@ import tmt.templates
 import tmt.utils
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultOutcome
-from tmt.utils import (Command, EnvironmentType, FmfContextType, Path,
-                       ShellScript, WorkdirArgumentType, field,
-                       normalize_shell_script, verdict)
+from tmt.utils import (
+    Command,
+    EnvironmentType,
+    FmfContextType,
+    Path,
+    ShellScript,
+    WorkdirArgumentType,
+    field,
+    normalize_shell_script,
+    verdict,
+    )
 
 if sys.version_info >= (3, 8):
     from typing import Literal, TypedDict

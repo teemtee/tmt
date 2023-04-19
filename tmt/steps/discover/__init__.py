@@ -1,6 +1,5 @@
 import dataclasses
-from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Type,
-                    cast)
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Type, cast
 
 import click
 from fmf.utils import listed
@@ -9,8 +8,8 @@ import tmt
 
 if TYPE_CHECKING:
     import tmt.cli
-    import tmt.steps
     import tmt.options
+    import tmt.steps
 
 import tmt.base
 import tmt.steps

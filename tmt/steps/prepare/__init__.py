@@ -1,8 +1,7 @@
 import collections
 import copy
 import dataclasses
-from typing import (TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional,
-                    Type, cast)
+from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Type, cast
 
 import click
 import fmf
@@ -16,8 +15,14 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
-from tmt.steps import (Action, GuestSyncTaskT, PhaseQueue, PullTask, PushTask, QueuedPhase,
-                       sync_with_guests)
+from tmt.steps import (
+    Action,
+    PhaseQueue,
+    PullTask,
+    PushTask,
+    QueuedPhase,
+    sync_with_guests,
+    )
 from tmt.steps.provision import Guest
 from tmt.utils import uniq
 
