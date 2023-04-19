@@ -549,8 +549,8 @@ _test_templates = listed(tmt.templates.TEST, join='or')
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
-    help='Test template ({}).'.format(_test_templates),
-    prompt='Template ({})'.format(_test_templates))
+    help=f'Test template ({_test_templates}).',
+    prompt=f'Template ({_test_templates})')
 @verbosity_options
 @force_dry_options
 def tests_create(
@@ -671,7 +671,7 @@ def tests_import(
         path = path.resolve()
         if not path.is_dir():
             raise tmt.utils.GeneralError(
-                "Path '{0}' is not a directory.".format(path))
+                f"Path '{path}' is not a directory.")
         # Gather old metadata and store them as fmf
         common, individual = tmt.convert.read(
             path, makefile, restraint, nitrate, polarion, polarion_case_id, link_polarion,
@@ -932,8 +932,8 @@ _plan_templates = listed(tmt.templates.PLAN, join='or')
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
-    help='Plan template ({}).'.format(_plan_templates),
-    prompt='Template ({})'.format(_plan_templates))
+    help=f'Plan template ({_plan_templates}).',
+    prompt=f'Template ({_plan_templates})')
 @option(
     '--discover', metavar='YAML', multiple=True,
     help='Discover phase content in yaml format.')
@@ -1122,8 +1122,8 @@ _story_templates = listed(tmt.templates.STORY, join='or')
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
-    prompt='Template ({})'.format(_story_templates),
-    help='Story template ({}).'.format(_story_templates))
+    prompt=f'Template ({_story_templates})',
+    help=f'Story template ({_story_templates}).')
 @verbosity_options
 @force_dry_options
 def stories_create(
@@ -1206,11 +1206,11 @@ def stories_coverage(
     if not total:
         return
     if code:
-        headfoot('{}%'.format(round(100 * code_coverage / total)))
+        headfoot(f'{round(100 * code_coverage / total)}%')
     if test:
-        headfoot('{}%'.format(round(100 * test_coverage / total)))
+        headfoot(f'{round(100 * test_coverage / total)}%')
     if docs:
-        headfoot('{}%'.format(round(100 * docs_coverage / total)))
+        headfoot(f'{round(100 * docs_coverage / total)}%')
     headfoot('from {}'.format(listed(total, 'story')))
     echo()
 

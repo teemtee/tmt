@@ -119,7 +119,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
         while html_splitlines:
             try:
                 if re.search("^" + key + "$", html_splitlines[i]):
-                    html_content = str()
+                    html_content = ''
                     if key.startswith('<h1>Test'):
                         html_content = html_splitlines[i].\
                             replace('<h1>', '<b>').\
@@ -249,12 +249,12 @@ def return_markdown_file() -> Optional[Path]:
     if len(md_files) == 1:
         return Path.cwd() / str(md_files[0])
     if not md_files:
-        echo((style(f'Markdown file doesn\'t exist {fail_message}',
-                    fg='yellow')))
+        echo(style(f'Markdown file doesn\'t exist {fail_message}',
+                   fg='yellow'))
         return None
 
-    echo((style(f'{len(md_files)} Markdown files found {fail_message}',
-                fg='yellow')))
+    echo(style(f'{len(md_files)} Markdown files found {fail_message}',
+               fg='yellow'))
     return None
 
 
@@ -269,7 +269,7 @@ def get_category(path: Path) -> str:
         if category_search:
             category = category_search.group(1)
     # Default to 'Sanity' if Makefile or Type not found
-    except (IOError, AttributeError):
+    except (OSError, AttributeError):
         pass
     return category
 
@@ -640,7 +640,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Update nitrate test case
     if not dry_mode:
         nitrate_case.update()
-        echo(style("Test case '{0}' successfully exported to nitrate.".format(
+        echo(style("Test case '{}' successfully exported to nitrate.".format(
             nitrate_case.identifier), fg='magenta'))
 
     # Optionally link Bugzilla to Nitrate case

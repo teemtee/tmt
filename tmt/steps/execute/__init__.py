@@ -573,7 +573,7 @@ class Execute(tmt.steps.Step):
         # There should be just a single definition
         if len(self.data) > 1:
             raise tmt.utils.SpecificationError(
-                "Multiple execute steps defined in '{}'.".format(self.plan))
+                f"Multiple execute steps defined in '{self.plan}'.")
 
         # Choose the right plugin and wake it up
         # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599

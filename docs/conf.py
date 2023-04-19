@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #  documentation build configuration file, created by
 # sphinx-quickstart on Mon Apr 27 17:44:03 2015.
@@ -72,9 +71,9 @@ master_doc = 'index'
 master_man = 'man.1'
 
 # General information about the project.
-project = u'tmt'
-copyright = u'Red Hat'
-author = u'Petr Šplíchal'
+project = 'tmt'
+copyright = 'Red Hat'
+author = 'Petr Šplíchal'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -241,7 +240,7 @@ htmlhelp_basename = 'doc'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_man, '', u'tmt Documentation',
+    (master_man, '', 'tmt Documentation',
      [author], 1)
     ]
 

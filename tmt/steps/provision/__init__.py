@@ -398,7 +398,7 @@ class Guest(tmt.utils.Common):
         assert parent.plan.my_run is not None  # narrow type
         assert parent.plan.my_run.workdir is not None  # narrow type
         run_id = parent.plan.my_run.workdir.name
-        return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
+        return self._random_name(prefix=f"tmt-{run_id[-3:]}-")
 
     @property
     def multihost_name(self) -> str:

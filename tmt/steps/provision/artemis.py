@@ -118,12 +118,9 @@ GUEST_STATE_COLORS = {
 
 # Type annotation for Artemis API `GET /guests/$guestname` response.
 # Partial, not all fields necessary since plugin ignores most of them.
-GuestInspectType = TypedDict(
-    'GuestInspectType', {
-        'state': str,
-        'address': Optional[str]
-        }
-    )
+class GuestInspectType(TypedDict):
+    state: str
+    address: Optional[str]
 
 
 class ArtemisAPI:

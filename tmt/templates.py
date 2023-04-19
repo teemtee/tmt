@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """ Default Templates """
 
 from typing import Dict

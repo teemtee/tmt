@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import re
-from io import open
 from typing import Dict, List
 
 from setuptools import setup
@@ -109,7 +107,7 @@ with open(readme, encoding='utf-8') as _file:
     readme = _file.read()
 
 github = 'https://github.com/teemtee/tmt'
-download_url = '{0}/archive/main.zip'.format(github)
+download_url = f'{github}/archive/main.zip'
 
 setup(
     url=github,

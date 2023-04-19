@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """ Convert metadata into the new format """
 
 import copy
@@ -8,7 +6,6 @@ import pprint
 import re
 import shlex
 import subprocess
-from io import open
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
@@ -103,7 +100,7 @@ def read_manual(
         directory.mkdir(exist_ok=True)
 
         os.chdir(directory)
-        echo("Importing the '{0}' test case.".format(directory))
+        echo(f"Importing the '{directory}' test case.")
 
         # Test case data
         md_content = read_manual_data(testcase)
@@ -164,7 +161,7 @@ def write_markdown(path: Path, content: Dict[str, str]) -> None:
             md_file.write(to_print)
             echo(style(
                 f"Test case successfully stored into '{path}'.", fg='magenta'))
-    except IOError:
+    except OSError:
         raise ConvertError(f"Unable to write '{path}'.")
 
 
@@ -276,7 +273,7 @@ def read_datafile(
                     makefile = makefile_file.read()
                     search_result = \
                         re.search(makefile_regex_test, makefile, re.M)
-            except IOError:
+            except OSError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
             if search_result is not None:
@@ -291,8 +288,8 @@ def read_datafile(
         else:
             data["framework"] = "shell"
         echo(style("framework: ", fg="green") + data["framework"])
-    except IOError:
-        raise ConvertError("Unable to open '{0}'.".format(test_path))
+    except OSError:
+        raise ConvertError(f"Unable to open '{test_path}'.")
 
     # Contact
     search_result = re.search(regex_contact, testinfo, re.M)
@@ -399,7 +396,7 @@ def read(
     data for individual testcases (if multiple nitrate testcases found).
     """
 
-    echo("Checking the '{0}' directory.".format(path))
+    echo(f"Checking the '{path}' directory.")
 
     # Make sure there is a metadata tree initialized
     try:
@@ -457,10 +454,10 @@ def read(
         try:
             with open(datafile_path, encoding='utf-8') as datafile_file:
                 datafile = datafile_file.read()
-        except IOError:
-            raise ConvertError("Unable to open '{0}'.".format(
+        except OSError:
+            raise ConvertError("Unable to open '{}'.".format(
                 datafile_path))
-        echo("found in '{0}'.".format(datafile_path))
+        echo(f"found in '{datafile_path}'.")
 
     # If testinfo.desc exists read it to preserve content and remove it
     testinfo_path = path / 'testinfo.desc'
@@ -469,9 +466,9 @@ def read(
             with open(testinfo_path, encoding='utf-8') as testinfo_file:
                 old_testinfo = testinfo_file.read()
             testinfo_path.unlink()
-        except IOError:
+        except OSError:
             raise ConvertError(
-                "Unable to open '{0}'.".format(testinfo_path))
+                f"Unable to open '{testinfo_path}'.")
     else:
         old_testinfo = None
 
@@ -493,7 +490,7 @@ def read(
         except FileNotFoundError:
             raise ConvertError(
                 "Install tmt-test-convert to "
-                "convert metadata from {0}.".format(filename))
+                "convert metadata from {}.".format(filename))
         except subprocess.CalledProcessError:
             raise ConvertError(
                 "Failed to convert metadata using 'make testinfo.desc'.")
@@ -502,8 +499,8 @@ def read(
         try:
             with open(testinfo_path, encoding='utf-8') as testinfo_file:
                 testinfo = testinfo_file.read()
-        except IOError:
-            raise ConvertError("Unable to open '{0}'.".format(
+        except OSError:
+            raise ConvertError("Unable to open '{}'.".format(
                 testinfo_path))
 
     # restraint
@@ -569,9 +566,9 @@ def read(
             try:
                 with open(testinfo_path, 'w', encoding='utf-8') as testinfo_file:
                     testinfo_file.write(old_testinfo)
-            except IOError:
+            except OSError:
                 raise ConvertError(
-                    "Unable to write '{0}'.".format(testinfo_path))
+                    f"Unable to write '{testinfo_path}'.")
         # Remove created testinfo.desc otherwise
         else:
             testinfo_path.unlink()
@@ -586,13 +583,13 @@ def read(
         try:
             with open(purpose_path, encoding='utf-8') as purpose_file:
                 content = purpose_file.read()
-            echo("found in '{0}'.".format(purpose_path))
+            echo(f"found in '{purpose_path}'.")
             for header in ['PURPOSE', 'Description', 'Author']:
-                content = re.sub('^{0}.*\n'.format(header), '', content)
+                content = re.sub(f'^{header}.*\n', '', content)
             data['description'] = content.lstrip('\n')
             echo(style('description:', fg='green'))
             echo(data['description'].rstrip('\n'))
-        except IOError:
+        except OSError:
             echo("not found.")
 
     # Nitrate (extract contact, environment and relevancy)
@@ -694,11 +691,11 @@ def read_nitrate(
             gssapi.raw.misc.GSSError) as error:
         raise ConvertError(str(error))
     if not testcases:
-        echo("No {0}testcase found for '{1}'.".format(
+        echo("No {}testcase found for '{}'.".format(
             '' if disabled else 'non-disabled ', beaker_task))
         return common_data, []
     elif len(testcases) > 1:
-        echo("Multiple test cases found for '{0}'.".format(beaker_task))
+        echo(f"Multiple test cases found for '{beaker_task}'.")
 
     # Process individual test cases
     individual_data = []
@@ -726,9 +723,9 @@ def read_nitrate(
                        "successfully removed.", fg='magenta'))
         except FileNotFoundError:
             pass
-        except IOError:
+        except OSError:
             raise ConvertError(
-                "Unable to remove '{0}'.".format(md_path))
+                f"Unable to remove '{md_path}'.")
 
     # Merge environment from Makefile and Nitrate
     if 'environment' in common_data:
@@ -960,7 +957,7 @@ def read_nitrate_case(
     import tmt.export.nitrate
 
     data: NitrateDataType = {'tag': []}
-    echo("test case found '{0}'.".format(testcase.identifier))
+    echo(f"test case found '{testcase.identifier}'.")
     # Test identifier
     data['extra-nitrate'] = testcase.identifier
     # Beaker task name (taken from summary)
@@ -1101,15 +1098,15 @@ def adjust_runtest(path: Path) -> None:
                 else:
                     runtest.write(line)
             runtest.truncate()
-    except IOError:
-        raise ConvertError("Unable to read/write '{0}'.".format(path))
+    except OSError:
+        raise ConvertError(f"Unable to read/write '{path}'.")
 
     # Make sure the script has correct execute permissions
     try:
         path.chmod(0o755)
-    except IOError:
+    except OSError:
         raise tmt.convert.ConvertError(
-            "Could not make '{0}' executable.".format(path))
+            f"Could not make '{path}' executable.")
 
 
 def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
@@ -1129,11 +1126,11 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
     try:
         with open(path, 'w', encoding='utf-8') as fmf_file:
             fmf_file.write(tmt.utils.dict_to_yaml(sorted_data))
-    except IOError:
-        raise ConvertError("Unable to write '{0}'".format(path))
+    except OSError:
+        raise ConvertError(f"Unable to write '{path}'")
     if not quiet:
         echo(style(
-            "Metadata successfully stored into '{0}'.".format(path), fg='magenta'))
+            f"Metadata successfully stored into '{path}'.", fg='magenta'))
 
 
 def relevancy_to_adjust(

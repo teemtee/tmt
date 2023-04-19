@@ -704,7 +704,7 @@ class Core(
     @classmethod
     def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
         """ Save provided command line context for future use """
-        super(Core, cls)._save_cli_context(context)
+        super()._save_cli_context(context)
 
         # Handle '.' as an alias for the current working directory
         names = cls._opt('names')
@@ -725,7 +725,7 @@ class Core(
     def name_and_summary(self) -> str:
         """ Node name and optional summary """
         if self.summary:
-            return '{0} ({1})'.format(self.name, self.summary)
+            return f'{self.name} ({self.summary})'
         else:
             return self.name
 
@@ -1653,7 +1653,7 @@ class Plan(
             content = tmt.templates.PLAN[template]
         except KeyError:
             raise tmt.utils.GeneralError(
-                "Invalid template '{}'.".format(template))
+                f"Invalid template '{template}'.")
 
         # Override template with data provided on command line
         content = Plan.edit_template(content)
@@ -2184,7 +2184,7 @@ class Story(
             content = tmt.templates.STORY[template]
         except KeyError:
             raise tmt.utils.GeneralError(
-                "Invalid template '{}'.".format(template))
+                f"Invalid template '{template}'.")
 
         tmt.utils.create_file(
             path=story_path, content=content,
@@ -2917,7 +2917,7 @@ class Run(tmt.utils.Common):
     def follow(self) -> None:
         """ Periodically check for new lines in the log. """
         assert self.workdir is not None  # narrow type
-        logfile = open(self.workdir / tmt.log.LOG_FILENAME, 'r')
+        logfile = open(self.workdir / tmt.log.LOG_FILENAME)
         # Move to the end of the file
         logfile.seek(0, os.SEEK_END)
         # Rewind some lines back to show more context
@@ -3001,7 +3001,7 @@ class Run(tmt.utils.Common):
         # Show summary, store run data
         if not self.plans:
             raise tmt.utils.GeneralError("No plans found.")
-        self.verbose('Found {0}.'.format(listed(self.plans, 'plan')))
+        self.verbose('Found {}.'.format(listed(self.plans, 'plan')))
         self.save()
 
         # Iterate over plans

@@ -1,4 +1,3 @@
-
 """ Test Metadata Utilities """
 
 import contextlib
@@ -1658,7 +1657,7 @@ def _add_file_vars(
             f"Invalid variable file specification '{filepath}'.")
 
     try:
-        with open(filepath[1:], 'r') as file:
+        with open(filepath[1:]) as file:
             # Handle empty file as an empty environment
             content = file.read()
             if not content:
@@ -2405,13 +2404,13 @@ def markdown_to_html(filename: Path) -> str:
         raise ConvertError("Install tmt-test-convert to export tests.")
 
     try:
-        with open(filename, 'r') as file:
+        with open(filename) as file:
             try:
                 text = file.read()
             except UnicodeError:
                 raise MetadataError(f"Unable to read '{filename}'.")
             return markdown.markdown(text)
-    except IOError:
+    except OSError:
         raise ConvertError(f"Unable to open '{filename}'.")
 
 
@@ -2583,14 +2582,14 @@ def create_directory(
     """ Create a new directory, handle errors """
     say = log.debug if quiet else echo
     if path.is_dir():
-        say("Directory '{}' already exists.".format(path))
+        say(f"Directory '{path}' already exists.")
         return
     if dry:
-        say("Directory '{}' would be created.".format(path))
+        say(f"Directory '{path}' would be created.")
         return
     try:
         path.mkdir(exist_ok=True, parents=True)
-        say("Directory '{}' created.".format(path))
+        say(f"Directory '{path}' created.")
     except OSError as error:
         raise FileError("Failed to create {} '{}' ({})".format(
             name, path, error)) from error
@@ -2611,15 +2610,15 @@ def create_file(
         if force:
             action = 'would be overwritten' if dry else 'overwritten'
         else:
-            raise FileError("File '{}' already exists.".format(path))
+            raise FileError(f"File '{path}' already exists.")
 
     if dry:
-        say("{} '{}' {}.".format(name.capitalize(), path, action))
+        say(f"{name.capitalize()} '{path}' {action}.")
         return
 
     try:
         path.write_text(content)
-        say("{} '{}' {}.".format(name.capitalize(), path, action))
+        say(f"{name.capitalize()} '{path}' {action}.")
         path.chmod(mode)
     except OSError as error:
         raise FileError("Failed to create {} '{}' ({})".format(
@@ -3259,8 +3258,7 @@ class StructuredField:
 
     def __iter__(self) -> Generator[str, None, None]:
         """ By default iterate through all available section names """
-        for section in self._order:
-            yield section
+        yield from self._order
 
     def __nonzero__(self) -> bool:
         """ True when any section is defined """
@@ -3310,10 +3308,10 @@ class StructuredField:
         # Save header & footer (remove trailing new lines)
         self._header = re.sub("\n\n$", "\n", matched.groups()[0])
         if self._header:
-            log.debug(u"Parsed header:\n{0}".format(self._header))
+            log.debug(f"Parsed header:\n{self._header}")
         self._footer = re.sub("^\n", "", matched.groups()[2])
         if self._footer:
-            log.debug(u"Parsed footer:\n{0}".format(self._footer))
+            log.debug(f"Parsed footer:\n{self._footer}")
         # Split the content on the section names
         section = re.compile(r"\n\[([^\]]+)\][ \t]*\n", re.MULTILINE)
         parts = section.split(matched.groups()[1])
@@ -3325,7 +3323,7 @@ class StructuredField:
                 "Unable to detect StructuredField version")
         self.version(int(version_match.groups()[0]))
         log.debug(
-            "Detected StructuredField version {0}".format(
+            "Detected StructuredField version {}".format(
                 self.version()))
         # Convert to dictionary, remove escapes and save the order
         keys = parts[1::2]
@@ -3333,7 +3331,7 @@ class StructuredField:
         values = [escape.sub("", value) for value in parts[2::2]]
         for key, value in zip(keys, values):
             self.set(key, value)
-        log.debug(u"Parsed sections:\n{0}".format(
+        log.debug("Parsed sections:\n{}".format(
             pprint.pformat(self._sections)))
 
     def _save_version_zero(self) -> str:
@@ -3342,9 +3340,9 @@ class StructuredField:
         if self._header:
             result.append(self._header)
         for section, content in self.iterate():
-            result.append(u"[{0}]\n{1}".format(section, content))
+            result.append(f"[{section}]\n{content}")
         if self:
-            result.append(u"[end]\n")
+            result.append("[end]\n")
         if self._footer:
             result.append(self._footer)
         return "\n".join(result)
@@ -3360,13 +3358,13 @@ class StructuredField:
         # Sections
         if self:
             result.append(
-                u"[structured-field-start]\n"
-                u"This is StructuredField version {0}. "
-                u"Please, edit with care.\n".format(self._version))
+                "[structured-field-start]\n"
+                "This is StructuredField version {}. "
+                "Please, edit with care.\n".format(self._version))
             for section, content in self.iterate():
-                result.append(u"[{0}]\n{1}".format(section, escape.sub(
+                result.append("[{}]\n{}".format(section, escape.sub(
                     "[structured-field-escape]\\1", content)))
-            result.append(u"[structured-field-end]\n")
+            result.append("[structured-field-end]\n")
         # Footer
         if self._footer:
             result.append(self._footer)
@@ -3384,7 +3382,7 @@ class StructuredField:
             matched = re.search("([^=]+)=(.*)", line)
             if not matched:
                 raise StructuredFieldError(
-                    "Invalid key/value line: {0}".format(line))
+                    f"Invalid key/value line: {line}")
             key = matched.groups()[0].strip()
             value = matched.groups()[1].strip()
             # Handle multiple values if enabled
@@ -3404,9 +3402,9 @@ class StructuredField:
         for key in dictionary:
             if isinstance(dictionary[key], list):
                 for value in dictionary[key]:
-                    section += "{0} = {1}\n".format(key, value)
+                    section += f"{key} = {value}\n"
             else:
-                section += "{0} = {1}\n".format(key, dictionary[key])
+                section += f"{key} = {dictionary[key]}\n"
         return section
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3425,7 +3423,7 @@ class StructuredField:
                 self._version = version
             else:
                 raise StructuredFieldError(
-                    "Bad StructuredField version: {0}".format(version))
+                    f"Bad StructuredField version: {version}")
         return self._version
 
     def load(self, text: str, version: Optional[int] = None) -> None:
@@ -3443,7 +3441,7 @@ class StructuredField:
         # Make sure the text has a new line at the end
         if text and text[-1] != "\n":
             text += "\n"
-        log.debug(u"Parsing StructuredField\n{0}".format(text))
+        log.debug(f"Parsing StructuredField\n{text}")
         # Parse respective format version
         if self._version == 0:
             self._load_version_zero(text)
@@ -3482,7 +3480,7 @@ class StructuredField:
             content = self._sections[section]
         except KeyError:
             raise StructuredFieldError(
-                "Section [{0!r}] not found".format(ascii(section)))
+                f"Section [{ascii(section)!r}] not found")
         # Return the whole section content
         if item is None:
             return content
@@ -3491,7 +3489,7 @@ class StructuredField:
             return self._read_section(content)[item]
         except KeyError:
             raise StructuredFieldError(
-                "Unable to read '{0!r}' from section '{1!r}'".format(
+                "Unable to read '{!r}' from section '{!r}'".format(
                     ascii(item), ascii(section)))
 
     def set(self, section: str, content: Any,
@@ -3532,7 +3530,7 @@ class StructuredField:
                 del self._order[self._order.index(section)]
             except KeyError:
                 raise StructuredFieldError(
-                    "Section [{0!r}] not found".format(ascii(section)))
+                    f"Section [{ascii(section)!r}] not found")
         # Remove only selected item from the section
         else:
             try:
@@ -3540,7 +3538,7 @@ class StructuredField:
                 del (dictionary[item])
             except KeyError:
                 raise StructuredFieldError(
-                    "Unable to remove '{0!r}' from section '{1!r}'".format(
+                    "Unable to remove '{!r}' from section '{!r}'".format(
                         ascii(item), ascii(section)))
             self._sections[section] = self._write_section(dictionary)
 
@@ -3852,7 +3850,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
             / schema_filepath
 
     try:
-        with open(schema_filepath, 'r', encoding='utf-8') as f:
+        with open(schema_filepath, encoding='utf-8') as f:
             return cast(Schema, yaml_to_dict(f.read()))
 
     except Exception as exc:
@@ -4884,5 +4882,5 @@ def is_selinux_supported() -> bool:
 
     For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
     """
-    with open('/proc/filesystems', 'r') as file:
+    with open('/proc/filesystems') as file:
         return any('selinuxfs' in line for line in file)

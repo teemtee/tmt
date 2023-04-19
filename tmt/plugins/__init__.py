@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """ Handle Plugins """
 
 import importlib

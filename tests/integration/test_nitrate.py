@@ -333,7 +333,7 @@ extra-task: /tmt/integration
     def test_old_relevancy(self):
         os.chdir(self.tmpdir / "import_old_relevancy")
         files = os.listdir()
-        self.assertEquals(files, ['Makefile'])
+        self.assertEqual(files, ['Makefile'])
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main, [
@@ -348,11 +348,11 @@ extra-task: /tmt/integration
                 'arch': ['x86_64']})
 
         found_tests = tree_f36_intel.tests(names=['/import_old_relevancy'])
-        self.assertEquals(len(found_tests), 1)
+        self.assertEqual(len(found_tests), 1)
         test = found_tests[0]
         self.assertTrue(test.enabled)
-        self.assertEquals(test.environment, {'ARCH': 'not arch'})
-        self.assertEquals(test.node.get('extra-nitrate'), 'TC#0545993')
+        self.assertEqual(test.environment, {'ARCH': 'not arch'})
+        self.assertEqual(test.node.get('extra-nitrate'), 'TC#0545993')
 
         tree_f35_intel = tmt.Tree(
             logger=tmt.log.Logger.create(),
@@ -362,9 +362,9 @@ extra-task: /tmt/integration
                 'arch': ['x86_64']})
 
         found_tests = tree_f35_intel.tests(names=['/import_old_relevancy'])
-        self.assertEquals(len(found_tests), 1)
+        self.assertEqual(len(found_tests), 1)
         test = found_tests[0]
         self.assertFalse(test.enabled)
         # second rule is ignored if the order is correctly transferred
-        self.assertEquals(test.environment, {})
-        self.assertEquals(test.node.get('extra-nitrate'), 'TC#0545993')
+        self.assertEqual(test.environment, {})
+        self.assertEqual(test.node.get('extra-nitrate'), 'TC#0545993')

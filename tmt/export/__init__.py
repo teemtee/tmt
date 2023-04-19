@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Metadata export functionality core.
 

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """ Common options and the MethodCommand class """
 
 import re

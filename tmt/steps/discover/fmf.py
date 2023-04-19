@@ -236,7 +236,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
     def go(self) -> None:
         """ Discover available tests """
-        super(DiscoverFmf, self).go()
+        super().go()
 
         # Check url and path, prepare test directory
         url = self.get('url')

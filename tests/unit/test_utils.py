@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import datetime
 import queue
 import re
@@ -473,22 +471,22 @@ class TestStructuredField(unittest.TestCase):
 
     def test_unicode_header(self):
         """ Unicode text in header """
-        text = u"Už abychom měli unicode jako defaultní kódování!"
+        text = "Už abychom měli unicode jako defaultní kódování!"
         field = StructuredField(text)
         field.set("section", "content")
         self.assertTrue(text in field.save())
 
     def test_unicode_section_content(self):
         """ Unicode in section content """
-        chars = u"ěščřžýáíéů"
+        chars = "ěščřžýáíéů"
         text = "\n".join([self.start, "[section]", chars, self.end])
         field = StructuredField(text)
         self.assertEqual(field.get("section").strip(), chars)
 
     def test_unicode_section_name(self):
         """ Unicode in section name """
-        chars = u"ěščřžýáíéů"
-        text = "\n".join([self.start, u"[{0}]\nx".format(chars), self.end])
+        chars = "ěščřžýáíéů"
+        text = "\n".join([self.start, f"[{chars}]\nx", self.end])
         field = StructuredField(text)
         self.assertEqual(field.get(chars).strip(), "x")
 
@@ -508,7 +506,7 @@ class TestStructuredField(unittest.TestCase):
         original.set("name", "value")
         # Test with both space and tab appended after the section tag
         for char in [" ", "\t"]:
-            spaced = re.sub(r"\]\n", "]{0}\n".format(char), original.save())
+            spaced = re.sub(r"\]\n", f"]{char}\n", original.save())
             copy = StructuredField(spaced)
             self.assertEqual(original.get("name"), copy.get("name"))
 
