@@ -85,9 +85,12 @@ select = [
 #    "SLF",  # flake8-self
 #    "TCH",  # flake8-type-checking
     "PGH",  # pygrep-hooks
-#    "PLC",  # pylint-convention
-#    "PLE",  # pylint-error
-#    "PLR",  # pylint-refactor
+    "PLC",  # pylint-convention
+    "PLE",  # pylint-error
+    "PLR01",  # pylint-refactor
+    "PLR02",
+    "PLR04",
+    "PLR1",
 #    "PLW",  # pylint-warning
 #    "TRY",  # tryceratops
     "RUF",  # ruff
@@ -96,6 +99,8 @@ ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     "PIE790",  # Unnecessary `pass` statement
+    "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
+    "PLE1205",  # Too many arguments for `logging` format string
     "SIM222",  # expr-or-True charliermarsh/ruff#4058
 ]
 
