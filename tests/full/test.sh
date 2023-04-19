@@ -26,6 +26,9 @@ TEST_CMD="${TEST_CMD:-}"
 # Run whole test suite ('all') or just scope not covered by CI ('complement')
 SCOPE="${SCOPE:-all}"
 
+# Set to '1' to test the coverage
+COVERAGE="${COVERAGE:-0}"
+
 set -o pipefail
 
 
@@ -84,8 +87,12 @@ rlJournalStart
 
         # Do not "patch" version for pre-release...
         [[ $PRE_RELEASE -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i tmt.spec"
+        # Do not add -s into shabang -- https://docs.fedoraproject.org/en-US/packaging-guidelines/Python/#_shebangs
+        if [[ $COVERAGE -eq 1 ]]; then
+            rlRun "sed '1 a %undefine _py3_shebang_s' -i tmt.spec"
+        fi
 
-        # Build tmt packages
+        # Install missing requires and build tmt packages
         rlRun "dnf builddep -y tmt.spec" 0 "Install build dependencies"
         rlRun "make rpm" || rlDie "Failed to build tmt rpms"
 
@@ -179,6 +186,7 @@ EOF
 
         # Make all local changes visible in the log
         rlRun "git diff | cat"
+
         if [ -z "$PLANS" ]; then
             if [[ $SCOPE =~ 'complement' ]]; then
                 FILTER="--filter tag:additional_coverage"
@@ -186,13 +194,36 @@ EOF
             rlRun "su -l -c 'cd $USER_HOME/tmt; NO_COLOR=1 tmt -c how=full plans ls --enabled $FILTER > $USER_HOME/enabled_plans' $USER"
             PLANS="$(echo $(cat $USER_HOME/enabled_plans))"
         fi
+
+        # Coverage configuration
+        if [[ $COVERAGE -eq 1 ]]; then
+            rlRun "export USER_COVERAGERC=$USER_HOME/coveragerc"
+
+            cat <<EOF > $USER_COVERAGERC
+[run]
+data_file=$USER_HOME/coverage__
+parallel=True
+source=
+    $(dirname $(rpm -ql python3-tmt | grep tmt/base.py$))
+    $(command -v tmt)
+EOF
+            USER_SITE="$(su -l -c 'python3 -m site --user-site' $USER)"
+            rlRun "mkdir -p $USER_SITE"
+            # Note that shabang is changed from default (in tmt.spec) so site is allowed for system packages
+            cat <<EOF > $USER_SITE/sitecustomize.py
+import coverage
+coverage.process_startup()
+EOF
+            rlRun "export COVERAGE_OPT=COVERAGE_PROCESS_START=$USER_HOME/coveragerc"
+            rlRun "chown $USER:$USER -R $USER_HOME"
+        fi
     rlPhaseEnd
 
     for plan in $PLANS; do
         rlPhaseStartTest "Test: $plan"
             RUN="run$(echo $plan | tr '/' '-')"
             # Core of the test runs as $USER, -l should clear all BEAKER_envs.
-            rlRun "su -l -c 'cd $USER_HOME/tmt; tmt -c how=full run --id $USER_HOME/$RUN -vvv -a report -h html plans --name $plan $TEST_CMD' $USER"
+            rlRun "su -l -c 'cd $USER_HOME/tmt; $COVERAGE_OPT tmt -c how=full run --id $USER_HOME/$RUN -vvv -a report -h html plans --name $plan $TEST_CMD' $USER"
 
             # Upload file so one can review ASAP
             rlRun "tar czf /tmp/$RUN.tgz  --exclude *.qcow2 $USER_HOME/$RUN"
@@ -226,6 +257,14 @@ EOF
     done
 
     rlPhaseStartCleanup
+        if [[ $COVERAGE -eq 1 ]]; then
+            rlRun "su -l -c 'coverage combine --rcfile=$USER_COVERAGERC' $USER"
+            rlRun "su -l -c 'coverage report --rcfile=$USER_COVERAGERC' $USER"
+            rlRun "su -l -c 'coverage html -d $USER_HOME/coverage_html --rcfile=$USER_COVERAGERC' $USER"
+
+            rlRun "su -l -c 'tar czf $USER_HOME/coverage-html.tgz $USER_HOME/coverage_html' $USER"
+            rlFileSubmit $USER_HOME/coverage-html.tgz
+        fi
         rlRun "su -l -c 'tmt run --id $CONNECT_RUN plans --default finish' $USER"
         rlFileRestore
         rlRun "pkill -u $USER" 0,1
