@@ -73,21 +73,16 @@ select = [
 #    "FBT",  # flake8-boolean-trap
 #    "A",  # flake8-builtins
     "COM",  # flake8-commas
-#    "C4",  # flake8-comprehensions
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
 #    "EM",  # flake8-errmsg
     "EXE",  # flake8-executable
-#    "ISC",  # flake8-implicit-str-concat
 #    "G",  # flake8-logging-format
 #    "PIE",  # flake8-pie
 #    "T20",  # flake8-print
-#    "PT",  # flake8-pytest-style
 #    "Q",  # flake8-quotes
 #    "RSE",  # flake8-raise
-#    "RET",  # flake8-return
 #    "SLF",  # flake8-self
-#    "SIM",  # flake8-simplify
 #    "TCH",  # flake8-type-checking
     "PGH",  # pygrep-hooks
 #    "PLC",  # pylint-convention
