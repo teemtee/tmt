@@ -242,6 +242,10 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
     Methods should be already sorted according to their priority.
     """
 
+    def is_likely_subcommand(arg: str, subcommands: List[str]) -> bool:
+        """ Return true if arg is the beginning characters of a subcommand """
+        return any(subcommand.startswith(arg) for subcommand in subcommands)
+
     class MethodCommand(click.Command):
         _method: Optional[click.Command] = None
 
@@ -268,7 +272,7 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
                     how = re.sub('^-h ?', '', arg)
                     break
                 # Stop search at the first argument looking like a subcommand
-                elif arg in subcommands:
+                elif is_likely_subcommand(arg, subcommands):
                     break
 
             # Find method with the first matching prefix
