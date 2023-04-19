@@ -118,10 +118,8 @@ def _assert_log(
     # Given a logging record, apply all field/operator/value triplets, and make sure all match the
     # actual record properties.
     def _cmp(record: logging.LogRecord) -> bool:
-        return all([
-            op(expected_value, field_getter(record, field_name))
-            for field_getter, field_name, op, expected_value in operators
-            ])
+        return all(op(expected_value, field_getter(record, field_name))
+                   for field_getter, field_name, op, expected_value in operators)
 
     # Final step: apply our "make sure field/operator/value triplets match given record" to each
     # and every record, and reduce per-record results into a single answer. By default, `any` is

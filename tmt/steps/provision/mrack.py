@@ -117,7 +117,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
                 if parts[0]:
                     continue
 
-                if any([op in parts[1] for op in op]):
+                if any(op in parts[1] for op in op):
                     continue
 
                 result.append(op)

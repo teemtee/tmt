@@ -78,7 +78,7 @@ select = [
 #    "EM",  # flake8-errmsg
     "EXE",  # flake8-executable
 #    "G",  # flake8-logging-format
-#    "PIE",  # flake8-pie
+    "PIE",  # flake8-pie
 #    "T20",  # flake8-print
 #    "Q",  # flake8-quotes
 #    "RSE",  # flake8-raise
@@ -95,6 +95,7 @@ select = [
 ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
+    "PIE790",  # Unnecessary `pass` statement
     "SIM222",  # expr-or-True charliermarsh/ruff#4058
 ]
 
