@@ -189,7 +189,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
         assert test.path is not None  # narrow type
-        workdir = self.discover.workdir.parent / test.path.unrooted()
+        workdir = self.discover.workdir / test.path.unrooted()
         logger.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
@@ -431,18 +431,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             if self._login_after_test:
                 assert test.path is not None  # narrow type
 
-                # TODO: get rid of this as soon as we get rid of patching phase.discover
-                if isinstance(self.discover, tmt.steps.discover.Discover):
-                    parent_workdir = self.discover.workdir
-                else:
-                    assert self.discover.parent is not None  # narrow type
-
-                    parent_workdir = self.discover.parent.workdir
-
-                if parent_workdir is None:
+                if self.discover.workdir is None:
                     cwd = test.path.unrooted()
                 else:
-                    cwd = parent_workdir / test.path.unrooted()
+                    cwd = self.discover.workdir / test.path.unrooted()
                 self._login_after_test.after_test(
                     result,
                     cwd=cwd,

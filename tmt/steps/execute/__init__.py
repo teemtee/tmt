@@ -3,7 +3,7 @@ import dataclasses
 import re
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
 import click
 import fmf
@@ -129,6 +129,9 @@ class ExecutePlugin(tmt.steps.Plugin):
 
     _login_after_test: Optional[tmt.steps.Login] = None
 
+    #: If set, plugin should run tests only from this discover phase.
+    discover_phase: Optional[str] = None
+
     def __init__(
             self,
             *,
@@ -184,20 +187,10 @@ class ExecutePlugin(tmt.steps.Plugin):
             'exit-first', self.get('exit-first', default=False),
             'green', level=2)
 
-    # TODO: this is an ugly workaround for the fact go() does not accept
-    # a list of tests to run, but uses external dependency, `self.discover`,
-    # to find out what to run.
-    _discover: Optional['tmt.steps.discover.DiscoverPlugin'] = None
-
     @property
-    def discover(self) -> Union[
-            'tmt.steps.discover.Discover',
-            'tmt.steps.discover.DiscoverPlugin']:
+    def discover(self) -> tmt.steps.discover.Discover:
         """ Return discover plugin instance """
         # This is necessary so that upgrade plugin can inject a fake discover
-
-        if self._discover is not None:
-            return self._discover
 
         return self.step.plan.discover
 
@@ -241,7 +234,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         the aggregated metadata in a file under the test data directory
         and finally return a list of discovered tests.
         """
-        tests: List[tmt.Test] = self.discover.tests(enabled=True)
+        tests: List[tmt.Test] = self.discover.tests(phase_name=self.discover_phase, enabled=True)
         for test in tests:
             metadata_filename = self.data_path(
                 test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)
@@ -607,7 +600,7 @@ class Execute(tmt.steps.Step):
             else:
                 for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
                     phase_copy = cast(ExecutePlugin, copy.copy(phase))
-                    phase_copy.discover = discover
+                    phase_copy.discover_phase = discover.name
 
                     queue.enqueue(
                         phase=phase_copy,
