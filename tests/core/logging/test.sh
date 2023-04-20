@@ -7,11 +7,11 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Logging topics"
-        rlRun -s "tmt -dddd plan show > /dev/null"
+        rlRun -s "tmt -dddd plan show /plans/features/core > /dev/null"
         rlAssertNotGrep "key source" $rlRun_LOG
         rlAssertNotGrep "normalized fields" $rlRun_LOG
 
-        rlRun -s "tmt --log-topic=key-normalization -dddd plan show > /dev/null"
+        rlRun -s "tmt --log-topic=key-normalization -dddd plan show /plans/features/core > /dev/null"
         rlAssertGrep "key source" $rlRun_LOG
         rlAssertGrep "normalized fields" $rlRun_LOG
     rlPhaseEnd
