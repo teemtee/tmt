@@ -25,8 +25,12 @@ else:
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: no change, fixes issues with validation
+    '0.0.55',
     # NEW: added Kickstart specification
     '0.0.53',
+    # NEW: added compatible HW constraint
+    '0.0.48',
     # NEW: added missing cpu.processors constraint
     '0.0.47',
     # NEW: added new CPU constraints
