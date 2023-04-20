@@ -35,8 +35,8 @@ DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
 
 # Supported steps and actions
-STEPS = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
-ACTIONS = ['login', 'reboot']
+STEPS: List[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
+ACTIONS: List[str] = ['login', 'reboot']
 
 # Step phase order
 PHASE_START = 10
