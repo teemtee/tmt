@@ -2860,9 +2860,14 @@ class Login(Action):
         Login to the guest(s)
         """
 
-        # Skip to log into the guest if option '--test' is specified as
-        # it is unnecessary to log into the guest more than one time
-        if self.opt('test'):
+        # Skip to log into the guest if option '--test' is specified as it is unnecessary to log
+        # into the guest more than one time. But we should support two cases in the following:
+        # a) -t --when <result>: As tmt user I want to login to the guest with the same environment
+        #        as the test immediately after that test finishes with RESULT so I can investigate
+        #        why if finished in such result (e.g. --when fail to see why test fails)
+        # b) -t --when <result> --step <step>: As a tmt user I want to investiage test result in
+        #        execute step but I want to login to the guest in other steps than execute as well
+        if self.opt('test') and not self.opt('when') and not self.opt('step'):
             return
 
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
