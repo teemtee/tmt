@@ -1,35 +1,29 @@
-provision:
+discover:
   - name: server
-    how: virtual
-    connection: system
-  - name: client-one
-    how: virtual
-    role: client
-    connection: system
-  - name: client-two
-    how: virtual
-    connection: system
-    role: client
+    how: fmf
+    where: server
+    test: /test/server
 
-prepare:
-  - name: Install httpd
-    how: install
-    package: httpd
-    where: server
-  - name: Start the service
-    how: shell
-    script: systemctl start httpd
-    where: server
-  - name: Prepare page
-    how: shell
-    script: echo foo > /var/www/html/index.html
-    where: server
-
-  - name: Install curl
-    how: install
-    package: curl
+  - name: client
+    how: fmf
     where: client
+    test: /test/client
+
+provision:
+  - name: httpd-server
+    role: server
+    how: virtual
+    connection: system
+
+  - name: wget-client
+    role: client
+    how: virtual
+    connection: system
+
+  - name: curl-client
+    role: client
+    how: virtual
+    connection: system
 
 execute:
-    script: curl http://server/ | grep foo
-    where: client
+    how: tmt
