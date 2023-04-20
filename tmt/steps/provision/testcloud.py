@@ -140,20 +140,18 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
       <driver name='qemu' type='qcow2' cache='unsafe'/>
       <source file="{{ disk }}"/>
       <target dev='vda' bus='virtio'/>
-      {{ boot_drive_address }}
     </disk>
     <disk type='file' device='disk'>
       <driver name='qemu' type='raw'/>
       <source file="{{ seed }}"/>
       <target dev='vdb' bus='virtio'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
     </disk>
+    {{ additional_disks }}
     <interface type='{{ network_type }}'>
       <mac address="{{ mac_address }}"/>
       {{ network_source }}
       {{ ip_setup }}
       <model type='virtio'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </interface>
     <serial type='pty'>
       <target port='0'/>
@@ -162,6 +160,7 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
       <target type='serial' port='0'/>
     </console>
     <input type="keyboard" bus="virtio"/>
+    {{ tpm }}
     <rng model='virtio'>
       <backend model='random'>/dev/urandom</backend>
     </rng>
