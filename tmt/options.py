@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 import click
 
+import tmt.log
 import tmt.utils
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
@@ -50,6 +51,12 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
     click.option(
         '-q', '--quiet', is_flag=True,
         help='Be quiet. Exit code is just enough for me.'),
+    click.option(
+        '--log-topic',
+        metavar=f'[{"|".join(topic.value for topic in tmt.log.Topic)}]',
+        multiple=True,
+        type=str,
+        help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
 # Force and dry actions

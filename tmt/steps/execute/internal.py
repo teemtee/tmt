@@ -9,6 +9,7 @@ import click
 
 import tmt
 import tmt.base
+import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.execute
@@ -170,7 +171,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 2,
-            level: int = 3) -> None:
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """ Custom logger for test output with shift 2 and level 3 defaults """
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 

@@ -179,7 +179,8 @@ class BaseLoggerFnType(Protocol):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         pass
 
 
@@ -888,13 +889,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested verbose mode level
 
         In quiet mode verbose messages are not displayed.
         """
-        self._logger.verbose(key, value=value, color=color, shift=shift, level=level)
+        self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def debug(
             self,
@@ -902,13 +904,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested debug mode level
 
         In quiet mode debug messages are not displayed.
         """
-        self._logger.debug(key, value=value, color=color, shift=shift, level=level)
+        self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def warn(self, message: str, shift: int = 0) -> None:
         """ Show a yellow warning message on info level, send to stderr """
@@ -924,14 +927,15 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 1,
-            level: int = 3) -> None:
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Reports the executed command in verbose mode.
 
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
+        self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def run(self,
             command: Command,
@@ -3955,17 +3959,37 @@ def dataclass_normalize_field(
         logger.debug(
             'field normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
-            level=4)
+            level=4,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         with_getattr = getattr(container, keyname, None)
         with_dict = container.__dict__.get(keyname, None)
 
-        logger.debug('value', str(value), level=4, shift=1)
-        logger.debug('current value (getattr)', str(with_getattr), level=4, shift=1)
-        logger.debug('current value (__dict__)', str(with_dict), level=4, shift=1)
+        logger.debug(
+            'value',
+            str(value),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (getattr)',
+            str(with_getattr),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (__dict__)',
+            str(with_dict),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         if value != with_getattr or with_getattr != with_dict:
-            logger.debug('known values do not match', level=4, shift=2)
+            logger.debug(
+                'known values do not match',
+                level=4,
+                shift=2,
+                topic=tmt.log.Topic.KEY_NORMALIZATION)
 
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause re-use of mutable values by other instances.
@@ -4216,8 +4240,16 @@ class NormalizeKeysMixin(_CommonBase):
 
         LOG_SHIFT, LOG_LEVEL = 2, 4
 
-        debug_intro = functools.partial(logger.debug, shift=LOG_SHIFT - 1, level=LOG_LEVEL)
-        debug = functools.partial(logger.debug, shift=LOG_SHIFT, level=LOG_LEVEL)
+        debug_intro = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT - 1,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        debug = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         debug_intro('key source')
         for k, v in key_source.items():
