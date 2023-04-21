@@ -25,6 +25,9 @@ rlJournalStart
 
         rlAssertGrep "arch: $(arch)" $rlRun_LOG
         rlAssertGrep "distro: $distro" $rlRun_LOG
+        rlAssertNotGrep "kernel: $(uname -r)" $rlRun_LOG
+        rlAssertNotGrep "package manager: dnf\|yum" $rlRun_LOG
+        rlAssertNotGrep "selinux: $selinux" $rlRun_LOG
 
         rlRun -s "tmt run -i $run --scratch -vv provision -h local plan -n /plans/features/core"
 
