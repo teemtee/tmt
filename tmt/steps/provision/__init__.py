@@ -93,9 +93,9 @@ class GuestFacts(tmt.utils.SerializableContainer):
     """
     Contains interesting facts about the guest.
 
-    Inspired by Ansible or Puppeteer facts, interesting guest facts tmt
-    discovers while managing the guest are stored in this container, plus the
-    code performing the discovery of these facts.
+    Inspired by Ansible or Puppet facts, interesting guest facts tmt
+    discovers while managing the guest are stored in this container,
+    plus the code performing the discovery of these facts.
     """
 
     #: Set to ``True`` by the first call to :py:meth:`sync`.
@@ -225,19 +225,14 @@ class GuestFacts(tmt.utils.SerializableContainer):
         for command, pattern in probes:
             output = self._execute(guest, command)
 
-            if not output:
-                continue
-
-            if not output.stdout:
-                guest.debug('command produced no usable output')
-
+            if not output or not output.stdout:
+                guest.debug('query', f'Command "{str(command)}" produced no usable output')
                 continue
 
             match = re.search(pattern, output.stdout)
 
             if not match:
-                guest.debug('command produced no usable output')
-
+                guest.debug('query', f'Command "{str(command)}" produced no usable output')
                 continue
 
             return match.group(1)
@@ -357,8 +352,6 @@ class Guest(tmt.utils.Common):
     role: Optional[str]
     guest: Optional[str]
 
-    # facts: GuestFacts
-
     # Flag to indicate localhost guest, requires special handling
     localhost = False
 
@@ -462,17 +455,28 @@ class Guest(tmt.utils.Common):
         """
         self.debug(f"Doing nothing to start guest '{self.guest}'.")
 
-    # A bit of Python magic: we want to run `sync()` when first accessing
-    # `self.facts`. But the field might be already initialized because
-    # of how guest data => guest key loading works. Also, we can't afford
-    # to have an extra member, like ``_facts``, to store ``None``until facts
-    # are loaded, because such a field would not be serialized, and we want
-    # to save the facts we found already, to save time.
+    # A couple of requiremens for this field:
     #
-    # Therefore we overshadow the ``facts`` member here, with a property,
-    # and when accessed, we call the method. The only issue is, we need to
-    # make sure to not access ``self.facts`` directly because fo recursion,
-    # but we can update it via ``self.__dict__``.
+    # * it should be valid, i.e. when someone tries to access it, the values
+    #   should be there.
+    # * it should be serializable so we can save & load it, to save time when
+    #   using the guest once again.
+    #
+    # Note that the facts container, `GuestFacts`, is already provided to us,
+    # in `GuestData` package given to `Guest.__init__()`, and it's saved in
+    # our `__dict__`. It's just empty.
+    #
+    # A bit of Python magic then:
+    #
+    # * a property it is, it allows us to do some magic on access. Also,
+    #   `guest.facts` is much better than `guest.data.facts`.
+    # * property does not need to care about instantiation of the container,
+    #   it just works with it.
+    # * when accessed, property takes the facts container and starts the sync,
+    #   if needed. This is probably going to happen just once, on the first
+    #   access, unless something explicitly invalidates the facts.
+    # * when loaded from `guests.yaml`, the container is unserialized and put
+    #   directly into `__dict__`, like nothing has happened.
     @property
     def facts(self) -> GuestFacts:
         facts = cast(GuestFacts, self.__dict__['facts'])
