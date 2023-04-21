@@ -1387,6 +1387,10 @@ class PhaseQueue(List[QueuedPhase]):
         :param guests: one or more guests to run the phase on.
         """
 
+        if not guests:
+            raise tmt.utils.MetadataError(
+                f'No guests queued for phase "{phase}". A typo in "where" key?')
+
         queue_item = QueuedPhase(
             phase=phase,
             guests=guests
