@@ -229,8 +229,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 color: Optional[str] = None,
                 shift: int = 2,
                 level: int = 3,
-                err: bool = False) -> None:
-            logger.verbose(key=key, value=value, color=color, shift=shift, level=level)
+                topic: Optional[tmt.log.Topic] = None) -> None:
+            logger.verbose(
+                key=key,
+                value=value,
+                color=color,
+                shift=shift,
+                level=level,
+                topic=topic)
 
         # Execute the test, save the output and return code
         start = time.time()
