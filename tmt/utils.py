@@ -1559,8 +1559,8 @@ def copytree(
     if not dirs_exist_ok or sys.version_info >= (3, 8):
         return cast(
             Path,
-            shutil.copytree(src=src, dst=dst, symlinks=symlinks,
-                            dirs_exist_ok=dirs_exist_ok))  # type: ignore[call-arg]
+            shutil.copytree(src=src, dst=dst, symlinks=symlinks,  # type: ignore[call-arg]
+                            dirs_exist_ok=dirs_exist_ok))
     # Choice was to either copy python implementation and change ONE line
     # or use rsync (or cp with shell)
     # We need to copy CONTENT of src into dst
