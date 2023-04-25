@@ -25,6 +25,8 @@ else:
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: added user defined watchdog delay
+    '0.0.56',
     # NEW: no change, fixes issues with validation
     '0.0.55',
     # NEW: added Kickstart specification
@@ -91,6 +93,9 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     api_timeout: int = DEFAULT_API_TIMEOUT
     api_retries: int = DEFAULT_API_RETRIES
     api_retry_backoff_factor: int = DEFAULT_RETRY_BACKOFF_FACTOR
+    # Artemis core already contains default values
+    watchdog_dispatch_delay: Optional[int] = None
+    watchdog_period_delay: Optional[int] = None
 
 
 @dataclasses.dataclass
@@ -264,6 +269,8 @@ class GuestArtemis(tmt.GuestSsh):
     api_timeout: int
     api_retries: int
     api_retry_backoff_factor: int
+    watchdog_dispatch_delay: Optional[int]
+    watchdog_period_delay: Optional[int]
 
     _api: Optional[ArtemisAPI] = None
 
@@ -312,6 +319,16 @@ class GuestArtemis(tmt.GuestSsh):
             assert isinstance(self.hardware, dict)
 
             environment['hw']['constraints'] = self.hardware
+
+        if self.api_version >= "0.0.56":
+            if self.watchdog_dispatch_delay:
+                data['watchdog_dispatch_delay'] = self.watchdog_dispatch_delay
+            if self.watchdog_period_delay:
+                data['watchdog_period_delay'] = self.watchdog_period_delay
+
+        elif any([self.watchdog_dispatch_delay, self.watchdog_period_delay]):
+            raise ProvisionError(
+                f"API version '{self.api_version}' does not support watchdog specification.")
 
         # TODO: snapshots
         # TODO: spot instance
@@ -534,6 +551,15 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
                 help=f'A factor for exponential API retry backoff, '
                      f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
                 ),
+            click.option(
+                '--watchdog-dispatch-delay', metavar='SECONDS',
+                help='How long (seconds) before the guest "is-alive" watchdog is dispatched. '
+                     'The dispatch timer starts once the guest is successfully provisioned.'
+                ),
+            click.option(
+                '--watchdog-period-delay', metavar='SECONDS',
+                help='How often (seconds) check that the guest "is-alive".'
+                ),
             ] + super().options(how)
 
     def go(self) -> None:
@@ -573,7 +599,9 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             provision_tick=self.get('provision-tick'),
             api_timeout=self.get('api-timeout'),
             api_retries=self.get('api-retries'),
-            api_retry_backoff_factor=self.get('api-retry-backoff-factor')
+            api_retry_backoff_factor=self.get('api-retry-backoff-factor'),
+            watchdog_dispatch_delay=self.get('watchdog-dispatch-delay'),
+            watchdog_period_delay=self.get('watchdog-period-delay')
             )
 
         # FIXME: cast() - typeless "dispatcher" method
