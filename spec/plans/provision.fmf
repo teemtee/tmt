@@ -7,8 +7,9 @@ description: |
     testing, for example
     :ref:`/spec/plans/provision/virtual`,
     :ref:`/spec/plans/provision/container`,
-    :ref:`/spec/plans/provision/connect` or
-    :ref:`/spec/plans/provision/local`.
+    :ref:`/spec/plans/provision/connect`,
+    :ref:`/spec/plans/provision/local` or
+    :ref:`/spec/plans/provision/artemis`.
     See individual plugin documentation for details about
     supported options.
 
