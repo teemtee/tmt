@@ -8,16 +8,15 @@ rlJournalStart
         rlRun 'set -o pipefail'
     rlPhaseEnd
 
-    rlPhaseStartTest 'fmf help'
-        rlRun 'tmt run discover --help --how fmf | tee output'
-        rlAssertGrep 'Discover available tests from fmf metadata' 'output'
+    rlPhaseStartTest 'tmt run discover --how=fmf --help'
+        rlRun -s 'tmt run discover --how fmf --help'
+        rlAssertGrep 'Discover available tests from fmf metadata' $rlRun_LOG
         for option in url ref path test filter fmf-id; do
-            rlAssertGrep "--$option" output
+            rlAssertGrep "--$option" "$rlRun_LOG"
         done
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun 'rm -f output' 0 'Removing tmp file'
         rlRun 'popd'
     rlPhaseEnd
 rlJournalEnd

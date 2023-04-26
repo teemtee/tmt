@@ -298,25 +298,90 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
             subcommands = (
                 tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans'])
 
-            for index, arg in enumerate(args):
-                # Handle '--how method' or '-h method'
-                if arg in ['--how', '-h']:
-                    try:
-                        how = args[index + 1]
-                    except IndexError:
-                        pass
-                    break
-                # Handle '--how=method'
-                elif arg.startswith('--how='):
-                    how = re.sub('^--how=', '', arg)
-                    break
-                # Handle '-hmethod'
-                elif arg.startswith('-h'):
-                    how = re.sub('^-h ?', '', arg)
-                    break
-                # Stop search at the first argument looking like a subcommand
-                elif is_likely_subcommand(arg, subcommands):
-                    break
+            def _find_option_by_arg(arg: str) -> Optional[click.Parameter]:
+                for option in self.params:
+                    if arg in option.opts or arg in option.secondary_opts:
+                        return option
+                return None
+
+            def _find_how(args: List[str]) -> Optional[str]:
+                while args:
+                    arg = args.pop(0)
+
+                    # Handle '--how method' or '-h method'
+                    if arg in ['--how', '-h']:
+                        # Found `-h/--how foo`, next argument is how'
+                        return args.pop(0)
+
+                    # Handle '--how=method'
+                    if arg.startswith('--how='):
+                        return re.sub('^--how=', '', arg)
+
+                    # Handle '-hmethod'
+                    if arg.startswith('-h'):
+                        return re.sub('^-h ?', '', arg)
+
+                    # Handle anything that looks like an option
+                    if arg.startswith('-'):
+                        # Is it a --foo or --foo=bar?
+                        match = re.match(r'(--[a-z\-]+)(=.*)?', arg)
+                        if match:
+                            if match.group(2):
+                                # Found option like '--foo=bar'
+                                continue
+                        else:
+                            # Or is it a -f?
+                            match = re.match(r'(-[a-z])', arg)
+                            if match is None:
+                                # Found unexpected option format
+                                return None
+                        option_name: str = match.group(1)
+                        option = _find_option_by_arg(option_name)
+                        if option is None:
+                            # Unknown option? Probably remain silent, Click should report it in.
+                            return None
+
+                        # Options, unlike arguments, may not consume any additional arguments
+                        if isinstance(option, click.core.Option):
+                            if option.is_flag:
+                                # Found a flag
+                                continue
+                            if option.count:
+                                # Found options like '-ddddd'
+                                continue
+
+                        # Consume all remaining arguments. Think `ls /foo /bar ...`, it's not
+                        # possible to tell which of these is an actual argument or misspelled
+                        # subcommand name.
+                        if option.nargs == -1:
+                            # Found option consuming all arguments
+                            return None
+                        if option.nargs == 0:
+                            # Found option with no arguments
+                            continue
+
+                        # Consume the given number of arguments
+                        for _ in range(option.nargs):
+                            args.pop(0)
+
+                        continue
+
+                    if is_likely_subcommand(arg, subcommands):
+                        # Found a subcommand
+                        return None
+
+                    # We're left with a string that does not start with `-`, and which has not
+                    # been claimed by an option. It is highly likely this is a misspelled
+                    # subcommand name.
+                    raise tmt.utils.SpecificationError(
+                        f"Invalid subcommand of 'run' found: '{arg}'.")
+
+                return None
+
+            try:
+                how = _find_how(args[:])
+            except IndexError:
+                pass
 
             # Find method with the first matching prefix
             if how is not None:
