@@ -11,16 +11,16 @@ from tmt.utils import Path
 
 
 @pytest.fixture()
-def report_fix(tmpdir, root_logger):
+def report_fix(tmppath: Path, root_logger):
     # need to provide genuine workdir paths - mock would break os.path.* calls
-    step_mock = MagicMock(workdir=str(tmpdir))
+    step_mock = MagicMock(workdir=tmppath)
     plan_mock = MagicMock()
     name_property = PropertyMock(return_value='name')
 
     type(plan_mock).name = name_property
     type(step_mock).plan = plan_mock
 
-    out_file_path = str(tmpdir.join("out.xml"))
+    out_file_path = str(tmppath / "out.xml")
 
     def get(key, default=None):
         if key == "file":
@@ -31,7 +31,7 @@ def report_fix(tmpdir, root_logger):
         logger=root_logger,
         step=step_mock,
         data=ReportJUnitData(name='x', how='junit'),
-        workdir=Path(str(tmpdir.join('junit'))))
+        workdir=tmppath / 'junit')
     report.get = get
     report.info = MagicMock()
 

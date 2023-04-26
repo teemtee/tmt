@@ -9,7 +9,6 @@ import unittest.mock
 from datetime import timedelta
 from typing import Any, List, Tuple
 
-import py
 import pytest
 
 import tmt
@@ -40,8 +39,8 @@ run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
 
 @pytest.fixture()
-def local_git_repo(tmpdir: py.path.local) -> Path:
-    origin = Path(str(tmpdir)) / 'origin'
+def local_git_repo(tmppath: Path) -> Path:
+    origin = tmppath / 'origin'
     origin.mkdir()
 
     run(Command('git', 'init'), cwd=origin)
@@ -136,9 +135,11 @@ def test_config():
     assert config2.last_run.resolve() == run.resolve()
 
 
-def test_last_run_race(tmpdir, monkeypatch):
+def test_last_run_race(tmppath: Path, monkeypatch):
     """ Race in last run symlink should't be fatal """
-    monkeypatch.setattr(tmt.utils, 'CONFIG_PATH', Path(str(tmpdir.mkdir('config'))))
+    config_path = tmppath / 'config'
+    config_path.mkdir()
+    monkeypatch.setattr(tmt.utils, 'CONFIG_PATH', config_path)
     mock_logger = unittest.mock.MagicMock()
     monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
     config = tmt.utils.Config()
@@ -147,7 +148,9 @@ def test_last_run_race(tmpdir, monkeypatch):
 
     def create_last_run(config, counter):
         try:
-            val = config.last_run = Path(str(tmpdir.mkdir(f"run-{counter}")))
+            last_run_path = tmppath / f"run-{counter}"
+            last_run_path.mkdir()
+            val = config.last_run = last_run_path
             results.put(val)
         except Exception as err:
             results.put(err)
@@ -173,21 +176,21 @@ def test_last_run_race(tmpdir, monkeypatch):
     assert config.last_run, "Some run was stored as last run"
 
 
-def test_workdir_env_var(tmpdir, monkeypatch, root_logger):
+def test_workdir_env_var(tmppath: Path, monkeypatch, root_logger):
     """ Test TMT_WORKDIR_ROOT environment variable """
     # Cannot use monkeypatch.context() as it is not present for CentOS Stream 8
-    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmpdir))
+    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmppath))
     common = Common(logger=root_logger)
     common._workdir_init()
     monkeypatch.delenv('TMT_WORKDIR_ROOT')
-    assert common.workdir == Path(f'{tmpdir}/run-001')
+    assert common.workdir == tmppath / 'run-001'
 
 
-def test_workdir_root_full(tmpdir, monkeypatch, root_logger):
+def test_workdir_root_full(tmppath, monkeypatch, root_logger):
     """ Raise if all ids lower than WORKDIR_MAX are exceeded """
-    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmpdir))
+    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmppath))
     monkeypatch.setattr(tmt.utils, 'WORKDIR_MAX', 1)
-    possible_workdir = Path(str(tmpdir)) / 'run-001'
+    possible_workdir = tmppath / 'run-001'
     # First call success
     common1 = Common(logger=root_logger)
     common1._workdir_init()
@@ -203,9 +206,9 @@ def test_workdir_root_full(tmpdir, monkeypatch, root_logger):
     assert common2.workdir.resolve() == possible_workdir.resolve()
 
 
-def test_workdir_root_race(tmpdir, monkeypatch, root_logger):
+def test_workdir_root_race(tmppath, monkeypatch, root_logger):
     """ Avoid race in workdir creation """
-    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', Path(str(tmpdir)))
+    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', tmppath)
     results = queue.Queue()
     threads = []
 
@@ -546,11 +549,11 @@ class TestStructuredField(unittest.TestCase):
             StructuredFieldError, field.get, "section", "key")
 
 
-def test_run_interactive_not_joined(tmpdir, root_logger):
+def test_run_interactive_not_joined(tmppath, root_logger):
     output = ShellScript("echo abc; echo def >2").to_shell_command().run(
         shell=True,
         interactive=True,
-        cwd=Path(str(tmpdir)),
+        cwd=tmppath,
         env={},
         log=None,
         logger=root_logger)
@@ -558,11 +561,11 @@ def test_run_interactive_not_joined(tmpdir, root_logger):
     assert output.stderr is None
 
 
-def test_run_interactive_joined(tmpdir, root_logger):
+def test_run_interactive_joined(tmppath, root_logger):
     output = ShellScript("echo abc; echo def >2").to_shell_command().run(
         shell=True,
         interactive=True,
-        cwd=Path(str(tmpdir)),
+        cwd=tmppath,
         env={},
         join=True,
         log=None,
@@ -650,14 +653,13 @@ def test_get_distgit_handler_explicit():
     assert instance.__class__.__name__ == 'RedHatGitlab'
 
 
-def test_fedora_dist_git(tmpdir):
+def test_fedora_dist_git(tmppath):
     # Fake values, production hash is too long
-    path = Path(str(tmpdir))
-    path.joinpath('sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
-    path.joinpath('tmt.spec').write_text('')
+    (tmppath / 'sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
+    (tmppath / 'tmt.spec').write_text('')
     fedora_sources_obj = tmt.utils.FedoraDistGit()
     assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",  # noqa: E501
-            "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=path)
+            "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=tmppath)
 
 
 class TestValidateGitStatus:
@@ -689,15 +691,15 @@ class TestValidateGitStatus:
 
     @classmethod
     def test_no_remote(cls, local_git_repo: Path, root_logger):
-        tmpdir = local_git_repo
-        tmt.Tree.init(logger=root_logger, path=tmpdir, template=None, force=None)
-        tmpdir.joinpath('main.fmf').write_text('test: echo')
+        tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
+        with open(local_git_repo / 'main.fmf', 'w') as f:
+            f.write('test: echo')
         run(ShellScript('git add main.fmf .fmf/version').to_shell_command(),
-            cwd=tmpdir)
+            cwd=local_git_repo)
         run(ShellScript('git commit -m initial_commit').to_shell_command(),
-            cwd=tmpdir)
+            cwd=local_git_repo)
 
-        test = tmt.Tree(logger=root_logger, path=tmpdir).tests()[0]
+        test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         val, msg = validate_git_status(test)
         assert not val
         assert "Failed to get remote branch" in msg
