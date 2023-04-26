@@ -107,7 +107,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin):
 
     _data_class = ReportJUnitData
 
-    def prune(self) -> None:
+    def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated junit report """
         pass
 

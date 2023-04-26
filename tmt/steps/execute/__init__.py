@@ -496,7 +496,7 @@ class Execute(tmt.steps.Step):
 
     _plugin_base_class = ExecutePlugin
 
-    _preserved_files = ['step.yaml', 'results.yaml', 'data']
+    _preserved_workdir_members = ['step.yaml', 'results.yaml', 'data']
 
     def __init__(
             self,

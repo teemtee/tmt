@@ -28,7 +28,7 @@ import enum
 import itertools
 import logging
 import logging.handlers
-import os.path
+import os
 import sys
 from typing import TYPE_CHECKING, Any, List, Optional, Set, Tuple, cast
 
