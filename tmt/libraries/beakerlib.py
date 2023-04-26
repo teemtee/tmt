@@ -70,6 +70,7 @@ class BeakerLib(Library):
         # Default branch is detected from the origin after cloning
         self.default_branch: Optional[str] = None
 
+        # The 'library(repo/lib)' format
         if isinstance(identifier, tmt.base.RequireSimple):
             identifier = tmt.base.RequireSimple(identifier.strip())
             self.identifier = identifier

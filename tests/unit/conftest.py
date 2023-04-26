@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 
 import _pytest.logging
@@ -13,9 +12,9 @@ def fixture_root_logger(caplog: _pytest.logging.LogCaptureFixture) -> Logger:
 
 
 @pytest.fixture(scope='module')
-def source_dir():
+def source_dir(tmpdir_factory):
     """ Create dummy directory structure and remove it after tests """
-    source_location = Path('/tmp/tmt_testing_source')
+    source_location = Path(tmpdir_factory.mktemp('source'))
     (source_location / 'library').mkdir(parents=True)
     (source_location / 'lib_folder').mkdir()
     (source_location / 'tests').mkdir()
@@ -24,12 +23,9 @@ def source_dir():
         test_path.mkdir()
         (test_path / 'runtests.sh').touch()
     yield source_location
-    shutil.rmtree(source_location, ignore_errors=True)
 
 
 @pytest.fixture()
-def target_dir():
+def target_dir(tmpdir_factory):
     """ Return target directory path and clean up after tests """
-    target_path = Path('/tmp/tmt_testing_target')
-    yield target_path
-    shutil.rmtree(target_path, ignore_errors=True)
+    return Path(tmpdir_factory.mktemp('target'))

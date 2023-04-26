@@ -430,7 +430,7 @@ class RequireFile(
         """ Convert from a specification file or from a CLI option """
         require_file = RequireFile()
 
-        setattr(require_file, 'type', raw.get('type', None))
+        require_file.type = raw.get('type', None)
 
         patterns: List[Optional[str]] = []
         raw_patterns = raw.get('pattern', [])
@@ -440,7 +440,7 @@ class RequireFile(
         else:
             for pattern in raw_patterns:
                 patterns.append(str(pattern))
-        setattr(require_file, 'pattern', cast(Optional[List[str]], patterns))
+        require_file.pattern = cast(List[str], patterns)
 
         return require_file
 
