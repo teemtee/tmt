@@ -1742,7 +1742,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
     def prune(self) -> None:
         """ Remove all uninteresting files from the plan workdir """
 
-        logger = self._logger.descend(extra_shift=2)
+        logger = self._logger.descend(extra_shift=1)
 
         logger.verbose(
             f"Prune '{self.name}' plan workdir '{self.workdir}'.",
@@ -1754,7 +1754,7 @@ class Plan(Core, tmt.export.Exportable['Plan']):
             shutil.rmtree(self.worktree)
 
         for step in self.steps(disabled=True):
-            step.prune(logger)
+            step.prune(logger=step._logger)
 
 
 class StoryPriority(enum.Enum):
