@@ -354,6 +354,8 @@ class GuestTestcloud(tmt.GuestSsh):
         assert testcloud is not None
         self.config = testcloud.config.get_config()
 
+        self.debug(f"testcloud version: {testcloud.__version__}")
+
         # Make sure download progress is disabled unless in debug mode,
         # so it does not spoil our logging
         self.config.DOWNLOAD_PROGRESS = self.opt('debug') > 2
