@@ -13,7 +13,10 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.steps import Action, PhaseOutcome, PhaseQueue
+from tmt.queue import Queue, TaskOutcome
+from tmt.steps import (Action, GuestSyncTaskT, PhaseQueue, PullTask, PushTask,
+                       QueuedPhase)
+from tmt.steps.provision import Guest
 from tmt.utils import uniq
 
 if TYPE_CHECKING:
@@ -155,6 +158,24 @@ class Prepare(tmt.steps.Step):
                 host_mapping[guest.name] = guest.guest
         return host_mapping
 
+    def _sync_with_guests(self, action: str, task: GuestSyncTaskT) -> None:
+        queue: Queue[GuestSyncTaskT] = Queue(self._logger.descend(logger_name=f'{self}.{action}'))
+
+        queue.enqueue_task(task)
+
+        failed_actions: List[TaskOutcome[GuestSyncTaskT]] = []
+
+        for outcome in queue.run():
+            if outcome.exc:
+                outcome.logger.fail(str(outcome.exc))
+
+                failed_actions.append(outcome)
+                continue
+
+        if failed_actions:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError('prepare step failed') from failed_actions[0].exc
+
     def go(self) -> None:
         """ Prepare the guests """
         super().go()
@@ -224,10 +245,9 @@ class Prepare(tmt.steps.Step):
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Prepare guests (including workdir sync)
-        guest_copies: List[tmt.steps.provision.Guest] = []
+        guest_copies: List[Guest] = []
 
         for guest in self.plan.provision.guests():
-            guest.push()
             # Create a guest copy and change its parent so that the
             # operations inside prepare plugins on the guest use the
             # prepare step config rather than provision step config.
@@ -238,6 +258,12 @@ class Prepare(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
+        if guest_copies:
+            self._sync_with_guests(
+                'push',
+                PushTask(guests=guest_copies, logger=self._logger)
+                )
+
         queue = PhaseQueue(self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, PreparePlugin)):
@@ -246,10 +272,10 @@ class Prepare(tmt.steps.Step):
                 guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                 )
 
-        failed_phases: List[PhaseOutcome] = []
+        failed_phases: List[TaskOutcome[QueuedPhase]] = []
 
         for phase_outcome in queue.run():
-            if not isinstance(phase_outcome.queued_phase.phase, PreparePlugin):
+            if not isinstance(phase_outcome.task.phase, PreparePlugin):
                 continue
 
             if phase_outcome.exc:
@@ -268,9 +294,11 @@ class Prepare(tmt.steps.Step):
 
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
-        if self.phases():
-            for guest in guest_copies:
-                guest.pull(self.plan.data_directory)
+        if self.phases() and guest_copies:
+            self._sync_with_guests(
+                'pull',
+                PullTask(guests=guest_copies, logger=self._logger)
+                )
 
         # Give a summary, update status and save
         self.summary()

@@ -6,7 +6,6 @@ import re
 import shutil
 import sys
 import textwrap
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import (TYPE_CHECKING, Any, Callable, Dict, Generator, List,
                     Optional, Tuple, Type, TypeVar, Union, cast, overload)
 
@@ -16,16 +15,18 @@ else:
     from typing_extensions import TypedDict
 
 import click
-import fmf.utils
 from click import echo
 
 import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
+from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
 from tmt.utils import EnvironmentType, Path, field, flatten
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     import tmt.base
     import tmt.cli
     import tmt.steps.discover
@@ -1319,11 +1320,14 @@ class Login(Action):
 
 
 @dataclasses.dataclass
-class QueuedPhase:
+class QueuedPhase(GuestlessTask, Task):
     """ A phase to run on one or more guests """
 
     phase: Union[Action, Plugin]
-    guests: List['Guest']
+
+    # A cached environment, it will be initialized by `prepare_environment()`
+    # on the first call.
+    _environment: Optional[EnvironmentType] = None
 
     @property
     def phase_name(self) -> str:
@@ -1338,40 +1342,79 @@ class QueuedPhase:
         return self.phase.name
 
     @property
-    def guest_ids(self) -> List[str]:
-        return [guest.multihost_name for guest in self.guests]
+    def name(self) -> str:
+        return self.phase_name
+
+    def prepare_environment(self) -> EnvironmentType:
+        """
+        Prepare environment variables related to phase and its guests.
+        """
+
+        if self._environment is not None:
+            return self._environment
+
+        self._environment = {}
+
+        # TODO: Somewhat legacy variable, just a temporary solution.
+        # TODO: *Probably* makes sense only with more than one guest?
+        if len(self.guests) != 1:
+            self._environment['SERVERS'] = ' '.join(
+                guest.guest for guest in self.guests if guest.guest
+                )
+
+        # For each role, emit a variable named `TMT_ROLE_$rolename`, listing
+        # guests with this role.
+        _roles = [
+            guest.role for guest in self.guests if guest.role is not None
+            ]
+
+        for role in _roles:
+            self._environment[f'TMT_ROLE_{role}'] = ' '.join(
+                guest.guest
+                for guest in self.guests
+                if guest.role == role and guest.guest
+                )
+
+        return self._environment
+
+    def prepare_guest_environment(
+            self,
+            guest: 'Guest') -> EnvironmentType:
+        """
+        Prepare environment variables related to phase and a particular guest.
+        """
+
+        environment = self.prepare_environment().copy()
+
+        environment['TMT_GUEST_ROLE'] = guest.role or ''
+        environment['TMT_GUEST_HOSTNAME'] = guest.guest or ''
+
+        return environment
+
+    def run(self, logger: tmt.log.Logger) -> None:
+        assert isinstance(self.phase, Action)  # narrow type
+
+        self.phase.go()
+
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        assert isinstance(self.phase, Plugin)  # narrow type
+
+        self.phase.go(
+            guest=guest,
+            environment=self.prepare_guest_environment(guest),
+            logger=logger)
+
+    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+        # Based on the phase, pick the proper parent class' go()
+        if isinstance(self.phase, Action):
+            yield from GuestlessTask.go(self)
+
+        else:
+            yield from Task.go(self)
 
 
-@dataclasses.dataclass
-class PhaseOutcome:
-    """
-    Outcome of a phase executed on a guest.
-
-    Bundles together interesting objects related to how the phase has been
-    executed, where and what was the result.
-    """
-
-    #: A :py:`QueuedPhase` instace the outcome relates to.
-    queued_phase: QueuedPhase
-    #: A logger to use for logging events related to the outcome. It may be
-    #: the same logger phase uses, but it also might be a different instance,
-    #: with extra context.
-    logger: tmt.log.Logger
-    #: Guest on which the phase was executed. May be unset, :py:class:`Action`
-    #: do not have a dedicated guest.
-    guest: Optional['Guest'] = None
-    #: If set, an exception was raised by the running phase, and the exception
-    #: is saved in this field.
-    exc: Optional[Exception] = None
-
-
-class PhaseQueue(List[QueuedPhase]):
+class PhaseQueue(Queue[QueuedPhase]):
     """ Queue class for running phases on guests """
-
-    def __init__(self, logger: tmt.log.Logger) -> None:
-        super().__init__()
-
-        self._logger = logger
 
     def enqueue(
             self,
@@ -1391,233 +1434,35 @@ class PhaseQueue(List[QueuedPhase]):
             raise tmt.utils.MetadataError(
                 f'No guests queued for phase "{phase}". A typo in "where" key?')
 
-        queue_item = QueuedPhase(
+        self.enqueue_task(QueuedPhase(
             phase=phase,
-            guests=guests
-            )
+            guests=guests,
+            logger=phase._logger
+            ))
 
-        self.append(queue_item)
 
-        self._logger.info(
-            'queued',
-            f'{queue_item.phase_name} on {fmf.utils.listed(queue_item.guest_ids)}',
-            color='cyan')
+@dataclasses.dataclass
+class PushTask(Task):
+    """ Task performing a workdir push to a guest """
 
-    @classmethod
-    def _run_action(cls, queued_phase: QueuedPhase) -> Generator[PhaseOutcome, None, None]:
-        """
-        Run an action-based phase.
+    @property
+    def name(self) -> str:
+        return 'push'
 
-        .. note::
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        guest.push()
 
-           Actions do not seem to be limited to a set of guests. This may change
-           in the future.
 
-        :param queued_phase: a phase to run.
-        :yields: phase outcome.
-        """
+@dataclasses.dataclass
+class PullTask(Task):
+    """ Task performing a workdir pull from a guest """
 
-        assert isinstance(queued_phase.phase, Action)  # narrow type
+    @property
+    def name(self) -> str:
+        return 'pull'
 
-        try:
-            queued_phase.phase.go()
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        guest.pull()
 
-        except Exception as exc:
-            # logger.info('finished', color='cyan')
 
-            yield PhaseOutcome(queued_phase, queued_phase.phase._logger, exc=exc)
-
-        else:
-            # logger.info('finished', color='cyan')
-
-            yield PhaseOutcome(queued_phase, queued_phase.phase._logger)
-
-    @classmethod
-    def prepare_environment(cls, guests: List['Guest']) -> EnvironmentType:
-        """
-        Prepare environment variables related to phase and its guests.
-        """
-
-        environment: EnvironmentType = {}
-
-        # TODO: Somewhat legacy variable, just a temporary solution.
-        # TODO: *Probably* makes sense only with more than one guest?
-        if len(guests) != 1:
-            environment['SERVERS'] = ' '.join(
-                guest.guest for guest in guests if guest.guest
-                )
-
-        # For each role, emit a variable named `TMT_ROLE_$rolename`, listing
-        # guests with this role.
-        _roles = [
-            guest.role for guest in guests if guest.role is not None
-            ]
-
-        for role in _roles:
-            environment[f'TMT_ROLE_{role}'] = ' '.join(
-                guest.guest
-                for guest in guests
-                if guest.role == role and guest.guest
-                )
-
-        return environment
-
-    @classmethod
-    def prepare_guest_environment(
-            cls,
-            environment: EnvironmentType,
-            guest: 'Guest') -> EnvironmentType:
-        """
-        Prepare environment variables related to phase and a particular guest.
-        """
-
-        environment = environment.copy()
-
-        environment['TMT_GUEST_ROLE'] = guest.role or ''
-        environment['TMT_GUEST_HOSTNAME'] = guest.guest or ''
-
-        return environment
-
-    @classmethod
-    def prepare_loggers(
-            cls,
-            logger: tmt.log.Logger,
-            guests: List['Guest']) -> Dict[str, tmt.log.Logger]:
-        """
-        Create loggers for a set of guests.
-
-        Guests are assumed to be a group a phase would be executed on, and
-        therefore their labels need to be set, to provide context, plus their
-        labels need to be properly aligned for more readable output.
-        """
-
-        loggers: Dict[str, tmt.log.Logger] = {}
-
-        # First, spawn all loggers, and set their labels if needed. Don't bother
-        # with labels if there's just a single guest.
-        for guest in guests:
-            new_logger = logger.clone()
-
-            if len(guests) > 1:
-                new_logger.labels.append(guest.multihost_name)
-
-            loggers[guest.name] = new_logger
-
-        # Second, find the longest labels, and instruct all loggers to pad their
-        # labels to match this length. This should create well-indented messages.
-        max_label_span = max(new_logger.labels_span for new_logger in loggers.values())
-
-        for new_logger in loggers.values():
-            new_logger.labels_padding = max_label_span
-
-        return loggers
-
-    @classmethod
-    def _run_plugin(cls, queued_phase: QueuedPhase) -> Generator[PhaseOutcome, None, None]:
-        """
-        Run a plugin-based phase.
-
-        :param queued_phase: a phase to run.
-        :yields: a single phase outcome for each guest the phase was executed
-            on.
-        """
-
-        assert isinstance(queued_phase.phase, Plugin)  # narrow type
-
-        multiple_guests = len(queued_phase.guests) > 1
-
-        environment = cls.prepare_environment(queued_phase.guests)
-        new_loggers = cls.prepare_loggers(queued_phase.phase._logger, queued_phase.guests)
-        old_loggers: Dict[str, tmt.log.Logger] = {}
-
-        with ThreadPoolExecutor(max_workers=len(queued_phase.guests)) as executor:
-            futures: Dict[Future[None], Tuple[Guest, tmt.log.Logger]] = {}
-
-            for guest in queued_phase.guests:
-                # Swap guest's logger for the one we prepared, with labels
-                # and stuff.
-                #
-                # We can't do the same for phases - phase is shared among
-                # guests, its `self.$loggingmethod()` calls need to be
-                # fixed to use a logger we pass to it through the executor.
-                #
-                # Possibly, the same thing should happen to guest methods as
-                # well, then the phase would pass the given logger to guest
-                # methods when it calls them, propagating the single logger we
-                # prepared...
-                old_loggers[guest.name] = guest._logger
-                new_logger = new_loggers[guest.name]
-
-                guest.inject_logger(new_logger)
-
-                if multiple_guests:
-                    new_logger.info('queued', color='cyan')
-
-                # Submit each phase/guest combination (save the guest & logger
-                # for later)...
-                futures[
-                    executor.submit(
-                        queued_phase.phase.go,
-                        guest=guest,
-                        environment=cls.prepare_guest_environment(environment, guest),
-                        logger=new_logger)
-                    ] = (guest, new_logger)
-
-            # ... and then sit and wait as they get delivered to us as they
-            # finish. Unpack the guest and logger, so we could preserve logging
-            # and prepare the right outcome package.
-            for future in as_completed(futures):
-                guest, new_logger = futures[future]
-
-                if multiple_guests:
-                    new_logger.info('finished', color='cyan')
-
-                # `Future.result()` will either 1. reraise an exception the
-                # callable raised, if any, or 2. return whatever the callable
-                # returned - which is `None` in our case, therefore we can
-                # ignore the return value.
-                try:
-                    future.result()
-
-                except Exception as exc:
-                    yield PhaseOutcome(queued_phase, new_logger, guest=guest, exc=exc)
-
-                else:
-                    yield PhaseOutcome(queued_phase, new_logger, guest=guest)
-
-                # Don't forget to restore the original logger.
-                guest.inject_logger(old_loggers[guest.name])
-
-    def run(self) -> Generator[PhaseOutcome, None, None]:
-        """
-        Start crunching the queued phases.
-
-        Queued phases are executed in the order, for each phase/guest
-        combination a :py:class:`PhaseOutcome` instance is yielded.
-        """
-
-        for i, queued_phase in enumerate(self):
-            self._logger.info('')
-
-            self._logger.info(
-                f'queue tick #{i}',
-                f'{queued_phase.phase_name} on {fmf.utils.listed(queued_phase.guest_ids)}',
-                color='cyan')
-
-            failed_outcomes: List[PhaseOutcome] = []
-
-            if isinstance(queued_phase.phase, Action):
-                phase_runner = self._run_action
-
-            else:
-                phase_runner = self._run_plugin
-
-            for outcome in phase_runner(queued_phase):
-                if outcome.exc:
-                    failed_outcomes.append(outcome)
-
-                yield outcome
-
-            # TODO: make this optional
-            if failed_outcomes:
-                return
+GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)

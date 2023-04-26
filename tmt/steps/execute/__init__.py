@@ -13,8 +13,9 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt.queue import TaskOutcome
 from tmt.result import Result, ResultGuestData, ResultOutcome
-from tmt.steps import Action, PhaseOutcome, Step, StepData
+from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import Path
 
@@ -580,7 +581,7 @@ class Execute(tmt.steps.Step):
         # Execute the tests, store results
         from tmt.steps.discover import DiscoverPlugin
 
-        queue = tmt.steps.PhaseQueue(self._logger.descend(logger_name=f'{self}.queue'))
+        queue = PhaseQueue(self._logger.descend(logger_name=f'{self}.queue'))
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
@@ -615,7 +616,7 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_phases: List[PhaseOutcome] = []
+        failed_phases: List[TaskOutcome[QueuedPhase]] = []
 
         for phase_outcome in queue.run():
             if phase_outcome.exc:
