@@ -2,7 +2,8 @@ import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, Set, cast
+from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
 import fmf
 
@@ -18,9 +19,6 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
 
-# Placeholder format to mark repo we already know doesn't exist
-NONEXISTENT_REPO = 'no-such-repo'
-
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
     'https://github.com',
@@ -31,6 +29,7 @@ STRIP_SUFFIX_FORGES = [
 
 class CommonWithLibraryCache(tmt.utils.Common):
     _library_cache: Dict[str, 'BeakerLib']
+    _nonexistent_url: Set[str]
 
 
 class BeakerLib(Library):
@@ -167,24 +166,33 @@ class BeakerLib(Library):
 
         return cast(CommonWithLibraryCache, self.parent)._library_cache
 
+    @property
+    def _nonexistent_url(self) -> Set[str]:
+        # Set of url we tried to clone but didn't succeed
+        if not hasattr(self.parent, '_nonexistent_url'):
+            cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()
+
+        return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
+
     def fetch(self) -> None:
         """ Fetch the library (unless already fetched) """
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self.repo)]
-            if library.format == NONEXISTENT_REPO:
-                # We already probed self.url and it doesn't exist
-                raise LibraryError
             # The url must be identical
             if library.url != self.url:
                 # tmt guessed url so try if repo exists
                 if self.format == 'rpm':
+                    if self.url in self._nonexistent_url:
+                        self.parent.debug(f"Already know '{self.url}' is not found.")
+                        raise LibraryError
                     with TemporaryDirectory() as tmp:
                         try:
                             tmt.utils.git_clone(str(self.url), Path(tmp), self.parent,
                                                 env={"GIT_ASKPASS": "echo"}, shallow=True)
                         except tmt.utils.RunError:
                             self.parent.debug(f"Repository '{self.url}' not found.")
+                            self._nonexistent_url.add(str(self.url))
                             raise LibraryError
                 # If repo does exist we really have unsolvable url conflict
                 raise tmt.utils.GeneralError(
@@ -211,6 +219,8 @@ class BeakerLib(Library):
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
+                    if self.url in self._nonexistent_url:
+                        raise tmt.utils.GitUrlError("Already know '{self.url}' is not found.")
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
                     tmt.utils.git_clone(self.url, directory, self.parent,
@@ -233,14 +243,16 @@ class BeakerLib(Library):
                 # Use the default branch if no ref provided
                 if self.ref is None:
                     self.ref = self.default_branch
-            except tmt.utils.RunError:
+            except (tmt.utils.RunError, tmt.utils.GitUrlError) as error:
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
-                    self.parent.debug(f"Repository '{self.url}' not found.")
-                    # Make note to do not attempt to clone it ever again
-                    self.format = NONEXISTENT_REPO
-                    self._library_cache[str(self.repo)] = self
+                    # Print this message only for the first attempt
+                    if not isinstance(error, tmt.utils.GitUrlError):
+                        self.parent.debug(f"Repository '{self.url}' not found.")
+                        self._nonexistent_url.add(str(self.url))
                     raise LibraryError
+                # Mark self.url as known missing one
+                self._nonexistent_url.add(str(self.url))
                 self.parent.fail(
                     f"Failed to fetch library '{self}' from '{self.url}'.")
                 raise
