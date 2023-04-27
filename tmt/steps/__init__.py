@@ -1454,7 +1454,7 @@ class PhaseQueue(List[QueuedPhase]):
             ]
 
         for role in _roles:
-            environment[f'TMT_ROLE_{role.upper()}'] = ' '.join(
+            environment[f'TMT_ROLE_{role}'] = ' '.join(
                 guest.guest
                 for guest in guests
                 if guest.role == role and guest.guest
@@ -1527,7 +1527,8 @@ class PhaseQueue(List[QueuedPhase]):
         multiple_guests = len(queued_phase.guests) > 1
 
         environment = cls.prepare_environment(queued_phase.guests)
-        loggers = cls.prepare_loggers(queued_phase.phase._logger, queued_phase.guests)
+        new_loggers = cls.prepare_loggers(queued_phase.phase._logger, queued_phase.guests)
+        old_loggers: Dict[str, tmt.log.Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(queued_phase.guests)) as executor:
             futures: Dict[Future[None], Tuple[Guest, tmt.log.Logger]] = {}
@@ -1544,7 +1545,9 @@ class PhaseQueue(List[QueuedPhase]):
                 # well, then the phase would pass the given logger to guest
                 # methods when it calls them, propagating the single logger we
                 # prepared...
-                old_logger, new_logger = guest._logger, loggers[guest.name]
+                old_loggers[guest.name] = guest._logger
+                new_logger = new_loggers[guest.name]
+
                 guest.inject_logger(new_logger)
 
                 if multiple_guests:
@@ -1583,7 +1586,7 @@ class PhaseQueue(List[QueuedPhase]):
                     yield PhaseOutcome(queued_phase, new_logger, guest=guest)
 
                 # Don't forget to restore the original logger.
-                guest.inject_logger(old_logger)
+                guest.inject_logger(old_loggers[guest.name])
 
     def run(self) -> Generator[PhaseOutcome, None, None]:
         """

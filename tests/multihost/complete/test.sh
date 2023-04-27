@@ -61,12 +61,12 @@ rlJournalStart
         server_hostname="$(yq -r '."server" | .container' $run/plans/provision/guests.yaml)"
 
         # Make sure all guests see roles and the corresponding guests
-        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
-        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
-        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
-        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
-        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_CLIENT=$client1_hostname $client2_hostname' $rlRun_LOG"
-        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_SERVER=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_client=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-1 \\(client\\)\\]                 out: TMT_ROLE_server=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_client=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[client-2 \\(client\\)\\]                 out: TMT_ROLE_server=$server_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_client=$client1_hostname $client2_hostname' $rlRun_LOG"
+        rlRun "egrep '\\[server \\(server\\)\\]                   out: TMT_ROLE_server=$server_hostname' $rlRun_LOG"
 
         # Make sure each guest is notified about its own hostname and role
         rlRun "egrep '^\\[client-1 \\(client\\)\\]                 out: TMT_GUEST_HOSTNAME=$client1_hostname' $rlRun_LOG"

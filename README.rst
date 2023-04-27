@@ -432,7 +432,7 @@ TMT_GUEST_HOSTNAME, TMT_GUEST_ROLE
 TMT_ROLE_*
     Space-separated list of guests of a given role. Each known role
     spawns a variable, listing the corresponding guests. For example,
-    for guests with ``role: foo``, ``TMT_ROLE_FOO=guest1 guest2 ...``
+    for guests with ``role: foo``, ``TMT_ROLE_foo=guest1 guest2 ...``
     variable would be avaialble to tests.
 
 
