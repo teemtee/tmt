@@ -584,7 +584,6 @@ class Execute(tmt.steps.Step):
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
-        execute_phases[0]
 
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):
@@ -597,6 +596,13 @@ class Execute(tmt.steps.Step):
                         ])
 
             else:
+                # A single execute plugin is expected to process (potentialy)
+                # multiple discover phases. There must be a way to tell the execute
+                # plugin which discover phase to focus on. Unfortunately, the
+                # current way is the execute plugin checking its `discover`
+                # attribute. For each discover phase, we need a copy of the execute
+                # plugin, so we could point it to that discover phase rather than
+                # let is "see" all tests, or test in different discover phase.
                 for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
                     phase_copy = cast(ExecutePlugin, copy.copy(phase))
                     phase_copy.discover_phase = discover.name
@@ -618,8 +624,17 @@ class Execute(tmt.steps.Step):
                 failed_phases.append(phase_outcome)
                 continue
 
-            if isinstance(phase_outcome.queued_phase.phase, ExecutePlugin):
-                self._results.extend(phase_outcome.queued_phase.phase.results())
+        # Execute plugins do not return results. Instead, plugin collects results
+        # in its internal `_results` list. To accomodate for different discover
+        # phases, we create a copy of the execute phase for each discover phase
+        # we have. All these copies share the `_results` list, and append to it.
+        #
+        # Therefore, avoid collecting results from phases when iterating the
+        # outcomes - such a process would encounter the list multiple times,
+        # which would make results appear several times. Instead, we can reach
+        # into the original plugin, and use it as a singleton "entry point" to
+        # access all collected `_results`.
+        self._results += execute_phases[0].results()
 
         if failed_phases:
             # TODO: needs a better message...

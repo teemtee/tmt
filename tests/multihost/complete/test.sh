@@ -34,7 +34,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Execute"
-        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute"
+        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute finish"
+
+        rlRun "grep 'summary: 7 tests executed' $rlRun_LOG"
 
         rlRun "grep '^        queued: server-setup on server (server)' $rlRun_LOG"
         rlRun "grep '^        queued: tests on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
