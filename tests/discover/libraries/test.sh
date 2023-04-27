@@ -63,6 +63,20 @@ rlJournalStart
             "$rlRun_LOG"
     rlPhaseEnd
 
+    rlPhaseStartTest "Attempt github/beakerlib lookup just once per repo"
+        rlRun "tmt run --id $tmp/querying plan --name querying discover"
+        # We attempted to clone
+        rlAssertGrep "git clone .*beakerlib/FOOBAR" "$tmp/querying/log.txt"
+        # We know it doesn't exist
+        rlAssertGrep "Repository 'https://github.com/beakerlib/FOOBAR' not found." "$tmp/querying/log.txt"
+        # We do two attempts for clone (with --depth=1 and without it)
+        LINES=$(grep "git clone .*beakerlib/FOOBAR" "$tmp/querying/log.txt" | wc -l)
+        rlAssertEquals "Just two clone calls on non-existent repository" "2" "$LINES"
+        # However we do it all just once
+        LINES=$(grep "Repository 'https://github.com/beakerlib/FOOBAR' not found." "$tmp/querying/log.txt" | wc -l)
+        rlAssertEquals "Just one attempt on non-existent repository" "1" "$LINES"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"

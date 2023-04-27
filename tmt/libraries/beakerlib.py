@@ -18,6 +18,9 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
 
+# Placeholder format to mark repo we already know doesn't exist
+NONEXISTENT_REPO = 'no-such-repo'
+
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
     'https://github.com',
@@ -169,6 +172,9 @@ class BeakerLib(Library):
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self.repo)]
+            if library.format == NONEXISTENT_REPO:
+                # We already probed self.url and it doesn't exist
+                raise LibraryError
             # The url must be identical
             if library.url != self.url:
                 # tmt guessed url so try if repo exists
@@ -231,6 +237,9 @@ class BeakerLib(Library):
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
                     self.parent.debug(f"Repository '{self.url}' not found.")
+                    # Make note to do not attempt to clone it ever again
+                    self.format = NONEXISTENT_REPO
+                    self._library_cache[str(self.repo)] = self
                     raise LibraryError
                 self.parent.fail(
                     f"Failed to fetch library '{self}' from '{self.url}'.")
