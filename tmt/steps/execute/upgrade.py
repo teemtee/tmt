@@ -158,7 +158,6 @@ class ExecuteUpgrade(ExecuteInternal):
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> None:
         """ Execute available tests """
-        self._results: List[tmt.result.Result] = []
         # Inform about the how, skip the actual execution
         ExecutePlugin.go(self, guest=guest, environment=environment, logger=logger)
 
