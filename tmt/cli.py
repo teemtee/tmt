@@ -257,6 +257,13 @@ def main(
     '--environment-file', metavar='FILE|URL', multiple=True,
     help='Set environment variables from file or url (yaml or dotenv formats '
          'are supported). Can be specified multiple times.')
+@click.option(
+    '--on-plan-error',
+    type=click.Choice(['quit', 'continue']),
+    default='quit',
+    help='What to do when plan fails to finish. Quit by default, or continue'
+         'with the next plan.'
+    )
 @verbosity_options
 @force_dry_options
 def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:

@@ -3023,8 +3023,24 @@ class Run(tmt.utils.Common):
         self.save()
 
         # Iterate over plans
+        crashed_plans: List[Tuple[Plan, Exception]] = []
+
         for plan in self.plans:
-            plan.go()
+            try:
+                plan.go()
+
+            except Exception as exc:
+                if self.opt('on-plan-error') == 'quit':
+                    raise tmt.utils.GeneralError(
+                        'plan failed',
+                        causes=[exc])
+
+                crashed_plans.append((plan, exc))
+
+        if crashed_plans:
+            raise tmt.utils.GeneralError(
+                'plan failed',
+                causes=[exc for _, exc in crashed_plans])
 
         # Update the last run id at the very end
         # (override possible runs created during execution)

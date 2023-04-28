@@ -112,7 +112,9 @@ def test_step_execute():
 
     # Test execute empty with discover output missing
     assert result.exit_code != 0
-    assert isinstance(result.exception, tmt.utils.ExecuteError)
+    assert isinstance(result.exception, tmt.utils.GeneralError)
+    assert len(result.exception.causes) == 1
+    assert isinstance(result.exception.causes[0], tmt.utils.ExecuteError)
     assert step in result.output
     assert 'provision' not in result.output
     shutil.rmtree(tmp)
