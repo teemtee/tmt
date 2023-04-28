@@ -2525,6 +2525,15 @@ def public_git_url(url: str) -> str:
     authentication. For now just cover the most common services.
     """
 
+    # Gitlab on private namepace is synced to pkgs.devel.redhat.com
+    # old: https://gitlab.com/redhat/rhel/tests/bash
+    # old: git@gitlab.com:redhat/rhel/tests/bash
+    # new: git://pkgs.devel.redhat.com/tests/bash
+    matched = re.match(r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)', url)
+    if matched:
+        project = matched.group(1)
+        return f'git://pkgs.devel.redhat.com{project}'
+
     # GitHub, GitLab
     # old: git@github.com:teemtee/tmt.git
     # new: https://github.com/teemtee/tmt.git

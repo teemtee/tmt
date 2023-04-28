@@ -90,6 +90,15 @@ def test_public_git_url():
             }, {
             'original': 'ssh://git@pagure.io/fedora-ci/metadata.git',
             'expected': 'https://pagure.io/fedora-ci/metadata.git',
+            }, {
+            'original': 'git@gitlab.com:redhat/rhel/NAMESPACE/COMPONENT.git',
+            'expected': 'git://pkgs.devel.redhat.com/NAMESPACE/COMPONENT.git',
+            }, {
+            'original': 'https://gitlab.com/redhat/rhel/NAMESPACE/COMPONENT',
+            'expected': 'git://pkgs.devel.redhat.com/NAMESPACE/COMPONENT',
+            }, {
+            'original': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
+            'expected': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
             },
         ]
     for example in examples:
