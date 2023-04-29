@@ -812,7 +812,7 @@ class BasePlugin(Phase):
                 assert isinstance(plugin, BasePlugin)
                 return plugin
 
-        show_step_method_hints(step, step.name, how)
+        show_step_method_hints(step.name, how, step._logger)
         # Report invalid method
         if step.plan is None:
             raise tmt.utils.GeneralError(f"Plan for {step.name} is not set.")
