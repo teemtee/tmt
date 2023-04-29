@@ -32,6 +32,7 @@ else:
 import click
 from click import echo
 
+import tmt.export
 import tmt.log
 import tmt.options
 import tmt.utils
@@ -200,7 +201,7 @@ class WhereableStepData:
         )
 
 
-class Step(tmt.utils.Common):
+class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
     """ Common parent of all test steps """
 
     # Default implementation for all steps is "shell", but some
@@ -303,6 +304,15 @@ class Step(tmt.utils.Common):
             data.append(plugin.data)
 
         return data
+
+    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+        # TODO: one day, this should recurse down into each materialized plugin,
+        # to give them chance to affect the export of their data.
+        return cast(tmt.export._RawExportedInstance, self._raw_data)
+
+    @property
+    def step_name(self) -> str:
+        return self.__class__.__name__.lower()
 
     @property
     def data(self) -> List[StepData]:

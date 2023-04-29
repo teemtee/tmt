@@ -14,7 +14,6 @@ else:
 import tmt
 import tmt.utils
 from tmt.log import Logger
-from tmt.steps import STEPS
 from tmt.utils import Path
 
 # Two possibilities to load additional plugins:
@@ -56,13 +55,21 @@ def discover(path: Path) -> Generator[str, None, None]:
 #
 # If you think of adding new package with plugins tmt should load on start,
 # this is the place.
-_DISCOVER_PACKAGES: List[Tuple[str, Path]] = [
-    (f'tmt.steps.{step}', Path('steps') / step)
-    for step in STEPS
-    ] + [
-    ('tmt.plugins', Path('plugins')),
-    ('tmt.export', Path('export'))
-    ]
+#
+# TODO: this should be a list! Unfortunately, there is a circular import in play:
+# tmt.steps import tmt.export, and tmt.export import tmt.steps.STEPS. Until that
+# is resolved, to use `Exportable` in tmt.steps, we need a delayed import. Hence
+# the function.
+def _discover_packages() -> List[Tuple[str, Path]]:
+    from tmt.steps import STEPS
+
+    return [
+        (f'tmt.steps.{step}', Path('steps') / step)
+        for step in STEPS
+        ] + [
+        ('tmt.plugins', Path('plugins')),
+        ('tmt.export', Path('export'))
+        ]
 
 
 def _explore_package(package: str, path: Path, logger: Logger) -> None:
@@ -133,7 +140,7 @@ def _explore_packages(logger: Logger) -> None:
 
     logger.debug('Import plugins from tmt packages.')
 
-    for name, path in _DISCOVER_PACKAGES:
+    for name, path in _discover_packages():
         _explore_package(name, _TMT_ROOT / path, logger.descend())
 
 
