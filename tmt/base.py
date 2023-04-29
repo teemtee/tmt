@@ -2086,7 +2086,6 @@ class Tree(tmt.utils.Common):
         """ Initialize tree only when accessed """
         if self._tree is None:
             try:
-                # TODO: fmf.Tree should get a stringified path
                 self._tree = fmf.Tree(str(self._path))
             except fmf.utils.RootError:
                 raise tmt.utils.MetadataError(

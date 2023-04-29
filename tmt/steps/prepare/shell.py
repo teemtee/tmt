@@ -11,7 +11,6 @@ from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
 
-# TODO: remove `ignore` with follow-imports enablement
 @dataclasses.dataclass
 class PrepareShellData(tmt.steps.prepare.PrepareStepData):
     script: List[ShellScript] = field(
@@ -48,7 +47,6 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         return obj
 
 
-# TODO: drop ignore once type annotations between modules enabled
 @tmt.steps.provides_method('shell')
 class PrepareShell(tmt.steps.prepare.PreparePlugin):
     """

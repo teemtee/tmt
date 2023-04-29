@@ -17,9 +17,6 @@ if TYPE_CHECKING:
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
 
-# TODO: this should become a more strict data class, with an enum or two to handle
-# allowed values, etc. See https://github.com/teemtee/tmt/issues/1456.
-# Defining a type alias so we can follow where the package is used.
 class ResultOutcome(enum.Enum):
     PASS = 'pass'
     FAIL = 'fail'

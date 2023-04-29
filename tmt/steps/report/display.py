@@ -4,7 +4,7 @@ import tmt
 import tmt.steps
 import tmt.steps.report
 from tmt.steps.execute import TEST_OUTPUT_FILENAME
-from tmt.utils import Path, field
+from tmt.utils import field
 
 
 @dataclasses.dataclass
@@ -41,10 +41,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin):
         # -vv and more follows
         # TODO: are we sure it cannot be None?
         assert self.step.plan.execute.workdir is not None
-        for _log_file in result.log:
-            # TODO: this should be done already, result.log should use Path instead
-            # of strings, but result.log structure is not so clear right now.
-            log_file = Path(_log_file)
+        for log_file in result.log:
             log_name = log_file.name
             full_path = self.step.plan.execute.workdir / log_file
             # List path to logs (-vv and more)

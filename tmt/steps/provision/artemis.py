@@ -62,10 +62,6 @@ DEFAULT_API_RETRIES = 10
 # Should lead to delays of 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256 seconds
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
 
-# Type annotation for "data" package describing a guest instance. Passed
-# between load() and save() calls
-# TODO: get rid of `ignore` once superclass is no longer `Any`
-
 
 @dataclasses.dataclass
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
@@ -471,7 +467,6 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
     # Guest instance
     _guest = None
 
-    # TODO: fix types once superclass gains its annotations
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for Artemis """
