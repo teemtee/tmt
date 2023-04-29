@@ -757,33 +757,6 @@ class Core(
             elif isinstance(value, FmfId):
                 data[key] = value.to_dict()
 
-            # TODO: this belongs to Test.export, and it will be moved when the time
-            # of export() cleanup comes.
-            elif key in ('require', 'recommend') and value:
-                data[key] = [
-                    dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)
-                    ]
-
-            # TODO: this belongs to Story.export, and it will be moved when the time
-            # of export() cleanup comes.
-            elif key == 'priority' and value is not None:
-                data[key] = cast(StoryPriority, value).value
-
-            # TODO: this belongs to Plan.export, and it will be moved when the time
-            # of export() cleanup comes.
-            elif key == 'script' and isinstance(value, list):
-                data[key] = [str(script) for script in cast(List[ShellScript], value)]
-
-            # TODO: this belongs to Test.export, and it will be moved when the time
-            # of export() cleanup comes.
-            elif key == 'test' and isinstance(value, ShellScript):
-                data[key] = str(value)
-
-            # TODO: this belongs to Test.export, and it will be moved when the time
-            # of export() cleanup comes.
-            elif key == 'path' and isinstance(value, Path):
-                data[key] = str(value)
-
             else:
                 data[key] = value
 
@@ -1064,6 +1037,23 @@ class Test(
             self.require.append(DependencySimple('beakerlib'))
 
         self._update_metadata()
+
+    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+        data = super()._export(keys=keys)
+
+        for key, value in data.items():
+            if key in ('require', 'recommend') and value:
+                data[key] = [
+                    dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)
+                    ]
+
+            elif key == 'test' and isinstance(value, ShellScript):
+                data[key] = str(value)
+
+            elif key == 'path' and isinstance(value, Path):
+                data[key] = str(value)
+
+        return data
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -2090,6 +2080,15 @@ class Story(
     @classmethod
     def from_tree(cls, tree: 'tmt.Tree') -> List['Story']:
         return tree.stories()
+
+    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+        data = super()._export(keys=keys)
+
+        for key, value in data.items():
+            if key == 'priority' and value is not None:
+                data[key] = cast(StoryPriority, value).value
+
+        return data
 
     @property
     def documented(self) -> List['Link']:
