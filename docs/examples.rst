@@ -234,7 +234,7 @@ Use ``tmt test create`` to create a new test based on a template::
 Specify templates non-interactively with ``-t`` or ``--template``::
 
     $ tmt tests create --template shell /tests/smoke
-    $ tmt tests create --t beakerlib /tests/smoke
+    $ tmt tests create -t beakerlib /tests/smoke
 
 Use ``-f`` or ``--force`` option to overwrite existing files.
 
@@ -515,7 +515,7 @@ Create Plans
 Use ``tmt plan create`` to create a new plan with templates::
 
     tmt plans create --template mini /plans/smoke
-    tmt plans create --t full /plans/features
+    tmt plans create -t full /plans/features
 
 In order to override default template content directly from the
 command line use individual step options and provide desired data
