@@ -796,6 +796,46 @@ class Common(_CommonBase):
 
         return self._context_object.fmf_context
 
+    def _click_opt(self, option: str) -> Tuple[click.core.ParameterSource, Any]:
+        from dataclasses import MISSING
+
+        keyname = option_to_key(option)
+
+        local_value: Optional[Any] = self._options.get(keyname, MISSING)
+        local_source: Optional[click.core.ParameterSource] = self._context.get_parameter_source(
+            keyname)
+
+        parent_value, parent_source = MISSING, None
+
+        if self.parent:
+            parent_value, parent_source = self.parent._click_opt(option)
+
+        # print(f'{self.__class__.__name__}._click_opt: {option=}')
+        # print(f'{self.__class__.__name__}._click_opt:     {local_value=} {local_source=}')
+        # print(f'{self.__class__.__name__}._click_opt:     {parent_value=} {parent_source=}')
+
+        # Special handling for special flags (parent's yes always wins)
+        if option in ('quiet', 'force', 'dry'):
+            if parent_value is not MISSING:
+                return (parent_value, parent_source)
+
+            return (local_value, local_source)
+
+        # Special handling for counting options (child overrides the parent if it was defined)
+        if option in ('debug', 'verbose'):
+            if local_value is not MISSING:
+                return (local_value, local_source)
+
+            if parent_value is MISSING:
+                return (0, click.core.ParameterSource.DEFAULT)
+
+            return (parent_value, parent_source)
+
+        if parent_value is not MISSING:
+            return (parent_value, parent_source)
+
+        return (local_value, local_source)
+
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
         """
         Get an option from the command line options
@@ -811,8 +851,6 @@ class Common(_CommonBase):
 
         Environment variables override command line options.
         """
-        # Translate dashes to underscores to match click's conversion
-        option = option.replace('-', '_')
         # Check the environment first
         # TODO: moved to log.py
         if option == 'debug':
@@ -825,24 +863,12 @@ class Common(_CommonBase):
             except KeyError:
                 pass
 
-        # Get local option
-        local = self._options.get(option, default)
-        # Check parent option
-        parent = None
-        if self.parent:
-            parent = self.parent.opt(option)
-        # Special handling for special flags (parent's yes always wins)
-        if option in ['quiet', 'force', 'dry']:
-            return parent if parent else local
-        # Special handling for counting options (child overrides the
-        # parent if it was defined)
-        elif option in ['debug', 'verbose']:
-            winner = local if local else parent
-            if winner is None:
-                winner = 0
-            return winner
-        else:
-            return parent if parent is not None else local
+        value, _ = self._click_opt(option)
+
+        if value is dataclasses.MISSING:
+            return default
+
+        return value
 
     def _level(self) -> int:
         """ Hierarchy level """
@@ -4070,6 +4096,81 @@ def dataclass_normalize_field(
     return value
 
 
+# TODO: wouldn't it be nice if typing would support some kind of `typeof(...)`
+# helper? it doesn't, yet. https://github.com/python/typing/issues/769
+class OptionGetter(Protocol):
+    def __call__(self, option: str, default: Any) -> Any:
+        pass
+
+
+def dataclass_normalize_options(
+        *,
+        container: Any,
+        option_getter: OptionGetter,
+        keys: Optional[List[str]] = None,
+        preserve_modified: bool = True,
+        logger: tmt.log.Logger,
+        ) -> None:
+    """
+    Normalize and assign values from CLI options to container fields.
+
+    :param container: container to update.
+    :param option_getter: a callable to provide a value for a given option.
+        It is called once for each option name, with an optional default
+        to return if the option was not specified.
+    :param keys: optional list of keys to update. If not set, all keys
+        are considered.
+    :param preserve_modified: if set, only options whose value is not equal
+        to field's default value would be saved in the container.
+    :param logger: used for logging.
+    """
+
+    keys = keys or list(container.keys())
+
+    for keyname in keys:
+        # Checks below try to prevent default options of CLI options from
+        # overwriting values already consumed from fmf nodes. This is no
+        # simple task, since options have defaults, they are always present
+        # in the set of options provided by Click, therefore we have no way
+        # how to check whether the option was specified or not. Instead, we
+        # are "guessing", and ignoring default-ish values.
+
+        # Some keys are not even changeable via command line. Filter those
+        # out first. With a special default value, we can detect options
+        # that were never seen by Click.
+        #print(f'{container.__class__.__name__}: {keyname=}')
+        value, source = option_getter(tmt.utils.key_to_option(keyname))
+        #print(f'{container.__class__.__name__}:     {value=} {source=}')
+        # print()
+
+        if value is dataclasses.MISSING:
+            continue
+
+        if preserve_modified:
+            # If the value we get for an option is the default value, good,
+            # no need to bother - as such, it's either already stored in
+            # `self.data`, or it has been replaced with whatever came from an
+            # fmf node.
+            if source == click.core.ParameterSource.DEFAULT:
+                continue
+            # if value == container._default(keyname):
+            #     continue
+
+            # Finally, there are `multiple=True` options: even if they do
+            # specify their default as `[]`, Click uses `()` instead. Empty
+            # tuple is therefore the default-ish value.
+            # if value == ():
+            #     continue
+
+        else:
+            # If saved values are not to be preserved, we need to convert the
+            # Click's tuples into empty lists, to match the field default.
+            if value == ():
+                value = []
+
+        dataclass_normalize_field(container, keyname, value, logger)
+
+
 def normalize_string_list(
         value: Union[None, str, List[str]],
         logger: tmt.log.Logger) -> List[str]:
@@ -4544,8 +4645,14 @@ def field(
             }
         metadata.option_choices = choices
 
-        if default is not dataclasses.MISSING and not is_flag:
+        if is_flag is True:
             metadata.option_kwargs['default'] = default
+
+        elif default is not dataclasses.MISSING:
+            metadata.option_kwargs['default'] = default
+
+        elif default_factory is not dataclasses.MISSING:
+            metadata.option_kwargs['default'] = default_factory()
 
     if normalize:
         metadata.normalize_callback = normalize

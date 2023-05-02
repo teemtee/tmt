@@ -6,8 +6,9 @@ import pytest
 
 import tmt.log
 import tmt.utils
-from tmt.utils import (SerializableContainer, dataclass_field_by_name,
-                       dataclass_field_metadata, dataclass_normalize_field,
+from tmt.utils import (DataContainer, SerializableContainer,
+                       dataclass_field_by_name, dataclass_field_metadata,
+                       dataclass_normalize_field, dataclass_normalize_options,
                        field)
 
 
@@ -152,3 +153,58 @@ def test_field_custom_serialize():
     data = DummyContainer.from_serialized(serialized)
     assert data.foo == ['unserialized-from']
     assert serialized['bar'] == 'should-never-change'
+
+
+def test_normalize_options(root_logger):
+    @dataclasses.dataclass
+    class DummyContainer(DataContainer):
+        foo: int = field(option='--foo', default=1)
+        bar: List[str] = field(option='--bar', default_factory=list, multiple=True)
+        baz: str = 'undefined'
+        qux: List[str] = field(option='--qux', default_factory=list, multiple=True)
+        corge: bool = field(option='--corge / --no-corge', default=True, multiple=True)
+
+    def option_getter(option, default=None):
+        return {
+            'foo': 2,
+            'bar': ['bar value 1', 'bar value 2'],
+            # baz is missing on purpose, to simulate a field without an option
+            # baz: ...
+            # Special value used by Click as default for `multiple=True` options
+            'qux': (),
+            'corge': False
+            }.get(option, default)
+
+    data = DummyContainer()
+    assert data.foo == 1
+    assert data.bar == []
+    assert data.baz == 'undefined'
+    assert data.qux == []
+    assert data.corge is True
+
+    dataclass_normalize_options(
+        container=data,
+        option_getter=option_getter,
+        logger=root_logger)
+
+    assert data.foo == 2
+    assert data.bar == ['bar value 1', 'bar value 2']
+    assert data.baz == 'undefined'
+    assert data.qux == []
+    assert data.corge is False
+
+    data = DummyContainer()
+    # Modify the container, options should overwrite this change.
+    data.foo = 3
+
+    dataclass_normalize_options(
+        container=data,
+        option_getter=option_getter,
+        preserve_modified=False,
+        logger=root_logger)
+
+    assert data.foo == 2
+    assert data.bar == ['bar value 1', 'bar value 2']
+    assert data.baz == 'undefined'
+    assert data.qux == []
+    assert data.corge is False
