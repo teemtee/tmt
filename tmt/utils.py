@@ -1734,8 +1734,14 @@ def dict_to_yaml(
     yaml.encoding = 'utf-8'
     # ignore[assignment]: ruamel bug workaround, see stackoverflow.com/questions/58083562,
     # sourceforge.net/p/ruamel-yaml/tickets/322/
-    yaml.width = width  # type: ignore[assignment]
-    yaml.explicit_start = start  # type: ignore[assignment]
+    #
+    # Yeah, but sometimes the ignore is not needed, at least mypy in a Github
+    # check tells us it's unused... When disabled, the local pre-commit fails.
+    # It seems we cannot win until ruamel.yaml gets its things fixed, therefore,
+    # giving up, and using `cast()` to enforce matching types to silence mypy,
+    # being fully aware the enforce types are wrong.
+    yaml.width = cast(None, width)  # # type: ignore[assignment]
+    yaml.explicit_start = cast(None, start)  # # type: ignore[assignment]
 
     # For simpler dumping of well-known classes
     def _represent_path(representer: Representer, data: Path) -> Any:
