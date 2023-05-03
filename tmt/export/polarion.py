@@ -171,11 +171,12 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     dry_mode = test.opt('dry')
     duplicate = test.opt('duplicate')
     link_polarion = test.opt('link_polarion')
+    append_summary = test.opt('append-summary')
 
     polarion_case = None
     if not duplicate:
         polarion_case = get_polarion_case(test.node, project_id)
-    summary = tmt.export.nitrate.prepare_extra_summary(test)
+    summary = tmt.export.nitrate.prepare_extra_summary(test, append_summary)
     assert test.path is not None  # narrow type
     test_path = test.node.root / test.path.unrooted()
 

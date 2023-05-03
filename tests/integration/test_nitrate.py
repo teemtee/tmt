@@ -54,7 +54,7 @@ class NitrateExport(Base):
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
-             "--create", "--general", "."],
+             "--create", "--general", "--append-summary", "."],
             catch_exceptions=False)
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
@@ -69,7 +69,7 @@ class NitrateExport(Base):
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
-             "--create", "--dry", "--general", "."],
+             "--create", "--dry", "--general", "--append-summary", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         self.assertNotIn("extra-nitrate", fmf_node.data)
@@ -87,7 +87,7 @@ class NitrateExport(Base):
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
-             "--create", "--general", "."],
+             "--create", "--general", "--append-summary", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
 
@@ -100,7 +100,7 @@ class NitrateExport(Base):
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
-             "--debug", "--dry", "--general", "--bugzilla", "."],
+             "--debug", "--dry", "--general", "--bugzilla", "--append-summary", "."],
             catch_exceptions=False)
         self.assertIn(
             "summary: tmt /existing_dryrun_testcase - ABCDEF",
@@ -112,11 +112,20 @@ class NitrateExport(Base):
 
         os.chdir(self.tmpdir / "existing_dryrun_release_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli.main,
-            ["test", "export", "--how", "nitrate", "--debug", "--dry",
-             "--ignore-git-validation", "--general", "--bugzilla", "--link-runs", "."],
-            catch_exceptions=False)
+        self.runner_output = runner.invoke(tmt.cli.main,
+                                           ["test",
+                                            "export",
+                                            "--how",
+                                            "nitrate",
+                                            "--debug",
+                                            "--dry",
+                                            "--ignore-git-validation",
+                                            "--general",
+                                            "--bugzilla",
+                                            "--link-runs",
+                                            "--append-summary",
+                                            "."],
+                                           catch_exceptions=False)
         self.assertIn(
             "summary: tmt /existing_dryrun_release_testcase - ABCDEF",
             self.runner_output.output)
@@ -136,10 +145,16 @@ class NitrateExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli.main,
-            ["test", "export", "--how", "nitrate", "--ignore-git-validation", "--bugzilla", "."],
-            catch_exceptions=False)
+        self.runner_output = runner.invoke(tmt.cli.main,
+                                           ["test",
+                                            "export",
+                                            "--how",
+                                            "nitrate",
+                                            "--ignore-git-validation",
+                                            "--bugzilla",
+                                            "--append-summary",
+                                            "."],
+                                           catch_exceptions=False)
         assert self.runner_output.exit_code == 0
 
     def test_missing_user_dryrun(self):
@@ -161,7 +176,7 @@ class NitrateExport(Base):
         with self.assertRaises(ConvertError) as error:
             self.runner_output = runner.invoke(
                 tmt.cli.main,
-                ["test", "export", "--nitrate", "--debug", "--dry", "."],
+                ["test", "export", "--nitrate", "--debug", "--dry", "--append-summary", "."],
                 catch_exceptions=False)
         self.assertIn('Uncommitted changes', str(error.exception))
 
@@ -175,7 +190,8 @@ class NitrateExport(Base):
 
         self.runner_output = runner.invoke(
             tmt.cli.main,
-            ["test", "export", "--nitrate", "--debug", "--ignore-git-validation", "."],
+            ["test", "export", "--nitrate", "--debug", "--ignore-git-validation",
+             "--append-summary", "."],
             catch_exceptions=False)
 
         self.assertIn(

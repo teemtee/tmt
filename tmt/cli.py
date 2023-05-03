@@ -615,6 +615,11 @@ _test_export_default = 'yaml'
     help="Ignore unpublished git changes and export to Nitrate. "
     "The case might not be able to be scheduled!")
 @click.option(
+    '--append-summary / --no-append-summary', default=False,
+    help="Include test summary in the Nitrate/Polarion test case summary as well. "
+    "By default, only the repository name and test name are used."
+    )
+@click.option(
     '--create', is_flag=True,
     help="Create test cases in nitrate if they don't exist.")
 @click.option(
