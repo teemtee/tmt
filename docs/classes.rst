@@ -21,7 +21,9 @@ classes, it provides common methods for logging, running commands
 and workdir handling. The ``_CommonBase`` class is an actual root
 of the class tree, makes sure the inheritance works correctly.
 The ``Core`` class together with its child classes ``Test``,
-``Plan`` and ``Story`` cover the :ref:`specification`::
+``Plan`` and ``Story`` cover the :ref:`specification`:
+
+.. code-block::
 
     _CommonBase
     └── Common
@@ -42,7 +44,9 @@ Phases
 ------------------------------------------------------------------
 
 Actions performed during a normal step and plugins for individual
-step::
+step:
+
+.. code-block::
 
     Phase
     ├── Action
@@ -82,7 +86,9 @@ step::
 Steps
 ------------------------------------------------------------------
 
-A brief overview of all test steps::
+A brief overview of all test steps:
+
+.. code-block::
 
     Step
     ├── Discover
@@ -93,7 +99,9 @@ A brief overview of all test steps::
     └── Report
 
 Containers used for storing configuration data for individual step
-plugins::
+plugins:
+
+.. code-block::
 
     DataContainer
     └── SpecBasedContainer, SerializableContainer
@@ -130,7 +138,9 @@ plugins::
 Guests
 ------------------------------------------------------------------
 
-Guests provisioned for test execution::
+Guests provisioned for test execution:
+
+.. code-block::
 
     Guest
     ├── GuestContainer
@@ -139,7 +149,9 @@ Guests provisioned for test execution::
         ├── GuestArtemis
         └── GuestTestcloud
 
-Data related to provisioned guests::
+Data related to provisioned guests:
+
+.. code-block::
 
     GuestData
     ├── GuestSshData
@@ -195,8 +207,8 @@ default values or not set at all.
 
 .. code-block:: python
 
-   # Create an fmf id object from raw data
-   fmf_id = tmt.base.FmfId.from_spec({'url': ..., 'ref': ...})
+    # Create an fmf id object from raw data
+    fmf_id = tmt.base.FmfId.from_spec({'url': ..., 'ref': ...})
 
 
 ``to_serialized``/``from_serialized``/``unserialize``
@@ -235,21 +247,21 @@ on the concept of serialization.
 
         return obj
 
-   # A step saving its state...
-   content: Dict[str, Any] = {
-       'status': self.status(),
-       'data': [datum.to_serialized() for datum in self.data]
-   }
-   self.write('step.yaml', tmt.utils.dict_to_yaml(content))
+    # A step saving its state...
+    content: Dict[str, Any] = {
+        'status': self.status(),
+        'data': [datum.to_serialized() for datum in self.data]
+        }
+    self.write('step.yaml', tmt.utils.dict_to_yaml(content))
 
-   # ... and loading it back.
-   # Note the use of unserialize(): step data may have been serialized from
-   # various different classes (derived from tmt.steps.provision.Guest),
-   # and unserialize() will detect the correct class.
-   raw_step_data: Dict[Any, Any] = tmt.utils.yaml_to_dict(self.read('step.yaml'))
-   self.data = [
-       StepData.unserialize(raw_datum) for raw_datum in raw_step_data['data']
-   ]
+    # ... and loading it back.
+    # Note the use of unserialize(): step data may have been serialized from
+    # various different classes (derived from tmt.steps.provision.Guest),
+    # and unserialize() will detect the correct class.
+    raw_step_data: Dict[Any, Any] = tmt.utils.yaml_to_dict(self.read('step.yaml'))
+    self.data = [
+        StepData.unserialize(raw_datum) for raw_datum in raw_step_data['data']
+        ]
 
 
 ``to_dict``/``to_minimal_dict``
@@ -264,19 +276,19 @@ of default implementations.
 
 .. warning::
 
-   If you think of using ``to_dict()``, please, think again and be sure
-   you know what are you doing. Despite its output being sometimes
-   perfectly compatible with output of ``to_serialized()`` or ``to_spec()``,
-   it is not generaly true, and using it instead of proper methods may lead
-   to unexpected exceptions.
+    If you think of using ``to_dict()``, please, think again and be sure
+    you know what are you doing. Despite its output being sometimes
+    perfectly compatible with output of ``to_serialized()`` or ``to_spec()``,
+    it is not generaly true, and using it instead of proper methods may lead
+    to unexpected exceptions.
 
-   The same applies to ``to_minimal_dict()``.
+    The same applies to ``to_minimal_dict()``.
 
 .. code-block:: python
 
-   # tmt.base.FmfId's specification is basically just a mapping,
-   # therefore `to_dict()` is good enough to produce a specification.
-   def to_spec(self) -> Dict[str, Any]:
+    # tmt.base.FmfId's specification is basically just a mapping,
+    # therefore `to_dict()` is good enough to produce a specification.
+    def to_spec(self) -> Dict[str, Any]:
         return self.to_dict()
 
 
@@ -311,16 +323,16 @@ Following rules apply:
 
   .. code-block:: python
 
-     class FooStepData(tmt.steps.StepData):
-       # `--script ...` option dictates step data to have a field of correct type
-       script: List[tmt.utils.ShellScript]
+      class FooStepData(tmt.steps.StepData):
+        # `--script ...` option dictates step data to have a field of correct type
+        script: List[tmt.utils.ShellScript]
 
-     ...
-     def go(self):
-       ...
+      ...
+      def go(self):
+        ...
 
-       # When calling `get()`, hint type linters with the right type
-       scripts: List[tmt.utils.ShellScript] = self.get('script')
+        # When calling `get()`, hint type linters with the right type
+        scripts: List[tmt.utils.ShellScript] = self.get('script')
 * ``shell=True`` should not be needed, use ``ShellScript.to_shell_command()``
   instead.
 
@@ -329,16 +341,16 @@ to build up commands and scripts from smaller building blocks:
 
 .. code-block:: python
 
-   >>> command = Command('ls')
-   >>> command += Command('-al')
-   >>> command += ['/']
-   >>> str(command)
-   'ls -al /'
+    >>> command = Command('ls')
+    >>> command += Command('-al')
+    >>> command += ['/']
+    >>> str(command)
+    'ls -al /'
 
-   >>> script = ShellScript('ls -al')
-   >>> script += ShellScript('ls -al $HOME')
-   >>> str(script)
-   'ls -al; ls -al $HOME'
+    >>> script = ShellScript('ls -al')
+    >>> script += ShellScript('ls -al $HOME')
+    >>> str(script)
+    'ls -al; ls -al $HOME'
 
 There are several functions available to help with conversion between
 command and shell script format:
@@ -352,10 +364,10 @@ as its options:
 
 .. code-block:: python
 
-   >>> ssh_command = Command('ssh', '-o', 'ForwardX11=yes', '-o', 'IdentitiesOnly=yes')
-   >>> command = Command('rsync', '-e', ssh_command.to_element())
-   >>> str(command)
-   "rsync -e 'ssh -o ForwardX11=yes -o IdentitiesOnly=yes'"
+    >>> ssh_command = Command('ssh', '-o', 'ForwardX11=yes', '-o', 'IdentitiesOnly=yes')
+    >>> command = Command('rsync', '-e', ssh_command.to_element())
+    >>> str(command)
+    "rsync -e 'ssh -o ForwardX11=yes -o IdentitiesOnly=yes'"
 
 ``Command.to_script``
 ------------------------------------------------------------------
@@ -364,10 +376,10 @@ Convert a command to a shell script:
 
 .. code-block:: python
 
-   >>> command1 = Command('ls', '-al', '/')
-   >>> command2 = Command('bash', '-c', command1.to_script().to_element())
-   >>> str(command2)
-   "bash -c 'ls -al /'"
+    >>> command1 = Command('ls', '-al', '/')
+    >>> command2 = Command('bash', '-c', command1.to_script().to_element())
+    >>> str(command2)
+    "bash -c 'ls -al /'"
 
 
 ``Script.to_element``
@@ -377,9 +389,9 @@ Convert a shell script to a command element:
 
 .. code-block:: python
 
-   >>> command = Command('bash', '-c', ShellScript('ls -al /').to_element())
-   >>> str(command)
-   "bash -c 'ls -al /'"
+    >>> command = Command('bash', '-c', ShellScript('ls -al /').to_element())
+    >>> str(command)
+    "bash -c 'ls -al /'"
 
 ``Script.from_scripts``
 ------------------------------------------------------------------
@@ -389,17 +401,17 @@ script from multiple steps:
 
 .. code-block:: python
 
-   >>> scripts: List[ShellScript] = [
-   ...   ShellScript('cd $HOME'),
-   ...   ShellScript('ls -al')
-   ... ]
-   >>>
-   >>> if True:
-   ...   scripts.append(ShellScript('rm -f bar'))
-   ...
-   >>> script = ShellScript.from_scripts(scripts)
-   >>> str(script)
-   'cd $HOME; ls -al; rm -f bar'
+    >>> scripts: List[ShellScript] = [
+    ...   ShellScript('cd $HOME'),
+    ...   ShellScript('ls -al')
+    ... ]
+    >>>
+    >>> if True:
+    ...   scripts.append(ShellScript('rm -f bar'))
+    ...
+    >>> script = ShellScript.from_scripts(scripts)
+    >>> str(script)
+    'cd $HOME; ls -al; rm -f bar'
 
 ``Script.to_shell_command``
 ------------------------------------------------------------------
@@ -409,13 +421,13 @@ would do, but it makes it explicit and involves correct type conversion:
 
 .. code-block:: python
 
-   >>> script = ShellScript("""
-   ... cd $HOME
-   ... ls -al
-   ... """)
-   >>> command = script.to_shell_command()
-   >>> str(command)
-   "/bin/bash -c '\ncd $HOME\nls -al\n'"
+    >>> script = ShellScript("""
+    ... cd $HOME
+    ... ls -al
+    ... """)
+    >>> command = script.to_shell_command()
+    >>> str(command)
+    "/bin/bash -c '\ncd $HOME\nls -al\n'"
 
 
 Essential Classes

@@ -29,22 +29,24 @@ description: |
 
     .. note::
 
-       It is **highly** recommended to wrap values with single or double quotes,
-       i.e. ``memory: '>= 8 GiB'`` rather than ``memory: >= 8 GiB``. This should
-       prevent any unexpected processing by parsers loading the fmf content.
-       Without explicit quotes, some operators might lead to unexpected outcome.
+        It is **highly** recommended to wrap values with single or double quotes,
+        i.e. ``memory: '>= 8 GiB'`` rather than ``memory: >= 8 GiB``. This should
+        prevent any unexpected processing by parsers loading the fmf content.
+        Without explicit quotes, some operators might lead to unexpected outcome.
 
-        # This...
-        memory: '8 GB'
-        # ... is the same as this:
-        memory: '= 8 GB'
+        .. code-block:: yaml
 
-        # Optional operators at the start of the value
-        memory: '!= 8 GB'
-        memory: '> 8 GB'
-        memory: '>= 8 GB'
-        memory: '< 8 GB'
-        memory: '<= 8 GB'
+            # This...
+            memory: '8 GB'
+            # ... is the same as this:
+            memory: '= 8 GB'
+
+            # Optional operators at the start of the value
+            memory: '!= 8 GB'
+            memory: '> 8 GB'
+            memory: '>= 8 GB'
+            memory: '< 8 GB'
+            memory: '<= 8 GB'
 
     Search
     ------
@@ -58,7 +60,9 @@ description: |
 
     Please note, that the full extent of regular expressions might
     not be supported across all provision implementations. The
-    ``.*`` notation, however, should be supported everywhere::
+    ``.*`` notation, however, should be supported everywhere:
+
+    .. code-block:: yaml
 
         # Search for processors using a cpu model name
         cpu:
@@ -76,7 +80,9 @@ description: |
     ``and`` operator containing a list of dictionaries with
     individual requirements. When the ``or`` operator is used, any
     of the alternatives provided in the list should be
-    sufficient::
+    sufficient:
+
+    .. code-block:: yaml
 
         # By default exact value expected, these are equivalent:
         cpu:
@@ -100,7 +106,9 @@ description: |
     -----
 
     The `pint`__ library is used for processing various units,
-    both decimal and binary prefixes can be used::
+    both decimal and binary prefixes can be used:
+
+    .. code-block::
 
         1 MB = 1 000 000 B
         1 MiB = 1 048 576 B

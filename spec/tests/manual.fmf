@@ -19,7 +19,9 @@ description: |
     __ https://spec.commonmark.org/0.29
 
     This is a minimal example of a manual test document containing
-    a single test with one test step and one expected result::
+    a single test with one test step and one expected result:
+
+    .. code-block:: markdown
 
         # Test
 

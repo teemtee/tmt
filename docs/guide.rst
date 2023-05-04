@@ -19,19 +19,25 @@ The First Steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Installing the main package with the core functionality is quite
-straightforward. No worry, there are just a few dependencies::
+straightforward. No worry, there are just a few dependencies:
+
+.. code-block:: shell
 
     sudo dnf install -y tmt
 
 Enabling a simple smoke test in the continuous integration should
 be a joy. Just a couple of concise commands, assuming you are in
-your project git repository::
+your project git repository:
+
+.. code-block:: shell
 
     tmt init --template mini
     vim plans/example.fmf
 
 Open the example plan in your favorite editor and adjust the smoke
-test script as needed. Your very first plan can look like this::
+test script as needed. Your very first plan can look like this:
+
+.. code-block:: yaml
 
     summary: Basic smoke test
     execute:
@@ -40,7 +46,9 @@ test script as needed. Your very first plan can look like this::
 Now you're ready to create a new pull request to check out how
 it's working. During push, remote usually shows a direct link to
 the page with a *Create* button, so now it's only two clicks
-away::
+away:
+
+.. code-block:: shell
 
     git add .
     git checkout -b smoke-test
@@ -49,13 +57,17 @@ away::
 
 But perhaps, you are a little bit impatient and would like to see
 the results faster. Sure, let's try the smoke test here and now,
-directly on your localhost::
+directly on your localhost:
+
+.. code-block:: shell
 
     tmt run --all provision --how local
 
 If you're a bit afraid that the test could break your machine or
 just want to keep your environment clean, run it in a container
-instead::
+instead:
+
+.. code-block:: shell
 
     sudo dnf install -y tmt-provision-container
     tmt run -a provision -h container
@@ -63,21 +75,27 @@ instead::
 Or even in a full virtual machine if the container environment is
 not enough. We'll use the :ref:`libvirt<libvirt>` to start a new
 virtual machine on your localhost. Be ready for a bit more
-dependencies here::
+dependencies here:
+
+.. code-block:: shell
 
     sudo dnf install -y tmt-provision-virtual
     tmt run -a provision -h virtual
 
 Don't care about the disk space? Simply install ``tmt-all`` and
 you'll get all available functionality at hand. Check the help to
-list all supported provision methods::
+list all supported provision methods:
+
+.. code-block:: shell
 
     sudo dnf install tmt-all
     tmt run provision --help
 
 Now when you've met your ``--help`` friend you know everything you
 need to get around without getting lost in the forest of available
-options::
+options:
+
+.. code-block:: shell
 
     tmt --help
     tmt run --help
@@ -104,7 +122,9 @@ Trees
 
 The data are organized into `trees`__. Similarly as with ``git``,
 there is a special ``.fmf`` directory which marks the root of the
-fmf metadata tree. Use the ``init`` command to initialize it::
+fmf metadata tree. Use the ``init`` command to initialize it:
+
+.. code-block:: shell
 
     tmt init
 
@@ -122,7 +142,9 @@ Plans
 ------------------------------------------------------------------
 
 As we've seen above, in order to enable testing the following plan
-is just enough::
+is just enough:
+
+.. code-block:: yaml
 
     execute:
         script: foo --version
@@ -136,7 +158,9 @@ By the way, there are several basic templates available which can
 be applied already during the ``init`` by using the ``--template``
 option or the short version ``-t``. The minimal template, which
 includes just a simple plan skeleton, is the fastest way to get
-started::
+started:
+
+.. code-block:: shell
 
     tmt init -t mini
 
@@ -150,7 +174,9 @@ results and finally how to :ref:`/spec/plans/finish` the test job.
 Here's an example of a slightly more complex plan which changes
 the default provision method to container to speed up the testing
 process and ensures that an additional package is installed before
-the testing starts::
+the testing starts:
+
+.. code-block:: yaml
 
     provision:
         how: container
@@ -179,7 +205,9 @@ Very often testing is much more complex than running just a
 single shell script. There might be many scenarios covered by
 individual scripts. For these cases the ``discover`` step can
 be instructed to explore available tests from fmf metadata as
-well. The plan will look like this::
+well. The plan will look like this:
+
+.. code-block:: yaml
 
     discover:
         how: fmf
@@ -193,7 +221,9 @@ cases such as the :ref:`/spec/tests/test` script,
 where the test should be executed, maximum test
 :ref:`/spec/tests/duration` or packages
 :ref:`required</spec/tests/require>` to run the test. Here's an
-example of test metadata::
+example of test metadata:
+
+.. code-block:: yaml
 
     summary: Fetch an example web page
     test: wget http://example.org/
@@ -203,7 +233,9 @@ example of test metadata::
 Instead of writing the plan and test metadata manualy, you might
 want to simply apply the ``base`` template which contains the plan
 mentioned above together with a test example including both test
-metadata and test script skeleton for inspiration::
+metadata and test script skeleton for inspiration:
+
+.. code-block:: shell
 
     tmt init --template base
 
@@ -228,7 +260,9 @@ Thanks to this you can track everything in one place, including
 the project implementation progress. Stories are identified by the
 ``story`` attribute which every story has to define or inherit.
 
-An example story can look like this::
+An example story can look like this:
+
+.. code-block:: yaml
 
     story:
         As a user I want to see more detailed information for
@@ -240,7 +274,9 @@ An example story can look like this::
 
 In order to start experimenting with the complete set of examples
 covering all metadata levels, use the ``full`` template which
-creates a test, a plan and a story::
+creates a test, a plan and a story:
+
+.. code-block:: shell
 
     tmt init -t full
 
@@ -257,7 +293,9 @@ the :ref:`/spec/core/link` key which can be used for tracking
 relations between objects.
 
 Here's how the story above could be extended with the core
-attributes ``description`` and ``link``::
+attributes ``description`` and ``link``:
+
+.. code-block:: yaml
 
     description:
         Different verbose levels can be enabled by using the
@@ -292,7 +330,9 @@ Create
 
 When working on the test coverage, one of the most common actions
 is creating new tests. Use ``tmt test create`` to simply create a
-new test based on a template::
+new test based on a template:
+
+.. code-block:: shell
 
     $ tmt test create /tests/smoke
     Template (shell or beakerlib): shell
@@ -304,13 +344,17 @@ As for now there are two templates available, ``shell`` for simple
 scripts written in shell and ``beakerlib`` with a basic skeleton
 demonstrating essential functions of this shell-level testing
 framework. If you want to be faster, specify the desired template
-directly on the command line using ``-t`` or ``--template``::
+directly on the command line using ``-t`` or ``--template``:
+
+.. code-block:: shell
 
     $ tmt test create --template shell /tests/smoke
     $ tmt test create --t beakerlib /tests/smoke
 
 In a similar way, the ``tmt plan create`` command can be used to
-create a new plan with templates::
+create a new plan with templates:
+
+.. code-block:: shell
 
     tmt plans create --template mini /plans/smoke
     tmt plans create --t full /plans/features
@@ -319,7 +363,9 @@ When creating many plans, for example when migrating the whole
 test coverage from a different tooling, it might be handy to
 override default template content directly from the command line.
 For this use individual step options such as ``--discover`` and
-provide desired data in the ``yaml`` format::
+provide desired data in the ``yaml`` format:
+
+.. code-block:: shell
 
     tmt plan create /plans/custom --template mini \
         --discover '{how: "fmf", name: "internal", url: "https://internal/repo"}' \
@@ -327,7 +373,9 @@ provide desired data in the ``yaml`` format::
 
 Now it will be no surprise for you that for creating a new story
 the ``tmt story create`` command can be used with the very same
-possibility to choose the right template::
+possibility to choose the right template:
+
+.. code-block:: shell
 
     tmt story create --template full /stories/usability
 
@@ -424,7 +472,9 @@ be otherwise repeated many times.
 
 Let's have a look at some tangible example. We create separate
 directories for tests and plans. Under each of them there is an
-additional level to group related tests or plans together::
+additional level to group related tests or plans together:
+
+.. code-block::
 
     ├── plans
     │   ├── features
@@ -455,7 +505,9 @@ the following test metadata are common:
     require: [tmt]
 
 Instead of repating this information again and again for each test
-we place a ``main.fmf`` file at the top of the ``tests`` tree::
+we place a ``main.fmf`` file at the top of the ``tests`` tree:
+
+.. code-block::
 
     tests
     ├── main.fmf

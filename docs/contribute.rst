@@ -27,7 +27,9 @@ couple of recommendations to keep on mind when writing code:
   is under the first non-whitespace character of the last line.
 
 When generating user messages use the whole sentence with the
-first word capitalized and enclose any names in single quotes::
+first word capitalized and enclose any names in single quotes:
+
+.. code-block:: python
 
     self.warn(f"File '{path}' not found.")
 
@@ -65,26 +67,36 @@ Develop
 
 In order to experiment, play with the latest bits and develop
 improvements it is best to use a virtual environment. Make sure
-that you have all required packages installed on your box::
+that you have all required packages installed on your box:
+
+.. code-block:: shell
 
     sudo dnf install gcc make git python3-docutils {python3,libvirt,krb5,libpq}-devel jq
 
 In case you're using Centos Stream 9 system you need to enable CRB
-repository first to make all the necessary packages available::
+repository first to make all the necessary packages available:
+
+.. code-block:: shell
 
     sudo dnf config-manager --set-enabled crb # for CentOS Stream 9
 
-For CentOS Stream 8 install also::
+For CentOS Stream 8 install also:
+
+.. code-block:: shell
 
     sudo dnf install python3-virtualenv
 
 Install ``python3-virtualenvwrapper`` to easily create and enable
-virtual environments using ``mkvirtualenv`` and ``workon``::
+virtual environments using ``mkvirtualenv`` and ``workon``:
+
+.. code-block:: shell
 
     sudo dnf install python3-virtualenvwrapper
 
 If ``python3-virtualenvwrapper`` package is not available for your
-system you can install it via ``pip``::
+system you can install it via ``pip``:
+
+.. code-block:: shell
 
     pip install virtualenvwrapper --user # use pip3 in case of CentOS Stream 8
 
@@ -92,18 +104,24 @@ Note that if you have freshly installed the package you need to
 open a new shell session to enable the wrapper functions. In case
 you installed package via ``pip``, you need to source
 ``virtualenvwrapper.sh`` script. You can also consider adding
-following lines into your ``.bash_profile``::
+following lines into your ``.bash_profile``:
+
+.. code-block:: shell
 
     source ${HOME}/.local/bin/virtualenvwrapper.sh
 
 There is no default ``python`` in ``$PATH`` in case of CentOS Stream 8,
 which causes sourcing of ``virtualenvwrapper.sh`` script to fail.
-You can resolve it using ``alternatives``::
+You can resolve it using ``alternatives``:
+
+.. code-block:: shell
 
     alternatives --set python /usr/bin/python3
 
 Now let's create a new virtual environment and install ``tmt`` in
-editable mode there::
+editable mode there:
+
+.. code-block:: shell
 
     mkvirtualenv tmt
     git clone https://github.com/teemtee/tmt
@@ -112,7 +130,9 @@ editable mode there::
 
 The main ``tmt`` package contains only the core dependencies. For
 building documentation, testing changes, importing/exporting test
-cases or advanced provisioning options install the extra deps::
+cases or advanced provisioning options install the extra deps:
+
+.. code-block:: shell
 
     pip install -e '.[docs]'
     pip install -e '.[tests]'
@@ -120,17 +140,23 @@ cases or advanced provisioning options install the extra deps::
     pip install -e '.[provision]'
 
 Or simply install all extra dependencies to make sure you have
-everything needed for the tmt development ready on your system::
+everything needed for the tmt development ready on your system:
+
+.. code-block:: shell
 
     pip install -e '.[all]'
 
 Install the ``pre-commit`` package to run all available checks for
-your commits to the project::
+your commits to the project:
+
+.. code-block:: shell
 
     sudo dnf install pre-commit # for Fedora
     pip install pre-commit --user # for CentOS Stream
 
-Then you can install the hooks it via::
+Then you can install the hooks it via:
+
+.. code-block:: shell
 
     pre-commit install
 
@@ -148,55 +174,75 @@ creating needed test coverage. You might also want to add the
 ``help wanted`` and ``tests needed`` labels to bring a bit more
 attention to your pull request.
 
-Run the default set of tests directly on your localhost::
+Run the default set of tests directly on your localhost:
+
+.. code-block:: shell
 
     tmt run
 
-Run selected tests or plans in verbose mode::
+Run selected tests or plans in verbose mode:
+
+.. code-block:: shell
 
     tmt run --verbose plan --name basic
     tmt run -v test -n smoke
 
 Build the rpms and execute the whole test coverage, including
-tests which need the full virtualization support::
+tests which need the full virtualization support:
+
+.. code-block:: shell
 
     make rpm
     tmt -c how=full run
 
 This would install the freshly built rpms on your laptop. In order
 to run the full test suite more safely under a virtual machine run
-the full test suite wrapper against the desired branch::
+the full test suite wrapper against the desired branch:
+
+.. code-block:: shell
 
     cd tests/full
     tmt run --environment BRANCH=target
 
-Or schedule the full test suite under an external test system::
+Or schedule the full test suite under an external test system:
+
+.. code-block:: shell
 
     cd tests/full
     tmt test export --fmf-id | wow fedora-35 x86_64 --fmf-id - --taskparam=BRANCH=target
 
 Or run local modifications copied to the virtual machine. Because this
 requires changes outside of the fmf root you need to run make
-which tars sources to the expected location::
+which tars sources to the expected location:
+
+.. code-block:: shell
 
     cd tests/full
     make test
 
-Similar as above but run only tests which don't run for merge requests::
+Similar as above but run only tests which don't run for merge requests:
+
+.. code-block:: shell
 
     cd tests/full
     make test-complement
 
-To run unit tests using pytest and generate coverage report::
+To run unit tests using pytest and generate coverage report:
+
+.. code-block:: shell
 
     coverage run --source=tmt -m py.test tests
     coverage report
 
-Install pytest and coverage using dnf::
+Install pytest and coverage using dnf:
+
+.. code-block:: shell
 
     dnf install python3-pytest python3-coverage
 
-or pip::
+or pip:
+
+.. code-block:: shell
 
     # sudo required if not in a virtualenv
     pip install pytest coveralls
@@ -223,15 +269,29 @@ good to include respective documentation. You can add or update
 the :ref:`specification`, extend the :ref:`examples` or write a
 new chapter for the user :ref:`guide`.
 
-For building documentation locally install necessary modules::
+For building documentation locally install necessary modules:
+
+.. code-block:: shell
 
     pip install sphinx sphinx_rtd_theme
 
-Make sure docutils are installed in order to build man pages::
+Make sure docutils are installed in order to build man pages:
+
+.. code-block:: shell
 
     dnf install python3-docutils
 
-Building documentation is then quite straightforward::
+By default, examples provided in the specification stories are
+rendered as ``yaml``. In order to select a different syntax
+highlighting schema add ``# syntax: <format>``, for example:
+
+.. code-block:: shell
+
+    # syntax: shell
+
+Building documentation is then quite straightforward:
+
+.. code-block:: shell
 
     make docs
 
@@ -261,7 +321,9 @@ single commit.
 Consider pasting the following checklist (or selected items which
 are applicable) to the pull request description to easily track
 progress of the implementation and prevent forgetting about
-essential steps to be completed before it is merged::
+essential steps to be completed before it is merged:
+
+.. code-block:: markdown
 
     * [ ] implement the feature
     * [ ] write documentation
@@ -274,13 +336,17 @@ essential steps to be completed before it is merged::
 
 The version should be mentioned in the specification when a new
 essential feature is added so that users can easily check whether
-given functionality is already available in their package::
+given functionality is already available in their package:
+
+.. code-block:: rst
 
     .. versionadded:: 1.23
 
 If the pull request addresses an existing issue, mention it using
 one of the automatically parsed formats so that it is linked to
-it, for example::
+it, for example:
+
+.. code-block:: markdown
 
     Fix #1234.
 

@@ -115,7 +115,9 @@ description:
     description: |
 
         Save the report into a ``report.yaml`` file with the
-        following format::
+        following format:
+
+        .. code-block:: yaml
 
             result: OVERALL_RESULT
             plans:

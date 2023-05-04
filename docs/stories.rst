@@ -19,7 +19,9 @@ couple of examples demonstrating expected usage.
 
 
 It is also possible to list and search stories directly from the
-command line using the ``story`` command::
+command line using the ``story`` command:
+
+.. code-block:: shell
 
     tmt story ls
     tmt story show
@@ -27,7 +29,9 @@ command line using the ``story`` command::
 
 Current status of story coverage from implementation, testing and
 documentation point of view can be viewed using the ``coverage``
-subcommand with optional regular expression for filtering::
+subcommand with optional regular expression for filtering:
+
+.. code-block:: shell
 
     tmt story coverage
     tmt story coverage cli

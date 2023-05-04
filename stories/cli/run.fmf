@@ -202,9 +202,11 @@ story: 'As a user I want to execute tests easily'
 
 /last:
     story: 'As a user I want to rerun tests easily'
-    description: >
+    description: |
         Execute previous run without the need to specify the
-        previous run id. The command is a shortcut for::
+        previous run id. The command is a shortcut for:
+
+        .. code-block:: shell
 
             tmt run --id PREVIOUS_RUN
 

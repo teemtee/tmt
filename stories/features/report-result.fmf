@@ -20,7 +20,8 @@ description: |
     __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-report-result
 
 example: |
-        tmt-report-result /test/name PASS
+    # syntax: shell
+    tmt-report-result /test/name PASS
 
 link:
   - implemented-by: /tmt/steps/execute/internal.py

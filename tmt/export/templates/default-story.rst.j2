@@ -1,3 +1,18 @@
+{% macro render_example(example) %}
+    {% set example = example.strip() %}
+    {% set syntax = example | regex_search('^# syntax: ([a-z]+)') %}
+    {% if syntax %}
+        {% set example = '\n'.join(example.splitlines()[1:]) %}
+        {% set syntax = syntax[0] %}
+    {% else %}
+        {% set syntax = 'yaml' %}
+    {% endif %}
+
+.. code-block:: {{ syntax }}
+
+   {{ example | indent(width=3, first=False, blank=False) | trim }}
+{% endmacro %}
+
 {% if INCLUDE_TITLE %}
 {% set depth = STORY.name | findall('/') | length - 1 %}
 {% set title_underline = '=~^:-><'[depth] %}
@@ -35,13 +50,10 @@
 {% if STORY.example and STORY.example != STORY.node.parent.get('example') %}
     {% for example in STORY.example %}
         {% if example == STORY.example | first %}
-Examples::
-        {% else %}
-::
+**Examples:**
         {% endif %}
 
-{{ example | indent(width=4, first=True, blank=True) }}
-
+{{ render_example(example) }}
     {% endfor %}
 {% endif %}
 

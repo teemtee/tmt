@@ -47,8 +47,8 @@ rlJournalStart
         rlAssertGrep "Story keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "Some description" $rlRun_LOG
         rlAssertGrep "\*As a user I want this and that\*" $rlRun_LOG
-        rlRun "grep -A1 ^A Concise Title$ $rlRun_LOG | grep ====" 0 "Check for header"
-        rlRun "grep -A2 ^Examples::$ $rlRun_LOG | grep 'An inspiring example'"
+        rlRun "grep -A1 '^A Concise Title$' $rlRun_LOG | grep ====" 0 "Check for header"
+        rlRun "grep -A5 '^\*\*Examples:\*\*$' $rlRun_LOG | grep 'An inspiring example'"
         rlAssertNotGrep "This is a draft" $rlRun_LOG
         rlAssertGrep "Status: implemented" $rlRun_LOG
     rlPhaseEnd

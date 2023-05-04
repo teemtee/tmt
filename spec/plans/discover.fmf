@@ -11,31 +11,33 @@ description: |
 
     Store the list of aggregated tests with their corresponding
     metadata in the ``tests.yaml`` file. The format must be a
-    list of dictionaries structured in the following way::
+    list of dictionaries structured in the following way:
 
-          - name: /test/one
-            summary: Short test summary.
-            description: Long test description.
-            contact: Petr Šplíchal <psplicha@redhat.com>
-            component: [tmt]
-            test: tmt --help
-            path: /test/path/
-            require: [package1, package2]
-            environment:
-                key1: value1
-                key2: value2
-                key3: value3
-            duration: 5m
-            enabled: true
-            result: respect
-            tag: [tag]
-            tier: 1
-            serialnumber: 1
+    .. code-block:: yaml
 
-          - name: /test/two
-            summary: Short test summary.
-            description: Long test description.
-            ...
+        - name: /test/one
+          summary: Short test summary.
+          description: Long test description.
+          contact: Petr Šplíchal <psplicha@redhat.com>
+          component: [tmt]
+          test: tmt --help
+          path: /test/path/
+          require: [package1, package2]
+          environment:
+              key1: value1
+              key2: value2
+              key3: value3
+          duration: 5m
+          enabled: true
+          result: respect
+          tag: [tag]
+          tier: 1
+          serialnumber: 1
+
+        - name: /test/two
+          summary: Short test summary.
+          description: Long test description.
+          ...
 
 /shell:
     summary: Provide a manual list of shell test cases

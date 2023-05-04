@@ -181,7 +181,8 @@ example:
       result: fail
 
   - |
-    # Example content of custom results.json
+    # syntax: json
+    /* Example content of custom results.json */
     [
       {
         "name": "/test/passing",

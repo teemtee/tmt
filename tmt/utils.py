@@ -3178,7 +3178,9 @@ class StructuredField:
 
     Version 0: Simple, concise, useful when neither the surrounding text
     or the section data can contain lines which could resemble section
-    names. Here's an example of a simple StructuredField::
+    names. Here's an example of a simple StructuredField:
+
+    .. code-block:: ini
 
         Note written by human.
 
@@ -3196,7 +3198,9 @@ class StructuredField:
         Another note written by human.
 
     Version 1: Includes unique header to prevent collisions with the
-    surrounding text and escapes any section-like lines in the content::
+    surrounding text and escapes any section-like lines in the content:
+
+    .. code-block:: ini
 
         Note written by human.
 
@@ -3223,7 +3227,9 @@ class StructuredField:
 
     Besides handling the whole section content it's also possible to
     store several key-value pairs in a single section, similarly as in
-    the ini config format::
+    the ini config format:
+
+    .. code-block:: ini
 
         [section]
         key1 = value1
@@ -3234,7 +3240,9 @@ class StructuredField:
     these single-line items. Note that the section cannot contain both
     plain text data and key-value pairs.
 
-    Example::
+    Example:
+
+    .. code-block:: python
 
         field = qe.StructuredField()
         field.set("project", "Project Name")
@@ -3279,7 +3287,9 @@ class StructuredField:
     Multiple values for the same key are supported as well. Enable this
     feature with 'multi=True' when initializing the structured field.
     If multiple values are present their list will be returned instead
-    of a single string. Similarly use list for setting multiple values::
+    of a single string. Similarly use list for setting multiple values:
+
+    .. code-block:: python
 
         field = qe.StructuredField(multi=True)
         requirements = ['hypervisor=', 'labcontroller=lab.example.com']
@@ -4879,11 +4889,22 @@ def default_template_environment() -> jinja2.Environment:
 
     environment = jinja2.Environment()
 
+    def regex_search(
+            string: str,
+            pattern: str) -> Union[Optional[str], Tuple[str, ...]]:
+        match = re.search(pattern, string)
+
+        if match is None:
+            return None
+
+        return match.groups()
+
     environment.filters['findall'] = lambda s, pattern: re.findall(pattern, s)
     environment.filters['listed'] = fmf.utils.listed
     environment.filters['strip'] = lambda x: x.strip()
     environment.filters['search'] = lambda string, pattern: re.search(pattern, string)
     environment.filters['match'] = lambda string, pattern: re.search(pattern, string)
+    environment.filters['regex_search'] = regex_search
     environment.filters['regex_replace'] = lambda string, pattern, repl: re.sub(
         pattern, repl, string)
 
