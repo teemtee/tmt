@@ -434,6 +434,8 @@ class RequireFile(
 
         patterns: List[Optional[str]] = []
         raw_patterns = raw.get('pattern', [])
+        if not raw_patterns:
+            raise tmt.utils.SpecificationError(f'Missing pattern for file requirei: {raw}')
         assert raw_patterns is not None  # narrow type
         if isinstance(raw_patterns, str):
             patterns.append(raw_patterns)
@@ -1319,14 +1321,14 @@ class Test(
                 missing_type.append(req)
 
         if missing_type and not self.opt('fix'):
-            yield LinterOutcome.FAIL, f'requirements should specify type, library or file'
+            yield LinterOutcome.FAIL, 'requirements should specify type, library or file'
             return
 
         if missing_type:
             for req in missing_type:
                 req['type'] = 'file' if req.get('pattern') else 'library'
             self.write(filename, tmt.utils.dict_to_yaml(metadata))
-            yield LinterOutcome.FIXED, f'added type to requirements'
+            yield LinterOutcome.FIXED, 'added type to requirements'
             return
 
         yield LinterOutcome.PASS, 'all requirements have type field'
