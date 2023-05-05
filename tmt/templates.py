@@ -97,7 +97,7 @@ discover:
     url: https://github.com/teemtee/tmt
 prepare:
     how: ansible
-    playbook: plans/packages.yml
+    playbook: ansible/packages.yml
 execute:
     how: tmt
 """.lstrip()

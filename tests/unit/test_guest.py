@@ -2,13 +2,13 @@ from tmt.log import Logger
 from tmt.steps.provision import Guest, GuestData
 
 
-def test_full_name(root_logger: Logger) -> None:
+def test_multihost_name(root_logger: Logger) -> None:
     assert Guest(
         logger=root_logger,
         name='foo',
-        data=GuestData(guest='bar')).full_name == 'foo'
+        data=GuestData(guest='bar')).multihost_name == 'foo'
 
     assert Guest(
         logger=root_logger,
         name='foo',
-        data=GuestData(guest='bar', role='client')).full_name == 'foo (client)'
+        data=GuestData(guest='bar', role='client')).multihost_name == 'foo (client)'

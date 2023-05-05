@@ -53,23 +53,23 @@ rlJournalStart
                 # Centos stream 8 doesn't do watchdog properly https://github.com/teemtee/tmt/issues/1387
                 # so we can't assert expected duration (1s) in /test/error-timeout
                 # FIXME remove this once issue is fixed
-                rlAssertGrep "errr /test/error-timeout (timeout) [7/12]" "$rlRun_LOG" -F
+                rlAssertGrep "errr /test/error-timeout (on default-0) (timeout) [7/12]" "$rlRun_LOG" -F
             else
                 rlAssertGrep "$line" "$rlRun_LOG" -F
             fi
         done <<-EOF
-00:00:00 errr /test/always-error (original result: pass) [1/12]
-00:00:00 fail /test/always-fail (original result: pass) [2/12]
-00:00:00 info /test/always-info (original result: pass) [3/12]
-00:00:00 pass /test/always-pass (original result: fail) [4/12]
-00:00:00 warn /test/always-warn (original result: pass) [5/12]
-00:00:00 errr /test/error [6/12]
-00:00:01 errr /test/error-timeout (timeout) [7/12]
-00:00:00 fail /test/fail [8/12]
-00:00:00 pass /test/pass [9/12]
-00:00:00 errr /test/xfail-error (original result: error) [10/12]
-00:00:00 pass /test/xfail-fail (original result: fail) [11/12]
-00:00:00 fail /test/xfail-pass (original result: pass) [12/12]
+00:00:00 errr /test/always-error (on default-0) (original result: pass) [1/12]
+00:00:00 fail /test/always-fail (on default-0) (original result: pass) [2/12]
+00:00:00 info /test/always-info (on default-0) (original result: pass) [3/12]
+00:00:00 pass /test/always-pass (on default-0) (original result: fail) [4/12]
+00:00:00 warn /test/always-warn (on default-0) (original result: pass) [5/12]
+00:00:00 errr /test/error (on default-0) [6/12]
+00:00:01 errr /test/error-timeout (on default-0) (timeout) [7/12]
+00:00:00 fail /test/fail (on default-0) [8/12]
+00:00:00 pass /test/pass (on default-0) [9/12]
+00:00:00 errr /test/xfail-error (on default-0) (original result: error) [10/12]
+00:00:00 pass /test/xfail-fail (on default-0) (original result: fail) [11/12]
+00:00:00 fail /test/xfail-pass (on default-0) (original result: pass) [12/12]
 EOF
     rlPhaseEnd
 
@@ -78,7 +78,7 @@ EOF
         rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /xfail-with-reboot provision --how container execute -v 2>&1 >/dev/null"
         EXPECTED=$(cat <<EOF
             00:00:00 /test/xfail-with-reboot [1/1]
-            00:00:00 pass /test/xfail-with-reboot (original result: fail) [1/1]
+            00:00:00 pass /test/xfail-with-reboot (on default-0) (original result: fail) [1/1]
 EOF
 )
     rlAssertEquals "Output matches the expectation" "$EXPECTED" "$(grep /test/xfail-with-reboot $rlRun_LOG)"
@@ -86,7 +86,7 @@ EOF
 
     rlPhaseStartTest "Verbose execute prints result - abort case"
         rlRun -s "tmt run --id \${run} --scratch --until execute tests tests -n /abort provision --how container execute -v 2>&1 >/dev/null" "2"
-        rlAssertGrep "00:00:00 errr /test/abort (aborted) [1/1" $rlRun_LOG -F
+        rlAssertGrep "00:00:00 errr /test/abort (on default-0) (aborted) [1/1" $rlRun_LOG -F
     rlPhaseEnd
 
     rlPhaseStartCleanup

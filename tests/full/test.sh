@@ -105,6 +105,8 @@ rlJournalStart
         # but make it work with podman run  registry.fedoraproject.org/fedora:latest
         rlRun "su -l -c 'podman run -itd --name fresh fedora' $USER"
         rlRun "su -l -c 'podman exec fresh dnf makecache' $USER"
+        # Install beakerlib as well, it is used a lot of times
+        rlRun "su -l -c 'podman exec fresh dnf install -y beakerlib' $USER"
         rlRun "su -l -c 'podman commit fresh fresh' $USER"
         rlRun "su -l -c 'podman container rm -f fresh' $USER"
         rlRun "su -l -c 'podman tag fresh registry.fedoraproject.org/fedora:latest' $USER"
@@ -112,9 +114,9 @@ rlJournalStart
 
         # Prepare fedora VM
         rlRun "su -l -c 'tmt run --rm plans --default provision -h virtual finish' $USER" 0 "Fetch image"
-        # Run dnf makecache in each image (should be single one though)
+        # Update metadata and install beakerlib into each image (should be a single one)
         for qcow in /var/tmp/tmt/testcloud/images/*qcow2; do
-            rlRun "virt-customize -a $qcow --run-command 'dnf makecache'" 0 "pre-fetch dnf cache in the image"
+            rlRun "virt-customize -a $qcow --run-command 'dnf --refresh install -y beakerlib'" 0 "Update metadata and install beakerlib"
         done
 
         # Some plans install tmt into provisioned guests however host might not be the same version

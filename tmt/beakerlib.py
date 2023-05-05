@@ -86,6 +86,8 @@ class Library:
         # Default branch is detected from the origin after cloning
         self.default_branch: Optional[str] = None
 
+        self._logger: tmt.log.Logger = logger
+
         self.identifier: BeakerlibIdentifierType
         # The 'library(repo/lib)' format
         if isinstance(identifier, tmt.base.RequireSimple):
@@ -234,7 +236,8 @@ class Library:
                     shutil.copytree(self.path, directory, symlinks=True)
                 # Detect the default branch from the origin
                 try:
-                    self.default_branch = tmt.utils.default_branch(directory)
+                    self.default_branch = tmt.utils.default_branch(
+                        repository=directory, logger=self._logger)
                 except OSError:
                     raise tmt.utils.GeneralError(
                         f"Unable to detect default branch for '{directory}'. "

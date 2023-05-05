@@ -14,8 +14,8 @@ rlJournalStart
         rlRun -s "tmt run --id $workdir -vvv  $plan"
         rlAssertGrep "package: 1 package requested" "$rlRun_LOG" -F
         rlAssertGrep "test: Concise summary" "$rlRun_LOG" -F
-        rlAssertGrep '00:00:00 pass /first (original result: fail) [1/2]' "$rlRun_LOG" -F
-        rlAssertGrep '00:00:00 pass /second [2/2]' "$rlRun_LOG" -F
+        rlAssertGrep '00:00:00 pass /first (on default-0) (original result: fail) [1/2]' "$rlRun_LOG" -F
+        rlAssertGrep '00:00:00 pass /second (on default-0) [2/2]' "$rlRun_LOG" -F
     rlPhaseEnd
 
     # Attribute 'adjust' is not applied

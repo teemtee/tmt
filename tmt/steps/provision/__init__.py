@@ -45,6 +45,15 @@ DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links",
 DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
 
 
+def format_guest_full_name(name: str, role: Optional[str]) -> str:
+    """ Render guest's full name, i.e. name and its role """
+
+    if role is None:
+        return name
+
+    return f'{name} ({role})'
+
+
 class CheckRsyncOutcome(enum.Enum):
     ALREADY_INSTALLED = 'already-installed'
     INSTALLED = 'installed'
@@ -129,13 +138,10 @@ class Guest(tmt.utils.Common):
         return self._random_name(prefix="tmt-{0}-".format(run_id[-3:]))
 
     @property
-    def full_name(self) -> str:
-        """ Return guest's full name, i.e. name and its role """
+    def multihost_name(self) -> str:
+        """ Return guest's multihost name, i.e. name and its role """
 
-        if self.role is None:
-            return self.name
-
-        return f'{self.name} ({self.role})'
+        return format_guest_full_name(self.name, self.role)
 
     @property
     def is_ready(self) -> bool:
@@ -196,11 +202,12 @@ class Guest(tmt.utils.Common):
 
     def details(self) -> None:
         """ Show guest details such as distro and kernel """
+
+        self.info('multihost name', self.multihost_name, 'green')
+
         # Skip distro & kernel check in dry mode
         if self.opt('dry'):
             return
-
-        self.info('full name', self.full_name, 'green')
 
         # A small helper to make the repeated run & extract combo easier on eyes.
         def _fetch_detail(command: Command, pattern: str) -> str:
@@ -377,7 +384,8 @@ class Guest(tmt.utils.Common):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None) -> None:
+             options: Optional[List[str]] = None,
+             superuser: bool = False) -> None:
         """
         Push files to the guest
         """
@@ -763,7 +771,8 @@ class GuestSsh(Guest):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None) -> None:
+             options: Optional[List[str]] = None,
+             superuser: bool = False) -> None:
         """
         Push files to the guest
 
@@ -771,6 +780,9 @@ class GuestSsh(Guest):
         on the guest. Use the 'source' and 'destination' to sync custom
         location and the 'options' parametr to modify default options
         which are '-Rrz --links --safe-links --delete'.
+
+        Set 'superuser' if rsync command has to run as root or passwordless
+        sudo on the Guest (e.g. pushing to r/o destination)
         """
         # Abort if guest is unavailable
         if self.guest is None:
@@ -799,8 +811,12 @@ class GuestSsh(Guest):
             assert source
             assert destination
 
+            cmd = ['rsync']
+            if superuser and self.user != 'root':
+                cmd += ['--rsync-path', 'sudo rsync']
+
             self.run(Command(
-                "rsync",
+                *cmd,
                 *options,
                 "-e", self._ssh_command().to_element(),
                 str(source),
@@ -1092,7 +1108,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
             help='Use specified method for provisioning.')
         def provision(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('provision')
-            Provision._save_context(context)
+            Provision._save_cli_context(context)
 
         return provision
 
@@ -1171,7 +1187,7 @@ class Provision(tmt.steps.Step):
 
     _plugin_base_class = ProvisionPlugin
 
-    _preserved_files = ['step.yaml', 'guests.yaml']
+    _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
     def __init__(
             self,
@@ -1212,7 +1228,7 @@ class Provision(tmt.steps.Step):
             raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
 
             self._guest_data = {
-                name: tmt.utils.SerializableContainer.unserialize(guest_data)
+                name: tmt.utils.SerializableContainer.unserialize(guest_data, self._logger)
                 for name, guest_data in raw_guest_data.items()
                 }
 

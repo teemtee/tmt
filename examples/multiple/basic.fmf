@@ -19,7 +19,7 @@ discover:
 prepare:
   - how: ansible
     name: packages
-    playbook: plans/packages.yml
+    playbook: ansible/packages.yml
   - how: shell
     name: services
     script: systemctl start service

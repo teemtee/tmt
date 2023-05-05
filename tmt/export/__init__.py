@@ -289,7 +289,6 @@ def check_md_file_respects_spec(md_path: Path) -> List[str]:
     """
     import tmt.base
     warnings_list = []
-    # TODO: remove cast lastr
     sections_headings = tmt.base.SECTIONS_HEADINGS
     required_headings = set(sections_headings['Step'] +
                             sections_headings['Expect'])

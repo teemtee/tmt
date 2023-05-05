@@ -126,6 +126,21 @@ execute:
                 discover:
                     how: fmf
                     url: https://github.com/teemtee/$@{VAR}${VAR}
+            /testselect:
+                context:
+                    PICK_FMF: 'REPLACED_BY_CMDLINE'
+                environment:
+                    PICK_TMT: 'REPLACED_BY_CMDLINE'
+                discover:
+                -   how: fmf
+                    url: https://github.com/teemtee/tmt.git
+                    name: TMT
+                    test: ${PICK_TMT}
+                -   how: fmf
+                    url: https://github.com/teemtee/fmf.git
+                    test: $@{PICK_FMF}
+                    name: FMF
+
 
     /nourl:
         /ref:

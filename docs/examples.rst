@@ -234,7 +234,7 @@ Use ``tmt test create`` to create a new test based on a template::
 Specify templates non-interactively with ``-t`` or ``--template``::
 
     $ tmt tests create --template shell /tests/smoke
-    $ tmt tests create --t beakerlib /tests/smoke
+    $ tmt tests create -t beakerlib /tests/smoke
 
 Use ``-f`` or ``--force`` option to overwrite existing files.
 
@@ -492,7 +492,7 @@ and detailed plan information, respectively::
           filter tier: 0,1
          prepare
              how ansible
-        playbook plans/packages.yml
+        playbook ansible/packages.yml
 
     /plans/helps
          summary Check help messages
@@ -515,7 +515,7 @@ Create Plans
 Use ``tmt plan create`` to create a new plan with templates::
 
     tmt plans create --template mini /plans/smoke
-    tmt plans create --t full /plans/features
+    tmt plans create -t full /plans/features
 
 In order to override default template content directly from the
 command line use individual step options and provide desired data
@@ -596,7 +596,7 @@ step could look like this::
     prepare:
       - name: packages
         how: ansible
-        playbook: plans/packages.yml
+        playbook: ansible/packages.yml
       - name: services
         how: shell
         script: systemctl start service
@@ -665,6 +665,20 @@ using both the attribute and the option, the value from the
 
     $ tmt run -e REPO=tmt
 
+Variables can be also utilized to pick tests from specific discovery phase.
+The command line (``tmt run tests --name ...``) applies for the whole discovery
+step and would select more tests than required in the case the test names are not unique::
+
+    discover:
+      - how: fmf
+        url: https://github.com/teemtee/tmt.git
+        test: ${PICK_TMT}
+      - how: fmf
+        url: https://github.com/teemtee/fmf.git
+        test: ${PICK_FMF}
+
+    $ tmt run -e PICK_TMT='^/tests/core/ls$' -e PICK_FMF='^/tests/(unit|basic/ls)$'
+
 For :ref:`context</spec/context>` parametrization the syntax is
 ``$@dimension`` or ``$@{dimension}``. The values are set according
 to the defined context specified using ``--context`` command line
@@ -678,6 +692,7 @@ option and the ``context`` plan attribute::
         ref: $@{branch}
 
     $ tmt -c branch=tmt run
+
 
 Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------
@@ -1312,6 +1327,15 @@ combining the above-mentioned commands on a single line::
 
     tmt run provision login finish
 
+Login can be used to run an arbitrary script on a provisioned
+guest. This can be handy if you want to run arbitrary scripts between
+steps for example. This is currently used in the Testing Farm's
+`tmt reproducer`__::
+
+    tmt run --last login < script.sh
+
+__ https://docs.testing-farm.io/general/0.1/test-results.html#_tmt_reproducer
+
 Have you heard already that using command abbreviation is possible
 as well? It might save you some typing::
 
@@ -1555,20 +1579,19 @@ Coding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to perform more advanced processing of the metadata
-which is not supported by the command line use Python.  Just
-import the ``tmt`` module and create a logger for debugging::
+which is not supported by the command line use Python. To get
+quickly started just import the ``tmt`` module and grow a new
+``tmt.Tree`` object::
 
     import tmt
-    from tmt.utils import Path
 
-    tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
+    tree = tmt.Tree.grow()
 
     for test in tree.tests():
         print(test.name)
 
-You might also want to explore all available plugins if you need
-to work with metadata export::
+Use the ``tmt.utils.Path`` class when specifying paths::
 
-    tmt.plugins.explore()
-    for plan in tree.plans():
-        print(plan.export(format="yaml"))
+    from tmt.utils import Path
+
+    tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))

@@ -18,7 +18,7 @@ rlJournalStart
                 rlRun -s "tmt run -a provision -h $method -i $image_url login -c exit" 0-255 \
                     "disallowed to login into guest which is virtual if image url is invalid"
                 rlAssertNotGrep "login: Starting interactive shell" "$rlRun_LOG"
-                rlAssertGrep "Could not map.*to compose" "$rlRun_LOG"
+                rlAssertGrep "Could not get image url" "$rlRun_LOG"
             rlPhaseEnd
 
             image_url="file:///rubbish"

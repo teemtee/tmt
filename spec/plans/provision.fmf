@@ -79,13 +79,52 @@ example: |
 
 /beaker:
     summary: Provision a machine in Beaker
-    description:
-        Reserve a machine from the Beaker pool.
-    example: |
+    description: |
+        Reserve a machine from the Beaker pool using the ``mrack``
+        plugin.  `mrack`__ is a multicloud provisioning library
+        supporting multiple cloud services including Beaker.
+
+        The following two files are used for configuration:
+
+        /etc/tmt/mrack.conf
+            for basic configuration
+
+        /etc/tmt/provisioning-config.yaml
+            configuration per supported provider
+
+        Beaker installs distribution specified by the ``image``
+        key. If the image can not be translated using the
+        ``provisioning-config.yaml`` file mrack passes the image
+        value to Beaker hub and tries to request distribution
+        based on the image value. This way we can bypass default
+        translations and use desired distribution specified like
+        the one in the example below.
+
+        __ https://github.com/neoave/mrack
+
+        .. note::
+
+            The beaker provision plugin is not available for
+            ``rhel-8`` or ``centos-stream-8``.
+
+        .. versionadded:: 1.22
+
+    example:
+      - |
+        # Use image name translation
         provision:
             how: beaker
-            family: Fedora31
-            tag: released
+            image: fedora
+      - |
+        # Specify the distro directly
+        provision:
+            how: beaker
+            image: Fedora-37%
+
+    link:
+      - implemented-by: /tmt/steps/provision/mrack.py
+      - verified-by: /tests/provision/beaker
+
 
 /connect:
     summary: Connect to a provisioned box
@@ -164,18 +203,3 @@ example: |
             role: client
           - name: tester-two
             role: client
-
-        # Synchronize guests using groups
-        provision:
-          - group: across-arches
-            guests:
-              - name: client-one
-                arch: s390x
-              - name: server-one
-                arch: ppc64le
-          - group: across-distros
-            guests:
-              - name: client-two
-                distro: centos-stream-8
-              - name: server-two
-                distro: centos-stream-9

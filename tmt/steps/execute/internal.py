@@ -1,14 +1,15 @@
 import dataclasses
+import datetime
 import json
 import os
 import sys
-import time
 from typing import Any, Dict, List, Optional, cast
 
 import click
 
 import tmt
 import tmt.base
+import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.execute
@@ -170,7 +171,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 2,
-            level: int = 3) -> None:
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """ Custom logger for test output with shift 2 and level 3 defaults """
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
@@ -217,7 +219,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                     remote_command=remote_command))
 
         # Execute the test, save the output and return code
-        start = time.time()
+        starttime = datetime.datetime.now(datetime.timezone.utc)
         try:
             stdout, _ = guest.execute(
                 remote_command,
@@ -235,11 +237,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             test.returncode = error.returncode
             if test.returncode == tmt.utils.PROCESS_TIMEOUT:
                 self.debug(f"Test duration '{test.duration}' exceeded.")
-        end = time.time()
+        endtime = datetime.datetime.now(datetime.timezone.utc)
         self.write(
             self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
-        test.real_duration = self.test_duration(start, end)
+
+        test.starttime = self.format_timestamp(starttime)
+        test.endtime = self.format_timestamp(endtime)
+        test.real_duration = self.format_duration(endtime - starttime)
 
     def check(self, test: Test, guest: Guest) -> List[Result]:
         """ Check the test result """

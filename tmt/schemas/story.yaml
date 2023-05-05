@@ -43,7 +43,6 @@ properties:
     $ref: "/schemas/core#/definitions/order"
 
   # https://tmt.readthedocs.io/en/stable/spec/stories.html#priority
-  # TODO: might need update once #440 is merged
   priority:
     type: string
     enum:

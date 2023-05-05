@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.21.0
+Version: 1.22.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -44,11 +44,14 @@ BuildRequires: python%{python3_pkgversion}-pytest
 BuildRequires: python%{python3_pkgversion}-click
 BuildRequires: python%{python3_pkgversion}-fmf >= 1.2.0
 BuildRequires: python%{python3_pkgversion}-requests
-BuildRequires: python%{python3_pkgversion}-testcloud >= 0.8.2
+BuildRequires: python%{python3_pkgversion}-testcloud >= 0.9.2
 BuildRequires: python%{python3_pkgversion}-markdown
 BuildRequires: python%{python3_pkgversion}-junit_xml
 BuildRequires: python%{python3_pkgversion}-ruamel-yaml
 BuildRequires: python%{python3_pkgversion}-jinja2
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+BuildRequires: python%{python3_pkgversion}-mrack-beaker >= 1.12.1
+%endif
 # Only needed for rhel-8 (it has python3.6)
 %if 0%{?rhel} == 8
 BuildRequires: python%{python3_pkgversion}-typing-extensions
@@ -78,7 +81,7 @@ Dependencies required to run tests in a container environment.
 Summary: Virtual machine provisioner for the Test Management Tool
 Obsoletes: tmt-testcloud < 0.17
 Requires: tmt == %{version}-%{release}
-Requires: python%{python3_pkgversion}-testcloud >= 0.8.2
+Requires: python%{python3_pkgversion}-testcloud >= 0.9.2
 Requires: libvirt-daemon-config-network
 Requires: openssh-clients
 Requires: (ansible or ansible-core)
@@ -88,6 +91,18 @@ Recommends: qemu-system-aarch64-core
 Recommends: qemu-system-ppc-core
 Recommends: qemu-system-s390x-core
 Recommends: qemu-system-x86-core
+%endif
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%package provision-beaker
+Summary: Beaker provisioner for the Test Management Tool
+Requires: tmt = %{version}-%{release}
+Requires: python3-mrack-beaker >= 1.12.1
+%endif
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%description provision-beaker
+Dependencies required to run tests in a Beaker environment.
 %endif
 
 %description provision-virtual
@@ -144,6 +159,9 @@ Requires: tmt-report-html >= %{version}
 Requires: tmt-report-junit >= %{version}
 Requires: tmt-report-polarion >= %{version}
 Requires: tmt-report-reportportal >= %{version}
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+Requires: tmt-provision-beaker >= %{version}
+%endif
 
 %description all
 All extra dependencies of the Test Management Tool. Install this
@@ -167,6 +185,10 @@ install -pm 644 tmt.1* %{buildroot}%{_mandir}/man1
 install -pm 644 bin/complete %{buildroot}/etc/bash_completion.d/tmt
 mkdir -p %{buildroot}%{workdir_root}
 chmod 1777 %{buildroot}%{workdir_root}
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+mkdir -p %{buildroot}/etc/%{name}/
+install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
+%endif
 
 %check
 %{__python3} -m pytest -vv -m 'not web' --ignore=tests/integration
@@ -187,21 +209,29 @@ chmod 1777 %{buildroot}%{workdir_root}
 %{python3_sitelib}/%{name}-*.egg-info/
 %license LICENSE
 %dir %{workdir_root}
-%exclude %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}{podman,testcloud}.*
+%exclude %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}{podman,testcloud,mrack}.*
+%exclude %{python3_sitelib}/%{name}/steps/provision/mrack
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
 %exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
 
+%exclude %{_sysconfdir}/%{name}/mrack*
+
 %files provision-container
 %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}podman.*
+
+%if 0%{?rhel} >= 9 || 0%{?fedora}
+%files provision-beaker
+%{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}mrack.*
+%config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%endif
 
 %files provision-virtual
 %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}testcloud.*
 
 %files report-html
 %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
-
 
 %files report-junit
 %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
@@ -220,6 +250,96 @@ chmod 1777 %{buildroot}%{workdir_root}
 
 
 %changelog
+* Fri Apr 14 2023 Petr Šplíchal <psplicha@redhat.com> - 1.22.0-1
+- Change help text of the `tmt --root` option
+- Add support for `results.json` in custom results
+- Proper support for the test `duration` format
+- Prepend '/' to custom test result name if missing
+- Document necessary packages for pip install on Ubuntu
+- Tag cloud resources to `tmt` in Testing Farm
+- Display guest multihost name even in dry run (#1982)
+- Pass the `arch` option to the Beaker provider
+- Use `job-id` instead of `guestname` in Beaker class
+- Adjust the fix for the default branch handling
+- Add support to get `ref` under the git worktree
+- Fix dry mode handling when running a remote plan
+- Enable the external `polarion` plugin tests
+- Extract "run a command" functionality into a stand-alone helper
+- Increase minimal severity of `ShellCheck` defects
+- Display guest full name in `display` plugin report
+- Push using `sudo rsync` when necessary
+- Avoid warning from installing tmt as pre-commit
+- Add test checking repeated test execution results
+- Freeze the `yq` version to fix `el8` installation
+- Update the `CODEOWNERS` file with more granularity
+- Document current workaround for running scripts
+- Install `beakerlib` before the `ShellCheck`
+- Rename `Guest.full_name` to `Guest.multihost_name`
+- Display guest full name in `html` plugin report
+- Add test for template-based export plugin
+- Add `kickstart` to the `artemis` provision plugin
+- Extract just tar files in dist-git-source
+- Add missing fields to custom results test
+- Add shell linter `Differential ShellCheck`
+- Always try to run dhclient in cloud-init in virtual provision
+- Fix polarion report pruning and add or fix arguments
+- Run `chcon` only if SELinux fs supported
+- Require `beaker` provision in `tmt-all`
+- Adjust the new `mrack` plugin spec, test and plan
+- Add `beaker` provision plugin using `mrack`
+- Adjust pip install to always upgrade to the latest
+- Move `testcloud` url guessing logic out of `tmt`
+- Hotfix Ubuntu with virtual provision
+- Detect correct category when export to nitrate
+- Add an entrypoint for interactive `tmt` sessions
+- Fix internal handling of the `where` key
+- Move logging labels to the beginning of lines
+- Refactor CLI error reporting to improve readability
+- Remove no longer needed cast around our custom Click context
+- Display guest full name when showing its details
+- Add `kickstart` section as a new specification key
+- Add more controls for output colorization
+- Rephrase `results.yaml` documentation and examples
+- Fix `get_bootstrap_logger` name and docstring typo
+- Expose guest info in results
+- Enable `root` login and disable default `core` for rhcos
+- Sanitize plan/test/story names before filtering
+- Set default user `core` for rhcos in testcloud
+- Remove no longer used "err" parameter of logging methods
+- testcloud: Raise default limits
+- Update log key content of results.yaml examples (#1834)
+- Include guest name in execute phase data paths
+- Adds "bootstrap logger" for logging before CLI options are recognized (#1839)
+- Export `TMT_TEST_NAME` and `TMT_TEST_METADATA` (#1888)
+- List supported operators in hardware requirement docs (#1867)
+- Build tmt usable in inner guests for tests/full
+- Target test-complement for tests/full
+- Tag tests which are affected by how=full
+- Use PROVISION_METHODS in tests
+- Report individual test results in tests/full
+- Use Require* classes for collection & installation of plugin requirements (#1766)
+- Disable tracebacks if default branch is not found
+- Assign a data path and serial number to each test in discover (#1876)
+- Convert log path for results:custom
+- Allow report result for itself in results:custom
+- Support to import Makefile having '\\\n'
+- Require `pylero` for the `polarion` subpackage
+- Fix forgotten guest when Artemis provisioning times out
+- Turn `tests.yaml` into a list of tests
+- Simplify the `Result` class implementation
+- Use `Path` instead of `os.path` in export code
+- Use `Path` when working with logfile path
+- Fix use of old `os.path.symlink()` in discover/shell
+- Add /root/.local/bin to PATH on Centos Stream 8 in CI
+- Install jq/yq for more readable tests in tmt test suite
+- Fix Common class ignoring other branches of multiple inheritance tree
+- Use Path instead of os.path in prepare/install plugin
+- Convert path-like strings to `pathlib.Path` objects
+- Change `Plugin.go()` to accept logger and extra environment
+- Artemis API version may contain multiple integers
+- Add logging `labels` used for prefixing messages
+- Adds "full name" guest property for multihost logging
+
 * Fri Feb 03 2023 Lukáš Zachar <lzachar@redhat.com> - 1.21.0-1
 - Fix tmt-reboot without custom command
 - Fix test /discover/libraries

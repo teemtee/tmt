@@ -71,7 +71,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0
             context.obj.steps.add('discover')
-            Discover._save_context(context)
+            Discover._save_cli_context(context)
 
         return discover
 
@@ -104,7 +104,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         else:
             handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
         for url, source_name in handler.url_and_name(distgit_dir):
-            if handler.re_ignore_extensions.search(source_name):
+            if not handler.re_supported_extensions.search(source_name):
                 continue
             self.debug(f"Download sources from '{url}'.")
             with tmt.utils.retry_session() as session:
@@ -122,7 +122,7 @@ class Discover(tmt.steps.Step):
     """ Gather information about test cases to be executed. """
 
     _plugin_base_class = DiscoverPlugin
-    _preserved_files = ['step.yaml', 'tests.yaml']
+    _preserved_workdir_members = ['step.yaml', 'tests.yaml']
 
     def __init__(
             self,

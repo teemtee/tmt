@@ -1,12 +1,12 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import _pytest.logging
 import click
 import pytest
 
-from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter,
-                     VerbosityLevelFilter, indent)
+from tmt.log import (DebugLevelFilter, Logger, QuietnessFilter, Topic,
+                     TopicFilter, VerbosityLevelFilter, indent, render_labels)
 
 from . import assert_log
 
@@ -15,18 +15,18 @@ def _exercise_logger(
         caplog: _pytest.logging.LogCaptureFixture,
         logger: Logger,
         indent_by: str = '',
-        labels: Optional[List[str]] = None) -> None:
+        labels: Optional[List[str]] = None,
+        reset: bool = True) -> None:
     labels = labels or []
 
     if labels:
-        prefix = ''.join(
-            click.style(f'[{label}]', fg='cyan') for label in labels
-            ) + indent_by + ' '
+        prefix = render_labels(labels) + indent_by + ' '
 
     else:
         prefix = indent_by
 
-    caplog.clear()
+    if reset:
+        caplog.clear()
 
     logger.print('this is printed')
     logger.debug('this is a debug message')
@@ -224,28 +224,62 @@ def test_bootstrap_logger(caplog: _pytest.logging.LogCaptureFixture) -> None:
     _exercise_logger(caplog, Logger.get_bootstrap_logger())
 
 
+# Helpers for the test below, to make strings slightly shorter: Rendered Labels...
+RL = render_labels(["foo", "bar"])
+# ... and Rendered Labels with Padding.
+RLP = render_labels(["foo", "bar"]) + '   '
+
+
 @pytest.mark.parametrize(
-    ('key', 'value', 'color', 'level', 'labels', 'expected'),
+    ('key', 'value', 'color', 'level', 'labels', 'labels_padding', 'expected'),
     [
-        ('dummy-key', None, None, 0, None, 'dummy-key'),
-        ('dummy-key', 'dummy-value', None, 0, None, 'dummy-key: dummy-value'),
+        ('dummy-key', None, None, 0, None, 0, 'dummy-key'),
+        ('dummy-key', 'dummy-value', None, 0, None, 0, 'dummy-key: dummy-value'),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
             None,
             0,
             None,
+            0,
             'dummy-key:\n    dummy\n    multiline\n    value'),
 
-        ('dummy-key', None, None, 2, None, '        dummy-key'),
-        ('dummy-key', 'dummy-value', None, 2, None, '        dummy-key: dummy-value'),
+        ('dummy-key', None, None, 2, None, 0, '        dummy-key'),
+        ('dummy-key', 'dummy-value', None, 2, None, 0, '        dummy-key: dummy-value'),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
             None,
             2,
             None,
-            '        dummy-key:\n            dummy\n            multiline\n            value')
+            0,
+            '        dummy-key:\n'
+            '            dummy\n'
+            '            multiline\n'
+            '            value'),
+        (
+            'dummy-key',
+            'dummy\nmultiline\nvalue',
+            None,
+            2,
+            ['foo', 'bar'],
+            0,
+            f'{RL}         dummy-key:\n'
+            f'{RL}             dummy\n'
+            f'{RL}             multiline\n'
+            f'{RL}             value'),
+        (
+            'dummy-key',
+            'dummy\nmultiline\nvalue',
+            None,
+            2,
+            ['foo', 'bar'],
+            # Pad labels to occupy their actual length plus 3 more characters
+            len(RL) + 3,
+            f'{RLP}         dummy-key:\n'
+            f'{RLP}             dummy\n'
+            f'{RLP}             multiline\n'
+            f'{RLP}             value')
         ], ids=[
         'key only',
         'key and value',
@@ -253,7 +287,68 @@ def test_bootstrap_logger(caplog: _pytest.logging.LogCaptureFixture) -> None:
         'key only, indented',
         'key and value, indented',
         'key and multiline value, indented',
+        'key and multiline value, indented, with labels',
+        'key and multiline value, indented, with labels, padded',
         ]
     )
-def test_indent(key, value, color, level, labels, expected):
-    assert indent(key, value=value, color=color, level=level, labels=labels) == expected
+def test_indent(key, value, color, level, labels, labels_padding, expected):
+    assert indent(
+        key,
+        value=value,
+        color=color,
+        level=level,
+        labels=labels,
+        labels_padding=labels_padding) == expected
+
+
+@pytest.mark.parametrize(
+    ('logger_topics', 'message_topic', 'filter_outcome'),
+    [
+        # (
+        #     logger topics,
+        #     message topic,
+        #   expected outcome of `QietnessFilter.filter()`
+        # )
+        (
+            set(),
+            None,
+            True
+            ),
+        (
+            set(),
+            Topic.KEY_NORMALIZATION,
+            False
+            ),
+        (
+            {Topic.KEY_NORMALIZATION},
+            Topic.KEY_NORMALIZATION,
+            True
+            ),
+        (
+            {Topic.KEY_NORMALIZATION},
+            None,
+            True
+            ),
+        ],
+    ids=(
+        'no logger topics, no message topic',
+        'no logger topics, message has topic',
+        'message for enabled topic',
+        'logger topic, no message topic'
+        # TODO: enable once we have more than one topic
+        # 'message for disabled topic'
+        )
+    )
+def test_topic_filter(
+        logger_topics: Set[Topic],
+        message_topic: Optional[Topic],
+        filter_outcome: bool) -> None:
+    filter = TopicFilter()
+
+    assert filter.filter(logging.makeLogRecord({
+        'levelno': logging.INFO,
+        'details': {
+            'logger_topics': logger_topics,
+            'message_topic': message_topic
+            }
+        })) == filter_outcome

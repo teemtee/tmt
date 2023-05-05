@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 import click
 
+import tmt.log
 import tmt.utils
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
@@ -50,6 +51,12 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
     click.option(
         '-q', '--quiet', is_flag=True,
         help='Be quiet. Exit code is just enough for me.'),
+    click.option(
+        '--log-topic',
+        metavar=f'[{"|".join(topic.value for topic in tmt.log.Topic)}]',
+        multiple=True,
+        type=str,
+        help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
 # Force and dry actions
@@ -235,6 +242,10 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
     Methods should be already sorted according to their priority.
     """
 
+    def is_likely_subcommand(arg: str, subcommands: List[str]) -> bool:
+        """ Return true if arg is the beginning characters of a subcommand """
+        return any(subcommand.startswith(arg) for subcommand in subcommands)
+
     class MethodCommand(click.Command):
         _method: Optional[click.Command] = None
 
@@ -261,7 +272,7 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
                     how = re.sub('^-h ?', '', arg)
                     break
                 # Stop search at the first argument looking like a subcommand
-                elif arg in subcommands:
+                elif is_likely_subcommand(arg, subcommands):
                     break
 
             # Find method with the first matching prefix

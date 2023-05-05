@@ -1,6 +1,6 @@
 import dataclasses
+import datetime
 import re
-import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
@@ -12,7 +12,7 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
-from tmt.result import Result, ResultOutcome
+from tmt.result import Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, Step, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
@@ -158,7 +158,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             help='Use specified method for test execution.')
         def execute(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('execute')
-            Execute._save_context(context)
+            Execute._save_cli_context(context)
 
         return execute
 
@@ -245,7 +245,8 @@ class ExecutePlugin(tmt.steps.Plugin):
                 guest.push(
                     source=source,
                     destination=dest,
-                    options=["-p", "--chmod=755"])
+                    options=["-p", "--chmod=755"],
+                    superuser=True)
 
     def check_shell(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a shell test """
@@ -268,7 +269,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
             note=note,
-            duration=test.real_duration,
             guest=guest)]
 
     def check_beakerlib(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
@@ -293,7 +293,6 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration,
                 guest=guest)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
@@ -311,7 +310,6 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                duration=test.real_duration,
                 guest=guest)]
 
         result = search_result.group(1)
@@ -333,7 +331,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             result=actual_result,
             note=note,
             log=log,
-            duration=test.real_duration,
             guest=guest)]
 
     def check_result_file(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
@@ -377,7 +374,6 @@ class ExecutePlugin(tmt.steps.Plugin):
             test=test,
             result=actual_result,
             log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
-            duration=test.real_duration,
             note=note,
             guest=guest)]
 
@@ -387,20 +383,26 @@ class ExecutePlugin(tmt.steps.Plugin):
         """
         self.debug("Processing custom 'results.yaml' file created by the test itself.")
 
-        custom_results_path = self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / 'results.yaml'
+        test_data_path = self.data_path(test, guest, full=True) \
+            / tmt.steps.execute.TEST_DATA
 
-        if not custom_results_path.exists():
-            # Missing results.yaml means error result, but tmt contines with other tests
+        custom_results_path_yaml = test_data_path / 'results.yaml'
+        custom_results_path_json = test_data_path / 'results.json'
+
+        if custom_results_path_yaml.exists():
+            with open(custom_results_path_yaml) as results_file:
+                results = tmt.utils.yaml_to_list(results_file)
+
+        elif custom_results_path_json.exists():
+            with open(custom_results_path_json) as results_file:
+                results = tmt.utils.json_to_list(results_file)
+
+        else:
             return [tmt.Result.from_test(
                 test=test,
-                note=f"custom results file '{custom_results_path}' not found",
+                note=f"custom results file not found in '{test_data_path}'",
                 result=ResultOutcome.ERROR,
                 guest=guest)]
-
-        with open(custom_results_path) as custom_results_file:
-            results = tmt.utils.yaml_to_list(custom_results_file)
 
         custom_results = []
         for partial_result_data in results:
@@ -409,7 +411,14 @@ class ExecutePlugin(tmt.steps.Plugin):
             # Name '/' means the test itself
             if partial_result.name == '/':
                 partial_result.name = test.name
+
             else:
+                if not partial_result.name.startswith('/'):
+                    if partial_result.note and isinstance(partial_result.note, str):
+                        partial_result.note += ", custom test result name should start with '/'"
+                    else:
+                        partial_result.note = "custom test result name should start with '/'"
+                    partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
 
             # Fix log paths as user provides relative path to TMT_TEST_DATA
@@ -436,6 +445,16 @@ class ExecutePlugin(tmt.steps.Plugin):
             # can be useful, for grouping results that belong to the same tests.
             partial_result.serialnumber = test.serialnumber
 
+            # Enforce the correct guest info
+            partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
+
+            # For the result representing the test itself, set the duration
+            # and timestamps to what tmt measured.
+            if partial_result.name == test.name:
+                partial_result.starttime = test.starttime
+                partial_result.endtime = test.endtime
+                partial_result.duration = test.real_duration
+
             custom_results.append(partial_result)
 
         return custom_results
@@ -451,9 +470,22 @@ class ExecutePlugin(tmt.steps.Plugin):
             TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
-    def test_duration(start: float, end: float) -> str:
+    def format_timestamp(timestamp: datetime.datetime) -> str:
+        """ Convert timestamp to a human readable format """
+
+        return timestamp.isoformat()
+
+    @staticmethod
+    def format_duration(duration: datetime.timedelta) -> str:
         """ Convert duration to a human readable format """
-        return time.strftime("%H:%M:%S", time.gmtime(end - start))
+
+        # A helper variable to hold the duration while we cut away days, hours and seconds.
+        counter = int(duration.total_seconds())
+
+        hours, counter = divmod(counter, 3600)
+        minutes, seconds = divmod(counter, 60)
+
+        return f'{hours:02}:{minutes:02}:{seconds:02}'
 
     def timeout_hint(self, test: "tmt.Test", guest: Guest) -> None:
         """ Append a duration increase hint to the test output """
@@ -480,7 +512,7 @@ class Execute(tmt.steps.Step):
 
     _plugin_base_class = ExecutePlugin
 
-    _preserved_files = ['step.yaml', 'results.yaml', 'data']
+    _preserved_workdir_members = ['step.yaml', 'results.yaml', 'data']
 
     def __init__(
             self,

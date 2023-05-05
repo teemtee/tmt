@@ -260,7 +260,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 "the `--dist-git-merge` option.")
 
         def get_git_root(dir: Path) -> Path:
-            stdout, _ = self.run(Command("git", "rev-parse", "--show-toplevel"), cwd=dir, dry=True)
+            stdout, _ = self.run(
+                Command("git", "rev-parse", "--show-toplevel"),
+                cwd=dir,
+                ignore_dry=True)
             assert stdout is not None
             return Path(stdout.strip("\n"))
 
@@ -498,7 +501,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.run(Command('git', 'fetch', 'reference'), cwd=self.testdir)
         if modified_only:
             modified_ref = self.get(
-                'modified-ref', tmt.utils.default_branch(self.testdir))
+                'modified-ref',
+                tmt.utils.default_branch(repository=self.testdir, logger=self._logger))
             self.info('modified-ref', modified_ref, 'green')
             output = self.run(
                 Command(
@@ -515,7 +519,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         if self.opt('dry'):
             self._tests = []
             return
-        tree = tmt.Tree(logger=self._logger, path=tree_path, context=self.step.plan._fmf_context())
+        tree = tmt.Tree(
+            logger=self._logger,
+            path=tree_path,
+            fmf_context=self.step.plan._fmf_context)
         self._tests = tree.tests(
             filters=filters,
             names=names,

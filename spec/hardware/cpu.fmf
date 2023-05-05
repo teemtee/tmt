@@ -24,5 +24,13 @@ example:
         family-name: Comet Lake
         # CPU family number.
         family: 6
+
+        # CPU flag(s) as reported with /proc/cpuinfo
+        # Field applies an implicit "and" to listed flags
+        # Supported operators: "=" and "!="
+        flag:
+          - avx
+          - avx2
+          - "!= smep"
 link:
   - implemented-by: /tmt/steps/provision/artemis.py

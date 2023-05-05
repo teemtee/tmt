@@ -17,9 +17,6 @@ if TYPE_CHECKING:
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
 
-# TODO: this should become a more strict data class, with an enum or two to handle
-# allowed values, etc. See https://github.com/teemtee/tmt/issues/1456.
-# Defining a type alias so we can follow where the package is used.
 class ResultOutcome(enum.Enum):
     PASS = 'pass'
     FAIL = 'fail'
@@ -68,7 +65,7 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
 class ResultGuestData(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a guest the result was produced on """
 
-    name: Optional[str] = None
+    name: str = f'{tmt.utils.DEFAULT_NAME}-0'
     role: Optional[str] = None
 
 
@@ -84,7 +81,6 @@ class Result(tmt.utils.SerializableContainer):
         unserialize=ResultOutcome.from_spec
         )
     note: Optional[str] = None
-    duration: Optional[str] = None
     ids: Dict[str, Optional[str]] = field(default_factory=dict)
     log: List[Path] = field(
         default_factory=list,
@@ -96,6 +92,10 @@ class Result(tmt.utils.SerializableContainer):
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
+    starttime: Optional[str] = None
+    endtime: Optional[str] = None
+    duration: Optional[str] = None
+
     @classmethod
     def from_test(
             cls,
@@ -103,7 +103,6 @@ class Result(tmt.utils.SerializableContainer):
             test: 'tmt.base.Test',
             result: ResultOutcome,
             note: Optional[str] = None,
-            duration: Optional[str] = None,
             ids: Optional[Dict[str, Optional[str]]] = None,
             log: Optional[List[Path]] = None,
             guest: Optional['tmt.steps.provision.Guest'] = None) -> 'Result':
@@ -149,7 +148,9 @@ class Result(tmt.utils.SerializableContainer):
             serialnumber=test.serialnumber,
             result=result,
             note=note,
-            duration=duration,
+            starttime=test.starttime,
+            endtime=test.endtime,
+            duration=test.real_duration,
             ids=ids,
             log=log or [],
             guest=guest_data)
@@ -231,12 +232,27 @@ class Result(tmt.utils.SerializableContainer):
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
-    def show(self) -> str:
+    def show(self, display_guest: bool = True) -> str:
         """ Return a nicely colored result with test name (and note) """
+
+        from tmt.steps.provision import format_guest_full_name
+
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
-        colored = click.style(result, fg=RESULT_OUTCOME_COLORS[self.result])
-        note = f" ({self.note})" if self.note else ''
-        return f"{colored} {self.name}{note}"
+
+        components: List[str] = [
+            click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
+            self.name
+            ]
+
+        if display_guest and self.guest:
+            assert self.guest.name  # narrow type
+
+            components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
+
+        if self.note:
+            components.append(f'({self.note})')
+
+        return ' '.join(components)
 
     @staticmethod
     def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:

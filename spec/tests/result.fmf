@@ -20,40 +20,19 @@ description: |
         ignore the actual test result and always report provided
         value instead
     custom
-        test needs to create it's own ``results.yaml`` file in the
-        ``${TMT_TEST_DATA}`` directory. The format of the file is
-        documented at :ref:`/spec/plans/results`. When importing results
-        from the custom file, each test name, referenced in the file via
-        ``name`` key, would be prefixed by the original test name. A
-        special case, ``name: /``, sets the result for the original test
-        itself.
+        test needs to create its own ``results.yaml`` or
+        ``results.json`` file in the ``${TMT_TEST_DATA}``
+        directory. The format of the file, notes and detailed examples
+        are documented at :ref:`/spec/plans/results`.
 
 example:
   - |
     # Plain swapping fail to pass and pass to fail result
     result: xfail
+
   - |
-    # Custom results - results.yaml needs to be provided to the ${TMT_TEST_DATA} directory
+    # Look for $TMT_TEST_DATA/results.yaml (or results.json) with custom results
     result: custom
-
-    # Example content of results.yaml
-    - name: /test/passing
-      result: pass
-      log:
-        - pass_log
-      duration: 00:11:22
-      note: good result
-
-    - name: /test/failing
-      result: fail
-      log:
-        - fail_log
-        - another_log
-      duration: 00:22:33
-      note: fail result
-
-    - name: /test/no_keys
-      result: pass
 
 link:
   - implemented-by: /tmt/base.py

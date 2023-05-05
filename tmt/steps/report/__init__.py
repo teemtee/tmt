@@ -46,7 +46,7 @@ class ReportPlugin(tmt.steps.GuestlessPlugin):
             help='Use specified method for results reporting.')
         def report(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('report')
-            Report._save_context(context)
+            Report._save_cli_context(context)
 
         return report
 

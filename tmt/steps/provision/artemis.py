@@ -25,6 +25,12 @@ else:
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: no change, fixes issues with validation
+    '0.0.55',
+    # NEW: added Kickstart specification
+    '0.0.53',
+    # NEW: added compatible HW constraint
+    '0.0.48',
     # NEW: added missing cpu.processors constraint
     '0.0.47',
     # NEW: added new CPU constraints
@@ -56,10 +62,6 @@ DEFAULT_API_RETRIES = 10
 # Should lead to delays of 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256 seconds
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
 
-# Type annotation for "data" package describing a guest instance. Passed
-# between load() and save() calls
-# TODO: get rid of `ignore` once superclass is no longer `Any`
-
 
 @dataclasses.dataclass
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
@@ -78,6 +80,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     priority_group: str = DEFAULT_PRIORITY_GROUP
     keyname: str = DEFAULT_KEYNAME
     user_data: Dict[str, str] = dataclasses.field(default_factory=dict)
+    kickstart: Dict[str, str] = dataclasses.field(default_factory=dict)
 
     # Provided by Artemis response
     guestname: Optional[str] = None
@@ -250,6 +253,7 @@ class GuestArtemis(tmt.GuestSsh):
     priority_group: str
     keyname: str
     user_data: Dict[str, str]
+    kickstart: Dict[str, str]
 
     # Provided by Artemis response
     guestname: Optional[str]
@@ -287,6 +291,12 @@ class GuestArtemis(tmt.GuestSsh):
                 'compose': self.image
                 }
             }
+
+        if self.api_version >= "0.0.53":
+            environment['kickstart'] = self.kickstart
+
+        elif self.kickstart:
+            raise ProvisionError(f"API version '{self.api_version}' does not support kickstart.")
 
         data: Dict[str, Any] = {
             'environment': environment,
@@ -457,7 +467,6 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
     # Guest instance
     _guest = None
 
-    # TODO: fix types once superclass gains its annotations
     @classmethod
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for Artemis """
@@ -554,6 +563,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             arch=self.get('arch'),
             image=self.get('image'),
             hardware=self.get('hardware'),
+            kickstart=self.get('kickstart'),
             pool=self.get('pool'),
             priority_group=self.get('priority-group'),
             keyname=self.get('keyname'),

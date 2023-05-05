@@ -67,6 +67,28 @@ rlJournalStart
         fi
     done
 
+    rlPhaseStartTest "Check guest display modes"
+        # Two cases for multihost, one with a single guest, other with multiple, to test the default "auto"...
+        rlRun -s "tmt run -av --scratch --id $tmp test -n pass report -h html"
+        rlAssertNotGrep "<th>Guest</th>" "$tmp/plan/report/default-0/index.html"
+        rlAssertNotGrep "<td class=\"guest\">default-0</td>" "$tmp/plan/report/default-0/index.html"
+
+        rlRun -s "tmt -c report_multihost=yes run -av --scratch --id $tmp plan -n multihost-plan test -n pass report -h html"
+        rlAssertGrep "<th>Guest</th>" "$tmp/multihost-plan/report/default-0/index.html"
+        rlAssertGrep "<td class=\"guest\">guest-1</td>" "$tmp/multihost-plan/report/default-0/index.html"
+        rlAssertGrep "<td class=\"guest\">guest-2</td>" "$tmp/multihost-plan/report/default-0/index.html"
+
+        # ...then "always", ...
+        rlRun -s "tmt run -av --scratch --id $tmp test -n pass report -h html --display-guest always"
+        rlAssertGrep "<th>Guest</th>" "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep "<td class=\"guest\">default-0</td>" "$tmp/plan/report/default-0/index.html"
+
+        # ... and "never".
+        rlRun -s "tmt run -av --scratch --id $tmp test -n pass report -h html --display-guest never"
+        rlAssertNotGrep "<th>Guest</th>" "$tmp/plan/report/default-0/index.html"
+        rlAssertNotGrep "<td class=\"guest\">default-0</td>" "$tmp/plan/report/default-0/index.html"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $tmp"

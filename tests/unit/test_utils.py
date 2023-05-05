@@ -3,10 +3,12 @@
 import datetime
 import queue
 import re
+import textwrap
 import threading
 import time
 import unittest
 import unittest.mock
+from datetime import timedelta
 from typing import Any, List, Tuple
 
 import py
@@ -89,6 +91,15 @@ def test_public_git_url():
             }, {
             'original': 'ssh://git@pagure.io/fedora-ci/metadata.git',
             'expected': 'https://pagure.io/fedora-ci/metadata.git',
+            }, {
+            'original': 'git@gitlab.com:redhat/rhel/NAMESPACE/COMPONENT.git',
+            'expected': 'git://pkgs.devel.redhat.com/NAMESPACE/COMPONENT.git',
+            }, {
+            'original': 'https://gitlab.com/redhat/rhel/NAMESPACE/COMPONENT',
+            'expected': 'git://pkgs.devel.redhat.com/NAMESPACE/COMPONENT',
+            }, {
+            'original': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
+            'expected': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
             },
         ]
     for example in examples:
@@ -225,8 +236,18 @@ def test_duration_to_seconds():
     assert duration_to_seconds('5m') == 300
     assert duration_to_seconds('5h') == 18000
     assert duration_to_seconds('5d') == 432000
+    assert duration_to_seconds('5d') == 432000
+    # `man sleep` says: Given two or more arguments, pause for the amount of time
+    # specified by the sum of their values.
+    assert duration_to_seconds('1s 2s') == 3
+    assert duration_to_seconds('1h 2 3m') == 3600 + 2 + 180
+    # Divergence from 'sleep' as that expects space separated arguments
+    assert duration_to_seconds('1s2s') == 3
+    assert duration_to_seconds('1 m2   m') == 180
     with pytest.raises(tmt.utils.SpecificationError):
         duration_to_seconds('bad')
+    with pytest.raises(tmt.utils.SpecificationError):
+        duration_to_seconds('1sm')
 
 
 class test_structured_field(unittest.TestCase):
@@ -521,62 +542,78 @@ class test_structured_field(unittest.TestCase):
 
 
 def test_run_interactive_not_joined(tmpdir, root_logger):
-    stdout, stderr = Common(logger=root_logger)._run(
-        "echo abc; echo def >2", shell=True, interactive=True, cwd=str(tmpdir), env={}, log=None)
+    stdout, stderr = ShellScript("echo abc; echo def >2").to_shell_command().run(
+        shell=True,
+        interactive=True,
+        cwd=Path(str(tmpdir)),
+        env={},
+        log=None,
+        logger=root_logger)
     assert stdout is None
     assert stderr is None
 
 
 def test_run_interactive_joined(tmpdir, root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        "echo abc; echo def >2",
+    stdout, _ = ShellScript("echo abc; echo def >2").to_shell_command().run(
         shell=True,
         interactive=True,
-        cwd=str(tmpdir),
+        cwd=Path(str(tmpdir)),
         env={},
         join=True,
-        log=None)
+        log=None,
+        logger=root_logger)
     assert stdout is None
 
 
 def test_run_not_joined_stdout(root_logger):
-    stdout, _ = Common(
-        logger=root_logger)._run(
-        Command(
-            "ls", "/"), shell=False, cwd=".", env={}, log=None)
+    stdout, stderr = Command("ls", "/").run(
+        shell=False,
+        cwd=Path.cwd(),
+        env={},
+        log=None,
+        logger=root_logger)
     assert "sbin" in stdout
 
 
 def test_run_not_joined_stderr(root_logger):
-    _, stderr = Common(logger=root_logger)._run(
-        ShellScript("ls non_existing || true").to_shell_command(),
+    _, stderr = ShellScript("ls non_existing || true").to_shell_command().run(
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
-        log=None)
+        log=None,
+        logger=root_logger)
     assert "ls: cannot access" in stderr
 
 
 def test_run_joined(root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        ShellScript("ls non_existing / || true").to_shell_command(),
+    stdout, _ = ShellScript("ls non_existing / || true").to_shell_command().run(
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
         log=None,
-        join=True)
+        join=True,
+        logger=root_logger)
     assert "ls: cannot access" in stdout
     assert "sbin" in stdout
 
 
 def test_run_big(root_logger):
-    stdout, _ = Common(logger=root_logger)._run(
-        ShellScript("""for NUM in {1..100}; do LINE="$LINE n"; done; for NUM in {1..1000}; do echo $LINE; done""").to_shell_command(),  # noqa: E501
+    script = """
+        for NUM in {1..100}; do
+            LINE="$LINE n";
+        done;
+        for NUM in {1..1000}; do
+            echo $LINE;
+        done
+        """
+
+    stdout, _ = ShellScript(textwrap.dedent(script)).to_shell_command().run(
         shell=False,
-        cwd=".",
+        cwd=Path.cwd(),
         env={},
         log=None,
-        join=True)
+        join=True,
+        logger=root_logger)
     assert "n n" in stdout
     assert len(stdout) == 200000
 
@@ -842,24 +879,31 @@ def test_wait_success_but_too_late(root_logger):
         wait(Common(logger=root_logger), check, datetime.timedelta(seconds=1))
 
 
-def test_import_member():
-    klass = tmt.plugins.import_member('tmt.steps.discover', 'Discover')
+def test_import_member(root_logger):
+    klass = tmt.plugins.import_member(
+        module_name='tmt.steps.discover', member_name='Discover', logger=root_logger)
 
     assert klass is tmt.steps.discover.Discover
 
 
-def test_import_member_no_such_module():
+def test_import_member_no_such_module(root_logger):
     with pytest.raises(
             tmt.utils.GeneralError,
             match=r"Failed to import module 'tmt\.steps\.nope_does_not_exist'."):
-        tmt.plugins.import_member('tmt.steps.nope_does_not_exist', 'Discover')
+        tmt.plugins.import_member(
+            module_name='tmt.steps.nope_does_not_exist',
+            member_name='Discover',
+            logger=root_logger)
 
 
-def test_import_member_no_such_class():
+def test_import_member_no_such_class(root_logger):
     with pytest.raises(
             tmt.utils.GeneralError,
             match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'."):
-        tmt.plugins.import_member('tmt.steps.discover', 'NopeDoesNotExist')
+        tmt.plugins.import_member(
+            module_name='tmt.steps.discover',
+            member_name='NopeDoesNotExist',
+            logger=root_logger)
 
 
 def test_common_base_inheritance(root_logger):
@@ -942,3 +986,18 @@ def test_uniq(values: List[Any], expected: List[Any]) -> None:
     )
 def test_flatten(lists: List[List[Any]], unique: bool, expected: List[Any]) -> None:
     assert tmt.utils.flatten(lists, unique=unique) == expected
+
+
+@pytest.mark.parametrize(
+    ('duration', 'expected'),
+    (
+        (timedelta(seconds=8), '00:00:08'),
+        (timedelta(minutes=6, seconds=8), '00:06:08'),
+        (timedelta(hours=4, minutes=6, seconds=8), '04:06:08'),
+        (timedelta(days=15, hours=4, minutes=6, seconds=8), '364:06:08'),
+        )
+    )
+def test_format_duration(duration, expected):
+    from tmt.steps.execute import ExecutePlugin
+
+    assert ExecutePlugin.format_duration(duration) == expected

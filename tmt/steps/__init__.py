@@ -2,7 +2,6 @@
 """ Step Classes """
 
 import dataclasses
-import os
 import re
 import shutil
 import sys
@@ -35,8 +34,8 @@ DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
 
 # Supported steps and actions
-STEPS = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
-ACTIONS = ['login', 'reboot']
+STEPS: List[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
+ACTIONS: List[str] = ['login', 'reboot']
 
 # Step phase order
 PHASE_START = 10
@@ -204,9 +203,9 @@ class Step(tmt.utils.Common):
     _raw_data: List[_RawStepData]
 
     # The step has pruning capability to remove all irrelevant files. All
-    # important files located in workdir should be specified in the list below
-    # to avoid deletion during pruning.
-    _preserved_files: List[str] = ['step.yaml']
+    # important file and directory names located in workdir should be specified
+    # in the list below to avoid deletion during pruning.
+    _preserved_workdir_members: List[str] = ['step.yaml']
 
     def __init__(
             self,
@@ -217,7 +216,7 @@ class Step(tmt.utils.Common):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Initialize and check the step data """
-        logger.apply_verbosity_options(**self.__class__._options)
+        logger.apply_verbosity_options(**self.__class__._cli_options)
 
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
 
@@ -296,10 +295,10 @@ class Step(tmt.utils.Common):
     @property
     def enabled(self) -> Optional[bool]:
         """ True if the step is enabled """
-        if self.plan.my_run is None or self.plan.my_run._context_object is None:
+        if self.plan.my_run is None or self.plan.my_run._cli_context_object is None:
             return None
 
-        return self.name in self.plan.my_run._context_object.steps
+        return self.name in self.plan.my_run._cli_context_object.steps
 
     @property
     def plugins_in_standalone_mode(self) -> int:
@@ -368,7 +367,8 @@ class Step(tmt.utils.Common):
             self.debug('Successfully loaded step data.', level=2)
 
             self.data = [
-                StepData.unserialize(raw_datum) for raw_datum in raw_step_data['data']
+                StepData.unserialize(raw_datum, self._logger)
+                for raw_datum in raw_step_data['data']
                 ]
             self.status(raw_step_data['status'])
         except tmt.utils.GeneralError:
@@ -524,35 +524,38 @@ class Step(tmt.utils.Common):
         if self.workdir:
             self.debug('workdir', str(self.workdir), 'magenta')
 
-    def prune(self) -> None:
+    def prune(self, logger: tmt.log.Logger) -> None:
         """ Remove all uninteresting files from the step workdir """
         if self.workdir is None:
             return
-        self.debug(f"Prune workdir '{self.workdir}'.", level=3, shift=1)
+
+        logger.debug(f"Prune '{self.name}' step workdir '{self.workdir}'.", level=3)
+        logger = logger.descend()
+
+        # Collect all workdir members that shall not be removed
+        preserved_members: List[str] = self._preserved_workdir_members[:]
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
         plugins = self.phases(classes=BasePlugin)
-        plugin_workdirs = []
         for plugin in plugins:
             if plugin.workdir is not None:
-                plugin_workdirs.append(os.path.basename(plugin.workdir))
-            plugin.prune()
+                preserved_members.append(plugin.workdir.name)
+            plugin.prune(logger)
 
         # Prune everything except for the preserved files
-        preserved_files = self._preserved_files + plugin_workdirs
-        for file in os.listdir(self.workdir):
-            if file in preserved_files:
+        for member in self.workdir.iterdir():
+            if member.name in preserved_members:
+                logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
                 continue
-            full_path = os.path.join(self.workdir, file)
-            self.debug(f"Remove '{full_path}'.", level=3, shift=1)
+            logger.debug(f"Remove '{member}'.", level=3)
             try:
-                if os.path.isfile(full_path) or os.path.islink(full_path):
-                    os.remove(full_path)
+                if member.is_file() or member.is_symlink():
+                    member.unlink()
                 else:
-                    shutil.rmtree(full_path)
+                    shutil.rmtree(member)
             except OSError as error:
-                self.warn(f"Unable to remove '{full_path}': {error}", shift=1)
+                logger.warn(f"Unable to remove '{member}': {error}")
 
     def requires(self) -> List['tmt.base.Require']:
         """
@@ -680,7 +683,7 @@ class BasePlugin(Phase):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Store plugin name, data and parent step """
-        logger.apply_verbosity_options(**self.__class__._options)
+        logger.apply_verbosity_options(**self.__class__._cli_options)
 
         # Store name, data and parent step
         super().__init__(
@@ -1011,7 +1014,7 @@ class BasePlugin(Phase):
         """ All requirements of the plugin on the guest """
         return []
 
-    def prune(self) -> None:
+    def prune(self, logger: tmt.log.Logger) -> None:
         """
         Prune uninteresting files from the plugin workdir
 
@@ -1021,11 +1024,11 @@ class BasePlugin(Phase):
         """
         if self.workdir is None:
             return
-        self.debug(f"Remove plugin workdir '{self.workdir}'.", level=3)
+        logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
         try:
             shutil.rmtree(self.workdir)
         except OSError as error:
-            self.warn(f"Unable to remove '{self.workdir}': {error}")
+            logger.warn(f"Unable to remove '{self.workdir}': {error}")
 
 
 class GuestlessPlugin(BasePlugin):
@@ -1152,7 +1155,7 @@ class Reboot(Action):
             help='Hard reboot of the machine. Unsaved data may be lost.')
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """ Reboot the guest. """
-            Reboot._save_context(context)
+            Reboot._save_cli_context(context)
             Reboot._enabled = True
 
         return reboot
@@ -1240,7 +1243,7 @@ class Login(Action):
             the tests finished with given result (pass, info, fail,
             warn, error).
             """
-            Login._save_context(context)
+            Login._save_cli_context(context)
             Login._enabled = True
 
         return login

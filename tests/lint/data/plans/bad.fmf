@@ -4,6 +4,6 @@ discovery:
     url: https://github.com/teemtee/tmt
 prepareahoj:
     how: ansible
-    playbook: plans/packages.yml
+    playbook: ansible/packages.yml
 execute:
     how: tmt

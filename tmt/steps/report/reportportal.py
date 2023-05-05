@@ -105,14 +105,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         launch_name = self.step.plan.name if not self.get("launch-name") \
             else self.get("launch-name")
 
-        service = ReportPortalService(endpoint=endpoint, project=project, token=token)
-        assert service is not None
-
-        attributes = {k: v[0] for k, v in self.step.plan._fmf_context().items()}
+        attributes = {k: v[0] for k, v in self.step.plan._fmf_context.items()}
         env_variables = self.get("env-vars") if self.get("env-vars") else []
-        # # or if you want to use env_variables from the environment:
+        # # use env_variables from the environment:
         # env_variables = os.environ.get("TMT_REPORT_REPORTPORTAL_ENVARS").split(", ") \
         #              if os.environ.get("TMT_REPORT_REPORTPORTAL_ENVARS") else []
+
+        service = ReportPortalService(endpoint=endpoint, project=project, token=token)
+        assert service is not None
 
         # create launch and its items
         self.debug("Uploading a launch into Report Portal server")

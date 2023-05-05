@@ -46,7 +46,7 @@ class FinishPlugin(tmt.steps.Plugin):
             help='Use specified method for finishing tasks.')
         def finish(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('finish')
-            Finish._save_context(context)
+            Finish._save_cli_context(context)
 
         return finish
 
@@ -110,7 +110,7 @@ class Finish(tmt.steps.Step):
             # operations inside finish plugins on the guest use the
             # finish step config rather than provision step config.
             guest_copy = copy.copy(guest)
-            guest_copy._logger = guest._logger.clone().apply_verbosity_options(**self._options)
+            guest_copy._logger = guest._logger.clone().apply_verbosity_options(**self._cli_options)
             guest_copy.parent = self
             for phase in self.phases(classes=(Action, FinishPlugin)):
                 if isinstance(phase, Action):

@@ -94,7 +94,8 @@ class GuestLocal(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None) -> None:
+            options: Optional[List[str]] = None,
+            superuser: bool = False) -> None:
         """ Nothing to be done to push workdir """
 
     def pull(

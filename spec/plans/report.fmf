@@ -80,7 +80,9 @@ description:
             how: polarion
             file: test.xml
             project-id: TMT
-            testrun-title: tests_that_pass
+            title: tests_that_pass
+            planned-in: RHEL-9.1.0
+            pool-team: sst_tmt
     link:
         - implemented-by: /tmt/steps/report/polarion.py
 

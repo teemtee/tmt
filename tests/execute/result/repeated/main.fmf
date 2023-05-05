@@ -1,0 +1,21 @@
+/plan:
+    discover:
+        how: fmf
+        test:
+          - test
+          - test
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/test:
+    test: |
+        if [ -e file ] ; then
+            echo exists
+            exit 0
+        else
+            echo creating
+            touch file
+            exit 1
+        fi

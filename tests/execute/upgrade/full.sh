@@ -17,8 +17,8 @@ rlJournalStart
         # 1 test before + 3 upgrade tasks + 1 test after
         rlAssertGrep "5 tests passed" $rlRun_LOG
         # Check that the IN_PLACE_UPGRADE variable was set
-        rlAssertGrep "IN_PLACE_UPGRADE=old" "$run/plan/path/execute/data/old/test/output.txt"
-        rlAssertGrep "IN_PLACE_UPGRADE=new" "$run/plan/path/execute/data/new/test/output.txt"
+        rlAssertGrep "IN_PLACE_UPGRADE=old" "$run/plan/path/execute/data/guest/default-0/old/test-1/output.txt"
+        rlAssertGrep "IN_PLACE_UPGRADE=new" "$run/plan/path/execute/data/guest/default-0/new/test-1/output.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup

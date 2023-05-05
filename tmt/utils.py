@@ -7,6 +7,7 @@ import dataclasses
 import datetime
 import functools
 import io
+import json
 import os
 import pathlib
 import pprint
@@ -35,8 +36,8 @@ import jsonschema
 import pkg_resources
 import requests
 import requests.adapters
-import requests.packages.urllib3.util.retry
 import urllib3.exceptions
+import urllib3.util.retry
 from click import echo, style, wrap_text
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
@@ -76,11 +77,7 @@ class Path(pathlib.PosixPath):
     # implementation considers to not be relative to each other. Therefore, we
     # need to override `is_relative_to()` even for other Python versions, to not
     # depend on `ValueError` raised by the original `relative_to()`.
-    #
-    # ignore[override]: does not match the signature on purpose, our use is
-    # slightly less generic that what pathlib supports, to be usable with
-    # os.path.relpath.
-    def is_relative_to(self, other: 'Path') -> bool:  # type: ignore[override]
+    def is_relative_to(self, other: 'Path') -> bool:
         # NOTE: the following is not perfect, but it should be enough for
         # what tmt needs to know about its paths.
 
@@ -182,7 +179,8 @@ class BaseLoggerFnType(Protocol):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         pass
 
 
@@ -267,12 +265,15 @@ class StreamLogger(Thread):
     https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10
     """
 
-    def __init__(self,
-                 stream: Optional[IO[bytes]],
-                 log_header: str,
-                 logger: BaseLoggerFnType,
-                 click_context: Optional[click.Context]) -> None:
+    def __init__(
+            self,
+            log_header: str,
+            *,
+            stream: Optional[IO[bytes]] = None,
+            logger: Optional[BaseLoggerFnType] = None,
+            click_context: Optional[click.Context] = None) -> None:
         super().__init__(daemon=True)
+
         self.stream = stream
         self.output: List[str] = []
         self.log_header = log_header
@@ -281,6 +282,9 @@ class StreamLogger(Thread):
 
     def run(self) -> None:
         if self.stream is None:
+            return
+
+        if self.logger is None:
             return
 
         if self.click_context is not None:
@@ -296,8 +300,28 @@ class StreamLogger(Thread):
                     level=3)
             self.output.append(line)
 
-    def get_output(self) -> str:
+    def get_output(self) -> Optional[str]:
         return "".join(self.output)
+
+
+class UnusedStreamLogger(StreamLogger):
+    """
+    Special variant of :py:class:`StreamLogger` that records no data.
+
+    It is designed to make the implementation of merged streams easier in
+    :py:meth:`Command.run`. Instance of this class is created to log ``stderr``
+    when, in fact, ``stderr`` is merged into ``stdout``. This class returns
+    values compatible with :py:class:`CommandOutput` notion of "no output".
+    """
+
+    def __init__(self, log_header: str) -> None:
+        super().__init__(log_header)
+
+    def run(self) -> None:
+        pass
+
+    def get_output(self) -> Optional[str]:
+        return None
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,6 +332,11 @@ CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
 
 #: A single element of command-line.
 _CommandElement = str
+
+
+class CommandOutput(NamedTuple):
+    stdout: Optional[str]
+    stderr: Optional[str]
 
 
 class ShellScript:
@@ -404,10 +433,193 @@ class Command:
 
         return list(self._command)
 
+    def run(
+            self,
+            *,
+            cwd: Optional[Path],
+            shell: bool = False,
+            env: Optional[EnvironmentType] = None,
+            dry: bool = False,
+            join: bool = False,
+            interactive: bool = False,
+            timeout: Optional[int] = None,
+            # Logging
+            message: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[BaseLoggerFnType] = None,
+            silent: bool = False,
+            caller: Optional['Common'] = None,
+            logger: tmt.log.Logger) -> CommandOutput:
+        """
+        Run command, give message, handle errors.
 
-class CommandOutput(NamedTuple):
-    stdout: Optional[str]
-    stderr: Optional[str]
+        :param cwd: if set, command would be executed in the given directory,
+            otherwise the current working directory is used.
+        :param shell: if set, the command would be executed in a shell.
+        :param env: environment variables to combine with the current environment
+            before running the command.
+        :param dry: if set, the command would not be actually executed.
+        :param join: if set, stdout and stderr of the command would be merged into
+            a single output text.
+        :param interactive: if set, the command would be executed in an interactive
+            manner, i.e. with stdout and stdout connected to terminal for live
+            interaction with user.
+        :param timeout: if set, command would be interrupted, if still running,
+            after this many seconds.
+        :param message: if set, it would be logged for more friendly logging.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        :param caller: optional "parent" of the command execution, used for better
+            linked exceptions.
+        :param logger: logger to use for logging.
+        :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
+        """
+
+        # A bit of logging - command, default message, error message for later...
+
+        # First, if we were given a message, emit it.
+        if message:
+            logger.verbose(message, level=2)
+
+        # For debugging, we want to save somewhere the actual command rather
+        # than the provided "friendly". Emit the actual command to the debug
+        # log, and the friendly one to the verbose/custom log
+        logger.debug(f'Run command: {str(self)}', level=2)
+
+        # The friendly command version would be emitted only when we were not
+        # asked to be quiet.
+        if not silent and friendly_command:
+            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+
+        # Nothing more to do in dry mode
+        if dry:
+            return CommandOutput(None, None)
+
+        # Fail nicely if the working directory does not exist
+        if cwd and not cwd.exists():
+            raise GeneralError(f"The working directory '{cwd}' does not exist.")
+
+        # For command output logging, use either the given logging callback, or
+        # use the given logger & emit to debug log.
+        output_logger = (log or logger.debug) if not silent else logger.debug
+
+        # Prepare the environment: use the current process environment, but do
+        # not modify it if caller wants something extra, make a copy.
+        actual_env: Optional[EnvironmentType] = None
+
+        # Do not modify current process environment
+        if env is not None:
+            actual_env = os.environ.copy()
+            actual_env.update(env)
+
+        logger.debug('environment', pprint.pformat(actual_env), level=4)
+
+        # Set special executable only when shell was requested
+        executable = DEFAULT_SHELL if shell else None
+
+        # Run the command in an interactive mode if requested
+        if interactive:
+            try:
+                subprocess.run(
+                    self.to_popen(),
+                    cwd=cwd,
+                    shell=shell,
+                    env=actual_env,
+                    check=True,
+                    executable=executable)
+
+            except subprocess.CalledProcessError:
+                # Interactive mode can return non-zero if the last command
+                # failed, ignore errors here
+                pass
+
+            finally:
+                return CommandOutput(None, None)
+
+        # Spawn the child process
+        try:
+            process = subprocess.Popen(
+                self.to_popen(),
+                cwd=cwd,
+                shell=shell,
+                env=actual_env,
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT if join else subprocess.PIPE,
+                executable=executable)
+
+        except FileNotFoundError as exc:
+            raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
+
+        # Create and start stream loggers
+        stdout_logger = StreamLogger(
+            'out',
+            stream=process.stdout,
+            logger=output_logger,
+            click_context=click.get_current_context(silent=True))
+
+        if join:
+            stderr_logger: StreamLogger = UnusedStreamLogger('err')
+
+        else:
+            stderr_logger = StreamLogger(
+                'err',
+                stream=process.stderr,
+                logger=output_logger,
+                click_context=click.get_current_context(silent=True))
+
+        stdout_logger.start()
+        stderr_logger.start()
+
+        # A bit of logging helpers for debugging duration behavior
+        start_timestamp = time.monotonic()
+
+        def _event_timestamp() -> str:
+            return f'{time.monotonic() - start_timestamp:.4}'
+
+        def log_event(msg: str) -> None:
+            logger.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
+
+        try:
+            process.wait(timeout=timeout)
+
+        except subprocess.TimeoutExpired:
+            log_event(f'duration "{timeout}" exceeded')
+
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            log_event('sent SIGKILL signal')
+
+            process.wait()
+            log_event('kill confirmed')
+
+            process.returncode = PROCESS_TIMEOUT
+
+        log_event('waiting for stream readers')
+
+        stdout_logger.join()
+        log_event('stdout reader done')
+
+        stderr_logger.join()
+        log_event('stderr reader done')
+
+        # Handle the exit code, return output
+        if process.returncode != 0:
+            logger.debug(f"Command returned '{process.returncode}'.", level=3)
+
+            raise RunError(
+                f"Command '{friendly_command or str(self)}' returned {process.returncode}.",
+                self,
+                process.returncode,
+                stdout=stdout_logger.get_output(),
+                stderr=stderr_logger.get_output(),
+                caller=caller)
+
+        return CommandOutput(stdout_logger.get_output(), stderr_logger.get_output())
 
 
 class _CommonBase:
@@ -461,11 +673,28 @@ class Common(_CommonBase):
     Provides the run() method for easy command execution.
     """
 
-    # Command line context, options and workdir
-    _context: Optional['tmt.cli.Context'] = None
+    # CLI context and options it carries are saved for later use. This happens
+    # when Click subcommand (or "group" command) runs, and saves its context
+    # in a class corresponding to the subcommand/group. For example, in command
+    # like `tmt run report -h foo --bar=baz`, `report` subcommand would save
+    # its context inside `tmt.steps.report.Report` class.
+    #
+    # The context can be also saved on the instance level, for more fine-grained
+    # context tracking.
+    #
+    # The "later use" means the context is often used when looking for options
+    # like --how, --dry or --verbose.
+    #
+    # TODO: Unfortunately, there's just a single "slot", and there can be only
+    # one saved context on class level. This prevents repeated use of
+    # subcommands, i.e. create multiple phases of a step via CLI. While it's
+    # perfectly fine to define multiple report plugins in plan's fmf data,
+    # doing so via CLI - `report -h display report -h html` - is not supported.
+    _cli_context: Optional['tmt.cli.Context'] = None
+    _cli_options: Dict[str, Any] = {}
+
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
-    _options: Dict[str, Any] = dict()
     _workdir: WorkdirType = None
 
     # TODO: must be declared outside of __init__(), because it must exist before
@@ -491,7 +720,7 @@ class Common(_CommonBase):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
-            context: Optional['tmt.cli.Context'] = None,
+            cli_context: Optional['tmt.cli.Context'] = None,
             relative_indent: int = 1,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
@@ -508,7 +737,7 @@ class Common(_CommonBase):
             parent=parent,
             name=name,
             workdir=workdir,
-            context=context,
+            cli_context=cli_context,
             relative_indent=relative_indent,
             logger=logger,
             **kwargs)
@@ -518,8 +747,8 @@ class Common(_CommonBase):
         self.parent = parent
 
         # Store command line context
-        if context:
-            self._save_context_to_instance(context)
+        if cli_context:
+            self._save_cli_context_to_instance(cli_context)
 
             # TODO: not needed here, apparently, it's applied elsewhere, not to
             # each and every Common child.
@@ -543,15 +772,77 @@ class Common(_CommonBase):
         return self.name
 
     @classmethod
-    def _save_context(cls, context: 'tmt.cli.Context') -> None:
-        """ Save provided command line context and options for future use """
-        cls._context = context
-        cls._options = context.params
+    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
+        """
+        Save a CLI context and options it carries for later use.
 
-    def _save_context_to_instance(self, context: 'tmt.cli.Context') -> None:
-        """ Save provided command line context and options to the instance """
-        self._context = context
-        self._options = context.params
+        .. warning::
+
+           The given context is saved into a class variable, therefore it will
+           function as a "default" context for instances on which
+           :py:meth:`_save_cli_context_to_instance` has not been called.
+
+        .. warning::
+
+           The given context will overwrite any previously saved context.
+
+        :param context: CLI context to save.
+        """
+
+        cls._cli_context = context
+        cls._cli_options = cls._cli_context.params
+
+    def _save_cli_context_to_instance(self, context: 'tmt.cli.Context') -> None:
+        """
+        Save a CLI context and options it carries for later use.
+
+        .. warning::
+
+           The given context will overwrite any previously saved context.
+
+        :param context: CLI context to save.
+        """
+
+        self._cli_context = context
+        self._cli_options = self._cli_context.params
+
+    @property
+    def _cli_context_object(self) -> Optional['tmt.cli.ContextObject']:
+        """
+        A CLI context object with tmt info relevant for command execution.
+
+        :returns: CLI context object, or ``None`` if the CLI context itself
+            has not been set.
+        """
+
+        # TODO: can this even happen? Common._save_cli_context() is called
+        # from tmt.cli:main(), would this act as an initializer for all
+        # derived classes?
+        if self._cli_context is None:
+            return None
+
+        return self._cli_context.obj
+
+    @property
+    def _cli_fmf_context(self) -> FmfContextType:
+        """ An fmf context set for this object via CLI """
+
+        # TODO: can this even happen? Common._save_cli_context() is called
+        # from tmt.cli:main(), would this act as an initializer for all
+        # derived classes?
+        if self._cli_context_object is None:
+            return {}
+
+        return self._cli_context_object.fmf_context
+
+    @property
+    def _fmf_context(self) -> FmfContextType:
+        """ An fmf context set for this object. """
+
+        # By default, the only fmf context available is one provided via CLI.
+        # But some derived classes can and will override this, because fmf
+        # context can exist in fmf nodes, too.
+        return self._cli_fmf_context
 
     @overload
     @classmethod
@@ -568,21 +859,7 @@ class Common(_CommonBase):
         """ Get an option from the command line context (class version) """
         if cls.ignore_class_options:
             return default
-        return cls._options.get(option, default)
-
-    @property
-    def _context_object(self) -> Optional['tmt.cli.ContextObject']:
-        if self._context is None:
-            return None
-
-        return self._context.obj
-
-    def _fmf_context(self) -> FmfContextType:
-        """ Return the current fmf context """
-        if self._context_object is None:
-            return dict()
-
-        return self._context_object.fmf_context
+        return cls._cli_options.get(option, default)
 
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
         """
@@ -614,7 +891,7 @@ class Common(_CommonBase):
                 pass
 
         # Get local option
-        local = self._options.get(option, default)
+        local = self._cli_options.get(option, default)
         # Check parent option
         parent = None
         if self.parent:
@@ -677,13 +954,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested verbose mode level
 
         In quiet mode verbose messages are not displayed.
         """
-        self._logger.verbose(key, value=value, color=color, shift=shift, level=level)
+        self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def debug(
             self,
@@ -691,13 +969,14 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1) -> None:
+            level: int = 1,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Show message if in requested debug mode level
 
         In quiet mode debug messages are not displayed.
         """
-        self._logger.debug(key, value=value, color=color, shift=shift, level=level)
+        self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def warn(self, message: str, shift: int = 0) -> None:
         """ Show a yellow warning message on info level, send to stderr """
@@ -713,140 +992,15 @@ class Common(_CommonBase):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 1,
-            level: int = 3) -> None:
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None) -> None:
         """
         Reports the executed command in verbose mode.
 
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level)
-
-    def _run(self,
-             command: Command,
-             cwd: Optional[Path],
-             shell: bool,
-             env: Optional[EnvironmentType],
-             log: Optional[BaseLoggerFnType],
-             join: bool = False,
-             interactive: bool = False,
-             timeout: Optional[int] = None) -> CommandOutput:
-        """
-        Run command, capture the output
-
-        By default stdout and stderr are captured separately.
-        Use join=True to merge stderr into stdout.
-        Use timeout=<seconds> to finish process after given time
-        """
-        # By default command ouput is logged using debug
-        if not log:
-            log = self.debug
-        # Prepare the environment
-        if env:
-            if not isinstance(env, dict):
-                raise GeneralError(f"Invalid environment '{env}'.")
-            # Do not modify current process environment
-            environment = os.environ.copy()
-            environment.update(env)
-        else:
-            environment = None
-        self.debug('environment', pprint.pformat(environment), level=4)
-
-        # Set only for shell=True as it would affect command
-        executable = DEFAULT_SHELL if shell else None
-
-        # Run the command in interactive mode if requested
-        if interactive:
-            try:
-                subprocess.run(
-                    command.to_popen(),
-                    cwd=cwd, shell=shell, env=environment, check=True,
-                    executable=executable)
-            except subprocess.CalledProcessError:
-                # Interactive mode can return non-zero if the last command
-                # failed, ignore errors here
-                pass
-            finally:
-                return CommandOutput(None, None)
-
-        # Create the process
-        try:
-            process = subprocess.Popen(
-                command.to_popen(),
-                cwd=cwd, shell=shell, env=environment,
-                start_new_session=True,
-                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT if join else subprocess.PIPE,
-                executable=executable)
-        except FileNotFoundError as error:
-            raise RunError(
-                f"File '{error.filename}' not found.",
-                command,
-                127,
-                caller=self)
-
-        stdout_thread = StreamLogger(
-            process.stdout,
-            log_header='out',
-            logger=log,
-            click_context=click.get_current_context(silent=True))
-        stderr_thread = stdout_thread
-        if not join:
-            stderr_thread = StreamLogger(
-                process.stderr,
-                log_header='err',
-                logger=log,
-                click_context=click.get_current_context(silent=True))
-        stdout_thread.start()
-        if not join:
-            stderr_thread.start()
-
-        # A bit of logging helpers for debugging duration behavior
-        start_timestamp = time.monotonic()
-
-        def _event_timestamp() -> str:
-            return f'{time.monotonic() - start_timestamp:.4}'
-
-        def log_event(msg: str) -> None:
-            self.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
-
-        try:
-            process.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            log_event(f'duration "{timeout}" exceeded')
-
-            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-            log_event('sent SIGKILL signal')
-
-            process.wait()
-            log_event('kill confirmed')
-
-            process.returncode = PROCESS_TIMEOUT
-
-        log_event('waiting for stream readers')
-
-        stdout_thread.join()
-        log_event('stdout reader done')
-
-        if not join:
-            stderr_thread.join()
-            log_event('stderr reader done')
-
-        # Handle the exit code, return output
-        if process.returncode != 0:
-            raise RunError(
-                message=f"Command returned '{process.returncode}'.",
-                command=command,
-                returncode=process.returncode,
-                stdout=stdout_thread.get_output(),
-                stderr=stderr_thread.get_output(),
-                caller=self)
-        if join:
-            return CommandOutput(
-                stdout_thread.get_output(), None)
-        else:
-            return CommandOutput(
-                stdout_thread.get_output(), stderr_thread.get_output())
+        self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def run(self,
             command: Command,
@@ -854,7 +1008,7 @@ class Common(_CommonBase):
             silent: bool = False,
             message: Optional[str] = None,
             cwd: Optional[Path] = None,
-            dry: bool = False,
+            ignore_dry: bool = False,
             shell: bool = False,
             env: Optional[EnvironmentType] = None,
             interactive: bool = False,
@@ -865,7 +1019,7 @@ class Common(_CommonBase):
         Run command, give message, handle errors
 
         Command is run in the workdir be default.
-        In dry mode commands are not executed unless dry=True.
+        In dry mode commands are not executed unless ignore_dry=True.
         Environment is updated with variables from the 'env' dictionary.
 
         Output is logged using self.debug() or custom 'log' function.
@@ -875,44 +1029,26 @@ class Common(_CommonBase):
         Returns named tuple CommandOutput.
         """
 
-        # A bit of logging - command, default message, error message for later...
-        # for debug output we want to rather print actual command rather than
-        # the provided printable command
-        if isinstance(command, (list, tuple)):
-            full_command_string = ' '.join(shlex.quote(s) for s in command)
-        else:
-            full_command_string = command
+        dryrun_actual = self.opt('dry')
 
-        if message:
-            self.verbose(message, level=2)
+        if ignore_dry:
+            dryrun_actual = False
 
-        # Add full command to the debug log, short version to verbose/custom log
-        self.debug(f'Run command: {full_command_string}', level=2)
-        if not silent and friendly_command:
-            logger = log or self.verbose
-            logger("cmd", friendly_command, color="yellow", level=2)
-
-        # Nothing more to do in dry mode (unless requested)
-        if self.opt('dry') and not dry:
-            return CommandOutput(None, None)
-
-        # Run the command, handle the exit code
-        cwd = cwd or self.workdir
-
-        # Fail nicely if the working directory does not exist
-        if cwd and not cwd.exists():
-            raise GeneralError(
-                f"The working directory '{cwd}' does not exist.")
-
-        try:
-            return self._run(
-                command, cwd, shell, env, log if not silent else None, join, interactive, timeout)
-        except RunError as error:
-            self.debug(error.message, level=3)
-            message = f"Failed to run command: {friendly_command} Reason: {error.message}"
-            raise RunError(
-                message, error.command, error.returncode,
-                error.stdout, error.stderr, caller=self)
+        return command.run(
+            friendly_command=friendly_command,
+            silent=silent,
+            message=message,
+            cwd=cwd or self.workdir,
+            dry=dryrun_actual,
+            shell=shell,
+            env=env,
+            interactive=interactive,
+            join=join,
+            log=log,
+            timeout=timeout,
+            caller=self,
+            logger=self._logger
+            )
 
     def read(self, path: Path, level: int = 2) -> str:
         """ Read a file from the workdir """
@@ -1197,6 +1333,72 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
+def render_run_exception(exception: RunError) -> str:
+    """ Render detailed output upon command execution errors for printing """
+
+    lines: List[str] = []
+
+    # Check verbosity level used during raising exception,
+    # Supported way to correctly get verbosity is
+    # tmt.util.Common.opt('verbose')
+    if isinstance(exception.caller, Common):
+        verbose = exception.caller.opt('verbose')
+    else:
+        verbose = 0
+    for name, output in (('stdout', exception.stdout), ('stderr', exception.stderr)):
+        if not output:
+            continue
+        output_lines = output.strip().split('\n')
+        # Show all lines in verbose mode, limit to maximum otherwise
+        if verbose > 0:
+            line_summary = f"{len(output_lines)}"
+        else:
+            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
+            output_lines = output_lines[-OUTPUT_LINES:]
+
+        lines += [
+            f'{name} ({line_summary} lines)',
+            OUTPUT_WIDTH * '~'
+            ] + output_lines + [
+            OUTPUT_WIDTH * '~',
+            ''
+            ]
+
+    return '\n'.join(lines)
+
+
+def render_exception(exception: BaseException) -> str:
+    """ Render the exception and its causes for printing """
+
+    lines = [
+        click.style(str(exception), fg='red')
+        ]
+
+    if isinstance(exception, RunError):
+        lines += [
+            '',
+            render_run_exception(exception)
+            ]
+
+    # Follow the chain
+    if exception.__cause__:
+        lines += [
+            '',
+            'The exception was caused by the previous exception:',
+            '',
+            render_exception(exception.__cause__)
+            ]
+
+    return '\n'.join(lines)
+
+
+def show_exception(exception: BaseException) -> None:
+    """ Display the exception and its causes """
+
+    print('', file=sys.stderr)
+    print(render_exception(exception), file=sys.stderr)
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Utilities
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1266,10 +1468,12 @@ def copytree(
         ) -> Path:
     """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
     # No need to reimplement for newer python or if argument is not requested
+    # ignore[call-arg] needed when running type-checks with Python < 3.8
     if not dirs_exist_ok or sys.version_info >= (3, 8):
         return cast(
             Path,
-            shutil.copytree(src=src, dst=dst, symlinks=symlinks, dirs_exist_ok=dirs_exist_ok))
+            shutil.copytree(src=src, dst=dst, symlinks=symlinks,
+                            dirs_exist_ok=dirs_exist_ok))  # type: ignore[call-arg]
     # Choice was to either copy python implementation and change ONE line
     # or use rsync (or cp with shell)
     # We need to copy CONTENT of src into dst
@@ -1593,8 +1797,16 @@ def dict_to_yaml(
     yaml.default_flow_style = False
     yaml.allow_unicode = True
     yaml.encoding = 'utf-8'
-    yaml.width = width
-    yaml.explicit_start = start
+    # ignore[assignment]: ruamel bug workaround, see stackoverflow.com/questions/58083562,
+    # sourceforge.net/p/ruamel-yaml/tickets/322/
+    #
+    # Yeah, but sometimes the ignore is not needed, at least mypy in a Github
+    # check tells us it's unused... When disabled, the local pre-commit fails.
+    # It seems we cannot win until ruamel.yaml gets its things fixed, therefore,
+    # giving up, and using `cast()` to enforce matching types to silence mypy,
+    # being fully aware the enforce types are wrong.
+    yaml.width = cast(None, width)  # # type: ignore[assignment]
+    yaml.explicit_start = cast(None, start)  # # type: ignore[assignment]
 
     # For simpler dumping of well-known classes
     def _represent_path(representer: Representer, data: Path) -> Any:
@@ -1651,6 +1863,21 @@ def yaml_to_list(data: Any,
     if not isinstance(loaded_data, list):
         raise GeneralError(
             f"Expected list in yaml data, "
+            f"got '{type(loaded_data).__name__}'.")
+    return loaded_data
+
+
+def json_to_list(data: Any) -> List[Any]:
+    """ Convert json into list """
+
+    try:
+        loaded_data = json.load(data)
+    except json.decoder.JSONDecodeError as error:
+        raise GeneralError(f"Invalid json syntax: {error}")
+
+    if not isinstance(loaded_data, list):
+        raise GeneralError(
+            f"Expected list in json data, "
             f"got '{type(loaded_data).__name__}'.")
     return loaded_data
 
@@ -1997,7 +2224,8 @@ class SerializableContainer(DataContainer):
     # silence mypy about the missing actual type.
     @staticmethod
     def unserialize(
-            serialized: Dict[str, Any]
+            serialized: Dict[str, Any],
+            logger: tmt.log.Logger
             ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
         """
         Convert from a serialized form loaded from a file.
@@ -2027,7 +2255,10 @@ class SerializableContainer(DataContainer):
                 "Use 'tmt clean runs' to clean up old runs.")
 
         klass_info = serialized.pop('__class__')
-        klass = import_member(klass_info['module'], klass_info['name'])
+        klass = import_member(
+            module_name=klass_info['module'],
+            member_name=klass_info['name'],
+            logger=logger)
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
@@ -2091,14 +2322,12 @@ def duration_to_seconds(duration: str) -> int:
         'h': 60 * 60,
         'd': 60 * 60 * 24,
         }
-    try:
-        match = re.match(r'^(\d+)([smhd]?)$', str(duration))
-        if match is None:
-            raise SpecificationError(f"Invalid duration '{duration}'.")
-        number, suffix = match.groups()
-        return int(number) * units.get(suffix, 1)
-    except (ValueError, AttributeError):
+    if re.match(r'^(\d+ *?[smhd]? *)+$', str(duration)) is None:
         raise SpecificationError(f"Invalid duration '{duration}'.")
+    total_time = 0
+    for number, suffix in re.findall(r'(\d+) *([smhd]?)', str(duration)):
+        total_time += int(number) * units.get(suffix, 1)
+    return total_time
 
 
 @overload
@@ -2296,6 +2525,15 @@ def public_git_url(url: str) -> str:
     authentication. For now just cover the most common services.
     """
 
+    # Gitlab on private namepace is synced to pkgs.devel.redhat.com
+    # old: https://gitlab.com/redhat/rhel/tests/bash
+    # old: git@gitlab.com:redhat/rhel/tests/bash
+    # new: git://pkgs.devel.redhat.com/tests/bash
+    matched = re.match(r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)', url)
+    if matched:
+        project = matched.group(1)
+        return f'git://pkgs.devel.redhat.com{project}'
+
     # GitHub, GitLab
     # old: git@github.com:teemtee/tmt.git
     # new: https://github.com/teemtee/tmt.git
@@ -2359,43 +2597,49 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
 
 
 @lru_cache(maxsize=None)
-def fmf_id(name: str, fmf_root: Path, always_get_ref: bool = False) -> 'tmt.base.FmfId':
+def fmf_id(
+        *,
+        name: str,
+        fmf_root: Path,
+        always_get_ref: bool = False,
+        logger: tmt.log.Logger) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
-    def run(command: str) -> str:
+    def run(command: Command) -> str:
         """ Run command, return output """
-        cwd = fmf_root
-        result = subprocess.run(
-            command.split(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            cwd=cwd)
-        return result.stdout.strip().decode("utf-8")
+        try:
+            result = command.run(cwd=fmf_root, logger=logger)
+            if result.stdout is None:
+                return ""
+            return result.stdout.strip()
+        except RunError:
+            # Always return an empty string in case 'git' command is run in a non-git repo
+            return ""
 
     from tmt.base import FmfId
 
     fmf_id = FmfId(name=name)
 
     # Prepare url (for now handle just the most common schemas)
-    branch = run("git rev-parse --abbrev-ref --symbolic-full-name @{u}")
+    branch = run(Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"))
     try:
         remote_name = branch[:branch.index('/')]
     except ValueError:
         remote_name = 'origin'
-    remote = run(f"git config --get remote.{remote_name}.url")
+    remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
     fmf_id.url = public_git_url(remote) if remote else None
 
     # Construct path (if different from git root)
-    git_root = Path(run('git rev-parse --show-toplevel'))
+    git_root = Path(run(Command("git", "rev-parse", "--show-toplevel")))
     if git_root.resolve() != fmf_root.resolve():
         fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
 
     # Get the ref (skip for the default)
-    def_branch = default_branch(git_root)
+    def_branch = default_branch(repository=git_root, logger=logger)
     if def_branch is None:
         fmf_id.ref = None
     else:
-        ref = run('git rev-parse --abbrev-ref HEAD')
+        ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
         if ref != def_branch or always_get_ref:
             fmf_id.ref = ref
         else:
@@ -2428,14 +2672,12 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-# ignore[misc]: the package *does* exist, and Retry class as well, it's
-# somehow opaque to mypy.
-class RetryStrategy(requests.packages.urllib3.util.retry.Retry):  # type: ignore[misc]
+class RetryStrategy(urllib3.util.retry.Retry):
     def increment(
             self,
             *args: Any,
             **kwargs: Any
-            ) -> requests.packages.urllib3.util.retry.Retry:
+            ) -> urllib3.util.retry.Retry:
         error = cast(Optional[Exception], kwargs.get('error', None))
 
         # Detect a subset of exception we do not want to follow with a retry.
@@ -2532,21 +2774,48 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def default_branch(repository: Path, remote: str = 'origin') -> Optional[str]:
+def default_branch(
+        *,
+        repository: Path,
+        remote: str = 'origin',
+        logger: tmt.log.Logger) -> Optional[str]:
     """ Detect default branch from given local git repository """
+    # Make sure '.git' is present and it is a file or a directory
+    dot_git = repository / '.git'
+    if not dot_git.exists():
+        return None
+    if not dot_git.is_file() and not dot_git.is_dir():
+        return None
+
+    # Detect the original repository path if worktree is provided
+    if dot_git.is_file():
+        try:
+            result = Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir").run(
+                cwd=repository,
+                logger=logger)
+        except RunError:
+            return None
+        if result.stdout is None:
+            return None
+        repository = Path(result.stdout.strip().replace("/.git", ""))
+
     # Make sure the '.git/refs/remotes/{remote}' directory is present
     git_remotes_dir = repository / f'.git/refs/remotes/{remote}'
     if not git_remotes_dir.exists():
         return None
 
-    head = repository / f'.git/refs/remotes/{remote}/HEAD'
     # Make sure the HEAD reference is available
+    head = git_remotes_dir / 'HEAD'
     if not head.exists():
-        subprocess.run(
-            f'git remote set-head {remote} --auto'.split(), cwd=repository)
+        try:
+            Command('git', 'remote', 'set-head', f'{remote}', '--auto').run(
+                cwd=repository,
+                logger=logger)
+        except BaseException:
+            return None
+
     # The ref format is 'ref: refs/remotes/origin/main'
-    with open(head) as ref:
-        return ref.read().strip().split('/')[-1]
+    return head.read_text().strip().split('/')[-1]
 
 
 def parse_dotenv(content: str) -> EnvironmentType:
@@ -3152,7 +3421,9 @@ class DistGitHandler:
 
     usage_name: str  # Name to use for dist-git-type
     re_source: Pattern[str]
-    re_ignore_extensions: Pattern[str] = re.compile(r'\.(sign|asc|key)$')
+    # https://www.gnu.org/software/tar/manual/tar.html#auto_002dcompress
+    re_supported_extensions: Pattern[str] = re.compile(
+        r'\.((tar\.(gz|Z|bz2|lz|lzma|lzo|xz|zst))|tgz|taz|taZ|tz2|tbz2|tbz|tlz|tzst)$')
     lookaside_server: str
     remote_substring: Pattern[str]
 
@@ -3513,7 +3784,7 @@ def load_schema_store() -> SchemaStore:
     return store
 
 
-def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
+def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Logger) -> fmf.Tree:
     """
     Apply the minimal possible normalization steps to nodes before validating them with schemas.
 
@@ -3579,7 +3850,10 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
         step_module_name = f'tmt.steps.{step_name}'
         step_class_name = step_name.capitalize()
 
-        step_class = import_member(step_module_name, step_class_name)
+        step_class = import_member(
+            module_name=step_module_name,
+            member_name=step_class_name,
+            logger=logger)
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(
@@ -3621,10 +3895,12 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str) -> fmf.Tree:
 
 
 def validate_fmf_node(
-        node: fmf.Tree, schema_name: str) -> List[Tuple[jsonschema.ValidationError, str]]:
+        node: fmf.Tree,
+        schema_name: str,
+        logger: tmt.log.Logger) -> List[Tuple[jsonschema.ValidationError, str]]:
     """ Validate a given fmf node """
 
-    node = _prenormalize_fmf_node(node, schema_name)
+    node = _prenormalize_fmf_node(node, schema_name, logger)
 
     result = node.validate(load_schema(Path(schema_name)), schema_store=load_schema_store())
 
@@ -3766,7 +4042,7 @@ class ValidateFmfMixin(_CommonBase):
         """ Validate a given fmf node """
 
         errors = validate_fmf_node(
-            node, f'{self.__class__.__name__.lower()}.yaml')
+            node, f'{self.__class__.__name__.lower()}.yaml', logger)
 
         if errors:
             if raise_on_validation_error:
@@ -3838,17 +4114,37 @@ def dataclass_normalize_field(
         logger.debug(
             'field normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
-            level=4)
+            level=4,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         with_getattr = getattr(container, keyname, None)
         with_dict = container.__dict__.get(keyname, None)
 
-        logger.debug('value', str(value), level=4, shift=1)
-        logger.debug('current value (getattr)', str(with_getattr), level=4, shift=1)
-        logger.debug('current value (__dict__)', str(with_dict), level=4, shift=1)
+        logger.debug(
+            'value',
+            str(value),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (getattr)',
+            str(with_getattr),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug(
+            'current value (__dict__)',
+            str(with_dict),
+            level=4,
+            shift=1,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         if value != with_getattr or with_getattr != with_dict:
-            logger.debug('known values do not match', level=4, shift=2)
+            logger.debug(
+                'known values do not match',
+                level=4,
+                shift=2,
+                topic=tmt.log.Topic.KEY_NORMALIZATION)
 
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause re-use of mutable values by other instances.
@@ -4099,8 +4395,16 @@ class NormalizeKeysMixin(_CommonBase):
 
         LOG_SHIFT, LOG_LEVEL = 2, 4
 
-        debug_intro = functools.partial(logger.debug, shift=LOG_SHIFT - 1, level=LOG_LEVEL)
-        debug = functools.partial(logger.debug, shift=LOG_SHIFT, level=LOG_LEVEL)
+        debug_intro = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT - 1,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        debug = functools.partial(
+            logger.debug,
+            shift=LOG_SHIFT,
+            level=LOG_LEVEL,
+            topic=tmt.log.Topic.KEY_NORMALIZATION)
 
         debug_intro('key source')
         for k, v in key_source.items():
@@ -4192,6 +4496,12 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
 FieldCLIOption = Union[str, Sequence[str]]
 
 
+class Deprecated(NamedTuple):
+    """ Version information and hint for obsolete options """
+    since: str
+    hint: Optional[str] = None
+
+
 @overload
 def field(
         *,
@@ -4202,6 +4512,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization - not needed, the field is a boolean
         # flag.
@@ -4223,6 +4534,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4243,6 +4555,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4263,6 +4576,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        deprecated: Optional[Deprecated] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4290,10 +4604,17 @@ def field(
     :param choices: if provided, the command-line option would accept only
         the listed input values.
         Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
+    :param multiple: accept multiple arguments of the same name.
+        Passed directly to :py:func:`click.option`.
     :param metavar: how the input value is represented in the help page.
         Passed directly to :py:func:`click.option`.
-    :param help: the help string for the command-line option.
-        Passed directly to :py:func:`click.option`.
+    :param deprecated: mark the option as deprecated
+        Provide an instance of Deprecated() with version in which the
+        option was obsoleted and an optional hint with the recommended
+        alternative. A warning message will be added to the option help.
+    :param help: the help string for the command-line option. Multiline strings
+        can be used, :py:func:`textwrap.dedent` is applied before passing
+        ``help`` to :py:func:`click.option`.
     :param normalize: a callback for normalizing the input value. Consumed by
         :py:class:`NormalizeKeysMixin`.
     :param serialize: a callback for custom serialization of the field value.
@@ -4309,6 +4630,19 @@ def field(
 
     if option:
         assert is_flag is False or isinstance(default, bool)
+
+        if help:
+            help = textwrap.dedent(help)
+
+        # Add a deprecation warning for obsoleted options
+        if deprecated:
+            warning = f"The option is deprecated since {deprecated.since}."
+            if not help:
+                help = warning
+            else:
+                help += " " + warning
+            if deprecated.hint:
+                help += " " + deprecated.hint
 
         metadata.option_args = (option,) if isinstance(option, str) else option
         metadata.option_kwargs = {
@@ -4374,7 +4708,7 @@ def render_template_file(
     try:
         template = environment.from_string(template_filepath.read_text())
 
-        return cast(str, template.render(**variables).strip())
+        return template.render(**variables).strip()
 
     except jinja2.exceptions.TemplateSyntaxError as exc:
         raise GeneralError(
@@ -4382,3 +4716,14 @@ def render_template_file(
 
     except jinja2.exceptions.TemplateError as exc:
         raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
+
+
+@lru_cache(maxsize=None)
+def is_selinux_supported() -> bool:
+    """
+    Returns ``true`` if SELinux filesystem is supported by the kernel, ``false`` otherwise.
+
+    For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
+    """
+    with open('/proc/filesystems', 'r') as file:
+        return any('selinuxfs' in line for line in file)

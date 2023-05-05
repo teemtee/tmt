@@ -147,6 +147,18 @@ def create_polarion_case(summary: str, project_id: str, path: Path) -> PolarionT
     return testcase
 
 
+def add_hyperlink(polarion_case: PolarionTestCase, link: str, role: str = 'testscript') -> None:
+    """ Add new hyperlink to a Polarion case and check/remove duplicates """
+    existing_hyperlinks = [link.uri for link in polarion_case.hyperlinks if link.role == role]
+    if link not in existing_hyperlinks:
+        polarion_case.add_hyperlink(link, role)
+    else:
+        for hyperlink in set(existing_hyperlinks):
+            for _ in range(existing_hyperlinks.count(hyperlink) - 1):
+                # Remove all but one occurence of the same hyperlink
+                polarion_case.remove_hyperlink(hyperlink)
+
+
 def export_to_polarion(test: tmt.base.Test) -> None:
     """ Export fmf metadata to a Polarion test case """
     import tmt.export.nitrate
@@ -159,11 +171,12 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     dry_mode = test.opt('dry')
     duplicate = test.opt('duplicate')
     link_polarion = test.opt('link_polarion')
+    append_summary = test.opt('append-summary')
 
     polarion_case = None
     if not duplicate:
         polarion_case = get_polarion_case(test.node, project_id)
-    summary = tmt.export.nitrate.prepare_extra_summary(test)
+    summary = tmt.export.nitrate.prepare_extra_summary(test, append_summary)
     assert test.path is not None  # narrow type
     test_path = test.node.root / test.path.unrooted()
 
@@ -214,13 +227,20 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     assert test.fmf_id.url is not None  # narrow type
     if test.node.get('extra-task'):
         automation_script = test.node.get('extra-task')
-        automation_script += ' ' + test.fmf_id.url
+        automation_script += f'<br/>{test.fmf_id.url}'
     else:
         automation_script = test.fmf_id.url
     if not dry_mode:
         polarion_case.caseautomation = 'automated'
+        if test.link:
+            for link in test.link.get(relation='test-script'):
+                if isinstance(link.target, str):
+                    automation_script += f'<br/>{link.target}'
+                    add_hyperlink(polarion_case, link.target)
         polarion_case.automation_script = automation_script
-        polarion_case.add_hyperlink(test.web_link(), 'testscript')
+        web_link = test.web_link()
+        if web_link:
+            add_hyperlink(polarion_case, web_link)
     echo(style('script: ', fg='green') + automation_script)
 
     # Components

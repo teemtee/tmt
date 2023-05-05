@@ -25,7 +25,8 @@ __pkgdata__ = {
         'schemas/*.yaml',
         'schemas/*/*.yaml',
         'steps/execute/scripts/*',
-        'steps/report/html/*'
+        'steps/report/html/*',
+        'steps/provision/mrack/*',
         ]
     }
 __pkgdir__: Dict[str, str] = {}
@@ -50,6 +51,7 @@ install_requires = [
     'fmf>=1.2.1',
     'click',
     'requests',
+    'urllib3',
     'ruamel.yaml',
     'jinja2',
     ]
@@ -76,9 +78,12 @@ extras_require = {
         'requre',
         'pre-commit',
         'mypy',
-        'yq'
+        'yq==3.1.1'  # frozen to be able to install on el8
         ],
-    'provision': ['testcloud>=0.8.2'],
+    'provision': [
+        'testcloud>=0.9.2',
+        'mrack>=1.12.1',
+        ],
     'convert': [
         'nitrate',
         'markdown',

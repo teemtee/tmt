@@ -84,6 +84,7 @@ runcmd:
   systemctl restart systemd-networkd; fi']
   - [sh, -c, 'if cat /etc/os-release |
   grep -q platform:el8; then systemctl restart sshd; fi']
+  - [sh, -c, 'dhclient || :']
 """
 
 COREOS_DATA = """variant: fcos
@@ -139,20 +140,18 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
       <driver name='qemu' type='qcow2' cache='unsafe'/>
       <source file="{{ disk }}"/>
       <target dev='vda' bus='virtio'/>
-      {{ boot_drive_address }}
     </disk>
     <disk type='file' device='disk'>
       <driver name='qemu' type='raw'/>
       <source file="{{ seed }}"/>
       <target dev='vdb' bus='virtio'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
     </disk>
+    {{ additional_disks }}
     <interface type='{{ network_type }}'>
       <mac address="{{ mac_address }}"/>
       {{ network_source }}
       {{ ip_setup }}
       <model type='virtio'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </interface>
     <serial type='pty'>
       <target port='0'/>
@@ -161,13 +160,14 @@ DOMAIN_TEMPLATE = """<domain type='{{ virt_type }}' xmlns:qemu='http://libvirt.o
       <target type='serial' port='0'/>
     </console>
     <input type="keyboard" bus="virtio"/>
+    {{ tpm }}
     <rng model='virtio'>
       <backend model='random'>/dev/urandom</backend>
     </rng>
   </devices>
   {{ qemu_args }}
 </domain>
-"""  # noqa: E501
+"""
 
 # VM defaults
 DEFAULT_BOOT_TIMEOUT = 120     # seconds
@@ -199,6 +199,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
     image_url: Optional[str] = None
     instance_name: Optional[str] = None
+    list_local_images: bool = False
 
 
 @dataclasses.dataclass
@@ -285,55 +286,11 @@ class GuestTestcloud(tmt.GuestSsh):
         if name_as_path.is_absolute() and name_as_path.is_file():
             return f'file://{name}'
 
-        name = name.lower().strip()
         url: Optional[str] = None
-
-        # Map fedora aliases (e.g. rawhide, fedora, fedora-32, f-32, f32)
-        matched_fedora = re.match(r'^f(edora)?-?(\d+)$', name)
-        # Map fedora coreos aliases (e.g. stable, next or testing)
-        matched_fedora_coreos = re.match(r'^f(edora-coreos)?-?(stable|testing|next)$', name)
-        # Map centos aliases (e.g. centos:X, centos, centos-stream:X)
-        matched_centos = [re.match(r'^c(entos)?-?(\d+)$', name),
-                          re.match(r'^c(entos-stream)?-?(\d+)$', name)]
-        matched_ubuntu = re.match(r'^u(buntu)?-?(\w+)$', name)
-        matched_debian = re.match(r'^d(ebian)?-?(\w+)$', name)
-
         assert testcloud is not None
-        # Plain name match means we want the latest release
-        try:
-            if name == 'fedora':
-                url = testcloud.util.get_fedora_image_url("latest", self.arch)
-            elif name == 'fedora-coreos':
-                url = testcloud.util.get_fedora_image_url("stable", self.arch)
-            elif name == 'centos':
-                url = testcloud.util.get_centos_image_url("latest", stream=False, arch=self.arch)
-            elif name == 'centos-stream':
-                url = testcloud.util.get_centos_image_url("latest", stream=True, arch=self.arch)
-            elif name == 'ubuntu':
-                url = testcloud.util.get_ubuntu_image_url("latest", self.arch)
-            elif name == 'debian':
-                url = testcloud.util.get_debian_image_url("latest", self.arch)
 
-            elif matched_fedora:
-                url = testcloud.util.get_fedora_image_url(
-                    matched_fedora.group(2), self.arch)
-            elif matched_fedora_coreos:
-                url = testcloud.util.get_fedora_image_url(
-                    matched_fedora_coreos.group(2), self.arch)
-            elif matched_centos[0]:
-                url = testcloud.util.get_centos_image_url(
-                    matched_centos[0].group(2), stream=False, arch=self.arch)
-            elif matched_centos[1]:
-                url = testcloud.util.get_centos_image_url(
-                    matched_centos[1].group(2), stream=True, arch=self.arch)
-            elif matched_ubuntu:
-                url = testcloud.util.get_ubuntu_image_url(
-                    matched_ubuntu.group(2), self.arch)
-            elif matched_debian:
-                url = testcloud.util.get_debian_image_url(
-                    matched_debian.group(2), self.arch)
-            elif 'rawhide' in name:
-                url = testcloud.util.get_fedora_image_url("rawhide", self.arch)
+        try:
+            url = testcloud.util.get_image_url(name.lower().strip(), self.arch)
         except Exception as error:
             raise ProvisionError("Could not get image url.") from error
 
@@ -397,6 +354,8 @@ class GuestTestcloud(tmt.GuestSsh):
         # Get configuration
         assert testcloud is not None
         self.config = testcloud.config.get_config()
+
+        self.debug(f"testcloud version: {testcloud.__version__}")
 
         # Make sure download progress is disabled unless in debug mode,
         # so it does not spoil our logging
@@ -582,14 +541,19 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             memory: 2048
 
     As the image use 'fedora' for the latest released Fedora compose,
-    'rawhide' for the latest Rawhide compose, short aliases such as
+    'fedora-rawhide' for the latest Rawhide compose, short aliases such as
     'fedora-32', 'f-32' or 'f32' for specific release or a full url to
     the qcow2 image for example from:
 
         https://kojipkgs.fedoraproject.org/compose/
 
-    Short names are also provided for 'centos', 'centos-stream',
-    'debian' and 'ubuntu' (e.g. 'centos-8' or 'c8').
+    Short names are also provided for 'centos', 'centos-stream', 'alma',
+    'rocky', 'oracle', 'debian' and 'ubuntu' (e.g. 'centos-8' or 'c8').
+
+    Note that the non-rpm distros are not fully supported yet in tmt as
+    the package installation is performed solely using dnf/yum and rpm.
+    But you should be able the login to the provisioned guest and start
+    experimenting. Full support is coming in the future :)
 
     Supported Fedora CoreOS images are:
 
@@ -640,11 +604,21 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             click.option(
                 '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
                 help='Existing private key for login into the guest system.'),
+            click.option(
+                '--list-local-images', is_flag=True,
+                help="List locally available images."),
             ] + super().options(how)
 
     def go(self) -> None:
         """ Provision the testcloud instance """
         super().go()
+
+        if self.get('list-local-images'):
+            self._print_local_images()
+            # Clean up the run workdir and exit
+            if self.step.plan.my_run:
+                self.step.plan.my_run._workdir_cleanup()
+            raise SystemExit(0)
 
         # Give info about provided data
         data = TestcloudGuestData(**{
@@ -692,6 +666,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     def guest(self) -> Optional[tmt.Guest]:
         """ Return the provisioned guest """
         return self._guest
+
+    def _print_local_images(self) -> None:
+        """ Print images which are already cached """
+        self.info("Locally available images")
+        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+            self.info(filename.name, shift=1, color='yellow')
+            click.echo(f"{TESTCLOUD_IMAGES / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:

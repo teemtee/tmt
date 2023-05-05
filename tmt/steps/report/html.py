@@ -31,6 +31,15 @@ class ReportHtmlData(tmt.steps.report.ReportStepData):
         help='Make paths absolute rather than relative to working directory.'
         )
 
+    display_guest: str = field(
+        default='auto',
+        option='--display-guest',
+        metavar='auto|always|never',
+        choices=['auto', 'always', 'never'],
+        help="When to display full guest name in report:"
+             " when more than a single guest was involved (default), always, or never."
+        )
+
 
 @tmt.steps.provides_method('html')
 class ReportHtml(tmt.steps.report.ReportPlugin):
@@ -46,7 +55,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
 
     _data_class = ReportHtmlData
 
-    def prune(self) -> None:
+    def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated html report """
         pass
 
@@ -70,6 +79,20 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         with open(HTML_TEMPLATE_PATH) as file:
             template = environment.from_string(file.read())
 
+        if self.get('display-guest') == 'always':
+            display_guest = True
+
+        elif self.get('display-guest') == 'never':
+            display_guest = False
+
+        else:
+            seen_guests = {
+                result.guest.name
+                for result in self.step.plan.execute.results() if result.guest.name is not None
+                }
+
+            display_guest = len(seen_guests) > 1
+
         # Write the report
         filename = Path('index.html')
         self.write(
@@ -77,7 +100,8 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
             data=template.render(
                 results=self.step.plan.execute.results(),
                 base_dir=self.step.plan.execute.workdir,
-                plan=self.step.plan))
+                plan=self.step.plan,
+                display_guest=display_guest))
 
         # Nothing more to do in dry mode
         if self.opt('dry'):

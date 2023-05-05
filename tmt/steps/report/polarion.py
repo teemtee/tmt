@@ -38,11 +38,74 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         help='Use specific Polarion project ID.'
         )
 
-    testrun_title: Optional[str] = field(
+    title: Optional[str] = field(
         default=None,
-        option='--testrun-title',
+        option='--title',
         metavar='TITLE',
-        help='Use specific TestRun title.'
+        help='Use specific test run title.'
+        )
+
+    planned_in: Optional[str] = field(
+        default=None,
+        option='--planned-in',
+        metavar='PLANNEDIN',
+        help='Select a specific release to mark this test run with'
+        )
+
+    assignee: Optional[str] = field(
+        default=None,
+        option='--assignee',
+        metavar='ASSIGNEE',
+        help='Who is responsible for this test run'
+        )
+
+    pool_team: Optional[str] = field(
+        default=None,
+        option='--pool-team',
+        metavar='POOLTEAM',
+        help='Which subsystem is this test run relevant for'
+        )
+
+    arch: Optional[str] = field(
+        default=None,
+        option='--arch',
+        metavar='ARCH',
+        help='Which architecture was this run executed on'
+        )
+
+    platform: Optional[str] = field(
+        default=None,
+        option='--platform',
+        metavar='PLATFORM',
+        help='Which platform was this run executed on'
+        )
+
+    build: Optional[str] = field(
+        default=None,
+        option='--build',
+        metavar='BUILD',
+        help='Which build was this run executed on'
+        )
+
+    sample_image: Optional[str] = field(
+        default=None,
+        option='--sample-image',
+        metavar='SAMPLEIMAGE',
+        help='Which sample image was this run executed on'
+        )
+
+    logs: Optional[str] = field(
+        default=None,
+        option='--logs',
+        metavar='LOGLOCATION',
+        help='Location of the logs for this test run'
+        )
+
+    composeid: Optional[str] = field(
+        default=None,
+        option='--composeid',
+        metavar='COMPOSEID',
+        help='Compose ID of image used for this run'
         )
 
 
@@ -54,6 +117,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
     _data_class = ReportPolarionData
 
+    def prune(self, logger: tmt.log.Logger) -> None:
+        """ Do not prune generated xunit report """
+        pass
+
     def go(self) -> None:
         """ Go through executed tests and report into Polarion """
         super().go()
@@ -64,12 +131,15 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         assert PolarionWorkItem
 
         title = self.get(
-            'testrun_title',
+            'title',
             self.step.plan.name.rsplit('/', 1)[1] +
             datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
         title = title.replace('-', '_')
         project_id = self.get('project-id')
         upload = self.get('upload')
+        other_testrun_fields = [
+            'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build', 'sample_image',
+            'logs', 'composeid']
 
         junit_suite = make_junit_xml(self)
         xml_tree = ET.fromstring(junit_suite.to_xml_string([junit_suite]))
@@ -77,8 +147,12 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         properties = {
             'polarion-project-id': project_id,
             'polarion-user-id': PolarionWorkItem._session.user_id,
-            'polarion-testrun-id': title,
+            'polarion-testrun-title': title,
             'polarion-project-span-ids': project_id}
+        for tr_field in other_testrun_fields:
+            param = self.get(tr_field)
+            if param:
+                properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
         testsuites_properties = ET.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
             ET.SubElement(testsuites_properties, 'property', attrib={

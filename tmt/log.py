@@ -24,12 +24,13 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import enum
 import itertools
 import logging
 import logging.handlers
-import os.path
+import os
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Tuple, cast
 
 import click
 
@@ -50,6 +51,14 @@ INDENT = 4
 
 DEFAULT_VERBOSITY_LEVEL = 0
 DEFAULT_DEBUG_LEVEL = 0
+
+
+class Topic(enum.Enum):
+    KEY_NORMALIZATION = 'key-normalization'
+
+
+DEFAULT_TOPICS: Set[Topic] = set()
+
 
 LABEL_FORMAT = '[{label}]'
 
@@ -128,12 +137,25 @@ def decide_colorization(no_color: bool, force_color: bool) -> Tuple[bool, bool]:
     return apply_colors_output, apply_colors_logging
 
 
+def render_labels(labels: List[str]) -> str:
+    if not labels:
+        return ''
+
+    return ''.join(
+        # TODO: color here is questionable - it will be removed, but I'd rather not
+        # add it at first place, and it should be configurable.
+        click.style(LABEL_FORMAT.format(label=label), fg='cyan')
+        for label in labels
+        )
+
+
 def indent(
         key: str,
         value: Optional[str] = None,
         color: Optional[str] = None,
         level: int = 0,
-        labels: Optional[List[str]] = None) -> str:
+        labels: Optional[List[str]] = None,
+        labels_padding: int = 0) -> str:
     """
     Indent a key/value message.
 
@@ -148,9 +170,9 @@ def indent(
                   by :py:data:`INDENT` spaces.
     :param labels: optional list of strings to prepend to each message.
         Each item would be wrapped within square brackets (``[foo] message...``).
+    :param labels_padding: if set, rendered labels would be padded to this
+        length.
     """
-
-    labels = labels or []
 
     indent = ' ' * INDENT * level
 
@@ -160,12 +182,7 @@ def indent(
 
     # Prepare prefix if labels provided
     if labels:
-        prefix = ''.join(
-            # TODO: color here is questionable - it will be removed, but I'd rather not
-            # add it at first place, and it should be configurable.
-            click.style(LABEL_FORMAT.format(label=label), fg='cyan')
-            for label in labels
-            ) + ' '
+        prefix = render_labels(labels).ljust(labels_padding) + ' '
     else:
         prefix = ''
 
@@ -202,6 +219,7 @@ class LogRecordDetails(TypedDict, total=False):
     shift: int
 
     logger_labels: List[str]
+    logger_labels_padding: int
 
     logger_verbosity_level: int
     message_verbosity_level: Optional[int]
@@ -211,6 +229,9 @@ class LogRecordDetails(TypedDict, total=False):
 
     logger_quiet: bool
     ignore_quietness: bool
+
+    logger_topics: Set[Topic]
+    message_topic: Optional[Topic]
 
 
 class LogfileHandler(logging.FileHandler):
@@ -350,6 +371,27 @@ class QuietnessFilter(logging.Filter):
         return False
 
 
+class TopicFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno not in (logging.DEBUG, logging.INFO):
+            return True
+
+        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+
+        if details is None:
+            return False
+
+        message_topic = details.get('message_topic', None)
+
+        if message_topic is None:
+            return True
+
+        if message_topic in details['logger_topics']:
+            return True
+
+        return False
+
+
 class Logger:
     """
     A logging entry point, representing a certain level of verbosity and handlers.
@@ -363,9 +405,11 @@ class Logger:
             actual_logger: logging.Logger,
             base_shift: int = 0,
             labels: Optional[List[str]] = None,
+            labels_padding: int = 0,
             verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
             debug_level: int = DEFAULT_DEBUG_LEVEL,
-            quiet: bool = False
+            quiet: bool = False,
+            topics: Optional[Set[Topic]] = None
             ) -> None:
         """
         Create a ``Logger`` instance with given verbosity levels.
@@ -373,6 +417,8 @@ class Logger:
         :param actual_logger: a :py:class:`logging.Logger` instance, the _raw logger_
             to use for logging.
         :param base_shift: shift applied to all messages processed by this logger.
+        :param labels_padding: if set, rendered labels would be padded to this
+            length.
         :param verbosity_level: desired verbosity level, usually derived from ``-v``
             command-line option.
         :param debug_level: desired debugging level, usually derived from ``-d``
@@ -389,17 +435,25 @@ class Logger:
         self._child_id_counter = itertools.count()
 
         self.labels = labels or []
+        self.labels_padding = labels_padding
 
         self.verbosity_level = verbosity_level
         self.debug_level = debug_level
         self.quiet = quiet
+        self.topics = topics or DEFAULT_TOPICS
 
     def __repr__(self) -> str:
         return '<Logger:' \
             f' name={self._logger.name}' \
             f' verbosity={self.verbosity_level}' \
             f' debug={self.debug_level}' \
-            f' quiet={self.quiet}>'
+            f' quiet={self.quiet}' \
+            f' topics={self.topics}>'
+
+    @property
+    def labels_span(self) -> int:
+        """ Length of rendered labels """
+        return len(render_labels(self.labels))
 
     @staticmethod
     def _normalize_logger(logger: logging.Logger) -> logging.Logger:
@@ -423,9 +477,12 @@ class Logger:
         return Logger(
             self._logger,
             base_shift=self._base_shift,
+            labels=self.labels,
+            labels_padding=self.labels_padding,
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
-            quiet=self.quiet
+            quiet=self.quiet,
+            topics=self.topics
             )
 
     def descend(
@@ -452,9 +509,12 @@ class Logger:
         return Logger(
             actual_logger,
             base_shift=self._base_shift + extra_shift,
+            labels=self.labels,
+            labels_padding=self.labels_padding,
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
-            quiet=self.quiet
+            quiet=self.quiet,
+            topics=self.topics
             )
 
     def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
@@ -463,6 +523,8 @@ class Logger:
         handler = LogfileHandler(filepath)
 
         handler.setFormatter(LogfileFormatter())
+
+        handler.addFilter(TopicFilter())
 
         self._logger.addHandler(handler)
 
@@ -476,6 +538,7 @@ class Logger:
         handler.addFilter(VerbosityLevelFilter())
         handler.addFilter(DebugLevelFilter())
         handler.addFilter(QuietnessFilter())
+        handler.addFilter(TopicFilter())
 
         self._logger.addHandler(handler)
 
@@ -519,6 +582,19 @@ class Logger:
         if quietness_level is True:
             self.quiet = quietness_level
 
+        topic_specs = kwargs.get('log_topic', [])
+
+        for topic_spec in topic_specs:
+            try:
+                self.topics.add(Topic(topic_spec))
+
+            except Exception:
+                import tmt.utils
+
+                raise tmt.utils.GeneralError(
+                    f'Logging topic "{topic_spec}" is invalid.'
+                    f" Possible choices are {', '.join(topic.value for topic in Topic)}")
+
         return self
 
     @classmethod
@@ -560,10 +636,12 @@ class Logger:
         """
 
         details['logger_labels'] = self.labels
+        details['logger_labels_padding'] = self.labels_padding
 
         details['logger_verbosity_level'] = self.verbosity_level
         details['logger_debug_level'] = self.debug_level
         details['logger_quiet'] = self.quiet
+        details['logger_topics'] = self.topics
 
         details['shift'] = details.get('shift', 0) + self._base_shift
 
@@ -574,7 +652,8 @@ class Logger:
                 # Always apply colors - message can be decolorized later.
                 color=details.get('color', None),
                 level=details.get('shift', 0),
-                labels=self.labels)
+                labels=self.labels,
+                labels_padding=self.labels_padding)
 
         self._logger._log(level, message, tuple(), extra={'details': details})
 
@@ -603,7 +682,15 @@ class Logger:
             color: Optional[str] = None,
             shift: int = 0
             ) -> None:
-        self._log(logging.INFO, {'key': key, 'value': value, 'color': color, 'shift': shift})
+        self._log(
+            logging.INFO,
+            {
+                'key': key,
+                'value': value,
+                'color': color,
+                'shift': shift
+                }
+            )
 
     def verbose(
             self,
@@ -612,6 +699,7 @@ class Logger:
             color: Optional[str] = None,
             shift: int = 0,
             level: int = 1,
+            topic: Optional[Topic] = None
             ) -> None:
         self._log(
             logging.INFO,
@@ -620,7 +708,8 @@ class Logger:
                 'value': value,
                 'color': color,
                 'shift': shift,
-                'message_verbosity_level': level
+                'message_verbosity_level': level,
+                'message_topic': topic
                 }
             )
 
@@ -630,7 +719,8 @@ class Logger:
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0,
-            level: int = 1
+            level: int = 1,
+            topic: Optional[Topic] = None
             ) -> None:
         self._log(
             logging.DEBUG,
@@ -639,7 +729,8 @@ class Logger:
                 'value': value,
                 'color': color,
                 'shift': shift,
-                'message_debug_level': level
+                'message_debug_level': level,
+                'message_topic': topic
                 }
             )
 

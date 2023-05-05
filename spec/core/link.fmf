@@ -75,6 +75,11 @@ description: |
         This object relates to the provided target.
         This is the **default** relation.
 
+    test-script
+        Web link to the location of the testing script, intended
+        for cases where the tests are stored in a different
+        directory or repository than the metadata files.
+
     An optional key ``note`` can be used to add an arbitrary
     comment describing the relation.
 

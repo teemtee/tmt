@@ -1,0 +1,41 @@
+---
+
+#
+# JSON Schema definition for `mrack` provision plugin
+#
+
+$id: /schemas/provision/mrack
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - beaker
+
+  name:
+    type: string
+
+  arch:
+    $ref: "/schemas/common#/definitions/arch"
+
+  image:
+    type: string
+
+  provision-timeout:
+    type: integer
+    minimum: 1
+
+  provision-tick:
+    type: integer
+    minimum: 1
+
+  hardware:
+    $ref: "/schemas/provision/hardware#/definitions/hardware"
+
+required:
+  - how

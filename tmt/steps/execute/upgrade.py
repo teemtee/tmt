@@ -222,17 +222,16 @@ class ExecuteUpgrade(ExecuteInternal):
         """ Silently run discover upgrade """
         # Make it quiet, we do not want any output from discover
         assert self._discover_upgrade is not None
-        assert self._discover_upgrade._context is not None
-        quiet = self._discover_upgrade._context.params['quiet']
+        quiet = self._discover_upgrade._cli_options['quiet']
         try:
-            self._discover_upgrade._context.params['quiet'] = True
+            self._discover_upgrade._cli_options['quiet'] = True
             # Discover normally uses also options from global Test class
             # (e.g. test -n foo). Ignore this when selecting upgrade tasks.
             tmt.base.Test.ignore_class_options = True
             self._discover_upgrade.wake()
             self._discover_upgrade.go()
         finally:
-            self._discover_upgrade._context.params['quiet'] = quiet
+            self._discover_upgrade._cli_options['quiet'] = quiet
             tmt.base.Test.ignore_class_options = False
 
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
@@ -272,12 +271,12 @@ class ExecuteUpgrade(ExecuteInternal):
                 # Create a fake discover from the data in the upgrade path
                 plan = self._get_plan(self._discover_upgrade.testdir)
                 data = self._prepare_remote_discover_data(plan)
-                # Unset `url` because we don't want discover step to perform clone.
-                # Instead, we want it to re-use existing, already cloned path.
-                # ignore[typeddict-item]: data is _RwStepData, we do not have more detailed type
-                # for raw step data of internal/upgrade plugins, it would be pretty verbose.
-                data['url'] = None  # type: ignore[typeddict-item]
-                data['path'] = self._discover_upgrade.testdir  # type: ignore[typeddict-item]
+                # Unset `url` because we don't want discover step to perform clone. Instead,
+                # we want it to re-use existing, already cloned path.
+                # ignore[typeddict-unknown-key]: data is _RwStepData, we do not have more detailed
+                # type for raw step data of internal/upgrade plugins, it would be pretty verbose.
+                data['url'] = None   # type: ignore[typeddict-unknown-key]
+                data['path'] = self._discover_upgrade.testdir  # type:ignore[typeddict-unknown-key]
                 # FIXME: cast() - https://github.com/teemtee/tmt/issues/1599
                 self._discover_upgrade = cast(DiscoverFmf, DiscoverPlugin.delegate(
                     self.step, raw_data=data))

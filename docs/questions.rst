@@ -30,6 +30,29 @@ __ https://tmt.readthedocs.io/en/latest/
 .. _libvirt:
 
 
+Using tmt outside of Fedora, CentOS and RHEL distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The tmt is packaged and tested only for these three flavors,
+however if one :ref:`installs<pip_install>` tmt from the PyPI it
+can be run also on other Linux distributions.
+
+The caveat is that installation of required packages depends on
+the usage of ``rpm``, ``yum`` or ``dnf``. When tmt is executed on
+the host none of these commands is necessary so tmt should work
+once ``pip install`` succeeds.
+
+On the other hand - when tmt is used to execute tests on
+provisioned guest it depends if the plan will try to install any
+packages (either by test :ref:`/spec/tests/require`,
+:ref:`/spec/tests/recommend` or using prepare
+:ref:`/spec/plans/prepare/install` plugin) it will fail as tmt
+currently doesn't work with other package management tools. This
+can be worked around by installing the test dependencies (as well
+as the ``rsync`` command) using :ref:`/spec/plans/prepare/ansible`
+or :ref:`/spec/plans/prepare/shell` prepare plugins.
+
+
 Virtualization Tips
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

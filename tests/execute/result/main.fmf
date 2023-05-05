@@ -4,3 +4,6 @@
 /custom:
     summary: Test custom results format provided in results.yaml
     test: ./custom.sh
+/repeated:
+    summary: Repeated test should provide multiple results
+    test: ./repeated.sh

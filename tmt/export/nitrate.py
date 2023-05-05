@@ -314,14 +314,14 @@ def add_to_nitrate_runs(
                     nitrate.CaseRun(testcase=nitrate_case, testrun=testrun)
 
 
-def prepare_extra_summary(test: 'tmt.Test') -> str:
+def prepare_extra_summary(test: 'tmt.Test', append_summary: bool) -> str:
     """ extra-summary for export --create test """
     assert test.fmf_id.url is not None  # narrow type
     remote_dirname = re.sub('.git$', '', os.path.basename(test.fmf_id.url))
     if not remote_dirname:
         raise ConvertError("Unable to find git remote url.")
     generated = f"{remote_dirname} {test.name}"
-    if test.summary:
+    if test.summary and append_summary:
         generated += f" - {test.summary}"
     # FIXME: cast() - no issue, type-less "dispatcher" method
     return cast(str, test.node.get('extra-summary', generated))
@@ -370,6 +370,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     link_bugzilla = test.opt('bugzilla')
     ignore_git_validation = test.opt('ignore_git_validation')
     dry_mode = test.opt('dry')
+    append_summary = test.opt('append-summary')
 
     if link_runs:
         general = True
@@ -404,7 +405,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
                     pass
             if not nitrate_case:
                 # Summary for TCMS case
-                extra_summary = prepare_extra_summary(test)
+                extra_summary = prepare_extra_summary(test, append_summary)
                 assert test.path is not None  # narrow type
                 category = get_category(test.node.root / test.path.unrooted())
                 if not dry_mode:
@@ -433,7 +434,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     try:
         summary = (test._metadata.get('extra-summary')
                    or test._metadata.get('extra-task')
-                   or prepare_extra_summary(test))
+                   or prepare_extra_summary(test, append_summary))
     except ConvertError:
         summary = test.name
     if not dry_mode:

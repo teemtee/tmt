@@ -25,5 +25,8 @@ properties:
   absolute-paths:
     type: boolean
 
+  display-guest:
+    type: boolean
+
 required:
   - how
