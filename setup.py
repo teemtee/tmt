@@ -87,7 +87,7 @@ extras_require = {
     'report-junit': ['junit_xml'],
     'report-polarion': ['junit_xml', 'pylero'],
     'export-polarion': ['pylero'],
-    'reportportal': ['reportportal-client>5.0.0']
+    'reportportal': ['reportportal-client==5.2.5']
     }
 extras_require['all'] = [
     dependency
