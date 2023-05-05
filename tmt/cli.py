@@ -2095,6 +2095,17 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     '-v', '--verbose', count=True, default=0,
     help='Variable passed to tmt main. See `tmt --help`')
 @click.option(
+    '-d', '--debug', count=True, default=0,
+    help='Variable passed to tmt main. See `tmt --help`')
+@click.option(
+    '--no-color', is_flag=True, default=False,
+    help='Variable passed to tmt main. See `tmt --help`'
+    )
+@click.option(
+    '--force-color', is_flag=True, default=False,
+    help='Variable passed to tmt main. See `tmt --help`'
+    )
+@click.option(
     '--version', is_flag=True,
     help="Variable passed to tmt main. See `tmt --help`")
 @click.option(
@@ -2105,7 +2116,10 @@ def pre_commit(
         context: Context,
         root: str,
         verbose: int,
+        debug: int,
         version: bool,
+        no_color: bool,
+        force_color: bool,
         lint_type: Optional[str]) -> None:
     """
     Cli wrapper of tmt lint for
@@ -2114,26 +2128,37 @@ def pre_commit(
     if version:
         main(['--version'])
 
+    # Create logger to reuse tmt.utils.Command utility
+    # apply_colors_output is not used because this is recreated and handled by main app instead
+    apply_colors_output, apply_colors_logging = tmt.log.decide_colorization(no_color, force_color)
+    logger = tmt.log.Logger.create()
+    logger.add_console_handler(apply_colors=apply_colors_logging)
+
     # Check that .fmf/version file is present for the specific root requested
-    git_root = subprocess.check_output(
-        args=[
-            'git',
-            'rev-parse',
-            '--show-toplevel'],
-        text=True).strip()
-    subprocess.check_call(
-        args=[
-            'git',
-            'ls-files',
-            '--error-unmatch',
-            f"{git_root}/{root}/.fmf/version"])
+    git_root = tmt.utils.Command('git', 'rev-parse', '--show-toplevel').\
+        run(cwd=None, logger=logger).stdout
+    if not git_root:
+        raise tmt.utils.GeneralError(
+            "git rev-parse did not produce a path")
+    git_root = git_root.strip()
+    tmt.utils.Command('git', 'ls-files', '--error-unmatch', f"{git_root}/{root}/.fmf/version").\
+        run(cwd=None, logger=logger)
 
     # Construct the arguments for main cli
     args = ['--root', f"{git_root}/{root}"]
     if verbose:
         args += ['-' + 'v' * verbose]
+    if debug:
+        args += ['-' + 'd' * debug]
+    if no_color:
+        args += ['--no-color']
+    if force_color:
+        args += ['--force-color']
+
+    # Pass test/plan/stories before lint
     if lint_type:
         args += [lint_type]
+    # Pass lint and default flags of the lint command
     args += ['lint', '--source']
     # Get everything else
     if '--source' in context.args:
