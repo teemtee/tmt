@@ -251,7 +251,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Execute the test, save the output and return code
         starttime = datetime.datetime.now(datetime.timezone.utc)
         try:
-            stdout, _ = guest.execute(
+            output = guest.execute(
                 remote_command,
                 cwd=workdir,
                 env=environment,
@@ -262,6 +262,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 test_session=True,
                 friendly_command=str(test.test))
             test.returncode = 0
+            stdout = output.stdout
         except tmt.utils.RunError as error:
             stdout = error.stdout
             test.returncode = error.returncode

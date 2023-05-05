@@ -347,9 +347,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
                 run_result = self.run(
                     Command("git", "rev-parse", "--show-toplevel"),
                     cwd=self.step.plan.my_run.tree.root,
-                    ignore_dry=True)[0]
-                assert run_result is not None
-                git_root = Path(run_result.strip('\n'))
+                    ignore_dry=True)
+                assert run_result.stdout is not None
+                git_root = Path(run_result.stdout.strip('\n'))
             except tmt.utils.RunError:
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type

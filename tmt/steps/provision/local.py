@@ -29,7 +29,7 @@ class GuestLocal(tmt.Guest):
     def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare localhost using ansible playbook """
         playbook = self._ansible_playbook_path(playbook)
-        stdout, _ = self.run(
+        output = self.run(
             Command(
                 'sudo', '-E',
                 'ansible-playbook',
@@ -39,7 +39,7 @@ class GuestLocal(tmt.Guest):
                 '-i', 'localhost,',
                 str(playbook)),
             env=self._prepare_environment())
-        self._ansible_summary(stdout)
+        self._ansible_summary(output.stdout)
 
     def execute(self,
                 command: Union[Command, ShellScript],

@@ -91,13 +91,13 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         Source tarball is discovered from the 'sources' file content.
         """
         if handler_name is None:
-            stdout, _ = self.run(
+            output = self.run(
                 Command("git", "config", "--get-regexp", '^remote\\..*.url'),
                 cwd=distgit_dir)
-            if stdout is None:
+            if output.stdout is None:
                 raise tmt.utils.GeneralError("Missing remote origin url.")
 
-            remotes = stdout.split('\n')
+            remotes = output.stdout.split('\n')
             handler = tmt.utils.get_distgit_handler(remotes=remotes)
         else:
             handler = tmt.utils.get_distgit_handler(usage_name=handler_name)

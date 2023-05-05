@@ -995,11 +995,11 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        stdout, _ = self.run(
+        output = self.run(
             ansible_command,
             cwd=parent.plan.worktree,
             env=self._prepare_environment())
-        self._ansible_summary(stdout)
+        self._ansible_summary(output.stdout)
 
     @property
     def is_ready(self) -> bool:

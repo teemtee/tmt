@@ -1,9 +1,10 @@
 """ Common options and the MethodCommand class """
 
 import contextlib
+import dataclasses
 import re
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, NamedTuple, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
 
 import click
 
@@ -27,7 +28,8 @@ if TYPE_CHECKING:
     import tmt.utils
 
 
-class Deprecated(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class Deprecated:
     """ Version information and hint for obsolete options """
     since: str
     hint: Optional[str] = None

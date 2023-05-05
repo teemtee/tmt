@@ -35,7 +35,6 @@ from typing import (
     Generic,
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Pattern,
     Sequence,
@@ -396,7 +395,8 @@ CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
 _CommandElement = str
 
 
-class CommandOutput(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class CommandOutput:
     stdout: Optional[str]
     stderr: Optional[str]
 

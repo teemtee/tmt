@@ -260,12 +260,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 "the `--dist-git-merge` option.")
 
         def get_git_root(dir: Path) -> Path:
-            stdout, _ = self.run(
+            output = self.run(
                 Command("git", "rev-parse", "--show-toplevel"),
                 cwd=dir,
                 ignore_dry=True)
-            assert stdout is not None
-            return Path(stdout.strip("\n"))
+            assert output.stdout is not None
+            return Path(output.stdout.strip("\n"))
 
         # Raise an exception if --fmf-id uses w/o url and git root
         # doesn't exist for discovered plan
@@ -384,10 +384,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         # Show current commit hash if inside a git repository
         if self.testdir.is_dir():
             try:
-                hash_, _ = self.run(Command("git", "rev-parse", "--short", "HEAD"),
-                                    cwd=self.testdir)
-                if hash_ is not None:
-                    self.verbose('hash', hash_.strip(), 'green')
+                output = self.run(Command("git", "rev-parse", "--short", "HEAD"),
+                                  cwd=self.testdir)
+                if output.stdout is not None:
+                    self.verbose('hash', output.stdout.strip(), 'green')
             except (tmt.utils.RunError, AttributeError):
                 pass
 
@@ -507,9 +507,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             output = self.run(
                 Command(
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
-                    ), cwd=self.testdir)[0]
-            if output:
-                directories = [os.path.dirname(name) for name in output.split('\n')]
+                    ), cwd=self.testdir)
+            if output.stdout:
+                directories = [os.path.dirname(name) for name in output.stdout.split('\n')]
                 modified = {f"^/{re.escape(name)}" for name in directories if name}
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
                 names.extend(modified)

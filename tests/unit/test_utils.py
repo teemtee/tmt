@@ -547,19 +547,19 @@ class TestStructuredField(unittest.TestCase):
 
 
 def test_run_interactive_not_joined(tmpdir, root_logger):
-    stdout, stderr = ShellScript("echo abc; echo def >2").to_shell_command().run(
+    output = ShellScript("echo abc; echo def >2").to_shell_command().run(
         shell=True,
         interactive=True,
         cwd=Path(str(tmpdir)),
         env={},
         log=None,
         logger=root_logger)
-    assert stdout is None
-    assert stderr is None
+    assert output.stdout is None
+    assert output.stderr is None
 
 
 def test_run_interactive_joined(tmpdir, root_logger):
-    stdout, _ = ShellScript("echo abc; echo def >2").to_shell_command().run(
+    output = ShellScript("echo abc; echo def >2").to_shell_command().run(
         shell=True,
         interactive=True,
         cwd=Path(str(tmpdir)),
@@ -567,39 +567,39 @@ def test_run_interactive_joined(tmpdir, root_logger):
         join=True,
         log=None,
         logger=root_logger)
-    assert stdout is None
+    assert output.stdout is None
 
 
 def test_run_not_joined_stdout(root_logger):
-    stdout, stderr = Command("ls", "/").run(
+    output = Command("ls", "/").run(
         shell=False,
         cwd=Path.cwd(),
         env={},
         log=None,
         logger=root_logger)
-    assert "sbin" in stdout
+    assert "sbin" in output.stdout
 
 
 def test_run_not_joined_stderr(root_logger):
-    _, stderr = ShellScript("ls non_existing || true").to_shell_command().run(
+    output = ShellScript("ls non_existing || true").to_shell_command().run(
         shell=False,
         cwd=Path.cwd(),
         env={},
         log=None,
         logger=root_logger)
-    assert "ls: cannot access" in stderr
+    assert "ls: cannot access" in output.stderr
 
 
 def test_run_joined(root_logger):
-    stdout, _ = ShellScript("ls non_existing / || true").to_shell_command().run(
+    output = ShellScript("ls non_existing / || true").to_shell_command().run(
         shell=False,
         cwd=Path.cwd(),
         env={},
         log=None,
         join=True,
         logger=root_logger)
-    assert "ls: cannot access" in stdout
-    assert "sbin" in stdout
+    assert "ls: cannot access" in output.stdout
+    assert "sbin" in output.stdout
 
 
 def test_run_big(root_logger):
@@ -612,15 +612,15 @@ def test_run_big(root_logger):
         done
         """
 
-    stdout, _ = ShellScript(textwrap.dedent(script)).to_shell_command().run(
+    output = ShellScript(textwrap.dedent(script)).to_shell_command().run(
         shell=False,
         cwd=Path.cwd(),
         env={},
         log=None,
         join=True,
         logger=root_logger)
-    assert "n n" in stdout
-    assert len(stdout) == 200000
+    assert "n n" in output.stdout
+    assert len(output.stdout) == 200000
 
 
 def test_get_distgit_handler():

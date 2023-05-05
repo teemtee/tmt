@@ -72,8 +72,7 @@ class GuestContainer(tmt.Guest):
             '--format', '{{json .State.Running}}',
             self.container
             ))
-        cmd_stdout, cmd_stderr = cmd_output
-        return str(cmd_stdout).strip() == 'true'
+        return str(cmd_output.stdout).strip() == 'true'
 
     def wake(self) -> None:
         """ Wake up the guest """
@@ -157,11 +156,11 @@ class GuestContainer(tmt.Guest):
             '-c', 'podman', '-i', f'{self.container},', str(playbook)
             ]
 
-        stdout, _ = self.run(
+        output = self.run(
             podman_command,
             cwd=self.parent.plan.worktree,
             env=self._prepare_environment())
-        self._ansible_summary(stdout)
+        self._ansible_summary(output.stdout)
 
     def podman(self, command: Command, **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Run given command via podman """
