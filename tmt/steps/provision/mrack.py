@@ -5,13 +5,12 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-import click
-
 import tmt
 import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.utils import ProvisionError, updatable_message
 
 if sys.version_info >= (3, 8):
@@ -527,21 +526,21 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for Beaker """
         return [
-            click.option(
+            option(
                 '--arch', metavar='ARCH',
                 help='Architecture to provision.'
                 ),
-            click.option(
+            option(
                 '--image', metavar='COMPOSE',
                 help='Image (distro or "compose" in Beaker terminology) '
                      'to provision.'
                 ),
-            click.option(
+            option(
                 '--provision-timeout', metavar='SECONDS',
                 help=f'How long to wait for provisioning to complete, '
                      f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.'
                 ),
-            click.option(
+            option(
                 '--provision-tick', metavar='SECONDS',
                 help=f'How often check Beaker for provisioning status, '
                      f'{DEFAULT_PROVISION_TICK} seconds by default.',

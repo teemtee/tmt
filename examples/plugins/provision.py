@@ -1,7 +1,7 @@
-import click
 
 import tmt
 import tmt.steps
+from tmt.options import option
 
 # See the online documentation for more details about writing plugins
 # https://tmt.readthedocs.io/en/stable/plugins.html
@@ -29,10 +29,10 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how=None):
         """ Prepare command line options for example """
         return [
-            click.option(
+            option(
                 '-w', '--what', metavar='WHAT',
                 help="Example how to pass value."),
-            click.option(
+            option(
                 '-s', '--switch', is_flag=True,
                 help="Example how to enable something.")
             ] + super().options(how)

@@ -3,13 +3,12 @@ import os
 from shlex import quote
 from typing import Any, List, Optional, Union
 
-import click
-
 import tmt
 import tmt.base
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
 
 # Timeout in seconds of waiting for a connection
@@ -274,16 +273,16 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for connect """
         return [
-            click.option(
+            option(
                 '-i', '--image', metavar='IMAGE',
                 help='Select image to use. Short name or complete url.'),
-            click.option(
+            option(
                 '-c', '--container', metavar='NAME',
                 help='Name or id of an existing container to be used.'),
-            click.option(
+            option(
                 '-p', '--pull', 'force_pull', is_flag=True,
                 help='Force pulling a fresh container image.'),
-            click.option(
+            option(
                 '-u', '--user', metavar='USER',
                 help='User to use for all container operations.')
             ] + super().options(how)

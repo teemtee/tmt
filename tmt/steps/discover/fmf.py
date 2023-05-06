@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from typing import Any, List, Optional, cast
 
-import click
 import fmf
 
 import tmt
@@ -17,6 +16,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+from tmt.options import option
 from tmt.utils import Command, Path
 
 
@@ -74,16 +74,16 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             self.ref = self.revision
 
 
-REF_OPTION = click.option(
+REF_OPTION = option(
     '-r', '--ref', metavar='REVISION',
     help='Branch, tag or commit specifying the git revision.')
-TEST_OPTION = click.option(
+TEST_OPTION = option(
     '-t', '--test', metavar='NAMES', multiple=True,
     help='Select tests by name.')
-FILTER_OPTION = click.option(
+FILTER_OPTION = option(
     '-F', '--filter', metavar='FILTERS', multiple=True,
     help='Include only tests matching the filter.')
-EXCLUDE_OPTION = click.option(
+EXCLUDE_OPTION = option(
     '-x', '--exclude', metavar='[REGEXP]', multiple=True,
     help="Exclude a regular expression from search result.")
 
@@ -175,51 +175,51 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for given method """
         return [
-            click.option(
+            option(
                 '-u', '--url', metavar='REPOSITORY',
                 help='URL of the git repository with fmf metadata.'),
             REF_OPTION,
-            click.option(
+            option(
                 '--modified-url', metavar='REPOSITORY',
                 help='URL of the reference git repository with fmf metadata.'),
-            click.option(
+            option(
                 '--modified-ref', metavar='REVISION',
                 help='Branch, tag or commit specifying the reference git '
                 'revision (if not provided, the default branch is used).'),
-            click.option(
+            option(
                 '-m', '--modified-only', is_flag=True,
                 help='If set, select only tests modified '
                 'since reference revision.'),
-            click.option(
+            option(
                 '-p', '--path', metavar='ROOT',
                 help='Path to the metadata tree root.'),
             TEST_OPTION,
-            click.option(
+            option(
                 '--link', metavar="RELATION:TARGET", multiple=True,
                 help="Filter by linked objects (regular expressions are "
                      "supported for both relation and target)."),
             FILTER_OPTION,
             EXCLUDE_OPTION,
-            click.option(
+            option(
                 '--fmf-id', default=False, is_flag=True,
                 help='Show fmf identifiers for tests discovered in plan.'),
-            click.option(
+            option(
                 '--sync-repo', default=False, is_flag=True,
                 help='Force the sync of the whole git repo. By default, the '
                      'repo is copied only if the used options require it.'),
-            click.option(
+            option(
                 '--dist-git-init', is_flag=True,
                 help='Initialize fmf root inside extracted sources '
                      '(at dist-git-extract or top directory).'),
-            click.option(
+            option(
                 '--dist-git-remove-fmf-root', is_flag=True,
                 help='Remove fmf root from extracted source '
                      '(top one or selected by copy-path, '
                      'happens before dist-git-extract.'),
-            click.option(
+            option(
                 '--dist-git-merge', is_flag=True,
                 help='Merge copied sources and plan fmf root.'),
-            click.option(
+            option(
                 '--dist-git-extract',
                 help='What to copy from extracted sources, globbing is '
                      'supported. Defaults to the top fmf root if it is '

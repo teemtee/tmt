@@ -18,6 +18,7 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.utils import (WORKDIR_ROOT, Command, Path, ProvisionError,
                        ShellScript, retry_session)
 
@@ -580,31 +581,31 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for testcloud """
         return [
-            click.option(
+            option(
                 '-i', '--image', metavar='IMAGE',
                 help='Select image to be used. Provide a short name, '
                      'full path to a local file or a complete url.'),
-            click.option(
+            option(
                 '-m', '--memory', metavar='MEMORY', type=int,
                 help='Set available memory in MB, 2048 MB by default.'),
-            click.option(
+            option(
                 '-D', '--disk', metavar='MEMORY', type=int,
                 help='Specify disk size in GB, 10 GB by default.'),
-            click.option(
+            option(
                 '-u', '--user', metavar='USER',
                 help='Username to use for all guest operations.'),
-            click.option(
+            option(
                 '-c', '--connection',
                 type=click.Choice(['session', 'system']),
                 help="What session type to use, 'session' by default."),
-            click.option(
+            option(
                 '-a', '--arch',
                 type=click.Choice(['x86_64', 'aarch64', 's390x', 'ppc64le']),
                 help="What architecture to virtualize, host arch by default."),
-            click.option(
+            option(
                 '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
                 help='Existing private key for login into the guest system.'),
-            click.option(
+            option(
                 '--list-local-images', is_flag=True,
                 help="List locally available images."),
             ] + super().options(how)

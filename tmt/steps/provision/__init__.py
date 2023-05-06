@@ -22,6 +22,7 @@ import tmt.log
 import tmt.plugins
 import tmt.steps
 import tmt.utils
+from tmt.options import option
 from tmt.steps import Action
 from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript, field
 
@@ -908,10 +909,10 @@ class GuestSsh(Guest):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to SSH-capable guests """
         return super().options(how=how) + [
-            click.option('--ssh-option', metavar="OPTION", multiple=True, default=[],
-                         help="Specify additional SSH option. "
-                              "Value is passed to SSH's -o option, see ssh_config(5) for "
-                              "supported options. Can be specified multiple times.")]
+            option('--ssh-option', metavar="OPTION", multiple=True, default=[],
+                   help="Specify additional SSH option. "
+                   "Value is passed to SSH's -o option, see ssh_config(5) for "
+                   "supported options. Can be specified multiple times.")]
 
     def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """
@@ -1354,7 +1355,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @click.option(
+        @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for provisioning.')
         def provision(context: 'tmt.cli.Context', **kwargs: Any) -> None:

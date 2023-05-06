@@ -12,6 +12,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.utils import ProvisionError, retry_session, updatable_message
 
 if sys.version_info >= (3, 8):
@@ -488,75 +489,75 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for Artemis """
         return [
-            click.option(
+            option(
                 '--api-url', metavar='URL',
                 help="Artemis API URL.",
                 envvar='ARTEMIS_API_URL'
                 ),
-            click.option(
+            option(
                 '--api-version', metavar='x.y.z',
                 help="Artemis API version to use.",
                 type=click.Choice(SUPPORTED_API_VERSIONS),
                 envvar='ARTEMIS_API_VERSION'
                 ),
-            click.option(
+            option(
                 '--arch', metavar='ARCH',
                 help='Architecture to provision.'
                 ),
-            click.option(
+            option(
                 '--image', metavar='COMPOSE',
                 help='Image (or "compose" in Artemis terminology) '
                      'to provision.'
                 ),
-            click.option(
+            option(
                 '--pool', metavar='NAME',
                 help='Pool to enforce.'
                 ),
-            click.option(
+            option(
                 '--priority-group', metavar='NAME',
                 help='Provisioning priority group.'
                 ),
-            click.option(
+            option(
                 '--keyname', metavar='NAME',
                 help='SSH key name.'
                 ),
-            click.option(
+            option(
                 '--user-data', metavar='KEY=VALUE',
                 help='Optional data to attach to guest.',
                 multiple=True,
                 default=[]
                 ),
-            click.option(
+            option(
                 '--provision-timeout', metavar='SECONDS',
                 help=f'How long to wait for provisioning to complete, '
                      f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.'
                 ),
-            click.option(
+            option(
                 '--provision-tick', metavar='SECONDS',
                 help=f'How often check Artemis API for provisioning status, '
                      f'{DEFAULT_PROVISION_TICK} seconds by default.',
                 ),
-            click.option(
+            option(
                 '--api-timeout', metavar='SECONDS',
                 help=f'How long to wait for API operations to complete, '
                      f'{DEFAULT_API_TIMEOUT} seconds by default.',
                 ),
-            click.option(
+            option(
                 '--api-retries', metavar='COUNT',
                 help=f'How many attempts to use when talking to API, '
                      f'{DEFAULT_API_RETRIES} by default.',
                 ),
-            click.option(
+            option(
                 '--api-retry-backoff-factor', metavar='COUNT',
                 help=f'A factor for exponential API retry backoff, '
                      f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
                 ),
-            click.option(
+            option(
                 '--watchdog-dispatch-delay', metavar='SECONDS',
                 help='How long (seconds) before the guest "is-alive" watchdog is dispatched. '
                      'The dispatch timer starts once the guest is successfully provisioned.'
                 ),
-            click.option(
+            option(
                 '--watchdog-period-delay', metavar='SECONDS',
                 help='How often (seconds) check that the guest "is-alive".'
                 ),

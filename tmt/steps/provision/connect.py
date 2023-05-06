@@ -1,13 +1,13 @@
 import dataclasses
 from typing import List, Optional, cast
 
-import click
 import fmf.utils
 
 import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 
 DEFAULT_USER = "root"
 
@@ -61,19 +61,19 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for connect """
         return [
-            click.option(
+            option(
                 '-g', '--guest', metavar='GUEST',
                 help='Select remote host to connect to (hostname or ip).'),
-            click.option(
+            option(
                 '-P', '--port', metavar='PORT',
                 help='Use specific port to connect to.'),
-            click.option(
+            option(
                 '-k', '--key', metavar='PRIVATE_KEY',
                 help='Private key for login into the guest system.'),
-            click.option(
+            option(
                 '-u', '--user', metavar='USER',
                 help='Username to use for all guest operations.'),
-            click.option(
+            option(
                 '-p', '--password', metavar='PASSWORD',
                 help='Password for login into the guest system.'),
             ] + super().options(how)

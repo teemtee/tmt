@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt.options import option
 from tmt.steps import Action
 from tmt.utils import Command, GeneralError, Path, flatten
 
@@ -59,7 +60,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @click.option(
+        @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method to discover tests.')
         def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:

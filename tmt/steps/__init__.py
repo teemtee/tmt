@@ -22,7 +22,7 @@ from click import echo
 import tmt.log
 import tmt.options
 import tmt.utils
-from tmt.options import show_step_method_hints
+from tmt.options import option, show_step_method_hints
 from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
 from tmt.utils import EnvironmentType, Path, field, flatten
 
@@ -739,8 +739,8 @@ class BasePlugin(Phase):
             method_overview += f'\n{method.describe()}'
             command: click.Command = cls.base_command(usage=method.usage())
             # Apply plugin specific options
-            for option in method.class_.options(method.name):
-                command = option(command)
+            for method_option in method.class_.options(method.name):
+                command = method_option(command)
             commands[method.name] = command
 
             for param in command.params:
@@ -784,8 +784,8 @@ class BasePlugin(Phase):
         method_class = tmt.options.create_method_class(commands)
         command = cls.base_command(usage=method_overview, method_class=method_class)
         # Apply common options
-        for option in cls.options():
-            command = option(command)
+        for common_option in cls.options():
+            command = common_option(command)
         return command
 
     @classmethod
@@ -1149,13 +1149,13 @@ class Action(Phase):
                 phases[login_during.name] = [PHASE_END]
 
         # Process provided options
-        for option in options:
+        for step_option in options:
             # Parse the step:phase format
-            matched = re.match(r'(\w+)(:(\w+))?', option)
+            matched = re.match(r'(\w+)(:(\w+))?', step_option)
             if matched:
                 step_name, _, phase = matched.groups()
             if not matched or step_name not in STEPS:
-                raise tmt.utils.GeneralError(f"Invalid step '{option}'.")
+                raise tmt.utils.GeneralError(f"Invalid step '{step_option}'.")
             # Check phase format, convert into int, use end by default
             try:
                 phase = int(phase)
@@ -1197,10 +1197,10 @@ class Reboot(Action):
         """ Create the reboot command """
         @click.command()
         @click.pass_context
-        @click.option(
+        @option(
             '-s', '--step', metavar='STEP[:PHASE]', multiple=True,
             help='Reboot machine during given phase of selected step(s).')
-        @click.option(
+        @option(
             '--hard', is_flag=True,
             help='Hard reboot of the machine. Unsaved data may be lost.')
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
@@ -1253,18 +1253,18 @@ class Login(Action):
 
         @click.command()
         @click.pass_context
-        @click.option(
+        @option(
             '-s', '--step', metavar='STEP[:PHASE]', multiple=True,
             help='Log in during given phase of selected step(s).')
-        @click.option(
+        @option(
             '-w', '--when', metavar='RESULT', multiple=True,
             type=click.Choice([m.value for m in ResultOutcome.__members__.values()]),
             help='Log in if a test finished with given result(s).')
-        @click.option(
+        @option(
             '-c', '--command', metavar='COMMAND',
             multiple=True, default=['bash'],
             help="Run given command(s). Default is 'bash'.")
-        @click.option(
+        @option(
             '-t', '--test', is_flag=True,
             help='Log into the guest after each executed test in the execute phase.')
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:

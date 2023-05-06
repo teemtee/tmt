@@ -56,6 +56,7 @@ import tmt.log
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
+    import tmt.options
     import tmt.steps
 
 
@@ -2079,13 +2080,15 @@ class FieldMetadata(Generic[T]):
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.option_args and self.option_kwargs:
+            from tmt.options import option
+
             if isinstance(self.option_choices, (list, tuple)):
                 self.option_kwargs['type'] = click.Choice(self.option_choices)
 
             elif callable(self.option_choices):
                 self.option_kwargs['type'] = click.Choice(self.option_choices())
 
-            self._option = click.option(
+            self._option = option(
                 *self.option_args,
                 **self.option_kwargs
                 )
@@ -4681,12 +4684,6 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
 FieldCLIOption = Union[str, Sequence[str]]
 
 
-class Deprecated(NamedTuple):
-    """ Version information and hint for obsolete options """
-    since: str
-    hint: Optional[str] = None
-
-
 @overload
 def field(
         *,
@@ -4697,7 +4694,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
-        deprecated: Optional[Deprecated] = None,
+        deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization - not needed, the field is a boolean
         # flag.
@@ -4719,7 +4716,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
-        deprecated: Optional[Deprecated] = None,
+        deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4740,7 +4737,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
-        deprecated: Optional[Deprecated] = None,
+        deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4761,7 +4758,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
-        deprecated: Optional[Deprecated] = None,
+        deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
@@ -4816,25 +4813,13 @@ def field(
     if option:
         assert is_flag is False or isinstance(default, bool)
 
-        if help:
-            help = textwrap.dedent(help)
-
-        # Add a deprecation warning for obsoleted options
-        if deprecated:
-            warning = f"The option is deprecated since {deprecated.since}."
-            if not help:
-                help = warning
-            else:
-                help += " " + warning
-            if deprecated.hint:
-                help += " " + deprecated.hint
-
         metadata.option_args = (option,) if isinstance(option, str) else option
         metadata.option_kwargs = {
             'is_flag': is_flag,
             'multiple': multiple,
             'metavar': metavar,
-            'help': help
+            'help': help,
+            'deprecated': deprecated
             }
         metadata.option_choices = choices
 

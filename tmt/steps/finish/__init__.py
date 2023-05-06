@@ -7,6 +7,7 @@ import fmf
 
 import tmt
 import tmt.steps
+from tmt.options import option
 from tmt.steps import (Action, Method, PhaseQueue, PullTask, QueuedPhase,
                        TaskOutcome, sync_with_guests)
 from tmt.steps.provision import Guest
@@ -42,7 +43,7 @@ class FinishPlugin(tmt.steps.Plugin):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @click.option(
+        @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for finishing tasks.')
         def finish(context: 'tmt.cli.Context', **kwargs: Any) -> None:

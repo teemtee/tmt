@@ -3,7 +3,9 @@
 """ Common options and the MethodCommand class """
 
 import re
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
+import textwrap
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List, NamedTuple,
+                    Optional, Type, Union)
 
 import click
 
@@ -17,13 +19,29 @@ try:
     from click.decorators import FC
 
 except ImportError:
-    from typing import TypeVar, Union
+    from typing import TypeVar
 
     FC = TypeVar('FC', bound=Union[Callable[..., Any], click.Command])  # type: ignore[misc]
 
 
 if TYPE_CHECKING:
     import tmt.cli
+    import tmt.utils
+
+
+class Deprecated(NamedTuple):
+    """ Version information and hint for obsolete options """
+    since: str
+    hint: Optional[str] = None
+
+    @property
+    def rendered(self) -> str:
+        message = f"The option is deprecated since {self.since}."
+
+        if self.hint:
+            message += " " + self.hint
+
+        return message
 
 
 MethodDictType = Dict[str, click.core.Command]
@@ -41,18 +59,70 @@ _ClickOptionDecoratorType = Callable[[FC], FC]
 # matches the type of the argument.
 ClickOptionDecoratorType = _ClickOptionDecoratorType[Any]
 
+
+def option(
+        *param_decls: str,
+        # Following parameters are inherited from click.option()/Option/Parameter.
+        # May allow stricter types than the original, because tmt code base does not
+        # care for every Click use case.
+        show_default: bool = False,
+        is_flag: bool = False,
+        multiple: bool = False,
+        count: bool = False,
+        type: Optional[Union[click.Choice, Any]] = None,
+        help: Optional[str] = None,
+        required: bool = False,
+        default: Optional[Any] = None,
+        nargs: Optional[int] = None,
+        metavar: Optional[str] = None,
+        prompt: Optional[str] = None,
+        envvar: Optional[str] = None,
+        # Following parameters are our additions.
+        deprecated: Optional[Deprecated] = None) -> ClickOptionDecoratorType:
+    """
+    Attaches an option to the command.
+
+    This is a wrapper for :py:func:`click.option`, its parameters have the same
+    meaning as those of ``click.option()``, and are passed to ``click.option()``,
+    with the exception of ``deprecated`` parameter.
+
+    :param deprecated: if set, it is rendered and appended to ``help``. This
+        parameter is **not** passed to :py:func:`click.option`.
+    """
+
+    if help:
+        help = textwrap.dedent(help)
+
+    # Add a deprecation warning for obsoleted options
+    if deprecated:
+        if help:
+            help += ' ' + deprecated.rendered
+
+        else:
+            help = deprecated.rendered
+
+    # Instead of repeating all keyword parameters, use locals(), they are all there
+    # already, and it's a dictionary - just don't forget to remove names that are
+    # not accepted by click and the positional parameter.
+    kwargs = locals().copy()
+    kwargs.pop('param_decls')
+    kwargs.pop('deprecated')
+
+    return click.option(*param_decls, **kwargs)
+
+
 # Verbose, debug and quiet output
 VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '-v', '--verbose', count=True, default=0,
         help='Show more details. Use multiple times to raise verbosity.'),
-    click.option(
+    option(
         '-d', '--debug', count=True, default=0,
         help='Provide debugging information. Repeat to see more details.'),
-    click.option(
+    option(
         '-q', '--quiet', is_flag=True,
         help='Be quiet. Exit code is just enough for me.'),
-    click.option(
+    option(
         '--log-topic',
         metavar=f'[{"|".join(topic.value for topic in tmt.log.Topic)}]',
         multiple=True,
@@ -62,13 +132,13 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
 
 # Force and dry actions
 DRY_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '-n', '--dry', is_flag=True,
         help='Run in dry mode. No changes, please.'),
     ]
 
 FORCE_DRY_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '-f', '--force', is_flag=True,
         help='Overwrite existing files and step data.')
     ] + DRY_OPTIONS
@@ -76,11 +146,11 @@ FORCE_DRY_OPTIONS: List[ClickOptionDecoratorType] = [
 
 # Fix action
 FIX_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option('-F', '--fix', is_flag=True, help='Attempt to fix all discovered issues.')
+    option('-F', '--fix', is_flag=True, help='Attempt to fix all discovered issues.')
     ]
 
 WORKDIR_ROOT_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '--workdir-root', metavar='PATH', envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
         help=f"Path to root directory containing run workdirs. "
@@ -91,23 +161,23 @@ WORKDIR_ROOT_OPTIONS: List[ClickOptionDecoratorType] = [
 FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
     click.argument(
         'names', nargs=-1, metavar='[REGEXP|.]'),
-    click.option(
+    option(
         '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
         help="Apply advanced filter (see 'pydoc fmf.filter')."),
-    click.option(
+    option(
         '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
         help="Use arbitrary Python expression for filtering."),
-    click.option(
+    option(
         '--enabled', is_flag=True,
         help="Show only enabled tests, plans or stories."),
-    click.option(
+    option(
         '--disabled', is_flag=True,
         help="Show only disabled tests, plans or stories."),
-    click.option(
+    option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
         help="Filter by linked objects (regular expressions are "
              "supported for both relation and target)."),
-    click.option(
+    option(
         '-x', '--exclude', 'exclude', metavar='[REGEXP]', multiple=True,
         help="Exclude a regular expression from search result."),
     ]
@@ -116,99 +186,99 @@ FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
 FILTER_OPTIONS_LONG: List[ClickOptionDecoratorType] = [
     click.argument(
         'names', nargs=-1, metavar='[REGEXP|.]'),
-    click.option(
+    option(
         '--filter', 'filters', metavar='FILTER', multiple=True,
         help="Apply advanced filter (see 'pydoc fmf.filter')."),
-    click.option(
+    option(
         '--condition', 'conditions', metavar="EXPR", multiple=True,
         help="Use arbitrary Python expression for filtering."),
-    click.option(
+    option(
         '--enabled', is_flag=True,
         help="Show only enabled tests, plans or stories."),
-    click.option(
+    option(
         '--disabled', is_flag=True,
         help="Show only disabled tests, plans or stories."),
-    click.option(
+    option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
         help="Filter by linked objects (regular expressions are "
              "supported for both relation and target)."),
-    click.option(
+    option(
         '--exclude', 'exclude', metavar='[REGEXP]', multiple=True,
         help="Exclude a regular expression from search result."),
     ]
 
 
 STORY_FLAGS_FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '--implemented', is_flag=True,
         help='Implemented stories only.'),
-    click.option(
+    option(
         '--unimplemented', is_flag=True,
         help='Unimplemented stories only.'),
-    click.option(
+    option(
         '--verified', is_flag=True,
         help='Stories verified by tests.'),
-    click.option(
+    option(
         '--unverified', is_flag=True,
         help='Stories not verified by tests.'),
-    click.option(
+    option(
         '--documented', is_flag=True,
         help='Documented stories only.'),
-    click.option(
+    option(
         '--undocumented', is_flag=True,
         help='Undocumented stories only.'),
-    click.option(
+    option(
         '--covered', is_flag=True,
         help='Covered stories only.'),
-    click.option(
+    option(
         '--uncovered', is_flag=True,
         help='Uncovered stories only.'),
     ]
 
 FMF_SOURCE_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '--source', is_flag=True, help="Select by fmf source file names instead of object names."
         )
     ]
 
 REMOTE_PLAN_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option('-s', '--shallow', is_flag=True, help='Do not clone remote plan.')
+    option('-s', '--shallow', is_flag=True, help='Do not clone remote plan.')
     ]
 
 
 _lint_outcomes = [member.value for member in tmt.lint.LinterOutcome.__members__.values()]
 
 LINT_OPTIONS: List[ClickOptionDecoratorType] = [
-    click.option(
+    option(
         '--list-checks',
         is_flag=True,
         help='List all available checks.'),
-    click.option(
+    option(
         '--enable-check',
         'enable_checks',
         metavar='CHECK-ID',
         multiple=True,
         type=str,
         help='Run only checks mentioned by this option.'),
-    click.option(
+    option(
         '--disable-check',
         'disable_checks',
         metavar='CHECK-ID',
         multiple=True,
         type=str,
         help='Do not run checks mentioned by this option.'),
-    click.option(
+    option(
         '--enforce-check',
         'enforce_checks',
         metavar='CHECK-ID',
         multiple=True,
         type=str,
         help='Consider linting as failed if any of the checks is not a pass.'),
-    click.option(
+    option(
         '--failed-only',
         is_flag=True,
         help='Display only tests/plans/stories that fail a check.'),
-    click.option(
+    option(
         '--outcome-only',
         metavar='|'.join(_lint_outcomes),
         multiple=True,

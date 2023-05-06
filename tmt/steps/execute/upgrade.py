@@ -1,7 +1,6 @@
 import dataclasses
 from typing import Any, List, Optional, Union, cast
 
-import click
 import fmf.utils
 
 import tmt.base
@@ -12,6 +11,7 @@ import tmt.steps.discover.fmf
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
 from tmt.steps.execute import ExecutePlugin
@@ -122,10 +122,10 @@ class ExecuteUpgrade(ExecuteInternal):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for given method """
         return [
-            click.option(
+            option(
                 '--url', '-u', metavar='REPOSITORY',
                 help='URL of the git repository with upgrade tasks.'),
-            click.option(
+            option(
                 '--upgrade-path', '-p', metavar='PLAN_NAME',
                 help='Upgrade path corresponding to a plan name in the repository '
                 'with upgrade tasks.'),

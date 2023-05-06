@@ -26,7 +26,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.templates
 import tmt.utils
-from tmt.options import create_options_decorator
+from tmt.options import create_options_decorator, option
 from tmt.utils import Path
 
 if TYPE_CHECKING:
@@ -144,23 +144,23 @@ lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 @click.group(invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
-@click.option(
+@option(
     '-r', '--root', metavar='PATH', show_default=True, default='.',
     help="Path to the metadata tree root, '.' used by default.")
-@click.option(
+@option(
     '-c', '--context', metavar='DATA', multiple=True,
     help='Set the fmf context. Use KEY=VAL or KEY=VAL1,VAL2... format '
          'to define individual dimensions or the @FILE notation to load data '
          'from provided yaml file. Can be specified multiple times. ')
 @verbosity_options
-@click.option(
+@option(
     '--version', is_flag=True,
     help='Show tmt version and commit hash.')
-@click.option(
+@option(
     '--no-color', is_flag=True, default=False,
     help='Forces tmt to not use any colors in the output or logging.'
     )
-@click.option(
+@option(
     '--force-color', is_flag=True, default=False,
     help='Forces tmt to use colors in the output and logging.'
     )
@@ -213,45 +213,45 @@ def main(
 
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
-@click.option(
+@option(
     '-i', '--id', 'id_', help='Run id (name or directory path).', metavar="ID")
-@click.option(
+@option(
     '-l', '--last', help='Execute the last run once again.', is_flag=True)
-@click.option(
+@option(
     '-r', '--rm', '--remove', 'remove', is_flag=True,
     help='Remove the workdir when test run is finished.')
-@click.option(
+@option(
     '-k', '--keep', is_flag=True,
     help='Keep all files in the run workdir after testing is done '
          '(skip pruning during the finish step).')
-@click.option(
+@option(
     '--scratch', is_flag=True,
     help='Remove the run workdir before executing to start from scratch.')
-@click.option(
+@option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
-@click.option(
+@option(
     '-a', '--all', help='Run all steps, customize some.', is_flag=True)
-@click.option(
+@option(
     '-u', '--until', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
     help='Enable given step and all preceding steps.')
-@click.option(
+@option(
     '-s', '--since', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
     help='Enable given step and all following steps.')
-@click.option(
+@option(
     '-A', '--after', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
     help='Enable all steps after the given one.')
-@click.option(
+@option(
     '-B', '--before', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
     help='Enable all steps before the given one.')
-@click.option(
+@option(
     '-S', '--skip', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
     help='Skip given step(s) during test run execution.', multiple=True)
-@click.option(
+@option(
     '-e', '--environment', metavar='KEY=VALUE|@FILE', multiple=True,
     help='Set environment variable. Can be specified multiple times. The '
          '"@" prefix marks a file to load (yaml or dotenv formats supported).')
-@click.option(
+@option(
     '--environment-file', metavar='FILE|URL', multiple=True,
     help='Set environment variables from file or url (yaml or dotenv formats '
          'are supported). Can be specified multiple times.')
@@ -285,20 +285,20 @@ run.add_command(tmt.steps.Reboot.command())
 
 @run.command(name='plans')
 @click.pass_context
-@click.option(
+@option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match plan name or '.' for current directory.")
-@click.option(
+@option(
     '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
     help="Apply advanced filter (see 'pydoc fmf.filter').")
-@click.option(
+@option(
     '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
     help="Use arbitrary Python expression for filtering.")
-@click.option(
+@option(
     '--link', 'links', metavar="RELATION:TARGET", multiple=True,
     help="Filter by linked objects (regular expressions are "
          "supported for both relation and target).")
-@click.option(
+@option(
     '--default', is_flag=True,
     help="Use default plans even if others are available.")
 @verbosity_options
@@ -314,16 +314,16 @@ def run_plans(context: Context, **kwargs: Any) -> None:
 
 @run.command(name='tests')
 @click.pass_context
-@click.option(
+@option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match test name or '.' for current directory.")
-@click.option(
+@option(
     '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
     help="Apply advanced filter (see 'pydoc fmf.filter').")
-@click.option(
+@option(
     '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
     help="Use arbitrary Python expression for filtering.")
-@click.option(
+@option(
     '--link', 'links', metavar="RELATION:TARGET", multiple=True,
     help="Filter by linked objects (regular expressions are "
          "supported for both relation and target).")
@@ -540,7 +540,7 @@ _test_templates = listed(tmt.templates.TEST, join='or')
 @tests.command(name='create')
 @click.pass_context
 @click.argument('name')
-@click.option(
+@option(
     '-t', '--template', metavar='TEMPLATE',
     help='Test template ({}).'.format(_test_templates),
     prompt='Template ({})'.format(_test_templates))
@@ -566,50 +566,50 @@ def tests_create(
 @tests.command(name='import')
 @click.pass_context
 @click.argument('paths', nargs=-1, metavar='[PATH]...')
-@click.option(
-    '--nitrate / --no-nitrate', default=True, show_default=True,
+@option(
+    '--nitrate / --no-nitrate', default=True, show_default=True, is_flag=True,
     help='Import test metadata from Nitrate.')
-@click.option(
-    '--polarion / --no-polarion', default=False, show_default=True,
+@option(
+    '--polarion / --no-polarion', default=False, show_default=True, is_flag=True,
     help='Import test metadata from Polarion.')
-@click.option(
-    '--purpose / --no-purpose', default=True, show_default=True,
+@option(
+    '--purpose / --no-purpose', default=True, show_default=True, is_flag=True,
     help='Migrate description from PURPOSE file.')
-@click.option(
-    '--makefile / --no-makefile', default=True, show_default=True,
+@option(
+    '--makefile / --no-makefile', default=True, show_default=True, is_flag=True,
     help='Convert Beaker Makefile metadata.')
-@click.option(
-    '--restraint / --no-restraint', default=False, show_default=True,
+@option(
+    '--restraint / --no-restraint', default=False, show_default=True, is_flag=True,
     help='Convert restraint metadata file.')
-@click.option(
-    '--general / --no-general', default=True,
+@option(
+    '--general / --no-general', default=True, is_flag=True,
     help='Detect components from linked nitrate general plans '
          '(overrides Makefile/restraint component).')
-@click.option(
+@option(
     '--polarion-case-id', multiple=True,
     help='Polarion Test case ID(s) to import data from. Can be provided multiple times. '
          'Can provide also test case name like: TEST-123:test_name')
-@click.option(
-    '--link-polarion / --no-link-polarion', default=False, show_default=True,
+@option(
+    '--link-polarion / --no-link-polarion', default=False, show_default=True, is_flag=True,
     help='Add Polarion link to fmf testcase metadata.')
-@click.option(
+@option(
     '--type', 'types', metavar='TYPE', default=['multihost'], multiple=True,
     show_default=True,
     help="Convert selected types from Makefile into tags. "
          "Use 'all' to convert all detected types.")
-@click.option(
+@option(
     '--disabled', default=False, is_flag=True,
     help='Import disabled test cases from Nitrate as well.')
-@click.option(
+@option(
     '--manual', default=False, is_flag=True,
     help='Import manual test cases from Nitrate.')
-@click.option(
+@option(
     '--plan', metavar='PLAN', type=int,
     help='Identifier of test plan from which to import manual test cases.')
-@click.option(
+@option(
     '--case', metavar='CASE', type=int,
     help='Identifier of manual test case to be imported.')
-@click.option(
+@option(
     '--with-script', default=False, is_flag=True,
     help='Import manual cases with non-empty script field in Nitrate.')
 @verbosity_options
@@ -699,61 +699,61 @@ _test_export_default = 'yaml'
 @tests.command(name='export')
 @click.pass_context
 @filter_options_long
-@click.option(
+@option(
     '-h', '--how', metavar='METHOD', default=_test_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_test_export_formats))
-@click.option(
+@option(
     '--format', metavar='FORMAT', default=_test_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_test_export_formats))
-@click.option(
+@option(
     '--nitrate', is_flag=True,
     help="Export test metadata to Nitrate, deprecated by '--how nitrate'.")
-@click.option(
+@option(
     '--project-id', help='Use specific Polarion project ID.')
-@click.option(
-    '--link-polarion / --no-link-polarion', default=False,
+@option(
+    '--link-polarion / --no-link-polarion', default=False, is_flag=True,
     help='Add Polarion link to fmf testcase metadata')
-@click.option(
+@option(
     '--bugzilla', is_flag=True,
     help="Link Nitrate case to Bugzilla specified in the 'link' attribute "
          "with the relation 'verifies'.")
-@click.option(
+@option(
     '--ignore-git-validation', is_flag=True,
     help="Ignore unpublished git changes and export to Nitrate. "
     "The case might not be able to be scheduled!")
-@click.option(
-    '--append-summary / --no-append-summary', default=False,
+@option(
+    '--append-summary / --no-append-summary', default=False, is_flag=True,
     help="Include test summary in the Nitrate/Polarion test case summary as well. "
     "By default, only the repository name and test name are used."
     )
-@click.option(
+@option(
     '--create', is_flag=True,
     help="Create test cases in nitrate if they don't exist.")
-@click.option(
-    '--general / --no-general', default=False,
+@option(
+    '--general / --no-general', default=False, is_flag=True,
     help="Link Nitrate case to component's General plan. Disabled by default. "
          "Note that this will unlink any previously connected general plans.")
-@click.option(
-    '--link-runs / --no-link-runs', default=False,
+@option(
+    '--link-runs / --no-link-runs', default=False, is_flag=True,
     help="Link Nitrate case to all open runs of descendant plans of "
          "General plan. Disabled by default. Implies --general option.")
-@click.option(
+@option(
     '--fmf-id', is_flag=True,
     help='Show fmf identifiers instead of test metadata.')
-@click.option(
-    '--duplicate / --no-duplicate', default=False, show_default=True,
+@option(
+    '--duplicate / --no-duplicate', default=False, show_default=True, is_flag=True,
     help='Allow or prevent creating duplicates in Nitrate by searching for '
          'existing test cases with the same fmf identifier.')
-@click.option(
+@option(
     '-n', '--dry', is_flag=True,
     help="Run in dry mode. No changes, please.")
-@click.option(
+@option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
 # TODO: move to `template` export plugin options
-@click.option(
+@option(
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
@@ -923,26 +923,26 @@ _plan_templates = listed(tmt.templates.PLAN, join='or')
 @plans.command(name='create')
 @click.pass_context
 @click.argument('name')
-@click.option(
+@option(
     '-t', '--template', metavar='TEMPLATE',
     help='Plan template ({}).'.format(_plan_templates),
     prompt='Template ({})'.format(_plan_templates))
-@click.option(
+@option(
     '--discover', metavar='YAML', multiple=True,
     help='Discover phase content in yaml format.')
-@click.option(
+@option(
     '--provision', metavar='YAML', multiple=True,
     help='Provision phase content in yaml format.')
-@click.option(
+@option(
     '--prepare', metavar='YAML', multiple=True,
     help='Prepare phase content in yaml format.')
-@click.option(
+@option(
     '--execute', metavar='YAML', multiple=True,
     help='Execute phase content in yaml format.')
-@click.option(
+@option(
     '--report', metavar='YAML', multiple=True,
     help='Report phase content in yaml format.')
-@click.option(
+@option(
     '--finish', metavar='YAML', multiple=True,
     help='Finish phase content in yaml format.')
 @verbosity_options
@@ -966,19 +966,19 @@ _plan_export_default = 'yaml'
 @plans.command(name='export')
 @click.pass_context
 @filter_options_long
-@click.option(
+@option(
     '-h', '--how', metavar='METHOD', default=_plan_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_plan_export_formats))
-@click.option(
+@option(
     '--format', metavar='FORMAT', default=_plan_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_plan_export_formats))
-@click.option(
+@option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
 # TODO: move to `template` export plugin options
-@click.option(
+@option(
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
@@ -1113,7 +1113,7 @@ _story_templates = listed(tmt.templates.STORY, join='or')
 @stories.command(name='create')
 @click.pass_context
 @click.argument('name')
-@click.option(
+@option(
     '-t', '--template', metavar='TEMPLATE',
     prompt='Template ({})'.format(_story_templates),
     help='Story template ({}).'.format(_story_templates))
@@ -1132,11 +1132,11 @@ def stories_create(
 
 
 @stories.command(name='coverage')
-@click.option(
+@option(
     '--docs', is_flag=True, help='Show docs coverage.')
-@click.option(
+@option(
     '--test', is_flag=True, help='Show test coverage.')
-@click.option(
+@option(
     '--code', is_flag=True, help='Show code coverage.')
 @click.pass_context
 @filter_options_long
@@ -1216,19 +1216,19 @@ _story_export_default = 'yaml'
 @click.pass_context
 @filter_options_long
 @story_flags_filter_options
-@click.option(
+@option(
     '-h', '--how', metavar='METHOD', default=_story_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_story_export_formats))
-@click.option(
+@option(
     '--format', metavar='FORMAT', default=_story_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_story_export_formats))
-@click.option(
+@option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
 # TODO: move to `template` export plugin options
-@click.option(
+@option(
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
@@ -1346,7 +1346,7 @@ def stories_id(
 @main.command()
 @click.pass_context
 @click.argument('path', default='.')
-@click.option(
+@option(
     '-t', '--template', default='empty', metavar='TEMPLATE',
     type=click.Choice(['empty'] + tmt.templates.INIT_TEMPLATES),
     help='Template ({}).'.format(
@@ -1383,18 +1383,18 @@ def init(
 @main.command()
 @click.pass_context
 @workdir_root_options
-@click.option(
+@option(
     '-i', '--id', metavar="ID",
     help='Run id (name or directory path) to show status of.')
-@click.option(
+@option(
     '--abandoned', is_flag=True, default=False,
     help='List runs which have provision step completed but finish step '
          'not yet done.')
-@click.option(
+@option(
     '--active', is_flag=True, default=False,
     help='List runs where at least one of the enabled steps has not '
          'been finished.')
-@click.option(
+@option(
     '--finished', is_flag=True, default=False,
     help='List all runs which have all enabled steps completed.')
 @verbosity_options
@@ -1521,12 +1521,12 @@ def perform_clean(
 @clean.command(name='runs')
 @click.pass_context
 @workdir_root_options
-@click.option(
+@option(
     '-l', '--last', is_flag=True, help='Clean the workdir of the last run.')
-@click.option(
+@option(
     '-i', '--id', 'id_', metavar="ID",
     help='Run id (name or directory path) to clean workdir of.')
-@click.option(
+@option(
     '-k', '--keep', type=int,
     help='The number of latest workdirs to keep, clean the rest.')
 @verbosity_options
@@ -1566,12 +1566,12 @@ def clean_runs(
 @clean.command(name='guests')
 @click.pass_context
 @workdir_root_options
-@click.option(
+@option(
     '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
-@click.option(
+@option(
     '-i', '--id', 'id_', metavar="ID",
     help='Run id (name or directory path) to stop the guest of.')
-@click.option(
+@option(
     '-h', '--how', metavar='METHOD',
     help='Stop guests of the specified provision method.')
 @verbosity_options
@@ -1733,7 +1733,7 @@ def setup_completion(shell: str, install: bool) -> None:
 
 @completion.command(name='bash')
 @click.pass_context
-@click.option(
+@option(
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to tmt's configuration directory "
          "and set it up by modifying '~/.bashrc'.")
@@ -1746,7 +1746,7 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
 
 @completion.command(name='zsh')
 @click.pass_context
-@click.option(
+@option(
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to tmt's configuration directory "
          "and set it up by modifying '~/.zshrc'.")
@@ -1759,7 +1759,7 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 
 @completion.command(name='fish')
 @click.pass_context
-@click.option(
+@option(
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to "
          "'~/.config/fish/completions/tmt.fish'.")

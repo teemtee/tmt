@@ -13,6 +13,7 @@ import tmt
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt.options import option
 from tmt.queue import TaskOutcome
 from tmt.result import Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
@@ -159,7 +160,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @click.option(
+        @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for test execution.')
         def execute(context: 'tmt.cli.Context', **kwargs: Any) -> None:
@@ -172,7 +173,7 @@ class ExecutePlugin(tmt.steps.Plugin):
     def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
         # Add option to exit after the first test failure
         return [
-            click.option(
+            option(
                 '-x', '--exit-first', is_flag=True,
                 help='Stop execution after the first test failure.'),
             ] + super().options(how)

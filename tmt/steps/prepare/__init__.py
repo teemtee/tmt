@@ -13,6 +13,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import option
 from tmt.queue import TaskOutcome
 from tmt.steps import (Action, PhaseQueue, PullTask, PushTask, QueuedPhase,
                        sync_with_guests)
@@ -61,7 +62,7 @@ class PreparePlugin(tmt.steps.Plugin):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @click.option(
+        @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for environment preparation.')
         def prepare(context: 'tmt.cli.Context', **kwargs: Any) -> None:
