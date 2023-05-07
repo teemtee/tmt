@@ -10,7 +10,7 @@ rlJournalStart
     rlPhaseStartTest
         rlRun -s "tmt run --id $run --verbose" 2
         rlAssertGrep "project: tmt" $rlRun_LOG
-        rlAssertGrep "launch: smoke" $rlRun_LOG
+        rlAssertGrep "launch-name: smoke" $rlRun_LOG
         rlAssertGrep "report: Successfully uploaded." $rlRun_LOG
     rlPhaseEnd
 
