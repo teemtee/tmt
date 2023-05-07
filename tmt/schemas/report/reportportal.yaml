@@ -31,6 +31,9 @@ properties:
   launch-name:
     type: string
 
+  ca-cert-file:
+    type: string
+
 required:
   - how
   - project
