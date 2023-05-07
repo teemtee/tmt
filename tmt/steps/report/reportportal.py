@@ -49,6 +49,11 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="NAME",
         default=None,
         help="The launch name (base name of run id used by default).")
+    ca_cert_file: Optional[str] = tmt.utils.field(
+        option="--ca_cert_file",
+        metavar="CA_CERT",
+        default=None,
+        help="Set reportportal cert file")
 
 
 @tmt.steps.provides_method("reportportal")
@@ -122,6 +127,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         # Send the report to the ReportPortal instance
         with tmt.utils.retry_session() as session:
+            if self.get("ca_cert_file"):
+                session.verify = self.get("ca_cert_file")
             url = f"{server}/api/v1/{project}/launch/import"
             self.debug(f"Send the report to '{url}'.")
             response = session.post(
