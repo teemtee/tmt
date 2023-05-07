@@ -34,6 +34,9 @@ properties:
   ca-cert-file:
     type: string
 
+  add-meta-data:
+    type: string
+
 required:
   - how
   - project

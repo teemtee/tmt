@@ -1,6 +1,8 @@
 import dataclasses
 import io
+import json
 import os
+import re
 import types
 import zipfile
 from typing import Optional
@@ -49,6 +51,11 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="NAME",
         default=None,
         help="The launch name (base name of run id used by default).")
+    add_meta_data: Optional[str] = tmt.utils.field(
+        option="--add-meta-data",
+        metavar="ADD_METADATA",
+        default=None,
+        help="Set metadata launch { key: key1, value: value1 }")
 
 
 @tmt.steps.provides_method("reportportal")
@@ -143,8 +150,77 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             message = response.text
         if not response.ok:
             raise tmt.utils.ReportError(
-                f"Received non-ok status code from ReportPortal, response text is: {message}")
+                "Received non-ok status code from ReportPortal, "
+                f"response text is: {message}")
         else:
             self.debug(f"Response code from the server: {response.status_code}")
             self.debug(f"Message from the server: {message}")
             self.info("report", "Successfully uploaded.", "yellow")
+
+        if self.get("add-meta-data"):
+            uuid = None
+            re_result = re.search("\\w{8}-(\\w{4}-){3}\\w{12}", str(message))
+            if isinstance(re_result, re.Match):
+                uuid = re_result.group()
+
+            if not isinstance(uuid, str):
+                self.debug(f"Message from tmt: could not update metadata in {message}")
+                return
+
+            # Get the launch_id from MQ uuid
+            with tmt.utils.retry_session() as session:
+                if self.get("ca-cert-file"):
+                    session.verify = self.get("ca-cert-file")
+                url = f"{server}/api/v1/{project}/launch/uuid/{uuid}"
+                self.debug(f"Send the report to '{url}'.")
+                response = session.get(
+                    url,
+                    headers={
+                        "Authorization": "bearer " + token,
+                        "accept": "*/*",
+                        },
+                    )
+                # Handle the response
+                try:
+                    message = tmt.utils.yaml_to_dict(response.text).get("message")
+                except (tmt.utils.GeneralError, KeyError):
+                    message = response.text
+                if not response.ok:
+                    raise tmt.utils.ReportError(
+                        "Received non-ok status code from ReportPortal, "
+                        f"response text is: {message}")
+                else:
+                    self.debug(f"Response code from the server: {response.status_code}")
+                    self.debug(f"Message from the server: {message}")
+                    self.info("report", "Successfully uploaded.", "yellow")
+
+                launch_id = json.loads(response.text)["id"]
+                if launch_id:
+                    with tmt.utils.retry_session() as session:
+                        if self.get("ca-cert-file"):
+                            session.verify = self.get("ca-cert-file")
+                        url = f"{server}/api/v1/{project}/launch/{launch_id}/update"
+                        self.debug(f"Send the report to '{url}'.")
+                        response = session.put(
+                            url,
+                            headers={
+                                "Content-Type": "application/json",
+                                "Authorization": "bearer " + token,
+                                "accept": "*/*",
+                                },
+                            data=json.dumps({"attributes": self.get("add-meta-data")}),
+                            )
+
+                        # Handle the response
+                        try:
+                            message = tmt.utils.yaml_to_dict(response.text).get("message")
+                        except (tmt.utils.GeneralError, KeyError):
+                            message = response.text
+                        if not response.ok:
+                            raise tmt.utils.ReportError(
+                                "Received non-ok status code from ReportPortal, "
+                                f"response text is: {message}")
+                        else:
+                            self.debug(f"Response code from the server: {response.status_code}")
+                            self.debug(f"Message from the server: {message}")
+                            self.info("report", "Successfully uploaded.", "yellow")
