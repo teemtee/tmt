@@ -377,10 +377,13 @@ def _lint_class(
 
     exit_code = 0
 
+    linters = klass.resolve_enabled_linters(
+        enable_checks=enable_checks or None,
+        disable_checks=disable_checks or None)
+
     for lintable in klass.from_tree(context.obj.tree):
         valid, rulings = lintable.lint(
-            enable_checks=enable_checks or None,
-            disable_checks=disable_checks or None,
+            linters=linters,
             enforce_checks=enforce_checks or None)
 
         # If the object pass the checks, and we're asked to show only the failed

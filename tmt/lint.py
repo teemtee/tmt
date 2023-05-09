@@ -259,7 +259,8 @@ class Lintable(Generic[LintableT]):
             self,
             enable_checks: Optional[List[str]] = None,
             disable_checks: Optional[List[str]] = None,
-            enforce_checks: Optional[List[str]] = None) -> Tuple[bool, List[LinterRuling]]:
+            enforce_checks: Optional[List[str]] = None,
+            linters: Optional[List[Linter]] = None) -> Tuple[bool, List[LinterRuling]]:
         """
         Check the instance against a battery of linters and report results.
 
@@ -270,6 +271,8 @@ class Lintable(Generic[LintableT]):
         :param enforce_checks: if set, listed checks would be marked as failed
             if their outcome is not ``pass``, i.e. even a warning would become
             a fail.
+        :param linters: if set, only these linters would be applied. Providing
+            ``linters`` makes ``enable_checks`` and ``disable_checks`` ignored.
         :returns: a tuple of two items: a boolean reporting whether the instance
             passed the test, and a list of :py:class:`LinterRuling` items, each
             describing one linter outcome. Note that linters may produce none or
@@ -278,7 +281,7 @@ class Lintable(Generic[LintableT]):
 
         enforce_checks = enforce_checks or []
 
-        linters = self.resolve_enabled_linters(
+        linters = linters or self.resolve_enabled_linters(
             enable_checks=enable_checks,
             disable_checks=disable_checks)
 
