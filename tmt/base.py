@@ -1337,6 +1337,11 @@ class Plan(
         tmt.lint.Lintable['Plan']):
     """ Plan object (L2 Metadata) """
 
+    # The class variable _cli_options need to be reassigned with a new empty
+    # dictionary instance. Otherwise, it would use the shared dictionary
+    # from Common class and causes error in certain cases.
+    _cli_options = {}
+
     # `environment` and `environment-file` are NOT promoted to instance variables.
     context: FmfContextType = {}
     gate: List[str] = []

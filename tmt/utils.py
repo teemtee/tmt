@@ -693,6 +693,8 @@ class Common(_CommonBase):
     # perfectly fine to define multiple report plugins in plan's fmf data,
     # doing so via CLI - `report -h display report -h html` - is not supported.
     _cli_context: Optional['tmt.cli.Context'] = None
+    # FIXME: The class inheritance sets the same instance of _cli_options
+    # dictionary to all child class and causes error in certain cases.
     _cli_options: Dict[str, Any] = {}
 
     # When set to true, _opt will be ignored (default will be returned)
