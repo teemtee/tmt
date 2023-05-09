@@ -86,11 +86,12 @@ EOF
         rlRun -s "git commit -m 'add_good'"
         rlAssertGrep "$expected_command.*Passed" $rlRun_LOG
 
-        # Modify main.fmf so both /good and /wrong are checked
+        # Modify main.fmf so /wrong is checked
+        # /good is checked as well but since it passes it is not reported
         rlRun "echo summary: foo >> main.fmf"
         rlRun -s "git commit -a -m 'modify_main'" "1"
         rlAssertGrep "$expected_command.*Failed" $rlRun_LOG
-        rlAssertGrep '/good' $rlRun_LOG
+        rlAssertNotGrep '/good' $rlRun_LOG
         rlAssertGrep '/wrong' $rlRun_LOG
 
         rlRun "popd"
