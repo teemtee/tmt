@@ -200,7 +200,7 @@ class ExportPlugin:
         """ Export collection of stories """
         raise NotImplementedError()
 
-# It's tempting to merge this the default implementation of `ExporterPlugin` class,
+# It's tempting to make this the default implementation of `ExporterPlugin` class,
 # but that would mean the `ExportPlugin` would suddenly not raise `NotImplementedError`
 # in methods where the export is not supported by a child class. That does not
 # feel right, therefore the "simple export plugin" class of plugins has its own

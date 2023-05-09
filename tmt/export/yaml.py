@@ -7,7 +7,7 @@ import tmt.utils
 @tmt.base.Test.provides_export('yaml')
 @tmt.base.Plan.provides_export('yaml')
 @tmt.base.Story.provides_export('yaml')
-class JSONExporter(tmt.export.TrivialExporter):
+class YAMLExporter(tmt.export.TrivialExporter):
     @classmethod
     def _export(cls, data: tmt.export._RawExported) -> str:
         return tmt.utils.dict_to_yaml(data)
