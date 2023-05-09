@@ -3,6 +3,7 @@ from typing import Any
 
 import _pytest.logging
 import _pytest.tmpdir
+import fmf
 import py.path
 import pytest
 
@@ -97,3 +98,15 @@ def source_dir(tmppath_factory: TempPathFactory) -> Path:
 def target_dir(tmppath_factory: TempPathFactory) -> Path:
     """ Return target directory path and clean up after tests """
     return tmppath_factory.mktemp('target')
+
+
+# Present two trees we have for identifier unit tests as fixtures, to make them
+# usable in other tests as well.
+@pytest.fixture(name='id_tree_defined')
+def fixture_id_tree_defined() -> fmf.Tree:
+    return fmf.Tree(Path(__file__).parent / 'id' / 'defined')
+
+
+@pytest.fixture(name='id_tree_empty')
+def fixture_id_tree_empty() -> fmf.Tree:
+    return fmf.Tree(Path(__file__).parent / 'id' / 'empty')

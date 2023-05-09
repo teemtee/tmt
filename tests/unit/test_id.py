@@ -9,52 +9,12 @@ from click.testing import CliRunner
 import tmt
 import tmt.cli
 import tmt.log
-from tmt.identifier import ID_KEY, locate_key
+from tmt.identifier import ID_KEY
 from tmt.utils import Path
 
 runner = CliRunner()
 test_path = Path(__file__).parent / "id"
 root_logger = tmt.log.Logger.create()
-
-
-class IdLocationDefined(TestCase):
-    def setUp(self) -> None:
-        self.base_tree = fmf.Tree(test_path / "defined")
-
-    def test_defined(self):
-        node = self.base_tree.find("/yes")
-        assert locate_key(node, ID_KEY) == node
-
-    def test_defined_partially(self):
-        node = self.base_tree.find("/partial")
-        test = tmt.Test(logger=root_logger, node=node)
-        assert locate_key(node, ID_KEY) == test.node
-
-    def test_not_defined(self):
-        node = self.base_tree.find("/deep/structure/no")
-        assert locate_key(node, ID_KEY).name == "/deep"
-
-    def test_deeper(self):
-        node = self.base_tree.find("/deep/structure/yes")
-        assert node == locate_key(node, ID_KEY)
-
-    def test_deeper_not_defined(self):
-        node = self.base_tree.find("/deep/structure/no")
-        assert node != locate_key(node, ID_KEY)
-        assert locate_key(node, ID_KEY).name == "/deep"
-
-
-class IdLocationEmpty(TestCase):
-    def setUp(self) -> None:
-        self.base_tree = fmf.Tree(test_path / "empty")
-
-    def test_defined_root(self):
-        node = self.base_tree.find("/")
-        assert locate_key(node, ID_KEY) is None
-
-    def test_defined(self):
-        node = self.base_tree.find("/some/structure")
-        assert locate_key(node, ID_KEY) is None
 
 
 class IdEmpty(TestCase):

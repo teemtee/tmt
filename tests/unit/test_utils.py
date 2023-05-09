@@ -9,6 +9,7 @@ import unittest.mock
 from datetime import timedelta
 from typing import Any, List, Tuple
 
+import fmf
 import pytest
 
 import tmt
@@ -1032,3 +1033,49 @@ def test_filter_paths(source_dir):
     )
 def test_sanitize_name(name: str, allow_slash: bool, sanitized: str) -> None:
     assert tmt.utils.sanitize_name(name, allow_slash=allow_slash) == sanitized
+
+
+def test_locate_key_origin(id_tree_defined: fmf.Tree) -> None:
+    node = id_tree_defined.find('/yes')
+
+    assert tmt.utils.locate_key_origin(node, 'id') is node
+
+
+def test_locate_key_origin_defined_partially(
+        root_logger: tmt.log.Logger,
+        id_tree_defined: fmf.Tree) -> None:
+    node = id_tree_defined.find('/partial')
+    test = tmt.Test(logger=root_logger, node=node)
+
+    assert tmt.utils.locate_key_origin(node, 'id') is test.node
+
+
+def test_locate_key_origin_not_defined(id_tree_defined: fmf.Tree) -> None:
+    node = id_tree_defined.find('/deep/structure/no')
+
+    assert tmt.utils.locate_key_origin(node, 'id').name == '/deep'
+
+
+def test_locate_key_origin_deeper(id_tree_defined: fmf.Tree) -> None:
+    node = id_tree_defined.find('/deep/structure/yes')
+
+    assert tmt.utils.locate_key_origin(node, 'id') is node
+
+
+def test_locate_key_origin_deeper_not_defined(id_tree_defined: fmf.Tree) -> None:
+    node = id_tree_defined.find('/deep/structure/no')
+
+    assert tmt.utils.locate_key_origin(node, 'id') is not node
+    assert tmt.utils.locate_key_origin(node, 'id').name == '/deep'
+
+
+def test_locate_key_origin_empty_defined_root(id_tree_empty: fmf.Tree) -> None:
+    node = id_tree_empty.find('/')
+
+    assert tmt.utils.locate_key_origin(node, 'id') is None
+
+
+def test_locate_key_origin_empty_defined(id_tree_empty: fmf.Tree) -> None:
+    node = id_tree_empty.find('/some/structure')
+
+    assert tmt.utils.locate_key_origin(node, 'id') is None

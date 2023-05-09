@@ -5050,3 +5050,41 @@ def is_selinux_supported() -> bool:
     """
     with open('/proc/filesystems') as file:
         return any('selinuxfs' in line for line in file)
+
+
+def locate_key_origin(node: fmf.Tree, key: str) -> Optional[fmf.Tree]:
+    """
+    Find an fmf node where the given key is defined.
+
+    :param node: node to begin with.
+    :param key: key to look for.
+    :returns: first node in which the key is defined, ``None`` if ``node`` nor
+        any of its parents define it.
+    """
+
+    # Find the closest parent with different key content
+    while node.parent:
+        if node.get(key) != node.parent.get(key):
+            break
+        node = node.parent
+
+    # Return node only if the key is defined
+    if node.get(key) is None:
+        return None
+
+    return node
+
+
+def is_key_origin(node: fmf.Tree, key: str) -> bool:
+    """
+    Find out whether the given key is defined in the given node.
+
+    :param node: node to check.
+    :param key: key to check.
+    :returns: ``True`` if the key is defined in ``node``, not by one of its
+        parents, ``False`` otherwise.
+    """
+
+    origin = locate_key_origin(node, key)
+
+    return origin is not None and node.name == origin.name

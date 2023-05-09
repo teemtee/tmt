@@ -660,7 +660,7 @@ class Core(
         self.node = node
 
         # Verify id is not inherited from parent.
-        if self.id and not tmt.identifier.key_defined_in_leaf(node, 'id'):
+        if self.id and not tmt.utils.is_key_origin(node, 'id'):
             raise tmt.utils.SpecificationError(
                 f"The 'id' key '{node.get('id')}' in '{self.name}' "
                 f"is inherited from parent, should be defined in a leaf.")
@@ -1268,9 +1268,7 @@ class Test(
     def lint_legacy_relevancy_rules(self) -> LinterReturn:
         """ T005: relevancy has been obsoleted by adjust """
 
-        filename = self.node.sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
-        relevancy = metadata.pop('relevancy', None)
+        relevancy = self.node.get('relevancy')
 
         if not relevancy:
             yield LinterOutcome.SKIP, 'legacy relevancy not detected'
@@ -1281,7 +1279,15 @@ class Test(
             yield LinterOutcome.FAIL, 'relevancy has been obsoleted by adjust'
             return
 
-        metadata['adjust'] = tmt.convert.relevancy_to_adjust(relevancy)
+        if not tmt.utils.is_key_origin(self.node, 'relevancy'):
+            yield LinterOutcome.FAIL, \
+                'relevancy detected but inherited from test parent, please, fix manually'
+            return
+
+        filename = self.node.sources[-1]
+        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+
+        metadata['adjust'] = tmt.convert.relevancy_to_adjust(metadata.pop('relevancy'))
         self.write(filename, tmt.utils.dict_to_yaml(metadata))
 
         yield LinterOutcome.FIXED, 'relevancy converted into adjust'
@@ -1289,9 +1295,7 @@ class Test(
     def lint_legacy_coverage_key(self) -> LinterReturn:
         """ T006: coverage has been obsoleted by link """
 
-        filename = self.node.sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
-        coverage = metadata.pop('coverage', None)
+        coverage = self.node.get('coverage')
 
         if coverage is None:
             yield LinterOutcome.SKIP, "legacy 'coverage' field not detected"
@@ -1344,27 +1348,50 @@ class Test(
     def lint_require_type_field(self) -> LinterReturn:
         """ T009: require fields should have type field """
 
-        filename = self.node.sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        self.node.get('require')
         missing_type = []
 
         # Check require items have type field
-        for require in metadata.get('require', []):
-            if isinstance(require, dict) and not require.get('type'):
-                missing_type.append(require)
+        complex_dependencies = [
+            dependency for dependency in self.node.get('require', [])
+            if isinstance(dependency, dict)
+            ]
 
-        if missing_type and not self.opt('fix'):
-            yield LinterOutcome.FAIL, 'requirements should specify type, library or file'
+        if not complex_dependencies:
+            yield LinterOutcome.SKIP, 'library/file requirements not used'
             return
 
-        if missing_type:
-            for require in missing_type:
-                require['type'] = 'file' if require.get('pattern') else 'library'
-            self.write(filename, tmt.utils.dict_to_yaml(metadata))
-            yield LinterOutcome.FIXED, 'added type to requirements'
+        missing_type = [
+            dependency for dependency in complex_dependencies if not dependency.get('type')
+            ]
+
+        if not missing_type:
+            yield LinterOutcome.PASS, 'all library/file requirements specify type'
             return
 
-        yield LinterOutcome.PASS, 'all requirements have type field'
+        if not self.opt('fix'):
+            yield LinterOutcome.FAIL, 'library/file requirements should specify type'
+            return
+
+        filename = self.node.sources[-1]
+        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+
+        if not tmt.utils.is_key_origin(self.node, 'require') \
+                and all(dependency in metadata.get('require', []) for dependency in missing_type):
+            yield LinterOutcome.FAIL, \
+                'some library/file requirement are missing type, but inherited from test parent,' \
+                ' please, fix manually'
+            return
+
+        for dependency in metadata.get('require', []):
+            if not isinstance(dependency, dict) or dependency.get('type'):
+                continue
+
+            dependency['type'] = 'file' if dependency.get('pattern') else 'library'
+
+        self.write(filename, tmt.utils.dict_to_yaml(metadata))
+
+        yield LinterOutcome.FIXED, 'added type to requirements'
 
 
 @dataclasses.dataclass(repr=False)
