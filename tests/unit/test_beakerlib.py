@@ -115,8 +115,8 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
         url='https://github.com/beakerlib/THISDOESNTEXIST',
         name='/',
         )
-    with pytest.raises(tmt.utils.GeneralError):
-        tmt.beakerlib.Library(
+    with pytest.raises(tmt.utils.RunError):
+        tmt.libraries.library_factory(
             logger=root_logger,
             identifier=identifier,
             parent=parent)
@@ -124,8 +124,15 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
     monkeypatch.setattr("tmt.utils.git_clone", MagicMock(
         side_effect=RuntimeError('Should not be called')))
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.beakerlib.Library(
+        tmt.libraries.library_factory(
             logger=root_logger,
             identifier=identifier,
+            parent=parent)
+    # And it shouldn't be called for library() neither
+    rpm_like = tmt.base.RequireSimple('library(THISDOESNTEXIST/foo)')
+    with pytest.raises(tmt.libraries.LibraryError):
+        tmt.libraries.library_factory(
+            logger=root_logger,
+            identifier=rpm_like,
             parent=parent)
     shutil.rmtree(parent.workdir)

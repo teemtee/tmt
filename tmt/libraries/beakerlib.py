@@ -3,7 +3,6 @@ import re
 import shutil
 from tempfile import TemporaryDirectory
 from typing import Dict, Optional, Set, cast
-from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
 import fmf
 
@@ -28,7 +27,7 @@ STRIP_SUFFIX_FORGES = [
 
 
 class CommonWithLibraryCache(tmt.utils.Common):
-    _library_cache: Dict[str, 'BeakerLib']
+    _library_cache: Dict[Path, 'BeakerLib']
     _nonexistent_url: Set[str]
 
 
@@ -158,7 +157,7 @@ class BeakerLib(Library):
         return super().fmf_node_path
 
     @property
-    def _library_cache(self) -> Dict[str, 'BeakerLib']:
+    def _library_cache(self) -> Dict[Path, 'BeakerLib']:
         # Initialize library cache (indexed by the repository name)
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         if not hasattr(self.parent, '_library_cache'):
@@ -221,7 +220,7 @@ class BeakerLib(Library):
             try:
                 if self.url:
                     if self.url in self._nonexistent_url:
-                        raise tmt.utils.GitUrlError("Already know '{self.url}' is not found.")
+                        raise tmt.utils.GitUrlError(f"Already know '{self.url}' is not found.")
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
                     tmt.utils.git_clone(self.url, directory, self.parent,
