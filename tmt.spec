@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.22.0
+Version: 1.23.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -250,6 +250,49 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Thu May 11 2023 Lukáš Zachar <lzachar@redhat.com> - 1.23.0-1
+- Add `Artemis` to the `provision` documentation
+- Add artemis's user defined watchdog specification
+- Add support for require of files and directories
+- Expose test serial number as an environment variable
+- Print only failed objects when linting in hook
+- Refactored metadata linting
+- Request newer os image and python version for docs
+- Explore all available plugins only once
+- Add test start/end timestamps into results
+- Implement `deprecated` for obsoleted options
+- Unify results examples in test and plan specification
+- Convert gitlab private namespace into dist-git url
+- Shorter Nitrate summary name
+- Correct the path of Ansible playbook
+- Refactor logging during plugin discovery, using tmt's logging
+- Improve names and docs around CLI context in Common classes
+- Fix ruamel.yaml type waivers that mypy sometimes ignores
+- Drop some no longer valid TODO comments
+- Replace '--t' by '-t' when creating a new plan with template
+- Add a new cpu property `flag` to the hardware spec
+- Fix duplicate export for Polarion hyperlinks
+- Option to list locally cached images for testcloud
+- Log out testcloud version in virtual provision
+- Use yq instead of grep when testing YAML content
+- Don't use specific addresses in virtual provision
+- Polish workdir pruning - pathlib transition & logging
+- Support for fuzzy matching subcommand
+- Add new link relation `test-script` definition
+- Remove `group` from the `multihost` specification
+- Move "show exception" code to utils
+- Add missing support for 0.0.55 and 0.0.48 API
+- Add type annotations to tmt.steps.STEPS/ACTIONS
+- Support logging "topics" to allow lower unnecessary verbosity
+- Add support for right-padding of logging labels
+- Move tools config to `pyproject.toml`, add Ruff
+- Example to parametrize test selection via envars
+- Merge run_command() and _run_command() into Command.run()
+- Install beakerlib into images used in test/full
+- Don't run `ShellCheck` on tests & decrease severity
+- Support multiline strings for option help texts
+- Fix tests run only in full testsuite
+
 * Fri Apr 14 2023 Petr Šplíchal <psplicha@redhat.com> - 1.22.0-1
 - Change help text of the `tmt --root` option
 - Add support for `results.json` in custom results
