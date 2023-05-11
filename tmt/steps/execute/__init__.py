@@ -311,8 +311,15 @@ class ExecutePlugin(tmt.steps.Plugin):
         search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', results)
 
         if search_result is None or search_state is None:
+            # Same outcome but make it easier to debug
+            if search_result is None:
+                missing_piece = 'TESTRESULT_RESULT_STRING='
+                hint = ''
+            else:
+                missing_piece = 'TESTRESULT_STATE='
+                hint = ', possibly outdated beakerlib (requires 1.23+)'
             self.debug(
-                f"No result or state found in '{beakerlib_results_file}'.",
+                f"No '{missing_piece}' found in '{beakerlib_results_file}'{hint}.",
                 level=3)
             note = 'beakerlib: Result/State missing'
             return [tmt.Result.from_test(
