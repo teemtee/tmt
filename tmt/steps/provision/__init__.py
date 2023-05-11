@@ -2,7 +2,6 @@ import collections
 import dataclasses
 import datetime
 import enum
-import functools
 import os
 import random
 import re
@@ -11,8 +10,8 @@ import string
 import subprocess
 import tempfile
 from shlex import quote
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
-                    Type, TypeVar, Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type,
+                    TypeVar, Union, cast, overload)
 
 import click
 import fmf
@@ -67,25 +66,6 @@ class GuestPackageManager(enum.Enum):
 
 
 T = TypeVar('T')
-_FactQuery = Callable[['GuestFacts', 'Guest'], Optional[T]]
-_SafeFactQuery = Callable[['GuestFacts', 'Guest'], T]
-
-
-def raise_on_none(family: str) -> Callable[[_FactQuery[T]], _SafeFactQuery[T]]:
-    def outer(fn: _FactQuery[T]) -> _SafeFactQuery[T]:
-        @functools.wraps(fn)
-        def inner(self: 'GuestFacts', guest: 'Guest') -> T:
-            fact = fn(self, guest)
-
-            if fact is not None:
-                return fact
-
-            raise tmt.utils.GeneralError(
-                f'Failed to identify {family} of guest "{guest}".')
-
-        return inner
-
-    return outer
 
 
 @dataclasses.dataclass
@@ -499,9 +479,9 @@ class Guest(tmt.utils.Common):
         if self.opt('dry'):
             return
 
-        self.info('arch', self.facts.arch, 'green')
-        self.info('distro', self.facts.distro, 'green')
-        self.verbose('kernel', self.facts.kernel_release, 'green')
+        self.info('arch', self.facts.arch or 'unknown', 'green')
+        self.info('distro', self.facts.distro or 'unknown', 'green')
+        self.verbose('kernel', self.facts.kernel_release or 'unknown', 'green')
         self.verbose(
             'package manager',
             self.facts.package_manager.value if self.facts.package_manager else 'unknown',
