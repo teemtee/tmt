@@ -434,7 +434,7 @@ class GuestTestcloud(tmt.GuestSsh):
             import guestfs  # noqa: F401
         except ImportError:
             match_legacy = re.search(
-                r'(rhel|centos).*-7', self.image_url.lower())
+                r'(rhel|centos)\D+(6\.|7\.).*', self.image_url.lower())
             if match_legacy:
                 self._instance.pci_net = "e1000"
             else:
