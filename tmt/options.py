@@ -99,6 +99,10 @@ def option(
         else:
             help = deprecated.rendered
 
+    # Add a metavar listing choices unless an explicit metavar has been provided
+    if isinstance(type, click.Choice) and metavar is None:
+        metavar = '|'.join(type.choices)
+
     # Instead of repeating all keyword parameters, use locals(), they are all there
     # already, and it's a dictionary - just don't forget to remove names that are
     # not accepted by click and the positional parameter.
@@ -122,9 +126,8 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
         help='Be quiet. Exit code is just enough for me.'),
     option(
         '--log-topic',
-        metavar=f'[{"|".join(topic.value for topic in tmt.log.Topic)}]',
+        type=click.Choice([topic.value for topic in tmt.log.Topic]),
         multiple=True,
-        type=str,
         help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
@@ -278,7 +281,6 @@ LINT_OPTIONS: List[ClickOptionDecoratorType] = [
         help='Display only tests/plans/stories that fail a check.'),
     option(
         '--outcome-only',
-        metavar='|'.join(_lint_outcomes),
         multiple=True,
         type=click.Choice(_lint_outcomes),
         help='Display only checks with the given outcome.')

@@ -235,19 +235,19 @@ def main(
 @option(
     '-a', '--all', help='Run all steps, customize some.', is_flag=True)
 @option(
-    '-u', '--until', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
+    '-u', '--until', type=click.Choice(tmt.steps.STEPS),
     help='Enable given step and all preceding steps.')
 @option(
-    '-s', '--since', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
+    '-s', '--since', type=click.Choice(tmt.steps.STEPS),
     help='Enable given step and all following steps.')
 @option(
-    '-A', '--after', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
+    '-A', '--after', type=click.Choice(tmt.steps.STEPS),
     help='Enable all steps after the given one.')
 @option(
-    '-B', '--before', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
+    '-B', '--before', type=click.Choice(tmt.steps.STEPS),
     help='Enable all steps before the given one.')
 @option(
-    '-S', '--skip', type=click.Choice(tmt.steps.STEPS), metavar='STEP',
+    '-S', '--skip', type=click.Choice(tmt.steps.STEPS),
     help='Skip given step(s) during test run execution.', multiple=True)
 @option(
     '-e', '--environment', metavar='KEY=VALUE|@FILE', multiple=True,
@@ -704,11 +704,11 @@ _test_export_default = 'yaml'
 @click.pass_context
 @filter_options_long
 @option(
-    '-h', '--how', metavar='METHOD', default=_test_export_default, show_default=True,
+    '-h', '--how', default=_test_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_test_export_formats))
 @option(
-    '--format', metavar='FORMAT', default=_test_export_default, show_default=True,
+    '--format', default=_test_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_test_export_formats))
 @option(
@@ -971,11 +971,11 @@ _plan_export_default = 'yaml'
 @click.pass_context
 @filter_options_long
 @option(
-    '-h', '--how', metavar='METHOD', default=_plan_export_default, show_default=True,
+    '-h', '--how', default=_plan_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_plan_export_formats))
 @option(
-    '--format', metavar='FORMAT', default=_plan_export_default, show_default=True,
+    '--format', default=_plan_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_plan_export_formats))
 @option(
@@ -1221,11 +1221,11 @@ _story_export_default = 'yaml'
 @filter_options_long
 @story_flags_filter_options
 @option(
-    '-h', '--how', metavar='METHOD', default=_story_export_default, show_default=True,
+    '-h', '--how', default=_story_export_default, show_default=True,
     help='Output format.',
     type=click.Choice(choices=_story_export_formats))
 @option(
-    '--format', metavar='FORMAT', default=_story_export_default, show_default=True,
+    '--format', default=_story_export_default, show_default=True,
     help='Output format. Deprecated, use --how instead.',
     type=click.Choice(choices=_story_export_formats))
 @option(
@@ -1351,9 +1351,9 @@ def stories_id(
 @click.pass_context
 @click.argument('path', default='.')
 @option(
-    '-t', '--template', default='empty', metavar='TEMPLATE',
+    '-t', '--template', default='empty',
     type=click.Choice(['empty', *tmt.templates.INIT_TEMPLATES]),
-    help=f"Template ({listed(tmt.templates.INIT_TEMPLATES, join='or')}).")
+    help="Use this template to populate the tree.")
 @verbosity_options
 @force_dry_options
 def init(
