@@ -81,11 +81,13 @@ properties:
     anyOf:
       - type: string
       - $ref: "/schemas/common#/definitions/beakerlib_library"
+      - $ref: "/schemas/common#/definitions/require_file"
       - type: array
         items:
           anyOf:
             - type: string
             - $ref: "/schemas/common#/definitions/beakerlib_library"
+            - $ref: "/schemas/common#/definitions/require_file"
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
   result:

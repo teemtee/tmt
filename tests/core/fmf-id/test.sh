@@ -23,12 +23,11 @@ rlJournalStart
 
         rlRun -s "tmt test -vvvv show /test-with-valid-ref"
         rlAssertNotGrep "warn:" $rlRun_LOG
-        rlAssertGrep "{'ref': 'branch-or-tag-ref'}" $rlRun_LOG
-        rlAssertGrep "{'ref': '8deadbeaf8'}" $rlRun_LOG
+        rlAssertGrep "{'ref': 'branch-or-tag-ref', 'type': 'library'}" $rlRun_LOG
+        rlAssertGrep "{'ref': '8deadbeaf8', 'type': 'library'}" $rlRun_LOG
         rlAssertGrep "some-package" $rlRun_LOG
 
         rlRun -s "tmt test -vvvv show /test-with-invalid-ref" 2
-        rlAssertGrep "warn: /test-with-invalid-ref:require .* is not valid under any of the given schemas" $rlRun_LOG
         rlAssertGrep "The 'ref' field must be a string, got 'int'." $rlRun_LOG
     rlPhaseEnd
 

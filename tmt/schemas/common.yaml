@@ -53,6 +53,14 @@ definitions:
       - s390x
       - x86_64
 
+  # List of all available require types
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
+  require_type:
+    type: string
+    enum:
+      - library
+      - file
+
   # helper for specifying array of strings
   array_of_strings:
     type: array
@@ -87,12 +95,19 @@ definitions:
       nick:
         type: string
 
+      type:
+        $ref: "/schemas/common#/definitions/require_type"
+
+    required:
+      - type
+
     # This would have been the easy way, understandable by newer jsonschema
     # packages.
     # url: true
     # ref: true
     # path: true
     # name: true
+    # type: true
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
@@ -180,6 +195,22 @@ definitions:
       name:
         type: string
         pattern: "^/"
+
+  require_file:
+    type: object
+    minProperties: 1
+    properties:
+      pattern:
+        anyOf:
+          - type: string
+          - $ref: "/schemas/common#/definitions/array_of_strings"
+
+      type:
+        $ref: "/schemas/common#/definitions/require_type"
+
+    required:
+      - type
+      - pattern
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#link
   # helper for one link

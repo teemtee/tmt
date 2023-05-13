@@ -259,3 +259,27 @@ def test_ks_schema_examples(ks: str, request) -> None:
         'Kickstart requirements',
         request.node.callspec.id
         )
+
+
+def test_watchdog_specification() -> None:
+    tree = tmt.Tree(logger=LOGGER)
+
+    # Our user defined watchdog timeout values for artemis are supposed to be referenced
+    # from provision plugin schemas. Instead of cutting it out, we can use a provision
+    # plugin schema & prepare the fmf node correctly, to pretend it comes from `provision` step.
+    # The only required field is usually `how`.
+    node = fmf.Tree(
+        {
+            'how': 'artemis',
+            'watchdog-period-delay': 10,
+            'watchdog-dispatch-delay': 42,
+            }
+        )
+
+    validate_node(
+        tree,
+        node,
+        os.path.join('provision', 'artemis.yaml'),
+        'Watchdog specification',
+        'both-wd-options'
+        )

@@ -100,7 +100,7 @@ repository's ``.pre-commit-config.yaml``::
 
     repos:
     - repo: https://github.com/teemtee/tmt.git
-      rev: 1.21.0
+      rev: 1.23.0
       hooks:
       - id: tmt-lint
 

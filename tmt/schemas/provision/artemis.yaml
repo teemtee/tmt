@@ -79,5 +79,13 @@ properties:
   user:
     type: string
 
+  watchdog-dispatch-delay:
+    type: integer
+    minimum: 1
+
+  watchdog-period-delay:
+    type: integer
+    minimum: 1
+
 required:
   - how

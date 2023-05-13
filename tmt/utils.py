@@ -17,6 +17,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import unicodedata
@@ -696,6 +697,7 @@ class Common(_CommonBase):
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
     _workdir: WorkdirType = None
+    _clone_dirpath: Optional[Path] = None
 
     # TODO: must be declared outside of __init__(), because it must exist before
     # __init__() gets called to allow logging helpers work correctly when used
@@ -1200,6 +1202,20 @@ class Common(_CommonBase):
 
         return self._workdir
 
+    @property
+    def clone_dirpath(self) -> Path:
+        """
+        Path for cloning into
+
+        Used internally for picking specific libraries (or anything
+        else) from cloned repos for filtering purposes, it is removed at
+        the end of relevant step.
+        """
+        if not self._clone_dirpath:
+            self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
+
+        return self._clone_dirpath
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1484,6 +1500,7 @@ def copytree(
     if rsync_dst[-1] == '/':
         rsync_dst = rsync_dst[:-1]
 
+    dst.mkdir(parents=True, exist_ok=dirs_exist_ok)
     command = ["rsync", "-r"]
     if symlinks:
         command.append('-l')
@@ -1500,6 +1517,42 @@ def copytree(
             [f"Unable to copy '{src}' into '{dst}' using rsync.",
              outcome.returncode, outcome.stdout])
     return dst
+
+
+def get_full_metadata(fmf_tree_path: str, node_path: str) -> Any:
+    """
+    Get full metadata for a node in any fmf tree
+
+    Go through fmf tree nodes using given relative node path
+    and return full data as dictionary.
+    """
+    return fmf.Tree(fmf_tree_path).find(node_path).data
+
+
+def filter_paths(directory: Path, searching: List[str], files_only: bool = False) -> List[Path]:
+    """
+    Filter files for specific paths we are searching for inside a directory
+
+    Returns list of matching paths.
+    """
+    all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
+    alldirs = [str(dir) for dir in all_paths if dir.is_dir()]
+    allfiles = [str(file) for file in all_paths if not file.is_dir()]
+    found_paths: List[str] = []
+
+    for search_string in searching:
+        regex = re.compile(search_string)
+
+        if not files_only:
+            # Search in directories first to reduce amount of copying later
+            matches = list(filter(regex.search, alldirs))
+            if matches:
+                found_paths += matches
+                continue
+
+        # Search through all files
+        found_paths += list(filter(regex.search, allfiles))
+    return [Path(path) for path in set(found_paths)]  # return all matching unique paths as Path's
 
 
 # These two are helpers for shell_to_dict and environment_to_dict -

@@ -11,7 +11,7 @@ import fmf
 
 import tmt
 import tmt.base
-import tmt.beakerlib
+import tmt.libraries
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -541,11 +541,18 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             test.path = prefix_path / test.path.unrooted()
             # Check for possible required beakerlib libraries
             if test.require or test.recommend:
-                test.require, test.recommend, _ = tmt.beakerlib.dependencies(
+                test.require, test.recommend, _ = tmt.libraries.dependencies(
                     original_require=test.require,
                     original_recommend=test.recommend,
                     parent=self,
-                    logger=self._logger)
+                    logger=self._logger,
+                    # TODO: Change with pruning for tests
+                    source_location=self.workdir / 'tests',
+                    target_location=self.workdir / 'tests')
+
+        # Cleanup clone directories
+        if self.clone_dirpath.exists():
+            shutil.rmtree(self.clone_dirpath, ignore_errors=True)
 
         # Add TMT_SOURCE_DIR variable for each test
         if dist_git_source:

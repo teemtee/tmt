@@ -404,6 +404,10 @@ TMT_TEST_DATA
     back from the guest and available for inspection after the
     test execution is finished.
 
+TMT_TEST_SERIAL_NUMBER
+    The serial number of running test in the whole plan. Each test
+    is assigned its own serial number.
+
 TMT_TEST_METADATA
     Path to a YAML-formatted file with test metadata collected
     during the ``discover`` step.
@@ -475,7 +479,8 @@ Cahyna, Martin Litwora, Brian Grech, Vojtěch Eichler, Philip Daly,
 Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín,
 Lukáš Kotek, Daniel Diblík, Laura Barcziova, Marián Konček,
 Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
-Macků, Filip Vágner, Martin Hoyer and Iveta Česalová.
+Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang
+and Zhaojuan Guo.
 
 
 Copyright

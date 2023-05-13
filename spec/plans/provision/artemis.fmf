@@ -1,0 +1,62 @@
+summary: Provision a guest via an Artemis service
+description: |
+    Reserve a machine using the Artemis service.
+    Users can specify many requirements, mostly regarding the
+    desired OS, RAM, disk size and more. Most of the HW specifications
+    defined in the :ref:`/spec/hardware` are supported. Including the
+    :ref:`/spec/plans/provision/kickstart`.
+
+    Artemis takes machines from AWS, OpenStack, Beaker or Azure.
+    By default, Artemis handles the selection of a cloud provider
+    to its best abilities and the required specification. However, it
+    is possible to specify the keyword ``pool`` and select the
+    desired cloud provider.
+
+    Artemis project:
+    https://gitlab.com/testing-farm/artemis
+
+    .. note::
+
+        When used together with TF infrastructure
+        some of the options from the first example below
+        will be filled for you by the TF service.
+
+example:
+  - |
+    provision:
+        how: artemis
+        # Specify the Artemis URL where the service is running.
+        # Here is an example of a local Artemis instance
+        api-url: "http://127.0.0.1:8001/v0.0.56"
+        api-version: "0.0.56"
+        image: Fedora-37
+        # ssh key used to connect to the machine
+        keyname: master-key
+
+  - |
+    provision:
+        how: artemis
+        # How long (seconds) to wait for guest provisioning to complete
+        provision-timeout: 300
+        # How often (seconds) check Artemis API for provisioning status
+        provision-tick: 40
+        # How long (seconds) to wait for API operations to complete
+        api-timeout: 15
+        # How many attempts to use when talking to API
+        api-retries: 5
+        # How long (seconds) before the guest "is-alive" watchdog is dispatched
+        watchdog-dispatch-delay: 200
+        # How often (seconds) check that the guest "is-alive"
+        watchdog-period-delay : 500
+  - |
+    provision:
+        how: artemis
+        arch: x86_64
+        pool: beaker
+        hardware:
+            # Pick a guest with at least 8 GB RAM
+            memory: ">= 8 GB"
+
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/schemas/provision/artemis.yaml

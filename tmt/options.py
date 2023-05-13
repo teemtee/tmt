@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 import click
 
+import tmt.lint
 import tmt.log
 import tmt.utils
 
@@ -171,6 +172,47 @@ FMF_SOURCE_OPTIONS: List[ClickOptionDecoratorType] = [
 
 REMOTE_PLAN_OPTIONS: List[ClickOptionDecoratorType] = [
     click.option('-s', '--shallow', is_flag=True, help='Do not clone remote plan.')
+    ]
+
+
+_lint_outcomes = [member.value for member in tmt.lint.LinterOutcome.__members__.values()]
+
+LINT_OPTIONS: List[ClickOptionDecoratorType] = [
+    click.option(
+        '--list-checks',
+        is_flag=True,
+        help='List all available checks.'),
+    click.option(
+        '--enable-check',
+        'enable_checks',
+        metavar='CHECK-ID',
+        multiple=True,
+        type=str,
+        help='Run only checks mentioned by this option.'),
+    click.option(
+        '--disable-check',
+        'disable_checks',
+        metavar='CHECK-ID',
+        multiple=True,
+        type=str,
+        help='Do not run checks mentioned by this option.'),
+    click.option(
+        '--enforce-check',
+        'enforce_checks',
+        metavar='CHECK-ID',
+        multiple=True,
+        type=str,
+        help='Consider linting as failed if any of the checks is not a pass.'),
+    click.option(
+        '--failed-only',
+        is_flag=True,
+        help='Display only tests/plans/stories that fail a check.'),
+    click.option(
+        '--outcome-only',
+        metavar='|'.join(_lint_outcomes),
+        multiple=True,
+        type=click.Choice(_lint_outcomes),
+        help='Display only checks with the given outcome.')
     ]
 
 

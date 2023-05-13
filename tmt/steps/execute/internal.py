@@ -150,6 +150,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         environment["TMT_TEST_NAME"] = test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
+        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serialnumber)
         environment["TMT_TEST_METADATA"] = str(
             data_directory / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = str(
