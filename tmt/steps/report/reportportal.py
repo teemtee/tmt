@@ -92,8 +92,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         super().go()
 
-        endpoint = self.get("url")
-        if not endpoint:
+        server = self.get("url")
+        if not server:
             raise tmt.utils.ReportError("No ReportPortal server url provided.")
         project = self.get("project")
         if not project:
@@ -102,16 +102,16 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         if not token:
             raise tmt.utils.ReportError("No ReportPortal token provided.")
 
-        launch_name = self.step.plan.name if not self.get("launch") \
-            else self.get("launch")
+        assert self.step.plan.name is not None
+        launch_name = self.get("launch") or self.step.plan.name
+        self.info("launch", launch_name, color="green")
 
         attributes = {k: v[0] for k, v in self.step.plan._fmf_context.items()}
-        env_variables = self.get("env-vars") if self.get("env-vars") else []
+        env_variables = self.get("env-vars") or []
         # # use env_variables from the environment:
-        # env_variables = os.environ.get("TMT_REPORT_REPORTPORTAL_ENVARS").split(", ") \
-        #              if os.environ.get("TMT_REPORT_REPORTPORTAL_ENVARS") else []
+        # env_variables = os.environ.get("TMT_REPORT_REPORTPORTAL_ENVARS").split(", ") or []
 
-        service = ReportPortalService(endpoint=endpoint, project=project, token=token)
+        service = ReportPortalService(endpoint=server, project=project, token=token)
         assert service is not None
 
         # create launch and its items
@@ -135,6 +135,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         for result in self.step.plan.execute.results():
 
             # create test item
+            assert result.name is not None
+            self.info("test", result.name, color="yellow")
             test = [test for test in self.step.plan.discover.tests()
                     if test.serialnumber == result.serialnumber][0]
             attributes['contact'] = test.contact[0]
@@ -143,8 +145,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 name=result.name,
                 start_time=timestamp(),
                 item_type="TEST",
-                test_case_id=None if not test.id else test.id,
-                code_ref=None if not test.web_link() else test.web_link(),
+                test_case_id=test.id or None,
+                code_ref=test.web_link() or None,
                 parameters={k: v for k, v in test.environment.items()
                             if not k.startswith("TMT_") or k in env_variables},
                 attributes=attributes,
@@ -178,6 +180,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         service.finish_launch(end_time=timestamp())
         service.terminate()
 
-        self.info("Report Portal launch URL", launch_url)
+        self.info("RP URL", launch_url, color="green")
 
         return
