@@ -116,7 +116,7 @@ class StepData(
     """
 
     # TODO: we can easily add lists of keys for various verbosity levels...
-    KEYS_SHOW_ORDER = ['name', 'how']
+    _KEYS_SHOW_ORDER = ['name', 'how']
 
     name: str
     how: str
@@ -913,7 +913,7 @@ class BasePlugin(Phase):
         # First, follow the order prefered by step data, but emit only the keys
         # that are allowed. Each emitted key would be removed so we wouldn't
         # emit it again when showing the unsorted rest of keys.
-        for key in self.data.KEYS_SHOW_ORDER:
+        for key in self.data._KEYS_SHOW_ORDER:
             if key not in keys:
                 continue
 

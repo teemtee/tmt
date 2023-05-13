@@ -4224,7 +4224,7 @@ def dataclass_normalize_field(
 
     # First try new-style fields, i.e. normalize callback stored in field metadata
     if dataclasses.is_dataclass(container):
-        field: dataclasses.Field[Any] = dataclass_field_by_name(container, keyname)
+        field: dataclasses.Field[Any] = dataclass_field_by_name(type(container), keyname)
         normalize_callback = dataclass_field_metadata(field).normalize_callback
 
     if not normalize_callback:
@@ -4388,6 +4388,23 @@ def normalize_shell_script_list(
         f"Field can be either string or list of strings, '{type(value).__name__}' found.")
 
 
+def normalize_fmf_context(
+        value: Optional[Dict[Any, Any]],
+        logger: tmt.log.Logger) -> FmfContextType:
+    if value is None:
+        return {}
+
+    normalized: FmfContextType = {}
+
+    for dimension, values in value.items():
+        if isinstance(values, list):
+            normalized[str(dimension)] = [str(v) for v in values]
+        else:
+            normalized[str(dimension)] = [str(values)]
+
+    return normalized
+
+
 class NormalizeKeysMixin(_CommonBase):
     """
     Mixin adding support for loading fmf keys into object attributes.
@@ -4404,7 +4421,7 @@ class NormalizeKeysMixin(_CommonBase):
     """
 
     # If specified, keys would be iterated over in the order as listed here.
-    KEYS_SHOW_ORDER: List[str] = []
+    _KEYS_SHOW_ORDER: List[str] = []
 
     # NOTE: these could be static methods, self is probably useless, but that would
     # cause complications when classes assign these to their members. That makes them
@@ -4469,7 +4486,7 @@ class NormalizeKeysMixin(_CommonBase):
 
             for name, value in klass.__dict__.get('__annotations__', {}).items():
                 # Skip special fields that are not keys.
-                if name == 'KEYS_SHOW_ORDER':
+                if name in ('_KEYS_SHOW_ORDER', '_linter_registry', '_export_plugin_registry'):
                     continue
 
                 yield (name, value)

@@ -206,6 +206,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         logger.debug('test wrapper', str(test_wrapper_filepath))
 
         # Prepare the test command (use default options for shell tests)
+        # TODO: `test` is mandatory, but it's defined after attributes with default
+        # values. Try to find a way how to drop the need for a dummy default.
+        assert test.test is not None
         if test.framework == "shell":
             test_command = ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {test.test}")
         else:
