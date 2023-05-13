@@ -28,8 +28,13 @@ properties:
   project:
     type: string
 
-  launch-name:
+  launch:
     type: string
+
+  env-vars:
+    type: array
+    items:
+      type: string
 
 required:
   - how

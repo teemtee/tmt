@@ -36,13 +36,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="TOKEN",
         default=os.environ.get("TMT_REPORT_REPORTPORTAL_TOKEN"),
         help="The token to use for upload to the ReportPortal instance.")
-    project: Optional[str] = tmt.utils.field(  # todo: argument should be mandatory
+    project: Optional[str] = tmt.utils.field(
         option="--project",
         metavar="PROJECT",
         default=None,
         help="The project name which is used to create the full URL.")
-    launch_name: Optional[str] = tmt.utils.field(
-        option="--launch-name",
+    launch: Optional[str] = tmt.utils.field(
+        option="--launch",
         metavar="LAUNCH_NAME",
         default=None,
         help="The launch name (base name of run id used by default).")
@@ -66,7 +66,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         export TMT_REPORT_REPORTPORTAL_URL=...
         export TMT_REPORT_REPORTPORTAL_TOKEN=...
 
-    The optional launch NAME doesn't have to be provided if it is the same
+    The optional launch name doesn't have to be provided if it is the same
      as the plan name (by default). Assuming the URL and TOKEN variables
      are provided by the environment, the config can
      look like this:
@@ -102,8 +102,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         if not token:
             raise tmt.utils.ReportError("No ReportPortal token provided.")
 
-        launch_name = self.step.plan.name if not self.get("launch-name") \
-            else self.get("launch-name")
+        launch_name = self.step.plan.name if not self.get("launch") \
+            else self.get("launch")
 
         attributes = {k: v[0] for k, v in self.step.plan._fmf_context.items()}
         env_variables = self.get("env-vars") if self.get("env-vars") else []
