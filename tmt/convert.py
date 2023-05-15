@@ -384,7 +384,7 @@ def read(
         restraint: bool,
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: Optional[str],
+        polarion_case_id: Optional[List[str]],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
@@ -415,13 +415,13 @@ def read(
     filenames = [f.name for f in path.iterdir() if f.is_file()]
 
     # Ascertain which file to use based on cmd arg.
-    # If both are false raise an assertion.
+    # If both are false and there is no Polarion import raise an assertion.
     # If both are true then default to using
     # the restraint metadata file.
     # Raise an assertion if the file is not found.
-    if not makefile and not restraint:
-        raise ConvertError("Please specify either a "
-                           "Makefile or Restraint file.")
+    if not makefile and not restraint and not polarion:
+        raise ConvertError(
+            "Please specify either a Makefile or a Restraint file or a Polarion case ID.")
     elif makefile and restraint:
         if 'metadata' in filenames:
             filename = 'metadata'
@@ -448,10 +448,11 @@ def read(
             restraint_file = True
             echo(style('Restraint ', fg='blue'), nl=False)
 
-    if filename is None:
+    if filename is None and not polarion:
         raise GeneralError('filename is not defined')
     # Open the datafile
     if restraint_file or makefile_file:
+        assert filename is not None  # type check
         datafile_path = path / filename
         try:
             with open(datafile_path, encoding='utf-8') as datafile_file:
@@ -507,11 +508,13 @@ def read(
 
     # restraint
     if restraint_file:
+        assert filename is not None  # type check
         beaker_task, data = \
             read_datafile(path, filename, datafile, types)
 
     # Makefile (extract summary, test, duration and requires)
-    else:
+    elif makefile:
+        assert filename is not None  # type check
         beaker_task, data = \
             read_datafile(path, filename, datafile, types, testinfo)
 
@@ -572,6 +575,9 @@ def read(
         # Remove created testinfo.desc otherwise
         else:
             testinfo_path.unlink()
+    else:
+        data = {}
+        beaker_task = ''
 
     # Purpose (extract everything after the header as a description)
     if purpose:
@@ -590,7 +596,7 @@ def read(
             echo("not found.")
 
     # Nitrate (extract contact, environment and relevancy)
-    if nitrate:
+    if nitrate and beaker_task:
         common_data, individual_data = read_nitrate(
             beaker_task, data, disabled, general)
     else:
@@ -599,7 +605,7 @@ def read(
 
     # Polarion (extract summary, assignee, id, component, tags, links)
     if polarion:
-        read_polarion(common_data, polarion_case_id, link_polarion)
+        read_polarion(common_data, individual_data, polarion_case_id, link_polarion, filenames)
 
     # Remove keys which are inherited from parent
     parent_path = path.parent
@@ -614,6 +620,44 @@ def read(
     log.debug('Common metadata:\n' + pprint.pformat(common_data))
     log.debug('Individual metadata:\n' + pprint.pformat(individual_data))
     return common_data, individual_data
+
+
+def filter_common_data(
+        common_data: NitrateDataType,
+        individual_data: List[NitrateDataType]) -> None:
+    """ Filter common data out from individual data """
+    common_candidates = copy.copy(individual_data[0])
+    histogram = {}
+    for key in individual_data[0]:
+        histogram[key] = 1
+    if len(individual_data) > 1:
+        for testcase in individual_data:
+            for key, value in testcase.items():
+                if key in common_candidates:
+                    if value != common_candidates[key]:
+                        common_candidates.pop(key)
+                if key in histogram:
+                    histogram[key] += 1
+
+    for key in histogram:
+        if key in common_candidates and histogram[key] < len(individual_data):
+            common_candidates.pop(key)
+
+    # Add common data to main.fmf
+    for key, value in common_candidates.items():
+        common_data[key] = value
+
+    # If there is only single testcase found there is no need to continue
+    if len(individual_data) == 1:
+        individual_data.pop()
+    if not individual_data:
+        return
+
+    # Remove common data from individual fmfs
+    for common_key in common_candidates:
+        for testcase in individual_data:
+            if common_key in testcase:
+                testcase.pop(common_key)
 
 
 def read_nitrate(
@@ -703,40 +747,7 @@ def read_nitrate(
     if 'description' in common_data:
         common_data.pop('description')
 
-    # Find common data from individual test cases
-    common_candidates = dict()
-    histogram = dict()
-    for testcase in individual_data:
-        if individual_data.index(testcase) == 0:
-            common_candidates = copy.copy(testcase)
-            for key in testcase:
-                histogram[key] = 1
-        else:
-            for key, value in testcase.items():
-                if key in common_candidates:
-                    if value != common_candidates[key]:
-                        common_candidates.pop(key)
-                if key in histogram:
-                    histogram[key] += 1
-
-    for key in histogram:
-        if key in common_candidates and histogram[key] < len(individual_data):
-            common_candidates.pop(key)
-
-    # Add common data to main.fmf
-    for key, value in common_candidates.items():
-        common_data[key] = value
-
-    # If there is only single testcase found there is no need to continue
-    if len(individual_data) <= 1:
-        return common_data, []
-
-    # Remove common data from individual fmfs
-    for common_key in common_candidates:
-        for testcase in individual_data:
-            if common_key in testcase:
-                testcase.pop(common_key)
-
+    filter_common_data(common_data, individual_data)
     return common_data, individual_data
 
 
@@ -760,39 +771,108 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
 
 
 def read_polarion(
-        data: NitrateDataType,
+        common_data: NitrateDataType,
+        individual_data: List[NitrateDataType],
+        polarion_case_id: Optional[List[str]],
+        link_polarion: bool,
+        filenames: List[str]) -> None:
+    """ Read data from Polarion """
+    if not polarion_case_id:
+        read_polarion_case(common_data, None, link_polarion)
+    elif len(polarion_case_id) == 1:
+        read_polarion_case(common_data, polarion_case_id[0], link_polarion)
+    else:
+        if not individual_data:
+            for case in polarion_case_id:
+                current_data: NitrateDataType = {}
+                read_polarion_case(current_data, case, link_polarion)
+                individual_data.append(current_data)
+        else:
+            for case in polarion_case_id:
+                read_polarion_case(individual_data, case, link_polarion)
+        filter_common_data(common_data, individual_data)
+
+    # Check test script existence and add it if not already imported by other means
+    if not common_data.get('test'):
+        test_file = next((file for file in filenames if file.endswith('.sh')), '')
+        if test_file:
+            common_data['test'] = f'./{test_file}'
+            echo(style('test: ', fg='green') + common_data['test'])
+
+    # Fix badly added id to common data for import from one Polarion case
+    # while having multiple Nitrate cases
+    # Also keep original file name for the common data
+    if individual_data and (common_data.get(tmt.identifier.ID_KEY) or common_data.get('filename')):
+        common_data.pop('filename', None)
+        common_data.pop(tmt.identifier.ID_KEY, None)
+        echo(style(
+            'You are trying to match one Polarion case to multiple Nitrate cases, '
+            'please run export and sync these test cases', fg='red'))
+
+
+def read_polarion_case(
+        data: Union[NitrateDataType, List[NitrateDataType]],
         polarion_case_id: Optional[str],
         link_polarion: bool) -> None:
-    """ Read data from Polarion """
+    """ Read data of specific case from Polarion """
     import tmt.export.polarion
+    file_name: Optional[str] = None
 
     # Find Polarion case
     echo(style('Polarion ', fg='blue'), nl=False)
-    polarion_case = tmt.export.polarion.get_polarion_case(data, polarion_case_id=polarion_case_id)
+    if polarion_case_id:  # If we have Polarion ID we can ignore other data
+        if ':' in polarion_case_id:
+            polarion_case_id, file_name = polarion_case_id.split(':', 1)
+        polarion_case = tmt.export.polarion.get_polarion_case(
+            {}, polarion_case_id=polarion_case_id)
+    else:
+        # If Polarion case ID is not provided only common data is edited
+        # data shouldn't be a list in that case
+        if isinstance(data, list):
+            raise ConvertError(
+                'Common data ended up being a list which is wrong, this is likely a bug.')
+        polarion_case = tmt.export.polarion.get_polarion_case(
+            data, polarion_case_id=polarion_case_id)
     if not polarion_case:
         raise ConvertError('Failed to find test case in Polarion.')
 
+    # Find correct nitrate case for this Polarion case or create a new one
+    if isinstance(data, list):
+        for testcase in data:
+            if (
+                    polarion_case.tcmscaseid and
+                    polarion_case.tcmscaseid in testcase.get('extra-nitrate', '') or
+                    testcase.get('extra-task') and
+                    testcase.get('extra-task') in polarion_case.description):
+                current_data = testcase
+                break
+        else:
+            current_data = {}
+            data.append(current_data)
+    else:
+        current_data = data
+
     # Update summary
-    if not data.get('summary') or data['summary'] != polarion_case.title:
-        data['summary'] = str(polarion_case.title)
-        echo(style('summary: ', fg='green') + data['summary'])
+    if not current_data.get('summary') or current_data['summary'] != polarion_case.title:
+        current_data['summary'] = str(polarion_case.title)
+        echo(style('summary: ', fg='green') + current_data['summary'])
 
     # Update description
     if polarion_case.description:
-        data['description'] = str(polarion_case.description)
-        echo(style('description: ', fg='green') + data['description'])
+        current_data['description'] = str(polarion_case.description)
+        echo(style('description: ', fg='green') + current_data['description'])
 
     # Update status
     status = True if polarion_case.status == 'approved' else False
-    if not data.get('enabled') or data['enabled'] != status:
-        data['enabled'] = status
-        echo(style('enabled: ', fg='green') + str(data['enabled']))
+    if not current_data.get('enabled') or current_data['enabled'] != status:
+        current_data['enabled'] = status
+        echo(style('enabled: ', fg='green') + str(current_data['enabled']))
 
     # Update assignee
     if polarion_case.assignee:
-        data['contact'] = str(polarion_case.assignee[0].name).replace(
-            '(', '<').replace(')', '@redhat.com>')
-        echo(style('contact: ', fg='green') + data['contact'])
+        current_data['contact'] = str(polarion_case.assignee[0].name).replace(
+            '(', ' <').replace(')', '@redhat.com>')
+        echo(style('contact: ', fg='green') + current_data['contact'])
 
     # Set tmt id if available in Polarion, otherwise generate
     try:
@@ -802,25 +882,25 @@ def read_polarion(
         uuid = str(uuid4())
         polarion_case.test_case_id = uuid
         polarion_case.update()
-    data[tmt.identifier.ID_KEY] = uuid
+    current_data[tmt.identifier.ID_KEY] = uuid
     echo(style('ID: ', fg='green') + uuid)
 
     # Update component
     if polarion_case.casecomponent:
-        data['component'] = []
+        current_data['component'] = []
         for component in polarion_case.casecomponent:
-            data['component'].append(str(component))
-        echo(style('component: ', fg='green') + ' '.join(data['component']))
+            current_data['component'].append(str(component))
+        echo(style('component: ', fg='green') + ' '.join(current_data['component']))
 
     # Update tags
     if polarion_case.tags:
-        if not data.get('tag'):
-            data['tag'] = []
+        if not current_data.get('tag'):
+            current_data['tag'] = []
         for tag in polarion_case.tags.split():
-            data['tag'].append(tag)
-            read_tier(tag, data)
-        data['tag'] = sorted(set(data['tag']))
-        echo(style('tag: ', fg='green') + ' '.join(data['tag']))
+            current_data['tag'].append(tag)
+            read_tier(tag, current_data)
+        current_data['tag'] = sorted(set(current_data['tag']))
+        echo(style('tag: ', fg='green') + ' '.join(current_data['tag']))
 
     # Add Polarion links for Requirements and the case
     if link_polarion:
@@ -832,11 +912,18 @@ def read_polarion(
                 add_link(
                     f'{server_url}#/project/{link.project_id}/'
                     f'workitem?id={str(link.work_item_id)}',
-                    data, system=SYSTEM_OTHER, type_=str(link.role))
+                    current_data, system=SYSTEM_OTHER, type_=str(link.role))
         add_link(
             f'{server_url}#/project/{polarion_case.project_id}/workitem?id='
             f'{str(polarion_case.work_item_id)}',
-            data, system=SYSTEM_OTHER, type_='implements')
+            current_data, system=SYSTEM_OTHER, type_='implements')
+        if not file_name:
+            file_name = str(polarion_case.work_item_id)
+
+    # Set test/file name
+    if not file_name:
+        file_name = current_data['summary'].replace(' ', '_')
+    current_data['filename'] = f'{file_name}.fmf'
 
 
 RelevancyType = Union[str, List[str]]
