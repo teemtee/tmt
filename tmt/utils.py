@@ -37,6 +37,7 @@ import jsonschema
 import pkg_resources
 import requests
 import requests.adapters
+import urllib3
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, style, wrap_text
@@ -2771,17 +2772,25 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             status_forcelist: Optional[Tuple[int, ...]] = None,
             timeout: Optional[int] = None
             ) -> requests.Session:
-        retry_strategy = RetryStrategy(
-            total=retries,
-            status_forcelist=status_forcelist,
-            # `method_whitelist`` has been renamed to `allowed_methods` since
-            # urllib3 1.26, and it will be removed in urllib3 2.0.
-            # `allowed_methods` is therefore the future-proof name, but for the
-            # sake of backward compatibility, internally we need to use the
-            # deprecated parameter for now. Or request newer urllib3, but that
-            # might a problem because of RPM availability.
-            method_whitelist=allowed_methods,
-            backoff_factor=backoff_factor)
+
+        # `method_whitelist`` has been renamed to `allowed_methods` since
+        # urllib3 1.26, and it will be removed in urllib3 2.0.
+        # `allowed_methods` is therefore the future-proof name, but for the
+        # sake of backward compatibility, internally might need to use the
+        # deprecated parameter.
+        if urllib3.__version__.startswith('1.'):
+            retry_strategy = RetryStrategy(
+                total=retries,
+                status_forcelist=status_forcelist,
+                method_whitelist=allowed_methods,
+                backoff_factor=backoff_factor)
+
+        else:
+            retry_strategy = RetryStrategy(
+                total=retries,
+                status_forcelist=status_forcelist,
+                allowed_methods=allowed_methods,
+                backoff_factor=backoff_factor)
 
         if timeout is not None:
             http_adapter: requests.adapters.HTTPAdapter = TimeoutHTTPAdapter(
