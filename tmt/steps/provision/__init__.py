@@ -1,3 +1,4 @@
+import ast
 import collections
 import dataclasses
 import datetime
@@ -10,8 +11,8 @@ import string
 import subprocess
 import tempfile
 from shlex import quote
-from typing import (TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type,
-                    TypeVar, Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple,
+                    Type, TypeVar, Union, cast, overload)
 
 import click
 import fmf
@@ -141,6 +142,9 @@ class GuestFacts(tmt.utils.SerializableContainer):
            ID_LIKE=debian
            ...
 
+        See https://www.freedesktop.org/software/systemd/man/os-release.html for
+        more details on syntax of these files.
+
         :returns: mapping with key/value pairs loaded from ``filepath``, or an
             empty mapping if it was impossible to load the content.
         """
@@ -152,21 +156,33 @@ class GuestFacts(tmt.utils.SerializableContainer):
         if not output or not output.stdout:
             return content
 
-        for line in output.stdout.splitlines(keepends=False):
-            line = line.strip()
-            if not line:
-                continue
+        def _iter_pairs() -> Generator[Tuple[str, str], None, None]:
+            assert output  # narrow type in a closure
+            assert output.stdout  # narrow type in a closure
 
-            key, value = line.split('=', 1)
+            line_pattern = re.compile(r'([A-Z][A-Z_0-9]+)=(.*)')
 
-            if value.startswith('"'):
-                value = value[1:]
-            if value.endswith('"'):
-                value = value[:-1]
+            for line_number, line in enumerate(output.stdout.splitlines(keepends=False), start=1):
+                line = line.rstrip()
 
-            content[key] = value
+                if not line or line.startswith('#'):
+                    continue
 
-        return content
+                match = line_pattern.match(line)
+
+                if not match:
+                    raise tmt.utils.ProvisionError(
+                        f"Cannot parse line {line_number} in '{filepath}' on guest '{guest.name}':"
+                        f" {line}")
+
+                key, value = match.groups()
+
+                if value and value[0] in '"\'':
+                    value = ast.literal_eval(value)
+
+                yield key, value
+
+        return dict(_iter_pairs())
 
     def _probe(
             self,
