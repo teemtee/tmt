@@ -259,13 +259,34 @@ sources.
 
 To read data from Polarion you need to install and setup
 ``pylero`` library (described in `Export tests`_) and enable it
-with the ``--polarion`` flag.  If you are importing a single test
-case you can specify ``--polarion-case-id`` instead of searching
-by values pulled from other sources and you can specify
-``--no-link-polarion`` to not save Polarion links.  It reads
+with the ``--polarion`` flag. You can specify ``--polarion-case-id``
+instead of searching by values pulled from other sources and you can specify
+``--no-link-polarion`` to not save Polarion links. It reads
 summary, description, enabled status, assignee, id, component,
 tags and links. If ``id`` is not found in Polarion it's generated
 and exported.
+
+Argument ``--polarion-case-id`` can be provided multiple times to import
+multiple test cases and it supports setting of test names (seprated by ``:``),
+if test name is not provided ``Polarion WorkItem ID`` is used
+and lastly when ``--no-link-polarion`` is used ``summary`` is taken as test name.
+Examples how to use the import with multiple cases and test names::
+
+    $ tmt test import --polarion --polarion-case-id TMT-123:smoke_test .
+    ...
+    Metadata successfully stored into '/path/to/test/smoke_test.fmf'.
+
+    $ tmt test import --polarion --polarion-case-id TMT-123:smoke_test --polarion-case-id TMT-124:base_test .
+    ...
+    Metadata successfully stored into '/path/to/test/main.fmf'.
+    Metadata successfully stored into '/path/to/test/smoke_test.fmf'.
+    Metadata successfully stored into '/path/to/test/base_test.fmf'.
+
+    $ tmt test import --polarion --polarion-case-id TMT-123 --polarion-case-id TMT-124 .
+    ...
+    Metadata successfully stored into '/path/to/test/main.fmf'.
+    Metadata successfully stored into '/path/to/test/TMT-123.fmf'.
+    Metadata successfully stored into '/path/to/test/TMT-124.fmf'.
 
 Manual test cases can be imported from Nitrate using the
 ``--manual`` option. Provide either ``--case ID`` or ``--plan ID``
