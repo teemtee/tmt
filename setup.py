@@ -55,6 +55,7 @@ install_requires = [
     'urllib3',
     'ruamel.yaml',
     'jinja2',
+    'setuptools',
     ]
 
 # typing_extensions is needed with Python 3.7 and older, types imported

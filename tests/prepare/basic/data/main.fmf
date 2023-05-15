@@ -3,7 +3,7 @@ provision:
     image: fedora
 prepare:
     how: install
-    package: tmt
+    package: fmf
 execute:
     how: tmt
-    script: tmt --help
+    script: fmf --help
