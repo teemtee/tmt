@@ -78,10 +78,27 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
         """ Prepare the guests """
         super().go(guest=guest, environment=environment, logger=logger)
 
+        environment = environment or {}
+
         # Give a short summary
         scripts: List[tmt.utils.ShellScript] = self.get('script')
         overview = fmf.utils.listed(scripts, 'script')
         logger.info('overview', f'{overview} found', 'green')
+
+        if not self.opt('dry') and self.step.plan.worktree:
+            topology = tmt.steps.Topology(self.step.plan.provision.guests())
+            topology.guest = tmt.steps.GuestTopology(guest)
+
+            # Since we do not have the test data dir at hand, we must make the topology
+            # filename unique on our own, and include the phase name and guest name.
+            filename_base = f'{tmt.steps.TEST_TOPOLOGY_FILENAME_BASE}-{self.name}-{guest.name}'
+
+            environment.update(
+                topology.push(
+                    dirpath=self.step.plan.worktree,
+                    guest=guest,
+                    logger=logger,
+                    filename_base=filename_base))
 
         # Execute each script on the guest (with default shell options)
         for script in scripts:

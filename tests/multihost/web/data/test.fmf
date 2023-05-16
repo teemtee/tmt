@@ -11,11 +11,15 @@
 /client:
     require: [curl, wget]
     test: |
+        echo "Guest topology stored in '$TMT_TOPOLOGY_BASH':"
+        cat "$TMT_TOPOLOGY_BASH"
+        . "$TMT_TOPOLOGY_BASH"
+
         [[ $(hostname) == curl-client ]] && command="curl --silent"
         [[ $(hostname) == wget-client ]] && command="wget --quiet -O -"
 
         for count in {1..33}; do
             echo "Get file using '$command', attempt $count."
-            $command http://httpd-server/ | grep -q foo
+            $command http://${TMT_GUESTS[httpd-server.hostname]}/ | grep -q foo
             sleep .$[$RANDOM % 10]
         done
