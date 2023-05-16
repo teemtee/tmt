@@ -96,7 +96,10 @@ ignore = [
     "PIE790",  # Unnecessary `pass` statement
     "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
     "PLE1205",  # Too many arguments for `logging` format string
-    "SIM222",  # expr-or-True charliermarsh/ruff#4058
+    "RUF008",  # Do not use mutable default values for dataclass attributes
+    "RUF009",  # Do not perform function call `field` in dataclass defaults
+    "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF013",  # PEP 484 prohibits implicit `Optional`
 ]
 [tool.ruff.isort]
 known-first-party = ["tmt"]

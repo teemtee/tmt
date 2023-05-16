@@ -14,7 +14,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.2.0"
+    rev: "v1.3.0"
     hooks:
       - id: mypy
         # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -33,25 +33,25 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.22.0"
+    rev: "0.23.1"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.30.0
+    rev: v1.32.0
     hooks:
       - id: yamllint
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.261
+    rev: v0.0.274
     hooks:
       - id: ruff
         args: [--fix]
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.23.0
+    rev: 1.24.1
     hooks:
     - id: tmt-lint
