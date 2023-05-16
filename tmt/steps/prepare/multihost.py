@@ -53,10 +53,12 @@ class PrepareMultihost(tmt.steps.prepare.PreparePlugin):
         """ Prepare the guests """
         super().go(guest=guest, environment=environment, logger=logger)
 
-        logger.debug('Export roles.', level=2)
-        for role, corresponding_guests in self.get('roles').items():
-            formatted_guests = ','.join(corresponding_guests)
-            self.step.plan._environment[f"TMT_ROLE_{role}"] = formatted_guests
+        # TODO: either this or the one in tmt.steps.QueuedPhase is superfluous.
+        # Find out which one.
+        # See https://github.com/teemtee/tmt/pull/2072
+#        logger.debug('Export roles.', level=2)
+#        for role, corresponding_guests in self.get('roles').items():
+#            self.step.plan._environment[f'TMT_ROLE_{role}'] = ' '.join(corresponding_guests)
         logger.debug("Add hosts to '/etc/hosts'.", level=2)
         for host_name, host_address in self.get('hosts').items():
             if host_address:

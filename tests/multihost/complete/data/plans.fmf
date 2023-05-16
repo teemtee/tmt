@@ -1,0 +1,52 @@
+provision:
+  - how: container
+    name: client-1
+    role: client
+    image: fedora:36
+
+  - how: container
+    name: client-2
+    role: client
+    image: fedora:36
+
+  - how: container
+    name: server
+    role: server
+    image: fedora:36
+
+execute:
+  how: tmt
+
+prepare:
+  - how: shell
+    script:
+      - for envvar in $(compgen -A variable | egrep 'SERVERS|TMT' | sort); do echo "$envvar=${!envvar}"; done
+    where:
+      - client
+
+  - how: shell
+    script:
+      - for envvar in $(compgen -A variable | egrep 'SERVERS|TMT' | sort); do echo "$envvar=${!envvar}"; done
+    where:
+      - server
+
+discover:
+  - name: server-setup
+    how: fmf
+    test:
+      - /tests/A
+    where:
+      - server
+
+  - name: tests
+    how: fmf
+    test:
+      - /tests/B
+    where:
+      - server
+      - client
+
+  - name: teardown
+    how: fmf
+    test:
+      - /tests/C

@@ -5,6 +5,7 @@ import click
 import fmf.utils
 
 import tmt.base
+import tmt.log
 import tmt.result
 import tmt.steps
 import tmt.steps.discover.fmf
@@ -134,8 +135,10 @@ class ExecuteUpgrade(ExecuteInternal):
             tmt.steps.discover.fmf.EXCLUDE_OPTION
             ] + super().options(how)
 
-    @property
-    def discover(self) -> Union[tmt.steps.discover.Discover, DiscoverFmf]:  # type:ignore[override]
+    @property  # type:ignore[override]
+    def discover(self) -> Union[
+            'tmt.steps.discover.Discover',
+            DiscoverFmf]:
         """ Return discover plugin instance """
         # If we are in the second phase (upgrade), take tests from our fake
         # discover plugin.
@@ -144,6 +147,10 @@ class ExecuteUpgrade(ExecuteInternal):
         else:
             return self.step.plan.discover
 
+    @discover.setter
+    def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
+        self._discover = plugin
+
     def go(
             self,
             *,
@@ -151,7 +158,6 @@ class ExecuteUpgrade(ExecuteInternal):
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> None:
         """ Execute available tests """
-        self._results: List[tmt.result.Result] = []
         # Inform about the how, skip the actual execution
         ExecutePlugin.go(self, guest=guest, environment=environment, logger=logger)
 
@@ -175,13 +181,13 @@ class ExecuteUpgrade(ExecuteInternal):
 
         self.verbose(
             'upgrade', 'run tests on the old system', color='blue', shift=1)
-        self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX)
+        self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
         self.verbose(
             'upgrade', 'perform the system upgrade', color='blue', shift=1)
-        self._perform_upgrade(guest)
+        self._perform_upgrade(guest, logger)
         self.verbose(
             'upgrade', 'run tests on the new system', color='blue', shift=1)
-        self._run_test_phase(guest, AFTER_UPGRADE_PREFIX)
+        self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
     def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
         """ Get plan based on upgrade path """
@@ -261,8 +267,13 @@ class ExecuteUpgrade(ExecuteInternal):
 
         return remote_raw_data
 
-    def _perform_upgrade(self, guest: tmt.steps.provision.Guest) -> None:
+    def _perform_upgrade(
+            self,
+            guest: tmt.steps.provision.Guest,
+            logger: tmt.log.Logger) -> None:
         """ Perform a system upgrade """
+        original_discover_phase = self.discover_phase
+
         try:
             self._fetch_upgrade_tasks()
             extra_environment = None
@@ -283,13 +294,19 @@ class ExecuteUpgrade(ExecuteInternal):
                 self._run_discover_upgrade()
                 # Pass in the path-specific env variables
                 extra_environment = plan.environment
-            for test in self._discover_upgrade.tests():
+            for test in self._discover_upgrade.tests(enabled=True):
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
-            self._run_tests(guest, extra_environment=extra_environment)
+            self.discover_phase = self._discover_upgrade.name
+            self._run_tests(guest=guest, extra_environment=extra_environment, logger=logger)
         finally:
             self._discover_upgrade = None
+            self.discover_phase = original_discover_phase
 
-    def _run_test_phase(self, guest: tmt.steps.provision.Guest, prefix: str) -> None:
+    def _run_test_phase(
+            self,
+            guest: tmt.steps.provision.Guest,
+            prefix: str,
+            logger: tmt.log.Logger) -> None:
         """
         Execute a single test phase on the guest
 
@@ -298,12 +315,12 @@ class ExecuteUpgrade(ExecuteInternal):
         The prefix is also set as IN_PLACE_UPGRADE environment variable.
         """
         names_backup = []
-        for test in self.discover.tests():
+        for test in self.discover.tests(enabled=True):
             names_backup.append(test.name)
             test.name = f'/{prefix}/{test.name.lstrip("/")}'
 
-        self._run_tests(guest, extra_environment={STATUS_VARIABLE: prefix})
+        self._run_tests(guest=guest, extra_environment={STATUS_VARIABLE: prefix}, logger=logger)
 
-        tests = self.discover.tests()
+        tests = self.discover.tests(enabled=True)
         for i, test in enumerate(tests):
             test.name = names_backup[i]

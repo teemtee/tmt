@@ -428,6 +428,25 @@ TMT_REBOOT_COUNT
     for requesting the reboot, variables ``REBOOTCOUNT`` and
     ``RSTRNT_REBOOTCOUNT`` contain number of reboots as well.
 
+TMT_GUEST_HOSTNAME, TMT_GUEST_ROLE
+    The hostname of the guest on which the test is running, and
+    the multihost role of the guest, if it was specified in plan's
+    ``provision`` step, via ``role`` key.
+
+TMT_ROLE_*
+    Space-separated list of guests of a given role. Each known role
+    spawns a variable, listing the corresponding guests. For example,
+    for guests with ``role: foo``, ``TMT_ROLE_foo=guest1 guest2 ...``
+    variable would be available to tests.
+
+SERVERS
+    A legacy variable, exported for the backward compatibility. It
+    contains a list of all guests on which the test is running at
+    the moment.
+
+    This variable will be removed in the future, it is supported only
+    to make multihost prototype support easier to verify as many current
+    tests were developed with Restraint.
 
 Links
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

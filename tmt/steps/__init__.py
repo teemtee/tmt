@@ -6,8 +6,8 @@ import re
 import shutil
 import sys
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
-                    Type, TypeVar, Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Generator, List,
+                    Optional, Tuple, Type, TypeVar, Union, cast, overload)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -21,11 +21,16 @@ import tmt.log
 import tmt.options
 import tmt.utils
 from tmt.options import show_step_method_hints
-from tmt.utils import Path, field, flatten
+from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
+from tmt.utils import EnvironmentType, Path, field, flatten
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     import tmt.base
     import tmt.cli
+    import tmt.steps.discover
+    import tmt.steps.execute
     from tmt.base import Plan
     from tmt.steps.provision import Guest
 
@@ -999,6 +1004,9 @@ class BasePlugin(Phase):
     # method from child classes.
     def go_prolog(self, logger: tmt.log.Logger) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
+
+        logger = logger or self._logger
+
         # Show the method
         logger.info('how', self.get('how'), 'magenta')
         # Give summary if provided
@@ -1310,3 +1318,154 @@ class Login(Action):
         """ Check and login after test execution """
         if self._enabled_by_results([result]):
             self._login(cwd, env)
+
+
+@dataclasses.dataclass
+class QueuedPhase(GuestlessTask, Task):
+    """ A phase to run on one or more guests """
+
+    phase: Union[Action, Plugin]
+
+    # A cached environment, it will be initialized by `prepare_environment()`
+    # on the first call.
+    _environment: Optional[EnvironmentType] = None
+
+    @property
+    def phase_name(self) -> str:
+        from tmt.steps.execute import ExecutePlugin
+
+        # A better fitting name for an execute step phase, instead of its own
+        # name, which is always the same, would be the name of the discover
+        # phase it's supposed to process.
+        if isinstance(self.phase, ExecutePlugin):
+            return self.phase.discover_phase or self.phase.discover.name
+
+        return self.phase.name
+
+    @property
+    def name(self) -> str:
+        return self.phase_name
+
+    def prepare_environment(self) -> EnvironmentType:
+        """
+        Prepare environment variables related to phase and its guests.
+        """
+
+        if self._environment is not None:
+            return self._environment
+
+        self._environment = {}
+
+        # TODO: Somewhat legacy variable, just a temporary solution.
+        # TODO: *Probably* makes sense only with more than one guest?
+        if len(self.guests) != 1:
+            self._environment['SERVERS'] = ' '.join(
+                guest.guest for guest in self.guests if guest.guest
+                )
+
+        # For each role, emit a variable named `TMT_ROLE_$rolename`, listing
+        # guests with this role.
+        _roles = [
+            guest.role for guest in self.guests if guest.role is not None
+            ]
+
+        for role in _roles:
+            self._environment[f'TMT_ROLE_{role}'] = ' '.join(
+                guest.guest
+                for guest in self.guests
+                if guest.role == role and guest.guest
+                )
+
+        return self._environment
+
+    def prepare_guest_environment(
+            self,
+            guest: 'Guest') -> EnvironmentType:
+        """
+        Prepare environment variables related to phase and a particular guest.
+        """
+
+        environment = self.prepare_environment().copy()
+
+        environment['TMT_GUEST_ROLE'] = guest.role or ''
+        environment['TMT_GUEST_HOSTNAME'] = guest.guest or ''
+
+        return environment
+
+    def run(self, logger: tmt.log.Logger) -> None:
+        assert isinstance(self.phase, Action)  # narrow type
+
+        self.phase.go()
+
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        assert isinstance(self.phase, Plugin)  # narrow type
+
+        self.phase.go(
+            guest=guest,
+            environment=self.prepare_guest_environment(guest),
+            logger=logger)
+
+    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+        # Based on the phase, pick the proper parent class' go()
+        if isinstance(self.phase, Action):
+            yield from GuestlessTask.go(self)
+
+        else:
+            yield from Task.go(self)
+
+
+class PhaseQueue(Queue[QueuedPhase]):
+    """ Queue class for running phases on guests """
+
+    def enqueue(
+            self,
+            *,
+            phase: Union[Action, Plugin],
+            guests: List['Guest']) -> None:
+        """
+        Add a phase to queue.
+
+        Phase will be executed on given guests, starting at the same time.
+
+        :param phase: phase to run.
+        :param guests: one or more guests to run the phase on.
+        """
+
+        if not guests:
+            raise tmt.utils.MetadataError(
+                f'No guests queued for phase "{phase}". A typo in "where" key?')
+
+        self.enqueue_task(QueuedPhase(
+            phase=phase,
+            guests=guests,
+            logger=phase._logger
+            ))
+
+
+@dataclasses.dataclass
+class PushTask(Task):
+    """ Task performing a workdir push to a guest """
+
+    @property
+    def name(self) -> str:
+        return 'push'
+
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        guest.push()
+
+
+@dataclasses.dataclass
+class PullTask(Task):
+    """ Task performing a workdir pull from a guest """
+
+    source: Optional[Path] = None
+
+    @property
+    def name(self) -> str:
+        return 'pull'
+
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        guest.pull(source=self.source)
+
+
+GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)

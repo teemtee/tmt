@@ -117,9 +117,6 @@ class Finish(tmt.steps.Step):
                     phase.go()
 
                 elif isinstance(phase, FinishPlugin):
-                    # TODO: re-injecting the logger already given to the guest,
-                    # with multihost support heading our way this will change
-                    # to be not so trivial.
                     phase.go(guest=guest_copy, logger=guest_copy._logger)
 
                 else:
