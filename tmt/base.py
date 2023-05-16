@@ -3489,7 +3489,7 @@ class Links(tmt.utils.SpecBasedContainer):
         if data is not None and not isinstance(data, (str, dict, list)):
             # TODO: deliver better key address, needs to know the parent
             raise tmt.utils.NormalizationError(
-                'link', data, 'string, fmf id or list of their commbinations')
+                'link', data, 'string, fmf id or list of their combinations')
 
         # Nothing to do if no data provided
         if data is None:

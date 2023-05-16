@@ -141,7 +141,7 @@ def test_link():
     # Invalid links and relations
     with pytest.raises(
             SpecificationError,
-            match="Field 'link' can be string, fmf id or list of their commbinations,"
+            match="Field 'link' can be string, fmf id or list of their combinations,"
                   " 'int' found."):
         Links(data=123)
     with pytest.raises(SpecificationError, match='Multiple relations'):
