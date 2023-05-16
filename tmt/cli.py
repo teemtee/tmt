@@ -120,8 +120,7 @@ class CustomGroup(click.Group):
             return None
         if len(matches) == 1:
             return click.Group.get_command(self, context, matches[0])
-        context.fail('Did you mean {}?'.format(
-            listed(sorted(matches), join='or')))
+        context.fail(f"Did you mean {listed(sorted(matches), join='or')}?")
         return None
 
 
@@ -1209,7 +1208,7 @@ def stories_coverage(
         headfoot(f'{round(100 * test_coverage / total)}%')
     if docs:
         headfoot(f'{round(100 * docs_coverage / total)}%')
-    headfoot('from {}'.format(listed(total, 'story')))
+    headfoot(f"from {listed(total, 'story')}")
     echo()
 
 
@@ -1354,8 +1353,7 @@ def stories_id(
 @option(
     '-t', '--template', default='empty', metavar='TEMPLATE',
     type=click.Choice(['empty', *tmt.templates.INIT_TEMPLATES]),
-    help='Template ({}).'.format(
-        listed(tmt.templates.INIT_TEMPLATES, join='or')))
+    help=f"Template ({listed(tmt.templates.INIT_TEMPLATES, join='or')}).")
 @verbosity_options
 @force_dry_options
 def init(

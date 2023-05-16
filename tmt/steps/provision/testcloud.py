@@ -331,7 +331,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # Generate new ssh key pair
         else:
             self.debug('Generating an ssh key.')
-            key_name = "id_{}".format(key_type if key_type is not None else 'rsa')
+            key_name = f"id_{key_type if key_type is not None else 'rsa'}"
             self.key = [self.workdir / key_name]
             command = Command("ssh-keygen", "-f", str(self.key[0]), "-N", "")
             if key_type is not None:

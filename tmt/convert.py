@@ -454,8 +454,7 @@ def read(
             with open(datafile_path, encoding='utf-8') as datafile_file:
                 datafile = datafile_file.read()
         except OSError:
-            raise ConvertError("Unable to open '{}'.".format(
-                datafile_path))
+            raise ConvertError(f"Unable to open '{datafile_path}'.")
         echo(f"found in '{datafile_path}'.")
 
     # If testinfo.desc exists read it to preserve content and remove it
@@ -488,8 +487,7 @@ def read(
                 stdout=subprocess.DEVNULL)
         except FileNotFoundError:
             raise ConvertError(
-                "Install tmt-test-convert to "
-                "convert metadata from {}.".format(filename))
+                f"Install tmt-test-convert to convert metadata from {filename}.")
         except subprocess.CalledProcessError:
             raise ConvertError(
                 "Failed to convert metadata using 'make testinfo.desc'.")
@@ -499,8 +497,7 @@ def read(
             with open(testinfo_path, encoding='utf-8') as testinfo_file:
                 testinfo = testinfo_file.read()
         except OSError:
-            raise ConvertError("Unable to open '{}'.".format(
-                testinfo_path))
+            raise ConvertError(f"Unable to open '{testinfo_path}'.")
 
     # restraint
     if restraint_file:
@@ -966,8 +963,7 @@ def read_nitrate_case(
     if testcase.tester:
         # Full 'Name Surname <example@email.com>' form
         if testcase.tester.name is not None:
-            data['contact'] = '{} <{}>'.format(
-                testcase.tester.name, testcase.tester.email)
+            data['contact'] = f'{testcase.tester.name} <{testcase.tester.email}>'
         else:
             if makefile_data is None or 'contact' not in makefile_data:
                 # Otherwise use just the email address

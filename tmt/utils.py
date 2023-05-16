@@ -1133,7 +1133,7 @@ class Common(_CommonBase):
 
             # Generated unique id or fail, has to be atomic call
             for id_bit in range(1, WORKDIR_MAX + 1):
-                directory = 'run-{}'.format(str(id_bit).rjust(3, '0'))
+                directory = f"run-{str(id_bit).rjust(3, '0')}"
                 workdir = workdir_root / directory
                 try:
                     # Call is atomic, no race possible
@@ -2536,7 +2536,7 @@ def format(
     """
     indent_string = (indent + 1) * ' '
     # Key
-    output = '{} '.format(str(key).rjust(indent, ' '))
+    output = f"{str(key).rjust(indent, ' ')} "
     if key_color is not None:
         output = style(output, fg=key_color)
     # Bool
@@ -2595,8 +2595,7 @@ def create_directory(
         path.mkdir(exist_ok=True, parents=True)
         say(f"Directory '{path}' created.")
     except OSError as error:
-        raise FileError("Failed to create {} '{}' ({})".format(
-            name, path, error)) from error
+        raise FileError(f"Failed to create {name} '{path}' ({error})") from error
 
 
 def create_file(
@@ -2625,8 +2624,7 @@ def create_file(
         say(f"{name.capitalize()} '{path}' {action}.")
         path.chmod(mode)
     except OSError as error:
-        raise FileError("Failed to create {} '{}' ({})".format(
-            name, path, error))
+        raise FileError(f"Failed to create {name} '{path}' ({error})")
 
 
 # Avoid multiple subprocess calls for the same url
@@ -3329,16 +3327,14 @@ class StructuredField:
                 "Unable to detect StructuredField version")
         self.version(int(version_match.groups()[0]))
         log.debug(
-            "Detected StructuredField version {}".format(
-                self.version()))
+            f"Detected StructuredField version {self.version()}")
         # Convert to dictionary, remove escapes and save the order
         keys = parts[1::2]
         escape = re.compile(r"^\[structured-field-escape\]", re.MULTILINE)
         values = [escape.sub("", value) for value in parts[2::2]]
         for key, value in zip(keys, values):
             self.set(key, value)
-        log.debug("Parsed sections:\n{}".format(
-            pprint.pformat(self._sections)))
+        log.debug(f"Parsed sections:\n{pprint.pformat(self._sections)}")
 
     def _save_version_zero(self) -> str:
         """ Save version 0 format """
@@ -3365,8 +3361,8 @@ class StructuredField:
         if self:
             result.append(
                 "[structured-field-start]\n"
-                "This is StructuredField version {}. "
-                "Please, edit with care.\n".format(self._version))
+                f"This is StructuredField version {self._version}. "
+                "Please, edit with care.\n")
             for section, content in self.iterate():
                 result.append("[{}]\n{}".format(section, escape.sub(
                     "[structured-field-escape]\\1", content)))
@@ -3494,8 +3490,7 @@ class StructuredField:
             return self._read_section(content)[item]
         except KeyError:
             raise StructuredFieldError(
-                "Unable to read '{!r}' from section '{!r}'".format(
-                    ascii(item), ascii(section)))
+                f"Unable to read '{ascii(item)!r}' from section '{ascii(section)!r}'")
 
     def set(self, section: str, content: Any,
             item: Optional[str] = None) -> None:

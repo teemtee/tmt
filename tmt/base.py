@@ -3016,7 +3016,7 @@ class Run(tmt.utils.Common):
         # Show summary, store run data
         if not self.plans:
             raise tmt.utils.GeneralError("No plans found.")
-        self.verbose('Found {}.'.format(listed(self.plans, 'plan')))
+        self.verbose(f"Found {listed(self.plans, 'plan')}.")
         self.save()
 
         # Iterate over plans
