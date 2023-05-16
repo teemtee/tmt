@@ -914,7 +914,7 @@ class Test(
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
     test: Optional[ShellScript] = field(
         default=None,
-        normalize=lambda raw_value, logger: ShellScript('' if raw_value is None else raw_value))
+        normalize=lambda raw_value, logger: None if raw_value is None else ShellScript(raw_value))
     path: Optional[Path] = field(
         default=None,
         normalize=lambda raw_value, logger: None if raw_value is None else Path(raw_value))
