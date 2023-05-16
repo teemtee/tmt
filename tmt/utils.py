@@ -474,7 +474,7 @@ class Command:
         # For debugging, we want to save somewhere the actual command rather
         # than the provided "friendly". Emit the actual command to the debug
         # log, and the friendly one to the verbose/custom log
-        logger.debug(f'Run command: {str(self)}', level=2)
+        logger.debug(f'Run command: {self!s}', level=2)
 
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.

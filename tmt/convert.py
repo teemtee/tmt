@@ -906,11 +906,11 @@ def read_polarion_case(
             if link.role == 'verifies':
                 add_link(
                     f'{server_url}#/project/{link.project_id}/'
-                    f'workitem?id={str(link.work_item_id)}',
+                    f'workitem?id={link.work_item_id!s}',
                     current_data, system=SYSTEM_OTHER, type_=str(link.role))
         add_link(
             f'{server_url}#/project/{polarion_case.project_id}/workitem?id='
-            f'{str(polarion_case.work_item_id)}',
+            f'{polarion_case.work_item_id!s}',
             current_data, system=SYSTEM_OTHER, type_='implements')
         if not file_name:
             file_name = str(polarion_case.work_item_id)

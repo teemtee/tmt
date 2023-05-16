@@ -128,7 +128,7 @@ def get_polarion_case(
         polarion_case = PolarionTestCase(
             project_id=project_id, work_item_id=case_id)
         echo(style(
-            f"Test case '{str(polarion_case.work_item_id)}' found.",
+            f"Test case '{polarion_case.work_item_id!s}' found.",
             fg='blue'))
         return polarion_case
     except PolarionException:
@@ -301,7 +301,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
             tmt.convert.add_link(
                 f'{server_url}{"" if server_url.endswith("/") else "/"}'
                 f'#/project/{polarion_case.project_id}/workitem?id='
-                f'{str(polarion_case.work_item_id)}',
+                f'{polarion_case.work_item_id!s}',
                 data, system=tmt.convert.SYSTEM_OTHER, type_='implements')
 
     # List of bugs test verifies
@@ -352,7 +352,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     # Optionally link Bugzilla to Polarion case
     if link_bugzilla and bug_ids and not dry_mode:
         case_id = (f"{polarion_case.project_id}/workitem?id="
-                   f"{str(polarion_case.work_item_id)}")
+                   f"{polarion_case.work_item_id!s}")
         tmt.export.bz_set_coverage(bug_ids, case_id, POLARION_TRACKER_ID)
 
 

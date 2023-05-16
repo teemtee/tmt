@@ -70,7 +70,7 @@ def validate_node(tree, node, schema, label, name):
     errors = tmt.utils.validate_fmf_node(node, schema, LOGGER)
 
     if errors:
-        print(f"""A node in tree loaded from {str(_tree_path(tree))} failed validation
+        print(f"""A node in tree loaded from {_tree_path(tree)!s} failed validation
 """)
 
         for error, message in errors:

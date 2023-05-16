@@ -2390,7 +2390,7 @@ class Tree(tmt.utils.Common):
         """ Sanitize CLI names in case name includes control character """
         for name in names:
             if not name.isprintable():
-                raise tmt.utils.GeneralError(f"Invalid name {repr(name)} as it's not printable.")
+                raise tmt.utils.GeneralError(f"Invalid name {name!r} as it's not printable.")
         return names
 
     @property

@@ -237,13 +237,13 @@ class GuestFacts(tmt.utils.SerializableContainer):
             output = self._execute(guest, command)
 
             if not output or not output.stdout:
-                guest.debug('query', f"Command '{str(command)}' produced no usable output.")
+                guest.debug('query', f"Command '{command!s}' produced no usable output.")
                 continue
 
             match = re.search(pattern, output.stdout)
 
             if not match:
-                guest.debug('query', f"Command '{str(command)}' produced no usable output.")
+                guest.debug('query', f"Command '{command!s}' produced no usable output.")
                 continue
 
             return match.group(1)
