@@ -90,24 +90,38 @@ description:
     summary: Report test results to a ReportPortal instance
     story:
         As a tester I want to review results in a nicely arranged
-        web page with links to detailed test output.
+        web page, filter them via context attributes and get links
+        to detailed test output and other test information.
     description:
-        Prepare a JUnit report with test results, zip it and send
-        it to a ReportPortal instance.
+        Fill json with test results and other fmf data per each plan,
+        and send it to a Report Portal instance via its API.
     example:
       - |
         # Set environment variables with the server url and token
-        export TMT_REPORT_REPORTPORTAL_URL=...
-        export TMT_REPORT_REPORTPORTAL_TOKEN=...
+        export TMT_REPORT_REPORTPORTAL_URL=<url-to-RP-instance>
+        export TMT_REPORT_REPORTPORTAL_TOKEN=<token-from-RP-profile>
       - |
         # Enable ReportPortal report from the command line
-        tmt run --all report --how reportportal --project=baseosqe --launch-name=maven
+        tmt run --all report --how reportportal --project=baseosqe
+        tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+        tmt run --all report --how reportportal --project=baseosqe --launch=test_plan
+        tmt run --all report --how reportportal --project=baseosqe --url=... --token=...
       - |
         # Use ReportPortal as the default report for given plan
         report:
             how: reportportal
             project: baseosqe
-            launch-name: maven
+
+        # Report context attributes for given plan
+        context:
+            ...
+      - |
+        # Report description, contact, id and environment variables for given test
+        summary: ...
+        contact: ...
+        id: ...
+        environment:
+            ...
     link:
         - implemented-by: /tmt/steps/report/reportportal.py
 

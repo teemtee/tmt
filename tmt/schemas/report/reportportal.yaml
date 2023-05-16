@@ -28,7 +28,10 @@ properties:
   project:
     type: string
 
-  launch-name:
+  launch:
+    type: string
+
+  exclude-variables:
     type: string
 
 required:
