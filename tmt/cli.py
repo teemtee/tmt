@@ -2159,9 +2159,11 @@ def pre_commit(
     if lint_type:
         args += [lint_type]
     # Pass lint and default flags of the lint command
-    args += ['lint', '--source']
+    args += ['lint', '--source', '--failed-only']
     # Get everything else
     if '--source' in context.args:
         context.args.remove('--source')
+    if '--failed-only' in context.args:
+        context.args.remove('--failed-only')
     args += context.args
     main(args)
