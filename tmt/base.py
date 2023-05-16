@@ -3,6 +3,7 @@
 import copy
 import dataclasses
 import enum
+import functools
 import itertools
 import os
 import re
@@ -78,6 +79,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.cli
+    import tmt.steps.provision.local
 
 
 T = TypeVar('T')
@@ -3083,6 +3085,17 @@ class Run(tmt.utils.Common):
         self._environment_from_options: Optional[EnvironmentType] = None
         self.remove = self.opt('remove')
 
+    @tmt.utils.cached_property
+    def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
+        import tmt.steps.provision.local
+
+        return tmt.steps.provision.local.GuestLocal(
+            data=tmt.steps.provision.GuestData(
+                guest='localhost',
+                role=None),
+            name='tmt runner',
+            logger=self._logger)
+
     def _use_default_plan(self) -> None:
         """ Prepare metadata tree with only the default plan """
         default_plan = tmt.utils.yaml_to_dict(tmt.templates.DEFAULT_PLAN)
@@ -3305,6 +3318,19 @@ class Run(tmt.utils.Common):
                 else:
                     time.sleep(0.5)
 
+    def show_runner(self, logger: tmt.log.Logger) -> None:
+        """ Log facts about the machine on which tmt runs """
+
+        # populate facts before logging
+        _ = self.runner.facts
+
+        log = functools.partial(logger.debug, color='green', level=3)
+
+        log('tmt runner')
+
+        for _, key_formatted, value_formatted in self.runner.facts.format():
+            log(key_formatted, value_formatted, shift=1)
+
     def go(self) -> None:
         """ Go and do test steps for selected plans """
         # Create the workdir and save last run
@@ -3321,6 +3347,9 @@ class Run(tmt.utils.Common):
         self.info(str(self.workdir), color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
         self.debug('tmt command line', Command(*sys.argv))
+
+        self.show_runner(self._logger)
+
         # Attempt to load run data
         self.load()
         # Follow log instead of executing the run

@@ -19,7 +19,7 @@ class GuestLocal(tmt.Guest):
     """ Local Host """
 
     localhost = True
-    parent: tmt.steps.Step
+    parent: Optional[tmt.steps.Step]
 
     @property
     def is_ready(self) -> bool:
@@ -80,7 +80,8 @@ class GuestLocal(tmt.Guest):
         # Prepare the environment (plan/cli variables override)
         environment: tmt.utils.EnvironmentType = {}
         environment.update(env or {})
-        environment.update(self.parent.plan.environment)
+        if self.parent:
+            environment.update(self.parent.plan.environment)
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
 

@@ -340,6 +340,31 @@ class GuestFacts(SerializableContainer):
 
         self.in_sync = True
 
+    def format(self) -> Iterator[Tuple[str, str, str]]:
+        """
+        Format facts for pretty printing.
+
+        :yields: three-item tuples: the field name, its pretty label, and formatted representation
+            of its value.
+        """
+
+        yield 'arch', 'arch', self.arch or 'unknown'
+        yield 'distro', 'distro', self.distro or 'unknown'
+        yield 'kernel_release', 'kernel', self.kernel_release or 'unknown'
+        yield 'package_manager', \
+            'package manager', \
+            self.package_manager.value if self.package_manager else 'unknown'
+        yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
+        yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
+
+
+GUEST_FACTS_INFO_FIELDS: List[str] = ['arch', 'distro']
+GUEST_FACTS_VERBOSE_FIELDS: List[str] = [
+    # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
+    # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
+    key for key in GuestFacts.keys()  # noqa: SIM118
+    if key not in GUEST_FACTS_INFO_FIELDS]
+
 
 def normalize_hardware(
         key_address: str,
@@ -659,24 +684,22 @@ class Guest(tmt.utils.Common):
         else:
             self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
-    def details(self) -> None:
+    def show(self, show_multihost_name: bool = True) -> None:
         """ Show guest details such as distro and kernel """
 
-        self.info('multihost name', self.multihost_name, 'green')
+        if show_multihost_name:
+            self.info('multihost name', self.multihost_name, color='green')
 
-        # Skip distro & kernel check in dry mode
+        # Skip active checks in dry mode
         if self.is_dry_run:
             return
 
-        self.info('arch', self.facts.arch or 'unknown', 'green')
-        self.info('distro', self.facts.distro or 'unknown', 'green')
-        self.verbose('kernel', self.facts.kernel_release or 'unknown', 'green')
-        self.verbose(
-            'package manager',
-            self.facts.package_manager.value if self.facts.package_manager else 'unknown',
-            'green')
-        self.verbose('selinux', 'yes' if self.facts.has_selinux else 'no', 'green')
-        self.verbose('is superuser', 'yes' if self.facts.is_superuser else 'no', 'green')
+        for key, key_formatted, value_formatted in self.facts.format():
+            if key in GUEST_FACTS_INFO_FIELDS:
+                self.info(key_formatted, value_formatted, color='green')
+
+            elif key in GUEST_FACTS_VERBOSE_FIELDS:
+                self.verbose(key_formatted, value_formatted, color='green')
 
     def _ansible_verbosity(self) -> List[str]:
         """ Prepare verbose level based on the --debug option count """
@@ -1854,7 +1877,7 @@ class Provision(tmt.steps.Step):
 
                         guest = phase.guest()
                         if guest:
-                            guest.details()
+                            guest.show()
 
                     if self.is_multihost:
                         self.info('')
