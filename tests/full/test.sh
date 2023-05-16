@@ -18,13 +18,19 @@ COPY_IN="${COPY_IN:-0}"
 BRANCH="${BRANCH:-}"
 
 # Set to '1' to keep tmt.spec as is
-PRE_RELEASE="${PRE_RELEASE:-0}"
+KEEP_VERSION="${KEEP_VERSION:-0}"
+
+# Git repository with tmt code (origin or fork or own...)
+REPO="${REPO:-https://github.com/teemtee/tmt}"
 
 # Set to `test <options>` for test filtering
 TEST_CMD="${TEST_CMD:-}"
 
 # Run whole test suite ('all') or just scope not covered by CI ('complement')
 SCOPE="${SCOPE:-all}"
+
+# PLANS to be run
+PLANS="${PLANS:-}"
 
 set -o pipefail
 
@@ -74,7 +80,7 @@ rlJournalStart
             rlRun "chown root:root -R ."
         else
             # Clone repo otherwise
-            rlRun "git clone https://github.com/teemtee/tmt $USER_HOME/tmt"
+            rlRun "git clone $REPO $USER_HOME/tmt"
             rlRun "pushd $USER_HOME/tmt"
             [ -n "$BRANCH" ] && rlRun "git checkout --force '$BRANCH'"
         fi
@@ -82,8 +88,8 @@ rlJournalStart
         # Make current commit visible in the log
         rlRun "git show -s | cat"
 
-        # Do not "patch" version for pre-release...
-        [[ $PRE_RELEASE -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i tmt.spec"
+        # Do not "patch" version
+        [[ $KEEP_VERSION -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i tmt.spec"
 
         # Build tmt packages
         rlRun "dnf builddep -y tmt.spec" 0 "Install build dependencies"

@@ -16,7 +16,29 @@ description: |
     Again just test not run in a merge request
       tmt test export --fmf-id | wow fedora-37 x86_64 --fmf-id - --taskparam=SCOPE=complement --taskparam=BRANCH=<branch>
 
-    See head of the test.sh for further information
+    Following environment variables can be used:
+
+      COPY_IN - When '1' injects local content (produced by `make bundle`)
+                and skips git clone (used to test local changes without push).
+
+      REPO - URL to git repository to clone,
+             defaults to github.com/teemtee/tmt
+
+      BRANCH - Set to the branch, commit or tag to checkout,
+               defaults to REPO's default branch
+
+      KEEP_VERSION - When '1' tests keeps version and release
+                     in the tmt.spec, otherwise set it to 9.9.9.9
+
+      PLANS - Space separated names of plans to execute,
+              when not set all enabled plans are run
+
+      TESTS_CMD - String to be placed as after
+                  `tests` subcommand (e.g. "-n /tests/unit")
+
+      SCOPE - To run tests which do not run in CI set to 'complement',
+              otherwise 'all' is used to run all tests
+
 
 test: ./test.sh
 framework: beakerlib
