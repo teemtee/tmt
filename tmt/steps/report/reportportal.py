@@ -51,11 +51,11 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="NAME",
         default=None,
         help="The launch name (base name of run id used by default).")
-    add_meta_data: Optional[str] = tmt.utils.field(
-        option="--add-meta-data",
-        metavar="ADD_METADATA",
+    metadata: Optional[str] = tmt.utils.field(
+        option="--metadata",
+        metavar="METADATA",
         default=None,
-        help="Set metadata launch { key: key1, value: value1 }")
+        help="Set metadata launch [{ key: key1, value: value1 }]")
 
 
 @tmt.steps.provides_method("reportportal")
@@ -112,6 +112,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         launch_name = self.get("launch-name") or self.step.plan.my_run.workdir.name
         self.info("launch", launch_name, color="green")
 
+        # Retrieve metadata
+        meta_data = self.get("metadata")
+
         # Generate a xUnit report
         import_junit_xml()
         assert junit_xml is not None
@@ -157,14 +160,19 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             self.debug(f"Message from the server: {message}")
             self.info("report", "Successfully uploaded.", "yellow")
 
-        if self.get("add-meta-data"):
+        try:
+            _ = json.dumps(meta_data)
+        except Exception as exc:
+            raise tmt.utils.SpecificationError("Invalid syntax of provided metadata") from exc
+
+        if meta_data:
             uuid = None
             re_result = re.search("\\w{8}-(\\w{4}-){3}\\w{12}", str(message))
             if isinstance(re_result, re.Match):
                 uuid = re_result.group()
 
             if not isinstance(uuid, str):
-                self.debug(f"Message from tmt: could not update metadata in {message}")
+                self.debug(f"Could not update metadata in {message}")
                 return
 
             # Get the launch_id from MQ uuid
@@ -208,7 +216,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                                 "Authorization": "bearer " + token,
                                 "accept": "*/*",
                                 },
-                            data=json.dumps({"attributes": self.get("add-meta-data")}),
+                            data=json.dumps({"attributes": meta_data}),
                             )
 
                         # Handle the response

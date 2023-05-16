@@ -31,10 +31,7 @@ properties:
   launch-name:
     type: string
 
-  ca-cert-file:
-    type: string
-
-  add-meta-data:
+  metadata:
     type: string
 
 required:
