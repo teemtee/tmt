@@ -1458,12 +1458,14 @@ class PushTask(Task):
 class PullTask(Task):
     """ Task performing a workdir pull from a guest """
 
+    source: Optional[Path] = None
+
     @property
     def name(self) -> str:
         return 'pull'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        guest.pull()
+        guest.pull(source=self.source)
 
 
 GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)

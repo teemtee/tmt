@@ -302,7 +302,7 @@ class Prepare(tmt.steps.Step):
         if self.phases() and guest_copies:
             self._sync_with_guests(
                 'pull',
-                PullTask(guests=guest_copies, logger=self._logger)
+                PullTask(guests=guest_copies, logger=self._logger, source=self.plan.data_directory)
                 )
 
             # To separate "prepare" from "pull" queue visually
