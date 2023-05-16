@@ -277,7 +277,6 @@ class Discover(tmt.steps.Step):
             return
 
         # Perform test discovery, gather discovered tests
-        # self._tests = {}
         for phase in self.phases(classes=(Action, DiscoverPlugin)):
             if isinstance(phase, Action):
                 phase.go()

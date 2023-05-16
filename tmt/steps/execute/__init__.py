@@ -657,6 +657,7 @@ class Execute(tmt.steps.Step):
             # TODO: needs a better message...
             raise tmt.utils.GeneralError('execute step failed')
 
+        # To separate "execute" from the follow-up logging visually
         self.info('')
 
         # Give a summary, update status and save
