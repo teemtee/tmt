@@ -589,7 +589,7 @@ def tests_create(
     '--polarion-case-id',
     help='Polarion Test case ID to import data from.')
 @click.option(
-    '--link-polarion / --no-link-polarion', default=True,
+    '--link-polarion / --no-link-polarion', default=False,
     help='Add Polarion link to fmf testcase metadata.')
 @click.option(
     '--type', 'types', metavar='TYPE', default=['multihost'], multiple=True,
@@ -704,7 +704,7 @@ _test_export_default = 'yaml'
 @click.option(
     '--project-id', help='Use specific Polarion project ID.')
 @click.option(
-    '--link-polarion / --no-link-polarion', default=True,
+    '--link-polarion / --no-link-polarion', default=False,
     help='Add Polarion link to fmf testcase metadata')
 @click.option(
     '--bugzilla', is_flag=True,
