@@ -53,7 +53,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="The launch name (base name of run id used by default).")
     metadata: Optional[str] = tmt.utils.field(
         option="--metadata",
-        metavar="METADATA",
+        metavar="JSON",
         default=None,
         help="Set metadata launch [{ key: key1, value: value1 }]")
 
@@ -155,17 +155,17 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             raise tmt.utils.ReportError(
                 "Received non-ok status code from ReportPortal, "
                 f"response text is: {message}")
-        else:
-            self.debug(f"Response code from the server: {response.status_code}")
-            self.debug(f"Message from the server: {message}")
-            self.info("report", "Successfully uploaded.", "yellow")
 
-        try:
-            _ = json.dumps(meta_data)
-        except Exception as exc:
-            raise tmt.utils.SpecificationError("Invalid syntax of provided metadata") from exc
+        self.debug(f"Response code from the server: {response.status_code}")
+        self.debug(f"Message from the server: {message}")
+        self.info("report", "Successfully uploaded.", "yellow")
 
         if meta_data:
+            try:
+                _ = json.dumps(meta_data)
+            except Exception as exc:
+                raise tmt.utils.SpecificationError("Invalid syntax of provided metadata") from exc
+
             uuid = None
             re_result = re.search("\\w{8}-(\\w{4}-){3}\\w{12}", str(message))
             if isinstance(re_result, re.Match):
@@ -177,8 +177,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
             # Get the launch_id from MQ uuid
             with tmt.utils.retry_session() as session:
-                if self.get("ca-cert-file"):
-                    session.verify = self.get("ca-cert-file")
                 url = f"{server}/api/v1/{project}/launch/uuid/{uuid}"
                 self.debug(f"Send the report to '{url}'.")
                 response = session.get(
@@ -197,16 +195,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                     raise tmt.utils.ReportError(
                         "Received non-ok status code from ReportPortal, "
                         f"response text is: {message}")
-                else:
-                    self.debug(f"Response code from the server: {response.status_code}")
-                    self.debug(f"Message from the server: {message}")
-                    self.info("report", "Successfully uploaded.", "yellow")
 
                 launch_id = json.loads(response.text)["id"]
+                self.debug(f"Response code from the server: {response.status_code}")
+                self.debug(f"Message from the server: {message}")
+                self.info("report", f"Successfully retrieved {launch_id}.", "yellow")
+
                 if launch_id:
                     with tmt.utils.retry_session() as session:
-                        if self.get("ca-cert-file"):
-                            session.verify = self.get("ca-cert-file")
                         url = f"{server}/api/v1/{project}/launch/{launch_id}/update"
                         self.debug(f"Send the report to '{url}'.")
                         response = session.put(
@@ -228,7 +224,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                             raise tmt.utils.ReportError(
                                 "Received non-ok status code from ReportPortal, "
                                 f"response text is: {message}")
-                        else:
-                            self.debug(f"Response code from the server: {response.status_code}")
-                            self.debug(f"Message from the server: {message}")
-                            self.info("report", "Successfully uploaded.", "yellow")
+
+                        self.debug(f"Response code from the server: {response.status_code}")
+                        self.debug(f"Message from the server: {message}")
+                        self.info("report", "Successfully updated.", "yellow")
