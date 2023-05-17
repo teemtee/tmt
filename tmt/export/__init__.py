@@ -200,6 +200,66 @@ class ExportPlugin:
         """ Export collection of stories """
         raise NotImplementedError()
 
+# It's tempting to make this the default implementation of `ExporterPlugin` class,
+# but that would mean the `ExportPlugin` would suddenly not raise `NotImplementedError`
+# in methods where the export is not supported by a child class. That does not
+# feel right, therefore the "simple export plugin" class of plugins has its own
+# dedicated base.
+
+
+class TrivialExporter(ExportPlugin):
+    """
+    A helper base class for exporters with trivial export procedure.
+
+    Child classes need to implement a single method that performs a conversion
+    of a single collection item, and that's all. It is good enough for formats
+    like ``dict`` or ``YAML`` as they do not require any other input than the
+    data to convert.
+    """
+
+    @classmethod
+    def _export(cls, data: _RawExported) -> str:
+        """
+        Perform the actual conversion of internal data package to desired format.
+
+        The method is left for child classes to implement, all other public
+        methods call this method to perform the conversion for each collection
+        item.
+
+        :param data: data package to export.
+        :returns: string representation of the given data.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    def export_fmfid_collection(cls,
+                                fmf_ids: List['tmt.base.FmfId'],
+                                keys: Optional[List[str]] = None,
+                                **kwargs: Any) -> str:
+        return cls._export([fmf_id._export(keys=keys) for fmf_id in fmf_ids])
+
+    @classmethod
+    def export_test_collection(cls,
+                               tests: List['tmt.base.Test'],
+                               keys: Optional[List[str]] = None,
+                               **kwargs: Any) -> str:
+        return cls._export([test._export(keys=keys) for test in tests])
+
+    @classmethod
+    def export_plan_collection(cls,
+                               plans: List['tmt.base.Plan'],
+                               keys: Optional[List[str]] = None,
+                               **kwargs: Any) -> str:
+        return cls._export([plan._export(keys=keys) for plan in plans])
+
+    @classmethod
+    def export_story_collection(cls,
+                                stories: List['tmt.base.Story'],
+                                keys: Optional[List[str]] = None,
+                                **kwargs: Any) -> str:
+        return cls._export([story._export(keys=keys) for story in stories])
+
 
 def get_bz_instance() -> BugzillaInstance:
     """ Import the bugzilla module and return BZ instance """

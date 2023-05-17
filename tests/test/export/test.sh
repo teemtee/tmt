@@ -43,9 +43,9 @@ rlJournalStart
         if rlIsRHELLike "=8"; then
             # RHEL-8 and Centos stream 8 usually offer an older Click package that has slightly
             # different wording & quotes.
-            rlAssertgrep "Error: Invalid value for \"-h\" / \"--how\": invalid choice: weird. (choose from dict, nitrate, polarion, yaml)" $rlRun_LOG
+            rlAssertgrep "Error: Invalid value for \"-h\" / \"--how\": invalid choice: weird. (choose from dict, json, nitrate, polarion, yaml)" $rlRun_LOG
         else
-            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'nitrate', 'polarion', 'yaml'." $rlRun_LOG
+            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'json', 'nitrate', 'polarion', 'yaml'." $rlRun_LOG
         fi
     rlPhaseEnd
 
