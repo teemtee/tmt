@@ -69,12 +69,25 @@ class ResultGuestData(tmt.utils.SerializableContainer):
     role: Optional[str] = None
 
 
+# This needs to be a stand-alone function because of the import of `tmt.base`.
+# It cannot be imported on module level because of circular dependency.
+def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
+    from tmt.base import FmfId
+
+    return FmfId.from_spec(serialized)
+
+
 @dataclasses.dataclass
 class Result(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a single test result """
 
     name: str
     serialnumber: int = 0
+    fmf_id: Optional['tmt.base.FmfId'] = field(
+        default=cast(Optional['tmt.base.FmfId'], None),
+        serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
+        unserialize=_unserialize_fmf_id
+        )
     result: ResultOutcome = field(
         default=ResultOutcome.PASS,
         serialize=lambda result: result.value,
@@ -146,6 +159,7 @@ class Result(tmt.utils.SerializableContainer):
         _result = Result(
             name=test.name,
             serialnumber=test.serialnumber,
+            fmf_id=test.fmf_id,
             result=result,
             note=note,
             starttime=test.starttime,

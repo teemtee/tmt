@@ -20,6 +20,12 @@ description: |
        # String, name of the test.
        name: /test/one
 
+       # fmf ID of the test.
+       fmf_id:
+         url: http://some.git.host.com/project/tests.git
+         name: /test/one
+         path: /
+
        # String, outcome of the test execution.
        result: "pass"|"fail"|"info"|"warn"|"error"
 
@@ -98,8 +104,8 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
-    The ``serialnumber`` and ``guest`` keys, if present in the custom
-    results file, will be overwritten by tmt during their import after
+    The ``serialnumber``, ``guest`` and ``fmf_id`` keys, if present in the
+    custom results file, will be overwritten by tmt during their import after
     test completes. This happens on purpose, to assure this vital
     information is correct.
 

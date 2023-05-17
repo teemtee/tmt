@@ -651,6 +651,12 @@ class Core(
     def fmf_id(self) -> FmfId:
         """ Return full fmf identifier of the node """
 
+        # When the object is built from an fmf node without a root, it's
+        # probably not possible for the object to have any fmf ID in the
+        # context of a non-existent fmf tree.
+        if self.node.root is None:
+            return FmfId()
+
         return tmt.utils.fmf_id(name=self.name, fmf_root=Path(self.node.root), logger=self._logger)
 
     def web_link(self) -> Optional[str]:
