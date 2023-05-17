@@ -3,11 +3,11 @@
 """
 Metadata linting.
 
-Internal APIs, classes, shared functionality and helpers for linting of
-test, plan and story metadata linting.
+Internal APIs, classes, shared functionality and helpers for test, plan and
+story metadata linting.
 
 A mixin class, :py:class:`Lintable`, provides the required functionality for
-base classes. Namely, it takes care of linter discovery and adds
+base classes. Namely, it takes care of linter discovery and provides
 :py:meth:`Lintable.lint` method to run them.
 
 Classes spiced with ``Lintable`` define their sets of linters. Consider the
@@ -15,13 +15,14 @@ following examples:
 
 .. code-block:: python
 
-   # Methods whose names start with ``lint_*`` prefix are considered linters.
+   # Methods whose names start with ``lint_*`` prefix are considered *linters*,
+   # and linters perform one or more *checks* users can enable or disable.
    def lint_path_exists(self) -> LinterReturn:
        # A linter must have a docstring which is then used to generate documentation,
        # e.g. when ``lint --list-checks`` is called. The docstring must begin with
        # a linter *id*. The id should match ``[CTPS]\\d\\d\\d`` regular expression:
        # ``C``ommon, ``T``est, ``P``lan, ``S``tory, plus a three-digit serial number
-       # of the linter among its peers.
+       # of the check among its peers.
        ''' T004: test directory path must exist '''
 
        # Linter implements a generator (see :py:member:`LinterReturn`) yielding
@@ -43,7 +44,8 @@ following examples:
        ''' T008: manual test should be valid markdown '''
 
        # Linter should yield `SKIP` outcome when it does not apply, to announce
-       # it did inspect the object but realized it's out of scope.
+       # it did inspect the object but realized the object is out of scope of
+       # the linter, and checks do not apply.
        if not self.manual:
             yield LinterOutcome.SKIP, 'not a manual test'
             return
@@ -53,9 +55,9 @@ following examples:
        warnings = tmt.export.check_md_file_respects_spec(manual_test)
 
        if warnings:
-           # Linter may yield as many tuples as deems necessary. This allows for
-           # linters iterating over more granular aspects of metadata, providing
-           # more specific hints.
+           # Linter may yield as many tuples as it deems necessary. This allows
+           # for linters iterating over more granular aspects of metadata,
+           # providing more specific hints.
            for warning in warnings:
               yield LinterOutcome.WARN, warning
 
@@ -64,6 +66,7 @@ following examples:
 
 import dataclasses
 import enum
+import re
 import textwrap
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Generator, Generic,
                     Iterable, List, Optional, Tuple, TypeVar)
@@ -124,6 +127,9 @@ LinterReturn = Generator[Tuple[LinterOutcome, str], None, None]
 #: A linter itself, a callable method.
 LinterCallback = Callable[['Lintable'], LinterReturn]
 
+_LINTER_DESCRIPTION_PATTERN = re.compile(
+    r'(?m)^(?P<id>[CTPS]\d\d\d):\s*(?P<short>.+)$')
+
 
 @dataclasses.dataclass(init=False)
 class Linter:
@@ -132,15 +138,36 @@ class Linter:
     callback: LinterCallback
     id: str
 
+    help: str
+    description: Optional[str] = None
+
     def __init__(self, callback: LinterCallback) -> None:
         self.callback = callback
 
         if not callback.__doc__:
             raise tmt.utils.GeneralError(f"Linter '{callback}' lacks docstring.")
 
-        id, _ = textwrap.dedent(callback.__doc__).strip().split(':', 1)
+        match = _LINTER_DESCRIPTION_PATTERN.match(textwrap.dedent(callback.__doc__).strip())
 
-        self.id = id.strip()
+        if not match:
+            raise tmt.utils.GeneralError(f"Linter '{callback}' docstring has wrong format.")
+
+        components = match.groupdict()
+
+        self.id = components['id'].strip()
+        self.help = components['short'].strip()
+
+    def format(self) -> List[str]:
+        """
+        Format the linter for printing or logging.
+
+        :returns: a string description of the linter, suitable for
+            logging or help texts, in the form of lines of text.
+        """
+
+        return [
+            f'{self.id}: {self.help}'
+            ]
 
 
 class Lintable(Generic[LintableT]):
@@ -195,14 +222,14 @@ class Lintable(Generic[LintableT]):
         * list of checks to enable, and
         * list of checks to disable
 
-        into a single list of checks that are considered as enabled.
+        into a single list of linters that are considered as enabled.
 
-        :param enable_checks: if set, only listed checks would be included in
-            the output.
-        :param disable_checks: if set, listed checks would be removed from the
-            output.
-        :returns: list of linters that were registered, enabled and not
-            disabled.
+        :param enable_checks: if set, only linters providing the listed checks
+            would be included in the output.
+        :param disable_checks: if set, linters providing the listed checks would
+            be removed from the output.
+        :returns: list of linters that were registered, and whose checks were
+            enabled and not disabled.
         """
 
         linters: List[Linter] = []
@@ -236,8 +263,10 @@ class Lintable(Generic[LintableT]):
         """
         Check the instance against a battery of linters and report results.
 
-        :param enable_checks: if set, only listed checks would be applied.
-        :param disable_checks: if set, listed checks would not be applied.
+        :param enable_checks: if set, only linters providing the listed checks
+            would be applied.
+        :param disable_checks: if set, linters providing the listed checks would
+            not be applied.
         :param enforce_checks: if set, listed checks would be marked as failed
             if their outcome is not ``pass``, i.e. even a warning would become
             a fail.
@@ -289,10 +318,7 @@ class Lintable(Generic[LintableT]):
         hints: List[str] = []
 
         for linter in sorted(cls.get_linter_registry(), key=lambda x: x.id):
-            # This has been already verified when registering the linter
-            assert linter.callback.__doc__ is not None
-
-            hints.append(textwrap.dedent(linter.callback.__doc__).strip())
+            hints += linter.format()
 
         return '\n'.join(hints)
 
