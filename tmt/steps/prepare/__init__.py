@@ -293,7 +293,10 @@ class Prepare(tmt.steps.Step):
 
         if failed_phases:
             # TODO: needs a better message...
-            raise tmt.utils.GeneralError('prepare step failed') from failed_phases[0].exc
+            raise tmt.utils.GeneralError(
+                'prepare step failed',
+                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                )
 
         self.info('')
 

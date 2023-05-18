@@ -662,7 +662,10 @@ class Execute(tmt.steps.Step):
 
         if failed_phases:
             # TODO: needs a better message...
-            raise tmt.utils.GeneralError('execute step failed')
+            raise tmt.utils.GeneralError(
+                'execute step failed',
+                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                )
 
         # To separate "execute" from the follow-up logging visually
         self.info('')
