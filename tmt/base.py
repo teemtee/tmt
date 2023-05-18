@@ -582,8 +582,16 @@ def _normalize_link(key_address: str, value: _RawLinks, logger: tmt.log.Logger) 
     return Links(data=value)
 
 
+def _serialize_link(link: Optional['Links']) -> List[_RawLinkRelation]:
+    if not link:
+        return []
+
+    return link.to_spec()
+
+
 @dataclasses.dataclass(repr=False)
 class Core(
+        tmt.utils.SerializableContainer,
         tmt.utils.ValidateFmfMixin,
         tmt.utils.LoadFmfKeysMixin,
         tmt.utils.Common):
@@ -605,7 +613,8 @@ class Core(
             DEFAULT_ORDER if raw_value is None else int(raw_value))
     link: Optional['Links'] = field(
         default=None,
-        normalize=_normalize_link)
+        normalize=_normalize_link,
+        serialize=_serialize_link)
     id: Optional[str] = None
     tag: List[str] = field(
         default_factory=list,
@@ -949,19 +958,23 @@ class Test(
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
     test: Optional[ShellScript] = field(
         default=None,
-        normalize=normalize_shell_script)
+        normalize=normalize_shell_script,
+        serialize=lambda test: str(test))
     path: Optional[Path] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger:
-            None if raw_value is None else Path(raw_value))
+            None if raw_value is None else Path(raw_value),
+        serialize=lambda path: str(path) if path is not None else None)
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
         default_factory=list,
-        normalize=normalize_require)
+        normalize=normalize_require,
+        serialize=lambda require: [dependency.to_spec() for dependency in require])
     recommend: List[Dependency] = field(
         default_factory=list,
-        normalize=normalize_require)
+        normalize=normalize_require,
+        serialize=lambda recommend: [dependency.to_spec() for dependency in recommend])
     environment: tmt.utils.EnvironmentType = field(default_factory=dict)
 
     duration: str = DEFAULT_TEST_DURATION_L1
@@ -969,11 +982,11 @@ class Test(
 
     where: List[str] = field(default_factory=list)
 
-    serialnumber: int = 0
+    serial_number: int = 0
 
     returncode: Optional[int] = None
-    starttime: Optional[str] = None
-    endtime: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     real_duration: Optional[str] = None
     _reboot_count: int = 0
 

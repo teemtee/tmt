@@ -2231,8 +2231,12 @@ def dataclass_field_metadata(field: 'dataclasses.Field[T]') -> 'FieldMetadata[T]
 
 
 @dataclasses.dataclass
-class DataContainer:
+class DataContainer(_CommonBase):
     """ A base class for objects that have keys and values """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2241,7 +2245,11 @@ class DataContainer:
         See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
         """
 
-        return dataclasses.asdict(self)
+        # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
+        # "DataContainer" has no attribute "__iter__" (not iterable)
+        return {
+            key: getattr(self, key) for key in self.keys()  # noqa: SIM118
+            }
 
     def to_minimal_dict(self) -> Dict[str, Any]:
         """
@@ -2396,8 +2404,12 @@ UnserializeCallback = Callable[[Any], T]
 
 
 @dataclasses.dataclass
-class SerializableContainer(DataContainer):
+class SerializableContainer(DataContainer, _CommonBase):
     """ A mixin class for saving and loading objects """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def default(cls, key: str, default: Any = None) -> Any:
@@ -2444,24 +2456,28 @@ class SerializableContainer(DataContainer):
         See :py:meth:`from_serialized` for its counterpart.
         """
 
-        fields = self.to_dict()
+        def _produce_serialized() -> Generator[Tuple[str, Any], None, None]:
+            for key, value in self.to_dict().items():
+                option = key_to_option(key)
 
-        for name in fields:
-            field: dataclasses.Field[Any] = dataclass_field_by_name(self, name)
-            serialize_callback = dataclass_field_metadata(field).serialize_callback
+                field: dataclasses.Field[Any] = dataclass_field_by_name(self, key)
+                serialize_callback = dataclass_field_metadata(field).serialize_callback
 
-            if serialize_callback:
-                fields[name] = serialize_callback(getattr(self, name))
+                if serialize_callback:
+                    yield option, serialize_callback(value)
+
+                else:
+                    yield option, value
+
+        serialized = dict(_produce_serialized())
 
         # Add a special field tracking what class we just shattered to pieces.
-        fields.update({
-            '__class__': {
-                'module': self.__class__.__module__,
-                'name': self.__class__.__name__
-                }
-            })
+        serialized['__class__'] = {
+            'module': self.__class__.__module__,
+            'name': self.__class__.__name__
+            }
 
-        return fields
+        return serialized
 
     @classmethod
     def from_serialized(
@@ -2480,18 +2496,20 @@ class SerializableContainer(DataContainer):
         # already know what class to restore: this one.
         serialized.pop('__class__', None)
 
-        obj = cls(**serialized)
+        def _produce_unserialized() -> Generator[Tuple[str, Any], None, None]:
+            for option, value in serialized.items():
+                key = option_to_key(option)
 
-        for keyname, value in serialized.items():
-            field: dataclasses.Field[Any] = dataclass_field_by_name(obj, keyname)
-            unserialize_callback = dataclass_field_metadata(field).unserialize_callback
+                field: dataclasses.Field[Any] = dataclass_field_by_name(cls, key)
+                unserialize_callback = dataclass_field_metadata(field).unserialize_callback
 
-            if unserialize_callback:
-                # Set attribute by adding it to __dict__ directly. Messing with setattr()
-                # might cause re-use of mutable values by other instances.
-                obj.__dict__[keyname] = unserialize_callback(value)
+                if unserialize_callback:
+                    yield key, unserialize_callback(value)
 
-        return obj
+                else:
+                    yield key, value
+
+        return cls(**dict(_produce_unserialized()))
 
     # ignore[misc,type-var]: mypy is correct here, method does return a
     # TypeVar, but there is no way to deduce the actual type, because

@@ -552,8 +552,12 @@ class Guest(tmt.utils.Common):
         return facts
 
     @facts.setter
-    def facts(self, facts: Dict[str, Any]) -> None:
-        self.__dict__['facts'] = GuestFacts.from_serialized(facts)
+    def facts(self, facts: Union[GuestFacts, Dict[str, Any]]) -> None:
+        if isinstance(facts, GuestFacts):
+            self.__dict__['facts'] = facts
+
+        else:
+            self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
     def details(self) -> None:
         """ Show guest details such as distro and kernel """

@@ -141,7 +141,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         environment["TMT_TEST_NAME"] = test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
-        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serialnumber)
+        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serial_number)
         environment["TMT_TEST_METADATA"] = str(
             data_directory / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = str(
@@ -247,7 +247,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 topic=topic)
 
         # Execute the test, save the output and return code
-        starttime = datetime.datetime.now(datetime.timezone.utc)
+        start_time = datetime.datetime.now(datetime.timezone.utc)
         try:
             output = guest.execute(
                 remote_command,
@@ -266,14 +266,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             test.returncode = error.returncode
             if test.returncode == tmt.utils.PROCESS_TIMEOUT:
                 logger.debug(f"Test duration '{test.duration}' exceeded.")
-        endtime = datetime.datetime.now(datetime.timezone.utc)
+        end_time = datetime.datetime.now(datetime.timezone.utc)
         self.write(
             self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
 
-        test.starttime = self.format_timestamp(starttime)
-        test.endtime = self.format_timestamp(endtime)
-        test.real_duration = self.format_duration(endtime - starttime)
+        test.start_time = self.format_timestamp(start_time)
+        test.end_time = self.format_timestamp(end_time)
+        test.real_duration = self.format_duration(end_time - start_time)
 
     def _will_reboot(self, test: Test, guest: Guest) -> bool:
         """ True if reboot is requested """

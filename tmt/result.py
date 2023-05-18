@@ -82,7 +82,7 @@ class Result(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a single test result """
 
     name: str
-    serialnumber: int = 0
+    serial_number: int = 0
     fmf_id: Optional['tmt.base.FmfId'] = field(
         default=cast(Optional['tmt.base.FmfId'], None),
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
@@ -105,8 +105,8 @@ class Result(tmt.utils.SerializableContainer):
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
-    starttime: Optional[str] = None
-    endtime: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     duration: Optional[str] = None
 
     @classmethod
@@ -158,12 +158,12 @@ class Result(tmt.utils.SerializableContainer):
 
         _result = Result(
             name=test.name,
-            serialnumber=test.serialnumber,
+            serial_number=test.serial_number,
             fmf_id=test.fmf_id,
             result=result,
             note=note,
-            starttime=test.starttime,
-            endtime=test.endtime,
+            start_time=test.start_time,
+            end_time=test.end_time,
             duration=test.real_duration,
             ids=ids,
             log=log or [],

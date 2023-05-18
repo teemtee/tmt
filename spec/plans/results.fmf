@@ -44,16 +44,16 @@ description: |
          another-id: bar
 
        # String, when the test started, in an ISO 8601 format.
-       starttime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+       start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
        # String, when the test finished, in an ISO 8601 format.
-       endtime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+       end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
        # String, how long did the test run.
        duration: hh:mm:ss
 
        # Integer, serial number of the test in the sequence of all tests of a plan.
-       serialnumber: 1
+       serial-number: 1
 
        # Mapping, describes the guest on which the test was executed.
        guest:
@@ -104,12 +104,12 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
-    The ``serialnumber``, ``guest`` and ``fmf_id`` keys, if present in the
+    The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
     test completes. This happens on purpose, to assure this vital
     information is correct.
 
-    Similarly, the ``duration``, ``starttime`` and ``endtime`` keys, if
+    Similarly, the ``duration``, ``start-time`` and ``end-time`` keys, if
     present in the special custom result, representing the original test
     itself - ``name: /`` -, will be overwritten by tmt with actual
     observed values. This also happens on purpose: while tmt cannot
@@ -128,11 +128,11 @@ example:
     # Example content of results.yaml
     - name: /test/passing
       result: pass
-      serialnumber: 1
+      serial-number: 1
       log:
         - pass_log
-      starttime: "2023-03-10T09:44:14.439120+00:00"
-      endtime: "2023-03-10T09:44:24.242227+00:00"
+      start-time: "2023-03-10T09:44:14.439120+00:00"
+      end-time: "2023-03-10T09:44:24.242227+00:00"
       duration: 00:00:09
       note: good result
       ids:
@@ -142,12 +142,12 @@ example:
 
     - name: /test/failing
       result: fail
-      serialnumber: 2
+      serial-number: 2
       log:
         - fail_log
         - another_log
-      starttime: "2023-03-10T09:44:14.439120+00:00"
-      endtime: "2023-03-10T09:44:24.242227+00:00"
+      start-time: "2023-03-10T09:44:14.439120+00:00"
+      end-time: "2023-03-10T09:44:24.242227+00:00"
       duration: 00:00:09
       note: fail result
       guest:

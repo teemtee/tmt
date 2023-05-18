@@ -1412,7 +1412,7 @@ class Login(Action):
 
 
 @dataclasses.dataclass
-class GuestTopology(tmt.utils.SerializableContainer):
+class GuestTopology(tmt.utils.DataContainer):
     """ Describes a guest in the topology of provisioned tmt guests """
 
     name: str
@@ -1426,7 +1426,7 @@ class GuestTopology(tmt.utils.SerializableContainer):
 
 
 @dataclasses.dataclass(init=False)
-class Topology(tmt.utils.SerializableContainer):
+class Topology(tmt.utils.DataContainer):
     """ Describes the topology of provisioned tmt guests """
 
     guest: Optional[GuestTopology]
@@ -1458,6 +1458,16 @@ class Topology(tmt.utils.SerializableContainer):
             for role, role_guests in roles.items()
             }
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'guest': self.guest.to_dict() if self.guest else None,
+            'guest-names': {
+                name: guest.to_dict() for name, guest in self.guests.items()
+                },
+            'role-names': self.role_names,
+            'roles': self.roles
+            }
+
     def save_yaml(self, dirpath: Path, filename: Optional[str] = None) -> Path:
         """
         Save the topology in a YAML file.
@@ -1472,15 +1482,7 @@ class Topology(tmt.utils.SerializableContainer):
         filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.yaml'
         filepath = dirpath / filename
 
-        serialized = self.to_dict()
-
-        # Stick to using `-` for multiword keys.
-        # TODO: after https://github.com/teemtee/tmt/pull/2095/, this could
-        # be handled by SerializableContainer transparently.
-        serialized['guest-names'] = serialized.pop('guest_names')
-        serialized['role-names'] = serialized.pop('role_names')
-
-        filepath.write_text(tmt.utils.dict_to_yaml(serialized))
+        filepath.write_text(tmt.utils.dict_to_yaml(self.to_dict()))
 
         return filepath
 
