@@ -1255,10 +1255,27 @@ class Common(_CommonBase):
 class GeneralError(Exception):
     """ General error """
 
-    def __init__(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+            self,
+            message: str,
+            causes: Optional[List[Exception]] = None,
+            *args: Any,
+            **kwargs: Any) -> None:
+        """
+        General error.
+
+        :param message: error message.
+        :param causes: optional list of exceptions that caused this one. Since
+            ``raise ... from ...`` allows only for a single cause, and some of
+            our workflows may raise exceptions triggered by more than one
+            exception, we need a mechanism for storing them. Our reporting will
+            honor this field, and report causes the same way as ``__cause__``.
+        """
+
         super().__init__(message, *args, **kwargs)
 
         self.message = message
+        self.causes = causes or []
 
 
 class GitUrlError(GeneralError):
@@ -1380,7 +1397,7 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
-def render_run_exception(exception: RunError) -> str:
+def render_run_exception(exception: RunError) -> List[str]:
     """ Render detailed output upon command execution errors for printing """
 
     lines: List[str] = []
@@ -1411,10 +1428,10 @@ def render_run_exception(exception: RunError) -> str:
             ''
             ]
 
-    return '\n'.join(lines)
+    return lines
 
 
-def render_exception(exception: BaseException) -> str:
+def render_exception(exception: BaseException) -> List[str]:
     """ Render the exception and its causes for printing """
 
     lines = [
@@ -1424,26 +1441,49 @@ def render_exception(exception: BaseException) -> str:
     if isinstance(exception, RunError):
         lines += [
             '',
-            render_run_exception(exception)
+            *render_run_exception(exception)
             ]
 
-    # Follow the chain
+    # Follow the chain and render all causes
+    def _render_cause(number: int, cause: BaseException) -> List[str]:
+        return [
+            '',
+            f'Cause number {number}:',
+            ''
+            ] + [
+            f'{INDENT * " "}{line}' for line in render_exception(cause)
+            ]
+
+    def _render_causes(causes: List[BaseException]) -> List[str]:
+        lines: List[str] = [
+            '',
+            f'The exception was caused by {len(causes)} earlier exceptions',
+            ]
+
+        for number, cause in enumerate(causes, start=1):
+            lines += _render_cause(number, cause)
+
+        return lines
+
+    causes: List[BaseException] = []
+
+    if isinstance(exception, GeneralError) and exception.causes:
+        causes += exception.causes
+
     if exception.__cause__:
-        lines += [
-            '',
-            'The exception was caused by the previous exception:',
-            '',
-            render_exception(exception.__cause__)
-            ]
+        causes += [exception.__cause__]
 
-    return '\n'.join(lines)
+    if causes:
+        lines += _render_causes(causes)
+
+    return lines
 
 
 def show_exception(exception: BaseException) -> None:
     """ Display the exception and its causes """
 
     print('', file=sys.stderr)
-    print(render_exception(exception), file=sys.stderr)
+    print('\n'.join(render_exception(exception)), file=sys.stderr)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
