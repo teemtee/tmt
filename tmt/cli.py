@@ -623,7 +623,7 @@ def tests_import(
         types: List[str],
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: Optional[List[str]],
+        polarion_case_id: List[str],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
@@ -674,7 +674,7 @@ def tests_import(
             root = Path(fmf.Tree(str(path)).root)
             common['path'] = str(Path('/') / path.relative_to(root))
         # Store common metadata
-        file_name: str = common.get('filename', '') or 'main.fmf'
+        file_name = common.get('filename', 'main.fmf')
         common_path = path / file_name
         tmt.convert.write(common_path, common)
         # Store individual data (as virtual tests)
@@ -682,7 +682,7 @@ def tests_import(
             if nitrate and testcase.get('extra-nitrate'):
                 testcase_path = path / f'{testcase["extra-nitrate"]}.fmf'
             else:
-                file_name = testcase.get('filename', '')
+                file_name = testcase.get('filename')
                 if not file_name:
                     raise tmt.utils.ConvertError(
                         'Filename was not found, please set one with --polarion-case-id.')

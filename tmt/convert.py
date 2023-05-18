@@ -384,7 +384,7 @@ def read(
         restraint: bool,
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: Optional[List[str]],
+        polarion_case_id: List[str],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
@@ -449,7 +449,7 @@ def read(
             echo(style('Restraint ', fg='blue'), nl=False)
 
     if filename is None and not polarion:
-        raise GeneralError('filename is not defined')
+        raise GeneralError('Filename is not defined and there is no import from Polarion')
     # Open the datafile
     if restraint_file or makefile_file:
         assert filename is not None  # type check
@@ -631,7 +631,7 @@ def filter_common_data(
     for key in individual_data[0]:
         histogram[key] = 1
     if len(individual_data) > 1:
-        for testcase in individual_data:
+        for testcase in individual_data[1:]:
             for key, value in testcase.items():
                 if key in common_candidates:
                     if value != common_candidates[key]:
@@ -773,7 +773,7 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
 def read_polarion(
         common_data: NitrateDataType,
         individual_data: List[NitrateDataType],
-        polarion_case_id: Optional[List[str]],
+        polarion_case_id: List[str],
         link_polarion: bool,
         filenames: List[str]) -> None:
     """ Read data from Polarion """

@@ -62,7 +62,7 @@ rlJournalStart
 
     rlPhaseStartTest 'Import specifying not to use Makefile or Restraint. Verify an error is returned.'
         rlRun -s 'tmt test import --no-makefile --no-restraint --no-nitrate 2>&1' 2
-        rlAssertGrep 'Please specify either a Makefile or a Restraint file' $rlRun_LOG
+        rlAssertGrep 'Please specify either a Makefile or a Restraint file or a Polarion case ID' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest 'Import metadata'
