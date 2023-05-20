@@ -418,6 +418,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             if not dist_git_init and not dist_git_extract:
                 try:
                     top_fmf_root = tmt.utils.find_fmf_root(sourcedir)[0]
+                    # Using the fmf_root as the working directory, additional path is redundant
+                    path = None
                 except tmt.utils.MetadataError:
                     dist_git_extract = sourcedir
                     if not dist_git_merge:
