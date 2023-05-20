@@ -407,8 +407,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                     dist_git_extract = sourcedir
                 else:
                     try:
-                        dist_git_extract = glob.glob(os.path.join(
-                            sourcedir, dist_git_extract.lstrip('/')))[0]
+                        # Glob everything
+                        glob_path = glob.glob(os.path.join(sourcedir, dist_git_extract.lstrip('/')))
+                        # Use only the directories
+                        glob_dirs = [d for d  in glob_path if Path(d).is_dir()]
+                        # Use only the first valid directory
+                        dist_git_extract = glob_dirs[0]
                     except IndexError:
                         raise tmt.utils.DiscoverError(
                             f"Couldn't glob '{dist_git_extract}' "
