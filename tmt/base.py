@@ -327,7 +327,9 @@ class DependencyFmfId(FmfId):
 
     destination: Optional[Path] = None
     nick: Optional[str] = None
-    type: Optional[str] = None
+    # fmf id dependency is a beakerlib dependency, as of now, there is no other
+    # allowed `type` value.
+    type: str = 'library'
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -379,7 +381,7 @@ class DependencyFmfId(FmfId):
 
         fmf_id = DependencyFmfId()
 
-        for key in ('url', 'ref', 'name', 'nick', 'type'):
+        for key in ('url', 'ref', 'name', 'nick'):
             setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
 
         for key in ('path', 'destination'):
@@ -401,7 +403,7 @@ class DependencyFile(
         tmt.export.Exportable['DependencyFile']):
     VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
 
-    type: Optional[str] = None
+    type: str = 'file'
     pattern: List[str] = tmt.utils.field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
@@ -435,22 +437,20 @@ class DependencyFile(
     @classmethod
     def from_spec(cls, raw: _RawDependencyFile) -> 'DependencyFile':
         """ Convert from a specification file or from a CLI option """
-        require_file = DependencyFile()
+        dependency = cls()
 
-        require_file.type = raw.get('type', None)
-
-        patterns: List[Optional[str]] = []
         raw_patterns = raw.get('pattern', [])
         if not raw_patterns:
             raise tmt.utils.SpecificationError(f'Missing pattern for file require: {raw}')
-        if isinstance(raw_patterns, str):
-            patterns.append(raw_patterns)
-        else:
-            for pattern in raw_patterns:
-                patterns.append(str(pattern))
-        require_file.pattern = cast(List[str], patterns)
 
-        return require_file
+        if isinstance(raw_patterns, str):
+            dependency.pattern.append(raw_patterns)
+        else:
+            dependency.pattern += [
+                str(pattern) for pattern in raw_patterns
+                ]
+
+        return dependency
 
     @staticmethod
     def validate() -> Tuple[bool, str]:
