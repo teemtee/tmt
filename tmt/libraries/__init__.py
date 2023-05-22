@@ -8,12 +8,12 @@ import tmt
 import tmt.base
 import tmt.log
 import tmt.utils
+from tmt.base import (Dependency, DependencyFile, DependencyFmfId,
+                      DependencySimple)
 from tmt.utils import Path
 
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
-LibraryIdentifierType = Union[
-    tmt.base.RequireSimple, tmt.base.RequireFmfId, tmt.base.RequireFile]
-ImportedIdentifiersType = Optional[List[LibraryIdentifierType]]
+ImportedIdentifiersType = Optional[List[Dependency]]
 
 # A Library type, can be Beakerlib or File
 # undefined references are ignored due to cyclic dependencies of these files,
@@ -22,7 +22,7 @@ LibraryType = Union['BeakerLib', 'File']  # type: ignore[name-defined] # noqa: F
 
 # A type for Beakerlib dependencies
 LibraryDependenciesType = Tuple[
-    List[tmt.base.Require], List[tmt.base.Require], List['LibraryType']
+    List[Dependency], List[Dependency], List['LibraryType']
     ]
 
 
@@ -47,7 +47,7 @@ class Library:
         self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
         self._logger: tmt.log.Logger = logger
 
-        self.identifier: LibraryIdentifierType
+        self.identifier: Dependency
         self.format: str
         self.repo: Path
         self.name: str
@@ -69,19 +69,18 @@ class Library:
 
 def library_factory(
         *,
-        identifier: LibraryIdentifierType,
+        identifier: Dependency,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
         source_location: Optional[Path] = None,
         target_location: Optional[Path] = None) -> LibraryType:
     """ Factory function to get correct library instance """
-    if (isinstance(identifier, tmt.base.RequireSimple) or
-            isinstance(identifier, tmt.base.RequireFmfId)):
+    if isinstance(identifier, (DependencySimple, DependencyFmfId)):
         from .beakerlib import BeakerLib
         library: LibraryType = BeakerLib(identifier=identifier, parent=parent, logger=logger)
 
     # File import
-    elif isinstance(identifier, tmt.base.RequireFile):
+    elif isinstance(identifier, DependencyFile):
         assert source_location is not None
         assert target_location is not None  # narrow type
         from .file import File
@@ -107,8 +106,8 @@ def library_factory(
 
 def dependencies(
         *,
-        original_require: List[tmt.base.Require],
-        original_recommend: Optional[List[tmt.base.Require]] = None,
+        original_require: List[Dependency],
+        original_recommend: Optional[List[Dependency]] = None,
         parent: Optional[tmt.utils.Common] = None,
         imported_lib_ids: ImportedIdentifiersType = None,
         logger: tmt.log.Logger,
@@ -135,7 +134,7 @@ def dependencies(
     original_recommend = original_recommend or []
 
     # Cut circular dependencies to avoid infinite recursion
-    def already_fetched(lib: LibraryIdentifierType) -> bool:
+    def already_fetched(lib: Dependency) -> bool:
         if not imported_lib_ids:
             return True
         return lib not in imported_lib_ids

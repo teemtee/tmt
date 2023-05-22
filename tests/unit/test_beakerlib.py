@@ -14,11 +14,11 @@ def test_basic(root_logger):
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     library_with_parent = tmt.libraries.library_factory(
         logger=root_logger,
-        identifier=tmt.base.RequireSimple('library(openssl/certgen)'),
+        identifier=tmt.base.DependencySimple('library(openssl/certgen)'),
         parent=parent)
     library_without_parent = tmt.libraries.library_factory(
         logger=root_logger,
-        identifier=tmt.base.RequireSimple('library(openssl/certgen)'))
+        identifier=tmt.base.DependencySimple('library(openssl/certgen)'))
 
     for library in [library_with_parent, library_without_parent]:
         assert library.format == 'rpm'
@@ -40,7 +40,7 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
     """ Fetch beakerlib library referenced by fmf identifier """
     library = tmt.libraries.library_factory(
         logger=root_logger,
-        identifier=tmt.base.RequireFmfId(
+        identifier=tmt.base.DependencyFmfId(
             url=url,
             name=name))
     assert library.format == 'fmf'
@@ -60,7 +60,7 @@ def test_invalid_url_conflict(root_logger):
     # Fetch to cache 'tmt' repo
     tmt.libraries.library_factory(
         logger=root_logger,
-        identifier=tmt.base.RequireFmfId(
+        identifier=tmt.base.DependencyFmfId(
             url='https://github.com/teemtee/tmt',
             name='/',
             path='/tests/libraries/local/data'),
@@ -80,8 +80,8 @@ def test_dependencies(root_logger):
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     requires, recommends, libraries = tmt.libraries.dependencies(
         original_require=[
-            tmt.base.RequireSimple('library(httpd/http)'), tmt.base.RequireSimple('wget')],
-        original_recommend=[tmt.base.RequireSimple('forest')],
+            tmt.base.DependencySimple('library(httpd/http)'), tmt.base.DependencySimple('wget')],
+        original_recommend=[tmt.base.DependencySimple('forest')],
         parent=parent,
         logger=root_logger)
     # Check for correct requires and recommends

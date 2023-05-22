@@ -287,19 +287,19 @@ _RawAdjustRule = TypedDict(
     )
 
 
-# A type describing content accepted by various require-like keys: - a string, fmf id,
-# or a list with a mixture of these two types.
-#
-# Note the use of custom fmf-id-based class - fmf id is accepted as a require,
-# but allows several extra keys that must be stored.
+# Types describing content accepted by various require-like keys: strings, fmf ids,
+# paths, or lists mixing various types.
 #
 # See https://tmt.readthedocs.io/en/latest/spec/tests.html#require
-class RequireSimple(str):
+
+class DependencySimple(str):
+    """ A basic, simple dependency, usually a package """
+
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
     @classmethod
-    def from_spec(cls, spec: str) -> 'RequireSimple':
-        return RequireSimple(spec)
+    def from_spec(cls, spec: str) -> 'DependencySimple':
+        return DependencySimple(spec)
 
     def to_spec(self) -> str:
         return str(self)
@@ -308,14 +308,21 @@ class RequireSimple(str):
         return self.to_spec()
 
 
-class _RawRequireFmfId(_RawFmfId):
+class _RawDependencyFmfId(_RawFmfId):
     destination: Optional[str]
     nick: Optional[str]
     type: Optional[str]
 
 
 @dataclasses.dataclass
-class RequireFmfId(FmfId):
+class DependencyFmfId(FmfId):
+    """
+    A fmf ID as a dependency.
+
+    Not a pure fmf ID though, the form accepted by `require` & co. allows
+    several extra keys.
+    """
+
     VALID_KEYS: ClassVar[List[str]] = FmfId.VALID_KEYS + ['destination', 'nick', 'type']
 
     destination: Optional[Path] = None
@@ -324,19 +331,19 @@ class RequireFmfId(FmfId):
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_dict(self) -> _RawRequireFmfId:  # type: ignore[override]
-        return cast(_RawRequireFmfId, super().to_dict())
+    def to_dict(self) -> _RawDependencyFmfId:  # type: ignore[override]
+        return cast(_RawDependencyFmfId, super().to_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_minimal_dict(self) -> _RawRequireFmfId:  # type: ignore[override]
+    def to_minimal_dict(self) -> _RawDependencyFmfId:  # type: ignore[override]
         """ Convert to a mapping with unset keys omitted """
 
-        return cast(_RawRequireFmfId, super().to_minimal_dict())
+        return cast(_RawDependencyFmfId, super().to_minimal_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_spec(self) -> _RawRequireFmfId:  # type: ignore[override]
+    def to_spec(self) -> _RawDependencyFmfId:  # type: ignore[override]
         """ Convert to a form suitable for saving in a specification file """
 
         spec = self.to_dict()
@@ -348,7 +355,7 @@ class RequireFmfId(FmfId):
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_minimal_spec(self) -> _RawRequireFmfId:  # type: ignore[override]
+    def to_minimal_spec(self) -> _RawDependencyFmfId:  # type: ignore[override]
         """ Convert to specification, skip default values """
 
         spec = self.to_minimal_dict()
@@ -361,7 +368,7 @@ class RequireFmfId(FmfId):
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
     @classmethod
-    def from_spec(cls, raw: _RawRequireFmfId) -> 'RequireFmfId':  # type: ignore[override]
+    def from_spec(cls, raw: _RawDependencyFmfId) -> 'DependencyFmfId':  # type: ignore[override]
         """ Convert from a specification file or from a CLI option """
 
         # TODO: with mandatory validation, this can go away.
@@ -370,7 +377,7 @@ class RequireFmfId(FmfId):
             raise tmt.utils.SpecificationError(
                 f"The 'ref' field must be a string, got '{type(ref).__name__}'.")
 
-        fmf_id = RequireFmfId()
+        fmf_id = DependencyFmfId()
 
         for key in ('url', 'ref', 'name', 'nick', 'type'):
             setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
@@ -382,16 +389,16 @@ class RequireFmfId(FmfId):
         return fmf_id
 
 
-class _RawRequireFile(TypedDict):
+class _RawDependencyFile(TypedDict):
     type: Optional[str]
     pattern: Optional[List[str]]
 
 
 @dataclasses.dataclass
-class RequireFile(
+class DependencyFile(
         tmt.utils.SpecBasedContainer,
         tmt.utils.SerializableContainer,
-        tmt.export.Exportable['RequireFile']):
+        tmt.export.Exportable['DependencyFile']):
     VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
 
     type: Optional[str] = None
@@ -401,34 +408,34 @@ class RequireFile(
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_dict(self) -> _RawRequireFile:  # type: ignore[override]
+    def to_dict(self) -> _RawDependencyFile:  # type: ignore[override]
         """ Return keys and values in the form of a dictionary """
-        return cast(_RawRequireFile, super().to_dict())
+        return cast(_RawDependencyFile, super().to_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_minimal_dict(self) -> _RawRequireFile:  # type: ignore[override]
+    def to_minimal_dict(self) -> _RawDependencyFile:  # type: ignore[override]
         """ Convert to a mapping with unset keys omitted """
-        return cast(_RawRequireFile, super().to_minimal_dict())
+        return cast(_RawDependencyFile, super().to_minimal_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_spec(self) -> _RawRequireFile:  # type: ignore[override]
+    def to_spec(self) -> _RawDependencyFile:  # type: ignore[override]
         """ Convert to a form suitable for saving in a specification file """
         return self.to_dict()
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def to_minimal_spec(self) -> _RawRequireFile:  # type: ignore[override]
+    def to_minimal_spec(self) -> _RawDependencyFile:  # type: ignore[override]
         """ Convert to specification, skip default values """
-        return cast(_RawRequireFile, super().to_minimal_spec())
+        return cast(_RawDependencyFile, super().to_minimal_spec())
 
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
     @classmethod
-    def from_spec(cls, raw: _RawRequireFile) -> 'RequireFile':
+    def from_spec(cls, raw: _RawDependencyFile) -> 'DependencyFile':
         """ Convert from a specification file or from a CLI option """
-        require_file = RequireFile()
+        require_file = DependencyFile()
 
         require_file.type = raw.get('type', None)
 
@@ -448,37 +455,39 @@ class RequireFile(
     @staticmethod
     def validate() -> Tuple[bool, str]:
         """
-        Validate file requirement and return a human readable error
+        Validate file dependency and return a human readable error
 
         There is no way to check validity of type or pattern string at
         this time. Return a tuple (boolean, message) as the result of
         validation. The boolean specifies the validation result and the
-        message the validation error. In case the file requirement is
+        message the validation error. In case the file dependency is
         valid, return an empty string as the message.
         """
         return True, ''
 
 
-_RawRequireItem = Union[str, _RawRequireFmfId, _RawRequireFile]
+_RawRequireItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
 _RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
 
-Require = Union[RequireSimple, RequireFmfId, RequireFile]
+Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
 
 
-def require_factory(require: Optional[_RawRequireItem]) -> Require:
+def dependency_factory(raw_dependency: Optional[_RawRequireItem]) -> Dependency:
     """ Select the correct require class """
-    if isinstance(require, dict):
-        require_type = require.get('type', 'library')
-        if require_type == 'library':  # can't use isinstance check with TypedDict
-            return RequireFmfId.from_spec(require)  # type: ignore[arg-type]
-        if require_type == 'file':
-            return RequireFile.from_spec(require)  # type: ignore[arg-type]
+    if isinstance(raw_dependency, dict):
+        dependency_type = raw_dependency.get('type', 'library')
+        if dependency_type == 'library':  # can't use isinstance check with TypedDict
+            return DependencyFmfId.from_spec(raw_dependency)  # type: ignore[arg-type]
+        if dependency_type == 'file':
+            return DependencyFile.from_spec(raw_dependency)  # type: ignore[arg-type]
 
-    assert isinstance(require, str)  # check type
-    return RequireSimple.from_spec(require)
+    assert isinstance(raw_dependency, str)  # check type
+    return DependencySimple.from_spec(raw_dependency)
 
 
-def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger) -> List[Require]:
+def normalize_require(
+        raw_require: Optional[_RawRequire],
+        logger: tmt.log.Logger) -> List[Dependency]:
     """
     Normalize content of ``require`` key.
 
@@ -492,35 +501,35 @@ def normalize_require(raw_require: Optional[_RawRequire], logger: tmt.log.Logger
         return []
 
     if isinstance(raw_require, str) or isinstance(raw_require, dict):
-        return [require_factory(raw_require)]
+        return [dependency_factory(raw_require)]
 
-    return [require_factory(require) for require in raw_require]
+    return [dependency_factory(require) for require in raw_require]
 
 
-def assert_simple_requirements(
-        requirements: List[Require],
+def assert_simple_dependencies(
+        dependencies: List[Dependency],
         error_message: str,
-        logger: tmt.log.Logger) -> List[RequireSimple]:
+        logger: tmt.log.Logger) -> List[DependencySimple]:
     """
-    Make sure the list of requirements consists of simple ones.
+    Make sure the list of dependencies consists of simple ones.
 
-    :param requires: the list of requires.
+    :param dependencies: the list of requires.
     :param error_message: used for a raised exception.
     :param logger: used for logging.
-    :raises GeneralError: when there is a requirement on the list which
-        is not a subclass of :py:class:`tmt.base.RequireSimple`.
+    :raises GeneralError: when there is a dependency on the list which
+        is not a subclass of :py:class:`tmt.base.DependencySimple`.
     """
 
-    non_simple_requirements = list(filter(
-        lambda require: not isinstance(require, RequireSimple),
-        requirements
+    non_simple_dependencies = list(filter(
+        lambda dependency: not isinstance(dependency, DependencySimple),
+        dependencies
         ))
 
-    if not non_simple_requirements:
-        return cast(List[RequireSimple], requirements)
+    if not non_simple_dependencies:
+        return cast(List[DependencySimple], dependencies)
 
-    for require in non_simple_requirements:
-        logger.fail(f'Invalid requirement: {require}')
+    for dependency in non_simple_dependencies:
+        logger.fail(f'Invalid requirement: {dependency}')
 
     raise tmt.utils.GeneralError(error_message)
 
@@ -752,7 +761,7 @@ class Core(
             # of export() cleanup comes.
             elif key in ('require', 'recommend') and value:
                 data[key] = [
-                    require.to_minimal_spec() for require in cast(List[Require], value)
+                    dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)
                     ]
 
             # TODO: this belongs to Story.export, and it will be moved when the time
@@ -926,13 +935,14 @@ class Test(
         normalize=lambda raw_value, logger: None if raw_value is None else Path(raw_value))
     framework: str = "shell"
     manual: bool = False
-    require: List[Require] = field(
+    require: List[Dependency] = field(
         default_factory=list,
         normalize=normalize_require)
-    recommend: List[Require] = field(
+    recommend: List[Dependency] = field(
         default_factory=list,
         normalize=normalize_require)
     environment: tmt.utils.EnvironmentType = field(default_factory=dict)
+
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
 
@@ -1051,7 +1061,7 @@ class Test(
                 f"The 'test' attribute in '{self.name}' must be defined.")
 
         if self.framework == 'beakerlib':
-            self.require.append(RequireSimple('beakerlib'))
+            self.require.append(DependencySimple('beakerlib'))
 
         self._update_metadata()
 
@@ -1131,7 +1141,7 @@ class Test(
             if key in ('require', 'recommend') and value:
                 echo(tmt.utils.format(
                     key,
-                    [require.to_minimal_spec() for require in cast(List[Require], value)]
+                    [dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)]
                     ))
                 continue
             if value not in [None, list(), dict()]:

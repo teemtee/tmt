@@ -189,7 +189,7 @@ class Prepare(tmt.steps.Step):
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
                 package=[
                     require.to_spec()
-                    for require in tmt.base.assert_simple_requirements(
+                    for require in tmt.base.assert_simple_dependencies(
                         requires,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger)
@@ -206,7 +206,7 @@ class Prepare(tmt.steps.Step):
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
                 package=[
                     recommend.to_spec()
-                    for recommend in tmt.base.assert_simple_requirements(
+                    for recommend in tmt.base.assert_simple_dependencies(
                         recommends,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger)

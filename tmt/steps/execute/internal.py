@@ -471,6 +471,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         """ Return test results """
         return self._results
 
-    def requires(self) -> List[tmt.base.Require]:
+    def requires(self) -> List[tmt.base.Dependency]:
         """ All requirements of the plugin on the guest """
         return []

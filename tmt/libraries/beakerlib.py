@@ -2,14 +2,16 @@ import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, Union, cast
 
 import fmf
 
 import tmt
+import tmt.base
+from tmt.base import DependencyFmfId, DependencySimple
 from tmt.utils import Command, Path
 
-from . import Library, LibraryError, LibraryIdentifierType
+from . import Library, LibraryError
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -61,7 +63,7 @@ class BeakerLib(Library):
     def __init__(
             self,
             *,
-            identifier: LibraryIdentifierType,
+            identifier: Union[DependencySimple, DependencyFmfId],
             parent: Optional[tmt.utils.Common] = None,
             logger: tmt.log.Logger) -> None:
 
@@ -71,8 +73,8 @@ class BeakerLib(Library):
         self.default_branch: Optional[str] = None
 
         # The 'library(repo/lib)' format
-        if isinstance(identifier, tmt.base.RequireSimple):
-            identifier = tmt.base.RequireSimple(identifier.strip())
+        if isinstance(identifier, DependencySimple):
+            identifier = DependencySimple(identifier.strip())
             self.identifier = identifier
             matched = LIBRARY_REGEXP.search(identifier)
             if not matched:
@@ -88,7 +90,7 @@ class BeakerLib(Library):
             self.dest: Path = Path(DEFAULT_DESTINATION)
 
         # The fmf identifier
-        elif isinstance(identifier, tmt.base.RequireFmfId):
+        elif isinstance(identifier, DependencyFmfId):
             self.identifier = identifier
             self.parent.debug(
                 f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
