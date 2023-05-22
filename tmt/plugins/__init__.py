@@ -115,7 +115,13 @@ def _explore_entry_point(entry_point: str, logger: Logger) -> None:
     logger = logger.descend()
 
     try:
-        for found in entry_points()[entry_point]:
+        eps = entry_points()
+        if hasattr(eps, "select"):
+            entry_point_group = eps.select(group=entry_point)
+        else:
+            entry_point_group = eps[entry_point]
+
+        for found in entry_point_group:
             logger.debug(f"Loading plugin '{found.name}' ({found.value}).")
             found.load()
 
