@@ -165,7 +165,7 @@ def test_last_run_race(tmpdir, monkeypatch):
 def test_workdir_env_var(tmpdir, monkeypatch, root_logger):
     """ Test TMT_WORKDIR_ROOT environment variable """
     # Cannot use monkeypatch.context() as it is not present for CentOS Stream 8
-    monkeypatch.setenv('TMT_WORKDIR_ROOT', tmpdir)
+    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmpdir))
     common = Common(logger=root_logger)
     common._workdir_init()
     monkeypatch.delenv('TMT_WORKDIR_ROOT')
