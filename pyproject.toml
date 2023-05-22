@@ -113,3 +113,8 @@ ignore = [
 
 [tool.ruff.per-file-ignores]
 "tmt/steps/report/polarion.py" = ["DTZ005"]
+
+[tool.pytest.ini_options]
+markers = [
+    "web: tests which need to access the web"
+]
