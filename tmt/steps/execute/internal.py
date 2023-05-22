@@ -196,7 +196,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Create data directory, prepare test environment
         environment = self._test_environment(test, guest, extra_environment)
 
-        test_wrapper_filepath = workdir / TEST_WRAPPER_FILENAME
+        # tmt wrapper filename *must* be "unique" - the plugin might be handling
+        # the same `discover` phase for different guests at the same time, and
+        # must keep them isolated. The wrapper script, while being prepared, is
+        # a shared global state, and we must prevent race conditions.
+        test_wrapper_filename = f'{TEST_WRAPPER_FILENAME}.{guest.name}'
+        test_wrapper_filepath = workdir / test_wrapper_filename
+
+        logger.debug('test wrapper', str(test_wrapper_filepath))
 
         # Prepare the test command (use default options for shell tests)
         if test.framework == "shell":
@@ -214,7 +221,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             options=["-s", "-p", "--chmod=755"])
 
         # Prepare the actual remote command
-        remote_command = ShellScript(f'./{TEST_WRAPPER_FILENAME}')
+        remote_command = ShellScript(f'./{test_wrapper_filename}')
         if self.get('interactive'):
             remote_command = ShellScript(
                 TEST_WRAPPER_INTERACTIVE.format(
