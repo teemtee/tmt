@@ -24,7 +24,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
             return int(raw_value)
 
         except ValueError as exc:
-            raise tmt.utils.NormalizationError(key_address, raw_value, 'not set or integer') \
+            raise tmt.utils.NormalizationError(key_address, raw_value, 'unset or an integer') \
                 from exc
 
     @dataclasses.dataclass
@@ -49,7 +49,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
 
     with pytest.raises(
             tmt.utils.SpecificationError,
-            match=r"Field ':foo' can be not set or integer, 'str' found."):
+            match=r"Field ':foo' must be unset or an integer, 'str' found."):
         dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
     assert data.foo == 3
@@ -64,7 +64,7 @@ def test_field_normalize_special_method(root_logger: tmt.log.Logger) -> None:
             return int(raw_value)
 
         except ValueError as exc:
-            raise tmt.utils.NormalizationError(key_address, raw_value, 'not set or integer') \
+            raise tmt.utils.NormalizationError(key_address, raw_value, 'unset or an integer') \
                 from exc
 
     @dataclasses.dataclass
@@ -90,7 +90,7 @@ def test_field_normalize_special_method(root_logger: tmt.log.Logger) -> None:
 
     with pytest.raises(
             tmt.utils.SpecificationError,
-            match=r"Field ':foo' can be not set or integer, 'str' found."):
+            match=r"Field ':foo' must be unset or an integer, 'str' found."):
         dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
     assert data.foo == 3

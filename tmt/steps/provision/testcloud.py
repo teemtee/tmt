@@ -637,7 +637,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                     setattr(data, int_key, int(value))
                 except ValueError as exc:
                     raise tmt.utils.NormalizationError(
-                        f'{self.name}:{int_key}', value, 'integer') from exc
+                        f'{self.name}:{int_key}', value, 'an integer') from exc
 
         for key, value in data.items():
             if key == 'memory':

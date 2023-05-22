@@ -1350,7 +1350,7 @@ class NormalizationError(SpecificationError):
         """
 
         super().__init__(
-            f"Field '{key_address}' can be {expected_type}, '{type(raw_value).__name__}' found.",
+            f"Field '{key_address}' must be {expected_type}, '{type(raw_value).__name__}' found.",
             *args,
             **kwargs)
 
@@ -4382,7 +4382,7 @@ def normalize_path_list(
     if isinstance(value, (list, tuple)):
         return [Path(path) for path in value]
 
-    raise NormalizationError(key_address, value, 'path or list of paths')
+    raise NormalizationError(key_address, value, 'a path or a list of paths')
 
 
 def normalize_shell_script_list(
@@ -4418,7 +4418,7 @@ def normalize_shell_script_list(
     if isinstance(value, (list, tuple)):
         return [ShellScript(str(item)) for item in value]
 
-    raise NormalizationError(key_address, value, 'string or list of strings')
+    raise NormalizationError(key_address, value, 'a string or a list of strings')
 
 
 def normalize_fmf_context(
@@ -4479,7 +4479,7 @@ class NormalizeKeysMixin(_CommonBase):
         if isinstance(value, (list, tuple)):
             return [item for item in value]
 
-        raise NormalizationError(key_address, value, 'string or list of strings')
+        raise NormalizationError(key_address, value, 'a string or a list of strings')
 
     def _normalize_environment(
             self,

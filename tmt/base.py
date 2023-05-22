@@ -162,7 +162,7 @@ class FmfId(
         ref = raw.get('ref', None)
         if not isinstance(ref, (type(None), str)):
             # TODO: deliver better key address
-            raise tmt.utils.NormalizationError('ref', ref, 'not set or string')
+            raise tmt.utils.NormalizationError('ref', ref, 'unset or a string')
 
         fmf_id = FmfId()
 
@@ -375,7 +375,7 @@ class DependencyFmfId(FmfId):
         ref = raw.get('ref', None)
         if not isinstance(ref, (type(None), str)):
             # TODO: deliver better key address
-            raise tmt.utils.NormalizationError('ref', ref, 'not set or string')
+            raise tmt.utils.NormalizationError('ref', ref, 'unset or a string')
 
         fmf_id = DependencyFmfId()
 
@@ -504,7 +504,13 @@ def normalize_require(
     if isinstance(raw_require, str) or isinstance(raw_require, dict):
         return [dependency_factory(raw_require)]
 
-    return [dependency_factory(require) for require in raw_require]
+    if isinstance(raw_require, list):
+        return [dependency_factory(require) for require in raw_require]
+
+    raise tmt.utils.NormalizationError(
+        key_address,
+        raw_require,
+        'a string, a library, a file or a list of their combinations')
 
 
 def assert_simple_dependencies(
@@ -1502,7 +1508,7 @@ class Plan(
         environment_files = node.get("environment-file") or []
         if not isinstance(environment_files, list):
             raise tmt.utils.NormalizationError(
-                f'{self.name}:environment-file', environment_files, 'list of paths')
+                f'{self.name}:environment-file', environment_files, 'unset or a list of paths')
         combined = tmt.utils.environment_files_to_dict(
             filenames=environment_files,
             root=Path(node.root) if node.root else None,
@@ -3489,7 +3495,7 @@ class Links(tmt.utils.SpecBasedContainer):
         if data is not None and not isinstance(data, (str, dict, list)):
             # TODO: deliver better key address, needs to know the parent
             raise tmt.utils.NormalizationError(
-                'link', data, 'string, fmf id or list of their combinations')
+                'link', data, 'a string, a fmf id or a list of their combinations')
 
         # Nothing to do if no data provided
         if data is None:

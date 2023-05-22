@@ -57,7 +57,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             return None
 
         if not isinstance(value, str):
-            raise tmt.utils.NormalizationError(key_address, value, 'string')
+            raise tmt.utils.NormalizationError(key_address, value, 'a string')
 
         return value
 
