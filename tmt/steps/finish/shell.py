@@ -19,7 +19,9 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         multiple=True,
         metavar='SCRIPT',
         help='Shell script to be executed. Can be used multiple times.',
-        normalize=tmt.utils.normalize_shell_script_list
+        normalize=tmt.utils.normalize_shell_script_list,
+        serialize=lambda scripts: [str(script) for script in scripts],
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
         )
 
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
@@ -30,22 +32,6 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         data['script'] = [str(script) for script in self.script]
 
         return data
-
-    def to_serialized(self) -> Dict[str, Any]:
-        data = super().to_serialized()
-
-        data['script'] = [str(script) for script in self.script]
-
-        return data
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'FinishShellData':
-        """ Convert from a serialized form loaded from a file """
-
-        obj = super().from_serialized(serialized)
-        obj.script = [ShellScript(script) for script in serialized['script']]
-
-        return obj
 
 
 @tmt.steps.provides_method('shell')

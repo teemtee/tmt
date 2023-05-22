@@ -20,7 +20,7 @@ from tmt.result import Result, ResultOutcome
 from tmt.steps.execute import (SCRIPTS, TEST_OUTPUT_FILENAME,
                                TMT_FILE_SUBMIT_SCRIPT, TMT_REBOOT_SCRIPT)
 from tmt.steps.provision import Guest
-from tmt.utils import EnvironmentType, Path, ShellScript
+from tmt.utils import EnvironmentType, Path, ShellScript, field
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 
@@ -30,7 +30,12 @@ TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& 
 
 @dataclasses.dataclass
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
-    script: List[ShellScript] = dataclasses.field(default_factory=list)
+    script: List[ShellScript] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_shell_script_list,
+        serialize=lambda scripts: [str(script) for script in scripts],
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
+        )
     interactive: bool = False
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
@@ -40,22 +45,6 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         data['script'] = [str(script) for script in self.script]
 
         return data
-
-    def to_serialized(self) -> Dict[str, Any]:
-        data = super().to_serialized()
-
-        data['script'] = [str(script) for script in self.script]
-
-        return data
-
-    @classmethod
-    def from_serialized(cls, serialized: Dict[str, Any]) -> 'ExecuteInternalData':
-        """ Convert from a serialized form loaded from a file """
-
-        obj = super().from_serialized(serialized)
-        obj.script = [ShellScript(script) for script in serialized['script']]
-
-        return obj
 
 
 @tmt.steps.provides_method('tmt')
