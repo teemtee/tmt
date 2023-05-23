@@ -218,8 +218,8 @@ class ExecutePlugin(tmt.steps.Plugin):
         directory = self.step.workdir \
             / TEST_DATA \
             / 'guest' \
-            / guest.name \
-            / f'{test.name.lstrip("/") or "default"}-{test.serialnumber}'
+            / guest.safe_name \
+            / f'{test.safe_name.lstrip("/") or "default"}-{test.serialnumber}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:
