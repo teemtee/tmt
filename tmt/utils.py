@@ -716,6 +716,12 @@ class Common(_CommonBase):
     # mostly fine.
     parent: Optional['Common'] = None
 
+    # Store actual name and safe name. When `name` changes, we need to update
+    # `safe_name` accordingly. Direct access not encouraged, use `name` and
+    # `safe_name` attributes.
+    _name: str
+    _safe_name: Optional[str]
+
     def inject_logger(self, logger: tmt.log.Logger) -> None:
         self._logger = logger
 
@@ -761,16 +767,38 @@ class Common(_CommonBase):
 
         self.inject_logger(logger)
 
-        # Prepare a safe variant of the name which does not contain
-        # spaces or other special characters to prevent problems with
-        # tools which do not expect them (e.g. in directory names).
-        self.safe_name = re.sub(r"[^\w/-]+", "-", self.name).strip("-")
-
         # Relative log indent level shift against the parent
         self._relative_indent = relative_indent
 
         # Initialize the workdir if requested
         self._workdir_load(workdir)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self._name = name
+
+        # Reset safe name - when accessed next time, it'd be recomputed from
+        # the name we just set.
+        self._safe_name = None
+
+    # TODO: cached_property candidate
+    @property
+    def safe_name(self) -> str:
+        """
+        A safe variant of the name which does not contain special characters.
+
+        Spaces and other special characters are removed to prevent problems with
+        tools which do not expect them (e.g. in directory names).
+        """
+
+        if self._safe_name is None:
+            self._safe_name = re.sub(r"[^\w/-]+", "-", self.name).strip("-")
+
+        return self._safe_name
 
     def __str__(self) -> str:
         """ Name is the default string representation """
