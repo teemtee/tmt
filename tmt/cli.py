@@ -567,29 +567,30 @@ def tests_create(
 @click.pass_context
 @click.argument('paths', nargs=-1, metavar='[PATH]...')
 @click.option(
-    '--nitrate / --no-nitrate', default=True,
+    '--nitrate / --no-nitrate', default=True, show_default=True,
     help='Import test metadata from Nitrate.')
 @click.option(
-    '--polarion / --no-polarion', default=False,
+    '--polarion / --no-polarion', default=False, show_default=True,
     help='Import test metadata from Polarion.')
 @click.option(
-    '--purpose / --no-purpose', default=True,
+    '--purpose / --no-purpose', default=True, show_default=True,
     help='Migrate description from PURPOSE file.')
 @click.option(
-    '--makefile / --no-makefile', default=True,
+    '--makefile / --no-makefile', default=True, show_default=True,
     help='Convert Beaker Makefile metadata.')
 @click.option(
-    '--restraint / --no-restraint', default=False,
+    '--restraint / --no-restraint', default=False, show_default=True,
     help='Convert restraint metadata file.')
 @click.option(
     '--general / --no-general', default=True,
     help='Detect components from linked nitrate general plans '
          '(overrides Makefile/restraint component).')
 @click.option(
-    '--polarion-case-id',
-    help='Polarion Test case ID to import data from.')
+    '--polarion-case-id', multiple=True,
+    help='Polarion Test case ID(s) to import data from. Can be provided multiple times. '
+         'Can provide also test case name like: TEST-123:test_name')
 @click.option(
-    '--link-polarion / --no-link-polarion', default=False,
+    '--link-polarion / --no-link-polarion', default=False, show_default=True,
     help='Add Polarion link to fmf testcase metadata.')
 @click.option(
     '--type', 'types', metavar='TYPE', default=['multihost'], multiple=True,
@@ -622,7 +623,7 @@ def tests_import(
         types: List[str],
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: Optional[str],
+        polarion_case_id: List[str],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
@@ -673,11 +674,19 @@ def tests_import(
             root = Path(fmf.Tree(str(path)).root)
             common['path'] = str(Path('/') / path.relative_to(root))
         # Store common metadata
-        common_path = path / 'main.fmf'
+        file_name = common.get('filename', 'main.fmf')
+        common_path = path / file_name
         tmt.convert.write(common_path, common)
         # Store individual data (as virtual tests)
         for testcase in individual:
-            testcase_path = path / f'{testcase["extra-nitrate"]}.fmf'
+            if nitrate and testcase.get('extra-nitrate'):
+                testcase_path = path / f'{testcase["extra-nitrate"]}.fmf'
+            else:
+                file_name = testcase.get('filename')
+                if not file_name:
+                    raise tmt.utils.ConvertError(
+                        'Filename was not found, please set one with --polarion-case-id.')
+                testcase_path = path / file_name
             tmt.convert.write(testcase_path, testcase)
         # Adjust runtest.sh content and permission if needed
         tmt.convert.adjust_runtest(path / 'runtest.sh')
