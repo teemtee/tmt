@@ -13,9 +13,9 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.queue import Queue, TaskOutcome
-from tmt.steps import (Action, GuestSyncTaskT, PhaseQueue, PullTask, PushTask,
-                       QueuedPhase)
+from tmt.queue import TaskOutcome
+from tmt.steps import (Action, PhaseQueue, PullTask, PushTask, QueuedPhase,
+                       sync_with_guests)
 from tmt.steps.provision import Guest
 from tmt.utils import uniq
 
@@ -158,26 +158,6 @@ class Prepare(tmt.steps.Step):
                 host_mapping[guest.name] = guest.guest
         return host_mapping
 
-    def _sync_with_guests(self, action: str, task: GuestSyncTaskT) -> None:
-        queue: Queue[GuestSyncTaskT] = Queue(
-            action,
-            self._logger.descend(logger_name=f'{self}.{action}'))
-
-        queue.enqueue_task(task)
-
-        failed_actions: List[TaskOutcome[GuestSyncTaskT]] = []
-
-        for outcome in queue.run():
-            if outcome.exc:
-                outcome.logger.fail(str(outcome.exc))
-
-                failed_actions.append(outcome)
-                continue
-
-        if failed_actions:
-            # TODO: needs a better message...
-            raise tmt.utils.GeneralError('prepare step failed') from failed_actions[0].exc
-
     def go(self) -> None:
         """ Prepare the guests """
         super().go()
@@ -261,10 +241,11 @@ class Prepare(tmt.steps.Step):
             guest_copies.append(guest_copy)
 
         if guest_copies:
-            self._sync_with_guests(
+            sync_with_guests(
+                self,
                 'push',
-                PushTask(guests=guest_copies, logger=self._logger)
-                )
+                PushTask(guests=guest_copies, logger=self._logger),
+                self._logger)
 
             # To separate "push" from "prepare" queue visually
             self.info('')
@@ -303,10 +284,14 @@ class Prepare(tmt.steps.Step):
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
         if self.phases() and guest_copies:
-            self._sync_with_guests(
+            sync_with_guests(
+                self,
                 'pull',
-                PullTask(guests=guest_copies, logger=self._logger, source=self.plan.data_directory)
-                )
+                PullTask(
+                    guests=guest_copies,
+                    logger=self._logger,
+                    source=self.plan.data_directory),
+                self._logger)
 
             # To separate "prepare" from "pull" queue visually
             self.info('')
