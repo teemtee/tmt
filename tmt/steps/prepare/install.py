@@ -37,8 +37,6 @@ class InstallBase(tmt.utils.Common):
     command: Command
     options: Command
 
-    use_sudo: bool = False
-
     skip_missing: bool = False
 
     packages: List[str]
@@ -75,7 +73,6 @@ class InstallBase(tmt.utils.Common):
             self.debug("No packages for installation found.", level=3)
 
         self.skip_missing = bool(parent.get('missing') == 'skip')
-        self.use_sudo = self._test_sudo()
 
         # Prepare package lists and installation command
         self.prepare_packages()
@@ -115,21 +112,6 @@ class InstallBase(tmt.utils.Common):
                 if filepath.suffix == '.rpm':
                     self.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(filepath)
-
-    def _test_sudo(self) -> bool:
-        """ Check if sudo is needed for installation """
-        self.debug('Check if sudo is necessary.', level=2)
-        command = Command('whoami')
-        user_output = self.guest.execute(command, silent=True)
-        if user_output.stdout is None:
-            raise tmt.utils.RunError(
-                'unexpected command output',
-                command,
-                0,
-                user_output.stdout,
-                user_output.stderr)
-
-        return user_output.stdout.strip() != 'root'
 
     def prepare_command(self) -> Tuple[Command, Command]:
         """ Prepare installation command and subcommand options """
@@ -302,7 +284,7 @@ class InstallDnf(InstallBase):
 
         command = Command()
 
-        if self.use_sudo:
+        if self.guest.facts.is_superuser is False:
             command += Command('sudo')
 
         command += Command(self.package_manager)
@@ -423,7 +405,7 @@ class InstallRpmOstree(InstallBase):
 
         command = Command()
 
-        if self.use_sudo:
+        if self.guest.facts.is_superuser is False:
             command += Command('sudo')
 
         command += Command('rpm-ostree')

@@ -256,7 +256,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                     source=source,
                     destination=dest,
                     options=["-p", "--chmod=755"],
-                    superuser=True)
+                    superuser=guest.facts.is_superuser is not True)
 
     def check_shell(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """ Check result of a shell test """
