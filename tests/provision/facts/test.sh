@@ -12,6 +12,7 @@ rlJournalStart
         rlPhaseStartTest "Check $provision_method plugin"
             if [ "$provision_method" = "local" ]; then
                 provision_options=""
+                bfu_provision_options=""
 
                 arch="$(arch)"
 
@@ -32,8 +33,11 @@ rlJournalStart
                     selinux="yes"
                 fi
 
+                is_superuser="no"
+
             elif [ "$provision_method" = "container" ]; then
                 provision_options="--image fedora:37"
+                bfu_provision_options="$provision_options --user=nobody"
 
                 arch="$(arch)"
                 distro="Fedora Linux 37 (Container Image)"
@@ -47,6 +51,9 @@ rlJournalStart
                     selinux="yes"
                 fi
 
+                is_superuser="yes"
+                bfu_is_superuser="no"
+
             else
                 rlDie "Provision method ${provision_method} is not supported by the test."
             fi
@@ -58,6 +65,7 @@ rlJournalStart
             rlAssertNotGrep "kernel: $kernel" $rlRun_LOG
             rlAssertNotGrep "package manager: $package_manager" $rlRun_LOG
             rlAssertNotGrep "selinux: $selinux" $rlRun_LOG
+            rlAssertNotGrep "is superuser: " $rlRun_LOG
 
             rlRun -s "tmt run -i $run --scratch -vv provision -h "$provision_method" $provision_options plan -n /plans/features/core"
 
@@ -66,6 +74,20 @@ rlJournalStart
             rlAssertGrep "kernel: $kernel" $rlRun_LOG
             rlAssertGrep "package manager: $package_manager" $rlRun_LOG
             rlAssertGrep "selinux: $selinux" $rlRun_LOG
+            rlAssertGrep "is superuser: $is_superuser" $rlRun_LOG
+
+            # If provisioning method allows a less privileged user, check that one as well
+            if [ "$bfu_provision_options" != "" ]; then
+                rlRun -s "tmt run -i $run --scratch -vv provision -h "$provision_method" $bfu_provision_options plan -n /plans/features/core"
+
+                rlAssertGrep "arch: $arch" $rlRun_LOG
+                rlAssertGrep "distro: $distro" $rlRun_LOG
+                rlAssertGrep "kernel: $kernel" $rlRun_LOG
+                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+                rlAssertGrep "selinux: $selinux" $rlRun_LOG
+                rlAssertGrep "is superuser: $bfu_is_superuser" $rlRun_LOG
+            fi
+
         rlPhaseEnd
     done
 
