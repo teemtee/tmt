@@ -33,7 +33,11 @@ rlJournalStart
                     selinux="yes"
                 fi
 
-                is_superuser="no"
+                if [ "$(whoami)" != "root" ]; then
+                    is_superuser="no"
+                else
+                    is_superuser="yes"
+                fi
 
             elif [ "$provision_method" = "container" ]; then
                 provision_options="--image fedora:37"
