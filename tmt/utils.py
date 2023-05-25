@@ -26,8 +26,8 @@ from collections import OrderedDict
 from functools import lru_cache
 from threading import Thread
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Generic,
-                    Iterable, List, NamedTuple, Optional, Pattern, Sequence,
-                    Tuple, Type, TypeVar, Union, cast, overload)
+                    Iterable, List, NamedTuple, NewType, Optional, Pattern,
+                    Sequence, Tuple, Type, TypeVar, Union, cast, overload)
 
 import click
 import fmf
@@ -54,12 +54,25 @@ else:
 import tmt.log
 
 if TYPE_CHECKING:
+    from typing_extensions import LiteralString, Self
+
     import tmt.base
     import tmt.cli
     import tmt.steps
 
 
+PathSafeString = NewType('PathSafeString', str)
+PathComponent = Union['Path', 'LiteralString', PathSafeString]
+
+
+def sanitize(value: str) -> PathSafeString:
+    return PathSafeString(re.sub(r"[^\w/-]+", "-", value).strip("-"))
+
+
 class Path(pathlib.PosixPath):
+    def __new__(cls, *args: PathComponent) -> 'Self':
+        return super().__new__(*args)  # type: ignore[arg-type]
+
     # Apparently, `pathlib`` does not offer `relpath` transition between
     # parallel trees, instead, a `ValueError`` is raised when `self` does not
     # lie under `other`. Overriding the original implementation with one based
@@ -99,6 +112,12 @@ class Path(pathlib.PosixPath):
             return self.relative_to('/')
 
         return self
+
+    def __truediv__(self, key: PathComponent) -> 'Path':  # type: ignore[override]
+        return super().__truediv__(key)
+
+    def __rtruediv__(self, key: PathComponent) -> 'Path':  # type: ignore[override]
+        return super().__rtruediv__(key)
 
 
 log = fmf.utils.Logging('tmt').logger
@@ -3827,7 +3846,7 @@ def load_schema_store() -> SchemaStore:
         for dirpath, _, filenames in os.walk(
                 schema_dirpath, followlinks=True):
             for filename in filenames:
-                filepath = Path(dirpath) / filename
+                filepath = Path(sanitize(dirpath)) / filename
 
                 # Ignore all files but YAML files.
                 if filepath.suffix.lower() not in ('.yaml', '.yml'):
@@ -4273,10 +4292,10 @@ def normalize_path_list(
         return []
 
     if isinstance(value, str):
-        return [Path(value)]
+        return [Path(sanitize(value))]
 
     if isinstance(value, (list, tuple)):
-        return [Path(path) for path in value]
+        return [Path(sanitize(path)) for path in value]
 
     # TODO: propagate field name down to normalization callbacks for better exceptions
     raise SpecificationError(
