@@ -110,8 +110,8 @@ class Finish(tmt.steps.Step):
 
         for guest in self.plan.provision.guests():
             # Create a guest copy and change its parent so that the
-            # operations inside prepare plugins on the guest use the
-            # prepare step config rather than provision step config.
+            # operations inside finish plugins on the guest use the
+            # finish step config rather than provision step config.
             guest_copy = copy.copy(guest)
             guest_copy.inject_logger(
                 guest._logger.clone().apply_verbosity_options(**self._cli_options))
@@ -119,7 +119,7 @@ class Finish(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
-        queue = PhaseQueue('prepare', self._logger.descend(logger_name=f'{self}.queue'))
+        queue = PhaseQueue('finish', self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, FinishPlugin)):
             queue.enqueue(
@@ -158,7 +158,7 @@ class Finish(tmt.steps.Step):
                     source=self.plan.data_directory),
                 self._logger)
 
-            # To separate "prepare" from "pull" queue visually
+            # To separate "finish" from "pull" queue visually
             self.info('')
 
         # Stop and remove provisioned guests
