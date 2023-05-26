@@ -208,39 +208,45 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     in the plan as a list of dictionaries containing test name, actual
     test script and optionally a path to the test. Example config:
 
-    discover:
-        how: shell
-        tests:
-        - name: /help/main
-          test: tmt --help
-        - name: /help/test
-          test: tmt test --help
-        - name: /help/smoke
-          test: ./smoke.sh
-          path: /tests/shell
+    .. code-block:: yaml
+
+        discover:
+            how: shell
+            tests:
+            - name: /help/main
+              test: tmt --help
+            - name: /help/test
+              test: tmt test --help
+            - name: /help/smoke
+              test: ./smoke.sh
+              path: /tests/shell
 
     For DistGit repo one can download sources and use their code.
     They are available in TMT_SOURCE_DIR however no patches are applied.
     By default tarballs are extracted which can be disabled.
 
-    discover:
-        how: shell
-        dist-git-source: true
-        tests:
-        - name: /upstream
-          test: cd $TMT_SOURCE_DIR/*/tests && make test
+    .. code-block:: yaml
+
+        discover:
+            how: shell
+            dist-git-source: true
+            tests:
+            - name: /upstream
+              test: cd $TMT_SOURCE_DIR/*/tests && make test
 
     To clone a remote repository and use it as a source specify `url`.
     It accepts also `ref` to checkout provided reference. Dynamic
     reference feature is supported as well.
 
-    discover:
-        how: shell
-        url: https://github.com/teemtee/tmt.git
-        ref: "1.18.0"
-        tests:
-        - name: first test
-          test: ./script-from-the-repo.sh
+    .. code-block:: yaml
+
+        discover:
+            how: shell
+            url: https://github.com/teemtee/tmt.git
+            ref: "1.18.0"
+            tests:
+            - name: first test
+              test: ./script-from-the-repo.sh
     """
 
     _data_class = DiscoverShellData

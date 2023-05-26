@@ -616,6 +616,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
 
     Full configuration example:
 
+    .. code-block:: yaml
+
         provision:
             how: artemis
 

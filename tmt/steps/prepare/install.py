@@ -526,6 +526,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
     Example config:
 
+    .. code-block:: yaml
+
         prepare:
             how: install
             copr: psss/tmt
@@ -539,6 +541,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     In addition to package name you can also use one or more paths to
     local rpm files to be installed:
 
+    .. code-block:: yaml
+
         prepare:
             how: install
             package:
@@ -547,6 +551,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
     Use 'directory' to install all packages from given folder and
     'exclude' to skip selected packages:
+
+    .. code-block:: yaml
 
         prepare:
             how: install
@@ -562,8 +568,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     requested packages. The current limitations of the rpm-ostree
     implementation are:
 
-        Cannot install new version of already installed local rpm.
-        No support for installing debuginfo packages at this time.
+    * Cannot install new version of already installed local rpm.
+    * No support for installing debuginfo packages at this time.
     """
 
     _data_class = PrepareInstallData

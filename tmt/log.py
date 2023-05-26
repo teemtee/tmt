@@ -450,7 +450,7 @@ class Logger:
         """
         Create a ``Logger`` instance with given verbosity levels.
 
-        :param actual_logger: a :py:class:`logging.Logger` instance, the _raw logger_
+        :param actual_logger: a :py:class:`logging.Logger` instance, the raw logger
             to use for logging.
         :param base_shift: shift applied to all messages processed by this logger.
         :param labels_padding: if set, rendered labels would be padded to this

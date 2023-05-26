@@ -12,11 +12,15 @@ class FinishAnsible(
 
     Single playbook config:
 
+    .. code-block:: yaml
+
         finish:
             how: ansible
             playbook: ansible/packages.yml
 
     Multiple playbooks config:
+
+    .. code-block:: yaml
 
         finish:
             how: ansible

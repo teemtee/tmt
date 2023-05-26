@@ -74,6 +74,8 @@ PHASE_END = 90
 
 TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
 
+CODE_BLOCK_REGEXP = re.compile(r"^\s*\.\. code-block::.*$\n", re.MULTILINE)
+
 
 PHASE_OPTIONS = tmt.options.create_options_decorator([
     option(
@@ -964,7 +966,7 @@ class Method:
 
         self.name = name
         self.class_ = class_
-        self.doc = doc
+        self.doc = CODE_BLOCK_REGEXP.sub("", doc)
         self.order = order
 
         # Parse summary and description from provided doc string
@@ -2052,7 +2054,7 @@ def sync_with_guests(
     needed, and this function handles the details.
 
     :param step: step managing the sync operation.
-    :param action: ``push`` or ``pull`, used for nicer logging.
+    :param action: ``push`` or ``pull``, used for nicer logging.
     :param task: :py:class:`PushTask` or :py:class:`PullTask` which represents
         the actual operation.
     :param logger: logger to use for logging.

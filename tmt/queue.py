@@ -25,7 +25,7 @@ class TaskOutcome(Generic[TaskT]):
     executed, where and what was the result.
     """
 
-    #: A :py:`_Task` instace the outcome relates to.
+    #: A :py:class:`_Task` instace the outcome relates to.
     task: TaskT
 
     #: A logger to use for logging events related to the outcome.
@@ -157,7 +157,7 @@ class Task(_Task):
         old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: dict[Future[None], Guest] = {}
+            futures: dict[Future[None], 'Guest'] = {}
 
             for guest in self.guests:
                 # Swap guest's logger for the one we prepared, with labels

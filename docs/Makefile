@@ -16,10 +16,10 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help generate-stories clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
+.PHONY: help generate-stories generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
 
 clean:
-	rm -rf $(BUILDDIR) stories spec
+	rm -rf $(BUILDDIR) stories spec autodocs/*.rst
 
 ##
 ## Building documentation
@@ -52,7 +52,7 @@ REPODIR       = ..
 TMTDIR        = $(REPODIR)/tmt
 SCRIPTSDIR    = scripts
 
-generate: spec stories generate-lint-checks generate-stories  ## Refresh all generated documentation sources
+generate: spec stories generate-lint-checks generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 spec:
 	mkdir -p spec
@@ -67,6 +67,9 @@ generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for 
 
 generate-stories: stories  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py story.rst.j2
+
+generate-autodocs:  ## Generate autodocs from source docstrings
+	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/autodocs tmt
 
 ##
 ## Help!

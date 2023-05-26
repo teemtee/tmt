@@ -3389,7 +3389,7 @@ def format_value(
         this color.
     :param list_format: preferred list formatting. It may be ignored
         if ``window_size`` is set and not wide enough to hold the
-        desired formatting; :py:member:`ListFormat.LONG` would be
+        desired formatting; :py:attr:`ListFormat.LONG` would be
         the fallback choice.
     :returns: a formatted string representation of ``value``.
     """
@@ -3464,7 +3464,7 @@ def format(
         this color.
     :param list_format: preferred list formatting. It may be ignored
         if ``window_size`` is set and not wide enough to hold the
-        desired formatting; :py:member:`ListFormat.LONG` would be
+        desired formatting; :py:attr:`ListFormat.LONG` would be
         the fallback choice.
     :returns: a formatted string representation of ``value``.
     """
@@ -3853,6 +3853,14 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
             self,
             request: requests.PreparedRequest,
             **kwargs: Any) -> requests.Response:
+        """
+        Send request.
+
+        All arguments are passed to superclass after enforcing the timeout.
+
+        :param request: the request to send.
+        """
+
         kwargs.setdefault('timeout', self.timeout)
 
         return super().send(request, **kwargs)
@@ -4858,7 +4866,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         """
         Updatable message suitable for progress-bar-like reporting.
 
-        .. code:block:: python3
+        .. code-block:: python3
 
            with UpdatableMessage('foo') as message:
                while ...:
@@ -5265,7 +5273,7 @@ def wait(
     * decide the condition has been fulfilled. This is a successfull outcome,
       ``check`` shall then simply return, and waiting ends. Or,
     * decide more time is needed. This is not a successfull outcome, ``check``
-      shall then raise :py:clas:`WaitingIncomplete` exception, and ``wait()``
+      shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
       will try again later.
 
     :param parent: "owner" of the wait process. Used for its logging capability.
@@ -6213,11 +6221,12 @@ def retry(
         ) -> T:
     """ Retry functionality to be used elsewhere in the code.
 
-    :param func: function to be called with any amount
-    of arguments of Any type, returning the value of type TypeVar
+    :param func: function to be called with all unclaimed positional
+        and keyword arguments.
     :param attempts: number of tries to call the function
     :param interval: amount of seconds to wait before a new try
     :param label: action to retry
+    :returns: propagates return value of ``func``.
     """
     exceptions: list[Exception] = []
     for i in range(attempts):

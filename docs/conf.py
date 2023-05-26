@@ -102,6 +102,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc.typehints',
     'sphinx_rtd_theme',
     ]
 
@@ -178,6 +179,18 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Autodocs & type hints
+autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance', 'private-members']
+autodoc_default_options = {
+    # Enable to "ignore" re-imported names in `tmt.__all__`
+    'ignore-module-all': True
+    }
+autoclass_content = "both"
+
+autodoc_typehints_format = 'short'
+autodoc_typehints_description_target = 'all'
+# This one works, but it's a bit uglier than the default value (`signature`).
+# autodoc_typehints = 'description'
 
 # -- Options for HTML output ----------------------------------------------
 

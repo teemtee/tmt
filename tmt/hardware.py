@@ -562,7 +562,7 @@ class Constraint(BaseConstraint):
         Expand constraint name into its components.
 
         :returns: tuple consisting of constraint name components: name, optional indices, child
-        properties, etc.
+            properties, etc.
         """
 
         match = CONSTRAINT_NAME_PATTERN.match(self.name)

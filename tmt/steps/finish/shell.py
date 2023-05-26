@@ -44,11 +44,13 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
 
     Example config:
 
-    finish:
-        how: shell
-        script:
-            - upload-logs.sh || true
-            - rm -rf /tmp/temporary-files
+    .. code-block:: yaml
+
+        finish:
+            how: shell
+            script:
+              - upload-logs.sh || true
+              - rm -rf /tmp/temporary-files
 
     Use the 'order' attribute to select in which order finishing tasks
     should happen if there are multiple configs. Default order is '50'.

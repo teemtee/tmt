@@ -7,6 +7,7 @@ prepare:
     package:
       - make
       - python3-pip
+      - python3-docutils
 execute:
     script: |
         set -ex

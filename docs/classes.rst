@@ -462,5 +462,6 @@ Essential Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: tmt
+    :noindex:
     :members:
     :undoc-members:

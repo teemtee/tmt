@@ -182,10 +182,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     By default all available tests from the current repository are used
     so the minimal configuration looks like this:
 
+    .. code-block::
+
         discover:
             how: fmf
 
     Full config example:
+
+    .. code-block::
 
         discover:
             how: fmf
@@ -202,11 +206,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     together with 'ref', 'path' and 'url', However 'ref' is not possible
     without using 'url'.
 
+    .. code-block::
+
         discover:
             how: fmf
             dist-git-source: true
 
     Related config options (all optional):
+
     * dist-git-merge - set to True if you want to copy in extracted
       sources to the local repo
     * dist-git-init - set to True and 'fmf init' will be called inside
@@ -221,6 +228,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     expressions are supported for both relation and target part of the
     value. Relation can be omitted to target match any relation.
 
+    .. code-block::
+
         discover:
             how: fmf
             link: verifies:.*issue/850$
@@ -230,11 +239,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     testing changes to tests themselves (e.g. in a pull request CI).
 
     Related config options (all optional):
+
     * modified-only - set to True if you want to filter modified tests
     * modified-url - fetched as "reference" remote in the test dir
     * modified-ref - the ref to compare against
 
     Example to compare local repo against upstream 'main' branch:
+
+    .. code-block::
 
         discover:
             how: fmf

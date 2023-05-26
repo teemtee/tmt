@@ -63,11 +63,15 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     Single playbook config:
 
+    .. code-block:: yaml
+
         prepare:
             how: ansible
             playbook: ansible/packages.yml
 
     Multiple playbooks config:
+
+    .. code-block:: yaml
 
         prepare:
             how: ansible
@@ -79,6 +83,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     Remote playbooks can be referenced as well as local ones, and both
     kinds can be intermixed:
+
+    .. code-block:: yaml
 
         prepare:
             how: ansible
