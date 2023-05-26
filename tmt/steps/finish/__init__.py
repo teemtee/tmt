@@ -140,8 +140,10 @@ class Finish(tmt.steps.Step):
                 continue
 
         if failed_phases:
-            # TODO: needs a better message...
-            raise tmt.utils.GeneralError('finish step failed') from failed_phases[0].exc
+            raise tmt.utils.GeneralError(
+                'finish step failed',
+                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                )
 
         # To separate "finish" from "pull" queue visually
         self.info('')
