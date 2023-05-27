@@ -113,3 +113,19 @@ ignore = [
 
 [tool.ruff.per-file-ignores]
 "tmt/steps/report/polarion.py" = ["DTZ005"]
+
+[tool.pyright]
+include = ["tmt"]
+exclude = [
+    "**/__pycache__"
+]
+#defineConstant = { DEBUG = true }
+#stubPath = "src/stubs"
+venvPath = "/home/mprchlik/virtualenvs"
+venv = "tmt"
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+##pythonVersion = "3.6"
+pythonPlatform = "Linux"
