@@ -38,7 +38,7 @@ import tmt.utils
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultOutcome
 from tmt.utils import (Command, EnvironmentType, FmfContextType, Path,
-                       ShellScript, WorkdirArgumentType, verdict)
+                       ShellScript, WorkdirArgumentType, field, verdict)
 
 if sys.version_info >= (3, 8):
     from typing import Literal, TypedDict
@@ -528,6 +528,11 @@ def assert_simple_requirements(
 CoreT = TypeVar('CoreT', bound='Core')
 
 
+def _normalize_link(value: _RawLinks, logger: tmt.log.Logger) -> 'Links':
+    return Links(data=value)
+
+
+@dataclasses.dataclass(repr=False)
 class Core(
         tmt.utils.ValidateFmfMixin,
         tmt.utils.LoadFmfKeysMixin,
@@ -544,14 +549,25 @@ class Core(
     summary: Optional[str] = None
     description: Optional[str] = None
     enabled: bool = True
-    order: int = DEFAULT_ORDER
-    link: Optional['Links'] = None
+    order: int = field(
+        default=DEFAULT_ORDER,
+        normalize=lambda raw_value, logger: DEFAULT_ORDER if raw_value is None else int(raw_value))
+    link: Optional['Links'] = field(
+        default=None,
+        normalize=_normalize_link)
     id: Optional[str] = None
-    tag: List[str] = []
-    tier: Optional[str] = None
-    adjust: Optional[List[_RawAdjustRule]] = None
+    tag: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
+    tier: Optional[str] = field(
+        default=None,
+        normalize=lambda raw_value, logger: None if raw_value is None else str(raw_value))
+    adjust: Optional[List[_RawAdjustRule]] = field(
+        default_factory=list,
+        normalize=lambda raw_value, logger: [] if raw_value is None
+        else ([raw_value] if not isinstance(raw_value, list) else raw_value))
 
-    KEYS_SHOW_ORDER = [
+    _KEYS_SHOW_ORDER = [
         # Basic stuff
         'summary',
         'description',
@@ -565,40 +581,6 @@ class Core(
         'link',
         'adjust',
         ]
-
-    # Normalization methods
-    _normalize_tag = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-
-    # TODO: remove when schema becomes mandatory, `order` shall never be `null`
-    def _normalize_order(
-            self,
-            value: Optional[int],
-            logger: tmt.log.Logger) -> int:
-        if value is None:
-            return DEFAULT_ORDER
-        return int(value)
-
-    def _normalize_link(
-            self,
-            value: _RawLinks,
-            logger: tmt.log.Logger) -> 'Links':
-        return Links(data=value)
-
-    def _normalize_adjust(
-            self,
-            value: Union[_RawAdjustRule, List[_RawAdjustRule]],
-            logger: tmt.log.Logger) -> List[_RawAdjustRule]:
-        if value is None:
-            return []
-        return [value] if not isinstance(value, list) else value
-
-    def _normalize_tier(
-            self,
-            value: Optional[Union[int, str]],
-            logger: tmt.log.Logger) -> Optional[str]:
-        if value is None:
-            return None
-        return str(value)
 
     def __init__(self,
                  *,
@@ -910,6 +892,7 @@ class Core(
 Node = Core
 
 
+@dataclasses.dataclass(repr=False)
 class Test(
         Core,
         tmt.export.Exportable['Test'],
@@ -917,21 +900,37 @@ class Test(
     """ Test object (L1 Metadata) """
 
     # Basic test information
-    contact: List[str] = []
-    component: List[str] = []
+    contact: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
+    component: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
 
     # Test execution data
-    test: ShellScript
-    path: Optional[Path] = None
+    # TODO: mandatory schema validation would remove the need for Optional...
+    # `test` is mandatory, must exist, so how to initialize if it's missing :(
+    test: Optional[ShellScript] = field(
+        default=None,
+        normalize=lambda raw_value, logger: None if raw_value is None else ShellScript(raw_value))
+    path: Optional[Path] = field(
+        default=None,
+        normalize=lambda raw_value, logger: None if raw_value is None else Path(raw_value))
     framework: str = "shell"
     manual: bool = False
-    require: List[Require] = []
-    recommend: List[Require] = []
-    environment: tmt.utils.EnvironmentType = {}
+    require: List[Require] = field(
+        default_factory=list,
+        normalize=normalize_require)
+    recommend: List[Require] = field(
+        default_factory=list,
+        normalize=normalize_require)
+    environment: tmt.utils.EnvironmentType = field(default_factory=dict)
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
 
-    where: List[str] = []
+    where: List[str] = field(default_factory=list)
 
     serialnumber: int = 0
 
@@ -941,42 +940,7 @@ class Test(
     real_duration: Optional[str] = None
     _reboot_count: int = 0
 
-    _normalize_contact = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-    _normalize_component = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-
-    def _normalize_test(
-            self,
-            value: Optional[str],
-            logger: tmt.log.Logger) -> ShellScript:
-        # TODO: mandatory schema validation would remove the need for Optional...
-        # `test` is mandatory, must exist, so how to initialize if it's missing :(
-        if value is None:
-            return ShellScript('')
-
-        return ShellScript(value)
-
-    def _normalize_require(
-            self,
-            value: Optional[_RawRequire],
-            logger: tmt.log.Logger) -> List[Require]:
-        return normalize_require(value, logger)
-
-    def _normalize_recommend(
-            self,
-            value: Optional[_RawRequire],
-            logger: tmt.log.Logger) -> List[Require]:
-        return normalize_require(value, logger)
-
-    def _normalize_path(
-            self,
-            value: str,
-            logger: tmt.log.Logger) -> Optional[Path]:
-        if value is None:
-            return None
-
-        return Path(value)
-
-    KEYS_SHOW_ORDER = [
+    _KEYS_SHOW_ORDER = [
         # Basic test information
         'summary',
         'description',
@@ -1076,7 +1040,7 @@ class Test(
 
         # TODO: As long as validation is optional, a missing `test` key would be reported
         # as such but won't stop tmt from moving on.
-        if str(self.test) == '':
+        if self.test is None:
             raise tmt.utils.SpecificationError(
                 f"The 'test' attribute in '{self.name}' must be defined.")
 
@@ -1142,6 +1106,7 @@ class Test(
     def manual_test_path(self) -> Path:
         assert self.manual, 'Test is not manual yet path to manual instructions was requested'
 
+        assert self.test
         assert self.path
 
         return Path(self.node.root) / self.path.unrooted() / str(self.test)
@@ -1149,7 +1114,7 @@ class Test(
     def show(self) -> None:
         """ Show test details """
         self.ls()
-        for key in self.KEYS_SHOW_ORDER:
+        for key in self._KEYS_SHOW_ORDER:
             value = getattr(self, key)
             if key == 'link' and value is not None:
                 value.show()
@@ -1331,6 +1296,7 @@ class Test(
         yield LinterOutcome.PASS, 'all requirements have type field'
 
 
+@dataclasses.dataclass(repr=False)
 class Plan(
         Core,
         tmt.export.Exportable['Plan'],
@@ -1343,10 +1309,12 @@ class Plan(
     _cli_options = {}
 
     # `environment` and `environment-file` are NOT promoted to instance variables.
-    context: FmfContextType = {}
-    gate: List[str] = []
-
-    _normalize_gate = tmt.utils.LoadFmfKeysMixin._normalize_string_list
+    context: FmfContextType = field(
+        default_factory=dict,
+        normalize=tmt.utils.normalize_fmf_context)
+    gate: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
 
     # When fetching remote plans we store links between the original
     # plan with the fmf id and the imported plan with the content.
@@ -1354,29 +1322,12 @@ class Plan(
     _original_plan: Optional['Plan'] = None
     _remote_plan_fmf_id: Optional[FmfId] = None
 
-    extra_L2_keys = [
+    _extra_L2_keys = [
         'context',
         'environment',
         'environment-file',
         'gate',
         ]
-
-    def _normalize_context(
-            self,
-            value: Optional[Dict[str, Any]],
-            logger: tmt.log.Logger) -> FmfContextType:
-        if value is None:
-            return {}
-
-        normalized: FmfContextType = {}
-
-        for dimension, values in value.items():
-            if isinstance(values, list):
-                normalized[str(dimension)] = [str(v) for v in values]
-            else:
-                normalized[str(dimension)] = [str(values)]
-
-        return normalized
 
     def __init__(
             self,
@@ -1794,7 +1745,7 @@ class Plan(
         """ P001: all keys are known """
 
         invalid_keys = self._lint_keys(
-            list(self.step_names(enabled=True, disabled=True)) + self.extra_L2_keys)
+            list(self.step_names(enabled=True, disabled=True)) + self._extra_L2_keys)
 
         if invalid_keys:
             for key in invalid_keys:
@@ -1981,7 +1932,7 @@ class Plan(
     def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys)
 
-        for key in self.extra_L2_keys:
+        for key in self._extra_L2_keys:
             value = self.node.data.get(key)
             if value:
                 data[key] = value
@@ -2072,28 +2023,26 @@ class StoryPriority(enum.Enum):
         return self.value
 
 
+@dataclasses.dataclass(repr=False)
 class Story(
         Core,
         tmt.export.Exportable['Story'],
         tmt.lint.Lintable['Story']):
     """ User story object """
 
-    example: List[str] = []
-    story: str
+    example: List[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
+    # TODO: `story` is mandatory, but it's defined after attributes with default
+    # values. Try to find a way how to drop the need for a dummy default.
+    story: Optional[str] = None
     title: Optional[str] = None
-    priority: Optional[StoryPriority] = None
+    priority: Optional[StoryPriority] = field(
+        default=None,
+        normalize=lambda raw_value,
+        logger: None if raw_value is None else StoryPriority(raw_value))
 
-    _normalize_example = tmt.utils.LoadFmfKeysMixin._normalize_string_list
-
-    def _normalize_priority(
-            self,
-            value: Optional[str],
-            logger: tmt.log.Logger) -> Optional[StoryPriority]:
-        if value is None:
-            return None
-        return StoryPriority(value)
-
-    KEYS_SHOW_ORDER = [
+    _KEYS_SHOW_ORDER = [
         'summary',
         'title',
         'story',
@@ -2225,7 +2174,7 @@ class Story(
     def show(self) -> None:
         """ Show story details """
         self.ls()
-        for key in self.KEYS_SHOW_ORDER:
+        for key in self._KEYS_SHOW_ORDER:
             value = getattr(self, key)
             if key == 'link':
                 value.show()
