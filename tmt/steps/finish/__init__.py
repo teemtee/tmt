@@ -7,8 +7,9 @@ import fmf
 
 import tmt
 import tmt.steps
-from tmt.steps import Action, Method
-from tmt.utils import GeneralError
+from tmt.steps import (Action, Method, PhaseQueue, PullTask, QueuedPhase,
+                       TaskOutcome, sync_with_guests)
+from tmt.steps.provision import Guest
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -104,28 +105,63 @@ class Finish(tmt.steps.Step):
             self.actions()
             return
 
-        # Go and execute each plugin on all guests
+        # Prepare guests
+        guest_copies: List[Guest] = []
+
         for guest in self.plan.provision.guests():
             # Create a guest copy and change its parent so that the
             # operations inside finish plugins on the guest use the
             # finish step config rather than provision step config.
             guest_copy = copy.copy(guest)
-            guest_copy._logger = guest._logger.clone().apply_verbosity_options(**self._cli_options)
+            guest_copy.inject_logger(
+                guest._logger.clone().apply_verbosity_options(**self._cli_options))
             guest_copy.parent = self
-            for phase in self.phases(classes=(Action, FinishPlugin)):
-                if isinstance(phase, Action):
-                    phase.go()
 
-                elif isinstance(phase, FinishPlugin):
-                    phase.go(guest=guest_copy, logger=guest_copy._logger)
+            guest_copies.append(guest_copy)
 
-                else:
-                    raise GeneralError(f'Unexpected phase in finish step: {phase}')
+        queue = PhaseQueue('finish', self._logger.descend(logger_name=f'{self}.queue'))
 
-            # Pull artifacts created in the plan data directory
-            # if there was at least one plugin executed
-            if self.phases():
-                guest_copy.pull(self.plan.data_directory)
+        for phase in self.phases(classes=(Action, FinishPlugin)):
+            queue.enqueue(
+                phase=phase,  # type: ignore[arg-type]
+                guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
+                )
+
+        failed_phases: List[TaskOutcome[QueuedPhase]] = []
+
+        for phase_outcome in queue.run():
+            if not isinstance(phase_outcome.task.phase, FinishPlugin):
+                continue
+
+            if phase_outcome.exc:
+                phase_outcome.logger.fail(str(phase_outcome.exc))
+
+                failed_phases.append(phase_outcome)
+                continue
+
+        if failed_phases:
+            raise tmt.utils.GeneralError(
+                'finish step failed',
+                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                )
+
+        # To separate "finish" from "pull" queue visually
+        self.info('')
+
+        # Pull artifacts created in the plan data directory
+        # if there was at least one plugin executed
+        if self.phases() and guest_copies:
+            sync_with_guests(
+                self,
+                'pull',
+                PullTask(
+                    guests=guest_copies,
+                    logger=self._logger,
+                    source=self.plan.data_directory),
+                self._logger)
+
+            # To separate "finish" from "pull" queue visually
+            self.info('')
 
         # Stop and remove provisioned guests
         for guest in self.plan.provision.guests():

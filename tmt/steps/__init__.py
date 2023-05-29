@@ -1469,3 +1469,44 @@ class PullTask(Task):
 
 
 GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)
+
+
+def sync_with_guests(
+        step: Step,
+        action: str,
+        task: GuestSyncTaskT,
+        logger: tmt.log.Logger) -> None:
+    """
+    Push and pull stuff from guests in a parallel manner.
+
+    Used by steps that run their plugins against one or more guest. Based on
+    a :py:class:`PhaseQueue` primitive, parallelized push/pull operations are
+    needed, and this function handles the details.
+
+    :param step: step managing the sync operation.
+    :param action: ``push`` or ``pull`, used for nicer logging.
+    :param task: :py:class:`PushTask` or :py:class:`PullTask` which represents
+        the actual operation.
+    :param logger: logger to use for logging.
+    """
+
+    queue: Queue[GuestSyncTaskT] = Queue(
+        action,
+        logger.descend(logger_name=action))
+
+    queue.enqueue_task(task)
+
+    failed_actions: List[TaskOutcome[GuestSyncTaskT]] = []
+
+    for outcome in queue.run():
+        if outcome.exc:
+            outcome.logger.fail(str(outcome.exc))
+
+            failed_actions.append(outcome)
+            continue
+
+    if failed_actions:
+        # TODO: needs a better message...
+        # Shall be fixed with https://github.com/teemtee/tmt/pull/2094
+        raise tmt.utils.GeneralError(f'{step.__class__.__name__.lower()} step failed') \
+            from failed_actions[0].exc
