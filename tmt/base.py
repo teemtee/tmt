@@ -466,13 +466,13 @@ class DependencyFile(
         return True, ''
 
 
-_RawRequireItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
-_RawRequire = Union[_RawRequireItem, List[_RawRequireItem]]
+_RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
+_RawDependency = Union[_RawDependencyItem, List[_RawDependencyItem]]
 
 Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
 
 
-def dependency_factory(raw_dependency: Optional[_RawRequireItem]) -> Dependency:
+def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependency:
     """ Select the correct require class """
     if isinstance(raw_dependency, dict):
         dependency_type = raw_dependency.get('type', 'library')
@@ -486,7 +486,7 @@ def dependency_factory(raw_dependency: Optional[_RawRequireItem]) -> Dependency:
 
 
 def normalize_require(
-        raw_require: Optional[_RawRequire],
+        raw_require: Optional[_RawDependency],
         logger: tmt.log.Logger) -> List[Dependency]:
     """
     Normalize content of ``require`` key.
