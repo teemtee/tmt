@@ -52,6 +52,9 @@ class ContextObject:
     manages across commands.
     """
 
+    # "Parent" Click context
+    cli_context: 'Context'
+
     logger: tmt.log.Logger
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContextType
@@ -193,6 +196,7 @@ def main(
 
     # TODO: context object details need checks
     click_contex.obj = ContextObject(
+        cli_context=click_contex,
         logger=logger,
         common=tmt.utils.Common(logger=logger),
         fmf_context=tmt.utils.context_to_dict(context=context, logger=logger),
