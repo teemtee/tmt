@@ -97,21 +97,21 @@ class TestDescription(
     path: Optional[str] = None
     framework: Optional[str] = None
     manual: bool = False
-    require: List[tmt.base.Require] = field(
+    require: List[tmt.base.Dependency] = field(
         default_factory=list,
         normalize=tmt.base.normalize_require,
         serialize=lambda requires: [require.to_spec() for require in requires],
         unserialize=lambda serialized_requires: [
-            tmt.base.require_factory(require) for require in serialized_requires
+            tmt.base.dependency_factory(require) for require in serialized_requires
             ]
         )
-    recommend: List[tmt.base.Require] = field(
+    recommend: List[tmt.base.Dependency] = field(
         default_factory=list,
         normalize=tmt.base.normalize_require,
         serialize=lambda recommends: [recommend.to_spec() for recommend in recommends],
         unserialize=lambda serialized_recommends: [
-            tmt.base.RequireSimple.from_spec(recommend)
-            if isinstance(recommend, str) else tmt.base.RequireFmfId.from_spec(recommend)
+            tmt.base.DependencySimple.from_spec(recommend)
+            if isinstance(recommend, str) else tmt.base.DependencyFmfId.from_spec(recommend)
             for recommend in serialized_recommends
             ]
         )

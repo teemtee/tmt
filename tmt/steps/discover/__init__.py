@@ -343,7 +343,7 @@ class Discover(tmt.steps.Step):
 
         return [test for test in iterator() if test.enabled is enabled]
 
-    def requires(self) -> List['tmt.base.Require']:
+    def requires(self) -> List['tmt.base.Dependency']:
         """
         Collect all test requirements of all discovered tests in this step.
 
@@ -355,6 +355,6 @@ class Discover(tmt.steps.Step):
         """
         return flatten((test.require for test in self.tests(enabled=True)), unique=True)
 
-    def recommends(self) -> List['tmt.base.Require']:
+    def recommends(self) -> List['tmt.base.Dependency']:
         """ Return all packages recommended by tests """
         return flatten((test.recommend for test in self.tests(enabled=True)), unique=True)

@@ -776,7 +776,7 @@ class Guest(tmt.utils.Common):
         return CheckRsyncOutcome.INSTALLED
 
     @classmethod
-    def requires(cls) -> List['tmt.base.Require']:
+    def requires(cls) -> List['tmt.base.Dependency']:
         """ All requirements of the guest implementation """
         return []
 
@@ -1404,7 +1404,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
         """
         raise NotImplementedError()
 
-    def requires(self) -> List['tmt.base.Require']:
+    def requires(self) -> List['tmt.base.Dependency']:
         """
         All requirements of the guest implementation.
 

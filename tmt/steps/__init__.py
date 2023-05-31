@@ -562,7 +562,7 @@ class Step(tmt.utils.Common):
             except OSError as error:
                 logger.warn(f"Unable to remove '{member}': {error}")
 
-    def requires(self) -> List['tmt.base.Require']:
+    def requires(self) -> List['tmt.base.Dependency']:
         """
         Collect all requirements of all enabled plugins in this step.
 
@@ -1018,7 +1018,7 @@ class BasePlugin(Phase):
         # Include order in verbose mode
         logger.verbose('order', str(self.order), 'magenta', level=3)
 
-    def requires(self) -> List['tmt.base.Require']:
+    def requires(self) -> List['tmt.base.Dependency']:
         """ All requirements of the plugin on the guest """
         return []
 

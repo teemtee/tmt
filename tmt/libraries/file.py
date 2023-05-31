@@ -4,9 +4,11 @@ from typing import List, Optional
 import fmf
 
 import tmt
+import tmt.base
+from tmt.base import DependencyFile
 from tmt.utils import Path
 
-from . import Library, LibraryIdentifierType
+from . import Library
 
 
 class File(Library):
@@ -29,7 +31,7 @@ class File(Library):
     def __init__(
             self,
             *,
-            identifier: LibraryIdentifierType,
+            identifier: DependencyFile,
             parent: Optional[tmt.utils.Common] = None,
             logger: tmt.log.Logger,
             source_location: Path,
