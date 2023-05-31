@@ -624,6 +624,19 @@ class Command:
         return CommandOutput(stdout_logger.get_output(), stderr_logger.get_output())
 
 
+@dataclasses.dataclass
+class CLIContext:
+    click_context: 'tmt.cli.Context'
+
+    @property
+    def context_object(self) -> 'tmt.cli.ContextObject':
+        return self.click_context.obj
+
+    @property
+    def options(self) -> Dict[str, Any]:
+        return self.click_context.params
+
+
 class _CommonBase:
     """
     A base class for **all** classes contributing to "common" tree of classes.
@@ -692,10 +705,7 @@ class Common(_CommonBase):
     # subcommands, i.e. create multiple phases of a step via CLI. While it's
     # perfectly fine to define multiple report plugins in plan's fmf data,
     # doing so via CLI - `report -h display report -h html` - is not supported.
-    _cli_context: Optional['tmt.cli.Context'] = None
-    # FIXME: The class inheritance sets the same instance of _cli_options
-    # dictionary to all child class and causes error in certain cases.
-    _cli_options: Dict[str, Any] = {}
+    _cli_context: Optional[CLIContext] = None
 
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
@@ -731,7 +741,7 @@ class Common(_CommonBase):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
-            cli_context: Optional['tmt.cli.Context'] = None,
+            cli_context: Optional[CLIContext] = None,
             relative_indent: int = 1,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
@@ -805,7 +815,7 @@ class Common(_CommonBase):
         return self.name
 
     @classmethod
-    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
+    def _save_cli_context(cls, context: CLIContext) -> None:
         """
         Save a CLI context and options it carries for later use.
 
@@ -823,9 +833,8 @@ class Common(_CommonBase):
         """
 
         cls._cli_context = context
-        cls._cli_options = cls._cli_context.params
 
-    def _save_cli_context_to_instance(self, context: 'tmt.cli.Context') -> None:
+    def _save_cli_context_to_instance(self, context: CLIContext) -> None:
         """
         Save a CLI context and options it carries for later use.
 
@@ -837,7 +846,6 @@ class Common(_CommonBase):
         """
 
         self._cli_context = context
-        self._cli_options = self._cli_context.params
 
     @property
     def _cli_context_object(self) -> Optional['tmt.cli.ContextObject']:
@@ -854,7 +862,7 @@ class Common(_CommonBase):
         if self._cli_context is None:
             return None
 
-        return self._cli_context.obj
+        return self._cli_context.context_object
 
     @property
     def _cli_fmf_context(self) -> FmfContextType:
@@ -892,7 +900,8 @@ class Common(_CommonBase):
         """ Get an option from the command line context (class version) """
         if cls.ignore_class_options:
             return default
-        return cls._cli_options.get(option, default)
+        assert cls._cli_context is not None
+        return cls._cli_context.options.get(option, default)
 
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
         """
@@ -924,7 +933,8 @@ class Common(_CommonBase):
                 pass
 
         # Get local option
-        local = self._cli_options.get(option, default)
+        assert self._cli_context is not None
+        local = self._cli_context.options.get(option, default)
         # Check parent option
         parent = None
         if self.parent:

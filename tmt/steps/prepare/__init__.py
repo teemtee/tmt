@@ -64,9 +64,9 @@ class PreparePlugin(tmt.steps.Plugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for environment preparation.')
+        @tmt.options.save_cli_context(cls)
         def prepare(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('prepare')
-            Prepare._save_cli_context(context)
 
         return prepare
 
@@ -227,6 +227,8 @@ class Prepare(tmt.steps.Step):
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Prepare guests (including workdir sync)
+        assert self._cli_context is not None
+
         guest_copies: List[Guest] = []
 
         for guest in self.plan.provision.guests():
@@ -235,7 +237,7 @@ class Prepare(tmt.steps.Step):
             # prepare step config rather than provision step config.
             guest_copy = copy.copy(guest)
             guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options))
+                guest._logger.clone().apply_verbosity_options(**self._cli_context.options))
             guest_copy.parent = self
 
             guest_copies.append(guest_copy)

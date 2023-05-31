@@ -221,7 +221,8 @@ class Step(tmt.utils.Common):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Initialize and check the step data """
-        logger.apply_verbosity_options(**self.__class__._cli_options)
+        assert self.__class__._cli_context is not None
+        logger.apply_verbosity_options(**self.__class__._cli_context.options)
 
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
 
@@ -688,7 +689,8 @@ class BasePlugin(Phase):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Store plugin name, data and parent step """
-        logger.apply_verbosity_options(**self.__class__._cli_options)
+        assert self.__class__._cli_context is not None
+        logger.apply_verbosity_options(**self.__class__._cli_context.options)
 
         # Store name, data and parent step
         super().__init__(
@@ -1161,9 +1163,9 @@ class Reboot(Action):
         @click.option(
             '--hard', is_flag=True,
             help='Hard reboot of the machine. Unsaved data may be lost.')
+        @tmt.options.save_cli_context(cls)
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """ Reboot the guest. """
-            Reboot._save_cli_context(context)
             Reboot._enabled = True
 
         return reboot
@@ -1225,6 +1227,7 @@ class Login(Action):
         @click.option(
             '-t', '--test', is_flag=True,
             help='Log into the guest after each executed test in the execute phase.')
+        @tmt.options.save_cli_context(cls)
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
             Provide user with an interactive shell on the guest.
@@ -1251,7 +1254,6 @@ class Login(Action):
             the tests finished with given result (pass, info, fail,
             warn, error).
             """
-            Login._save_cli_context(context)
             Login._enabled = True
 
         return login

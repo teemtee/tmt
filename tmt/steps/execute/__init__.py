@@ -162,9 +162,9 @@ class ExecutePlugin(tmt.steps.Plugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for test execution.')
+        @tmt.options.save_cli_context(cls)
         def execute(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('execute')
-            Execute._save_cli_context(context)
 
         return execute
 

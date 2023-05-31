@@ -7,7 +7,7 @@ import dataclasses
 import subprocess
 import sys
 from typing import (TYPE_CHECKING, Any, DefaultDict, List, Optional, Set,
-                    Tuple, Type, Union)
+                    Tuple, Type, Union, Dict)
 
 import click
 import fmf
@@ -26,7 +26,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.templates
 import tmt.utils
-from tmt.options import create_options_decorator
+from tmt.options import create_options_decorator, save_cli_context
 from tmt.utils import Path
 
 if TYPE_CHECKING:
@@ -167,6 +167,7 @@ lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
     '--force-color', is_flag=True, default=False,
     help='Forces tmt to use colors in the output and logging.'
     )
+@save_cli_context(tmt.utils.Common)
 def main(
         click_contex: Context,
         root: str,
@@ -187,9 +188,6 @@ def main(
 
     # Propagate color setting to Click as well.
     click_contex.color = apply_colors_output
-
-    # Save click context and fmf context for future use
-    tmt.utils.Common._save_cli_context(click_contex)
 
     # Initialize metadata tree (from given path or current directory)
     tree = tmt.Tree(logger=logger, path=Path(root))
@@ -270,7 +268,7 @@ def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
     run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
-        cli_context=context,
+        cli_context=tmt.utils.CLIContext(context),
         logger=logger
         )
     context.obj.run = run
@@ -306,6 +304,7 @@ run.add_command(tmt.steps.Reboot.command())
     '--default', is_flag=True,
     help="Use default plans even if others are available.")
 @verbosity_options
+@save_cli_context(tmt.base.Plan)
 def run_plans(context: Context, **kwargs: Any) -> None:
     """
     Select plans which should be executed.
@@ -313,7 +312,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
-    tmt.base.Plan._save_cli_context(context)
+    pass
 
 
 @run.command(name='tests')
@@ -332,6 +331,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     help="Filter by linked objects (regular expressions are "
          "supported for both relation and target).")
 @verbosity_options
+@save_cli_context(tmt.base.Test)
 def run_tests(context: Context, **kwargs: Any) -> None:
     """
     Select tests which should be executed.
@@ -339,7 +339,7 @@ def run_tests(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
-    tmt.base.Test._save_cli_context(context)
+    pass
 
 
 # FIXME: click 8.0 renamed resultcallback to result_callback. The former
@@ -365,7 +365,7 @@ def finito(
 
 
 def _lint_class(
-        context: Context,
+        context: tmt.utils.CLIContext,
         klass: Union[Type[tmt.base.Test], Type[tmt.base.Plan], Type[tmt.base.Story]],
         failed_only: bool,
         enable_checks: List[str],
@@ -376,12 +376,12 @@ def _lint_class(
     """ Lint a single class of objects """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
-    context.params.update(**kwargs)
+    context.options.update(**kwargs)
     klass._save_cli_context(context)
 
     exit_code = 0
 
-    for lintable in klass.from_tree(context.obj.tree):
+    for lintable in klass.from_tree(context.context_object.tree):
         valid, rulings = lintable.lint(
             enable_checks=enable_checks or None,
             disable_checks=disable_checks or None,
@@ -436,7 +436,7 @@ def do_lint(
 
     return max(
         _lint_class(
-            context,
+            tmt.utils.CLIContext(context),
             klass,
             failed_only,
             enable_checks,
@@ -472,6 +472,7 @@ def tests(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @filter_options
 @verbosity_options
+@save_cli_context(tmt.base.Test)
 def tests_ls(context: Context, **kwargs: Any) -> None:
     """
     List available tests.
@@ -479,7 +480,6 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
-    tmt.Test._save_cli_context(context)
     for test in context.obj.tree.tests():
         test.ls()
 
@@ -488,6 +488,7 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @filter_options
 @verbosity_options
+@save_cli_context(tmt.base.Test)
 def tests_show(context: Context, **kwargs: Any) -> None:
     """
     Show test details.
@@ -495,7 +496,6 @@ def tests_show(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
-    tmt.Test._save_cli_context(context)
     for test in context.obj.tree.tests():
         test.show()
         echo()
@@ -550,6 +550,7 @@ _test_templates = listed(tmt.templates.TEST, join='or')
     prompt='Template ({})'.format(_test_templates))
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Test)
 def tests_create(
         context: Context,
         name: str,
@@ -563,7 +564,6 @@ def tests_create(
     current working directory.
     """
     assert context.obj.tree.root is not None  # narrow type
-    tmt.Test._save_cli_context(context)
     tmt.Test.create(name, template, context.obj.tree.root, force)
 
 
@@ -618,6 +618,7 @@ def tests_create(
     help='Import manual cases with non-empty script field in Nitrate.')
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Test)
 def tests_import(
         context: Context,
         paths: List[str],
@@ -650,7 +651,6 @@ def tests_import(
     nitrate ...... contact, component, tag, environment, relevancy, enabled
     polarion ..... summary, enabled, assignee, id, component, tag, description, link
     """
-    tmt.Test._save_cli_context(context)
 
     if manual:
         if not (case or plan):
@@ -761,6 +761,7 @@ _test_export_default = 'yaml'
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
+@save_cli_context(tmt.base.Test)
 def tests_export(
         context: Context,
         format: str,
@@ -775,8 +776,6 @@ def tests_export(
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
-    tmt.Test._save_cli_context(context)
-
     if nitrate:
         context.obj.common.warn(
             "Option '--nitrate' is deprecated, please use '--how nitrate' instead.")
@@ -813,6 +812,7 @@ def tests_export(
 @filter_options
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Test)
 def tests_id(context: Context, **kwargs: Any) -> None:
     """
     Generate a unique id for each selected test.
@@ -821,7 +821,6 @@ def tests_id(context: Context, **kwargs: Any) -> None:
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
-    tmt.Test._save_cli_context(context)
     for test in context.obj.tree.tests():
         tmt.identifier.id_command(test.node, "test", dry=kwargs["dry"])
 
@@ -834,6 +833,7 @@ def tests_id(context: Context, **kwargs: Any) -> None:
 @click.pass_context
 @verbosity_options
 @remote_plan_options
+@save_cli_context(tmt.base.Plan)
 def plans(context: Context, **kwargs: Any) -> None:
     """
     Manage test plans (L2 metadata).
@@ -842,7 +842,6 @@ def plans(context: Context, **kwargs: Any) -> None:
     Search for available plans.
     Explore detailed test step configuration.
     """
-    tmt.Plan._save_cli_context(context)
 
     # Show overview of available plans
     if context.invoked_subcommand is None:
@@ -854,6 +853,7 @@ def plans(context: Context, **kwargs: Any) -> None:
 @filter_options
 @verbosity_options
 @remote_plan_options
+@save_cli_context(tmt.base.Plan)
 def plans_ls(context: Context, **kwargs: Any) -> None:
     """
     List available plans.
@@ -861,7 +861,6 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
-    tmt.Plan._save_cli_context(context)
     for plan in context.obj.tree.plans():
         plan.ls()
 
@@ -871,6 +870,7 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
 @filter_options
 @verbosity_options
 @remote_plan_options
+@save_cli_context(tmt.base.Plan)
 def plans_show(context: Context, **kwargs: Any) -> None:
     """
     Show plan details.
@@ -878,7 +878,6 @@ def plans_show(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
-    tmt.Plan._save_cli_context(context)
     for plan in context.obj.tree.plans():
         plan.show()
         echo()
@@ -951,6 +950,7 @@ _plan_templates = listed(tmt.templates.PLAN, join='or')
     help='Finish phase content in yaml format.')
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Plan)
 def plans_create(
         context: Context,
         name: str,
@@ -959,7 +959,6 @@ def plans_create(
         **kwargs: Any) -> None:
     """ Create a new plan based on given template. """
     assert context.obj.tree.root is not None  # narrow type
-    tmt.Plan._save_cli_context(context)
     tmt.Plan.create(name, template, context.obj.tree.root, force)
 
 
@@ -986,6 +985,7 @@ _plan_export_default = 'yaml'
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
+@save_cli_context(tmt.base.Plan)
 def plans_export(
         context: Context,
         how: str,
@@ -998,7 +998,6 @@ def plans_export(
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
-    tmt.Plan._save_cli_context(context)
 
     if format != _test_export_default:
         context.obj.common.warn("Option '--format' is deprecated, please use '--how' instead.")
@@ -1017,6 +1016,7 @@ def plans_export(
 @filter_options
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Plan)
 def plans_id(context: Context, **kwargs: Any) -> None:
     """
     Generate a unique id for each selected plan.
@@ -1025,7 +1025,6 @@ def plans_id(context: Context, **kwargs: Any) -> None:
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
-    tmt.Plan._save_cli_context(context)
     for plan in context.obj.tree.plans():
         tmt.identifier.id_command(plan.node, "plan", dry=kwargs["dry"])
 
@@ -1037,6 +1036,7 @@ def plans_id(context: Context, **kwargs: Any) -> None:
 @main.group(invoke_without_command=True, cls=CustomGroup)
 @click.pass_context
 @verbosity_options
+@save_cli_context(tmt.base.Story)
 def stories(context: Context, **kwargs: Any) -> None:
     """
     Manage user stories.
@@ -1045,8 +1045,6 @@ def stories(context: Context, **kwargs: Any) -> None:
     Check available user stories.
     Explore coverage (test, implementation, documentation).
     """
-    tmt.Story._save_cli_context(context)
-
     # Show overview of available stories
     if context.invoked_subcommand is None:
         tmt.Story.overview(context.obj.tree)
@@ -1057,6 +1055,7 @@ def stories(context: Context, **kwargs: Any) -> None:
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
+@save_cli_context(tmt.base.Story)
 def stories_ls(
         context: Context,
         implemented: bool,
@@ -1074,7 +1073,6 @@ def stories_ls(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
-    tmt.Story._save_cli_context(context)
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
                         unimplemented, unverified, undocumented, uncovered):
@@ -1086,6 +1084,7 @@ def stories_ls(
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
+@save_cli_context(tmt.base.Story)
 def stories_show(
         context: Context,
         implemented: bool,
@@ -1103,7 +1102,6 @@ def stories_show(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
-    tmt.Story._save_cli_context(context)
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
                         unimplemented, unverified, undocumented, uncovered):
@@ -1123,6 +1121,7 @@ _story_templates = listed(tmt.templates.STORY, join='or')
     help='Story template ({}).'.format(_story_templates))
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Story)
 def stories_create(
         context: Context,
         name: str,
@@ -1131,7 +1130,6 @@ def stories_create(
         **kwargs: Any) -> None:
     """ Create a new story based on given template. """
     assert context.obj.tree.root is not None  # narrow type
-    tmt.Story._save_cli_context(context)
     tmt.Story.create(name, template, context.obj.tree.root, force)
 
 
@@ -1146,6 +1144,7 @@ def stories_create(
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
+@save_cli_context(tmt.base.Story)
 def stories_coverage(
         context: Context,
         code: bool,
@@ -1166,8 +1165,6 @@ def stories_coverage(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
-    tmt.Story._save_cli_context(context)
-
     def headfoot(text: str) -> None:
         """ Format simple header/footer """
         echo(style(text.rjust(4) + ' ', fg='blue'), nl=False)
@@ -1236,6 +1233,7 @@ _story_export_default = 'yaml'
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
+@save_cli_context(tmt.base.Story)
 def stories_export(
         context: Context,
         how: str,
@@ -1256,8 +1254,6 @@ def stories_export(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
-    tmt.Story._save_cli_context(context)
-
     if format != _test_export_default:
         context.obj.common.warn("Option '--format' is deprecated, please use '--how' instead.")
 
@@ -1318,6 +1314,7 @@ def stories_lint(
 @story_flags_filter_options
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Story)
 def stories_id(
         context: Context,
         implemented: bool,
@@ -1336,7 +1333,6 @@ def stories_id(
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
-    tmt.Story._save_cli_context(context)
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
                         unimplemented, unverified, undocumented, uncovered):
@@ -1357,6 +1353,7 @@ def stories_id(
         listed(tmt.templates.INIT_TEMPLATES, join='or')))
 @verbosity_options
 @force_dry_options
+@save_cli_context(tmt.base.Tree)
 def init(
         context: Context,
         path: str,
@@ -1376,7 +1373,6 @@ def init(
     * 'full' template contains a 'full' story, an 'full' plan and a shell test.
     """
 
-    tmt.Tree._save_cli_context(context)
     tmt.Tree.init(logger=context.obj.logger, path=Path(path), template=template, force=force)
 
 
@@ -1428,7 +1424,7 @@ def status(
             "used together.")
     if not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
-    status_obj = tmt.Status(logger=context.obj.logger, cli_context=context)
+    status_obj = tmt.Status(logger=context.obj.logger, cli_context=tmt.utils.CLIContext(context))
     status_obj.show()
 
 
@@ -1463,7 +1459,7 @@ def clean(context: Context, **kwargs: Any) -> None:
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger,
         parent=context.obj.common,
-        cli_context=context
+        cli_context=tmt.utils.CLIContext(context)
         )
     context.obj.clean = clean_obj
     exit_code = 0
@@ -1479,7 +1475,7 @@ def clean(context: Context, **kwargs: Any) -> None:
             .descend(logger_name='clean-images', extra_shift=0)
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
-            cli_context=context
+            cli_context=tmt.utils.CLIContext(context)
             )
         if tmt.utils.WORKDIR_ROOT.exists():
             if not clean_obj.guests():
@@ -1563,7 +1559,7 @@ def clean_runs(
         .descend(logger_name='clean-runs', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_context=context)
+        cli_context=tmt.utils.CLIContext(context))
     context.obj.clean_partials["runs"].append(clean_obj.runs)
 
 
@@ -1604,7 +1600,7 @@ def clean_guests(
         .descend(logger_name='clean-guests', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_context=context
+        cli_context=tmt.utils.CLIContext(context)
         )
     context.obj.clean_partials["guests"].append(clean_obj.guests)
 
@@ -1630,7 +1626,7 @@ def clean_images(context: Context, **kwargs: Any) -> None:
         .descend(logger_name='clean-images', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_context=context
+        cli_context=tmt.utils.CLIContext(context)
         )
     context.obj.clean_partials["images"].append(clean_obj.images)
 

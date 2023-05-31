@@ -1357,9 +1357,9 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for provisioning.')
+        @tmt.options.save_cli_context(cls)
         def provision(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('provision')
-            Provision._save_cli_context(context)
 
         return provision
 

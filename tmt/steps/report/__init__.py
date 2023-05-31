@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 import click
 
 import tmt
+import tmt.options
 import tmt.steps
 from tmt.steps import Action
 
@@ -44,9 +45,9 @@ class ReportPlugin(tmt.steps.GuestlessPlugin):
         @click.option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for results reporting.')
+        @tmt.options.save_cli_context(cls)
         def report(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('report')
-            Report._save_cli_context(context)
 
         return report
 

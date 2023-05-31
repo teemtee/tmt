@@ -228,16 +228,17 @@ class ExecuteUpgrade(ExecuteInternal):
         """ Silently run discover upgrade """
         # Make it quiet, we do not want any output from discover
         assert self._discover_upgrade is not None
-        quiet = self._discover_upgrade._cli_options['quiet']
+        assert self._discover_upgrade._cli_context is not None
+        quiet = self._discover_upgrade._cli_context.options['quiet']
         try:
-            self._discover_upgrade._cli_options['quiet'] = True
+            self._discover_upgrade._cli_context.options['quiet'] = True
             # Discover normally uses also options from global Test class
             # (e.g. test -n foo). Ignore this when selecting upgrade tasks.
             tmt.base.Test.ignore_class_options = True
             self._discover_upgrade.wake()
             self._discover_upgrade.go()
         finally:
-            self._discover_upgrade._cli_options['quiet'] = quiet
+            self._discover_upgrade._cli_context.options['quiet'] = quiet
             tmt.base.Test.ignore_class_options = False
 
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:

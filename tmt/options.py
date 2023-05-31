@@ -2,8 +2,9 @@
 
 """ Common options and the MethodCommand class """
 
+import functools
 import re
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, cast
 
 import click
 
@@ -224,6 +225,19 @@ def create_options_decorator(options: List[ClickOptionDecoratorType]) -> Callabl
         return fn
 
     return common_decorator
+
+
+def save_cli_context(klass: Type[tmt.utils.Common]) -> Callable[[FC], FC]:
+    def decorator(fn: FC) -> FC:
+        @functools.wraps(fn)
+        def __save_cli_context(*args: Any, **kwargs: Any) -> Any:
+            klass._save_cli_context(tmt.utils.CLIContext(args[0]))
+
+            return fn(*args, **kwargs)
+
+        return cast(FC, __save_cli_context)
+
+    return decorator
 
 
 def show_step_method_hints(

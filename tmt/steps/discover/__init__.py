@@ -72,7 +72,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
                 context.parent.params['debug'] = 0
                 context.parent.params['verbose'] = 0
             context.obj.steps.add('discover')
-            Discover._save_cli_context(context)
+            Discover._save_cli_context(tmt.utils.CLIContext(context))
 
         return discover
 
