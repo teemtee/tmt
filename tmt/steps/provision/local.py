@@ -3,10 +3,11 @@ from typing import Any, List, Optional, Union
 
 import tmt
 import tmt.base
+import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript
+from tmt.utils import Command, Path, ShellScript
 
 
 @dataclasses.dataclass
@@ -47,7 +48,7 @@ class GuestLocal(tmt.Guest):
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
-                log: Optional[BaseLoggerFnType] = None,
+                log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute command on localhost """

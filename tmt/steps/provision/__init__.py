@@ -25,7 +25,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import BaseLoggerFnType, Command, Path, ShellScript, field
+from tmt.utils import Command, Path, ShellScript, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -595,7 +595,7 @@ class Guest(tmt.utils.Common):
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
-                log: Optional[BaseLoggerFnType] = None,
+                log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         pass
@@ -608,7 +608,7 @@ class Guest(tmt.utils.Common):
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
-                log: Optional[BaseLoggerFnType] = None,
+                log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         pass
@@ -620,7 +620,7 @@ class Guest(tmt.utils.Common):
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
-                log: Optional[BaseLoggerFnType] = None,
+                log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """
@@ -952,7 +952,7 @@ class GuestSsh(Guest):
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 silent: bool = False,
-                log: Optional[BaseLoggerFnType] = None,
+                log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """

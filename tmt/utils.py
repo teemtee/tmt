@@ -47,9 +47,9 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 if sys.version_info >= (3, 8):
-    from typing import Literal, Protocol
+    from typing import Literal
 else:
-    from typing_extensions import Literal, Protocol
+    from typing_extensions import Literal
 
 import tmt.log
 
@@ -175,39 +175,6 @@ PLAN_SCHEMA_IGNORED_IDS: List[str] = [
     ]
 
 
-class BaseLoggerFnType(Protocol):
-    def __call__(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[tmt.log.Topic] = None) -> None:
-        pass
-
-
-class LevelessLoggerFnType(Protocol):
-    def __call__(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 0) -> None:
-        pass
-
-
-class SemanticLoggerFnType(Protocol):
-    def __call__(self, message: str, shift: int = 0) -> None:
-        pass
-
-
-LoggerFnType = Union[
-    BaseLoggerFnType,
-    LevelessLoggerFnType,
-    SemanticLoggerFnType]
-
-
 class Config:
     """ User configuration """
 
@@ -273,7 +240,7 @@ class StreamLogger(Thread):
             log_header: str,
             *,
             stream: Optional[IO[bytes]] = None,
-            logger: Optional[BaseLoggerFnType] = None,
+            logger: Optional[tmt.log.LoggingFunction] = None,
             click_context: Optional[click.Context] = None) -> None:
         super().__init__(daemon=True)
 
@@ -449,7 +416,7 @@ class Command:
             # Logging
             message: Optional[str] = None,
             friendly_command: Optional[str] = None,
-            log: Optional[BaseLoggerFnType] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
             silent: bool = False,
             caller: Optional['Common'] = None,
             logger: tmt.log.Logger) -> CommandOutput:
@@ -1047,7 +1014,7 @@ class Common(_CommonBase):
             env: Optional[EnvironmentType] = None,
             interactive: bool = False,
             join: bool = False,
-            log: Optional[BaseLoggerFnType] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
             timeout: Optional[int] = None) -> CommandOutput:
         """
         Run command, give message, handle errors

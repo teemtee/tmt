@@ -35,9 +35,9 @@ from typing import TYPE_CHECKING, Any, List, Optional, Set, Tuple, cast
 import click
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict
+    from typing import Protocol, TypedDict
 else:
-    from typing_extensions import TypedDict
+    from typing_extensions import Protocol, TypedDict
 
 
 if TYPE_CHECKING:
@@ -390,6 +390,18 @@ class TopicFilter(logging.Filter):
             return True
 
         return False
+
+
+class LoggingFunction(Protocol):
+    def __call__(
+            self,
+            key: str,
+            value: Optional[str] = None,
+            color: Optional[str] = None,
+            shift: int = 0,
+            level: int = 1,
+            topic: Optional[Topic] = None) -> None:
+        pass
 
 
 class Logger:
