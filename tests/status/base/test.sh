@@ -72,6 +72,19 @@ rlJournalStart
         rlRun "tmt run -l finish"
     rlPhaseEnd
 
+    rlPhaseStartTest "env TMT_WORKDIR_ROOT and option --workdir-root"
+        rlRun "export TMT_WORKDIR_ROOT=$tmprun"
+        rlRun -s "tmt status -v"
+        rlAssertGrep "$tmprun" $rlRun_LOG
+        rlRun -s "tmt status --workdir-root=/var/tmp/tmt -v"
+        rlAssertGrep "/var/tmp/tmt" $rlRun_LOG
+        rlRun "unset TMT_WORKDIR_ROOT"
+        rlRun -s "tmt status -v"
+        rlAssertGrep "/var/tmp/tmt" $rlRun_LOG
+        rlRun -s "tmt status --workdir-root=$tmprun -v"
+        rlAssertGrep "$tmprun" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "tmt run -i $runid finish" 0 "Get rid of an active provision"
         rlRun "popd"
