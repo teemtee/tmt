@@ -567,7 +567,7 @@ class Core(
     enabled: bool = True
     order: int = field(
         default=DEFAULT_ORDER,
-        normalize=lambda key_address, raw_value, logger: 
+        normalize=lambda key_address, raw_value, logger:
             DEFAULT_ORDER if raw_value is None else int(raw_value))
     link: Optional['Links'] = field(
         default=None,
