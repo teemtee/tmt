@@ -774,7 +774,7 @@ class BasePlugin(Phase):
                 else:
                     raise tmt.utils.GeneralError(
                         f"Envvar property of '{param.name}' option "
-                        f"set to unexpected type {type(param.envvar)}")
+                        f"set to unexpected type '{type(param.envvar)}'.")
 
         # Create base command with common options using method class
         method_class = tmt.options.create_method_class(commands)

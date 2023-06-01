@@ -341,6 +341,13 @@ and only check for the exit code.
 Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The list of available environment variables which can be used to
+adjust the execution.
+
+
+Command Variables
+-----------------
+
 The following environment variables can be used to modify
 behaviour of the ``tmt`` command.
 
@@ -377,6 +384,10 @@ TMT_FORCE_COLOR
     and ``TMT_NO_COLOR``. If user tries both to disable and enable
     colorization, output would be colorized.
 
+
+Step Variables
+--------------
+
 The following environment variables are provided to the environment
 during ``prepare``, ``execute`` and ``finish`` steps:
 
@@ -390,6 +401,10 @@ TMT_PLAN_DATA
     artifacts related to the whole plan execution. It is pulled
     back from the guest and available for inspection after the
     plan is completed.
+
+
+Test Variables
+--------------
 
 The following environment variables are provided to the test
 during the execution:
@@ -448,22 +463,9 @@ SERVERS
     to make multihost prototype support easier to verify as many current
     tests were developed with Restraint.
 
-Plugin options
---------------
 
-.. note::
-
-   The following applies to situations when a plugin is specified
-   on the command line only. Keys of plugins specified in fmf files
-   would not be modified. This is a limit of the current implementation,
-   and will be addressed in the future.
-
-      # Here the verbosity will not be increased since the plugin is
-      # not mentioned on the command line:
-      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a
-
-      # Here the environment variable will take effect:
-      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
+Plugin Variables
+----------------
 
 Each plugin option can be also specified via environment variable.
 Variables follow a naming scheme utilizing plugin name, step it
@@ -503,6 +505,21 @@ For setting flag-like option, 0 and 1 are the expected value. For
 example, an interactive mode would be enabled in this run::
 
     TMT_PLUGIN_EXECUTE_TMT_INTERACTIVE=1 tmt run ... execute -h tmt ...
+
+.. note::
+
+   The following applies to situations when a plugin is specified
+   on the command line only. Keys of plugins specified in fmf files
+   would not be modified. This is a limit of the current implementation,
+   and will be addressed in the future::
+
+      # Here the verbosity will not be increased since the plugin is
+      # not mentioned on the command line:
+      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a
+
+      # Here the environment variable will take effect:
+      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
+
 
 Links
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
