@@ -1,10 +1,11 @@
 import shutil
+from unittest.mock import MagicMock
 
 import pytest
 
 import tmt
 import tmt.base
-import tmt.libraries
+import tmt.libraries.beakerlib
 from tmt.utils import Path
 
 
@@ -103,4 +104,28 @@ def test_dependencies(root_logger):
         tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
     assert libraries[1].repo == Path('openssl')
     assert libraries[1].name == '/certgen'
+    shutil.rmtree(parent.workdir)
+
+
+@pytest.mark.web()
+def test_mark_nonexistent_url(root_logger, monkeypatch):
+    """ Check url existence just one time """
+    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    identifier = tmt.base.DependencyFmfId(
+        url='https://github.com/beakerlib/THISDOESNTEXIST',
+        name='/',
+        )
+    with pytest.raises(tmt.utils.GeneralError):
+        tmt.libraries.beakerlib.BeakerLib(
+            logger=root_logger,
+            identifier=identifier,
+            parent=parent).fetch()
+    # Second time there shouldn't be an attempt to clone...
+    monkeypatch.setattr("tmt.utils.git_clone", MagicMock(
+        side_effect=RuntimeError('Should not be called')))
+    with pytest.raises(tmt.utils.GeneralError):
+        tmt.libraries.beakerlib.BeakerLib(
+            logger=root_logger,
+            identifier=identifier,
+            parent=parent).fetch()
     shutil.rmtree(parent.workdir)

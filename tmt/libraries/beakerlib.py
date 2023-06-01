@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Dict, Optional, Union, cast
+from typing import Dict, Optional, Set, Union, cast
 
 import fmf
 
@@ -30,6 +30,7 @@ STRIP_SUFFIX_FORGES = [
 
 class CommonWithLibraryCache(tmt.utils.Common):
     _library_cache: Dict[str, 'BeakerLib']
+    _nonexistent_url: Set[str]
 
 
 class BeakerLib(Library):
@@ -166,6 +167,14 @@ class BeakerLib(Library):
 
         return cast(CommonWithLibraryCache, self.parent)._library_cache
 
+    @property
+    def _nonexistent_url(self) -> Set[str]:
+        # Set of url we tried to clone but didn't succeed
+        if not hasattr(self.parent, '_nonexistent_url'):
+            cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()
+
+        return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
+
     def fetch(self) -> None:
         """ Fetch the library (unless already fetched) """
         # Check if the library was already fetched
@@ -175,12 +184,17 @@ class BeakerLib(Library):
             if library.url != self.url:
                 # tmt guessed url so try if repo exists
                 if self.format == 'rpm':
+                    if self.url in self._nonexistent_url:
+                        self.parent.debug(f"Already know that '{self.url}' does not exist.")
+                        raise LibraryError
                     with TemporaryDirectory() as tmp:
+                        assert self.url is not None  # narrow type
                         try:
-                            tmt.utils.git_clone(str(self.url), Path(tmp), self.parent,
+                            tmt.utils.git_clone(self.url, Path(tmp), self.parent,
                                                 env={"GIT_ASKPASS": "echo"}, shallow=True)
                         except tmt.utils.RunError:
                             self.parent.debug(f"Repository '{self.url}' not found.")
+                            self._nonexistent_url.add(self.url)
                             raise LibraryError
                 # If repo does exist we really have unsolvable url conflict
                 raise tmt.utils.GeneralError(
@@ -207,6 +221,9 @@ class BeakerLib(Library):
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
+                    if self.url in self._nonexistent_url:
+                        raise tmt.utils.GitUrlError(
+                            f"Already know that '{self.url}' does not exist.")
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
                     tmt.utils.git_clone(self.url, directory, self.parent,
@@ -229,11 +246,17 @@ class BeakerLib(Library):
                 # Use the default branch if no ref provided
                 if self.ref is None:
                     self.ref = self.default_branch
-            except tmt.utils.RunError:
+            except (tmt.utils.RunError, tmt.utils.GitUrlError) as error:
+                assert self.url is not None  # narrow type
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
-                    self.parent.debug(f"Repository '{self.url}' not found.")
+                    # Print this message only for the first attempt
+                    if not isinstance(error, tmt.utils.GitUrlError):
+                        self.parent.debug(f"Repository '{self.url}' not found.")
+                        self._nonexistent_url.add(self.url)
                     raise LibraryError
+                # Mark self.url as known to be missing
+                self._nonexistent_url.add(self.url)
                 self.parent.fail(
                     f"Failed to fetch library '{self}' from '{self.url}'.")
                 raise

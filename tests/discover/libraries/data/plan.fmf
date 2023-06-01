@@ -1,3 +1,6 @@
+/:
+    inherit: false
+
 discover:
     how: fmf
 provision:
@@ -68,3 +71,7 @@ execute:
             summary: "Missing reference"
             discover+:
                 test: missing/reference
+/querying:
+    summary: "Many tests requiring same rpm-only library"
+    discover+:
+        test: querying
