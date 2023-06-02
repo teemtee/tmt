@@ -1,10 +1,13 @@
 specfile_path: tmt.spec
-synced_files:
-    - tmt.spec
+files_to_sync:
+  - tmt.spec
+  - .packit.yaml
 
 upstream_project_name: tmt
 downstream_package_name: tmt
 
+upstream_project_url: https://github.com/teemtee/tmt
+issue_repository: https://github.com/teemtee/tmt
 
 actions:
   post-upstream-clone:
@@ -77,3 +80,27 @@ jobs:
   preserve_project: True
   owner: psss
   project: tmt
+
+# Fedora releases
+- job: propose_downstream
+  trigger: release
+  dist_git_branches:
+    - fedora-all
+    - epel-8
+    - epel-9
+
+- job: koji_build
+  trigger: commit
+  allowed_pr_authors: ["packit", "psss", "lzachar"]
+  allowed_committers: ["packit", "psss", "lzachar"]
+  dist_git_branches:
+    - fedora-all
+    - epel-8
+    - epel-9
+
+- job: bodhi_update
+  trigger: commit
+  dist_git_branches:
+    - fedora-branched
+    - epel-8
+    - epel-9
