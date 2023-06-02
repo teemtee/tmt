@@ -11,12 +11,12 @@ upstream_project_url: https://github.com/teemtee/tmt
 issue_repository: https://github.com/teemtee/tmt
 
 actions:
-  post-upstream-clone:
-  - make bump2dev
-  create-archive:
-  - make tarball
-  get-current-version:
-  - make version
+    post-upstream-clone:
+      - make bump2dev
+    create-archive:
+      - make tarball
+    get-current-version:
+      - make version
 
 srpm_build_deps:
   - make
@@ -24,84 +24,89 @@ srpm_build_deps:
 
 jobs:
 
-- job: copr_build
-  trigger: pull_request
-  targets:
-  - fedora-all
-  - epel-8
-  - epel-9
-  enable_net: False
+  # Build pull requests
+  - job: copr_build
+    trigger: pull_request
+    targets:
+      - fedora-all
+      - epel-8
+      - epel-9
+    enable_net: False
 
-- job: tests
-  trigger: pull_request
-  targets:
-  - fedora-all
-  - epel-8
-  - epel-9
+  # Test pull requests
+  - job: tests
+    trigger: pull_request
+    targets:
+      - fedora-all
+      - epel-8
+      - epel-9
 
-- job: tests
-  trigger: pull_request
-  identifier: "internal-plugins"
-  targets:
-  - fedora-latest-stable
-  use_internal_tf: True
-  fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
-  # Tag cloud resources for tmt
-  tf_extra_params:
-    environments:
-      - settings:
-          provisioning:
-            tags:
-              BusinessUnit: tmt
+  # Test internal plugins
+  - job: tests
+    trigger: pull_request
+    identifier: "internal-plugins"
+    targets:
+      - fedora-latest-stable
+    use_internal_tf: True
+    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
+    # Tag cloud resources for tmt
+    tf_extra_params:
+        environments:
+          - settings:
+                provisioning:
+                    tags:
+                        BusinessUnit: tmt
 
-- job: tests
-  trigger: pull_request
-  identifier: "internal-wow"
-  targets:
-  - fedora-latest-stable
-  use_internal_tf: True
-  fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
-  tmt_plan: "/tmt/integration/plan"
-  tf_extra_params:
-    environments:
-      - settings:
-          provisioning:
-            tags:
-              BusinessUnit: tmt
+  # Test internal wow
+  - job: tests
+    trigger: pull_request
+    identifier: "internal-wow"
+    targets:
+      - fedora-latest-stable
+    use_internal_tf: True
+    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
+    tmt_plan: "/tmt/integration/plan"
+    tf_extra_params:
+        environments:
+          - settings:
+                provisioning:
+                    tags:
+                        BusinessUnit: tmt
 
-- job: copr_build
-  trigger: commit
-  branch: main
-  targets:
-  - fedora-all
-  - epel-8
-  - epel-9
-  enable_net: False
-  list_on_homepage: True
-  preserve_project: True
-  owner: psss
-  project: tmt
+  # Build commits to main
+  - job: copr_build
+    trigger: commit
+    branch: main
+    targets:
+      - fedora-all
+      - epel-8
+      - epel-9
+    enable_net: False
+    list_on_homepage: True
+    preserve_project: True
+    owner: psss
+    project: tmt
 
-# Fedora releases
-- job: propose_downstream
-  trigger: release
-  dist_git_branches:
-    - fedora-all
-    - epel-8
-    - epel-9
+  # Fedora releases
+  - job: propose_downstream
+    trigger: release
+    dist_git_branches:
+      - fedora-all
+      - epel-8
+      - epel-9
 
-- job: koji_build
-  trigger: commit
-  allowed_pr_authors: ["packit", "psss", "lzachar"]
-  allowed_committers: ["packit", "psss", "lzachar"]
-  dist_git_branches:
-    - fedora-all
-    - epel-8
-    - epel-9
+  - job: koji_build
+    trigger: commit
+    allowed_pr_authors: ["packit", "psss", "lzachar"]
+    allowed_committers: ["packit", "psss", "lzachar"]
+    dist_git_branches:
+      - fedora-all
+      - epel-8
+      - epel-9
 
-- job: bodhi_update
-  trigger: commit
-  dist_git_branches:
-    - fedora-branched
-    - epel-8
-    - epel-9
+  - job: bodhi_update
+    trigger: commit
+    dist_git_branches:
+      - fedora-branched
+      - epel-8
+      - epel-9
