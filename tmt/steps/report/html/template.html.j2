@@ -40,53 +40,105 @@
             margin: 30px 7px 0px 7px;
         }
 
-        table {
+        #results, #filters {
             border-spacing: 7px;
         }
 
-        td, th {
+        #results td, #results th {
             padding: 0.7ex 1em;
         }
 
-        td {
+        #results td {
             background: #f8f8f8;
             border-radius: 0.5ex;
         }
 
-        td.result {
+        #results td.result {
             text-align: center;
             text-shadow: 0px 0px 5px #555;
             color: white;
         }
 
-        td.pass {
+        #results td.pass {
             background: #0a0;
         }
-
-        td.fail {
+        #results td.fail {
             background: #d30;
         }
-
-        td.info {
+        #results td.info {
             background: #58d;
         }
-
-        td.warn {
+        #results td.warn {
             background: #fc5;
         }
-
-        td.error {
+        #results td.error {
             background: #b4d;
         }
 
-        td.log {
+        #results td.log {
             word-spacing: 1ex;
         }
 
-        td.note {
+        #results td.note {
             color: #c00;
         }
     </style>
+    <script>
+        var filter_values = {
+            "pass": true,
+            "fail": true,
+            "info": true,
+            "warn": true,
+            "error": true,
+            "name": "",
+            "note": "",
+        };
+
+        // should a row be shown?
+        function valid_row(row) {
+            // checkboxes
+            const result = row.getElementsByClassName("result")[0].textContent;
+            if (!filter_values[result])
+                return false;
+            // name
+            const name = row.getElementsByClassName("name")[0].textContent;
+            if (filter_values["name"] && !name.match(filter_values["name"]))
+                return false;
+            // note (if it doesn't exist, treat it as empty)
+            let note = "";
+            const note_elem = row.getElementsByClassName("note")[0];
+            if (note_elem)
+                note = note_elem.textContent;
+            if (filter_values["note"] && !note.match(filter_values["note"]))
+                return false;
+            return true;
+        }
+
+        // show or hide results table rows
+        function update_rows() {
+            const rows = document.getElementById("results").rows;
+            for (let i = 1; i < rows.length; i++) {
+                if (valid_row(rows[i]))
+                    rows[i].style.removeProperty("display");
+                else
+                    rows[i].style.display = "none";
+            }
+        }
+
+        function filter_checkbox(e) {
+            const type = e.id.replace("filter_", "");
+            filter_values[type] = e.checked;
+            update_rows();
+        }
+        function filter_name(e) {
+            filter_values["name"] = e.value;
+            update_rows();
+        }
+        function filter_note(e) {
+            filter_values["note"] = e.value;
+            update_rows();
+        }
+    </script>
 </head>
 
 {% macro emit_guest(guest) %}
@@ -105,8 +157,21 @@
 <div>
 <h1>{{ plan.name }}</h1>
 {% if plan.summary %}<h2>{{ plan.summary }}</h2>{% endif %}
+
 {% if results %}
-<table>
+<table id="filters">
+    <tr>
+        <td><label><input type="checkbox" id="filter_pass" onclick="filter_checkbox(this);" checked>pass</label></td>
+        <td><label><input type="checkbox" id="filter_fail" onclick="filter_checkbox(this);" checked>fail</label></td>
+        <td><label><input type="checkbox" id="filter_info" onclick="filter_checkbox(this);" checked>info</label></td>
+        <td><label><input type="checkbox" id="filter_warn" onclick="filter_checkbox(this);" checked>warn</label></td>
+        <td><label><input type="checkbox" id="filter_error" onclick="filter_checkbox(this);" checked>error</label></td>
+        <td><input type="search" placeholder="Filter test names" onchange="filter_name(this);"/></td>
+        <td><input type="search" placeholder="Filter note" onchange="filter_note(this);"/></td>
+    </tr>
+</table>
+
+<table id="results">
     <thead>
         <tr>
             <th>Result</th>
