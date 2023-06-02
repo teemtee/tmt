@@ -183,7 +183,7 @@
         </tr>
     </thead>
     {% for result in results %}
-    <tr class="result {{ loop.cycle('odd', 'even') }}">
+    <tr class="result">
         <td class="result {{ result.result.value|e }}">{{ result.result.value|e }}</td>
         <td class="name">{{ result.name|e }}</td>
 {% if display_guest %}
