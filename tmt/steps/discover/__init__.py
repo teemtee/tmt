@@ -65,14 +65,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
             '-h', '--how', metavar='METHOD',
             help='Use specified method to discover tests.')
         def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            # TODO: This part should go into the 'fmf.py' module
-            if kwargs.get('fmf_id'):
-                # Set quiet, disable debug and verbose to avoid logging
-                # to terminal with discover --fmf-id
-                assert context.parent is not None
-                context.parent.params['quiet'] = True
-                context.parent.params['debug'] = 0
-                context.parent.params['verbose'] = 0
             context.obj.steps.add('discover')
             Discover._save_cli_context(context)
 
