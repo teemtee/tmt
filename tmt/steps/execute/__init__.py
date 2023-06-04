@@ -19,7 +19,7 @@ from tmt.queue import TaskOutcome
 from tmt.result import Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path
+from tmt.utils import Path, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -112,15 +112,24 @@ SCRIPTS = (
 
 @dataclasses.dataclass
 class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
-    # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
-    duration: str = '1h'
-    exit_first: bool = False
+    duration: str = field(
+        # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
+        default='1h',
+        option='--duration',
+        help='The maximal time allowed for the test to run.'
+        )
+    exit_first: bool = field(
+        default=False,
+        option=('-x', '--exit-first'),
+        is_flag=True,
+        help='Stop execution after the first test failure.')
 
 
 class ExecutePlugin(tmt.steps.Plugin):
     """ Common parent of execute plugins """
 
     _data_class = ExecuteStepData
+    data: ExecuteStepData
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
@@ -170,15 +179,6 @@ class ExecutePlugin(tmt.steps.Plugin):
 
         return execute
 
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        # Add option to exit after the first test failure
-        return [
-            option(
-                '-x', '--exit-first', is_flag=True,
-                help='Stop execution after the first test failure.'),
-            *super().options(how)]
-
     def go(
             self,
             *,
@@ -186,9 +186,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> None:
         super().go(guest=guest, environment=environment, logger=logger)
-        logger.verbose(
-            'exit-first', self.get('exit-first', default=False),
-            'green', level=2)
+        logger.verbose('exit-first', str(self.data.exit_first), 'green', level=2)
 
     @property
     def discover(self) -> tmt.steps.discover.Discover:
