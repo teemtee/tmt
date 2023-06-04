@@ -55,7 +55,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin):
         """ Discover available tests """
         super().go()
         # Show individual test results only in verbose mode
-        if not self.opt('verbose'):
+        if not self.verbosity_level:
             return
 
         if self.get('display-guest') == 'always':
@@ -73,4 +73,4 @@ class ReportDisplay(tmt.steps.report.ReportPlugin):
             display_guest = len(seen_guests) > 1
 
         for result in self.step.plan.execute.results():
-            self.details(result, self.opt('verbose'), display_guest)
+            self.details(result, self.verbosity_level, display_guest)

@@ -1434,7 +1434,10 @@ def status(
             "used together.")
     if not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
-    status_obj = tmt.Status(logger=context.obj.logger, cli_context=context)
+
+    status_obj = tmt.Status(
+        logger=context.obj.logger.clone().apply_verbosity_options(**kwargs),
+        cli_context=context)
     status_obj.show()
 
 

@@ -966,7 +966,7 @@ class BasePlugin(Phase):
         import tmt.base
 
         # Show empty config with default method only in verbose mode
-        if self.data.is_bare and not self.opt('verbose'):
+        if self.data.is_bare and not self.verbosity_level:
             return
         # Step name (and optional summary)
         echo(tmt.utils.format(

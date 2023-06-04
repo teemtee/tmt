@@ -413,7 +413,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Make sure download progress is disabled unless in debug mode,
         # so it does not spoil our logging
-        self.config.DOWNLOAD_PROGRESS = self.opt('debug') > 2
+        self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
         # Configure to tmt's storage directories

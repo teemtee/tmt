@@ -160,7 +160,7 @@ class InstallBase(tmt.utils.Common):
         """ Show package info and return package names """
 
         # Show a brief summary by default
-        if not self.opt('verbose'):
+        if not self.verbosity_level:
             summary = fmf.utils.listed(packages, max=3)
             self.info(title, summary, 'green')
         # Provide a full list of packages in verbose mode

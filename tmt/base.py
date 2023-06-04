@@ -1201,9 +1201,9 @@ class Test(
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
-        if self.opt('verbose'):
+        if self.verbosity_level:
             self._show_additional_keys()
-        if self.opt('verbose', 0) >= 2:
+        if self.verbosity_level >= 2:
             # Print non-empty unofficial attributes
             for key in sorted(self.node.get().keys()):
                 # Already asked to be printed
@@ -1819,11 +1819,11 @@ class Plan(
             echo(tmt.utils.format('tier', self.tier, key_color='cyan'))
         if self.link is not None:
             self.link.show()
-        if self.opt('verbose'):
+        if self.verbosity_level:
             self._show_additional_keys()
 
         # Show fmf id of the remote plan in verbose mode
-        if (self._original_plan or self._remote_plan_fmf_id) and self.opt('verbose'):
+        if (self._original_plan or self._remote_plan_fmf_id) and self.verbosity_level:
             # Pick fmf id from the original plan by default, use the
             # current plan in shallow mode when no plans are fetched.
             if self._original_plan is not None:
@@ -2302,7 +2302,7 @@ class Story(
             if value is not None and value != []:
                 wrap: tmt.utils.FormatWrap = False if key == 'example' else 'auto'
                 echo(tmt.utils.format(key, value, wrap=wrap))
-        if self.opt('verbose'):
+        if self.verbosity_level:
             self._show_additional_keys()
 
     def coverage(self, code: bool, test: bool, docs: bool) -> Tuple[bool, bool, bool]:
@@ -3221,9 +3221,9 @@ class Status(tmt.utils.Common):
         if not loaded:
             self.warn(f"Failed to load run '{run.workdir}': {error}")
             return
-        if self.opt('verbose') == 0:
+        if self.verbosity_level == 0:
             self.print_run_status(run)
-        elif self.opt('verbose') == 1:
+        elif self.verbosity_level == 1:
             self.print_plans_status(run)
         else:
             self.print_verbose_status(run)
@@ -3231,7 +3231,7 @@ class Status(tmt.utils.Common):
     def print_header(self) -> None:
         """ Print the header of the status table based on verbosity """
         header = ''
-        if self.opt('verbose') >= 2:
+        if self.verbosity_level >= 2:
             for step in tmt.steps.STEPS:
                 header += (step[0:4] + ' ')
             header += ' '

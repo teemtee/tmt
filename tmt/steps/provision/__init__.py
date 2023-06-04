@@ -576,9 +576,9 @@ class Guest(tmt.utils.Common):
 
     def _ansible_verbosity(self) -> List[str]:
         """ Prepare verbose level based on the --debug option count """
-        if self.opt('debug') < 3:
+        if self.debug_level < 3:
             return []
-        return ['-' + (self.opt('debug') - 2) * 'v']
+        return ['-' + (self.debug_level - 2) * 'v']
 
     @staticmethod
     def _ansible_extra_args(extra_args: Optional[str]) -> List[str]:

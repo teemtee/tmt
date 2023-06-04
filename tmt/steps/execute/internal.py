@@ -95,7 +95,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         """
         # Verbose mode outputs other information, using \r to
         # create a status bar wouldn't work.
-        if self.opt('verbose'):
+        if self.verbosity_level:
             return
 
         # No progress if terminal not attached or explicitly disabled
@@ -104,7 +104,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # For debug mode show just an info message (unless finishing)
         message = f"{test_name} [{progress}]" if not finish else ""
-        if self.opt('debug'):
+        if self.debug_level:
             if not finish:
                 self.info(message, shift=1)
             return
@@ -409,7 +409,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             results = self.check(test, guest)  # Produce list of results
             assert test.real_duration is not None  # narrow type
             duration = click.style(test.real_duration, fg='cyan')
-            shift = 1 if self.opt('verbose') < 2 else 2
+            shift = 1 if self.verbosity_level < 2 else 2
 
             # Handle reboot, abort, exit-first
             if self._will_reboot(test, guest):

@@ -986,18 +986,6 @@ class Common(_CommonBase):
         """
         # Translate dashes to underscores to match click's conversion
         option = option.replace('-', '_')
-        # Check the environment first
-        # TODO: moved to log.py
-        if option == 'debug':
-            try:
-                debug = os.environ['TMT_DEBUG']
-                return int(debug)
-            except ValueError:
-                raise GeneralError(
-                    f"Invalid debug level '{debug}', use an integer.")
-            except KeyError:
-                pass
-
         # Get local option
         local = self._cli_options.get(option, default)
         # Check parent option
@@ -1005,16 +993,27 @@ class Common(_CommonBase):
         if self.parent:
             parent = self.parent.opt(option)
         # Special handling for special flags (parent's yes always wins)
-        if option in ['quiet', 'force', 'dry']:
+        if option in ['force', 'dry']:
             return parent if parent else local
-        # Special handling for counting options (child overrides the
-        # parent if it was defined)
-        if option in ['debug', 'verbose']:
-            winner = local if local else parent
-            if winner is None:
-                winner = 0
-            return winner
         return parent if parent is not None else local
+
+    @property
+    def debug_level(self) -> int:
+        """ The current debug level applied to this object """
+
+        return self._logger.debug_level
+
+    @property
+    def verbosity_level(self) -> int:
+        """ The current verbosity level applied to this object """
+
+        return self._logger.verbosity_level
+
+    @property
+    def quietness(self) -> bool:
+        """ The current quietness level applied to this object """
+
+        return self._logger.quiet
 
     def _level(self) -> int:
         """ Hierarchy level """
@@ -1375,6 +1374,10 @@ class RunError(GeneralError):
         # Store instance of caller to get additional details
         # in post processing (e.g. verbose level)
         self.caller = caller
+        # Since logger may get swaped, to better reflect context (guests start
+        # with logger inherited from `provision` but may run under `prepare` or
+        # `finish`), save a logger for later.
+        self.logger = caller._logger if isinstance(caller, Common) else None
 
 
 class MetadataError(GeneralError):
@@ -1504,9 +1507,13 @@ def render_run_exception(exception: RunError) -> List[str]:
     lines: List[str] = []
 
     # Check verbosity level used during raising exception,
-    # Supported way to correctly get verbosity is
-    # tmt.util.Common.opt('verbose')
-    verbose = exception.caller.opt('verbose') if isinstance(exception.caller, Common) else 0
+    if exception.logger:
+        verbose = exception.logger.verbosity_level
+    elif isinstance(exception.caller, Common):
+        verbose = exception.caller.verbosity_level
+    else:
+        verbose = 0
+
     for name, output in (('stdout', exception.stdout), ('stderr', exception.stderr)):
         if not output:
             continue
