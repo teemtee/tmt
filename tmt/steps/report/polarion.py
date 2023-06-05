@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import os
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -35,77 +36,106 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         default=None,
         option='--project-id',
         metavar='ID',
-        help='Use specific Polarion project ID.'
+        help=(
+            'Use specific Polarion project ID, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PROJECT_ID.')
         )
 
     title: Optional[str] = field(
         default=None,
         option='--title',
         metavar='TITLE',
-        help='Use specific test run title.'
+        help=(
+            'Use specific test run title, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_TITLE.')
+        )
+
+    use_facts: bool = field(
+        default=False,
+        option=('--use-facts / --no-use-facts'),
+        is_flag=True,
+        help='Use hostname and arch from guest facts.'
         )
 
     planned_in: Optional[str] = field(
         default=None,
         option='--planned-in',
         metavar='PLANNEDIN',
-        help='Select a specific release to mark this test run with'
+        help=(
+            'Select a specific release to mark this test run with, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLANNED_IN.')
         )
 
     assignee: Optional[str] = field(
         default=None,
         option='--assignee',
         metavar='ASSIGNEE',
-        help='Who is responsible for this test run'
+        help=(
+            'Who is responsible for this test run, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_ASSIGNEE.')
         )
 
     pool_team: Optional[str] = field(
         default=None,
         option='--pool-team',
         metavar='POOLTEAM',
-        help='Which subsystem is this test run relevant for'
+        help=(
+            'Which subsystem is this test run relevant for, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_POOL_TEAM')
         )
 
     arch: Optional[str] = field(
         default=None,
         option='--arch',
         metavar='ARCH',
-        help='Which architecture was this run executed on'
+        help=(
+            'Which architecture was this run executed on, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_ARCH.')
         )
 
     platform: Optional[str] = field(
         default=None,
         option='--platform',
         metavar='PLATFORM',
-        help='Which platform was this run executed on'
+        help=(
+            'Which platform was this run executed on, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLATFORM.')
         )
 
     build: Optional[str] = field(
         default=None,
         option='--build',
         metavar='BUILD',
-        help='Which build was this run executed on'
+        help=(
+            'Which build was this run executed on, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_BUILD.')
         )
 
     sample_image: Optional[str] = field(
         default=None,
         option='--sample-image',
         metavar='SAMPLEIMAGE',
-        help='Which sample image was this run executed on'
+        help=(
+            'Which sample image was this run executed on, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_SAMPLE_IMAGE.')
         )
 
     logs: Optional[str] = field(
         default=None,
         option='--logs',
         metavar='LOGLOCATION',
-        help='Location of the logs for this test run'
+        help=(
+            'Location of the logs for this test run, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_LOGS.')
         )
 
-    composeid: Optional[str] = field(
+    compose_id: Optional[str] = field(
         default=None,
-        option='--composeid',
+        option='--compose-id',
         metavar='COMPOSEID',
-        help='Compose ID of image used for this run'
+        help=(
+            'Compose ID of image used for this run, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_COMPOSE_ID.')
         )
 
 
@@ -132,14 +162,17 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
         title = self.get(
             'title',
-            self.step.plan.name.rsplit('/', 1)[1] +
-            datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+            os.getenv(
+                'TMT_PLUGIN_REPORT_POLARION_TITLE',
+                self.step.plan.name.rsplit('/', 1)[1] +
+                datetime.datetime.now().strftime("%Y%m%d%H%M%S")))
         title = title.replace('-', '_')
-        project_id = self.get('project-id')
+        project_id = self.get('project-id', os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID'))
         upload = self.get('upload')
+        use_facts = self.get('use-facts')
         other_testrun_fields = [
             'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build', 'sample_image',
-            'logs', 'composeid']
+            'logs', 'compose_id']
 
         junit_suite = make_junit_xml(self)
         xml_tree = ET.fromstring(junit_suite.to_xml_string([junit_suite]))
@@ -150,9 +183,14 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             'polarion-testrun-title': title,
             'polarion-project-span-ids': project_id}
         for tr_field in other_testrun_fields:
-            param = self.get(tr_field)
+            param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
+            # TODO: remove the os.getenv when envvars in click work with steps in plans as well
+            # as with steps on cmdline
             if param:
                 properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
+        if use_facts:
+            properties['polarion_custom_hostname'] = self.step.plan.provision.guests()[0].guest
+            properties['polarion_custom_arch'] = self.step.plan.provision.guests()[0].facts.arch
         testsuites_properties = ET.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
             ET.SubElement(testsuites_properties, 'property', attrib={
@@ -211,8 +249,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             self.info(
                 f'Response code is {response.status_code} with text: {response.text}')
         else:
-            self.info(f"xUnit file saved at: {f_path}")
             self.info("Polarion upload can be done manually using command:")
             self.info(
                 "curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> "
                 "<POLARION_URL>/polarion/import/xunit")
+        self.info(f"xUnit file saved at: {f_path}")
