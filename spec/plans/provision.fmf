@@ -180,10 +180,6 @@ example: |
         :ref:`execution</spec/plans/discover/where>` should
         take place.
 
-        If guests need to be synchronized during the environment
-        preparation and test execution, group them under a common
-        dictionary which will ensure they are processed together.
-
     example: |
         # Request two guests
         provision:

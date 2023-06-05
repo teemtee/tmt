@@ -223,6 +223,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             destination=test_wrapper_filepath,
             options=["-s", "-p", "--chmod=755"])
 
+        # Create topology files
+        topology = tmt.steps.Topology(self.step.plan.provision.guests())
+        topology.guest = tmt.steps.GuestTopology(guest)
+
+        environment.update(topology.push(
+            dirpath=self.data_path(test, guest, full=True),
+            guest=guest,
+            logger=logger))
+
         # Prepare the actual remote command
         remote_command = ShellScript(f'./{test_wrapper_filename}')
         if self.get('interactive'):

@@ -1,13 +1,15 @@
 
 """ Step Classes """
 
+import collections
 import dataclasses
 import re
 import shutil
 import sys
 import textwrap
-from typing import (TYPE_CHECKING, Any, Callable, Dict, Generator, List,
-                    Optional, Tuple, Type, TypeVar, Union, cast, overload)
+from typing import (TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Generator,
+                    List, Optional, Tuple, Type, TypeVar, Union, cast,
+                    overload)
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -46,6 +48,8 @@ ACTIONS: List[str] = ['login', 'reboot']
 PHASE_START = 10
 PHASE_BASE = 50
 PHASE_END = 90
+
+TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
 
 
 class Phase(tmt.utils.Common):
@@ -1358,6 +1362,189 @@ class Login(Action):
 
 
 @dataclasses.dataclass
+class GuestTopology(tmt.utils.SerializableContainer):
+    """ Describes a guest in the topology of provisioned tmt guests """
+
+    name: str
+    role: Optional[str]
+    hostname: Optional[str]
+
+    def __init__(self, guest: 'Guest') -> None:
+        self.name = guest.name
+        self.role = guest.role
+        self.hostname = guest.guest
+
+
+@dataclasses.dataclass(init=False)
+class Topology(tmt.utils.SerializableContainer):
+    """ Describes the topology of provisioned tmt guests """
+
+    guest: Optional[GuestTopology]
+
+    guest_names: List[str]
+    guests: Dict[str, GuestTopology]
+
+    role_names: List[str]
+    roles: Dict[str, List[str]]
+
+    def __init__(self, guests: List['Guest']) -> None:
+        roles: DefaultDict[str, List['Guest']] = collections.defaultdict(list)
+
+        self.guest = None
+        self.guest_names: List[str] = []
+        self.guests = {}
+
+        for guest in guests:
+            self.guest_names.append(guest.name)
+
+            self.guests[guest.name] = GuestTopology(guest)
+
+            if guest.role:
+                roles[guest.role].append(guest)
+
+        self.role_names = list(roles.keys())
+        self.roles = {
+            role: [guest.name for guest in role_guests]
+            for role, role_guests in roles.items()
+            }
+
+    def save_yaml(self, dirpath: Path, filename: Optional[str] = None) -> Path:
+        """
+        Save the topology in a YAML file.
+
+        :param dirpath: a directory to save into.
+        :param filename: if set, it would be used, otherwise a filename is
+            created from :py:const:`TEST_TOPOLOGY_FILENAME_BASE` and ``.yaml``
+            suffix.
+        :returns: path to the saved file.
+        """
+
+        filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.yaml'
+        filepath = dirpath / filename
+
+        serialized = self.to_dict()
+
+        # Stick to using `-` for multiword keys.
+        # TODO: after https://github.com/teemtee/tmt/pull/2095/, this could
+        # be handled by SerializableContainer transparently.
+        serialized['guest-names'] = serialized.pop('guest_names')
+        serialized['role-names'] = serialized.pop('role_names')
+
+        filepath.write_text(tmt.utils.dict_to_yaml(serialized))
+
+        return filepath
+
+    def save_bash(self, dirpath: Path, filename: Optional[str] = None) -> Path:
+        """
+        Save the topology in a Bash-sourceable file.
+
+        :param dirpath: a directory to save into.
+        :param filename: if set, it would be used, otherwise a filename is
+            created from :py:const:`TEST_TOPOLOGY_FILENAME_BASE` and ``.sh``
+            suffix.
+        :returns: path to the saved file.
+        """
+
+        filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.sh'
+        filepath = dirpath / filename
+
+        lines: List[str] = []
+
+        def _emit_guest(guest: GuestTopology, variable: str,
+                        key: Optional[str] = None) -> List[str]:
+            return [
+                f'{variable}[{key or ""}name]="{guest.name}"',
+                f'{variable}[{key or ""}role]="{guest.role or ""}"',
+                f'{variable}[{key or ""}hostname]="{guest.hostname or ""}"'
+                ]
+
+        if self.guest:
+            lines += [
+                'declare -A TMT_GUEST',
+                *_emit_guest(self.guest, 'TMT_GUEST'),
+                ''
+                ]
+
+        lines += [
+            f'TMT_GUEST_NAMES="{" ".join(self.guest_names)}"',
+            '',
+            'declare -A TMT_GUESTS'
+            ]
+
+        for guest_info in self.guests.values():
+            lines += _emit_guest(guest_info, 'TMT_GUESTS', key=f'{guest_info.name}.')
+
+        lines += [
+            '',
+            f'TMT_ROLE_NAMES="{" ".join(self.role_names)}"',
+            '',
+            'declare -A TMT_ROLES'
+            ]
+
+        for role, guest_names in self.roles.items():
+            lines += [
+                f'TMT_ROLES[{role}]="{" ".join(guest_names)}"'
+                ]
+
+        filepath.write_text("\n".join(lines))
+
+        return filepath
+
+    def save(
+            self,
+            *,
+            dirpath: Path,
+            filename_base: Optional[str] = None) -> List[Path]:
+        """
+        Save the topology in files.
+
+        :param dirpath: a directory to save into.
+        :param filename_base: if set, it would be used as a base for filenames,
+            correct suffixes would be added.
+        :returns: list of paths to saved files.
+        """
+
+        return [
+            self.save_yaml(dirpath, filename=(f'{filename_base}.yaml' if filename_base else None)),
+            self.save_bash(dirpath, filename=(f'{filename_base}.sh' if filename_base else None))
+            ]
+
+    def push(
+            self,
+            *,
+            dirpath: Path,
+            guest: 'Guest',
+            filename_base: Optional[str] = None,
+            logger: tmt.log.Logger) -> EnvironmentType:
+        """
+        Save and push topology to a given guest.
+        """
+
+        topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
+
+        environment: EnvironmentType = {}
+
+        for filepath in topology_filepaths:
+            logger.debug('test topology', str(filepath))
+
+            guest.push(
+                source=filepath,
+                destination=filepath,
+                options=["-s", "-p", "--chmod=755"])
+
+            if filepath.suffix == '.sh':
+                environment['TMT_TOPOLOGY_BASH'] = str(filepath)
+
+            elif filepath.suffix == '.yaml':
+                environment['TMT_TOPOLOGY_YAML'] = str(filepath)
+
+            else:
+                raise tmt.utils.GeneralError(f"Unhandled topology file '{filepath}'.")
+
+        return environment
+
+
+@dataclasses.dataclass
 class QueuedPhase(GuestlessTask, Task):
     """ A phase to run on one or more guests """
 
@@ -1383,52 +1570,6 @@ class QueuedPhase(GuestlessTask, Task):
     def name(self) -> str:
         return self.phase_name
 
-    def prepare_environment(self) -> EnvironmentType:
-        """
-        Prepare environment variables related to phase and its guests.
-        """
-
-        if self._environment is not None:
-            return self._environment
-
-        self._environment = {}
-
-        # TODO: Somewhat legacy variable, just a temporary solution.
-        # TODO: *Probably* makes sense only with more than one guest?
-        if len(self.guests) != 1:
-            self._environment['SERVERS'] = ' '.join(
-                guest.guest for guest in self.guests if guest.guest
-                )
-
-        # For each role, emit a variable named `TMT_ROLE_$rolename`, listing
-        # guests with this role.
-        _roles = [
-            guest.role for guest in self.guests if guest.role is not None
-            ]
-
-        for role in _roles:
-            self._environment[f'TMT_ROLE_{role}'] = ' '.join(
-                guest.guest
-                for guest in self.guests
-                if guest.role == role and guest.guest
-                )
-
-        return self._environment
-
-    def prepare_guest_environment(
-            self,
-            guest: 'Guest') -> EnvironmentType:
-        """
-        Prepare environment variables related to phase and a particular guest.
-        """
-
-        environment = self.prepare_environment().copy()
-
-        environment['TMT_GUEST_ROLE'] = guest.role or ''
-        environment['TMT_GUEST_HOSTNAME'] = guest.guest or ''
-
-        return environment
-
     def run(self, logger: tmt.log.Logger) -> None:
         assert isinstance(self.phase, Action)  # narrow type
 
@@ -1439,7 +1580,6 @@ class QueuedPhase(GuestlessTask, Task):
 
         self.phase.go(
             guest=guest,
-            environment=self.prepare_guest_environment(guest),
             logger=logger)
 
     def go(self) -> Generator[TaskOutcome['Self'], None, None]:

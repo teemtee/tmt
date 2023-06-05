@@ -214,18 +214,6 @@ class Prepare(tmt.steps.Step):
                 missing='skip')
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
-        # Implicit multihost setup
-        if self.plan.provision.is_multihost:
-            data = dict(
-                how='multihost',
-                name='multihost',
-                summary='Setup guest for multihost testing',
-                order=tmt.utils.DEFAULT_PLUGIN_ORDER_MULTIHOST,
-                roles=self._prepare_roles(),
-                hosts=self._prepare_hosts(),
-                )
-            self._phases.append(PreparePlugin.delegate(self, raw_data=data))
-
         # Prepare guests (including workdir sync)
         guest_copies: List[Guest] = []
 
