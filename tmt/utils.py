@@ -4694,6 +4694,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization - not needed, the field is a boolean
@@ -4716,6 +4717,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
@@ -4737,6 +4739,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
@@ -4758,6 +4761,7 @@ def field(
         choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
         multiple: bool = False,
         metavar: Optional[str] = None,
+        envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         # Input data normalization
@@ -4790,6 +4794,8 @@ def field(
         Passed directly to :py:func:`click.option`.
     :param metavar: how the input value is represented in the help page.
         Passed directly to :py:func:`click.option`.
+    :param envvar: environment variable used for this option.
+        Passed directly to :py:func:`click.option`.
     :param deprecated: mark the option as deprecated
         Provide an instance of Deprecated() with version in which the
         option was obsoleted and an optional hint with the recommended
@@ -4818,6 +4824,7 @@ def field(
             'is_flag': is_flag,
             'multiple': multiple,
             'metavar': metavar,
+            'envvar': envvar,
             'help': help,
             'deprecated': deprecated
             }
