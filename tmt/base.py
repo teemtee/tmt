@@ -38,7 +38,8 @@ import tmt.utils
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultOutcome
 from tmt.utils import (Command, EnvironmentType, FmfContextType, Path,
-                       ShellScript, WorkdirArgumentType, field, verdict)
+                       ShellScript, WorkdirArgumentType, field,
+                       normalize_shell_script, verdict)
 
 if sys.version_info >= (3, 8):
     from typing import Literal, TypedDict
@@ -911,8 +912,7 @@ class Test(
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
     test: Optional[ShellScript] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger:
-            None if raw_value is None else ShellScript(raw_value))
+        normalize=normalize_shell_script)
     path: Optional[Path] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger:

@@ -4391,6 +4391,25 @@ def normalize_shell_script_list(
     raise NormalizationError(key_address, value, 'a string or a list of strings')
 
 
+def normalize_shell_script(
+        key_address: str,
+        value: Union[None, str],
+        logger: tmt.log.Logger) -> Optional[ShellScript]:
+    """
+    Normalize a single shell script input that may be unset.
+
+    :param value: input value from key source.
+    """
+
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return ShellScript(value)
+
+    raise NormalizationError(key_address, value, 'a string')
+
+
 def normalize_fmf_context(
         key_address: str,
         value: Optional[Dict[Any, Any]],
