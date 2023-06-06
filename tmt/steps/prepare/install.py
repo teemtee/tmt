@@ -521,7 +521,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         )
 
 
-@ tmt.steps.provides_method('install')
+@tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin):
     """
     Install packages on the guest
