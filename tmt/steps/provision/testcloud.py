@@ -635,9 +635,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             if value is not None:
                 try:
                     setattr(data, int_key, int(value))
-                except ValueError:
-                    raise tmt.utils.SpecificationError(
-                        f"Value '{value}' cannot be converted to int for '{int_key}' attribute.")
+                except ValueError as exc:
+                    raise tmt.utils.NormalizationError(
+                        f'{self.name}:{int_key}', value, 'an integer') from exc
 
         for key, value in data.items():
             if key == 'memory':

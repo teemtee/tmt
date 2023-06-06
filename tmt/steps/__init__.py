@@ -999,7 +999,8 @@ class BasePlugin(Phase):
             if value is None or value == [] or value == () or value is False:
                 continue
 
-            tmt.utils.dataclass_normalize_field(self.data, keyname, value, self._logger)
+            tmt.utils.dataclass_normalize_field(
+                self.data, f'{self.name}:{keyname}', keyname, value, self._logger)
 
     def wake(self) -> None:
         """

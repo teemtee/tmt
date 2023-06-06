@@ -139,7 +139,10 @@ def test_link():
             note=fmf_id['note'])]
 
     # Invalid links and relations
-    with pytest.raises(SpecificationError, match='Invalid link'):
+    with pytest.raises(
+            SpecificationError,
+            match="Field 'link' must be a string, a fmf id or a list of their combinations,"
+                  " 'int' found."):
         Links(data=123)
     with pytest.raises(SpecificationError, match='Multiple relations'):
         Links(data=dict(verifies='one', blocks='another'))

@@ -39,7 +39,7 @@ class TestDescription(
     # soon as possible - nobody want's to keep two very same lists of attributes.
     test: ShellScript = field(
         default=ShellScript(''),
-        normalize=lambda raw_value, logger: ShellScript(raw_value),
+        normalize=lambda key_address, raw_value, logger: ShellScript(raw_value),
         serialize=lambda test: str(test),
         unserialize=lambda serialized_test: ShellScript(serialized_test)
         )
@@ -51,11 +51,12 @@ class TestDescription(
     order: int = field(
         # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
         default=50,
-        normalize=lambda raw_value, logger: 50 if raw_value is None else int(raw_value)
+        normalize=lambda key_address, raw_value, logger:
+            50 if raw_value is None else int(raw_value)
         )
     link: Optional[tmt.base.Links] = field(
         default=None,
-        normalize=lambda raw_value, logger: tmt.base.Links(data=raw_value),
+        normalize=lambda key_address, raw_value, logger: tmt.base.Links(data=raw_value),
         # Using `to_spec()` on purpose: `Links` does not provide serialization
         # methods, because specification of links is already good enough. We
         # can use existing `to_spec()` method, and undo it with a simple
@@ -74,11 +75,12 @@ class TestDescription(
         )
     tier: Optional[str] = field(
         default=None,
-        normalize=lambda raw_value, logger: None if raw_value is None else str(raw_value)
+        normalize=lambda key_address, raw_value, logger:
+            None if raw_value is None else str(raw_value)
         )
     adjust: Optional[List[tmt.base._RawAdjustRule]] = field(
         default=None,
-        normalize=lambda raw_value, logger: [] if raw_value is None else (
+        normalize=lambda key_address, raw_value, logger: [] if raw_value is None else (
             [raw_value] if not isinstance(raw_value, list) else raw_value
             )
         )
@@ -149,7 +151,7 @@ class TestDescription(
 class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
     tests: List[TestDescription] = field(
         default_factory=list,
-        normalize=lambda raw_value, logger: [
+        normalize=lambda key_address, raw_value, logger: [
             TestDescription.from_spec(raw_datum, logger)
             for raw_datum in cast(List[Dict[str, Any]], raw_value)
             ],
