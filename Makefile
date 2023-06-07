@@ -92,3 +92,4 @@ clean:
 	rm -f .coverage tags
 	rm -rf examples/convert/{main.fmf,test.md,Manual}
 	rm -f tests/full/repo_copy.tgz
+	make -C docs/ clean
