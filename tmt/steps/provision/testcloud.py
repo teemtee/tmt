@@ -653,6 +653,11 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             elif key == 'ssh_option':
                 if value:
                     self.info('ssh options', fmf.utils.listed(value), 'green')
+            elif key == 'facts':
+                # TODO Remove once the general method for showing
+                # provision data is implemented. For details see:
+                # https://github.com/teemtee/tmt/issues/2117
+                continue
             elif value is not None:
                 self.info(key, value, 'green')
 
