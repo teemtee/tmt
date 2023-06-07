@@ -21,9 +21,6 @@ definitions:
     properties:
       method:
         type: string
-        enum:
-          - bios
-          - uefi
 
     additionalProperties: false
 
@@ -197,10 +194,6 @@ definitions:
 
       hypervisor:
         type: string
-        enum:
-          - nitro
-          - kvm
-          - xen
 
     additionalProperties: false
 
