@@ -88,6 +88,8 @@ Go on and explore. Don't be shy and ask, ``--help`` is eager to
 answer all your questions ;-)
 
 
+.. _lint:
+
 Checking data validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
