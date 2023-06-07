@@ -88,15 +88,44 @@ Go on and explore. Don't be shy and ask, ``--help`` is eager to
 answer all your questions ;-)
 
 
+.. _lint:
+
 Checking data validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is easy to introduce a syntax error to one of the fmf files and
-make the whole tree broken. You should run ``tmt lint`` before
-pushing changes, ideally even before you commit your changes.
+make the whole tree broken. ``tmt lint`` is here for you, and offers
+a broad variety of options to control what checks are applied on tests,
+plans and stories:
 
-You can set up `pre-commit`__ to do it for you. Add to your
-repository's ``.pre-commit-config.yaml``::
+.. code-block:: console
+
+    # Lint everything, everywhere
+    tmt lint
+
+    # Lint just selected plans
+    tmt lint /plans/features
+    tmt plans lint /plans/features
+
+    # Change the set of checks applied - enable some, disable others
+    tmt lint --enable-check T001 --disable-check C002
+
+To find out what checks are available, use ``--list-checks`` option:
+
+.. code-block:: console
+
+    # All checks tmt has for tests, plans and stories
+    tmt lint --list-checks
+
+    # All checks tmt has for tests
+    tmt test lint --list-checks
+
+For the full list of options, see ``tmt lint --help``. Available
+checks are documented at :ref:`lint-checks`.
+
+You should run ``tmt lint`` before pushing changes, ideally even
+before you commit your changes. You can set up `pre-commit`__ to
+do it for you. Add to your repository's ``.pre-commit-config.yaml``::
 
     repos:
     - repo: https://github.com/teemtee/tmt.git

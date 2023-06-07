@@ -14,8 +14,11 @@
 
 import os
 import sys
+from typing import List
 from unittest.mock import Mock as MagicMock
 
+import tmt.base
+import tmt.lint
 import tmt.plugins
 import tmt.utils
 from tmt.utils import Path
@@ -290,3 +293,20 @@ for area in areas:
             if story.enabled:
                 doc.write(story.export(format='rst', include_title=story.name != area))
                 doc.write('\n\n')
+
+
+# Render list of lint checks
+def _sort_linters(linters: List[tmt.lint.Linter]) -> List[tmt.lint.Linter]:
+    return sorted(linters, key=lambda x: x.id)
+
+
+linters = {
+    'TEST_LINTERS': _sort_linters(tmt.base.Test.get_linter_registry()),
+    'PLAN_LINTERS': _sort_linters(tmt.base.Plan.get_linter_registry()),
+    'STORY_LINTERS': _sort_linters(tmt.base.Story.get_linter_registry()),
+    }
+
+
+with open('spec/lint.rst', 'w') as f:
+    f.write(tmt.utils.render_template_file(tmt.utils.Path('lint-checks.rst.j2'), **linters))
+    f.flush()

@@ -273,7 +273,7 @@ LINT_OPTIONS: List[ClickOptionDecoratorType] = [
         metavar='CHECK-ID',
         multiple=True,
         type=str,
-        help='Consider linting as failed if any of the checks is not a pass.'),
+        help='Consider linting as failed if any of the mentioned checks is not a pass.'),
     option(
         '--failed-only',
         is_flag=True,
