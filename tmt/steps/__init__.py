@@ -947,6 +947,12 @@ class BasePlugin(Phase):
             if key == 'summary':
                 return
 
+            # TODO: this field belongs to provision, but does it even make sense
+            # to *show* this field? When a plan is shown, there is no guest to
+            # speak about, nothing is provisioned...
+            if key == 'facts':
+                return
+
             value = self.get(key)
 
             # No need to show the default order
