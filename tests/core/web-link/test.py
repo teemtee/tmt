@@ -1,9 +1,25 @@
 import re
 
 import tmt
+import tmt.utils
 
-tree = tmt.Tree(logger=tmt.Logger.create(), path='data')
-prefix = r'https://github.com/.*/tmt/tree/.*/tests/core/web-link/data/'
+logger = tmt.Logger.create()
+tree = tmt.Tree(logger=logger, path='data')
+
+# Try to find out what git thinks about the origin of the repository.
+# This should deal with custom SSH `Host` config one might have for
+# Github.
+try:
+    output = tmt.utils.Command('git', 'config', '--get', 'remote.origin.url').run(
+        cwd=None,
+        logger=logger)
+
+    base_url = output.stdout.strip().replace('.git', '')
+
+except tmt.utils.RunError:
+    base_url = r'https://github.com/.*/tmt'
+
+prefix = rf'{base_url}/tree/.*/tests/core/web-link/data/'
 
 
 def test_stories():
