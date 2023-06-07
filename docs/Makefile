@@ -7,7 +7,7 @@ SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
 
-GENERATED_SOURCES := docs/lint-checks.rst
+GENERATED_SOURCES := lint-checks.rst
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
