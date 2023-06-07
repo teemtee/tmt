@@ -54,4 +54,4 @@ Level 3: Stories
     spec/stories
     spec/context
     spec/hardware
-    lint-checks
+    spec/lint

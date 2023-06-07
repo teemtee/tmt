@@ -2,7 +2,6 @@
 
 /tmp/
 docs/_build
-docs/lint-checks.rst
 docs/spec
 docs/stories
 

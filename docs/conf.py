@@ -307,6 +307,6 @@ linters = {
     }
 
 
-with open('lint-checks.rst', 'w') as f:
+with open('spec/lint.rst', 'w') as f:
     f.write(tmt.utils.render_template_file(tmt.utils.Path('lint-checks.rst.j2'), **linters))
     f.flush()
