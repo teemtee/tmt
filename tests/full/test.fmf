@@ -34,6 +34,7 @@ require:
 recommend:
 - guestfs-tools
 - python3-docutils
+- python3-coverage
 duration: 4h
 extra-hardware: |
   keyvalue=HVM=1
