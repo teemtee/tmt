@@ -323,3 +323,124 @@ provides a flexible way to adjust metadata based on the
 :ref:`/spec/context`.  But this is rather a large topic, so let's
 keep it for another time. In the next chapter we'll learn how to
 comfortably create new tests and plans.
+
+
+Multihost Testing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 1.24
+
+Support for basic server/client scenarios is now available.
+
+The ``prepare``, ``execute``, and ``finish`` steps are able to run a
+given task (test, preparation script, ansible playbook, etc.) on
+several guests at once. Tasks are assigned to provisioned guests by
+matching the ``where`` key from
+:ref:`discover</spec/plans/discover/where>`,
+:ref:`prepare</spec/plans/prepare/where>` and ``finish`` phases
+with corresponding guests by their
+:ref:`key and role keys</spec/plans/provision/multihost>`.
+Essentially, plan author tells tmt on which guest(s) a test or
+script should run by listing guest name(s) or guest role(s).
+
+The granularity of the multihost scenario is on the step phase
+level. The user may define multiple ``discover``, ``prepare`` and
+``finish`` phases, and everything in them will start on given guests
+at the same time when the previous phase completes. The practical
+effect is, tmt does not manage synchronization on the test level:
+
+.. code-block:: yaml
+
+    discover:
+      - name: server-setup
+        how: fmf
+        test:
+          - /tests/A
+        where:
+          - server
+
+      - name: tests
+        how: fmf
+        test:
+          - /tests/B
+          - /tests/C
+        where:
+          - server
+          - client
+
+In this example, first, everything from the ``server-setup`` phase
+would run on guests called ``server``, while guests with the name or
+role ``client`` would remain idle. When this phase completes, tmt
+would move to the next one, and run everything in ``tests`` on
+``server`` and ``client`` guests. The phase would be started at the
+same time, more or less, but tmt will not even try to synchronize
+the execution of each test from this phase. ``/tests/B`` may still
+be running on ``server`` when ``/tests/C`` is already completed on
+``client``.
+
+tmt exposes information about guests and roles to all three steps in
+the form of files tests and scripts can parse or import.
+See the :ref:`/spec/plans/guest-topology` for details. Information
+from these files can be then used to contact other guests, connect
+to their services, synchronization, etc.
+
+tmt fully supports one test being executed multiple times. This is
+especially visible in the format of results, see
+:ref:`/spec/plans/results`. Every test is assigned a "serial
+number", if the same test appears in multiple discover phases, each
+instance would be given a different serial number. The serial number
+and the guest from which a result comes from are then saved for each
+test result.
+
+.. note::
+
+    As a well-mannered project, tmt of course has a battery of tests
+    to make sure the multihost support does not break down. The
+    `/tests/multihost/complete`__ test may serve as an inspiration
+    for your experiments.
+
+Current limits
+------------------------------------------------------------------
+
+.. note::
+
+    For the most up-to-date list of issues related to multihost,
+    our Github can display all isues with the `multihost`__ label.
+
+* requirements of all tests (:ref:`/spec/tests/require`,
+  :ref:`/spec/tests/recommend`) are installed on all guests. See
+  `this issue`__ for more details.
+* test-level synchronization, as described above, is not
+  implemented, and this is probably not going to change any time
+  soon. For the test-level synchronization, please use dedicated
+  libraries, e.g. one of the following:
+
+  * `RHTS support`__ in Beaker ``rhts-sync-block`` and
+    ``rhts-sync-set``,
+  * `a beakerlib library`__ by Ondrej Moris, utilizes a shared
+    storage, two-hosts only,
+  * `a rhts-like distributed version`__ by Karel Srot,
+  * `a native beakerlib library`__ by Dalibor Pospisil, a
+    distributed version of Ondrej Moris's library, supporting any
+    number of hosts.
+
+* interaction between guests provisioned by different plugins. Think
+  "a server from ``podman`` plugin vs client from ``virtual``".
+  This is not yet supported, see these issues: `here`__
+  and `here`__.
+* ``provision`` step is still running in sequence, guests are
+  provisioned one by one. This is not technically necessary, and
+  with tools we now have for handling parallelization of other
+  steps, provisioning deserves the same treatment, resulting in,
+  hopefully, a noticeable speed up (especially with plugins like
+  ``beaker`` or ``artemis``).
+
+__ https://github.com/teemtee/tmt/tree/main/tests/multihost/complete/data
+__ https://github.com/teemtee/tmt/labels/multihost
+__ https://github.com/teemtee/tmt/issues/2010
+__ https://github.com/beaker-project/rhts
+__ https://github.com/beakerlib/sync/tree/master/sync
+__ https://github.com/RedHat-SP-Security/keylime-tests/tree/main/Library/sync
+__ https://github.com/beakerlib/ControlFlow/tree/master/sync
+__ https://github.com/teemtee/tmt/issues/2047
+__ https://github.com/teemtee/tmt/issues/2046

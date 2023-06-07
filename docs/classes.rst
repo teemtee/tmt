@@ -76,7 +76,6 @@ step::
                 ├── PrepareAnsible
                 │   └── FinishAnsible
                 ├── PrepareInstall
-                ├── PrepareMultihost
                 └── PrepareShell
 
 
@@ -114,7 +113,6 @@ plugins::
             ├── PrepareStepData
             │   ├── PrepareAnsibleData
             │   ├── PrepareInstallData
-            │   ├── PrepareMultihostData
             │   └── PrepareShellData
             ├── ProvisionStepData
             │   ├── ProvisionArtemisData

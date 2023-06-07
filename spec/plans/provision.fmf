@@ -163,6 +163,8 @@ example: |
     summary: Multihost testing specification
 
     description: |
+        .. versionchanged:: 1.24
+
         As a part of the provision step it is possible to request
         multiple guests to be provisioned for testing. Each guest
         has to be assigned a unique ``name`` which is used to
@@ -179,6 +181,10 @@ example: |
         tasks should be applied or where the test
         :ref:`execution</spec/plans/discover/where>` should
         take place.
+
+        See :ref:`/spec/plans/guest-topology` for details on how
+        this information is exposed to tests and ``prepare`` and
+        ``finish`` tasks.
 
     example: |
         # Request two guests
@@ -200,3 +206,8 @@ example: |
             role: client
           - name: tester-two
             role: client
+
+    link:
+      - implemented-by: /tmt/steps/__init__.py
+      - implemented-by: /tmt/queue.py
+      - verified-by: /tests/multihost
