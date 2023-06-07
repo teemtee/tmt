@@ -174,7 +174,7 @@ def test_workdir_env_var(tmpdir, monkeypatch, root_logger):
 
 def test_workdir_root_full(tmpdir, monkeypatch, root_logger):
     """ Raise if all ids lower than WORKDIR_MAX are exceeded """
-    monkeypatch.setattr(tmt.utils, 'WORKDIR_ROOT', Path(str(tmpdir)))
+    monkeypatch.setenv('TMT_WORKDIR_ROOT', str(tmpdir))
     monkeypatch.setattr(tmt.utils, 'WORKDIR_MAX', 1)
     possible_workdir = Path(str(tmpdir)) / 'run-001'
     # First call success
