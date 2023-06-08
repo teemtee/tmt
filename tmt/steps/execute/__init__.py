@@ -423,6 +423,13 @@ class ExecutePlugin(tmt.steps.Plugin):
                 result=ResultOutcome.ERROR,
                 guest=guest)]
 
+        if not results:
+            return [tmt.Result.from_test(
+                test=test,
+                note="custom results are empty",
+                result=ResultOutcome.ERROR,
+                guest=guest)]
+
         custom_results = []
         for partial_result_data in results:
             partial_result = tmt.Result.from_serialized(partial_result_data)
