@@ -19,8 +19,13 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           ref: ${{ github.event.inputs.ref }}
-      - name: Create dist
-        run: make wheel
+      - name: Install dependencies
+        run: sudo apt-get install -y python3-docutils
+      - name: Create dist and tarball
+        run: |
+          make tarball
+          make wheel
+          mv tmp/SOURCES/*.tar.gz dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -13,7 +13,7 @@ ExcludeArch: %{power64}
 %endif
 
 URL: https://github.com/teemtee/tmt
-Source0: https://github.com/teemtee/tmt/archive/refs/tags/%{version}.tar.gz
+Source0: %pypi_source
 
 %define workdir_root /var/tmp/tmt
 
