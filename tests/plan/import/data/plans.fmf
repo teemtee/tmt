@@ -27,3 +27,14 @@
         import:
             url: https://github.com/teemtee/fmf
             name: /plans/features
+
+/dynamic-ref:
+    summary: Git URL and dynamic ref
+    context:
+        distro: fedora
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            ref: "@tests/discover/data/dynamic-ref.fmf"
+            path: /tests/discover/data
+            name: /plans/smoke

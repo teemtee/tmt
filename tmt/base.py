@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import time
 from typing import (
     TYPE_CHECKING,
@@ -60,6 +61,7 @@ from tmt.utils import (
     ShellScript,
     WorkdirArgumentType,
     field,
+    git_clone,
     normalize_shell_script,
     verdict,
     )
@@ -2055,49 +2057,92 @@ class Plan(
         if not self.is_remote_plan_reference:
             return None
 
-        if not self._imported_plan:
-            assert self._remote_plan_fmf_id is not None  # narrow type
-            plan_id = self._remote_plan_fmf_id
-            self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
+        if self._imported_plan:
+            return self._imported_plan
 
-            # Clone the whole git repository if executing tests (run is attached)
-            if self.my_run and not self.my_run.opt('dry'):
-                assert self.parent is not None  # narrow type
-                assert self.parent.workdir is not None  # narrow type
-                destination = self.parent.workdir / "import" / self.name.lstrip("/")
-                if plan_id.url is None:
-                    raise tmt.utils.SpecificationError(
-                        f"No url provided for remote plan '{self.name}'.")
-                if destination.exists():
-                    self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
-                else:
-                    tmt.utils.git_clone(plan_id.url, destination, self)
+        assert self._remote_plan_fmf_id is not None  # narrow type
+        plan_id = self._remote_plan_fmf_id
+        self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
+
+        # Clone the whole git repository if executing tests (run is attached)
+        if self.my_run and not self.my_run.opt('dry'):
+            assert self.parent is not None  # narrow type
+            assert self.parent.workdir is not None  # narrow type
+            destination = self.parent.workdir / "import" / self.name.lstrip("/")
+            if plan_id.url is None:
+                raise tmt.utils.SpecificationError(
+                    f"No url provided for remote plan '{self.name}'.")
+            if destination.exists():
+                self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
+            else:
+                tmt.utils.git_clone(plan_id.url, destination, self)
+            if plan_id.ref:
+                # Attempt to evaluate dynamic reference
+                try:
+                    dynamic_ref = resolve_dynamic_ref(
+                        workdir=destination,
+                        ref=plan_id.ref,
+                        plan=self,
+                        logger=self._logger
+                        )
+                    if plan_id.ref != dynamic_ref:
+                        self.debug(f"Update 'ref' to '{dynamic_ref}'.")
+                        plan_id.ref = dynamic_ref
+                except tmt.utils.FileError as error:
+                    raise tmt.utils.DiscoverError(
+                        f"Failed to resolve dynamic ref of '{plan_id.ref}'.") from error
                 if plan_id.ref:
                     self.run(Command('git', 'checkout', plan_id.ref), cwd=destination)
-                if plan_id.path:
-                    destination = destination / plan_id.path.unrooted()
-                node = fmf.Tree(str(destination)).find(plan_id.name)
+            if plan_id.path:
+                destination = destination / plan_id.path.unrooted()
+            node = fmf.Tree(str(destination)).find(plan_id.name)
 
-            # Use fmf cache for exploring plans (the whole git repo is not needed)
-            else:
-                try:
-                    node = fmf.Tree.node(plan_id.to_minimal_spec())
-                except fmf.utils.FetchError as error:
-                    raise tmt.utils.GitUrlError(
-                        f"Failed to import remote plan '{self.name}', "
-                        f"use '--shallow' to skip cloning repositories.\n{error}")
+        # Use fmf cache for exploring plans (the whole git repo is not needed)
+        else:
+            if str(plan_id.ref).startswith('@'):
+                self.debug(f"Not enough data to evaluate dynamic ref '{plan_id.ref}', "
+                           "going to clone the repository to read dynamic ref definition.")
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                    git_clone(str(plan_id.url), Path(tmpdirname), self, None, shallow=True)
+                    self.run(Command(
+                        'git', 'checkout', 'HEAD', str(plan_id.ref)[1:]),
+                        cwd=Path(tmpdirname))
+                    # Attempt to evaluate dynamic reference
+                    try:
+                        dynamic_ref = resolve_dynamic_ref(
+                            workdir=Path(tmpdirname),
+                            ref=plan_id.ref,
+                            plan=self,
+                            logger=self._logger
+                            )
+                        if plan_id.ref != dynamic_ref:
+                            self.debug(f"Update 'ref' to '{dynamic_ref}'.")
+                            plan_id.ref = dynamic_ref
+                    except tmt.utils.FileError as error:
+                        raise tmt.utils.DiscoverError(
+                            f"Failed to resolve dynamic ref of '{plan_id.ref}'.") from error
+            try:
+                node = fmf.Tree.node(plan_id.to_minimal_spec())
+            except fmf.utils.FetchError as error:
+                raise tmt.utils.GitUrlError(
+                    f"Failed to import remote plan '{self.name}', "
+                    f"use '--shallow' to skip cloning repositories.\n{error}")
+        if not node:
+            raise tmt.utils.DiscoverError(
+                f"Failed to find plan '{plan_id.name}' "
+                f"at 'url: {plan_id.url}, 'ref: {plan_id.ref}'.")
+        # Override the plan name with the local one to ensure unique names
+        node.name = self.name
+        # Create the plan object, save links between both plans
+        self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger.descend())
+        self._imported_plan._original_plan = self
 
-            # Override the plan name with the local one to ensure unique names
-            node.name = self.name
-            # Create the plan object, save links between both plans
-            self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger.descend())
-            self._imported_plan._original_plan = self
-
-            self._imported_plan.environment.update(self.environment)
-            with tmt.utils.modify_environ(self.environment):
-                self._expand_node_data(node.data, {
-                    key: ','.join(value)
-                    for (key, value) in self._fmf_context.items()})
+        # Update imported plan environment with the local environment
+        self._imported_plan.environment.update(self.environment)
+        with tmt.utils.modify_environ(self.environment):
+            self._expand_node_data(node.data, {
+                key: ','.join(value)
+                for (key, value) in self._fmf_context.items()})
 
         return self._imported_plan
 

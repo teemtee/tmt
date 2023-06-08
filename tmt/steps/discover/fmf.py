@@ -304,6 +304,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             if not url:
                 assert_git_url(self.step.plan.name)
 
+        self.log_import_plan_details()
+
         # Clone provided git repository (if url given) with disabled
         # prompt to ignore possibly missing or private repositories
         if url:

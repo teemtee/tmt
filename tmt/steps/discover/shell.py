@@ -286,6 +286,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         assert self.workdir is not None
         testdir = self.workdir / "tests"
 
+        self.log_import_plan_details()
+
         # Fetch remote repository
         url = self.get('url', None)
         ref = self.get('ref', None)

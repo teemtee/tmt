@@ -115,6 +115,20 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
                 Command("tar", "--auto-compress", "--extract", "-f", source_name),
                 cwd=target_dir)
 
+    def log_import_plan_details(self) -> None:
+        """
+        Log details about the imported plan
+        """
+        parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
+        if parent and parent.plan._original_plan and \
+                parent.plan._original_plan._remote_plan_fmf_id:
+            remote_plan_id = parent.plan._original_plan._remote_plan_fmf_id
+            # FIXME: cast() - https://github.com/python/mypy/issues/7981
+            # Note the missing Optional for values - to_minimal_dict() would
+            # not include unset keys, therefore all values should be valid.
+            for key, value in cast(Dict[str, str], remote_plan_id.to_minimal_spec()).items():
+                self.verbose(f'import {key}', value, 'green')
+
 
 class Discover(tmt.steps.Step):
     """ Gather information about test cases to be executed. """

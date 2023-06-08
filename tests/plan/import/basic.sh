@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseStartTest "Explore Plans"
         rlRun -s "tmt plan"
         rlAssertNotGrep "warn" $rlRun_LOG
-        rlAssertGrep "Found 4 plans" $rlRun_LOG
+        rlAssertGrep "Found 5 plans" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Show Plans (deep)"
@@ -59,7 +59,8 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Discover Tests"
-        rlRun -s "tmt run discover -v"
+        # Exclude /plans/dynamic-ref as dynamic ref cannot be evaluated in dry mode
+        rlRun -s "tmt run discover -v plan -n '/plans/[^d]'"
         rlAssertGrep "/plans/full" $rlRun_LOG
         rlAssertGrep "/tests/basic/ls" $rlRun_LOG
         rlAssertGrep "/tests/basic/show" $rlRun_LOG
@@ -67,10 +68,27 @@ rlJournalStart
         rlAssertGrep "/lint/tests" $rlRun_LOG
         rlAssertGrep "/lint/plans" $rlRun_LOG
         rlAssertNotGrep "/plans/default" $rlRun_LOG
+        # logging import plan details in verbose mode
+        rlAssertGrep "import url: https://github.com/teemtee/tmt" $rlRun_LOG
+        rlAssertGrep "import ref: 1.16.0" $rlRun_LOG
+        rlAssertGrep "import path: /tests/run/worktree/data/prepare" $rlRun_LOG
+        rlAssertGrep "import name: /plan" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Discover dynamic-ref plan in detail"
+        rlRun -s "tmt -c branch=fedora run -dddvvv discover plan -n dynamic-ref"
+        rlAssertGrep "Dynamic 'ref' definition file.*detected" $rlRun_LOG -E
+        rlAssertGrep "Run command: git checkout fedora" $rlRun_LOG
+        rlAssertGrep "Found 1 plan" $rlRun_LOG
+        rlAssertGrep "import url: https://github.com/teemtee/tmt" $rlRun_LOG
+        rlAssertGrep "import ref: fedora" $rlRun_LOG
+        rlAssertGrep "import path: /tests/discover/data" $rlRun_LOG
+        rlAssertGrep "import name: /plans/smoke" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Run Tests"
-        rlRun -s "tmt run --verbose --dry" 0 "Run tests (dry mode)"
+        # Exclude /plans/dynamic-ref as dynamic ref cannot be evaluated in dry mode
+        rlRun -s "tmt run --verbose --dry plan -n '/plans/[^d]'" 0 "Run tests (dry mode)"
         rlRun -s "tmt run --verbose" 0 "Run tests"
         rlAssertGrep "pass /tests/basic/ls" $rlRun_LOG
         rlAssertGrep "pass /lint/tests" $rlRun_LOG
