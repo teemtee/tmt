@@ -446,7 +446,8 @@ TMT_REBOOT_COUNT
 TMT_TOPOLOGY_BASH, TMT_TOPOLOGY_YAML
     Paths of files describing existing guests, their roles and the
     guest on which the test is running. Format of these files
-    is described at :ref:`/spec/plans/guest-topology`.
+    is described in the ``Guest Topology Format`` section of the
+    plan specification.
 
 
 Plugin Variables

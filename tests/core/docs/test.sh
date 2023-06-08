@@ -55,6 +55,7 @@ rlJournalStart
         rlRun -s "man tmt" 0 "Check man page"
         rlAssertGrep "usage is straightforward" "$rlRun_LOG"
         rlAssertNotGrep "WARNING" "$rlRun_LOG"
+        rlAssertNotGrep "ERROR" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "examples"
