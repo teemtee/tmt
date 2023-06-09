@@ -2,6 +2,7 @@ specfile_path: tmt.spec
 files_to_sync:
   - tmt.spec
   - .packit.yaml
+sync_changelog: true
 
 upstream_project_name: tmt
 downstream_package_name: tmt
