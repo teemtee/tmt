@@ -300,6 +300,15 @@ it, for example:
 
     Fix #1234.
 
+By default only a core set of tests is executed against a newly
+created pull request and its updates to verify basic sanity of the
+change. In order to run the full test suite add the following
+comment to the pull request:
+
+.. code-block::
+
+   /packit test --identifier full
+
 
 Merging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

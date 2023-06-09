@@ -36,9 +36,23 @@ jobs:
           # with the latest timestamp always wins.
           - bash -c "hatch version | sed -E 's/\\.[0-9]+\\.dev.*/.dev888/'"
 
-  # Test pull requests
+  # Test pull requests (core)
   - job: tests
+    identifier: core
     trigger: pull_request
+    targets:
+      - fedora-all
+      - epel-9
+    tf_extra_params:
+        test:
+            tmt:
+                name: /plans/features/(core|basic)
+
+  # Test pull requests (full)
+  - job: tests
+    identifier: full
+    trigger: pull_request
+    manual_trigger: true
     targets:
       - fedora-all
       - epel-9
