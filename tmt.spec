@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.24.0
+Version: 1.24.1
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -250,6 +250,10 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Fri Jun 09 2023 Petr Šplíchal <psplicha@redhat.com> - 1.24.1-1
+- Revert the `Source0` url to the original value
+- Use correct url for the release archive, fix docs
+
 * Wed Jun 07 2023 Petr Šplíchal <psplicha@redhat.com> - 1.24.0-1
 - Do not display guest facts when showing a plan
 - Add new guide/summary for multihost testing
