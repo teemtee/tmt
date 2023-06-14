@@ -4,7 +4,6 @@ import sys
 from typing import Any, Dict, List, Optional, cast
 
 import click
-import fmf.utils
 import requests
 
 import tmt
@@ -601,13 +600,11 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             api_retries=self.get('api-retries'),
             api_retry_backoff_factor=self.get('api-retry-backoff-factor'),
             watchdog_dispatch_delay=self.get('watchdog-dispatch-delay'),
-            watchdog_period_delay=self.get('watchdog-period-delay')
+            watchdog_period_delay=self.get('watchdog-period-delay'),
+            ssh_option=self.get('ssh-option')
             )
 
-        # FIXME: cast() - typeless "dispatcher" method
-        data.ssh_option = cast(List[str], self.get('ssh-option'))
-        if data.ssh_option:
-            self.info('ssh options', fmf.utils.listed(data.ssh_option), 'green')
+        data.show(verbose=self.get('verbose'), logger=self._logger)
 
         self._guest = GuestArtemis(
             logger=self._logger,

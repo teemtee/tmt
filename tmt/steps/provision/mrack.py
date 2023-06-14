@@ -575,6 +575,8 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
             provision_tick=self.get('provision-tick'),
             )
 
+        data.show(verbose=self.get('verbose'), logger=self._logger)
+
         self._guest = GuestBeaker(
             data=data,
             name=self.name,

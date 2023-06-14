@@ -349,6 +349,49 @@ class GuestData(tmt.utils.SerializableContainer):
         unserialize=lambda serialized: GuestFacts.from_serialized(serialized)
         )
 
+    def show(
+            self,
+            *,
+            keys: Optional[List[str]] = None,
+            verbose: int = 0,
+            logger: tmt.log.Logger) -> None:
+        """
+        Display guest data in a nice way.
+
+        :param keys: if set, only these keys would be shown.
+        :param verbose: desired verbosity. Some fields may be omitted in low
+            verbosity modes.
+        :param logger: logger to use for logging.
+        """
+
+        # If all keys are set to their defaults, do not bother showing them - unless
+        # forced to do so by the power of `-v`.
+        if self.is_bare and not verbose:
+            return
+
+        keys = keys or list(self.keys())
+
+        for key in keys:
+            # TODO: teach GuestFacts to cooperate with show() methods, honor
+            # the verbosity at the same time.
+            if key == 'facts':
+                return
+
+            value = getattr(self, key)
+
+            if value is None:
+                return
+
+            # TODO: it seems tmt.utils.format() needs a key, and logger.info()
+            # does not accept already formatted string.
+            if isinstance(value, (list, tuple)):
+                printable_value = fmf.utils.listed(value)
+
+            else:
+                printable_value = str(value)
+
+            logger.info(tmt.utils.key_to_option(key), printable_value, color='green')
+
 
 class Guest(tmt.utils.Common):
     """

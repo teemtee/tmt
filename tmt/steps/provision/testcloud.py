@@ -10,8 +10,6 @@ import types
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import click
-import fmf
-import fmf.utils
 import requests
 
 import tmt
@@ -200,6 +198,23 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     image_url: Optional[str] = None
     instance_name: Optional[str] = None
     list_local_images: bool = False
+
+    # TODO: custom handling for two fields - when the formatting moves into
+    # field(), this should not be necessary.
+    def show(
+            self,
+            *,
+            keys: Optional[List[str]] = None,
+            verbose: int = 0,
+            logger: tmt.log.Logger) -> None:
+
+        keys = keys or list(self.keys())
+        super_keys = [key for key in keys if key not in ('memory', 'disk')]
+
+        super().show(keys=super_keys, verbose=verbose, logger=logger)
+
+        logger.info('memory', f"{self.memory} MB", 'green')
+        logger.info('disk', f"{self.disk} GB", 'green')
 
 
 @dataclasses.dataclass
@@ -641,26 +656,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                     raise tmt.utils.NormalizationError(
                         f'{self.name}:{int_key}', value, 'an integer') from exc
 
-        for key, value in data.items():
-            if key == 'memory':
-                self.info('memory', f"{value} MB", 'green')
-            elif key == 'disk':
-                self.info('disk', f"{value} GB", 'green')
-            elif key == 'connection':
-                self.verbose('connection', value, 'green')
-            elif key == 'key':
-                if value:
-                    self.info('key', fmf.utils.listed(value), 'green')
-            elif key == 'ssh_option':
-                if value:
-                    self.info('ssh options', fmf.utils.listed(value), 'green')
-            elif key == 'facts':
-                # TODO Remove once the general method for showing
-                # provision data is implemented. For details see:
-                # https://github.com/teemtee/tmt/issues/2117
-                continue
-            elif value is not None:
-                self.info(key, value, 'green')
+        data.show(verbose=self.get('verbose'), logger=self._logger)
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestTestcloud(

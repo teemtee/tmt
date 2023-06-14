@@ -26,7 +26,9 @@ rlJournalStart
             rlRun "$tmt login -c true -s $step 2>&1 >/dev/null | tee output"
             rlAssertGrep "interactive" "output"
 
-            if [ "$step" = "prepare" ]; then
+            if [ "$step" = "provision" ]; then
+                rlRun "grep '^    $step$' -A6 output | grep -i interactive"
+            elif [ "$step" = "prepare" ]; then
                 rlRun "grep '^    $step$' -A8 output | grep -i interactive"
             elif [ "$step" = "execute" ]; then
                 rlRun "grep '^    $step$' -A9 output | grep -i interactive"

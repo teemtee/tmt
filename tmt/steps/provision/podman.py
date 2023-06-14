@@ -299,10 +299,6 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
         """ Provision the container """
         super().go()
 
-        # Show which image we are using
-        pull = ' (force pull)' if self.get('force_pull') else ''
-        self.info('image', f"{self.get('image')}{pull}", 'green')
-
         # Prepare data for the guest instance
         data_from_options = {
             key: self.get(key)
@@ -312,6 +308,8 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
             }
 
         data = PodmanGuestData(**data_from_options)
+
+        data.show(verbose=self.get('verbose'), logger=self._logger)
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(

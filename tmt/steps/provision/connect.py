@@ -1,7 +1,5 @@
 import dataclasses
-from typing import List, Optional, cast
-
-import fmf.utils
+from typing import List, Optional
 
 import tmt
 import tmt.steps
@@ -82,48 +80,28 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
         """ Prepare the connection """
         super().go()
 
-        # Check connection details
-        guest = self.get('guest')
-        user = self.get('user')
-        key = self.get('key')
-        password = self.get('password')
-        port = self.get('port')
-
         # Check guest and auth info
-        if not guest:
+        if not self.get('guest'):
             raise tmt.utils.SpecificationError(
                 'Provide a host name or an ip address to connect.')
+
         data = ConnectGuestData(
             role=self.get('role'),
-            guest=guest,
-            user=user
+            guest=self.get('guest'),
+            user=self.get('user'),
+            port=self.get('port'),
+            password=self.get('password'),
+            ssh_option=self.get('ssh-option'),
+            key=self.get('key')
             )
-        self.info('guest', guest, 'green')
-        self.info('user', user, 'green')
-        if port:
-            self.info('port', port, 'green')
-            data.port = port
 
-        # Use provided password for authentication
-        if password:
-            self.info('password', password, 'green')
+        data.show(verbose=self.get('verbose'), logger=self._logger)
+
+        if data.password:
             self.debug('Using password authentication.')
-            data.password = password
-        # Default to using a private key (user can have configured one)
-        else:
-            self.info('key', key or 'not provided', 'green')
-            self.debug('Using private key authentication.')
-            # TODO: something to fix in the future, multiple --key options would help.
-            # Right now, the default value is List[str], while the option is just str.
-            if isinstance(key, list):
-                data.key = key
-            else:
-                data.key = [key]
 
-        # FIXME: cast() - typeless "dispatcher" method
-        data.ssh_option = cast(List[str], self.get('ssh-option'))
-        if data.ssh_option:
-            self.info('ssh options', fmf.utils.listed(data.ssh_option), 'green')
+        else:
+            self.debug('Using private key authentication.')
 
         # And finally create the guest
         self._guest = tmt.GuestSsh(

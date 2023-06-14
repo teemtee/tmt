@@ -138,6 +138,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
             guest='localhost',
             role=self.get('role')
             )
+
+        data.show(verbose=self.get('verbose'), logger=self._logger)
+
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
 
     def guest(self) -> Optional[GuestLocal]:
