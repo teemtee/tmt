@@ -19,9 +19,9 @@ tmp:
 
 # Run the test suite, optionally with coverage
 test: tmp
-	python3 -m pytest -vvv -ra --showlocals -c tests/unit/pytest.ini tests/unit
+	python3 -m pytest -vvv -ra --showlocals tests/unit
 smoke: tmp
-	python3 -m pytest -vvv -ra --showlocals -c tests/unit/pytest.ini tests/unit/test_cli.py
+	python3 -m pytest -vvv -ra --showlocals tests/unit/test_cli.py
 coverage: tmp
 	coverage run --source=tmt,bin -m pytest -vvv -ra --showlocals tests
 	coverage report
