@@ -13,6 +13,10 @@ rlJournalStart
         rlAssertExists "fooo"
     rlPhaseEnd
 
+    rlPhaseStartTest
+        rlRun "randomFileCreate"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Remove tmp directory"

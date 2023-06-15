@@ -16,6 +16,7 @@ test: ./certificate.sh
     require:
       - url: https://github.com/beakerlib/openssl
         name: /certgen
+        type: library
 
 /recommend:
     summary: Generate a certificate (recommend)
@@ -36,6 +37,7 @@ test: ./certificate.sh
       - url: https://github.com/beakerlib-libraries/certgen/
         nick: openssl
         name: /certgen
+        type: library
     test: ./certificate.sh tree
 
 /destination:
@@ -47,6 +49,7 @@ test: ./certificate.sh
       - url: https://github.com/beakerlib/openssl
         name: /certgen
         destination: custom
+        type: library
 
 /missing:
     /repository:
@@ -59,8 +62,10 @@ test: ./certificate.sh
         summary: Repository with no fmf metadata
         require:
           - url: https://github.com/psss/try
+            type: library
     /reference:
         summary: Requested reference does not exist
         require:
           - url: https://github.com/beakerlib/epel
             ref: weird
+            type: library

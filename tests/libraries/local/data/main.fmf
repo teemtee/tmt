@@ -12,3 +12,4 @@
     require:
       - path: PATH
         name: /file
+        type: library

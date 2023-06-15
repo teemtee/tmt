@@ -14,11 +14,13 @@ test: ./file.sh
     - library(database/mariadb)
     - url: https://github.com/beakerlib/test
       name: /very/deep/file
+      type: library
 /test2:
   require:
     - library(database/mariadb)
     - url: https://github.com/beakerlib/squid.git
       name: /squid
+      type: library
   recommend:
     - url: https://github.com/beakerlib/database
       name: /postgresql

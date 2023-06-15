@@ -1,0 +1,9 @@
+summary: A simple test for libraries pruning
+description:
+    Checks that pruning is executed on libraries
+test: ./pruning.sh
+path: /
+require:
+  - url: https://github.com/beakerlib/database
+    name: /mariadb
+    type: library

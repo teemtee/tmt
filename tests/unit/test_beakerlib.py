@@ -64,7 +64,7 @@ def test_invalid_url_conflict(root_logger):
         identifier=tmt.base.DependencyFmfId(
             url='https://github.com/teemtee/tmt',
             name='/',
-            path='/tests/libraries/local/data'),
+            path=Path('/tests/libraries/local/data')),
         parent=parent)
     # Library 'tmt' repo is already fetched from different git,
     # however upstream (gh.com/beakerlib/tmt) repo does not exist,

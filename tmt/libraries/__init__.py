@@ -152,12 +152,6 @@ def dependencies(
             if isinstance(library, BeakerLib):
                 # Recursively check for possible dependent libraries
                 assert parent is not None  # narrow type
-                if library.hostname == 'local':
-                    library_path = library.path
-                else:  # TODO: Change with pruning for libraries
-                    assert parent.workdir is not None  # narrow type
-                    library_path = parent.workdir / library.dest / library.repo
-
                 assert parent.workdir is not None  # narrow type
                 requires, recommends, libraries = dependencies(
                     original_require=library.require,
@@ -165,8 +159,8 @@ def dependencies(
                     parent=parent,
                     imported_lib_ids=imported_lib_ids,
                     logger=logger,
-                    source_location=library_path,
-                    target_location=parent.workdir / library.dest / library.repo)
+                    source_location=library.source_directory,
+                    target_location=Path(library.tree.root))
                 processed_require.update(set(requires))
                 processed_recommend.update(set(recommends))
                 gathered_libraries.extend(libraries)
