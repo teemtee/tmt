@@ -1,6 +1,5 @@
 import os
 import re
-from glob import glob
 from tempfile import TemporaryDirectory
 from typing import Dict, Optional, Set, Union, cast
 
@@ -99,17 +98,13 @@ class BeakerLib(Library):
             self.format = 'fmf'
             self.url = identifier.url
             self.path = identifier.path
-            # Strip possible trailing slash from path
-            if isinstance(self.path, str):
-                self.path = self.path.rstrip('/')
             if not self.url and not self.path:
                 raise tmt.utils.SpecificationError(
                     "Need 'url' or 'path' to fetch a beakerlib library.")
             # Strip the '.git' suffix from url for known forges
             if self.url:
                 for forge in STRIP_SUFFIX_FORGES:
-                    if (self.url.startswith(forge)
-                            and self.url.endswith('.git')):
+                    if self.url.startswith(forge) and self.url.endswith('.git'):
                         self.url = self.url.rstrip('.git')
             self.ref = identifier.ref
             self.dest = identifier.destination or Path(DEFAULT_DESTINATION.lstrip('/'))
@@ -142,12 +137,14 @@ class BeakerLib(Library):
                         raise tmt.utils.GeneralError(
                             f"Unable to parse repository name from '{self.path}'.")
             self.repo = Path(repo)
+        # Set default source directory, used for files required by a library
+        self.source_directory: Path = self.path or self.fmf_node_path
 
     @property
     def hostname(self) -> str:
         """ Get hostname from url or default to local """
         if self.url:
-            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
+            matched = re.match(r'(?:git|http|https|ssh)(?:@|://)(.*?)[/:]', self.url)
             if matched:
                 return matched.group(1)
         return super().hostname
@@ -156,24 +153,8 @@ class BeakerLib(Library):
     def fmf_node_path(self) -> Path:
         """ Path to fmf node """
         if self.path:
-            return Path(self.path / self.name.strip('/'))
+            return self.path / self.name.strip('/')
         return super().fmf_node_path
-
-    @property
-    def hostname(self) -> str:
-        """ Get hostname from url or default to local """
-        if self.url:
-            matched = re.match(r'(?:git|http|https)://(.*?)/', self.url)
-            if matched:
-                return matched.group(1)
-        return 'local'
-
-    @property
-    def fmf_node_path(self) -> str:
-        """ Path to fmf node """
-        if self.path:
-            return os.path.join(self.path, self.name.strip('/'))
-        return self.name
 
     def __str__(self) -> str:
         """ Use repo/name for string representation """
@@ -196,12 +177,12 @@ class BeakerLib(Library):
 
         return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
 
-    def _merge_metadata(self, library_path: str, local_library_path: str) -> None:
+    def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
         """ Merge all inherited metadata into one metadata file """
-        for f in glob(os.path.join(local_library_path, '*.fmf')):
-            os.remove(f)
+        for f in local_library_path.glob(r'*\.fmf'):
+            f.unlink()
         write(
-            path=os.path.join(local_library_path, 'main.fmf'),
+            path=local_library_path / 'main.fmf',
             data=tmt.utils.get_full_metadata(library_path, self.name),
             quiet=True)
 
@@ -248,24 +229,25 @@ class BeakerLib(Library):
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
             directory = self.parent.workdir / self.dest / self.repo
-            clone_dir = os.path.join(directory, 'clone')
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
                     if self.url in self._nonexistent_url:
                         raise tmt.utils.GitUrlError(
                             f"Already know that '{self.url}' does not exist.")
-                    clone_dir = os.path.join(
-                        self.parent.clone_dirpath, self.hostname, self.repo)
+                    clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
+                    self.source_directory = clone_dir
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
-                    if not os.path.exists(clone_dir):
-                        tmt.utils.git_clone(self.url, clone_dir, self.parent,
-                                            env={"GIT_ASKPASS": "echo"}, shallow=self.ref is None)
+                    if not clone_dir.exists():
+                        tmt.utils.git_clone(
+                            self.url, clone_dir, self.parent,
+                            env={"GIT_ASKPASS": "echo"}, shallow=self.ref is None)
 
                     # Detect the default branch from the origin
                     try:
-                        self.default_branch = tmt.utils.default_branch(clone_dir)
+                        self.default_branch = tmt.utils.default_branch(
+                            repository=clone_dir, logger=self._logger)
                     except OSError:
                         raise tmt.utils.GeneralError(
                             f"Unable to detect default branch for '{clone_dir}'. "
@@ -273,42 +255,40 @@ class BeakerLib(Library):
                     # Use the default branch if no ref provided
                     if self.ref is None:
                         self.ref = self.default_branch
-                        # Check out the requested branch
-                        try:
-                            if self.ref is not None:
-                                self.parent.run(Command('git', 'checkout', self.ref),
-                                                cwd=clone_dir)
-                        except tmt.utils.RunError:
-                            # Fallback to install during the prepare step if in rpm format
-                            if self.format == 'rpm':
-                                self.parent.debug(f"Invalid reference '{self.ref}'.")
-                                raise LibraryError
-                            self.parent.fail(
-                                f"Reference '{self.ref}' for library '{self}' not found.")
-                            raise
+                    # Check out the requested branch
+                    try:
+                        if self.ref is not None:
+                            self.parent.run(
+                                Command('git', 'checkout', self.ref), cwd=clone_dir)
+                    except tmt.utils.RunError:
+                        # Fallback to install during the prepare step if in rpm format
+                        if self.format == 'rpm':
+                            self.parent.debug(f"Invalid reference '{self.ref}'.")
+                            raise LibraryError
+                        self.parent.fail(
+                            f"Reference '{self.ref}' for library '{self}' not found.")
+                        raise
 
                     # Copy only the required library
-                    library_path: str = os.path.join(clone_dir, self.fmf_node_path.strip('/'))
-                    local_library_path: str = os.path.join(
-                        directory, self.fmf_node_path.strip('/'))
-                    if not os.path.exists(library_path):
+                    library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
+                    local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
+                    if not library_path.exists():
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
                         raise LibraryError
+                    self.parent.debug(f"Library {self} is copied into {directory}")
                     tmt.utils.copytree(library_path, local_library_path, dirs_exist_ok=True)
 
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
 
                     # Copy fmf metadata
-                    tmt.utils.copytree(
-                        os.path.join(clone_dir, '.fmf'), os.path.join(directory, '.fmf'),
-                        dirs_exist_ok=True)
+                    tmt.utils.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
                 else:
                     # Either url or path must be defined
                     assert self.path is not None
                     library_path = self.fmf_node_path
-                    local_library_path = os.path.join(directory, self.name.strip('/'))
-                    if not os.path.exists(library_path):
+                    local_library_path = directory / self.name.strip('/')
+                    if not library_path.exists():
                         self.parent.debug(f"Failed to find library {self} at {self.path}")
                         raise LibraryError
 
@@ -320,21 +300,9 @@ class BeakerLib(Library):
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
-                    tmt.utils.copytree(
-                        self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
-                # Detect the default branch from the origin
-                try:
-                    self.default_branch = tmt.utils.default_branch(
-                        repository=directory, logger=self._logger)
-                except OSError:
-                    raise tmt.utils.GeneralError(
-                        f"Unable to detect default branch for '{directory}'. "
-                        f"Is the git repository '{self.url}' empty?")
-                # Use the default branch if no ref provided
-                if self.ref is None:
-                    self.ref = self.default_branch
+                    tmt.utils.copytree(self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
             except (tmt.utils.RunError, tmt.utils.GitUrlError) as error:
-                assert self.url is not None  # narrow type
+                assert self.url is not None
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
                     # Print this message only for the first attempt

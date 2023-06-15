@@ -1693,7 +1693,7 @@ def copytree(
     return dst
 
 
-def get_full_metadata(fmf_tree_path: str, node_path: str) -> Any:
+def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     """
     Get full metadata for a node in any fmf tree
 

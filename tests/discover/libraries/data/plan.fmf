@@ -71,7 +71,13 @@ execute:
             summary: "Missing reference"
             discover+:
                 test: missing/reference
+
 /querying:
     summary: "Many tests requiring same rpm-only library"
     discover+:
         test: querying
+
+/pruning:
+    summary: "Simple test for library pruning"
+    discover+:
+        test: pruning
