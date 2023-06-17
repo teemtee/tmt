@@ -56,7 +56,7 @@ class ContextObject:
 
     logger: tmt.log.Logger
     common: tmt.utils.Common
-    fmf_context: tmt.utils.FmfContextType
+    fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
     steps: Set[str] = dataclasses.field(default_factory=set)
     clean: Optional[tmt.Clean] = None
@@ -197,7 +197,7 @@ def main(
         cli_context=click_contex,
         logger=logger,
         common=tmt.utils.Common(logger=logger),
-        fmf_context=tmt.utils.context_to_dict(context=context, logger=logger),
+        fmf_context=tmt.utils.FmfContext.from_spec('cli', context, logger),
         steps=set(),
         tree=tree
         )

@@ -55,7 +55,7 @@ from tmt.result import Result, ResultOutcome
 from tmt.utils import (
     Command,
     EnvironmentType,
-    FmfContextType,
+    FmfContext,
     Path,
     ShellScript,
     WorkdirArgumentType,
@@ -1343,9 +1343,9 @@ class Plan(
     _cli_options = {}
 
     # `environment` and `environment-file` are NOT promoted to instance variables.
-    context: FmfContextType = field(
-        default_factory=dict,
-        normalize=tmt.utils.normalize_fmf_context)
+    context: FmfContext = field(
+        default_factory=FmfContext,
+        normalize=tmt.utils.FmfContext.from_spec)
     gate: List[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
@@ -1580,10 +1580,10 @@ class Plan(
         self.data_directory.mkdir(exist_ok=True, parents=True)
 
     @property
-    def _fmf_context(self) -> tmt.utils.FmfContextType:
+    def _fmf_context(self) -> tmt.utils.FmfContext:
         """ Return combined context from plan data and command line """
 
-        combined = {}
+        combined = FmfContext()
 
         combined.update(self.context)
         combined.update(self._cli_fmf_context)
@@ -1964,6 +1964,9 @@ class Plan(
     def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys)
 
+        # Maybe we could have some `export` callback in `field()`...
+        data['context'] = data['context'].to_spec()
+
         for key in self._extra_l2_keys:
             value = self.node.data.get(key)
             if value:
@@ -2286,7 +2289,7 @@ class Tree(tmt.utils.Common):
                  *,
                  path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
-                 fmf_context: Optional[tmt.utils.FmfContextType] = None,
+                 fmf_context: Optional[FmfContext] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 
@@ -2295,7 +2298,7 @@ class Tree(tmt.utils.Common):
 
         self._path = path or Path.cwd()
         self._tree = tree
-        self._custom_fmf_context = fmf_context or {}
+        self._custom_fmf_context = fmf_context or FmfContext()
 
     @classmethod
     def grow(
@@ -2303,7 +2306,7 @@ class Tree(tmt.utils.Common):
             *,
             path: Optional[Path] = None,
             tree: Optional[fmf.Tree] = None,
-            fmf_context: Optional[tmt.utils.FmfContextType] = None,
+            fmf_context: Optional[FmfContext] = None,
             logger: Optional[tmt.log.Logger] = None) -> 'Tree':
         """
         Initialize tmt tree from directory path or given fmf tree.
@@ -2331,7 +2334,7 @@ class Tree(tmt.utils.Common):
             logger=logger or tmt.log.Logger.create())
 
     @property
-    def _fmf_context(self) -> FmfContextType:
+    def _fmf_context(self) -> FmfContext:
         """ Use custom fmf context if provided, default otherwise """
         return self._custom_fmf_context or super()._fmf_context
 

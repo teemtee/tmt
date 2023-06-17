@@ -171,8 +171,84 @@ DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 # A stand-in variable for generic use.
 T = TypeVar('T')
 
-# A FMF context type, representing name/values context.
-FmfContextType = Dict[str, List[str]]
+
+class FmfContext(Dict[str, List[str]]):
+    """
+    Represents an fmf context.
+
+    See https://tmt.readthedocs.io/en/latest/spec/context.html
+    and https://fmf.readthedocs.io/en/latest/context.html.
+    """
+
+    @classmethod
+    def _normalize_command_line(cls, spec: List[str], logger: tmt.log.Logger) -> 'FmfContext':
+        """
+        Normalize command line fmf context specification.
+
+        .. code-block:: ini
+
+            -c distro=fedora-33 -> {'distro': ['fedora']}
+            -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
+        """
+
+        return FmfContext({
+            key: value.split(',')
+            for key, value in environment_to_dict(variables=spec, logger=logger).items()})
+
+    @classmethod
+    def _normalize_fmf(
+            cls,
+            spec: Dict[str, Union[str, List[str]]],
+            logger: tmt.log.Logger) -> 'FmfContext':
+        """
+        Normalize fmf context specification from fmf node.
+
+        .. code-block:: yaml
+
+            context:
+              distro: fedora-33
+              arch:
+                - x86_64
+                - ppc64
+        """
+
+        normalized: FmfContext = FmfContext()
+
+        for dimension, values in spec.items():
+            if isinstance(values, list):
+                normalized[str(dimension)] = [str(v) for v in values]
+            else:
+                normalized[str(dimension)] = [str(values)]
+
+        return normalized
+
+    @classmethod
+    def from_spec(cls, key_address: str, spec: Any, logger: tmt.log.Logger) -> 'FmfContext':
+        """
+        Convert from a specification file or from a CLI option.
+
+        See https://tmt.readthedocs.io/en/stable/spec/context.html for details on context.
+        """
+
+        if spec is None:
+            return FmfContext()
+
+        if isinstance(spec, tuple):
+            return cls._normalize_command_line(list(spec), logger)
+
+        if isinstance(spec, list):
+            return cls._normalize_command_line(spec, logger)
+
+        if isinstance(spec, dict):
+            return cls._normalize_fmf(spec, logger)
+
+        raise NormalizationError(key_address, spec, 'a list of strings or a dictionary')
+
+    def to_spec(self) -> Dict[str, Any]:
+        """ Convert to a form suitable for saving in a specification file """
+
+        return dict(self)
+
 
 # A "environment" type, representing name/value environment variables.
 EnvironmentType = Dict[str, str]
@@ -836,19 +912,19 @@ class Common(_CommonBase):
         return self._cli_context.obj
 
     @property
-    def _cli_fmf_context(self) -> FmfContextType:
+    def _cli_fmf_context(self) -> FmfContext:
         """ An fmf context set for this object via CLI """
 
         # TODO: can this even happen? Common._save_cli_context() is called
         # from tmt.cli:main(), would this act as an initializer for all
         # derived classes?
         if self._cli_context_object is None:
-            return {}
+            return FmfContext()
 
         return self._cli_context_object.fmf_context
 
     @property
-    def _fmf_context(self) -> FmfContextType:
+    def _fmf_context(self) -> FmfContext:
         """ An fmf context set for this object. """
 
         # By default, the only fmf context available is one provided via CLI.
@@ -1892,21 +1968,6 @@ def modify_environ(
     finally:
         os.environ.clear()
         os.environ.update(environ_backup)
-
-
-def context_to_dict(*, context: List[str], logger: tmt.log.Logger) -> FmfContextType:
-    """
-    Convert command line context definition into a dictionary
-
-    Does the same as environment_to_dict() plus separates possible
-    comma-separated values into lists. Here's a couple of examples:
-
-    distro=fedora-33 ---> {'distro': ['fedora']}
-    arch=x86_64,ppc64 ---> {'arch': ['x86_64', 'ppc64']}
-    """
-    return {
-        key: value.split(',')
-        for key, value in environment_to_dict(variables=context, logger=logger).items()}
 
 
 def dict_to_yaml(
@@ -4398,24 +4459,6 @@ def normalize_shell_script(
         return ShellScript(value)
 
     raise NormalizationError(key_address, value, 'a string')
-
-
-def normalize_fmf_context(
-        key_address: str,
-        value: Optional[Dict[Any, Any]],
-        logger: tmt.log.Logger) -> FmfContextType:
-    if value is None:
-        return {}
-
-    normalized: FmfContextType = {}
-
-    for dimension, values in value.items():
-        if isinstance(values, list):
-            normalized[str(dimension)] = [str(v) for v in values]
-        else:
-            normalized[str(dimension)] = [str(values)]
-
-    return normalized
 
 
 class NormalizeKeysMixin(_CommonBase):
