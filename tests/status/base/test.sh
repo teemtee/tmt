@@ -80,14 +80,14 @@ rlJournalStart
         # If /var/tmp/tmt is empty - because user does not really use it - then
         # the best we can do is to make sure the $tmprun does not appear in the
         # output.
-        if [ ls /var/tmp/tmt &> /dev/null ]; then
+        if ls /var/tmp/tmt/* &> /dev/null; then
             rlAssertGrep "/var/tmp/tmt" $rlRun_LOG
         else
             rlAssertNotGrep "$tmprun" $rlRun_LOG
         fi
         rlRun "unset TMT_WORKDIR_ROOT"
         rlRun -s "tmt status -v"
-        if [ ls /var/tmp/tmt &> /dev/null ]; then
+        if ls /var/tmp/tmt/* &> /dev/null; then
             rlAssertGrep "/var/tmp/tmt" $rlRun_LOG
         else
             rlAssertNotGrep "$tmprun" $rlRun_LOG
