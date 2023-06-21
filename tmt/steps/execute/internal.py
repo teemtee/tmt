@@ -195,24 +195,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         logger.debug('test wrapper', str(test_wrapper_filepath))
 
-        # Prepare the test command (use default options for shell tests)
-        # TODO: `test` is mandatory, but it's defined after attributes with default
-        # values. Try to find a way how to drop the need for a dummy default.
-        assert test.test is not None
-        if test.framework == "shell":
-            test_command = ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {test.test}")
-        else:
-            test_command = test.test
-        logger.debug('Test script', str(test_command), level=3)
-
-        # Prepare the wrapper, push to guest
-        self.write(test_wrapper_filepath, str(test_command), 'w')
-        test_wrapper_filepath.chmod(0o755)
-        guest.push(
-            source=test_wrapper_filepath,
-            destination=test_wrapper_filepath,
-            options=["-s", "-p", "--chmod=755"])
-
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
         topology.guest = tmt.steps.GuestTopology(guest)
@@ -221,17 +203,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             dirpath=self.data_path(test, guest, full=True),
             guest=guest,
             logger=logger))
-
-        # Prepare the actual remote command
-        remote_command = ShellScript(f'./{test_wrapper_filename}')
-        if self.get('interactive'):
-            remote_command = ShellScript(
-                TEST_WRAPPER_INTERACTIVE.format(
-                    remote_command=remote_command))
-        else:
-            remote_command = ShellScript(
-                TEST_WRAPPER_NONINTERACTIVE.format(
-                    remote_command=remote_command))
 
         def _test_output_logger(
                 key: str,
@@ -248,11 +219,28 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 level=level,
                 topic=topic)
 
-        # Execute the test, save the output and return code
-        starttime = datetime.datetime.now(datetime.timezone.utc)
-        try:
-            stdout, _ = guest.execute(
-                remote_command,
+        def run_cmd(command: ShellScript) -> tmt.utils.CommandOutput:
+            friendly_command = str(command)
+            # Prepare the wrapper, push to guest
+            if test.framework == "shell":
+                command = ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {command}")
+            self.debug('Test script', str(command), level=3)
+            self.write(test_wrapper_filepath, str(command), 'w')
+            test_wrapper_filepath.chmod(0o755)
+            guest.push(
+                source=test_wrapper_filepath,
+                destination=test_wrapper_filepath,
+                options=["-s", "-p", "--chmod=755"])
+
+            if self.get('interactive'):
+                command = ShellScript(
+                    TEST_WRAPPER_INTERACTIVE.format(remote_command=command))
+            else:
+                command = ShellScript(
+                    TEST_WRAPPER_NONINTERACTIVE.format(remote_command=command))
+
+            return guest.execute(
+                command,
                 cwd=workdir,
                 env=environment,
                 join=True,
@@ -260,7 +248,24 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 log=_test_output_logger,
                 timeout=tmt.utils.duration_to_seconds(test.duration),
                 test_session=True,
-                friendly_command=str(test.test))
+                friendly_command=friendly_command)
+
+        # Prepare the test command (use default options for shell tests)
+        # TODO: `test` is mandatory, but it's defined after attributes with default
+         # values. Try to find a way how to drop the need for a dummy default.
+        assert test.test is not None
+
+        # Execute the test, save the output and return code
+        starttime = datetime.datetime.now(datetime.timezone.utc)
+        try:
+            for setup_cmd in test.setup:
+                run_cmd(setup_cmd)
+
+            stdout, _ = run_cmd(test.test)
+
+            for cleanup_cmd in test.cleanup:
+                run_cmd(cleanup_cmd)
+
             test.returncode = 0
         except tmt.utils.RunError as error:
             stdout = error.stdout

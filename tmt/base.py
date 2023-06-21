@@ -917,6 +917,14 @@ class Test(
         default=None,
         normalize=lambda key_address, raw_value, logger:
             None if raw_value is None else Path(raw_value))
+    setup: List[ShellScript] = field(
+        default_factory=list,
+        normalize=lambda key_address, raw_value, logger:
+            raw_value if isinstance(raw_value, list) else [raw_value])
+    cleanup: List[ShellScript] = field(
+        default_factory=list,
+        normalize=lambda key_address, raw_value, logger:
+            raw_value if isinstance(raw_value, list) else [raw_value])
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
@@ -949,7 +957,9 @@ class Test(
         'id',
 
         # Test execution data
+        'setup',
         'test',
+        'cleanup',
         'path',
         'framework',
         'manual',
