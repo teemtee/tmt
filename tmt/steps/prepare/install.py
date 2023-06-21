@@ -290,7 +290,7 @@ class InstallDnf(InstallBase):
         command += Command(self.package_manager)
 
         if self.skip_missing:
-            command += Command('--skip-broken')
+            options += Command('--skip-broken')
 
         return (command, options)
 

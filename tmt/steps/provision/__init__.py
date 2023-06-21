@@ -286,8 +286,8 @@ class GuestFacts(tmt.utils.SerializableContainer):
             guest,
             [
                 (Command('stat', '/run/ostree-booted'), GuestPackageManager.RPM_OSTREE),
-                (Command('rpm', '-q', 'dnf'), GuestPackageManager.DNF),
-                (Command('rpm', '-q', 'yum'), GuestPackageManager.YUM),
+                (Command('dnf', '--version'), GuestPackageManager.DNF),
+                (Command('yum', '--version'), GuestPackageManager.YUM),
                 # And, one day, we'd follow up on this with...
                 # (Command('dpkg', '-l', 'apt'), 'apt')
                 ])
