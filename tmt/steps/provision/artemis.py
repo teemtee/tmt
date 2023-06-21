@@ -26,6 +26,8 @@ else:
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: fixed virtualization.hypervisor enum
+    '0.0.58',
     # NEW: added user defined watchdog delay
     '0.0.56',
     # NEW: no change, fixes issues with validation
