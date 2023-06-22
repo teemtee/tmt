@@ -1937,9 +1937,13 @@ def dict_to_yaml(
     def _represent_path(representer: Representer, data: Path) -> Any:
         return representer.represent_scalar('tag:yaml.org,2002:str', str(data))
 
+    def _represent_shell_script(representer: Representer, data: ShellScript) -> Any:
+        return representer.represent_scalar('tag:yaml.org,2002:str', str(data))
+
     yaml.representer.add_representer(pathlib.Path, _represent_path)
     yaml.representer.add_representer(pathlib.PosixPath, _represent_path)
     yaml.representer.add_representer(Path, _represent_path)
+    yaml.representer.add_representer(ShellScript, _represent_shell_script)
 
     # Convert multiline strings
     scalarstring.walk_tree(data)
