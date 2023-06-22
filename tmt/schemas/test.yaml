@@ -105,6 +105,18 @@ properties:
   test:
     type: string
 
+  # TODO: doc
+  setup:
+    anyOf:
+      - type: string
+      - type: array
+
+  # TODO: doc
+  cleanup:
+    anyOf:
+      - type: string
+      - type: array
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#tier
   tier:
     $ref: "/schemas/core#/definitions/tier"
