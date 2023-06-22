@@ -116,6 +116,20 @@ properties:
   test:
     type: string
 
+  setup:
+    anyOf:
+      - type: string
+      - type: array
+        items:
+          type: string
+
+  cleanup:
+    anyOf:
+      - type: string
+      - type: array
+        items:
+          type: string
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#tier
   tier:
     $ref: "/schemas/core#/definitions/tier"

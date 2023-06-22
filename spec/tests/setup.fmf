@@ -1,0 +1,29 @@
+summary: Script to setup system before test
+
+story:
+    As a tester I want to start a service before test or create
+    a temporary directory.
+
+description:
+    The parameter refers to a script that readies the system for testing
+    by starting services or creating temporary directories. Testers can share
+    and reuse setup scripts across tests. Must be a ``string`` or
+    a ``list of strings``, providing a program names or script paths.
+
+
+example:
+  - |
+    /apache:
+      summary+: apache
+      setup: ./setup_apache.sh
+
+  - |
+    /ngnix:
+      summary+: ngnix
+      setup:
+        - ./setup_ngnix.sh
+        - ./setup_usera.sh
+
+link:
+  - implemented-by: /tmt/steps/execute/internal.py
+  - verified-by: /tests/test/setup-cleanup

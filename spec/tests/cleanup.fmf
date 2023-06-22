@@ -1,0 +1,29 @@
+summary: Script to clean or recover system after test
+
+story:
+    As a tester I want to recover system after test or delete some files.
+
+description:
+    This feature equips testers with a customizable script to restore
+    the system post-testing or perform file deletions. Testers can use
+    this script across multiple TMT tests. This flexibility ensures
+    effective system cleanup and recovery, streamlining the testing
+    process. Must be a ``string`` or a ``list of strings``, providing
+    a program names or script paths.
+
+example:
+  - |
+    test: ./runtest.sh
+    summary: "Test curl against "
+    cleanup:
+      - ./stop_server.sh
+
+  - |
+    /ngnix:
+      summary+: ngnix
+      cleanup+:
+        - ./remove_users.sh
+
+link:
+  - implemented-by: /tmt/steps/execute/internal.py
+  - verified-by: /tests/test/setup-cleanup
