@@ -22,8 +22,7 @@ from tmt.steps.execute import (SCRIPTS, TEST_OUTPUT_FILENAME,
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, field
 
-TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
-WRAPPER_SUFFIX = 'tmt-wrapper.sh'
+WRAPPER_SUFFIX = 'wrapper.sh'
 
 TEST_WRAPPER_INTERACTIVE = '{remote_command}'
 TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& cat'
@@ -253,7 +252,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             for i, setup_command in enumerate(test.setup):
                 run_cmd(
                     setup_command,
-                    workdir / f'setup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    workdir / f'tmt-setup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
                     )
 
             # tmt wrapper filename *must* be "unique" - the plugin might be handling
@@ -262,13 +261,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             # a shared global state, and we must prevent race conditions.
             stdout, _ = run_cmd(
                 test.test,
-                workdir / f'{TEST_WRAPPER_FILENAME}.{guest.name}'
+                workdir / f'tmt-test-0-{WRAPPER_SUFFIX}.{guest.name}'
                 )
 
             for i, cleanup_command in enumerate(test.cleanup):
                 run_cmd(
                     cleanup_command,
-                    workdir / f'cleanup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    workdir / f'tmt-cleanup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
                     )
 
             test.returncode = 0
