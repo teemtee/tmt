@@ -39,7 +39,8 @@ from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultOutcome
 from tmt.utils import (Command, EnvironmentType, FmfContextType, Path,
                        ShellScript, WorkdirArgumentType, field,
-                       normalize_shell_script, verdict)
+                       normalize_shell_script, normalize_shell_script_list,
+                       verdict)
 
 if sys.version_info >= (3, 8):
     from typing import Literal, TypedDict
@@ -919,12 +920,10 @@ class Test(
             None if raw_value is None else Path(raw_value))
     setup: List[ShellScript] = field(
         default_factory=list,
-        normalize=lambda key_address, raw_value, logger:
-            raw_value if isinstance(raw_value, list) else [raw_value])
+        normalize=normalize_shell_script_list)
     cleanup: List[ShellScript] = field(
         default_factory=list,
-        normalize=lambda key_address, raw_value, logger:
-            raw_value if isinstance(raw_value, list) else [raw_value])
+        normalize=normalize_shell_script_list)
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
