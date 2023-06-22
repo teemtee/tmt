@@ -23,6 +23,7 @@ from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, field
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
+WRAPPER_SUFFIX = 'tmt-wrapper.sh'
 
 TEST_WRAPPER_INTERACTIVE = '{remote_command}'
 TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& cat'
@@ -186,15 +187,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Create data directory, prepare test environment
         environment = self._test_environment(test, guest, extra_environment)
 
-        # tmt wrapper filename *must* be "unique" - the plugin might be handling
-        # the same `discover` phase for different guests at the same time, and
-        # must keep them isolated. The wrapper script, while being prepared, is
-        # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = f'{TEST_WRAPPER_FILENAME}.{guest.name}'
-        test_wrapper_filepath = workdir / test_wrapper_filename
-
-        logger.debug('test wrapper', str(test_wrapper_filepath))
-
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
         topology.guest = tmt.steps.GuestTopology(guest)
@@ -219,17 +211,17 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 level=level,
                 topic=topic)
 
-        def run_cmd(command: ShellScript) -> tmt.utils.CommandOutput:
+        def run_cmd(command: ShellScript, wrapper_filepath: Path) -> tmt.utils.CommandOutput:
             friendly_command = str(command)
             # Prepare the wrapper, push to guest
             if test.framework == "shell":
                 command = ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {command}")
             self.debug('Test script', str(command), level=3)
-            self.write(test_wrapper_filepath, str(command), 'w')
-            test_wrapper_filepath.chmod(0o755)
+            self.write(wrapper_filepath, str(command), 'w')
+            wrapper_filepath.chmod(0o755)
             guest.push(
-                source=test_wrapper_filepath,
-                destination=test_wrapper_filepath,
+                source=wrapper_filepath,
+                destination=wrapper_filepath,
                 options=["-s", "-p", "--chmod=755"])
 
             if self.get('interactive'):
@@ -258,13 +250,26 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         # Execute the test, save the output and return code
         starttime = datetime.datetime.now(datetime.timezone.utc)
         try:
-            for setup_cmd in test.setup:
-                run_cmd(setup_cmd)
+            for i, setup_command in enumerate(test.setup):
+                run_cmd(
+                    setup_command,
+                    workdir / f'setup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    )
 
-            stdout, _ = run_cmd(test.test)
+            # tmt wrapper filename *must* be "unique" - the plugin might be handling
+            # the same `discover` phase for different guests at the same time, and
+            # must keep them isolated. The wrapper script, while being prepared, is
+            # a shared global state, and we must prevent race conditions.
+            stdout, _ = run_cmd(
+                test.test,
+                workdir / f'{TEST_WRAPPER_FILENAME}.{guest.name}'
+                )
 
-            for cleanup_cmd in test.cleanup:
-                run_cmd(cleanup_cmd)
+            for i, cleanup_command in enumerate(test.cleanup):
+                run_cmd(
+                    cleanup_command,
+                    workdir / f'cleanup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    )
 
             test.returncode = 0
         except tmt.utils.RunError as error:
