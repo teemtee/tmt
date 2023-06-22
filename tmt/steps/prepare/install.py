@@ -273,6 +273,7 @@ class InstallDnf(InstallBase):
 
     package_manager = "dnf"
     copr_plugin = "dnf-plugins-core"
+    skip_missing_option = "--skip-broken"
 
     def prepare_command(self) -> Tuple[Command, Command]:
         """ Prepare installation command """
@@ -290,7 +291,7 @@ class InstallDnf(InstallBase):
         command += Command(self.package_manager)
 
         if self.skip_missing:
-            options += Command('--skip-broken')
+            options += Command(self.skip_missing_option)
 
         return (command, options)
 
@@ -354,6 +355,14 @@ class InstallDnf(InstallBase):
             packages_debuginfo = [f'{package}-debuginfo' for package in self.debuginfo_packages]
             command = Command('rpm', '-q', *packages_debuginfo)
             self.guest.execute(command)
+
+
+class InstallDnf5(InstallDnf):
+    """ Install packages using dnf5 """
+
+    package_manager = "dnf5"
+    copr_plugin = "dnf5-plugins"
+    skip_missing_option = "--skip-unavailable"
 
 
 class InstallYum(InstallDnf):
@@ -591,6 +600,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
         elif guest.facts.package_manager == GuestPackageManager.DNF:
             installer = InstallDnf(logger=logger, parent=self, guest=guest)
+
+        elif guest.facts.package_manager == GuestPackageManager.DNF5:
+            installer = InstallDnf5(logger=logger, parent=self, guest=guest)
 
         elif guest.facts.package_manager == GuestPackageManager.YUM:
             installer = InstallYum(logger=logger, parent=self, guest=guest)

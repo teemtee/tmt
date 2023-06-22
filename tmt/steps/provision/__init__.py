@@ -76,6 +76,7 @@ class CheckRsyncOutcome(enum.Enum):
 
 class GuestPackageManager(enum.Enum):
     DNF = 'dnf'
+    DNF5 = 'dnf5'
     YUM = 'yum'
     RPM_OSTREE = 'rpm-ostree'
 
@@ -286,6 +287,7 @@ class GuestFacts(tmt.utils.SerializableContainer):
             guest,
             [
                 (Command('stat', '/run/ostree-booted'), GuestPackageManager.RPM_OSTREE),
+                (Command('dnf5', '--version'), GuestPackageManager.DNF5),
                 (Command('dnf', '--version'), GuestPackageManager.DNF),
                 (Command('yum', '--version'), GuestPackageManager.YUM),
                 # And, one day, we'd follow up on this with...
