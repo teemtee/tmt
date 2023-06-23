@@ -679,6 +679,26 @@ class Command:
         return CommandOutput(stdout_logger.get_output(), stderr_logger.get_output())
 
 
+_SANITIZE_NAME_PATTERN: Pattern[str] = re.compile(r'[^\w/-]+')
+_SANITIZE_NAME_PATTERN_NO_SLASH: Pattern[str] = re.compile(r'[^\w-]+')
+
+
+def sanitize_name(name: str, allow_slash: bool = True) -> str:
+    """
+    Create a safe variant of a name that does not contain special characters.
+
+    Spaces and other special characters are removed to prevent problems with
+    tools which do not expect them (e.g. in directory names).
+
+    :param name: a name to sanitize.
+    :param allow_slash: if set, even a slash character, ``/``, would be replaced.
+    """
+
+    pattern = _SANITIZE_NAME_PATTERN if allow_slash else _SANITIZE_NAME_PATTERN_NO_SLASH
+
+    return pattern.sub('-', name).strip('-')
+
+
 class _CommonBase:
     """
     A base class for **all** classes contributing to "common" tree of classes.
@@ -851,7 +871,7 @@ class Common(_CommonBase):
         """
 
         if self._safe_name is None:
-            self._safe_name = re.sub(r"[^\w/-]+", "-", self.name).strip("-")
+            self._safe_name = sanitize_name(self.name)
 
         return self._safe_name
 

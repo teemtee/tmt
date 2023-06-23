@@ -1019,3 +1019,14 @@ def test_filter_paths(source_dir):
 
     paths = filter_paths(source_dir, ['bz[235]', '/tests/bz5'])
     assert len(paths) == 3
+
+
+@pytest.mark.parametrize(
+    ('name', 'allow_slash', 'sanitized'),
+    [
+        ('foo bar/baz', True, 'foo-bar/baz'),
+        ('foo bar/baz', False, 'foo-bar-baz')
+        ]
+    )
+def test_sanitize_name(name: str, allow_slash: bool, sanitized: str) -> None:
+    assert tmt.utils.sanitize_name(name, allow_slash=allow_slash) == sanitized

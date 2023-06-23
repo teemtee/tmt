@@ -77,7 +77,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
 
             # Since we do not have the test data dir at hand, we must make the topology
             # filename unique on our own, and include the phase name and guest name.
-            filename_base = f'{tmt.steps.TEST_TOPOLOGY_FILENAME_BASE}-{self.name}-{guest.name}'
+            filename_base = f'{tmt.steps.TEST_TOPOLOGY_FILENAME_BASE}-{self.safe_name}-{guest.safe_name}'  # noqa: E501
 
             environment.update(
                 topology.push(

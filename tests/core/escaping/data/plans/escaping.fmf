@@ -9,6 +9,11 @@ discover:
   - name: Advanced plan's name escaping \n @? 'test' \"|"
     how: fmf
 
+prepare:
+  - name: A dummy prepare step with spaces/slashes
+    how: shell
+    script: /bin/true
+
 provision:
   how: container
 

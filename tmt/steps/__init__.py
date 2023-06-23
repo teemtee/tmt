@@ -731,6 +731,21 @@ class BasePlugin(Phase):
         self.data = data
         self.step = step
 
+    # TODO: cached_property candidate
+    @property
+    def safe_name(self) -> str:
+        """
+        A safe variant of the name which does not contain special characters.
+
+        Override parent implementation as we do not allow phase names to contain
+        slash characters, ``/``.
+        """
+
+        if self._safe_name is None:
+            self._safe_name = tmt.utils.sanitize_name(self.name, allow_slash=False)
+
+        return self._safe_name
+
     @classmethod
     def base_command(
             cls,
