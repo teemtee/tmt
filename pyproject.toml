@@ -88,6 +88,7 @@ select = [
     "PLR1",
 #    "PLW",  # pylint-warning
 #    "TRY",  # tryceratops
+    "FLY",  # flynt
     "RUF",  # ruff
 ]
 ignore = [

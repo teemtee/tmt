@@ -276,25 +276,19 @@ class TestStructuredField(unittest.TestCase):
         self.one = "[one]\n1\n"
         self.two = "[two]\n2\n"
         self.three = "[three]\n3\n"
-        self.sections = "\n".join([self.one, self.two, self.three])
+        self.sections = f'{self.one}\n{self.two}\n{self.three}'
 
     def test_everything(self):
         """ Everything """
         # Version 0
-        text0 = "\n".join([
-                self.header,
-                self.sections, self.zeroend,
-                self.footer])
+        text0 = f'{self.header}\n{self.sections}\n{self.zeroend}\n{self.footer}'
         inited0 = StructuredField(text0, version=0)
         loaded0 = StructuredField()
         loaded0.load(text0, version=0)
         assert inited0.save() == text0
         assert loaded0.save() == text0
         # Version 1
-        text1 = "\n".join([
-                self.header,
-                self.start, self.sections, self.end,
-                self.footer])
+        text1 = f'{self.header}\n{self.start}\n{self.sections}\n{self.end}\n{self.footer}'
         inited1 = StructuredField(text1)
         loaded1 = StructuredField()
         loaded1.load(text1)
@@ -312,12 +306,11 @@ class TestStructuredField(unittest.TestCase):
     def test_no_header(self):
         """ No header """
         # Version 0
-        text0 = "\n".join([self.sections, self.zeroend, self.footer])
+        text0 = f'{self.sections}\n{self.zeroend}\n{self.footer}'
         field0 = StructuredField(text0, version=0)
         assert field0.save() == text0
         # Version 1
-        text1 = "\n".join(
-                [self.start, self.sections, self.end, self.footer])
+        text1 = f'{self.start}\n{self.sections}\n{self.end}\n{self.footer}'
         field1 = StructuredField(text1)
         assert field1.save() == text1
         # Common checks
@@ -331,12 +324,11 @@ class TestStructuredField(unittest.TestCase):
     def test_no_footer(self):
         """ No footer """
         # Version 0
-        text0 = "\n".join([self.header, self.sections, self.zeroend])
+        text0 = f'{self.header}\n{self.sections}\n{self.zeroend}'
         field0 = StructuredField(text0, version=0)
         assert field0.save() == text0
         # Version 1
-        text1 = "\n".join(
-                [self.header, self.start, self.sections, self.end])
+        text1 = f'{self.header}\n{self.start}\n{self.sections}\n{self.end}'
         field1 = StructuredField(text1)
         assert field1.save() == text1
         # Common checks
@@ -350,11 +342,11 @@ class TestStructuredField(unittest.TestCase):
     def test_just_sections(self):
         """ Just sections """
         # Version 0
-        text0 = "\n".join([self.sections, self.zeroend])
+        text0 = f'{self.sections}\n{self.zeroend}'
         field0 = StructuredField(text0, version=0)
         assert field0.save() == text0
         # Version 1
-        text1 = "\n".join([self.start, self.sections, self.end])
+        text1 = f'{self.start}\n{self.sections}\n{self.end}'
         field1 = StructuredField(text1)
         assert field1.save() == text1
         # Common checks
@@ -379,7 +371,7 @@ class TestStructuredField(unittest.TestCase):
 
     def test_missing_end_tag(self):
         """ Missing end tag """
-        text = "\n".join([self.header, self.sections, self.footer])
+        text = f'{self.header}\n{self.sections}\n{self.footer}'
         self.assertRaises(StructuredFieldError, StructuredField, text, 0)
 
     def test_broken_field(self):
@@ -398,20 +390,20 @@ class TestStructuredField(unittest.TestCase):
             assert field.get('two') == '2\n'
             field.set("three", "3")
             assert field.get('three') == '3\n'
-        assert field0.save() == '\n'.join([self.sections, self.zeroend])
-        assert field1.save() == '\n'.join([self.start, self.sections, self.end])
+        assert field0.save() == f'{self.sections}\n{self.zeroend}'
+        assert field1.save() == f'{self.start}\n{self.sections}\n{self.end}'
 
     def test_remove_section(self):
         """ Remove section """
         field0 = StructuredField(
-            "\n".join([self.sections, self.zeroend]), version=0)
+            f'{self.sections}\n{self.zeroend}', version=0)
         field1 = StructuredField(
-            "\n".join([self.start, self.sections, self.end]))
+            f'{self.start}\n{self.sections}\n{self.end}')
         for field in [field0, field1]:
             field.remove("one")
             field.remove("two")
-        assert field0.save() == '\n'.join([self.three, self.zeroend])
-        assert field1.save() == '\n'.join([self.start, self.three, self.end])
+        assert field0.save() == f'{self.three}\n{self.zeroend}'
+        assert field1.save() == f'{self.start}\n{self.three}\n{self.end}'
 
     def test_section_tag_escaping(self):
         """ Section tag escaping """
@@ -443,8 +435,7 @@ class TestStructuredField(unittest.TestCase):
 
     def test_section_tags_in_header(self):
         """ Section tags in header """
-        field = StructuredField("\n".join(
-            ["[something]", self.start, self.one, self.end]))
+        field = StructuredField(f'[something]\n{self.start}\n{self.one}\n{self.end}')
         assert 'something' not in field
         assert 'one' in field
         assert field.get('one') == '1\n'
@@ -458,24 +449,23 @@ class TestStructuredField(unittest.TestCase):
 
     def test_section_item_get(self):
         """ Get section item """
-        text = "\n".join([self.start, "[section]\nx = 3\n", self.end])
+        text = f'{self.start}\n[section]\nx = 3\n\n{self.end}'
         field = StructuredField(text)
         assert field.get('section', 'x') == '3'
 
     def test_section_item_set(self):
         """ Set section item """
-        text = "\n".join([self.start, "[section]\nx = 3\n", self.end])
+        text = f'{self.start}\n[section]\nx = 3\n\n{self.end}'
         field = StructuredField()
         field.set("section", "3", "x")
         assert field.save() == text
 
     def test_section_item_remove(self):
         """ Remove section item """
-        text = "\n".join(
-            [self.start, "[section]\nx = 3\ny = 7\n", self.end])
+        text = f'{self.start}\n[section]\nx = 3\ny = 7\n\n{self.end}'
         field = StructuredField(text)
         field.remove("section", "x")
-        assert field.save() == '\n'.join([self.start, '[section]\ny = 7\n', self.end])
+        assert field.save() == f'{self.start}\n[section]\ny = 7\n\n{self.end}'
 
     def test_unicode_header(self):
         """ Unicode text in header """
@@ -487,7 +477,7 @@ class TestStructuredField(unittest.TestCase):
     def test_unicode_section_content(self):
         """ Unicode in section content """
         chars = "ěščřžýáíéů"
-        text = "\n".join([self.start, "[section]", chars, self.end])
+        text = f'{self.start}\n[section]\n{chars}\n{self.end}'
         field = StructuredField(text)
         assert field.get('section').strip() == chars
 
@@ -520,7 +510,7 @@ class TestStructuredField(unittest.TestCase):
 
     def test_carriage_returns(self):
         """ Carriage returns """
-        text1 = "\n".join([self.start, self.sections, self.end])
+        text1 = f'{self.start}\n{self.sections}\n{self.end}'
         text2 = re.sub(r"\n", "\r\n", text1)
         field1 = StructuredField(text1)
         field2 = StructuredField(text2)
@@ -530,7 +520,7 @@ class TestStructuredField(unittest.TestCase):
         """ Multiple values """
         # Reading multiple values
         section = "[section]\nkey=val1 # comment\nkey = val2\n key = val3 "
-        text = "\n".join([self.start, section, self.end])
+        text = f'{self.start}\n{section}\n{self.end}'
         field = StructuredField(text, multi=True)
         assert field.get('section', 'key') == ['val1', 'val2', 'val3']
         # Writing multiple values
