@@ -187,7 +187,11 @@ description: |
 
         There is a support for discovering tests from extracted
         (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS).
+        DistGit (Fedora, CentOS). By default tmt will search for
+        the first ``.fmf/version`` and use that as the fmf root,
+        ignoring all other files in the extracted sources. This
+        behavior can be changed: see "Advanced ``dist-git``
+        options" bellow.
 
         Patches are not yet supported, only tarball extraction
         happens.
