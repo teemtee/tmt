@@ -187,8 +187,7 @@ description: |
 
         There is a support for discovering tests from extracted
         (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
+        DistGit (Fedora, CentOS), ``path`` denotes path to the metadata
         tree root within extracted sources. At this moment no
         patches are applied, only tarball extraction happens.
 
