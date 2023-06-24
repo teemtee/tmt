@@ -213,14 +213,16 @@ description: |
             set to ``true`` and ``fmf init`` will be called inside
             extracted sources (at dist-git-extract or top directory)
         dist-git-extract
-            directory (glob supported) to copy from
-            extracted sources (defaults to inner fmf-root)
+            directory (glob supported) to copy from extracted sources.
+            Set to ``/`` to extract all sources
         dist-git-remove-fmf-root
             set to ``true`` to remove fmf root from
             extracted sources
         path
-            denotes path to the metadata tree root within extracted
-            sources
+            denotes path to the metadata tree root relative to
+            the extracted source root (equivalent to ``BUILDROOT``
+            in rpm builds). Must set ``dist-git-extract`` to have
+            any effect
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
