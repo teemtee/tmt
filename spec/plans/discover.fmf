@@ -187,9 +187,10 @@ description: |
 
         There is a support for discovering tests from extracted
         (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
+        DistGit (Fedora, CentOS).
+
+        Patches are not yet supported, only tarball extraction
+        happens.
 
         dist-git-source
             Set to ``true`` to enable extracting sources.
@@ -213,6 +214,9 @@ description: |
         dist-git-remove-fmf-root
             set to ``true`` to remove fmf root from
             extracted sources
+        path
+            denotes path to the metadata tree root within extracted
+            sources
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
