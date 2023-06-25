@@ -66,9 +66,6 @@ properties:
   dist-git-merge:
     type: boolean
 
-  dist-git-remove-fmf-root:
-    type: boolean
-
   dist-git-source:
     $ref: "/schemas/common#/definitions/dist-git-source"
 

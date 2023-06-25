@@ -127,8 +127,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
       extracted sources (at dist-git-extract or top directory)
     * dist-git-extract - directory (glob supported) to copy from
       extracted sources (defaults to inner fmf-root)
-    * dist-git-remove-fmf-root - set to True to remove fmf root from
-      extracted sources
 
     Selecting tests containing specified link is possible using 'link'
     option accepting RELATION:TARGET format of values. Regular
@@ -212,11 +210,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 help='Initialize fmf root inside extracted sources '
                      '(at dist-git-extract or top directory).'),
             option(
-                '--dist-git-remove-fmf-root', is_flag=True,
-                help='Remove fmf root from extracted source '
-                     '(top one or selected by copy-path, '
-                     'happens before dist-git-extract.'),
-            option(
                 '--dist-git-merge', is_flag=True,
                 help='Merge copied sources and plan fmf root.'),
             option(
@@ -251,7 +244,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         dist_git_merge = self.get('dist-git-merge', False)
         dist_git_init = self.get('dist-git-init', False)
         dist_git_extract = self.get('dist-git-extract', None)
-        dist_git_remove_fmf_root = self.get('dist-git-remove-fmf-root', False)
 
         # Self checks
         if dist_git_source and not dist_git_merge and (ref or url):

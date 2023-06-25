@@ -215,9 +215,6 @@ description: |
         dist-git-extract
             directory (glob supported) to copy from extracted sources.
             Set to ``/`` to extract all sources
-        dist-git-remove-fmf-root
-            set to ``true`` to remove fmf root from
-            extracted sources
         path
             denotes path to the metadata tree root relative to
             the extracted source root (equivalent to ``BUILDROOT``
