@@ -258,6 +258,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             raise tmt.utils.DiscoverError(
                 "Cannot manipulate with dist-git without "
                 "the `--dist-git-merge` option.")
+        # normalize `dist_git_extract` to list of strings
+        if type(dist_git_extract) == str:
+            dist_git_extract = [dist_git_extract]
 
         def get_git_root(dir: Path) -> Path:
             stdout, _ = self.run(
@@ -403,29 +406,40 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
             # Check what should be extracted from the sources
             if dist_git_extract:
-                if dist_git_extract == '/':
-                    dist_git_extract = sourcedir
+                if len(dist_git_extract) == 1 and dist_git_extract[0] == '/':
+                    # Special case to extract all sources
+                    dist_git_extract = [sourcedir]
                 else:
-                    try:
-                        # Glob everything
-                        glob_path = glob.glob(os.path.join(sourcedir, dist_git_extract.lstrip('/')))
-                        # Use only the directories
-                        glob_dirs = [d for d  in glob_path if Path(d).is_dir()]
-                        # Use only the first valid directory
-                        dist_git_extract = glob_dirs[0]
-                    except IndexError:
+                    if any(p == '/' for p in dist_git_extract):
                         raise tmt.utils.DiscoverError(
-                            f"Couldn't glob '{dist_git_extract}' "
-                            f"within extracted sources.")
+                            "Extract pattern '/' cannot be used with other patterns:\n"
+                            f"Requested pattern: {dist_git_extract}")
+                    # Otherwise resolve the glob pattern
+                    # Any string items are glob patterns, otherwise they are dicts with source and destination
+                    glob_patterns = [str(sourcedir.joinpath(p.lstrip('/'))) for p in dist_git_extract if type(p) == str]
+                    # Remove all glob patterns and keep the dict objects
+                    dist_git_extract = [p for p in dist_git_extract if type(p) != str]
+                    for pattern in glob_patterns:
+                        # Add all resolved paths to the paths
+                        try:
+                            dist_git_extract.extend([{
+                                "src": Path(p),
+                                "dest": Path(p).relative_to(sourcedir),
+                            } for p in glob.glob(pattern)])
+                        except Exception as error:
+                            raise tmt.utils.DiscoverError(
+                                f"Couldn't glob '{pattern}' "
+                                f"within extracted sources.") from error
 
             # Check sources for the fmf root, copy git root if not found
             if not dist_git_init and not dist_git_extract:
                 try:
+                    # TODO: Use the paths specified in dist_git_extract
                     top_fmf_root = tmt.utils.find_fmf_root(sourcedir)[0]
-                    # Using the fmf_root as the working directory, additional path is redundant
-                    path = None
+                    # If a specific path was not defined, use the automatically detected one
+                    if not path:
+                        path = top_fmf_root.relative_to(sourcedir)
                 except tmt.utils.MetadataError:
-                    dist_git_extract = sourcedir
                     if not dist_git_merge:
                         self.warn(
                             "Extracted sources do not contain fmf root, "
@@ -436,30 +450,30 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                             shutil.copytree(
                                 git_root, self.testdir, symlinks=True)
 
-            # Initialize or remove fmf root
-            if dist_git_init:
-                if not dist_git_extract:
-                    dist_git_extract = sourcedir
-                if not self.opt('dry'):
-                    fmf.Tree.init(dist_git_extract)
-            elif dist_git_remove_fmf_root:
-                if not self.opt('dry'):
-                    shutil.rmtree(os.path.join(
-                        dist_git_extract or top_fmf_root, '.fmf'))
-                if not dist_git_extract:
-                    dist_git_extract = sourcedir
-
-            # Now can safely default to top_fmf_root
+            # Set dist_git_extract if not set yet
             if not dist_git_extract:
-                dist_git_extract = top_fmf_root
+                dist_git_extract = [{
+                    "src": sourcedir,
+                    "dest": '.',
+                }]
 
             # Now copy dist_git_extract into tests
             if not self.opt('dry'):
-                tmt.utils.copytree(
-                    dist_git_extract,
-                    self.testdir,
-                    symlinks=True,
-                    dirs_exist_ok=True)
+                # Copy all requested paths
+                for path in dist_git_extract:
+                    try:
+                        tmt.utils.copytree(
+                            path['src'],
+                            self.testdir.joinpath(path['dest']),
+                            symlinks=True,
+                            dirs_exist_ok=True)
+                    except Exception as error:
+                        raise tmt.utils.DiscoverError(
+                            f"Could not copy path: {path}"
+                        ) from error
+                # Initialize fmf root at the extracted path
+                if dist_git_init:
+                    fmf.Tree.init(self.testdir)
 
         # Adjust path and optionally show
         if path is None or path.resolve() == Path.cwd().resolve():
