@@ -25,7 +25,7 @@ import tmt.plugins
 import tmt.steps
 import tmt.templates
 import tmt.utils
-from tmt.options import create_options_decorator, option
+from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Path
 
 if TYPE_CHECKING:
@@ -716,11 +716,13 @@ _test_export_default = 'yaml'
     type=click.Choice(choices=_test_export_formats))
 @option(
     '--format', default=_test_export_default, show_default=True,
-    help='Output format. Deprecated, use --how instead.',
+    help='Output format.',
+    deprecated=Deprecated('1.21', hint='use --how instead'),
     type=click.Choice(choices=_test_export_formats))
 @option(
     '--nitrate', is_flag=True,
-    help="Export test metadata to Nitrate, deprecated by '--how nitrate'.")
+    help="Export test metadata to Nitrate.",
+    deprecated=Deprecated('1.21', hint="use '--how nitrate' instead"))
 @option(
     '--project-id', help='Use specific Polarion project ID.')
 @option(
@@ -983,7 +985,8 @@ _plan_export_default = 'yaml'
     type=click.Choice(choices=_plan_export_formats))
 @option(
     '--format', default=_plan_export_default, show_default=True,
-    help='Output format. Deprecated, use --how instead.',
+    help='Output format.',
+    deprecated=Deprecated('1.21', hint='use --how instead'),
     type=click.Choice(choices=_plan_export_formats))
 @option(
     '-d', '--debug', is_flag=True,
@@ -1233,7 +1236,8 @@ _story_export_default = 'yaml'
     type=click.Choice(choices=_story_export_formats))
 @option(
     '--format', default=_story_export_default, show_default=True,
-    help='Output format. Deprecated, use --how instead.',
+    help='Output format.',
+    deprecated=Deprecated('1.21', hint='use --how instead'),
     type=click.Choice(choices=_story_export_formats))
 @option(
     '-d', '--debug', is_flag=True,

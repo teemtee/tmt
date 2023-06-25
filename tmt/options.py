@@ -36,12 +36,12 @@ class Deprecated:
 
     @property
     def rendered(self) -> str:
-        message = f"The option is deprecated since {self.since}."
+        message = f"The option is deprecated since {self.since}"
 
         if self.hint:
-            message += " " + self.hint
+            message = f'{message}, {self.hint}'
 
-        return message
+        return f'{message}.'
 
 
 MethodDictType = Dict[str, click.core.Command]
