@@ -115,7 +115,7 @@ T = TypeVar('T', bound='StepData')
 
 @dataclasses.dataclass
 class StepData(
-        tmt.utils.SpecBasedContainer,
+        tmt.utils.SpecBasedContainer[_RawStepData, _RawStepData],
         tmt.utils.NormalizeKeysMixin,
         tmt.utils.SerializableContainer):
     """
@@ -142,9 +142,7 @@ class StepData(
     order: int = tmt.utils.DEFAULT_PLUGIN_ORDER
     summary: Optional[str] = None
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> _RawStepData:  # type: ignore[override]
+    def to_spec(self) -> _RawStepData:
         """ Convert to a form suitable for saving in a specification file """
 
         return cast(_RawStepData, {
@@ -163,8 +161,7 @@ class StepData(
 
         pass
 
-    # ignore[override]: expected, we do want to accept more specific
-    # type than the one declared in superclass.
+    # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
             cls: Type[T],

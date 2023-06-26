@@ -131,7 +131,7 @@ class _RawFmfId(TypedDict, total=False):
 # An internal fmf id representation.
 @dataclasses.dataclass
 class FmfId(
-        tmt.utils.SpecBasedContainer,
+        tmt.utils.SpecBasedContainer[_RawFmfId, _RawFmfId],
         tmt.utils.SerializableContainer,
         tmt.export.Exportable['FmfId']):
 
@@ -176,9 +176,7 @@ class FmfId(
 
         return exported
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> _RawFmfId:  # type: ignore[override]
+    def to_spec(self) -> _RawFmfId:
         """ Convert to a form suitable for saving in a specification file """
 
         spec = self.to_dict()
@@ -188,9 +186,7 @@ class FmfId(
 
         return self._drop_nonexportable(spec)
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_minimal_spec(self) -> _RawFmfId:  # type: ignore[override]
+    def to_minimal_spec(self) -> _RawFmfId:
         """ Convert to specification, skip default values """
 
         spec = cast(_RawFmfId, super().to_minimal_spec())
@@ -366,7 +362,10 @@ class _RawDependencyFmfId(_RawFmfId):
 
 
 @dataclasses.dataclass
-class DependencyFmfId(FmfId):
+class DependencyFmfId(
+        FmfId,
+        # Repeat the SpecBasedContainer, with more fitting in/out spec type.
+        tmt.utils.SpecBasedContainer[_RawDependencyFmfId, _RawDependencyFmfId]):
     """
     A fmf ID as a dependency.
 
@@ -394,9 +393,7 @@ class DependencyFmfId(FmfId):
 
         return cast(_RawDependencyFmfId, super().to_minimal_dict())
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> _RawDependencyFmfId:  # type: ignore[override]
+    def to_spec(self) -> _RawDependencyFmfId:
         """ Convert to a form suitable for saving in a specification file """
 
         spec = self.to_dict()
@@ -406,9 +403,7 @@ class DependencyFmfId(FmfId):
 
         return spec
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_minimal_spec(self) -> _RawDependencyFmfId:  # type: ignore[override]
+    def to_minimal_spec(self) -> _RawDependencyFmfId:
         """ Convert to specification, skip default values """
 
         spec = self.to_minimal_dict()
@@ -449,7 +444,7 @@ class _RawDependencyFile(TypedDict):
 
 @dataclasses.dataclass
 class DependencyFile(
-        tmt.utils.SpecBasedContainer,
+        tmt.utils.SpecBasedContainer[_RawDependencyFile, _RawDependencyFile],
         tmt.utils.SerializableContainer,
         tmt.export.Exportable['DependencyFile']):
     VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
@@ -470,18 +465,6 @@ class DependencyFile(
     def to_minimal_dict(self) -> _RawDependencyFile:  # type: ignore[override]
         """ Convert to a mapping with unset keys omitted """
         return cast(_RawDependencyFile, super().to_minimal_dict())
-
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> _RawDependencyFile:  # type: ignore[override]
-        """ Convert to a form suitable for saving in a specification file """
-        return self.to_dict()
-
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_minimal_spec(self) -> _RawDependencyFile:  # type: ignore[override]
-        """ Convert to specification, skip default values """
-        return cast(_RawDependencyFile, super().to_minimal_spec())
 
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
@@ -3571,7 +3554,7 @@ class LinkNeedle:
 
 
 @dataclasses.dataclass
-class Link(tmt.utils.SpecBasedContainer):
+class Link(tmt.utils.SpecBasedContainer[Any, _RawLinkRelation]):
     """
     An internal "link" as defined by tmt specification.
 
@@ -3651,9 +3634,7 @@ class Link(tmt.utils.SpecBasedContainer):
 
         return Link(relation=relation, target=FmfId.from_spec(raw_target), note=note)
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> _RawLinkRelation:  # type: ignore[override]
+    def to_spec(self) -> _RawLinkRelation:
         """
         Convert to a form suitable for saving in a specification file
 
@@ -3679,7 +3660,7 @@ class Link(tmt.utils.SpecBasedContainer):
         return spec
 
 
-class Links(tmt.utils.SpecBasedContainer):
+class Links(tmt.utils.SpecBasedContainer[Any, List[_RawLinkRelation]]):
     """
     Collection of links in tests, plans and stories.
 
@@ -3721,9 +3702,7 @@ class Links(tmt.utils.SpecBasedContainer):
         # Ensure that each link is in the canonical form
         self._links = [Link.from_spec(spec) for spec in specs]
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> List[_RawLinkRelation]:  # type: ignore[override]
+    def to_spec(self) -> List[_RawLinkRelation]:
         """
         Convert to a form suitable for saving in a specification file
 

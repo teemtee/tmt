@@ -19,7 +19,7 @@ T = TypeVar('T', bound='TestDescription')
 
 @dataclasses.dataclass
 class TestDescription(
-        tmt.utils.SpecBasedContainer,
+        tmt.utils.SpecBasedContainer[Dict[str, Any], Dict[str, Any]],
         tmt.utils.NormalizeKeysMixin,
         tmt.utils.SerializableContainer):
     """

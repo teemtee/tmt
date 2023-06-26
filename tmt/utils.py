@@ -2292,12 +2292,32 @@ class DataContainer:
         return True
 
 
-SpecBasedContainerT = TypeVar('SpecBasedContainerT', bound='SpecBasedContainer')
+#: A typevar bound to spec-based container base class. A stand-in for all classes
+#: derived from :py:class:`SpecBasedContainer`.
+SpecBasedContainerT = TypeVar(
+    'SpecBasedContainerT',
+    # ignore[type-arg]: generic bounds are not supported by mypy.
+    bound='SpecBasedContainer')  # type: ignore[type-arg]
+
+# It may look weird, having two different typevars for "spec", but it does make
+# sense: tmt is fairly open to what it accepts, e.g. "a string or a list of
+# strings". This is the input part of the flow. But then the input is normalized,
+# and the output may be just a subset of types tmt is willing to accept. For
+# example, if `tag` can be either a string or a list of strings, when processed
+# by tmt and converted back to spec, a list of strings is the only output, even
+# if the original was a single string. Therefore `SpecBasedContainer` accepts
+# two types, one for each direction. Usually, the output one would be a subset
+# of the input one.
+
+#: A typevar representing an *input* specification consumed by :py:class:`SpecBasedContainer`.
+SpecInT = TypeVar('SpecInT')
+#: A typevar representing an *output* specification produced by :py:class:`SpecBasedContainer`.
+SpecOutT = TypeVar('SpecOutT')
 
 
-class SpecBasedContainer(DataContainer):
+class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
     @classmethod
-    def from_spec(cls: Type[SpecBasedContainerT], spec: Any) -> SpecBasedContainerT:
+    def from_spec(cls: Type[SpecBasedContainerT], spec: SpecInT) -> SpecBasedContainerT:
         """
         Convert from a specification file or from a CLI option
 
@@ -2308,7 +2328,7 @@ class SpecBasedContainer(DataContainer):
 
         raise NotImplementedError
 
-    def to_spec(self) -> Dict[str, Any]:
+    def to_spec(self) -> SpecOutT:
         """
         Convert to a form suitable for saving in a specification file
 
@@ -2317,9 +2337,9 @@ class SpecBasedContainer(DataContainer):
         See :py:meth:`from_spec` for its counterpart.
         """
 
-        return self.to_dict()
+        return cast(SpecOutT, self.to_dict())
 
-    def to_minimal_spec(self) -> Dict[str, Any]:
+    def to_minimal_spec(self) -> SpecOutT:
         """
         Convert to specification, skip default values
 
@@ -2328,7 +2348,7 @@ class SpecBasedContainer(DataContainer):
         See :py:meth:`from_spec` for its counterpart.
         """
 
-        return self.to_minimal_dict()
+        return cast(SpecOutT, self.to_minimal_dict())
 
 
 SerializableContainerDerivedType = TypeVar(
