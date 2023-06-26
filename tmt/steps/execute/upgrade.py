@@ -39,20 +39,20 @@ class ExecuteUpgradeData(ExecuteInternalData):
         metavar='PLAN_NAME',
         help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.')
 
-    # Inherit from tmt.steps.discover.fmf.DiscoverFmfStepData
+    # "Inherit" from tmt.steps.discover.fmf.DiscoverFmfStepData
     ref: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-r', '--ref'),
         metavar='REVISION',
         help='Branch, tag or commit specifying the git revision.')
-    filter: List[str] = field(
+    test: List[str] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
         help='Select tests by name.',
         normalize=tmt.utils.normalize_string_list)
-    test: List[str] = field(
+    filter: List[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
         metavar='FILTERS',
@@ -136,7 +136,6 @@ class ExecuteUpgrade(ExecuteInternal):
             filter: "tag:fedora"
     """
 
-    # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
     _data_class = ExecuteUpgradeData
     data: ExecuteUpgradeData
 
