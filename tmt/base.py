@@ -1137,11 +1137,13 @@ class Test(
 
     @staticmethod
     def create(
+            *,
             name: str,
             template: str,
             path: Path,
             force: bool = False,
-            dry: Optional[bool] = None) -> None:
+            dry: Optional[bool] = None,
+            logger: tmt.log.Logger) -> None:
         """ Create a new test """
         if dry is None:
             dry = Test._opt('dry')
@@ -1152,7 +1154,10 @@ class Test(
         else:
             directory_path = path / name.lstrip('/')
             tmt.utils.create_directory(
-                directory_path, 'test directory', dry=dry)
+                path=directory_path,
+                name='test directory',
+                dry=dry,
+                logger=logger)
 
         # Create metadata
         try:
@@ -1724,11 +1729,13 @@ class Plan(
 
     @staticmethod
     def create(
+            *,
             name: str,
             template: str,
             path: Path,
             force: bool = False,
-            dry: Optional[bool] = None) -> None:
+            dry: Optional[bool] = None,
+            logger: tmt.log.Logger) -> None:
         """ Create a new plan """
         # Prepare paths
         if dry is None:
@@ -1740,7 +1747,11 @@ class Plan(
         plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
 
         # Create directory & plan
-        tmt.utils.create_directory(directory_path, 'plan directory', dry=dry)
+        tmt.utils.create_directory(
+            path=directory_path,
+            name='plan directory',
+            dry=dry,
+            logger=logger)
         try:
             content = tmt.templates.PLAN[template]
         except KeyError:
@@ -2303,11 +2314,13 @@ class Story(
 
     @staticmethod
     def create(
+            *,
             name: str,
             template: str,
             path: Path,
             force: bool = False,
-            dry: Optional[bool] = None) -> None:
+            dry: Optional[bool] = None,
+            logger: tmt.log.Logger) -> None:
         """ Create a new story """
         if dry is None:
             dry = Story._opt('dry')
@@ -2319,7 +2332,11 @@ class Story(
         story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
 
         # Create directory & story
-        tmt.utils.create_directory(directory_path, 'story directory', dry=dry)
+        tmt.utils.create_directory(
+            path=directory_path,
+            name='story directory',
+            dry=dry,
+            logger=logger)
         try:
             content = tmt.templates.STORY[template]
         except KeyError:
@@ -2797,14 +2814,50 @@ class Tree(tmt.utils.Common):
             echo(f"Applying template '{template}'.")
 
         if template == 'mini':
-            tmt.Plan.create('/plans/example', 'mini', path, force, dry)
+            tmt.Plan.create(
+                name='/plans/example',
+                template='mini',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
         elif template == 'base':
-            tmt.Test.create('/tests/example', 'beakerlib', path, force, dry)
-            tmt.Plan.create('/plans/example', 'base', path, force, dry)
+            tmt.Test.create(
+                name='/tests/example',
+                template='beakerlib',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
+            tmt.Plan.create(
+                name='/plans/example',
+                template='base',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
         elif template == 'full':
-            tmt.Test.create('/tests/example', 'shell', path, force, dry)
-            tmt.Plan.create('/plans/example', 'full', path, force, dry)
-            tmt.Story.create('/stories/example', 'full', path, force, dry)
+            tmt.Test.create(
+                name='/tests/example',
+                template='shell',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
+            tmt.Plan.create(
+                name='/plans/example',
+                template='full',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
+            tmt.Story.create(
+                name='/stories/example',
+                template='full',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger)
 
 
 @dataclasses.dataclass

@@ -572,7 +572,12 @@ def tests_create(
     """
     assert context.obj.tree.root is not None  # narrow type
     tmt.Test._save_cli_context(context)
-    tmt.Test.create(name, template, context.obj.tree.root, force)
+    tmt.Test.create(
+        name=name,
+        template=template,
+        path=context.obj.tree.root,
+        force=force,
+        logger=context.obj.logger)
 
 
 @tests.command(name='import')
@@ -969,7 +974,12 @@ def plans_create(
     """ Create a new plan based on given template. """
     assert context.obj.tree.root is not None  # narrow type
     tmt.Plan._save_cli_context(context)
-    tmt.Plan.create(name, template, context.obj.tree.root, force)
+    tmt.Plan.create(
+        name=name,
+        template=template,
+        path=context.obj.tree.root,
+        force=force,
+        logger=context.obj.logger)
 
 
 _plan_export_formats = list(tmt.Plan.get_export_plugin_registry().iter_plugin_ids())
@@ -1142,7 +1152,12 @@ def stories_create(
     """ Create a new story based on given template. """
     assert context.obj.tree.root is not None  # narrow type
     tmt.Story._save_cli_context(context)
-    tmt.Story.create(name, template, context.obj.tree.root, force)
+    tmt.Story.create(
+        name=name,
+        template=template,
+        path=context.obj.tree.root,
+        force=force,
+        logger=context.obj.logger)
 
 
 @stories.command(name='coverage')

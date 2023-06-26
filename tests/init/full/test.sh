@@ -9,7 +9,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt init -t full -n"
-        rlAssertGrep "Directory .* would be created." "${rlRun_LOG}"
+        rlAssertGrep "Test directory .* would be created." "${rlRun_LOG}"
         rlAssertNotExists "stories/example.fmf"
         rlAssertNotExists "plans/example.fmf"
         rlAssertNotExists "tests/example/main.fmf"
@@ -17,7 +17,7 @@ rlJournalStart
         rlRun -s "tmt init -t full"
         rlAssertGrep "Tree .* initialized." "${rlRun_LOG}"
         rlAssertGrep "Applying template 'full'." "${rlRun_LOG}"
-        rlAssertGrep "Directory .* created." "${rlRun_LOG}"
+        rlAssertGrep "Test directory .* created." "${rlRun_LOG}"
         rlAssertExists "stories/example.fmf"
         rlAssertExists "plans/example.fmf"
         rlAssertExists "tests/example/main.fmf"

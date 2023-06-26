@@ -10,7 +10,7 @@ rlJournalStart
     rlPhaseStartTest "Dry"
         for option in '-n' '--dry'; do
             rlRun -s "tmt init -t base $option"
-            rlAssertGrep "Directory .* would be created." "${rlRun_LOG}"
+            rlAssertGrep "Test directory .* would be created." "${rlRun_LOG}"
             rlAssertNotExists "plans/example.fmf"
             rlAssertNotExists "tests/example/main.fmf"
             rlAssertNotExists "tests/example/test.sh"
@@ -21,7 +21,7 @@ rlJournalStart
         rlRun -s "tmt init -t base"
         rlAssertGrep "Tree .* initialized." "${rlRun_LOG}"
         rlAssertGrep "Applying template 'base'." "${rlRun_LOG}"
-        rlAssertGrep "Directory .* created." "${rlRun_LOG}"
+        rlAssertGrep "Test directory .* created." "${rlRun_LOG}"
         rlAssertExists "plans/example.fmf"
         rlAssertExists "tests/example/main.fmf"
         rlAssertExists "tests/example/test.sh"

@@ -24,7 +24,7 @@ rlJournalStart
             2 "test already exists"
         rlAssertGrep "File '$tmp/test_shell/main.fmf' already exists." \
             "${rlRun_LOG}"
-        rlAssertGrep "Directory '$tmp/test_shell' already exists." \
+        rlAssertGrep "Test directory '$tmp/test_shell' already exists." \
             "${rlRun_LOG}"
         rlAssertExists "$tmp/test_shell/main.fmf"
         rlAssertExists "$tmp/test_shell/test.sh"
@@ -51,7 +51,7 @@ rlJournalStart
 
     rlPhaseStartTest "Using the --dry option"
         rlRun -s "tmt test create -n -t beakerlib example-test"
-        rlAssertGrep "Directory .* would be created." "${rlRun_LOG}"
+        rlAssertGrep "Test directory .* would be created." "${rlRun_LOG}"
         rlAssertGrep "Test metadata .* would be created." "${rlRun_LOG}"
         rlAssertGrep "Test script .* would be created." "${rlRun_LOG}"
         rlAssertNotExists "$tmp/example-test"
@@ -67,7 +67,7 @@ rlJournalStart
             0 "Check testing comment was not overwritten"
 
         rlRun -s "tmt test create -nf -t beakerlib example-test"
-        rlAssertGrep "Directory .* already exists." "${rlRun_LOG}"
+        rlAssertGrep "Test directory .* already exists." "${rlRun_LOG}"
         rlAssertGrep "Test metadata .* would be overwritten." "${rlRun_LOG}"
         rlAssertGrep "Test script .* would be overwritten." "${rlRun_LOG}"
         rlRun "grep '$TEST_STRING' $tmp/example-test/test.sh" \

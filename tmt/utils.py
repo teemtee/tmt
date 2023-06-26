@@ -1248,7 +1248,11 @@ class Common(_CommonBase):
                 _check_or_create_workdir_root_with_perms()
 
             # Create the workdir
-            create_directory(workdir, 'workdir', quiet=True)
+            create_directory(
+                path=workdir,
+                name='workdir',
+                quiet=True,
+                logger=self._logger)
 
         # TODO: chicken and egg problem: when `Common` is instantiated, the workdir
         # path might be already known, but it's often not created yet. Therefore
@@ -1296,7 +1300,11 @@ class Common(_CommonBase):
             if self._workdir is None:
                 return None
             # Create a child workdir under the parent workdir
-            create_directory(self._workdir, 'workdir', quiet=True)
+            create_directory(
+                path=self._workdir,
+                name='workdir',
+                quiet=True,
+                logger=self._logger)
 
         return self._workdir
 
@@ -2667,23 +2675,61 @@ def format(
 
 
 def create_directory(
+        *,
         path: Path,
         name: str,
         dry: bool = False,
-        quiet: bool = False) -> None:
-    """ Create a new directory, handle errors """
-    say = log.debug if quiet else echo
-    if path.is_dir():
-        say(f"Directory '{path}' already exists.")
+        quiet: bool = False,
+        logger: tmt.log.Logger) -> None:
+    """
+    Create a new directory.
+
+    Before creating the directory, function checks whether it exists
+    already - the existing directory is **not** removed and re-created.
+
+    The outcome of the operation will be logged in a debug log, but
+    may also be sent to console with ``quiet=False``.
+
+    :param path: a path to be created.
+    :param name: a "label" of the path, used for logging.
+    :param dry: if set, directory would not be created. Still, the
+        existence check will happen.
+    :param quiet: if set, an outcome of the operation would be logged
+        to console.
+    :param logger: logger to use for logging.
+    :raises FileError: when function tried to create the directory,
+        but failed.
+    """
+
+    # Streamline the logging a bit: wrap the creating with a function returning
+    # a message & optional exception. Later we will send the message to debug
+    # log, and maybe also to console.
+    def _create_directory() -> Tuple[str, Optional[Exception]]:
+        if path.is_dir():
+            return (f"{name.capitalize()} '{path}' already exists.", None)
+
+        if dry:
+            return (f"{name.capitalize()} '{path}' would be created.", None)
+
+        try:
+            path.mkdir(exist_ok=True, parents=True)
+
+        except OSError as error:
+            return (f"Failed to create {name} '{path}'.", error)
+
+        return (f"{name.capitalize()} '{path}' created.", None)
+
+    message, exc = _create_directory()
+
+    if exc:
+        raise FileError(message) from exc
+
+    logger.debug(message)
+
+    if quiet:
         return
-    if dry:
-        say(f"Directory '{path}' would be created.")
-        return
-    try:
-        path.mkdir(exist_ok=True, parents=True)
-        say(f"Directory '{path}' created.")
-    except OSError as error:
-        raise FileError(f"Failed to create {name} '{path}' ({error})") from error
+
+    echo(message)
 
 
 def create_file(
