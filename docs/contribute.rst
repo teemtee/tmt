@@ -229,6 +229,21 @@ Building documentation is then quite straightforward:
 Find the resulting html pages under the ``docs/_build/html``
 folder.
 
+Use the ``TMT_DOCS_THEME`` variable to easily pick custom theme.
+If specified, ``make docs`` would use this theme for documentation
+rendering by Sphinx. The theme must be installed manually, ``make
+docs`` will not do so. Variable expects two strings, separated by
+a colon (``:``): theme package name, and theme name.
+
+.. code-block:: shell
+
+    # Sphinx book theme, sphinx-book-theme:
+    TMT_DOCS_THEME="sphinx_book_theme:sphinx_book_theme" make docs
+
+    # Renku theme, renku-sphinx-theme - note that package name
+    # and theme name are *not* the same string:
+    TMT_DOCS_THEME="renku_sphinx_theme:renku" make docs
+
 
 Pull Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

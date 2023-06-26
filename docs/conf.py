@@ -11,9 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import importlib
 import os
 import sys
-from typing import List
+from typing import List, Optional, Tuple
 from unittest.mock import Mock as MagicMock
 
 import tmt.base
@@ -22,20 +23,72 @@ import tmt.plugins
 import tmt.utils
 from tmt.utils import Path
 
-try:
-    # use bootstrap theme if user has it installed
-    import sphinx_bootstrap_theme
-    HTML_THEME = 'bootstrap'
-    html_theme_path = [sphinx_bootstrap_theme.get_html_theme_path()]
-except ImportError:
+_POSSIBLE_THEMES: List[Tuple[Optional[str], str]] = [
+    # Fall back to sphinx_rtd_theme if available
+    ('sphinx_rtd_theme', 'sphinx_rtd_theme'),
+    # The default theme
+    (None, 'default')
+    ]
+
+# NOTE: this one is defined somewhere below, among original Sphinx config fields,
+# but we need it as early as possible to be set when loading themes.
+# Add any paths that contain custom themes here, relative to this directory.
+html_theme_path = []
+
+
+def _load_theme(
+        theme_package_name: str,
+        theme_name: str) -> bool:
     try:
-        # fall back to sphinx_rtd_theme if available
-        import sphinx_rtd_theme
-        HTML_THEME = 'sphinx_rtd_theme'
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    except ImportError:
-        # and fall back to 'default' if neither of those are available
-        HTML_THEME = 'default'
+        theme_package = importlib.import_module(theme_package_name)
+
+    except ModuleNotFoundError:
+        return False
+
+    global HTML_THEME
+
+    HTML_THEME = theme_name
+
+    if hasattr(theme_package, 'get_html_theme_path'):
+        global html_theme_path
+
+        path = theme_package.get_html_theme_path()
+
+        html_theme_path = path if isinstance(path, list) else [path]
+
+        return True
+
+    return True
+
+
+if 'TMT_DOCS_THEME' in os.environ:
+    theme_package_name: Optional[str]
+    theme_name: str
+
+    theme_specs = os.environ['TMT_DOCS_THEME']
+
+    try:
+        theme_package_name, theme_name = theme_specs.split(':', 1)
+
+    except ValueError:
+        raise tmt.utils.GeneralError(
+            f"Cannot split TMT_DOCS_THEME '{theme_specs}' into theme package and theme name.")
+
+    if not _load_theme(theme_package_name, theme_name):
+        raise tmt.utils.GeneralError(f"Cannot load theme from TMT_DOCS_THEME, '{theme_specs}'.")
+
+else:
+    for theme_package_name, theme_name in _POSSIBLE_THEMES:
+        if not theme_package_name:
+            HTML_THEME = theme_name
+            break
+
+        if _load_theme(theme_package_name, theme_name):
+            break
+
+    else:
+        raise tmt.utils.GeneralError('Cannot find usable theme.')
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -147,9 +200,6 @@ if on_rtd:  # only import and set the theme if we're building docs locally
 # further.  For a list of options available for each theme, see the
 # documentation.
 # html_theme_options = {}
-
-# Add any paths that contain custom themes here, relative to this directory.
-# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
