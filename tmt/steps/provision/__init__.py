@@ -875,7 +875,7 @@ class GuestSshData(GuestData):
         option='--ssh-option',
         metavar="OPTION",
         multiple=True,
-        help="Specify additional SSH option. "
+        help="Specify an additional SSH option. "
         "Value is passed to SSH's -o option, see ssh_config(5) for "
         "supported options. Can be specified multiple times.",
         normalize=tmt.utils.normalize_string_list)

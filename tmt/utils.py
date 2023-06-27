@@ -4373,7 +4373,7 @@ def normalize_int(
 
 def normalize_optional_int(
         key_address: str,
-        value: Optional[str],
+        value: Any,
         logger: tmt.log.Logger) -> Optional[int]:
     """
     Normalize an integer that may be unset as well.
@@ -4404,7 +4404,7 @@ def normalize_storage_size(
 
     As of now, it's just a simple integer with units interpreted by the owning
     plugin. In the future, we want this function to switch to proper units
-    and return ``ping.Quantity`` instead.
+    and return ``pint.Quantity`` instead.
     """
 
     return normalize_int(key_address, value, logger)
