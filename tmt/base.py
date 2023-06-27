@@ -920,10 +920,16 @@ class Test(
             None if raw_value is None else Path(raw_value))
     setup: List[ShellScript] = field(
         default_factory=list,
-        normalize=normalize_shell_script_list)
+        normalize=normalize_shell_script_list,
+        serialize=lambda scripts: [str(script) for script in scripts],
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
+        )
     cleanup: List[ShellScript] = field(
         default_factory=list,
-        normalize=normalize_shell_script_list)
+        normalize=normalize_shell_script_list,
+        serialize=lambda scripts: [str(script) for script in scripts],
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
+        )
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
