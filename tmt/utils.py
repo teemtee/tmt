@@ -2796,50 +2796,61 @@ def check_git_url(url: str) -> str:
         raise GitUrlError(f"Unable to contact remote git via '{url}'.")
 
 
-def public_git_url(url: str) -> str:
-    """
-    Convert a git url into a public format
-
-    Return url in the format which can be accessed without
-    authentication. For now just cover the most common services.
-    """
-
+PUBLIC_GIT_URL_PATTERNS: List[Tuple[str, str]] = [
     # Gitlab on private namepace is synced to pkgs.devel.redhat.com
     # old: https://gitlab.com/redhat/rhel/tests/bash
     # old: git@gitlab.com:redhat/rhel/tests/bash
     # new: https://pkgs.devel.redhat.com/git/tests/bash
-    matched = re.match(r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)', url)
-    if matched:
-        project = matched.group(1)
-        return f'https://pkgs.devel.redhat.com/git{project}'
+    (
+        r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)',
+        r'https://pkgs.devel.redhat.com/git\1'
+        ),
 
     # GitHub, GitLab
     # old: git@github.com:teemtee/tmt.git
     # new: https://github.com/teemtee/tmt.git
-    matched = re.match('git@(.*):(.*)', url)
-    if matched:
-        host, project = matched.groups()
-        return f'https://{host}/{project}'
+    (
+        r'git@(.*):(.*)',
+        r'https://\1/\2'
+        ),
 
     # RHEL packages
     # old: git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://pkgs.devel.redhat.com/tests/bash
     # new: https://pkgs.devel.redhat.com/git/tests/bash
-    matched = re.match(
-        r'(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)', url)
-    if matched:
-        _, _, host, project = matched.groups()
-        return f'https://{host}/git/{project}'
+    (
+        r'(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)',
+        r'https://\3/git/\4'
+        ),
 
     # Fedora packages, Pagure
     # old: git+ssh://psss@pkgs.fedoraproject.org/tests/shell
     # old: ssh://psss@pkgs.fedoraproject.org/tests/shell
     # new: https://pkgs.fedoraproject.org/tests/shell
-    matched = re.match(r'(git\+)?ssh://(\w+@)?([^/]*)/(.*)', url)
-    if matched:
-        _, _, host, project = matched.groups()
-        return f'https://{host}/{project}'
+    (
+        r'(git\+)?ssh://(\w+@)?([^/]*)/(.*)',
+        r'https://\3/\4'
+        )
+    ]
+
+
+def public_git_url(url: str) -> str:
+    """
+    Convert a git url into a public format.
+
+    :param url: an URL to convert.
+    :returns: URL that is publicly accessible without authentication,
+        or the original URL if no applicable conversion was found.
+    """
+
+    for pattern, replacement in PUBLIC_GIT_URL_PATTERNS:
+        public_url = re.sub(pattern, replacement, url)
+
+        # If we got different string, `pattern` matched the URL and
+        # `replacement` made its changes - we got our hit!
+        if public_url != url:
+            return public_url
 
     # Otherwise return unmodified
     return url

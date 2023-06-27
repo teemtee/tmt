@@ -78,43 +78,60 @@ def origin_and_local_git_repo(local_git_repo: Path) -> Tuple[Path, Path]:
     return local_git_repo, fork_dir
 
 
-def test_public_git_url():
+_test_public_git_url_input = [
+    (
+        'git@github.com:teemtee/tmt.git',
+        'https://github.com/teemtee/tmt.git'
+        ),
+    (
+        'ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
+        'https://pkgs.devel.redhat.com/git/tests/bash',
+        ),
+    (
+        'git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
+        'https://pkgs.devel.redhat.com/git/tests/bash',
+        ),
+    (
+        'ssh://pkgs.devel.redhat.com/tests/bash',
+        'https://pkgs.devel.redhat.com/git/tests/bash',
+        ),
+    (
+        'git+ssh://psss@pkgs.fedoraproject.org/tests/shell',
+        'https://pkgs.fedoraproject.org/tests/shell',
+        ),
+    (
+        'ssh://psss@pkgs.fedoraproject.org/tests/shell',
+        'https://pkgs.fedoraproject.org/tests/shell',
+        ),
+    (
+        'ssh://git@pagure.io/fedora-ci/metadata.git',
+        'https://pagure.io/fedora-ci/metadata.git',
+        ),
+    (
+        'git@gitlab.com:redhat/rhel/NAMESPACE/COMPONENT.git',
+        'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT.git',
+        ),
+    (
+        'https://gitlab.com/redhat/rhel/NAMESPACE/COMPONENT',
+        'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT',
+        ),
+    (
+        'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
+        'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ('original', 'expected'),
+    _test_public_git_url_input,
+    ids=[
+        f'{original} => {expected}' for original, expected in _test_public_git_url_input
+        ])
+def test_public_git_url(original: str, expected: str) -> None:
     """ Verify url conversion """
-    examples = [
-        {
-            'original': 'git@github.com:teemtee/tmt.git',
-            'expected': 'https://github.com/teemtee/tmt.git',
-            }, {
-            'original': 'ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
-            'expected': 'https://pkgs.devel.redhat.com/git/tests/bash',
-            }, {
-            'original': 'git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
-            'expected': 'https://pkgs.devel.redhat.com/git/tests/bash',
-            }, {
-            'original': 'ssh://pkgs.devel.redhat.com/tests/bash',
-            'expected': 'https://pkgs.devel.redhat.com/git/tests/bash',
-            }, {
-            'original': 'git+ssh://psss@pkgs.fedoraproject.org/tests/shell',
-            'expected': 'https://pkgs.fedoraproject.org/tests/shell',
-            }, {
-            'original': 'ssh://psss@pkgs.fedoraproject.org/tests/shell',
-            'expected': 'https://pkgs.fedoraproject.org/tests/shell',
-            }, {
-            'original': 'ssh://git@pagure.io/fedora-ci/metadata.git',
-            'expected': 'https://pagure.io/fedora-ci/metadata.git',
-            }, {
-            'original': 'git@gitlab.com:redhat/rhel/NAMESPACE/COMPONENT.git',
-            'expected': 'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT.git',
-            }, {
-            'original': 'https://gitlab.com/redhat/rhel/NAMESPACE/COMPONENT',
-            'expected': 'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT',
-            }, {
-            'original': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
-            'expected': 'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
-            },
-        ]
-    for example in examples:
-        assert public_git_url(example['original']) == example['expected']
+
+    assert public_git_url(original) == expected
 
 
 def test_listify():
