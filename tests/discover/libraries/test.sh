@@ -57,7 +57,7 @@ rlJournalStart
         rlAssertGrep "summary: 3 tests selected" $rlRun_LOG
         rlAssertGrep "/strip_git_suffix/test2" $rlRun_LOG
         rlAssertGrep \
-            "Detected library '{'url': 'https://github.com/teemtee/fmf.git'}'." \
+            "Detected library.*https://github.com/teemtee/fmf.git" \
             "$rlRun_LOG"
         rlAssertNotGrep 'Library.*conflicts with already fetched library' \
             "$rlRun_LOG"
