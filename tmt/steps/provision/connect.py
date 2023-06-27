@@ -1,18 +1,29 @@
 import dataclasses
-from typing import List, Optional
+from typing import Optional
 
 import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
+from tmt.utils import field
 
 DEFAULT_USER = "root"
 
 
 @dataclasses.dataclass
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
-    user: str = DEFAULT_USER
+    guest: Optional[str] = field(
+        default=None,
+        option=('-g', '--guest'),
+        metavar='GUEST',
+        help='Select remote host to connect to (hostname or ip).'
+        )
+    user: Optional[str] = field(
+        default=DEFAULT_USER,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all guest operations.'
+        )
 
 
 @dataclasses.dataclass
@@ -54,27 +65,6 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
 
     # Guest instance
     _guest = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for connect """
-        return [
-            option(
-                '-g', '--guest', metavar='GUEST',
-                help='Select remote host to connect to (hostname or ip).'),
-            option(
-                '-P', '--port', metavar='PORT',
-                help='Use specific port to connect to.'),
-            option(
-                '-k', '--key', metavar='PRIVATE_KEY',
-                help='Private key for login into the guest system.'),
-            option(
-                '-u', '--user', metavar='USER',
-                help='Username to use for all guest operations.'),
-            option(
-                '-p', '--password', metavar='PASSWORD',
-                help='Password for login into the guest system.'),
-            *super().options(how)]
 
     def go(self) -> None:
         """ Prepare the connection """

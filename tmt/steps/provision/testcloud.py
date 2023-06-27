@@ -16,8 +16,15 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
-from tmt.utils import WORKDIR_ROOT, Command, Path, ProvisionError, ShellScript, retry_session
+from tmt.utils import (
+    WORKDIR_ROOT,
+    Command,
+    Path,
+    ProvisionError,
+    ShellScript,
+    field,
+    retry_session,
+    )
 
 if TYPE_CHECKING:
     import tmt.base
@@ -187,17 +194,49 @@ DEFAULT_ARCH = platform.machine()
 @dataclasses.dataclass
 class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
-    user: str = DEFAULT_USER
+    user: Optional[str] = field(
+        default=DEFAULT_USER,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all guest operations.')
 
-    image: str = DEFAULT_IMAGE
-    memory: int = DEFAULT_MEMORY
-    disk: int = DEFAULT_DISK
-    connection: str = DEFAULT_CONNECTION
-    arch: str = DEFAULT_ARCH
+    image: str = field(
+        default=DEFAULT_IMAGE,
+        option=('-i', '--image'),
+        metavar='IMAGE',
+        help='Select image to be used. Provide a short name, '
+        'full path to a local file or a complete url.')
+    memory: int = field(
+        default=DEFAULT_MEMORY,
+        option=('-m', '--memory'),
+        metavar='SIZE',
+        help='Set available memory in MB, 2048 MB by default.',
+        normalize=tmt.utils.normalize_storage_size)
+    disk: int = field(
+        default=DEFAULT_DISK,
+        option=('-D', '--disk'),
+        metavar='SIZE',
+        help='Specify disk size in GB, 10 GB by default.',
+        normalize=tmt.utils.normalize_storage_size)
+    connection: str = field(
+        default=DEFAULT_CONNECTION,
+        option=('-c', '--connection'),
+        choices=['session', 'system'],
+        help="What session type to use, 'session' by default.")
+    arch: str = field(
+        default=DEFAULT_ARCH,
+        option=('-a', '--arch'),
+        choices=['x86_64', 'aarch64', 's390x', 'ppc64le'],
+        help="What architecture to virtualize, host arch by default.")
+
+    list_local_images: bool = field(
+        default=False,
+        option='--list-local-images',
+        is_flag=True,
+        help="List locally available images.")
 
     image_url: Optional[str] = None
     instance_name: Optional[str] = None
-    list_local_images: bool = False
 
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.
@@ -590,39 +629,6 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
 
     # Guest instance
     _guest = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for testcloud """
-        return [
-            option(
-                '-i', '--image', metavar='IMAGE',
-                help='Select image to be used. Provide a short name, '
-                     'full path to a local file or a complete url.'),
-            option(
-                '-m', '--memory', metavar='MEMORY', type=int,
-                help='Set available memory in MB, 2048 MB by default.'),
-            option(
-                '-D', '--disk', metavar='MEMORY', type=int,
-                help='Specify disk size in GB, 10 GB by default.'),
-            option(
-                '-u', '--user', metavar='USER',
-                help='Username to use for all guest operations.'),
-            option(
-                '-c', '--connection',
-                type=click.Choice(['session', 'system']),
-                help="What session type to use, 'session' by default."),
-            option(
-                '-a', '--arch',
-                type=click.Choice(['x86_64', 'aarch64', 's390x', 'ppc64le']),
-                help="What architecture to virtualize, host arch by default."),
-            option(
-                '-k', '--key', metavar='PRIVATE_KEY', multiple=True,
-                help='Existing private key for login into the guest system.'),
-            option(
-                '--list-local-images', is_flag=True,
-                help="List locally available images."),
-            *super().options(how)]
 
     def go(self) -> None:
         """ Provision the testcloud instance """

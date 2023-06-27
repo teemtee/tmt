@@ -3,15 +3,14 @@ import datetime
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Optional, Tuple, cast
 
 import tmt
 import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
-from tmt.utils import ProvisionError, updatable_message
+from tmt.utils import ProvisionError, field, updatable_message
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -32,6 +31,7 @@ TmtBeakerTransformer = Any
 
 DEFAULT_USER = 'root'
 DEFAULT_ARCH = 'x86_64'
+DEFAULT_IMAGE = 'fedora'
 DEFAULT_PROVISION_TIMEOUT = 3600  # 1 hour timeout at least
 DEFAULT_PROVISION_TICK = 60  # poll job each minute
 
@@ -223,19 +223,45 @@ def async_run(func: Any) -> Any:
 @dataclasses.dataclass
 class BeakerGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
-    user: str = DEFAULT_USER
+    # Override parent class with our defaults
+    user: Optional[str] = field(
+        default=DEFAULT_USER,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all guest operations.'
+        )
 
     # Guest request properties
-    arch: str = DEFAULT_ARCH
-    image: Optional[str] = "fedora"
+    arch: str = field(
+        default=DEFAULT_ARCH,
+        option='--arch',
+        metavar='ARCH',
+        help='Architecture to provision.')
+    image: Optional[str] = field(
+        default=DEFAULT_IMAGE,
+        option='--image',
+        metavar='COMPOSE',
+        help='Image (distro or "compose" in Beaker terminology) to provision.')
     hardware: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     # Provided in Beaker job
     job_id: Optional[str] = None
 
     # Timeouts and deadlines
-    provision_timeout: int = DEFAULT_PROVISION_TIMEOUT
-    provision_tick: int = DEFAULT_PROVISION_TICK
+    provision_timeout: int = field(
+        default=DEFAULT_PROVISION_TIMEOUT,
+        option='--provision-timeout',
+        metavar='SECONDS',
+        help=f'How long to wait for provisioning to complete, '
+        f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.',
+        normalize=tmt.utils.normalize_int)
+    provision_tick: int = field(
+        default=DEFAULT_PROVISION_TICK,
+        option='--provision-tick',
+        metavar='SECONDS',
+        help=f'How often check Beaker for provisioning status, '
+        f'{DEFAULT_PROVISION_TICK} seconds by default.',
+        normalize=tmt.utils.normalize_int)
 
 
 @dataclasses.dataclass
@@ -520,31 +546,6 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
 
     # Guest instance
     _guest = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for Beaker """
-        return [
-            option(
-                '--arch', metavar='ARCH',
-                help='Architecture to provision.'
-                ),
-            option(
-                '--image', metavar='COMPOSE',
-                help='Image (distro or "compose" in Beaker terminology) '
-                     'to provision.'
-                ),
-            option(
-                '--provision-timeout', metavar='SECONDS',
-                help=f'How long to wait for provisioning to complete, '
-                     f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.'
-                ),
-            option(
-                '--provision-tick', metavar='SECONDS',
-                help=f'How often check Beaker for provisioning status, '
-                     f'{DEFAULT_PROVISION_TICK} seconds by default.',
-                ),
-            *super().options(how)]
 
     # data argument should be a "Optional[GuestData]" type but we would like to use
     # BeakerGuestData created here ignoring the override will make mypy calm

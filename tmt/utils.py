@@ -4350,6 +4350,66 @@ def dataclass_normalize_field(
     return value
 
 
+def normalize_int(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> int:
+    """
+    Normalize an integer.
+
+    For a field that takes an integer input. The field might be also
+    left out, but it does have a default value.
+    """
+
+    if isinstance(value, int):
+        return value
+
+    try:
+        return int(value)
+
+    except ValueError as exc:
+        raise NormalizationError(key_address, value, 'an integer') from exc
+
+
+def normalize_optional_int(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> Optional[int]:
+    """
+    Normalize an integer that may be unset as well.
+
+    For a field that takes an integer input, but might be also left out,
+    and has no default value.
+    """
+
+    if value is None:
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    try:
+        return int(value)
+
+    except ValueError as exc:
+        raise NormalizationError(key_address, value, 'unset or an integer') from exc
+
+
+def normalize_storage_size(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> int:
+    """
+    Normalize a storage size.
+
+    As of now, it's just a simple integer with units interpreted by the owning
+    plugin. In the future, we want this function to switch to proper units
+    and return ``pint.Quantity`` instead.
+    """
+
+    return normalize_int(key_address, value, logger)
+
+
 def normalize_string_list(
         key_address: str,
         value: Union[None, str, List[str]],

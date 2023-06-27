@@ -848,17 +848,37 @@ class GuestSshData(GuestData):
     reached over SSH.
     """
 
-    # port to connect to
-    port: Optional[int] = None
-    # user name to log in
-    user: Optional[str] = None
-    # path to the private key
-    key: List[str] = dataclasses.field(default_factory=list)
-    # password
-    password: Optional[str] = None
-    ssh_option: List[str] = dataclasses.field(default_factory=list)
-
-    _normalize_key = tmt.utils.NormalizeKeysMixin._normalize_string_list
+    port: Optional[int] = field(
+        default=None,
+        option=('-P', '--port'),
+        metavar='PORT',
+        help='Use specific port to connect to.',
+        normalize=tmt.utils.normalize_optional_int)
+    user: Optional[str] = field(
+        default=None,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all guest operations.')
+    key: List[str] = field(
+        default_factory=list,
+        option=('-k', '--key'),
+        metavar='PATH',
+        help='Private key for login into the guest system.',
+        normalize=tmt.utils.normalize_string_list)
+    password: Optional[str] = field(
+        default=None,
+        option=('-p', '--password'),
+        metavar='PASSWORD',
+        help='Password for login into the guest system.')
+    ssh_option: List[str] = field(
+        default_factory=list,
+        option='--ssh-option',
+        metavar="OPTION",
+        multiple=True,
+        help="Specify an additional SSH option. "
+        "Value is passed to SSH's -o option, see ssh_config(5) for "
+        "supported options. Can be specified multiple times.",
+        normalize=tmt.utils.normalize_string_list)
 
 
 class GuestSsh(Guest):
@@ -957,15 +977,6 @@ class GuestSsh(Guest):
         self._ssh_master_connection(command)
 
         return command + self._ssh_options()
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options related to SSH-capable guests """
-        return [*super().options(how=how),
-                option('--ssh-option', metavar="OPTION", multiple=True, default=[],
-                       help="Specify additional SSH option. "
-                       "Value is passed to SSH's -o option, see ssh_config(5) for "
-                       "supported options. Can be specified multiple times.")]
 
     def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
         """ Prepare guest using ansible playbook """
