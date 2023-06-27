@@ -16,7 +16,6 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.utils
 from tmt.base import Test
-from tmt.options import option
 from tmt.result import Result, ResultOutcome
 from tmt.steps.execute import (
     SCRIPTS,
@@ -37,11 +36,23 @@ TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& 
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
     script: List[ShellScript] = field(
         default_factory=list,
+        option=('-s', '--script'),
+        metavar='SCRIPT',
+        multiple=True,
+        help='Shell script to be executed as a test.',
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
-        )
-    interactive: bool = False
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized])
+    interactive: bool = field(
+        default=False,
+        option=('-i', '--interactive'),
+        is_flag=True,
+        help='Run in interactive mode, do not capture output.')
+    no_progress_bar: bool = field(
+        default=False,
+        option='--no-progress-bar',
+        is_flag=True,
+        help='Disable interactive progress bar showing the current test.')
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -64,28 +75,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
     """
 
     _data_class = ExecuteInternalData
+    data: ExecuteInternalData
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
         self.scripts = SCRIPTS
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for given method """
-        return [
-            option(
-                '-s', '--script', metavar='SCRIPT', multiple=True,
-                help='Shell script to be executed as a test.'),
-            # Interactive mode
-            option(
-                '-i', '--interactive', is_flag=True,
-                help='Run in interactive mode, do not capture output.'),
-            # Disable interactive progress bar
-            option(
-                '--no-progress-bar', is_flag=True,
-                help='Disable interactive progress bar showing the current test.'),
-            *super().options(how)]
 
     # TODO: consider switching to utils.updatable_message() - might need more
     # work, since use of _show_progress is split over several methods.
@@ -104,7 +99,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             return
 
         # No progress if terminal not attached or explicitly disabled
-        if not sys.stdout.isatty() or self.opt('no-progress-bar'):
+        if not sys.stdout.isatty() or self.data.no_progress_bar:
             return
 
         # For debug mode show just an info message (unless finishing)
@@ -376,7 +371,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # Prepare tests and helper scripts, check options
         tests = self.prepare_tests(guest)
-        exit_first = self.get('exit-first', default=False)
 
         # Prepare scripts, except localhost guest
         if not guest.localhost:
@@ -438,7 +432,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 # If test duration information is missing, print 8 spaces to keep indention
                 duration = click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
                 logger.verbose(f"{duration} {result.show()} [{progress}]", shift=shift)
-            if (abort or exit_first and
+            if (abort or self.data.exit_first and
                     result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)):
                 # Clear the progress bar before outputting
                 self._show_progress('', '', True)

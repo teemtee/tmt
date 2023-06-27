@@ -11,12 +11,11 @@ import tmt.steps.discover.fmf
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import option
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
 from tmt.steps.execute import ExecutePlugin
-from tmt.steps.execute.internal import ExecuteInternal
-from tmt.utils import Path
+from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
+from tmt.utils import Path, field
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'
@@ -28,19 +27,45 @@ PROPAGATE_TO_DISCOVER_KEYS = ['url', 'ref', 'filter', 'test', 'exclude']
 
 
 @dataclasses.dataclass
-class ExecuteUpgradeData(tmt.steps.execute.ExecuteStepData):
-    url: Optional[str] = None
-    upgrade_path: Optional[str] = None
+class ExecuteUpgradeData(ExecuteInternalData):
+    url: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-u', '--url'),
+        metavar='REPOSITORY',
+        help='URL of the git repository with upgrade tasks.')
+    upgrade_path: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-p', '--upgrade-path'),
+        metavar='PLAN_NAME',
+        help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.')
 
-    # Inherit from tmt.steps.discover.fmf.DiscoverFmfStepData
-    ref: Optional[str] = None
-    filter: Optional[List[str]] = None
-    test: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
-
-    _normalize_test = tmt.utils.NormalizeKeysMixin._normalize_string_list
-    _normalize_filter = tmt.utils.NormalizeKeysMixin._normalize_string_list
-    _normalize_exclude = tmt.utils.NormalizeKeysMixin._normalize_string_list
+    # "Inherit" from tmt.steps.discover.fmf.DiscoverFmfStepData
+    ref: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-r', '--ref'),
+        metavar='REVISION',
+        help='Branch, tag or commit specifying the git revision.')
+    test: List[str] = field(
+        default_factory=list,
+        option=('-t', '--test'),
+        metavar='NAMES',
+        multiple=True,
+        help='Select tests by name.',
+        normalize=tmt.utils.normalize_string_list)
+    filter: List[str] = field(
+        default_factory=list,
+        option=('-F', '--filter'),
+        metavar='FILTERS',
+        multiple=True,
+        help='Include only tests matching the filter.',
+        normalize=tmt.utils.normalize_string_list)
+    exclude: List[str] = field(
+        default_factory=list,
+        option=('-x', '--exclude'),
+        metavar='REGEXP',
+        multiple=True,
+        help="Exclude a regular expression from search result.",
+        normalize=tmt.utils.normalize_string_list)
 
 
 @tmt.steps.provides_method('upgrade')
@@ -111,29 +136,12 @@ class ExecuteUpgrade(ExecuteInternal):
             filter: "tag:fedora"
     """
 
-    # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
-    _data_class = ExecuteUpgradeData  # type: ignore[assignment]
+    _data_class = ExecuteUpgradeData
+    data: ExecuteUpgradeData
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._discover_upgrade: Optional[DiscoverFmf] = None
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for given method """
-        return [
-            option(
-                '--url', '-u', metavar='REPOSITORY',
-                help='URL of the git repository with upgrade tasks.'),
-            option(
-                '--upgrade-path', '-p', metavar='PLAN_NAME',
-                help='Upgrade path corresponding to a plan name in the repository '
-                'with upgrade tasks.'),
-            tmt.steps.discover.fmf.REF_OPTION,
-            tmt.steps.discover.fmf.TEST_OPTION,
-            tmt.steps.discover.fmf.FILTER_OPTION,
-            tmt.steps.discover.fmf.EXCLUDE_OPTION,
-            *super().options(how)]
 
     @property  # type:ignore[override]
     def discover(self) -> Union[
