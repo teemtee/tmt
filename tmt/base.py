@@ -118,7 +118,7 @@ SECTIONS_HEADINGS = {
 # A "raw" fmf id as stored in fmf node data, i.e. as a mapping with various keys.
 # Used for a brief moment, to annotate raw fmf data before they are converted
 # into FmfId instances.
-class _RawFmfId(TypedDict):
+class _RawFmfId(TypedDict, total=False):
     url: Optional[str]
     ref: Optional[str]
     path: Optional[str]
@@ -134,6 +134,15 @@ class FmfId(
 
     # The list of valid fmf id keys
     VALID_KEYS: ClassVar[List[str]] = ['url', 'ref', 'path', 'name']
+
+    #: Keys that are present, might be set, but shall not be exported.
+    NONEXPORTABLE_KEYS: ClassVar[List[str]] = ['fmf_root', 'git_root', 'default_branch']
+
+    # Save context of the ID for later - there are places where it matters,
+    # e.g. to not display `ref` under some conditions.
+    fmf_root: Optional[Path] = None
+    git_root: Optional[Path] = None
+    default_branch: Optional[str] = None
 
     url: Optional[str] = None
     ref: Optional[str] = None
@@ -154,6 +163,16 @@ class FmfId(
 
         return cast(_RawFmfId, super().to_minimal_dict())
 
+    # TODO: make this declarative, Exportable should support this feature
+    # out of the box. Maybe even add a parameter for field().
+    @classmethod
+    def _drop_nonexportable(cls, exported: _RawFmfId) -> _RawFmfId:
+        # ignore[misc]: since `exported` is a typed dict, only literals can be used as keys
+        for key in cls.NONEXPORTABLE_KEYS:
+            exported.pop(key, None)  # type: ignore[misc]
+
+        return exported
+
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_spec(self) -> _RawFmfId:  # type: ignore[override]
@@ -164,7 +183,7 @@ class FmfId(
         if self.path is not None:
             spec['path'] = str(self.path)
 
-        return spec
+        return self._drop_nonexportable(spec)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -176,7 +195,7 @@ class FmfId(
         if self.path is not None:
             spec['path'] = str(self.path)
 
-        return spec
+        return self._drop_nonexportable(spec)
 
     @classmethod
     def from_spec(cls, raw: _RawFmfId) -> 'FmfId':
@@ -242,7 +261,12 @@ class FmfId(
             *,
             keys: Optional[List[str]] = None
             ) -> tmt.export._RawExportedInstance:
-        return cast(tmt.export._RawExportedInstance, self.to_minimal_dict())
+
+        spec = self.to_minimal_spec()
+
+        spec = self._drop_nonexportable(spec)
+
+        return cast(tmt.export._RawExportedInstance, spec)
 
 
 #
@@ -683,7 +707,16 @@ class Core(
     def _fmf_id(self) -> None:
         """ Show fmf identifier """
         echo(tmt.utils.format('fmf-id', cast(Dict[str, Any],
-             self.fmf_id.to_minimal_dict()), key_color='magenta'))
+             self.fmf_id.to_minimal_spec()), key_color='magenta'))
+
+    # TODO: cached_property candidates
+    @property
+    def fmf_root(self) -> Path:
+        return Path(self.node.root)
+
+    @property
+    def git_root(self) -> Optional[Path]:
+        return tmt.utils.git_root(fmf_root=self.fmf_root, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
     # and constructing a workaround would be hard because of support of
@@ -699,7 +732,11 @@ class Core(
         if self.node.root is None:
             return FmfId()
 
-        return tmt.utils.fmf_id(name=self.name, fmf_root=Path(self.node.root), logger=self._logger)
+        return tmt.utils.fmf_id(
+            name=self.name,
+            fmf_root=self.fmf_root,
+            always_get_ref=True,
+            logger=self._logger)
 
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """

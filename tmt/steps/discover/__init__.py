@@ -300,11 +300,22 @@ class Discover(tmt.steps.Step):
         # TODO: This part should go into the 'fmf.py' module
         if self.opt('fmf_id'):
             if self.tests(enabled=True):
-                fmf_id_list = [
-                    tmt.utils.dict_to_yaml(
-                        test.fmf_id.to_minimal_spec(),
-                        start=True) for test in self.tests(enabled=True) if test.fmf_id.url]
-                click.echo(''.join(fmf_id_list), nl=False)
+                export_fmf_ids: List[str] = []
+
+                for test in self.tests(enabled=True):
+                    fmf_id = test.fmf_id
+
+                    if not fmf_id.url:
+                        continue
+
+                    exported = test.fmf_id.to_minimal_spec()
+
+                    if fmf_id.default_branch and fmf_id.ref == fmf_id.default_branch:
+                        exported.pop('ref')
+
+                    export_fmf_ids.append(tmt.utils.dict_to_yaml(exported, start=True))
+
+                click.echo(''.join(export_fmf_ids), nl=False)
             return
 
         # Give a summary, update status and save

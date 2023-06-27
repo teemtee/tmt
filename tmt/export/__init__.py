@@ -254,7 +254,19 @@ class TrivialExporter(ExportPlugin):
                                 fmf_ids: List['tmt.base.FmfId'],
                                 keys: Optional[List[str]] = None,
                                 **kwargs: Any) -> str:
-        return cls._export([fmf_id._export(keys=keys) for fmf_id in fmf_ids])
+        # Special case: fmf id export shall not display `ref` if it is equal
+        # to the default branch.
+        exported_fmf_ids: List[tmt.base._RawFmfId] = []
+
+        for fmf_id in fmf_ids:
+            exported = fmf_id._export(keys=keys)
+
+            if fmf_id.default_branch and fmf_id.ref == fmf_id.default_branch:
+                exported.pop('ref')
+
+            exported_fmf_ids.append(cast(tmt.base._RawFmfId, exported))
+
+        return cls._export(cast(List[_RawExportedInstance], exported_fmf_ids))
 
     @classmethod
     def export_test_collection(cls,

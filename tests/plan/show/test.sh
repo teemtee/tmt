@@ -67,17 +67,21 @@ rlJournalStart
 
         rlRun "git clone https://github.com/teemtee/tmt $local_repo"
         rlRun "pushd $local_repo"
-        # The ref should not be shown when under the default branch
+        # fmf id fields should be shown when under the default branch
         rlRun -s "tmt plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
-        rlAssertNotGrep "ref:" $show_tmp
-        # The ref should be shown when under a different branch
+        rlAssertGrep "url:" $show_tmp
+        rlAssertGrep "ref:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        # fmf id fields should be shown when under a different branch, too
         rlRun -s "git checkout -b another-branch"
         rlRun -s "tmt plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
+        rlAssertGrep "url:" $show_tmp
         rlAssertGrep "ref: another-branch" $show_tmp
+        rlAssertGrep "name:" $show_tmp
         # Create a new worktree
         rlRun "git branch $ref"
         rlRun "git worktree add $worktree $ref"
@@ -87,7 +91,9 @@ rlJournalStart
         rlRun -s "tmt plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
+        rlAssertGrep "url:" $show_tmp
         rlAssertGrep "ref:.*$ref" $show_tmp
+        rlAssertGrep "name:" $show_tmp
         rlRun "popd"
     rlPhaseEnd
 

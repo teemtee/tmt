@@ -2804,7 +2804,7 @@ def fmf_id(
 
     from tmt.base import FmfId
 
-    fmf_id = FmfId(name=name)
+    fmf_id = FmfId(fmf_root=fmf_root, name=name)
 
     # Prepare url (for now handle just the most common schemas)
     branch = run(Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"))
@@ -2816,23 +2816,25 @@ def fmf_id(
     fmf_id.url = public_git_url(remote) if remote else None
 
     # Construct path (if different from git root)
-    git_root = Path(run(Command("git", "rev-parse", "--show-toplevel")))
-    if git_root.resolve() != fmf_root.resolve():
-        fmf_id.path = Path('/') / fmf_root.relative_to(git_root)
+    fmf_id.git_root = git_root(fmf_root=fmf_root, logger=logger)
 
-    # Get the ref (skip for the default)
-    def_branch = default_branch(repository=git_root, logger=logger)
-    if def_branch is None:
-        fmf_id.ref = None
-    else:
-        ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
-        if ref != def_branch or always_get_ref:
-            fmf_id.ref = ref
-        else:
-            # Note that it is a valid configuration without having a default
-            # branch here. Consumers of returned fmf_id object should check
-            # the fmf_id contains everything they need.
+    if fmf_id.git_root:
+        if fmf_id.git_root.resolve() != fmf_root.resolve():
+            fmf_id.path = Path('/') / fmf_root.relative_to(fmf_id.git_root)
+
+        # Get the ref (skip for the default)
+        fmf_id.default_branch = default_branch(repository=fmf_id.git_root, logger=logger)
+        if fmf_id.default_branch is None:
             fmf_id.ref = None
+        else:
+            ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
+            if ref != fmf_id.default_branch or always_get_ref:
+                fmf_id.ref = ref
+            else:
+                # Note that it is a valid configuration without having a default
+                # branch here. Consumers of returned fmf_id object should check
+                # the fmf_id contains everything they need.
+                fmf_id.ref = None
 
     return fmf_id
 
@@ -2968,6 +2970,29 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
 def remove_color(text: str) -> str:
     """ Remove ansi color sequences from the string """
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+
+
+def git_root(*, fmf_root: Path, logger: tmt.log.Logger) -> Optional[Path]:
+    """
+    Find a path to the root of git repository containing an fmf root.
+
+    :param fmf_root: path to an fmf root that is supposedly in a git repository.
+    :param logger: used for logging.
+    :returns: path to the git repository root, if fmf root lies in one,
+        or ``None``.
+    """
+
+    try:
+        result = Command("git", "rev-parse", "--show-toplevel").run(cwd=fmf_root, logger=logger)
+
+        if result.stdout is None:
+            return None
+
+        return Path(result.stdout.strip())
+
+    except RunError:
+        # Always return an empty string in case 'git' command is run in a non-git repo
+        return None
 
 
 def default_branch(
