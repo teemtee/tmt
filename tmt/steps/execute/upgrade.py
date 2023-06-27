@@ -12,7 +12,7 @@ import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
 from tmt.steps.discover import DiscoverPlugin
-from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
+from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.utils import Path, field
@@ -44,7 +44,8 @@ class ExecuteUpgradeData(ExecuteInternalData):
         default=cast(Optional[str], None),
         option=('-r', '--ref'),
         metavar='REVISION',
-        help='Branch, tag or commit specifying the git revision.')
+        help='Branch, tag or commit specifying the git revision.',
+        normalize=normalize_ref)
     test: List[str] = field(
         default_factory=list,
         option=('-t', '--test'),

@@ -16,50 +16,123 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.options import option
-from tmt.utils import Command, Path
+from tmt.utils import Command, Path, field
+
+
+def normalize_ref(
+        key_address: str,
+        value: Optional[Any],
+        logger: tmt.log.Logger) -> Optional[str]:
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return value
+
+    raise tmt.utils.NormalizationError(key_address, value, 'unset or a string')
 
 
 @dataclasses.dataclass
 class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
-    url: Optional[str] = None
-    ref: Optional[str] = None
-    path: Optional[str] = None
-    test: List[str] = dataclasses.field(default_factory=list)
-    link: List[str] = dataclasses.field(default_factory=list)
-    filter: List[str] = dataclasses.field(default_factory=list)
-    modified_only: bool = False
-    modified_url: Optional[str] = None
-    modified_ref: Optional[str] = None
-    dist_git_init: bool = False
-    dist_git_remove_fmf_root: bool = False
-    dist_git_merge: bool = False
-    dist_git_extract: Optional[str] = None
-    fmf_id: bool = False
-    exclude: List[str] = dataclasses.field(default_factory=list)
+    url: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-u', '--url'),
+        metavar='REPOSITORY',
+        help='URL of the git repository with fmf metadata.')
+    ref: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-r', '--ref'),
+        metavar='REVISION',
+        help='Branch, tag or commit specifying the git revision.',
+        normalize=normalize_ref)
+    path: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-p', '--path'),
+        metavar='ROOT',
+        help='Path to the metadata tree root.')
+    test: List[str] = field(
+        default_factory=list,
+        option=('-t', '--test'),
+        metavar='NAMES',
+        multiple=True,
+        help='Select tests by name.',
+        normalize=tmt.utils.normalize_string_list)
+    link: List[str] = field(
+        default_factory=list,
+        option='--link',
+        metavar="RELATION:TARGET",
+        multiple=True,
+        help="Filter by linked objects (regular expressions are "
+        "supported for both relation and target).")
+    filter: List[str] = field(
+        default_factory=list,
+        option=('-F', '--filter'),
+        metavar='FILTERS',
+        multiple=True,
+        help='Include only tests matching the filter.',
+        normalize=tmt.utils.normalize_string_list)
+    modified_only: bool = field(
+        default=False,
+        option=('-m', '--modified-only'),
+        is_flag=True,
+        help='If set, select only tests modified since reference revision.')
+    modified_url: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option='--modified-url',
+        metavar='REPOSITORY',
+        help='URL of the reference git repository with fmf metadata.')
+    modified_ref: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option='--modified-ref',
+        metavar='REVISION',
+        help='Branch, tag or commit specifying the reference git '
+        'revision (if not provided, the default branch is used).')
+    dist_git_init: bool = field(
+        default=False,
+        option='--dist-git-init',
+        is_flag=True,
+        help='Initialize fmf root inside extracted sources '
+        '(at dist-git-extract or top directory).')
+    dist_git_remove_fmf_root: bool = field(
+        default=False,
+        option='--dist-git-remove-fmf-root',
+        is_flag=True,
+        help='Remove fmf root from extracted source (top one or selected by copy-path, '
+        'happens before dist-git-extract.')
+    dist_git_merge: bool = field(
+        default=False,
+        option='--dist-git-merge',
+        is_flag=True,
+        help='Merge copied sources and plan fmf root.')
+    dist_git_extract: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option='--dist-git-extract',
+        help='What to copy from extracted sources, globbing is supported. '
+        'Defaults to the top fmf root if it is present, otherwise top '
+        'directory (shortcut "/").')
+    fmf_id: bool = field(
+        default=False,
+        option='--fmf-id',
+        is_flag=True,
+        help='Show fmf identifiers for tests discovered in plan.')
+    exclude: List[str] = field(
+        default_factory=list,
+        option=('-x', '--exclude'),
+        metavar='REGEXP',
+        multiple=True,
+        help="Exclude a regular expression from search result.",
+        normalize=tmt.utils.normalize_string_list)
+
+    sync_repo: bool = field(
+        default=False,
+        option='--sync-repo',
+        is_flag=True,
+        help='Force the sync of the whole git repo. By default, the '
+        'repo is copied only if the used options require it.')
 
     # Legacy fields
     repository: Optional[str] = None
     revision: Optional[str] = None
-
-    _normalize_test = tmt.utils.NormalizeKeysMixin._normalize_string_list
-    _normalize_link = tmt.utils.NormalizeKeysMixin._normalize_string_list
-    _normalize_filter = tmt.utils.NormalizeKeysMixin._normalize_string_list
-    _normalize_exclude = tmt.utils.NormalizeKeysMixin._normalize_string_list
-
-    # TODO: with mandatory validation, this can go away.
-    def _normalize_ref(
-            self,
-            key_address: str,
-            value: Optional[Any],
-            logger: tmt.log.Logger) -> Optional[str]:
-        if value is None:
-            return None
-
-        if not isinstance(value, str):
-            raise tmt.utils.NormalizationError(key_address, value, 'a string')
-
-        return value
 
     def post_normalization(
             self,
@@ -72,20 +145,6 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
 
         if self.revision:
             self.ref = self.revision
-
-
-REF_OPTION = option(
-    '-r', '--ref', metavar='REVISION',
-    help='Branch, tag or commit specifying the git revision.')
-TEST_OPTION = option(
-    '-t', '--test', metavar='NAMES', multiple=True,
-    help='Select tests by name.')
-FILTER_OPTION = option(
-    '-F', '--filter', metavar='FILTERS', multiple=True,
-    help='Include only tests matching the filter.')
-EXCLUDE_OPTION = option(
-    '-x', '--exclude', metavar='[REGEXP]', multiple=True,
-    help="Exclude a regular expression from search result.")
 
 
 @tmt.steps.provides_method('fmf')
@@ -170,62 +229,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         "modified-only",
         "fmf-id",
         )
-
-    @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for given method """
-        return [
-            option(
-                '-u', '--url', metavar='REPOSITORY',
-                help='URL of the git repository with fmf metadata.'),
-            REF_OPTION,
-            option(
-                '--modified-url', metavar='REPOSITORY',
-                help='URL of the reference git repository with fmf metadata.'),
-            option(
-                '--modified-ref', metavar='REVISION',
-                help='Branch, tag or commit specifying the reference git '
-                'revision (if not provided, the default branch is used).'),
-            option(
-                '-m', '--modified-only', is_flag=True,
-                help='If set, select only tests modified '
-                'since reference revision.'),
-            option(
-                '-p', '--path', metavar='ROOT',
-                help='Path to the metadata tree root.'),
-            TEST_OPTION,
-            option(
-                '--link', metavar="RELATION:TARGET", multiple=True,
-                help="Filter by linked objects (regular expressions are "
-                     "supported for both relation and target)."),
-            FILTER_OPTION,
-            EXCLUDE_OPTION,
-            option(
-                '--fmf-id', default=False, is_flag=True,
-                help='Show fmf identifiers for tests discovered in plan.'),
-            option(
-                '--sync-repo', default=False, is_flag=True,
-                help='Force the sync of the whole git repo. By default, the '
-                     'repo is copied only if the used options require it.'),
-            option(
-                '--dist-git-init', is_flag=True,
-                help='Initialize fmf root inside extracted sources '
-                     '(at dist-git-extract or top directory).'),
-            option(
-                '--dist-git-remove-fmf-root', is_flag=True,
-                help='Remove fmf root from extracted source '
-                     '(top one or selected by copy-path, '
-                     'happens before dist-git-extract.'),
-            option(
-                '--dist-git-merge', is_flag=True,
-                help='Merge copied sources and plan fmf root.'),
-            option(
-                '--dist-git-extract',
-                help='What to copy from extracted sources, globbing is '
-                     'supported. Defaults to the top fmf root if it is '
-                     'present, otherwise top directory (shortcut "/").'
-                ),
-            *super().options(how)]
 
     @property
     def is_in_standalone_mode(self) -> bool:
