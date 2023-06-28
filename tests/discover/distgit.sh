@@ -292,7 +292,7 @@ done
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
-            --dist-git-type TESTING --dist-git-merge --dist-git-remove-fmf-root'
+            --dist-git-type TESTING --dist-git-merge'
         rlAssertGrep "\s/top_test" $rlRun_LOG -E
         rlAssertGrep "\s/simple-1/tests/magic" $rlRun_LOG -E
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG -F

@@ -187,10 +187,14 @@ description: |
 
         There is a support for discovering tests from extracted
         (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
+        DistGit (Fedora, CentOS). By default tmt will search for
+        the first ``.fmf/version`` and use that as the fmf root,
+        ignoring all other files in the extracted sources. This
+        behavior can be changed: see "Advanced ``dist-git``
+        options" bellow.
+
+        Patches are not yet supported, only tarball extraction
+        happens.
 
         dist-git-source
             Set to ``true`` to enable extracting sources.
@@ -199,6 +203,23 @@ description: |
             Use this option to specify it directly. At least
             ``Fedora`` and ``CentOS`` are supported as values,
             help will print all possible values.
+
+        Advanced ``dist-git`` options:
+
+        dist-git-merge
+            set to ``true`` if you want to copy in extracted
+            sources to the local repo
+        dist-git-init
+            set to ``true`` and ``fmf init`` will be called inside
+            extracted sources (at dist-git-extract or top directory)
+        dist-git-extract
+            directory (glob supported) to copy from extracted sources.
+            Set to ``/`` to extract all sources
+        path
+            denotes path to the metadata tree root relative to
+            the extracted source root (equivalent to ``BUILDROOT``
+            in rpm builds). Must set ``dist-git-extract`` to have
+            any effect
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/

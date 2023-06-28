@@ -47,15 +47,23 @@ properties:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   dist-git-extract:
-    type: string
+    anyOf:
+      - type: string
+      - type: array
+        items:
+          anyOf:
+            - type: string
+            - type: object
+              properties:
+                src:
+                  type: string
+                dest:
+                  type: string
 
   dist-git-init:
     type: boolean
 
   dist-git-merge:
-    type: boolean
-
-  dist-git-remove-fmf-root:
     type: boolean
 
   dist-git-source:
