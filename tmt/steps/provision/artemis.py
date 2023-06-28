@@ -11,7 +11,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import ProvisionError, field, retry_session, updatable_message
+from tmt.utils import ProvisionError, cached_property, field, retry_session, updatable_message
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -380,14 +380,9 @@ class GuestArtemis(tmt.GuestSsh):
     watchdog_dispatch_delay: Optional[int]
     watchdog_period_delay: Optional[int]
 
-    _api: Optional[ArtemisAPI] = None
-
-    @property
+    @cached_property
     def api(self) -> ArtemisAPI:
-        if self._api is None:
-            self._api = ArtemisAPI(self)
-
-        return self._api
+        return ArtemisAPI(self)
 
     @property
     def is_ready(self) -> bool:

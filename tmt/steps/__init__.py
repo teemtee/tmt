@@ -38,7 +38,7 @@ import tmt.options
 import tmt.utils
 from tmt.options import option, show_step_method_hints
 from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
-from tmt.utils import EnvironmentType, Path, field, flatten
+from tmt.utils import EnvironmentType, Path, cached_property, field, flatten
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -738,8 +738,7 @@ class BasePlugin(Phase):
         self.data = data
         self.step = step
 
-    # TODO: cached_property candidate
-    @property
+    @cached_property
     def safe_name(self) -> str:
         """
         A safe variant of the name which does not contain special characters.
@@ -748,10 +747,7 @@ class BasePlugin(Phase):
         slash characters, ``/``.
         """
 
-        if self._safe_name is None:
-            self._safe_name = tmt.utils.sanitize_name(self.name, allow_slash=False)
-
-        return self._safe_name
+        return tmt.utils.sanitize_name(self.name, allow_slash=False)
 
     @classmethod
     def base_command(

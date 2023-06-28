@@ -171,6 +171,28 @@ DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 T = TypeVar('T')
 
 
+# TODO: yes, cached_property is available since Python 3.8, but 1. we still need
+# to support Python 3.6, and 2. the type annotations are not perfect, depending
+# on what's in typing_extensions available in RPMs. Therefore adding a simplified
+# cached_property we would remove with Python 3.6 support.
+class cached_property(Generic[T]):  # noqa: N801
+    def __init__(self, fn: Callable[[Any], T]) -> None:
+        self.__doc__ = fn.__doc__
+        self.fn = fn
+
+    def __get__(self, obj: Any, cls: Any) -> T:
+        if obj is None:
+            # ignore[return-value]: special case, when `obj` is unset, operates
+            # as a class-level property, but that is not supported by cached
+            # property from stdlib.
+            return self  # type: ignore[return-value]
+
+        value = self.fn(obj)
+        obj.__dict__[self.fn.__name__] = value
+
+        return value
+
+
 class FmfContext(Dict[str, List[str]]):
     """
     Represents an fmf context.
@@ -795,7 +817,6 @@ class Common(_CommonBase):
     # `safe_name` accordingly. Direct access not encouraged, use `name` and
     # `safe_name` attributes.
     _name: str
-    _safe_name: Optional[str]
 
     def inject_logger(self, logger: tmt.log.Logger) -> None:
         self._logger = logger
@@ -858,10 +879,10 @@ class Common(_CommonBase):
 
         # Reset safe name - when accessed next time, it'd be recomputed from
         # the name we just set.
-        self._safe_name = None
+        if 'safe_name' in self.__dict__:
+            delattr(self, 'safe_name')
 
-    # TODO: cached_property candidate
-    @property
+    @cached_property
     def safe_name(self) -> str:
         """
         A safe variant of the name which does not contain special characters.
@@ -870,10 +891,7 @@ class Common(_CommonBase):
         tools which do not expect them (e.g. in directory names).
         """
 
-        if self._safe_name is None:
-            self._safe_name = sanitize_name(self.name)
-
-        return self._safe_name
+        return sanitize_name(self.name)
 
     def __str__(self) -> str:
         """ Name is the default string representation """

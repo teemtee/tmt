@@ -37,7 +37,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, Path, ShellScript, field
+from tmt.utils import Command, Path, ShellScript, cached_property, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -457,7 +457,7 @@ class Guest(tmt.utils.Common):
         run_id = parent.plan.my_run.workdir.name
         return self._random_name(prefix=f"tmt-{run_id[-3:]}-")
 
-    @property
+    @cached_property
     def multihost_name(self) -> str:
         """ Return guest's multihost name, i.e. name and its role """
 
