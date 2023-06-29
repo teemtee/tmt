@@ -761,21 +761,16 @@ test result.
     `/tests/multihost/complete`__ test may serve as an inspiration
     for your experiments.
 
-Current limits
+__ https://github.com/teemtee/tmt/tree/main/tests/multihost/complete/data
+
+
+Synchronization Libraries
 ------------------------------------------------------------------
 
-.. note::
-
-    For the most up-to-date list of issues related to multihost,
-    our Github can display all isues with the `multihost`__ label.
-
-* requirements of all tests (:ref:`/spec/tests/require`,
-  :ref:`/spec/tests/recommend`) are installed on all guests. See
-  `this issue`__ for more details.
-* test-level synchronization, as described above, is not
-  implemented, and this is probably not going to change any time
-  soon. For the test-level synchronization, please use dedicated
-  libraries, e.g. one of the following:
+The test-level synchronization, as described above, is not
+implemented, and this is probably not going to change any time
+soon. For the test-level synchronization, please use dedicated
+libraries, e.g. one of the following:
 
   * `RHTS support`__ in Beaker ``rhts-sync-block`` and
     ``rhts-sync-set``,
@@ -786,6 +781,23 @@ Current limits
     distributed version of Ondrej Moris's library, supporting any
     number of hosts.
 
+__ https://github.com/beaker-project/rhts
+__ https://github.com/beakerlib/sync/tree/master/sync
+__ https://github.com/RedHat-SP-Security/keylime-tests/tree/main/Library/sync
+__ https://github.com/beakerlib/ControlFlow/tree/master/sync
+
+
+Current Limits
+------------------------------------------------------------------
+
+.. note::
+
+    For the most up-to-date list of issues related to multihost,
+    our Github can display all isues with the `multihost`__ label.
+
+* requirements of all tests (:ref:`/spec/tests/require`,
+  :ref:`/spec/tests/recommend`) are installed on all guests. See
+  `this issue`__ for more details.
 * interaction between guests provisioned by different plugins. Think
   "a server from ``podman`` plugin vs client from ``virtual``".
   This is not yet supported, see these issues: `here`__
@@ -797,12 +809,7 @@ Current limits
   hopefully, a noticeable speed up (especially with plugins like
   ``beaker`` or ``artemis``).
 
-__ https://github.com/teemtee/tmt/tree/main/tests/multihost/complete/data
 __ https://github.com/teemtee/tmt/labels/multihost
 __ https://github.com/teemtee/tmt/issues/2010
-__ https://github.com/beaker-project/rhts
-__ https://github.com/beakerlib/sync/tree/master/sync
-__ https://github.com/RedHat-SP-Security/keylime-tests/tree/main/Library/sync
-__ https://github.com/beakerlib/ControlFlow/tree/master/sync
 __ https://github.com/teemtee/tmt/issues/2047
 __ https://github.com/teemtee/tmt/issues/2046
