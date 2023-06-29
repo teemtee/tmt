@@ -2036,10 +2036,12 @@ class Plan(
             if value:
                 data[key] = value
 
-        for step in tmt.steps.STEPS:
-            value = self.node.data.get(step)
+        for step_name in tmt.steps.STEPS:
+            step = cast(tmt.steps.Step, getattr(self, step_name))
+
+            value = step._export()
             if value:
-                data[step] = value
+                data[step.step_name] = value
 
         return data
 
