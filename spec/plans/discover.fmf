@@ -202,11 +202,12 @@ description: |
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
-    example: |
+    example:
+      - |
         # Discover all fmf tests in the current repository
         discover:
             how: fmf
-
+      - |
         # Fetch tests from a remote repo, filter by name/tier
         discover:
             how: fmf
@@ -215,19 +216,19 @@ description: |
             path: /metadata/tree/path
             test: [regexp]
             filter: tier:1
-
+      - |
         # Choose tests verifying given issue
         discover:
             how: fmf
             link: verifies:issues/123$
-
+      - |
         # Select only tests which have been modified
         discover:
             how: fmf
             modified-only: true
             modified-url: https://github.com/teemtee/tmt-official
             modified-ref: reference/main
-
+      - |
         # Extract tests from the distgit sources
         discover:
             how: fmf
