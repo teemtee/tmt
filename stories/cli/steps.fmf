@@ -1,165 +1,165 @@
 /discover:
-    story: 'Select or adjust the discover step'
-    description:
-        Defines which tests should be executed.
-    example:
-        - tmt run discover
-        - tmt run discover --how=fmf
-        - tmt run discover --how=fmf --url=url
-        - tmt run discover --how=shell
-    link:
-      - implemented-by: /tmt/steps/discover
+  story: 'Select or adjust the discover step'
+  description: >
+    Defines which tests should be executed.
+  example:
+    - tmt run discover
+    - tmt run discover --how=fmf
+    - tmt run discover --how=fmf --url=url
+    - tmt run discover --how=shell
+  link:
+    - implemented-by: /tmt/steps/discover
 
 /provision:
-    story: 'Select or adjust the provision step'
-    description:
-        Describes what environment is needed for testing and
-        how it should provisioned.
+  story: 'Select or adjust the provision step'
+  description: >
+    Describes what environment is needed for testing and
+    how it should provisioned.
+  example:
+    - tmt run provision
+    - tmt run provision --how=virtual
+    - tmt run provision --how=testing-farm --memory=2048MB
+    - tmt run provision --how=container
+    - tmt run provision --how=container --image=fedora:rawhide
+    - tmt run provision --how=local
+
+  /default:
+    story: 'Use default config or provision a virtual machine'
+    example: tmt run provision
+    link:
+      - implemented-by: /tmt/steps/provision
+      - documented-by: /docs/examples.rst#provision-options
+
+  /local:
+    story: 'Use localhost for testing'
+    example: tmt run provision --how=local
+    link:
+      - implemented-by: /tmt/steps/provision/localhost.py
+      - documented-by: /docs/examples.rst#provision-options
+      - verified-by: /tests/init/base
+
+  /virtual:
+    story: 'Provision a virtual machine'
+    example: tmt run provision --how=virtual --image=fedora/31-cloud-base
+    link:
+      - implemented-by: /tmt/steps/provision/testcloud.py
+      - documented-by: /docs/examples.rst#provision-options
+
+  /container:
+    story: 'Provision a container'
+    example: tmt run provision --how=container --image=fedora:latest
+    link:
+      - implemented-by: /tmt/steps/provision/podman.py
+      - documented-by: /docs/examples.rst#provision-options
+
+  /connect:
+    story: 'Connect to a provisioned box'
+    description: >
+      Do not provision a new system. Instead, use provided
+      authentication data to connect to a running machine.
+    link:
+      - implemented-by: /tmt/steps/provision/vagrant.py
+      - documented-by: /docs/examples.rst#provision-options
     example:
-        - tmt run provision
-        - tmt run provision --how=virtual
-        - tmt run provision --how=testing-farm --memory=2048MB
-        - tmt run provision --how=container
-        - tmt run provision --how=container --image=fedora:rawhide
-        - tmt run provision --how=local
-
-    /default:
-        story: 'Use default config or provision a virtual machine'
-        example: tmt run provision
-        link:
-          - implemented-by: /tmt/steps/provision
-          - documented-by: /docs/examples.rst#provision-options
-
-    /local:
-        story: 'Use localhost for testing'
-        example: tmt run provision --how=local
-        link:
-          - implemented-by: /tmt/steps/provision/localhost.py
-          - documented-by: /docs/examples.rst#provision-options
-          - verified-by: /tests/init/base
-
-    /virtual:
-        story: 'Provision a virtual machine'
-        example: tmt run provision --how=virtual --image=fedora/31-cloud-base
-        link:
-          - implemented-by: /tmt/steps/provision/testcloud.py
-          - documented-by: /docs/examples.rst#provision-options
-
-    /container:
-        story: 'Provision a container'
-        example: tmt run provision --how=container --image=fedora:latest
-        link:
-          - implemented-by: /tmt/steps/provision/podman.py
-          - documented-by: /docs/examples.rst#provision-options
-
-    /connect:
-        story: 'Connect to a provisioned box'
-        description:
-            Do not provision a new system. Instead, use provided
-            authentication data to connect to a running machine.
-        link:
-          - implemented-by: /tmt/steps/provision/vagrant.py
-          - documented-by: /docs/examples.rst#provision-options
-        example:
-            - tmt run provision --how=connect --guest=name-or-ip --user=login --password=secret
-            - tmt run provision --how=connect --guest=name-or-ip --key=private-key-path
+      - tmt run provision --how=connect --guest=name-or-ip --user=login --password=secret
+      - tmt run provision --how=connect --guest=name-or-ip --key=private-key-path
 
 /prepare:
-    story: 'Select or adjust the prepare step'
-    description:
-        Additional configuration of the provisioned
-        environment needed for testing.
-    example:
-        - tmt run prepare
-        - tmt run prepare --how=install
-        - tmt run prepare --how=install --package=fresh.rpm
-        - tmt run prepare --how=ansible
-        - tmt run prepare --how=ansible --playbook=server.yaml
-    link:
-      - implemented-by: /tmt/steps/prepare
+  story: 'Select or adjust the prepare step'
+  description: >
+    Additional configuration of the provisioned
+    environment needed for testing.
+  example:
+    - tmt run prepare
+    - tmt run prepare --how=install
+    - tmt run prepare --how=install --package=fresh.rpm
+    - tmt run prepare --how=ansible
+    - tmt run prepare --how=ansible --playbook=server.yaml
+  link:
+    - implemented-by: /tmt/steps/prepare
 
 /execute:
-    story: 'Select or adjust the execute step'
-    description:
-        Specification of the executor which should run tests.
+  story: 'Select or adjust the execute step'
+  description: >
+    Specification of the executor which should run tests.
+  example:
+    - tmt run execute
+    - tmt run execute --how=tmt
+    - tmt run execute --how=restraint
+
+  /progress:
+    summary: Watch test execution progress
+    story: >
+      As a user I want to watch live test execution
+      including the complete test output.
+    description: >
+      In order to see progress of the testing use the
+      ``--verbose`` or ``-v`` switch. Applying the option
+      multiple times increases verbosity. This is supported
+      by the :ref:`/spec/plans/execute/tmt` executor only.
     example:
-        - tmt run execute
-        - tmt run execute --how=tmt
-        - tmt run execute --how=restraint
+      - tmt run -v
+      - tmt run -vv
+      - tmt run -vvv
+      - tmt run --all execute -vvv
+    link:
+      - implemented-by: /tmt/steps/execute/internal.py
 
-    /progress:
-        summary: Watch test execution progress
-        story:
-            As a user I want to watch live test execution
-            including the complete test output.
-        description:
-            In order to see progress of the testing use the
-            ``--verbose`` or ``-v`` switch. Applying the option
-            multiple times increases verbosity. This is supported
-            by the :ref:`/spec/plans/execute/tmt` executor only.
-        example:
-          - tmt run -v
-          - tmt run -vv
-          - tmt run -vvv
-          - tmt run --all execute -vvv
-        link:
-          - implemented-by: /tmt/steps/execute/internal.py
+  /interactive:
+    summary: Interactive test debugging
+    story: >
+      As a user I want to interactively debug tests in the
+      middle of their execution.
+    description: >
+      To debug a test use the ``--interactive`` option which
+      disables output capturing and allows to interact
+      directly with the test from the terminal. For example,
+      for tests written in shell you can insert a ``bash``
+      command in the middle of the script and investigate.
+      Supported by the :ref:`/spec/plans/execute/tmt`
+      executor only.
+    example:
+      - tmt run --all execute --how tmt --interactive
+    link:
+      - implemented-by: /tmt/steps/execute/internal.py
+      - documented-by: /docs/examples.rst
 
-    /interactive:
-        summary: Interactive test debugging
-        story:
-            As a user I want to interactively debug tests in the
-            middle of their execution.
-        description:
-            To debug a test use the ``--interactive`` option which
-            disables output capturing and allows to interact
-            directly with the test from the terminal. For example,
-            for tests written in shell you can insert a ``bash``
-            command in the middle of the script and investigate.
-            Supported by the :ref:`/spec/plans/execute/tmt`
-            executor only.
-        example:
-          - tmt run --all execute --how tmt --interactive
-        link:
-          - implemented-by: /tmt/steps/execute/internal.py
-          - documented-by: /docs/examples.rst
-
-    /exit-first:
-        summary: Stop execution after a test fails
-        story:
-            As a user I want to avoid waiting for all discovered
-            tests to finish if one of them fails.
-        description:
-            To interrupt test execution after a test fails use the
-            ``--exit-first`` (or ``-x``) option. This option is
-            accepted by both the execute step and the plugins implementing
-            the execute step.
-        example:
-          - tmt run -a execute --exit-first
-          - tmt run -a execute -h tmt -x
-        link:
-          - implemented-by: /tmt/steps/execute/internal.py
-          - verified-by: /tests/execute/exit-first
+  /exit-first:
+    summary: Stop execution after a test fails
+    story: >
+      As a user I want to avoid waiting for all discovered
+      tests to finish if one of them fails.
+    description: >
+      To interrupt test execution after a test fails use the
+      ``--exit-first`` (or ``-x``) option. This option is
+      accepted by both the execute step and the plugins implementing
+      the execute step.
+    example:
+      - tmt run -a execute --exit-first
+      - tmt run -a execute -h tmt -x
+    link:
+      - implemented-by: /tmt/steps/execute/internal.py
+      - verified-by: /tests/execute/exit-first
 
 /report:
-    story: 'Select or adjust the report step'
-    description:
-        Adjusting notifications about the test progress and
-        results.
-    example:
-        - tmt run report
-        - tmt run report --how=html
-        - tmt run report --how=html --open
-    link:
-      - implemented-by: /tmt/steps/report
+  story: 'Select or adjust the report step'
+  description: >
+    Adjusting notifications about the test progress and
+    results.
+  example:
+    - tmt run report
+    - tmt run report --how=html
+    - tmt run report --how=html --open
+  link:
+    - implemented-by: /tmt/steps/report
 
 /finish:
-    story: 'Select or adjust the finish step'
-    description:
-        Additional actions to be performed after the test
-        execution has been completed. Counterpart of the
-        prepare step useful for various cleanup actions.
-    example:
-        - tmt run finish
-    link:
-      - implemented-by: /tmt/steps/finish
+  story: 'Select or adjust the finish step'
+  description: >
+    Additional actions to be performed after the test
+    execution has been completed. Counterpart of the
+    prepare step useful for various cleanup actions.
+  example:
+    - tmt run finish
+  link:
+    - implemented-by: /tmt/steps/finish

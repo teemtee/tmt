@@ -1,52 +1,52 @@
 title: Reboot during test
-story:
-    As a tester I need to reboot the guest during a test and then
-    resume the test execution.
+story: >
+  As a tester I need to reboot the guest during a test and then
+  resume the test execution.
 description: |
-    Some tests may require a reboot as a part of them, e.g.
-    upgrading the system, rebooting and then running some checks.
-    The ``tmt-reboot`` command can be used to request the guest
-    reboot from the test and the ``TMT_REBOOT_COUNT`` environment
-    variable provides number of successfully completed reboots.
+  Some tests may require a reboot as a part of them, e.g.
+  upgrading the system, rebooting and then running some checks.
+  The ``tmt-reboot`` command can be used to request the guest
+  reboot from the test and the ``TMT_REBOOT_COUNT`` environment
+  variable provides number of successfully completed reboots.
 
-    Note that this only works with guests provisioned by tmt, e.g.
-    ``container`` or ``virtual``, and doesn't work with the
-    ``local`` provision method. Support of the ``connect``
-    provision is on a best effort basis and will not work on
-    machines where ``reboot`` command is not available.
+  Note that this only works with guests provisioned by tmt, e.g.
+  ``container`` or ``virtual``, and doesn't work with the
+  ``local`` provision method. Support of the ``connect``
+  provision is on a best effort basis and will not work on
+  machines where ``reboot`` command is not available.
 
-    When a custom command for rebooting is required, the ``-c``
-    option of the reboot script can be used, e.g. ``tmt-reboot -c
-    "dnf system-upgrade reboot"``.
+  When a custom command for rebooting is required, the ``-c``
+  option of the reboot script can be used, e.g. ``tmt-reboot -c
+  "dnf system-upgrade reboot"``.
 
-    In some scenarios, rebooting may take longer than usual. The
-    default timeout used in tmt can be overriden using the ``-t``
-    option of the reboot script, e.g. ``tmt-reboot -t 3600`` to
-    wait for up to an hour for the guest to come back up.
+  In some scenarios, rebooting may take longer than usual. The
+  default timeout used in tmt can be overriden using the ``-t``
+  option of the reboot script, e.g. ``tmt-reboot -t 3600`` to
+  wait for up to an hour for the guest to come back up.
 
-    On machines booted in UEFI mode, by default, the *BootNext*
-    property shall be set to the value of *BootCurrent*. The
-    ``-e`` option of the reboot script can be used to prevent
-    this from being set, e.g. ``tmt-reboot -e``.
+  On machines booted in UEFI mode, by default, the *BootNext*
+  property shall be set to the value of *BootCurrent*. The
+  ``-e`` option of the reboot script can be used to prevent
+  this from being set, e.g. ``tmt-reboot -e``.
 
-    For backward-compatibility with the `restraint`__ framework
-    the ``rstrnt-reboot`` and ``rhts-reboot`` commands are provided
-    as well together with the ``RSTRNT_REBOOTCOUNT`` and ``REBOOTCOUNT``
-    environment variables. Calling the script kills the parent process
-    (the running test). Please note that the content of these
-    scripts is not preserved, ``tmt`` overwrites them.
+  For backward-compatibility with the `restraint`__ framework
+  the ``rstrnt-reboot`` and ``rhts-reboot`` commands are provided
+  as well together with the ``RSTRNT_REBOOTCOUNT`` and ``REBOOTCOUNT``
+  environment variables. Calling the script kills the parent process
+  (the running test). Please note that the content of these
+  scripts is not preserved, ``tmt`` overwrites them.
 
-    __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-reboot
+  __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-reboot
 
 example: |
-    # syntax: shell
+  # syntax: shell
 
-    if [ "$TMT_REBOOT_COUNT" -eq 0 ]; then
-        rlRun "echo 'Before the reboot'"
-        rlRun "tmt-reboot" 0 "Reboot the machine"
-    elif [ "$TMT_REBOOT_COUNT" -eq 1 ]; then
-        rlRun "echo 'After the reboot'"
-    fi
+  if [ "$TMT_REBOOT_COUNT" -eq 0 ]; then
+      rlRun "echo 'Before the reboot'"
+      rlRun "tmt-reboot" 0 "Reboot the machine"
+  elif [ "$TMT_REBOOT_COUNT" -eq 1 ]; then
+      rlRun "echo 'After the reboot'"
+  fi
 link:
-    - implemented-by: /tmt/steps/execute/internal.py
-    - verified-by: /tests/execute/reboot
+  - implemented-by: /tmt/steps/execute/internal.py
+  - verified-by: /tests/execute/reboot

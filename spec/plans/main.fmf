@@ -1,60 +1,60 @@
-story:
-    As a tester I want to easily execute selected tests or
-    selected test steps in given environment.
+story: >
+  As a tester I want to easily execute selected tests or
+  selected test steps in given environment.
 
 description: |
-    **Plans**, also called L2 metadata, are used to group relevant
-    tests and enable the CI. They describe how to `discover` tests
-    for execution, how to `provision` the environment, how to
-    `prepare` it for testing, how to `execute` tests, `report`
-    results and finally how to `finish` the test job.
+  **Plans**, also called L2 metadata, are used to group relevant
+  tests and enable the CI. They describe how to `discover` tests
+  for execution, how to `provision` the environment, how to
+  `prepare` it for testing, how to `execute` tests, `report`
+  results and finally how to `finish` the test job.
 
-    Each of the six steps mentioned above supports multiple
-    implementations.  The default methods are listed below.
+  Each of the six steps mentioned above supports multiple
+  implementations.  The default methods are listed below.
 
-     * :ref:`/spec/plans/discover`: shell
-     * :ref:`/spec/plans/provision`: virtual
-     * :ref:`/spec/plans/prepare`: shell
-     * :ref:`/spec/plans/execute`: tmt
-     * :ref:`/spec/plans/report`: display
-     * :ref:`/spec/plans/finish`: shell
+   * :ref:`/spec/plans/discover`: shell
+   * :ref:`/spec/plans/provision`: virtual
+   * :ref:`/spec/plans/prepare`: shell
+   * :ref:`/spec/plans/execute`: tmt
+   * :ref:`/spec/plans/report`: display
+   * :ref:`/spec/plans/finish`: shell
 
-    Thanks to clearly separated test steps it is possible to run
-    only selected steps, for example ``tmt run discover`` to see
-    which tests would be executed.
+  Thanks to clearly separated test steps it is possible to run
+  only selected steps, for example ``tmt run discover`` to see
+  which tests would be executed.
 
-    In addition to the attributes defined here, plans also support
-    common :ref:`/spec/core` attributes which are shared across
-    all metadata levels.
+  In addition to the attributes defined here, plans also support
+  common :ref:`/spec/core` attributes which are shared across
+  all metadata levels.
 
 example: |
-    # Enabled a minimal smoke test
-    execute:
-        script: foo --version
+  # Enabled a minimal smoke test
+  execute:
+      script: foo --version
 
-    # Run tier one tests in a container
-    discover:
-        how: fmf
-        filter: tier:1
-    provision:
-        how: container
-    execute:
-        how: tmt
+  # Run tier one tests in a container
+  discover:
+      how: fmf
+      filter: tier:1
+  provision:
+      how: container
+  execute:
+      how: tmt
 
-    # Verify that apache can serve pages
-    summary: Basic httpd smoke test
-    provision:
-        how: virtual
-        memory: 4096
-    prepare:
-      - name: packages
-        how: install
-        package: [httpd, curl]
-      - name: service
-        how: shell
-        script: systemctl start httpd
-    execute:
-        how: shell
-        script:
-        - echo foo > /var/www/html/index.html
-        - curl http://localhost/ | grep foo
+  # Verify that apache can serve pages
+  summary: Basic httpd smoke test
+  provision:
+      how: virtual
+      memory: 4096
+  prepare:
+    - name: packages
+      how: install
+      package: [httpd, curl]
+    - name: service
+      how: shell
+      script: systemctl start httpd
+  execute:
+      how: shell
+      script:
+      - echo foo > /var/www/html/index.html
+      - curl http://localhost/ | grep foo

@@ -1,33 +1,32 @@
-summary:
-    Demonstrate various test discover options
+summary: Demonstrate various test discover options
 execute:
-    how: tmt
+  how: tmt
 provision:
-    how: local
+  how: local
 
 /fmf:
-    /directory:
-        /mini:
-            summary: Minimal from directory
-            discover:
-                how: fmf
-        /full:
-            summary: Full from directory
-            discover:
-                how: fmf
-                ref: devel
-                filter: 'tier: 1'
+  /directory:
+    /mini:
+      summary: Minimal from directory
+      discover:
+        how: fmf
+    /full:
+      summary: Full from directory
+      discover:
+        how: fmf
+        ref: devel
+        filter: 'tier: 1'
 
-    /repository:
-        /mini:
-            summary: Minimal from repository
-            discover:
-                how: fmf
-                url: https://github.com/teemtee/tmt
-        /full:
-            summary: Full from repository
-            discover:
-                how: fmf
-                url: https://github.com/teemtee/tmt
-                ref: devel
-                filter: 'tier: 1'
+  /repository:
+    /mini:
+      summary: Minimal from repository
+      discover:
+        how: fmf
+        url: https://github.com/teemtee/tmt
+    /full:
+      summary: Full from repository
+      discover:
+        how: fmf
+        url: https://github.com/teemtee/tmt
+        ref: devel
+        filter: 'tier: 1'

@@ -1,14 +1,13 @@
-summary:
-    User story describing the feature to be implemented
+summary: User story describing the feature to be implemented
 
-description:
-    This is a **required** attribute. Each story has to define or
-    inherit a ``story`` definition.
+description: >
+  This is a **required** attribute. Each story has to define or
+  inherit a ``story`` definition.
 
 example: |
-    story:
-        As a user I want the application to do this and that
-        so that I can achieve this and that.
+  story: >
+      As a user I want the application to do this and that
+      so that I can achieve this and that.
 
 link:
   - implemented-by: /tmt/base.py

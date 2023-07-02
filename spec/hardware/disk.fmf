@@ -1,5 +1,4 @@
-summary:
-    Choose the disk size
+summary: Choose the disk size
 example:
   - |
     # Disk group used to allow possible future extensions

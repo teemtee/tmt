@@ -1,10 +1,10 @@
 # Run on localhost by default
 provision:
-    how: local
+  how: local
 
 # Use the internal executor
 execute:
-    how: tmt
+  how: tmt
 
 # Install packages in full mode
 adjust:

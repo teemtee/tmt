@@ -1,10 +1,10 @@
 summary: Verify integration with other systems
-description:
-    Run integration tests using the requre project for mocking
-    interaction with external systems (e.g. nitrate).
+description: >
+  Run integration tests using the requre project for mocking
+  interaction with external systems (e.g. nitrate).
 discover:
-    how: fmf
-    filter: 'tag: integration'
+  how: fmf
+  filter: 'tag: integration'
 prepare:
   - name: Install pip
     how: install

@@ -1,5 +1,4 @@
-summary:
-    Select guests with given network devices
+summary: Select guests with given network devices
 example:
   - |
     # Select by vendor and device name

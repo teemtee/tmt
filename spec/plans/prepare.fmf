@@ -1,171 +1,168 @@
 summary: Prepare the environment for testing
 
 description: |
-    The ``prepare`` step is used to define how the guest
-    environment should be prepared so that the tests can be
-    successfully executed.
+  The ``prepare`` step is used to define how the guest
+  environment should be prepared so that the tests can be
+  successfully executed.
 
-    The :ref:`/spec/plans/prepare/install` plugin provides an easy
-    way to install required or recommended packages from disk and
-    from the offical distribution or copr repositories. Use the
-    :ref:`/spec/plans/prepare/ansible` plugin for applying custom
-    playbooks or execute :ref:`/spec/plans/prepare/shell` scripts
-    to perform arbitrary preparation tasks.
+  The :ref:`/spec/plans/prepare/install` plugin provides an easy
+  way to install required or recommended packages from disk and
+  from the offical distribution or copr repositories. Use the
+  :ref:`/spec/plans/prepare/ansible` plugin for applying custom
+  playbooks or execute :ref:`/spec/plans/prepare/shell` scripts
+  to perform arbitrary preparation tasks.
 
-    Use the ``order`` attribute to select in which order the
-    preparation should happen if there are multiple configs.
-    Default order is ``50``. For installation of required packages
-    gathered from the :ref:`/spec/tests/require` attribute of
-    individual tests order ``70`` is used, for recommended
-    packages it is ``75``.
+  Use the ``order`` attribute to select in which order the
+  preparation should happen if there are multiple configs.
+  Default order is ``50``. For installation of required packages
+  gathered from the :ref:`/spec/tests/require` attribute of
+  individual tests order ``70`` is used, for recommended
+  packages it is ``75``.
 
-    .. note::
+  .. note::
 
-        If you want to use the ``prepare`` step to generate data
-        files needed for testing during the ``execute`` step,
-        move or copy them into ``${TMT_PLAN_DATA}`` directory. Only
-        files in this directory are guaranteed to be preserved.
+      If you want to use the ``prepare`` step to generate data
+      files needed for testing during the ``execute`` step,
+      move or copy them into ``${TMT_PLAN_DATA}`` directory. Only
+      files in this directory are guaranteed to be preserved.
 
 example: |
-    # Install fresh packages from a custom copr repository
-    prepare:
-      - how: install
-        copr: psss/tmt
-        package: tmt-all
+  # Install fresh packages from a custom copr repository
+  prepare:
+    - how: install
+      copr: psss/tmt
+      package: tmt-all
 
-    # Install required packages and start the service
-    prepare:
-      - name: packages
-        how: install
-        package: [httpd, curl]
-      - name: service
-        how: shell
-        script: systemctl start httpd
+  # Install required packages and start the service
+  prepare:
+    - name: packages
+      how: install
+      package: [httpd, curl]
+    - name: service
+      how: shell
+      script: systemctl start httpd
 
 /shell:
-    summary:
-        Prepare system using shell (bash) commands
-    description:
-        Execute arbitrary shell commands to set up the system.
+  summary: Prepare system using shell (bash) commands
+  description: >
+    Execute arbitrary shell commands to set up the system.
 
-        Default shell options are applied to the script, see the
-        :ref:`/spec/tests/test` key specification for more
-        details.
+    Default shell options are applied to the script, see the
+    :ref:`/spec/tests/test` key specification for more
+    details.
 
-    example: |
-        prepare:
-            how: shell
-            script: dnf install -y httpd
-    link:
-      - implemented-by: /tmt/steps/provision
+  example: |
+    prepare:
+        how: shell
+        script: dnf install -y httpd
+  link:
+    - implemented-by: /tmt/steps/provision
 
 /ansible:
-    summary:
-        Apply ansible playbook to get the desired final state.
-    description:
-        One or more playbooks can be provided as a list under the
-        ``playbook`` attribute.  Each of them will be applied
-        using ``ansible-playbook`` in the given order. The path
-        must be relative to the metadata tree root.
+  summary: Apply ansible playbook to get the desired final state.
+  description: >
+    One or more playbooks can be provided as a list under the
+    ``playbook`` attribute.  Each of them will be applied
+    using ``ansible-playbook`` in the given order. The path
+    must be relative to the metadata tree root.
 
-        Use ``extra-args`` attribute to enable optional arguments for
-        ``ansible-playbook``.
+    Use ``extra-args`` attribute to enable optional arguments for
+    ``ansible-playbook``.
 
-        Remote playbooks can be referenced as well as the local ones,
-        and both kinds can be used at the same time.
+    Remote playbooks can be referenced as well as the local ones,
+    and both kinds can be used at the same time.
 
-    example: |
-        prepare:
-            how: ansible
-            playbook:
-                - playbooks/common.yml
-                - playbooks/os/rhel7.yml
-                - https://foo.bar/rhel7-final-touches.yml
-            extra-args: '-vvv'
-    link:
-      - implemented-by: /tmt/steps/provision
-      - verified-by: /tests/prepare/ansible
+  example: |
+    prepare:
+        how: ansible
+        playbook:
+            - playbooks/common.yml
+            - playbooks/os/rhel7.yml
+            - https://foo.bar/rhel7-final-touches.yml
+        extra-args: '-vvv'
+  link:
+    - implemented-by: /tmt/steps/provision
+    - verified-by: /tests/prepare/ansible
 
 /install:
-    summary:
-        Install packages on the guest
-    description: |
-        One or more RPM packages can be specified under the
-        ``package`` attribute. The packages will be installed
-        on the guest. They can either be specified using their
-        names, paths to local rpm files or urls to remote rpms.
+  summary: Install packages on the guest
+  description: |
+    One or more RPM packages can be specified under the
+    ``package`` attribute. The packages will be installed
+    on the guest. They can either be specified using their
+    names, paths to local rpm files or urls to remote rpms.
 
-        Additionaly, the ``directory`` attribute can be used to
-        install all packages from the given directory. Copr
-        repositories can be enabled using the ``copr`` attribute.
-        Use the ``exclude`` option to skip selected packages from
-        installation (globbing characters are supported as well).
+    Additionaly, the ``directory`` attribute can be used to
+    install all packages from the given directory. Copr
+    repositories can be enabled using the ``copr`` attribute.
+    Use the ``exclude`` option to skip selected packages from
+    installation (globbing characters are supported as well).
 
-        It's possible to change the behaviour when a package is
-        missing using the ``missing`` attribute. The missing
-        packages can either be silently ignored ('skip') or a
-        preparation error is thrown ('fail'), which is the default
-        behaviour.
+    It's possible to change the behaviour when a package is
+    missing using the ``missing`` attribute. The missing
+    packages can either be silently ignored ('skip') or a
+    preparation error is thrown ('fail'), which is the default
+    behaviour.
 
-    example:
-      - |
-        # Install local rpms using file path
-        prepare:
-            how: install
-            package:
-              - tmp/RPMS/noarch/tmt-0.15-1.fc31.noarch.rpm
-              - tmp/RPMS/noarch/python3-tmt-0.15-1.fc31.noarch.rpm
+  example:
+    - |
+      # Install local rpms using file path
+      prepare:
+          how: install
+          package:
+            - tmp/RPMS/noarch/tmt-0.15-1.fc31.noarch.rpm
+            - tmp/RPMS/noarch/python3-tmt-0.15-1.fc31.noarch.rpm
 
-      - |
-        # Install remote packages using url
-        prepare:
-            how: install
-            package:
-              - https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              - https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-8.noarch.rpm
+    - |
+      # Install remote packages using url
+      prepare:
+          how: install
+          package:
+            - https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+            - https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-8.noarch.rpm
 
-      - |
-        # Install the whole directory, exclude selected packages
-        prepare:
-            how: install
-            directory:
-              - tmp/RPMS/noarch
-            exclude:
-              - tmt-all
-              - tmt-provision-virtual
+    - |
+      # Install the whole directory, exclude selected packages
+      prepare:
+          how: install
+          directory:
+            - tmp/RPMS/noarch
+          exclude:
+            - tmt-all
+            - tmt-provision-virtual
 
-      - |
-        # Enable copr repository, skip missing packages
-        prepare:
-            how: install
-            copr: psss/tmt
-            package: tmt-all
-            missing: skip
+    - |
+      # Enable copr repository, skip missing packages
+      prepare:
+          how: install
+          copr: psss/tmt
+          package: tmt-all
+          missing: skip
 
-    link:
-      - implemented-by: /tmt/steps/provision
-      - verified-by: /tests/prepare/install
+  link:
+    - implemented-by: /tmt/steps/provision
+    - verified-by: /tests/prepare/install
 
 /where:
-    summary: Apply preparation on selected guests
-    description: |
-        In the :ref:`/spec/plans/provision/multihost` scenarios it
-        is often necessary to perform different preparation tasks on
-        individual guests. The ``where`` key allows to select guests
-        where the preparation should be applied by providing their
-        ``name`` or the ``role`` they play in the scenario. Use a
-        list to specify multiple names or roles. By default, when
-        the ``where`` key is not defined, preparation is done on all
-        provisioned guests.
-    example: |
-        # Start Apache on the server
-        prepare:
-          - how: shell
-            script: systemctl start httpd
-            where: server
+  summary: Apply preparation on selected guests
+  description: |
+    In the :ref:`/spec/plans/provision/multihost` scenarios it
+    is often necessary to perform different preparation tasks on
+    individual guests. The ``where`` key allows to select guests
+    where the preparation should be applied by providing their
+    ``name`` or the ``role`` they play in the scenario. Use a
+    list to specify multiple names or roles. By default, when
+    the ``where`` key is not defined, preparation is done on all
+    provisioned guests.
+  example: |
+    # Start Apache on the server
+    prepare:
+      - how: shell
+        script: systemctl start httpd
+        where: server
 
-        # Apply common setup on the primary server and all replicas
-        prepare:
-          - how: ansible
-            playbook: common.yaml
-            where: [primary, replica]
+    # Apply common setup on the primary server and all replicas
+    prepare:
+      - how: ansible
+        playbook: common.yaml
+        where: [primary, replica]

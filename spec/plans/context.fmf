@@ -1,15 +1,15 @@
 summary: Definition of the test execution context
 
-story:
-    As a user I want to define the default context in which tests
-    included in given plan should be executed.
+story: >
+  As a user I want to define the default context in which tests
+  included in given plan should be executed.
 
 description: |
-    Define the default context values for all tests executed under
-    the given plan. Can be overriden by context provided directly
-    on the command line. See the :ref:`/spec/context` definition
-    for the full list of supported context dimensions. Must be a
-    ``dictionary``.
+  Define the default context values for all tests executed under
+  the given plan. Can be overriden by context provided directly
+  on the command line. See the :ref:`/spec/context` definition
+  for the full list of supported context dimensions. Must be a
+  ``dictionary``.
 
 example:
   - |

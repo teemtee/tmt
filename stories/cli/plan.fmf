@@ -1,56 +1,56 @@
 story: 'As a user I want to comfortably work with plans'
 
 /ls:
-    story: 'List available plans'
-    example: tmt plan ls
-    link:
-      - implemented-by: /tmt/cli.py
-      - verified-by: /tests/core/ls
-      - documented-by: /docs/examples.rst#explore-plans
+  story: 'List available plans'
+  example: tmt plan ls
+  link:
+    - implemented-by: /tmt/cli.py
+    - verified-by: /tests/core/ls
+    - documented-by: /docs/examples.rst#explore-plans
 
 /show:
-    story: 'Show plan configuration'
-    example: tmt plan show
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /docs/examples.rst#explore-plans
-      - verified-by: /tests/plans/select
+  story: 'Show plan configuration'
+  example: tmt plan show
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /docs/examples.rst#explore-plans
+    - verified-by: /tests/plans/select
 
 /filter:
-    story: 'Filter available plans'
-    description:
-        Search plans using a regular expression or a filter.
-        Use ``.`` to select plans under the current directory.
-    example:
-        - tmt plan ls .
-        - tmt plan ls REGEXP
-        - tmt plan show --filter artifact:build
-    link:
-      - implemented-by: /tmt/base.py
-      - documented-by: /docs/examples.rst#explore-plans
-      - verified-by: /tests/plans/select
+  story: 'Filter available plans'
+  description: >
+    Search plans using a regular expression or a filter.
+    Use ``.`` to select plans under the current directory.
+  example:
+    - tmt plan ls .
+    - tmt plan ls REGEXP
+    - tmt plan show --filter artifact:build
+  link:
+    - implemented-by: /tmt/base.py
+    - documented-by: /docs/examples.rst#explore-plans
+    - verified-by: /tests/plans/select
 
 /lint:
-    story: 'Check plan against the L2 metadata specification'
-    description:
-        Verify that plan metadata are aligned with the
-        specification, e.g. that all required attributes are
-        present and that all attributes have correct type.
-    example: tmt plan lint
-    link:
-      - implemented-by: /tmt/cli.py
-      - verified-by: /tests/plan/lint
+  story: 'Check plan against the L2 metadata specification'
+  description: >
+    Verify that plan metadata are aligned with the
+    specification, e.g. that all required attributes are
+    present and that all attributes have correct type.
+  example: tmt plan lint
+  link:
+    - implemented-by: /tmt/cli.py
+    - verified-by: /tests/plan/lint
 
 /create:
-    story: 'As a developer I want to easily enable CI'
-    description:
-        Provide a super-easy and user-friendly way how to
-        enable tests in the CI. Several templates should be
-        supported to cover common use cases.
-    example:
-        - tmt plan create /plans/smoke --template=mini
-        - tmt plan create /plans/features --template=full
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /docs/examples.rst#create-plans
-      - verified-by: /tests/plan/create
+  story: 'As a developer I want to easily enable CI'
+  description: >
+    Provide a super-easy and user-friendly way how to
+    enable tests in the CI. Several templates should be
+    supported to cover common use cases.
+  example:
+    - tmt plan create /plans/smoke --template=mini
+    - tmt plan create /plans/features --template=full
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /docs/examples.rst#create-plans
+    - verified-by: /tests/plan/create

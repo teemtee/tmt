@@ -2,36 +2,36 @@ summary: Importing plans from a remote repository
 title: Import Plans
 order: 90
 
-story:
-    As a user I want to reference a plan from a remote repository
-    in order to prevent duplication and minimize maintenance.
+story: >
+  As a user I want to reference a plan from a remote repository
+  in order to prevent duplication and minimize maintenance.
 
 description: |
-    In some cases the configuration stored in a plan can be quite
-    large, for example the :ref:`/spec/plans/prepare` step can
-    define complex scripts to set up the guest for testing. Using
-    a reference to a remote plan makes it possible to reuse the
-    same config on multiple places without the need to duplicate
-    the information. This can be useful for example when enabling
-    integration testing between related components.
+  In some cases the configuration stored in a plan can be quite
+  large, for example the :ref:`/spec/plans/prepare` step can
+  define complex scripts to set up the guest for testing. Using
+  a reference to a remote plan makes it possible to reuse the
+  same config on multiple places without the need to duplicate
+  the information. This can be useful for example when enabling
+  integration testing between related components.
 
-    Remote plans are identified by the ``plan`` key which must
-    contain an ``import`` dictionary with an `fmf identifier`__ of
-    the remote plan. The ``url`` and ``name`` keys have to be
-    defined, ``ref`` and ``path`` are optional. Only one remote
-    plan can be referenced and a full plan ``name`` must be used
-    (no string matching is applied).
+  Remote plans are identified by the ``plan`` key which must
+  contain an ``import`` dictionary with an `fmf identifier`__ of
+  the remote plan. The ``url`` and ``name`` keys have to be
+  defined, ``ref`` and ``path`` are optional. Only one remote
+  plan can be referenced and a full plan ``name`` must be used
+  (no string matching is applied).
 
-    Plan steps must not be defined in the remote plan reference.
-    Inheriting or overriding remote plan config with local plan
-    steps might be possible in the future but currently is not
-    supported. The only way how to modify imported plan is via
-    environment variables. Variables defined in the plan override
-    any variables defined in the remote plan.
+  Plan steps must not be defined in the remote plan reference.
+  Inheriting or overriding remote plan config with local plan
+  steps might be possible in the future but currently is not
+  supported. The only way how to modify imported plan is via
+  environment variables. Variables defined in the plan override
+  any variables defined in the remote plan.
 
-    .. versionadded:: 1.19
+  .. versionadded:: 1.19
 
-    __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
+  __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
 example:
   - |

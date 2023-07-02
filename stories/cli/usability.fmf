@@ -1,26 +1,24 @@
-story:
-    As a user I want to type as little as possible.
+story: As a user I want to type as little as possible.
 
 /abbreviation:
+  /commands:
+    summary: Allow command abbreviation
+    example:
+      - tmt story show
+      - tmt st sh
+      - tmt s s
+    link:
+      - implemented-by: /tmt/cli.py
 
-    /commands:
-        summary: Allow command abbreviation
-        example:
-            - tmt story show
-            - tmt st sh
-            - tmt s s
-        link:
-          - implemented-by: /tmt/cli.py
-
-    /options:
-        summary: Allow option abbreviation
-        example:
-            - tmt story ls --implemented
-            - tmt story ls --impl
-            - tmt story ls --i
+  /options:
+    summary: Allow option abbreviation
+    example:
+      - tmt story ls --implemented
+      - tmt story ls --impl
+      - tmt story ls --i
 
 /completion:
-    summary: Support bash completion
-    example: tmt st<tabl> sh<tab>
-    link:
-      - implemented-by: /tmt.spec
+  summary: Support bash completion
+  example: tmt st<tabl> sh<tab>
+  link:
+    - implemented-by: /tmt.spec

@@ -1,9 +1,8 @@
-summary:
-    Support for multiple configurations
-description:
-    All steps support multiple configurations. In this way it is
-    possible for example to discover tests from multiple repos.
-    The 'execute' steps supports only a single configuration.
+summary: Support for multiple configurations
+description: >
+  All steps support multiple configurations. In this way it is
+  possible for example to discover tests from multiple repos.
+  The 'execute' steps supports only a single configuration.
 discover:
   - name: tier0
     how: fmf
@@ -24,4 +23,4 @@ prepare:
     name: services
     script: systemctl start service
 execute:
-    how: tmt
+  how: tmt

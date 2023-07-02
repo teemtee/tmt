@@ -1,38 +1,38 @@
 summary: Instructive examples of real-life usage.
 
 description: |
-    One example is worth thousand words. Providing a few,
-    well selected, examples helps to understand quickly
-    and get inspiration for initial experimenting.
+  One example is worth thousand words. Providing a few,
+  well selected, examples helps to understand quickly
+  and get inspiration for initial experimenting.
 
-    One or more examples can be defined, each of them is rendered
-    into a separate box during export. Must be a ``string`` or a
-    ``list of strings``.
+  One or more examples can be defined, each of them is rendered
+  into a separate box during export. Must be a ``string`` or a
+  ``list of strings``.
 
 example:
-    - |
-        # Short one-line example
-        example: tmt run discover
-    - |
-        # Preserve line breaks using the '|' modifier
-        example: |
-            tmt run --until execute
-            tmt run --last report
-    - |
-        # Use a list to define multiple examples
-        example:
-          - tmt run --until execute
-          - tmt run --last report
+  - |
+    # Short one-line example
+    example: tmt run discover
+  - |
+    # Preserve line breaks using the '|' modifier
+    example: |
+        tmt run --until execute
+        tmt run --last report
+  - |
+    # Use a list to define multiple examples
+    example:
+      - tmt run --until execute
+      - tmt run --last report
 
-    - |
-        # Several multiline examples
-        example:
-            - |
-                # Check validity of the plans
-                tmt plan lint
-            - |
-                # Check which tests would be run
-                tmt run discover
+  - |
+    # Several multiline examples
+    example:
+        - |
+            # Check validity of the plans
+            tmt plan lint
+        - |
+            # Check which tests would be run
+            tmt run discover
 
 link:
   - implemented-by: /tmt/base.py

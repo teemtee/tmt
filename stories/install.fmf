@@ -5,11 +5,11 @@ link:
   - documented-by: /docs/guide.rst
 
 /minimal:
-    summary: Minimal tmt installation with core features only
-    example: dnf install tmt
-    link+:
-      - verified-by: /plans/install/minimal
+  summary: Minimal tmt installation with core features only
+  example: dnf install tmt
+  link+:
+    - verified-by: /plans/install/minimal
 
 /all:
-    summary: Install tmt with all available plugins and dependencies
-    example: dnf install tmt-all
+  summary: Install tmt with all available plugins and dependencies
+  example: dnf install tmt-all

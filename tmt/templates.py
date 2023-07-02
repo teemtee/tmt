@@ -62,42 +62,40 @@ rlJournalEnd
 DEFAULT_PLAN_NAME = "/plans/default"
 DEFAULT_PLAN = f"""
 {DEFAULT_PLAN_NAME}:
-    discover:
-        how: fmf
-    execute:
-        how: tmt
+  discover:
+    how: fmf
+  execute:
+    how: tmt
 """.lstrip()
 
 PLAN: Dict[str, str] = {}
 
 PLAN['mini'] = """
-summary:
-    Basic smoke test
+summary: Basic smoke test
 execute:
-    how: tmt
-    script: tmt --help
+  how: tmt
+  script: tmt --help
 """.lstrip()
 
 PLAN['base'] = """
-summary:
-    Basic smoke test
+summary: Basic smoke test
 discover:
-    how: fmf
+  how: fmf
 execute:
-    how: tmt
+  how: tmt
 """.lstrip()
 
 PLAN['full'] = """
 summary:
-    Essential command line features
+  Essential command line features
 discover:
-    how: fmf
-    url: https://github.com/teemtee/tmt
+  how: fmf
+  url: https://github.com/teemtee/tmt
 prepare:
-    how: ansible
-    playbook: ansible/packages.yml
+  how: ansible
+  playbook: ansible/packages.yml
 execute:
-    how: tmt
+  how: tmt
 """.lstrip()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,28 +110,26 @@ example: One example is worth thousand words.
 """.lstrip()
 
 STORY['base'] = """
-summary:
-    Short description summarizing the story
-story:
-    As a user I want to do this and that
-    so that I can achieve this.
+summary: Short description summarizing the story
+story: >
+  As a user I want to do this and that
+  so that I can achieve this.
 example:
-    - One example is worth thousand words.
-    - Of course, there can be more than one.
+  - One example is worth thousand words.
+  - Of course, there can be more than one.
 """.lstrip()
 
 STORY['full'] = """
-summary:
-    Short description summarizing the story
-story:
-    As a user I want to do this and that
-    so that I can achieve this.
-description:
-    Text describing all important aspects of the object.
-    Usually spans across several paragraphs. It should not
-    contain detailed examples. Those should be stored
-    under the 'examples' attribute.
+summary: Short description summarizing the story
+story: >
+  As a user I want to do this and that
+  so that I can achieve this.
+description: >
+  Text describing all important aspects of the object.
+  Usually spans across several paragraphs. It should not
+  contain detailed examples. Those should be stored
+  under the 'examples' attribute.
 example:
-    - One example is worth thousand words.
-    - Of course, there can be more than one.
+  - One example is worth thousand words.
+  - Of course, there can be more than one.
 """.lstrip()

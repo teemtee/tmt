@@ -1,5 +1,4 @@
-summary:
-    Select specific guest by its hostname
+summary: Select specific guest by its hostname
 example:
   - |
     # Choose machine with given hostname

@@ -1,29 +1,29 @@
 summary: Specify how test result should be interpreted
 
-story:
-    As a tester I want to regularly execute the test but
-    temporarily ignore test result until more investigation is
-    done and the test can be fixed properly.
+story: >
+  As a tester I want to regularly execute the test but
+  temporarily ignore test result until more investigation is
+  done and the test can be fixed properly.
 
 description: |
-    Even if a test fails it might makes sense to execute it to be
-    able to manually review the results (ignore test result) or
-    ensure the behaviour has not unexpectedly changed and the test
-    is still failing (expected fail). The following values are
-    supported:
+  Even if a test fails it might makes sense to execute it to be
+  able to manually review the results (ignore test result) or
+  ensure the behaviour has not unexpectedly changed and the test
+  is still failing (expected fail). The following values are
+  supported:
 
-    respect
-        test result is respected (fails when test failed) - default value
-    xfail
-        expected fail (pass when test fails, fail when test passes)
-    pass, info, warn, error, fail
-        ignore the actual test result and always report provided
-        value instead
-    custom
-        test needs to create its own ``results.yaml`` or
-        ``results.json`` file in the ``${TMT_TEST_DATA}``
-        directory. The format of the file, notes and detailed examples
-        are documented at :ref:`/spec/plans/results`.
+  respect
+      test result is respected (fails when test failed) - default value
+  xfail
+      expected fail (pass when test fails, fail when test passes)
+  pass, info, warn, error, fail
+      ignore the actual test result and always report provided
+      value instead
+  custom
+      test needs to create its own ``results.yaml`` or
+      ``results.json`` file in the ``${TMT_TEST_DATA}``
+      directory. The format of the file, notes and detailed examples
+      are documented at :ref:`/spec/plans/results`.
 
 example:
   - |

@@ -1,73 +1,70 @@
 title: Test Coverage
-story:
-    As a tester I want to document the test coverage, so that it
-    can be easily tracked which user stories are covered by which
-    test case and vice-versa.
+story: >
+  As a tester I want to document the test coverage, so that it
+  can be easily tracked which user stories are covered by which
+  test case and vice-versa.
 
 /relevancy:
-    summary:
-        Story relevancy
-    story:
-        As a product owner I want to connect user stories with
-        products or versions, so that I can filter out items
-        relevant (or not relevant) for a particular product.
-    description:
-        Relevancy is an easy way to bind stories to particular
-        product(s). The same relevancy rules as for tests should
-        be also used for stories.
-    example: |
-        story:
-            As an admin I want product A doing B, so that I can
-            use it for C.
-        adjust:
-          - enabled: False
-            when: distro < fedora-28
-    priority: should have
+  summary: Story relevancy
+  story: >
+    As a product owner I want to connect user stories with
+    products or versions, so that I can filter out items
+    relevant (or not relevant) for a particular product.
+  description: >
+    Relevancy is an easy way to bind stories to particular
+    product(s). The same relevancy rules as for tests should
+    be also used for stories.
+  example: |
+    story: >
+        As an admin I want product A doing B, so that I can
+        use it for C.
+    adjust:
+      - enabled: False
+        when: distro < fedora-28
+  priority: should have
 
 /reference:
-    summary:
-        Referencing remote repositories
-    story:
-        As a tester I want to reference not only local objects,
-        so that user stories can be covered by test cases from a
-        different repository.
-    description:
-        It is possible to use a full fmf identifier in the
-        :ref:`/spec/core/link` attribute.
-    example: |
-        verified-by:
-            url: https://github.com/teemtee/fmf
-            ref: main
-            name: /tests/basic/repo
-    priority: should have
+  summary: Referencing remote repositories
+  story: >
+    As a tester I want to reference not only local objects,
+    so that user stories can be covered by test cases from a
+    different repository.
+  description: >
+    It is possible to use a full fmf identifier in the
+    :ref:`/spec/core/link` attribute.
+  example: |
+    verified-by:
+        url: https://github.com/teemtee/fmf
+        ref: main
+        name: /tests/basic/repo
+  priority: should have
 
 /filter:
-    /repo:
-        summary:
-            Filtering based on fmf identifiers
-        story:
-            As a tester I want to filter based on reference
-            identifiers, so that I can learn where the tests are
-            implemented/maintained.
-        description:
-            There should be an easy way to filter based on fmf
-            identifiers.
-        example: |
-            tmt story ls --filter "url:https://gitlab/project"
-            tmt story ls --filter "url:https://gitlab/project & ref:main name:/tests/smoke"
-        priority: should have
+  /repo:
+    summary: Filtering based on fmf identifiers
+    story: >
+      As a tester I want to filter based on reference
+      identifiers, so that I can learn where the tests are
+      implemented/maintained.
+    description: >
+      There should be an easy way to filter based on fmf
+      identifiers.
+    example: |
+      tmt story ls --filter "url:https://gitlab/project"
+      tmt story ls --filter "url:https://gitlab/project & ref:main name:/tests/smoke"
+    priority: should have
 
-    /tags:
-        summary: Filtering based on test tags
-        story:
-            As a tester I want to filter user stories based on the
-            referenced tests tags, so that I can see what coverage
-            the stories have.
-        description:
-            There should be an easy way to filter based on tests
-            tags.
-        example: |
-            tmt story ls --filter "tag:fast"
-        priority: should have
-        link:
-          - implemented-by: /tmt/base.py
+  /tags:
+    summary: Filtering based on test tags
+    story: >
+      As a tester I want to filter user stories based on the
+      referenced tests tags, so that I can see what coverage
+      the stories have.
+    description: >
+      There should be an easy way to filter based on tests
+      tags.
+    example: |
+      tmt story ls --filter "tag:fast"
+    priority: should have
+    link:
+      - implemented-by: /tmt/base.py

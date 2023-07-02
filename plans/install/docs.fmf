@@ -1,16 +1,16 @@
 summary: Ensure the docs can be installed successfully
-description:
-    Make sure installing docs to the readthedocs.org site works
-    well and there is no warning displayed during the build.
+description: >
+  Make sure installing docs to the readthedocs.org site works
+  well and there is no warning displayed during the build.
 prepare:
-    how: install
-    package: python3-pip
+  how: install
+  package: python3-pip
 execute:
-    script: |
-        set -ex
-        set -o pipefail
-        pip3 install .[docs]
-        cd docs
-        python3 -m sphinx -T -E -b html -d _build/doctrees \
-            . _build/html 2>&1 | tee output
-        egrep 'ERROR|WARNING' output && exit 1 || exit 0
+  script: |
+    set -ex
+    set -o pipefail
+    pip3 install .[docs]
+    cd docs
+    python3 -m sphinx -T -E -b html -d _build/doctrees \
+        . _build/html 2>&1 | tee output
+    egrep 'ERROR|WARNING' output && exit 1 || exit 0

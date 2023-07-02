@@ -1,48 +1,48 @@
-story:
-    As a tester I want to specify detailed installation of a guest
-    using the kickstart script.
+story: >
+  As a tester I want to specify detailed installation of a guest
+  using the kickstart script.
 
 description: |
-    As part of the :ref:`/spec/plans/provision` step it is possible to
-    use the ``kickstart`` key to specify additional requirements for the
-    installation of a guest. It is possible to specify a kickstart
-    script that will for example specify specific partitioning.
+  As part of the :ref:`/spec/plans/provision` step it is possible to
+  use the ``kickstart`` key to specify additional requirements for the
+  installation of a guest. It is possible to specify a kickstart
+  script that will for example specify specific partitioning.
 
-    The structure of a kickstart file is separated into several
-    sections.
+  The structure of a kickstart file is separated into several
+  sections.
 
-    pre-install
-        Corresponds to the ``%pre`` section of a file.  It can contain
-        ``bash`` commands, this part is run before the installation of a
-        guest.
+  pre-install
+      Corresponds to the ``%pre`` section of a file.  It can contain
+      ``bash`` commands, this part is run before the installation of a
+      guest.
 
-    post-install
-        Corresponds to the ``%post`` section of a file.  It can contain
-        ``bash`` commands, this part is run after the installation of a
-        guest.
+  post-install
+      Corresponds to the ``%post`` section of a file.  It can contain
+      ``bash`` commands, this part is run after the installation of a
+      guest.
 
-    script
-        Contains the kickstart specific commands that are run during the
-        installation of a guest.
+  script
+      Contains the kickstart specific commands that are run during the
+      installation of a guest.
 
-    It is also possible to specify ``metadata``. This part may be
-    interpreted differently for each of the pools that the guest is
-    created from. For example, in Beaker this section can be used to
-    modify the default kickstart template used by Beaker.  Similarly
-    works the ``kernel-options`` and ``kernel-options-post``.  Kernel
-    options are passed on the kernel command line when the installer is
-    booted.  Post-install kernel options are set in the boot loader
-    configuration, to be passed on the kernel command line after
-    installation.
+  It is also possible to specify ``metadata``. This part may be
+  interpreted differently for each of the pools that the guest is
+  created from. For example, in Beaker this section can be used to
+  modify the default kickstart template used by Beaker.  Similarly
+  works the ``kernel-options`` and ``kernel-options-post``.  Kernel
+  options are passed on the kernel command line when the installer is
+  booted.  Post-install kernel options are set in the boot loader
+  configuration, to be passed on the kernel command line after
+  installation.
 
-    .. note::
+  .. note::
 
-        The implementation for the ``kickstart`` key is in progress.
-        Support of a kickstart file is currently limited to Beaker
-        provisioning, as implemented by tmt's beaker and artemis
-        plugins, and may not be fully supported by other provisioning
-        plugins in the future.  Check individual plugin documentation
-        for additional information on the kickstart support.
+      The implementation for the ``kickstart`` key is in progress.
+      Support of a kickstart file is currently limited to Beaker
+      provisioning, as implemented by tmt's beaker and artemis
+      plugins, and may not be fully supported by other provisioning
+      plugins in the future.  Check individual plugin documentation
+      for additional information on the kickstart support.
 
 example:
   - |

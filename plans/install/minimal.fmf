@@ -9,4 +9,4 @@ prepare+:
     order: 90
     script: dnf remove -y 'tmt-*' --exclude tmt
 execute:
-    script: cd $(mktemp -d) && tmt init -t full && tmt
+  script: cd $(mktemp -d) && tmt init -t full && tmt

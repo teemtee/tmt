@@ -1,6 +1,6 @@
 # Use localhost by default
 provision:
-    how: local
+  how: local
 
 # Install packages
 #prepare:
@@ -24,4 +24,4 @@ provision:
 #    - sudo dnf install -y tmt
 
 execute:
-    how: tmt
+  how: tmt

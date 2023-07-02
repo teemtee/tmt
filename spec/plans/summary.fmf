@@ -1,22 +1,22 @@
 summary: Concise summary describing the plan
 
-description:
-    Should shortly describe purpose of the test plan. Must be a
-    one-line ``string``, should be up to 50 characters long. It
-    is challenging to be both concise and descriptive, but that is
-    what a well-written summary should do.
+description: >
+  Should shortly describe purpose of the test plan. Must be a
+  one-line ``string``, should be up to 50 characters long. It
+  is challenging to be both concise and descriptive, but that is
+  what a well-written summary should do.
 
 example: |
-    /pull-request:
-        /pep:
-            summary: All code must comply with the PEP8 style guide
-        /lint:
-            summary: Run pylint to catch common problems (no gating)
-    /build:
-        /smoke:
-            summary: Basic smoke test (Tier1)
-        /features:
-            summary: Verify important features
+  /pull-request:
+    /pep:
+      summary: All code must comply with the PEP8 style guide
+    /lint:
+      summary: Run pylint to catch common problems (no gating)
+  /build:
+    /smoke:
+      summary: Basic smoke test (Tier1)
+    /features:
+      summary: Verify important features
 
 link:
   - implemented-by: /tmt/base.py

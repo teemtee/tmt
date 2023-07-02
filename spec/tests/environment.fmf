@@ -1,22 +1,22 @@
 summary: Environment variables to be set before running the test
 
-story:
-    As a tester I need to pass environment variables to my test
-    script to properly execute the desired test scenario.
+story: >
+  As a tester I need to pass environment variables to my test
+  script to properly execute the desired test scenario.
 
-description:
-    Test scripts might require certain environment variables to be
-    set.  Although this can be done on the shell command line as
-    part of the ``test`` attribute it makes sense to have a
-    dedicated field for this, especially when the number of
-    parameters grows. This might be useful for virtual test cases
-    as well. Plan :ref:`/spec/plans/environment` overrides test
-    environment. Must be a ``dictionary``.
+description: >
+  Test scripts might require certain environment variables to be
+  set.  Although this can be done on the shell command line as
+  part of the ``test`` attribute it makes sense to have a
+  dedicated field for this, especially when the number of
+  parameters grows. This might be useful for virtual test cases
+  as well. Plan :ref:`/spec/plans/environment` overrides test
+  environment. Must be a ``dictionary``.
 
 example: |
-    environment:
-        PACKAGE: python37
-        PYTHON: python3.7
+  environment:
+      PACKAGE: python37
+      PYTHON: python3.7
 
 link:
   - implemented-by: /tmt/base.py

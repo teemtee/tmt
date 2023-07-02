@@ -1,58 +1,58 @@
 summary: Packages, libraries or files required for test execution
 
-story:
-    As a tester I want to specify packages, libraries and files
-    which are required by the test and need to be installed on or
-    copied over to the system so that the test can be successfully
-    executed.
+story: >
+  As a tester I want to specify packages, libraries and files
+  which are required by the test and need to be installed on or
+  copied over to the system so that the test can be successfully
+  executed.
 
 description: |
-    In order to execute the test, additional packages may need to
-    be installed on the system. For example `gcc` and `make` are
-    needed to compile tests written in C on the target machine. If
-    the package cannot be installed test execution must result
-    in an ``error``.
+  In order to execute the test, additional packages may need to
+  be installed on the system. For example `gcc` and `make` are
+  needed to compile tests written in C on the target machine. If
+  the package cannot be installed test execution must result
+  in an ``error``.
 
-    For tests shared across multiple components or product
-    versions where required packages have different names it is
-    recommended to use the :ref:`/spec/plans/prepare` step
-    configuration to specify required packages for each component
-    or product version individually.
+  For tests shared across multiple components or product
+  versions where required packages have different names it is
+  recommended to use the :ref:`/spec/plans/prepare` step
+  configuration to specify required packages for each component
+  or product version individually.
 
-    When referencing beakerlib libraries it is possible to use
-    both the backward-compatible syntax ``library(repo/lib)``
-    which fetches libraries from the `default location`__ as well
-    as provide a ``dictionary`` with a full `fmf identifier`__.
-    For the latter case specify ``type: library``.
+  When referencing beakerlib libraries it is possible to use
+  both the backward-compatible syntax ``library(repo/lib)``
+  which fetches libraries from the `default location`__ as well
+  as provide a ``dictionary`` with a full `fmf identifier`__.
+  For the latter case specify ``type: library``.
 
-    When referencing local files or directories use ``type: file``
-    and define list of paths relative to the fmf root directory.
-    These can be regular expressions to match multiple files or
-    directories or just a single file or directory name. By
-    default everything under test :ref:`/spec/tests/path` is
-    copied over to the system.
+  When referencing local files or directories use ``type: file``
+  and define list of paths relative to the fmf root directory.
+  These can be regular expressions to match multiple files or
+  directories or just a single file or directory name. By
+  default everything under test :ref:`/spec/tests/path` is
+  copied over to the system.
 
-    For now everything is still copied over to the system,
-    this addition is just giving you the ability to change
-    your metadata to reflect required files for your tests/libraries,
-    before the pruning is actually done.
+  For now everything is still copied over to the system,
+  this addition is just giving you the ability to change
+  your metadata to reflect required files for your tests/libraries,
+  before the pruning is actually done.
 
-    By default, fetched repositories are stored in the discover
-    step workdir under the ``libs`` directory. Use optional key
-    ``destination`` to choose a different location. The ``nick``
-    key can be used to override the default git repository name.
+  By default, fetched repositories are stored in the discover
+  step workdir under the ``libs`` directory. Use optional key
+  ``destination`` to choose a different location. The ``nick``
+  key can be used to override the default git repository name.
 
-    For debugging beakerlib libraries it is useful to reference
-    the development version directly from the local filesystem.
-    Use the ``path`` key to specify a full path to the library.
+  For debugging beakerlib libraries it is useful to reference
+  the development version directly from the local filesystem.
+  Use the ``path`` key to specify a full path to the library.
 
-    Must be a ``string`` or a ``list of strings`` using package
-    specification supported by ``dnf`` which takes care of the
-    installation or a ``dictionary`` if using fmf identifier to
-    fetch dependent repositories.
+  Must be a ``string`` or a ``list of strings`` using package
+  specification supported by ``dnf`` which takes care of the
+  installation or a ``dictionary`` if using fmf identifier to
+  fetch dependent repositories.
 
-    __ https://github.com/beakerlib/
-    __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
+  __ https://github.com/beakerlib/
+  __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
 example:
   - |

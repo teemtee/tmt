@@ -1,6 +1,6 @@
 /:
-    inherit: false
+  inherit: false
 plan:
-    import:
-        url: https://github.com/teemtee/tests
-        name: /plans/polarion
+  import:
+    url: https://github.com/teemtee/tests
+    name: /plans/polarion

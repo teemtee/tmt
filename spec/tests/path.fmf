@@ -1,22 +1,22 @@
 summary: Directory to be entered before executing the test
 
-story:
-    As a test writer I want to define the directory from which the
-    test script should be executed.
+story: >
+  As a test writer I want to define the directory from which the
+  test script should be executed.
 
 description: |
-    In order to have all files which are needed for testing
-    prepared for execution and available on locations expected by
-    the test script, automation changes the current working
-    directory to the provided ``path`` before running the test.
+  In order to have all files which are needed for testing
+  prepared for execution and available on locations expected by
+  the test script, automation changes the current working
+  directory to the provided ``path`` before running the test.
 
-    It must be a ``string`` containing path from the metadata
-    :ref:`tree root<tree>` to the desired directory and must
-    start with a slash. If path is not defined, the directory
-    where the test metadata are stored is used as a default.
+  It must be a ``string`` containing path from the metadata
+  :ref:`tree root<tree>` to the desired directory and must
+  start with a slash. If path is not defined, the directory
+  where the test metadata are stored is used as a default.
 
 example: |
-    path: /protocols/https
+  path: /protocols/https
 
 link:
   - implemented-by: /tmt/base.py
