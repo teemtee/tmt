@@ -2741,11 +2741,11 @@ def public_git_url(url: str) -> str:
     # Gitlab on private namepace is synced to pkgs.devel.redhat.com
     # old: https://gitlab.com/redhat/rhel/tests/bash
     # old: git@gitlab.com:redhat/rhel/tests/bash
-    # new: git://pkgs.devel.redhat.com/tests/bash
+    # new: https://pkgs.devel.redhat.com/git/tests/bash
     matched = re.match(r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)', url)
     if matched:
         project = matched.group(1)
-        return f'git://pkgs.devel.redhat.com{project}'
+        return f'https://pkgs.devel.redhat.com/git{project}'
 
     # GitHub, GitLab
     # old: git@github.com:teemtee/tmt.git
@@ -2759,12 +2759,12 @@ def public_git_url(url: str) -> str:
     # old: git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://pkgs.devel.redhat.com/tests/bash
-    # new: git://pkgs.devel.redhat.com/tests/bash
+    # new: https://pkgs.devel.redhat.com/git/tests/bash
     matched = re.match(
         r'(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)', url)
     if matched:
         _, _, host, project = matched.groups()
-        return f'git://{host}/{project}'
+        return f'https://{host}/git/{project}'
 
     # Fedora packages, Pagure
     # old: git+ssh://psss@pkgs.fedoraproject.org/tests/shell
