@@ -63,9 +63,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin):
         @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method to discover tests.')
+        @tmt.steps.PHASE_OPTIONS
         def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('discover')
-            Discover._save_cli_context(context)
+            Discover.store_cli_invocation(context)
 
         return discover
 

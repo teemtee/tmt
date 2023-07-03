@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 
-import click.testing
 import jsonschema
 import pytest
 
@@ -11,7 +10,9 @@ import tmt.cli
 from tmt.base import FmfId, Link, LinkNeedle, Links
 from tmt.utils import Path, SpecificationError
 
-runner = click.testing.CliRunner()
+from .. import CLIRunner
+
+runner = CLIRunner()
 
 
 def test_invalid_yaml_syntax():

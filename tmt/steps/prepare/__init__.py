@@ -71,9 +71,10 @@ class PreparePlugin(tmt.steps.Plugin):
         @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for environment preparation.')
+        @tmt.steps.PHASE_OPTIONS
         def prepare(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('prepare')
-            Prepare._save_cli_context(context)
+            Prepare.store_cli_invocation(context)
 
         return prepare
 

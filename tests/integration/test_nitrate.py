@@ -3,7 +3,6 @@ import shutil
 import tempfile
 
 import nitrate
-from click.testing import CliRunner
 from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
@@ -12,6 +11,8 @@ import tmt.base
 import tmt.cli
 import tmt.log
 from tmt.utils import ConvertError, Path
+
+from .. import CLIRunner
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent
@@ -50,7 +51,7 @@ class NitrateExport(Base):
         assert "extra-nitrate" not in fmf_node.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
@@ -65,7 +66,7 @@ class NitrateExport(Base):
         assert "extra-nitrate" not in fmf_node_before.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
@@ -81,7 +82,7 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
@@ -94,7 +95,7 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
@@ -107,7 +108,7 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_release_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(tmt.cli.main,
                                            ["test",
                                             "export",
@@ -133,7 +134,7 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(tmt.cli.main,
                                            ["test",
                                             "export",
@@ -148,7 +149,7 @@ class NitrateExport(Base):
 
     def test_missing_user_dryrun(self):
         os.chdir(self.tmpdir / "existing_testcase_missing_user")
-        runner = CliRunner()
+        runner = CLIRunner()
         with self.assertRaises(ConvertError):
             self.runner_output = runner.invoke(
                 tmt.cli.main,
@@ -161,7 +162,7 @@ class NitrateExport(Base):
         fmf_node = Tree(self.tmpdir).find("/validation")
         with fmf_node as data:
             data['test'] = 'echo hello world'
-        runner = CliRunner()
+        runner = CLIRunner()
         with self.assertRaises(ConvertError) as error:
             self.runner_output = runner.invoke(
                 tmt.cli.main,
@@ -175,7 +176,7 @@ class NitrateExport(Base):
         with fmf_node as data:
             data['extra-nitrate'] = 'TC#599605'
 
-        runner = CliRunner()
+        runner = CLIRunner()
 
         self.runner_output = runner.invoke(
             tmt.cli.main,
@@ -189,7 +190,7 @@ class NitrateExport(Base):
 class NitrateImport(Base):
 
     def test_import_manual_confirmed(self):
-        runner = CliRunner()
+        runner = CLIRunner()
         # TODO: import does not respect --root param anyhow (could)
         self.runner_output = runner.invoke(
             tmt.cli.main,
@@ -217,7 +218,7 @@ class NitrateImport(Base):
             assert "tmt_test_component" in out["component"]
 
     def test_import_manual_proposed(self):
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main, ['--root', self.tmpdir / "import_case", "test",
                            "import", "--no-general", "--nitrate", "--manual", "--case=609705"],
@@ -294,7 +295,7 @@ extra-task: /tmt/integration
         assert "Makefile" in files
         assert "main.fmf" not in files
         assert "test.md" not in files
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main, [
                 "test", "import", "--nitrate"], catch_exceptions=False)
@@ -315,7 +316,7 @@ extra-task: /tmt/integration
         os.chdir(self.tmpdir / "import_old_relevancy")
         files = os.listdir()
         assert files == ["Makefile"]
-        runner = CliRunner()
+        runner = CLIRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main, [
                 "test", "import", "--nitrate", "--no-general"], catch_exceptions=False)

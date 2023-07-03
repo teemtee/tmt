@@ -30,11 +30,12 @@ import logging
 import logging.handlers
 import os
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional, Protocol, Set, Tuple, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Set, Tuple, TypedDict, cast
 
 import click
 
 if TYPE_CHECKING:
+    import tmt.cli
     import tmt.utils
 
 # Log in workdir
@@ -547,7 +548,10 @@ class Logger:
 
         self._logger.addHandler(handler)
 
-    def apply_verbosity_options(self, **kwargs: Any) -> 'Logger':
+    def apply_verbosity_options(
+            self,
+            cli_invocation: Optional['tmt.cli.CLIInvocation'] = None,
+            **kwargs: Any) -> 'Logger':
         """
         Update logger's settings to match given CLI options.
 
@@ -555,7 +559,14 @@ class Logger:
         to reflect options given to a tmt subcommand.
         """
 
-        verbosity_level = cast(Optional[int], kwargs.get('verbose', None))
+        actual_kwargs: Dict[str, Any] = {}
+
+        if cli_invocation is not None:
+            actual_kwargs = cli_invocation.options
+
+        actual_kwargs.update(kwargs)
+
+        verbosity_level = cast(Optional[int], actual_kwargs.get('verbose', None))
         if verbosity_level is None or verbosity_level == 0:
             pass
 
@@ -568,7 +579,7 @@ class Logger:
             self.debug_level = debug_level_from_global_envvar
 
         else:
-            debug_level_from_option = cast(Optional[int], kwargs.get('debug', None))
+            debug_level_from_option = cast(Optional[int], actual_kwargs.get('debug', None))
 
             if debug_level_from_option is None or debug_level_from_option == 0:
                 pass
@@ -576,12 +587,12 @@ class Logger:
             else:
                 self.debug_level = debug_level_from_option
 
-        quietness_level = kwargs.get('quiet', False)
+        quietness_level = actual_kwargs.get('quiet', False)
 
         if quietness_level is True:
             self.quiet = quietness_level
 
-        topic_specs = kwargs.get('log_topic', [])
+        topic_specs = actual_kwargs.get('log_topic', [])
 
         for topic_spec in topic_specs:
             try:

@@ -85,7 +85,7 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartTest "Verbose execute prints result - abort case"
-        rlRun -s "tmt run --id \${run} --scratch --until execute tests tests -n /abort provision --how container execute -v 2>&1 >/dev/null" "2"
+        rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /abort provision --how container execute -v 2>&1 >/dev/null" "2"
         rlAssertGrep "00:00:00 errr /test/abort (on default-0) (aborted) [1/1" $rlRun_LOG -F
     rlPhaseEnd
 

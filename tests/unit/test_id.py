@@ -4,7 +4,6 @@ import tempfile
 from unittest import TestCase
 
 import fmf
-from click.testing import CliRunner
 
 import tmt
 import tmt.cli
@@ -12,7 +11,9 @@ import tmt.log
 from tmt.identifier import ID_KEY
 from tmt.utils import Path
 
-runner = CliRunner()
+from .. import CLIRunner
+
+runner = CLIRunner()
 test_path = Path(__file__).parent / "id"
 root_logger = tmt.log.Logger.create()
 

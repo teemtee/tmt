@@ -7,10 +7,11 @@ from typing import Tuple
 
 import _pytest.monkeypatch
 import pytest
-from click.testing import CliRunner
 
 import tmt.cli
 import tmt.log
+
+from .. import CLIRunner
 
 # Prepare path to examples
 PATH = os.path.dirname(os.path.realpath(__file__))
@@ -21,7 +22,7 @@ def example(name):
     return os.path.join(PATH, "../../examples/", name)
 
 
-runner = CliRunner()
+runner = CLIRunner()
 
 
 def test_mini():
