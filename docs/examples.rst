@@ -629,15 +629,17 @@ option and the ``context`` plan attribute:
     $ tmt -c branch=tmt run
 
 
+.. _dynamic-ref:
+
 Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------
 
 When using test branching for test maintenance it becomes handy to
-be able to set ``ref`` dynamically depending on the provided
-:ref:`/spec/context`. This is possible using a special file in tmt format
-stored in a default branch of a tests repository. That special file
-should contain rules assigning attribute ``ref`` in an ``adjust``
-block depending on the context.
+be able to set :ref:`ref</spec/plans/discover/fmf>` dynamically
+depending on the provided :ref:`/spec/context`. This is possible
+using a special file in tmt format stored in a default branch of a
+tests repository. That special file should contain rules assigning
+attribute ``ref`` in an ``adjust`` block depending on the context.
 
 Dynamic ``ref`` assignment is enabled whenever a test plan reference
 has the format ``ref: @FILEPATH``.
