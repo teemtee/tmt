@@ -81,3 +81,5 @@ execute:
     summary: "Simple test for library pruning"
     discover+:
         test: pruning
+    provision:
+        how: virtual
