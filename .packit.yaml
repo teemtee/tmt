@@ -94,6 +94,8 @@ jobs:
       - fedora-all
       - epel-8
       - epel-9
+    actions:
+        post-upstream-clone: []
 
   - job: koji_build
     trigger: commit
