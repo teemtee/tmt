@@ -557,8 +557,8 @@ Cahyna, Martin Litwora, Brian Grech, Vojtěch Eichler, Philip Daly,
 Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín,
 Lukáš Kotek, Daniel Diblík, Laura Barcziova, Marián Konček,
 Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
-Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang
-and Zhaojuan Guo.
+Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
+Zhaojuan Guo and Natália Bubáková.
 
 
 Copyright

@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.24.1
+Version: 1.25.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -250,6 +250,84 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Mon Jul 10 2023 Lukáš Zachar <lzachar@redhat.com> - 1.25.0
+- Test for pruning needs VM
+- Internal anonymous git:// access is deprecated
+- Add tests and some modifications after rebases
+- Clone to tmp and use fmf.Tree.find instead of looping
+- Add clone_dirpath to Common
+- Fix bad usage of path and name
+- Fix multiple clones and inherited fmf metadata
+- Beakerlibs pruning and merge
+- Add dynamic ref evaluation support to plan import
+- Replace self.opt() when looking for debug/verbose/quiet setting
+- Reimplement the `ReportPortal` plugin using API
+- Make `Step` class own export of step data (#2040)
+- Make relevancy/coverage linters to not re-read fmf files
+- Add a single `tmpdir` fixture for all Python versions
+- Replace named tuples with data classes
+- Replace `/` in safe name, and fix prepare step to use safe names
+- Do not export fmf id's ref when it's the default branch
+- Move the sync libraries into a separate section
+- Allow running next plan in queue when one fails to complete
+- Fix a too strict check for the detected library
+- Convert provision plugins' step data to our field implementation
+- Convert execute plugins to `tmt.utils.field()` for options
+- Cache that beakerlib/library repo is missing
+- Use code-block directive for examples and code blocks
+- Add the `show()` method for guest data packages
+- Turn fmf context into a fancy dict
+- Enable ruff checks for mutable dataclass field defaults
+- Create option metavar from listed choices
+- Document how to modify imported plans
+- Recommend needs a different option for `dnf5`
+- Ask ruff to show what it fixed
+- Bumps supported Artemis API to 0.0.58
+- Use `--version` to gather the package_manager fact
+- Use f-strings where possible
+- Bump pre-commit hooks to latest version
+- Fix ruff RUF010: Use f-strings conversion flags
+- Fix py<38 mypy type:ignore being on wrong line
+- Move isort to ruff
+- Enable passing Pylint checks
+- Fix ruff RSE102: Unnecessary parentheses on exception
+- Fix ruff PIE: flake8-pie errors
+- Remove duplicates from ruff rules selection
+- Fix ruff SIM: flake8-simplify errors
+- Fix ruff RET: flake8-return errors
+- Fix ruff PT: flake8-pytest-style errors
+- Fix ruff UP: pyupgrade errors
+- Fix ruff N: pep8-naming errors
+- Fix ruff RUF005: collection-literal-concatenation
+- Fix ruff B: flake8-bugbear errors
+- Fix flake8 C405: unnecessary literal set
+- Fix flake8 C401: unnecessary generator set
+- Fix flake8 C416: unnecessary comprehension
+- Fix flake8 C408: unnecessary collection calls
+- Polarion report set to UTC timezone
+- Add `Organize Data` as a new tmt guide chapter
+- Fix emptiness check of /var/tmp/tmt in /tests/status/base
+- Allow modification of imported plans
+- Raise error if malformed test metadata is given
+- Ensure test with empty custom results ends as an ERROR
+- Fix /tests/status/base when /var/tmp/tmt is empty
+- Remove `pytest.ini` from the `Makefile` targets
+- Bad source path for local libraries file require
+- Remove useless loop.cycle() from the HTML report
+- Implement basic filtering for the HTML report
+- Cleanup of "logging function" types
+- Do not patch verbosity in discover for --fmf-id
+- Drop enum from HW hypervisor and boot method constraints
+- Fix enforcement of workdir root in full workdir root test
+- Narrow type of file & library dependencies
+- Make web-link test play nicely with custom SSH host config
+- Use serialization callbacks for last script fields
+- Save click context in click context object
+- Add the `envvar` argument to `utils.field()`
+- Improve structure of the packit config a bit
+- Update release instructions with simplified steps
+- Sync changelog when creating downstream release
+
 * Fri Jun 09 2023 Petr Šplíchal <psplicha@redhat.com> - 1.24.1-1
 - Revert the `Source0` url to the original value
 - Use correct url for the release archive, fix docs
