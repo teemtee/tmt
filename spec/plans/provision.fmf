@@ -1,213 +1,211 @@
 summary: Provision a system for testing
 
 description: |
-    Describes what environment is needed for testing and how it
-    should be provisioned. There are several provision plugins
-    supporting multiple ways to provision the environment for
-    testing, for example
-    :ref:`/spec/plans/provision/virtual`,
-    :ref:`/spec/plans/provision/container`,
-    :ref:`/spec/plans/provision/connect`,
-    :ref:`/spec/plans/provision/local` or
-    :ref:`/spec/plans/provision/artemis`.
-    See individual plugin documentation for details about
-    supported options.
+  Describes what environment is needed for testing and how it
+  should be provisioned. There are several provision plugins
+  supporting multiple ways to provision the environment for
+  testing, for example
+  :ref:`/spec/plans/provision/virtual`,
+  :ref:`/spec/plans/provision/container`,
+  :ref:`/spec/plans/provision/connect`,
+  :ref:`/spec/plans/provision/local` or
+  :ref:`/spec/plans/provision/artemis`.
+  See individual plugin documentation for details about
+  supported options.
 
-    As part of the provision step it is also possible to specify
-    detailed hardware requirements for the testing environment.
-    See the :ref:`/spec/hardware` specification section for
-    details.
+  As part of the provision step it is also possible to specify
+  detailed hardware requirements for the testing environment.
+  See the :ref:`/spec/hardware` specification section for
+  details.
 
-    As part of the provision step it is also possible to specify
-    kickstart file used during the installation.
-    See the :ref:`/spec/plans/provision/kickstart` specification
-    section for details.
+  As part of the provision step it is also possible to specify
+  kickstart file used during the installation.
+  See the :ref:`/spec/plans/provision/kickstart` specification
+  section for details.
 
 example: |
-    # Provision a local virtual machine with the latest Fedora
+  # Provision a local virtual machine with the latest Fedora
+  provision:
+      how: virtual
+      image: fedora
+
+/virtual:
+  summary: Provision a virtual machine (default)
+  description: >
+    Create a new virtual machine on the localhost using
+    testcloud (libvirt). Testcloud takes care of downloading
+    an image and making necessary changes to it for optimal
+    experience (such as disabling UseDNS and GSSAPI for SSH).
+  example: |
     provision:
         how: virtual
         image: fedora
-
-/virtual:
-    summary: Provision a virtual machine (default)
-    description:
-        Create a new virtual machine on the localhost using
-        testcloud (libvirt). Testcloud takes care of downloading
-        an image and making necessary changes to it for optimal
-        experience (such as disabling UseDNS and GSSAPI for SSH).
-    example: |
-        provision:
-            how: virtual
-            image: fedora
-    link:
-      - implemented-by: /tmt/steps/provision/testcloud.py
+  link:
+    - implemented-by: /tmt/steps/provision/testcloud.py
 
 /local:
-    summary: Use the localhost for testing
-    description:
-        Do not provision any system. Tests will be executed
-        directly on the localhost. Note that for some actions like
-        installing additional packages you need root permission or
-        enabled sudo.
-    example: |
-        provision:
-            how: local
-    link:
-      - implemented-by: /tmt/steps/provision/local.py
-      - verified-by: /tests/init/base
+  summary: Use the localhost for testing
+  description: >
+    Do not provision any system. Tests will be executed
+    directly on the localhost. Note that for some actions like
+    installing additional packages you need root permission or
+    enabled sudo.
+  example: |
+    provision:
+        how: local
+  link:
+    - implemented-by: /tmt/steps/provision/local.py
+    - verified-by: /tests/init/base
 
 /container:
-    summary: Provision a container
-    description:
-        Download (if necessary) and start a new container using
-        podman or docker.
-    example: |
-        provision:
-            how: container
-            image: fedora:latest
-    link:
-      - implemented-by: /tmt/steps/provision/podman.py
+  summary: Provision a container
+  description: >
+    Download (if necessary) and start a new container using
+    podman or docker.
+  example: |
+    provision:
+        how: container
+        image: fedora:latest
+  link:
+    - implemented-by: /tmt/steps/provision/podman.py
 
 /openstack:
-    summary: Provision a virtual machine in OpenStack
-    description:
-        Create a virtual machine using OpenStack.
-    example: |
-        provision:
-            how: openstack
-            image: f31
+  summary: Provision a virtual machine in OpenStack
+  description: >
+    Create a virtual machine using OpenStack.
+  example: |
+    provision:
+        how: openstack
+        image: f31
 
 /beaker:
-    summary: Provision a machine in Beaker
-    description: |
-        Reserve a machine from the Beaker pool using the ``mrack``
-        plugin.  `mrack`__ is a multicloud provisioning library
-        supporting multiple cloud services including Beaker.
+  summary: Provision a machine in Beaker
+  description: |
+    Reserve a machine from the Beaker pool using the ``mrack``
+    plugin.  `mrack`__ is a multicloud provisioning library
+    supporting multiple cloud services including Beaker.
 
-        The following two files are used for configuration:
+    The following two files are used for configuration:
 
-        /etc/tmt/mrack.conf
-            for basic configuration
+    /etc/tmt/mrack.conf
+        for basic configuration
 
-        /etc/tmt/provisioning-config.yaml
-            configuration per supported provider
+    /etc/tmt/provisioning-config.yaml
+        configuration per supported provider
 
-        Beaker installs distribution specified by the ``image``
-        key. If the image can not be translated using the
-        ``provisioning-config.yaml`` file mrack passes the image
-        value to Beaker hub and tries to request distribution
-        based on the image value. This way we can bypass default
-        translations and use desired distribution specified like
-        the one in the example below.
+    Beaker installs distribution specified by the ``image``
+    key. If the image can not be translated using the
+    ``provisioning-config.yaml`` file mrack passes the image
+    value to Beaker hub and tries to request distribution
+    based on the image value. This way we can bypass default
+    translations and use desired distribution specified like
+    the one in the example below.
 
-        __ https://github.com/neoave/mrack
+    __ https://github.com/neoave/mrack
 
-        .. note::
+    .. note::
 
-            The beaker provision plugin is not available for
-            ``rhel-8`` or ``centos-stream-8``.
+        The beaker provision plugin is not available for
+        ``rhel-8`` or ``centos-stream-8``.
 
-        .. versionadded:: 1.22
+    .. versionadded:: 1.22
 
-    example:
-      - |
-        # Use image name translation
-        provision:
-            how: beaker
-            image: fedora
-      - |
-        # Specify the distro directly
-        provision:
-            how: beaker
-            image: Fedora-37%
+  example:
+    - |
+      # Use image name translation
+      provision:
+          how: beaker
+          image: fedora
+    - |
+      # Specify the distro directly
+      provision:
+          how: beaker
+          image: Fedora-37%
 
-    link:
-      - implemented-by: /tmt/steps/provision/mrack.py
-      - verified-by: /tests/provision/beaker
-
+  link:
+    - implemented-by: /tmt/steps/provision/mrack.py
+    - verified-by: /tests/provision/beaker
 
 /connect:
-    summary: Connect to a provisioned box
-    description: |
-        Do not provision a new system. Instead, use provided
-        authentication data to connect to a running machine.
+  summary: Connect to a provisioned box
+  description: |
+    Do not provision a new system. Instead, use provided
+    authentication data to connect to a running machine.
 
-        guest
-            hostname or ip address of the box
-        user
-            user name to be used to log in, ``root`` by default
-        password
-            user password to be used to log in
-        key
-            path to the file with private key
-        port
-            use specific port to connect to
-    link:
-      - implemented-by: /tmt/steps/provision/connect.py
+    guest
+        hostname or ip address of the box
+    user
+        user name to be used to log in, ``root`` by default
+    password
+        user password to be used to log in
+    key
+        path to the file with private key
+    port
+        use specific port to connect to
+  link:
+    - implemented-by: /tmt/steps/provision/connect.py
 
-    example: |
-        provision:
-            how: connect
-            guest: hostname or ip address
-            user: username
-            password: password
+  example: |
+    provision:
+        how: connect
+        guest: hostname or ip address
+        user: username
+        password: password
 
-        provision:
-            how: connect
-            guest: hostname or ip address
-            key: private-key-path
-
+    provision:
+        how: connect
+        guest: hostname or ip address
+        key: private-key-path
 
 /multihost:
-    summary: Multihost testing specification
+  summary: Multihost testing specification
 
-    description: |
-        .. versionchanged:: 1.24
+  description: |
+    .. versionchanged:: 1.24
 
-        As a part of the provision step it is possible to request
-        multiple guests to be provisioned for testing. Each guest
-        has to be assigned a unique ``name`` which is used to
-        identify it.
+    As a part of the provision step it is possible to request
+    multiple guests to be provisioned for testing. Each guest
+    has to be assigned a unique ``name`` which is used to
+    identify it.
 
-        The optional parameter ``role`` can be used to mark
-        related guests so that common actions can be applied to
-        all such guests at once. An example role name can be
-        `client` or `server` but arbitrary identifier can be used.
+    The optional parameter ``role`` can be used to mark
+    related guests so that common actions can be applied to
+    all such guests at once. An example role name can be
+    `client` or `server` but arbitrary identifier can be used.
 
-        Both `name` and `role` can be used together with the
-        ``where`` key to select guests on which the
-        :ref:`preparation</spec/plans/prepare/where>`
-        tasks should be applied or where the test
-        :ref:`execution</spec/plans/discover/where>` should
-        take place.
+    Both `name` and `role` can be used together with the
+    ``where`` key to select guests on which the
+    :ref:`preparation</spec/plans/prepare/where>`
+    tasks should be applied or where the test
+    :ref:`execution</spec/plans/discover/where>` should
+    take place.
 
-        See :ref:`/spec/plans/guest-topology` for details on how
-        this information is exposed to tests and ``prepare`` and
-        ``finish`` tasks.
+    See :ref:`/spec/plans/guest-topology` for details on how
+    this information is exposed to tests and ``prepare`` and
+    ``finish`` tasks.
 
-    example: |
-        # Request two guests
-        provision:
-          - name: server
-            how: virtual
-          - name: client
-            how: virtual
+  example: |
+    # Request two guests
+    provision:
+      - name: server
+        how: virtual
+      - name: client
+        how: virtual
 
-        # Assign role to guests
-        provision:
-          - name: main-server
-            role: primary
-          - name: backup-one
-            role: replica
-          - name: backup-two
-            role: replica
-          - name: tester-one
-            role: client
-          - name: tester-two
-            role: client
+    # Assign role to guests
+    provision:
+      - name: main-server
+        role: primary
+      - name: backup-one
+        role: replica
+      - name: backup-two
+        role: replica
+      - name: tester-one
+        role: client
+      - name: tester-two
+        role: client
 
-    link:
-      - implemented-by: /tmt/steps/__init__.py
-      - implemented-by: /tmt/queue.py
-      - verified-by: /tests/multihost
+  link:
+    - implemented-by: /tmt/steps/__init__.py
+    - implemented-by: /tmt/queue.py
+    - verified-by: /tests/multihost

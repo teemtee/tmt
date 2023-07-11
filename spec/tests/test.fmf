@@ -1,25 +1,25 @@
 summary: Shell command which executes the test
 
-story:
-    As a test writer I want to run a single test script in
-    multiple ways (e.g. by providing different parameters).
+story: >
+  As a test writer I want to run a single test script in
+  multiple ways (e.g. by providing different parameters).
 
 description: |
-    This attribute defines how the test is to be executed.
-    Allows to parametrize a single test script and in this way
-    create virtual test cases.
+  This attribute defines how the test is to be executed.
+  Allows to parametrize a single test script and in this way
+  create virtual test cases.
 
-    If the test is :ref:`/spec/tests/manual`, it points to the
-    document describing the manual test case steps in Markdown
-    format with defined structure.
+  If the test is :ref:`/spec/tests/manual`, it points to the
+  document describing the manual test case steps in Markdown
+  format with defined structure.
 
-    Must be a ``string``. This is a **required** attribute.
+  Must be a ``string``. This is a **required** attribute.
 
-    ``Bash`` is used as shell and options ``errexit`` and ``pipefail``
-    are applied using ``set -eo pipefail`` to avoid potential errors
-    going unnoticed. You may revert this setting by explicitly
-    using ``set +eo pipefail``. These options are not applied when
-    ``beakerlib`` is used as the :ref:`/spec/tests/framework`.
+  ``Bash`` is used as shell and options ``errexit`` and ``pipefail``
+  are applied using ``set -eo pipefail`` to avoid potential errors
+  going unnoticed. You may revert this setting by explicitly
+  using ``set +eo pipefail``. These options are not applied when
+  ``beakerlib`` is used as the :ref:`/spec/tests/framework`.
 
 example:
   - |

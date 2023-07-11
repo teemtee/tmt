@@ -14,14 +14,14 @@
 summary: Sanity tests of Artemis provision plugin
 
 discover:
-    how: fmf
-    filter: 'tag: artemis & tier: 1'
+  how: fmf
+  filter: 'tag: artemis & tier: 1'
 
 provision:
-    how: artemis
+  how: artemis
 
-    # NOTE: the required keys are missing *on purpose* - they must be given
-    # on command-line.
+  # NOTE: the required keys are missing *on purpose* - they must be given
+  # on command-line.
 
 enabled: false
 adjust:

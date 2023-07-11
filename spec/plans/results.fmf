@@ -3,125 +3,125 @@ title: Results Format
 order: 90
 
 description: |
-    The following text defines a YAML file structure tmt uses for storing
-    results. tmt itself will use it when saving results of ``execute`` step,
-    and custom test results are required to follow it when creating their
-    ``results.yaml`` file.
+  The following text defines a YAML file structure tmt uses for storing
+  results. tmt itself will use it when saving results of ``execute`` step,
+  and custom test results are required to follow it when creating their
+  ``results.yaml`` file.
 
-    Tests may choose JSON instead of YAML for their custom results file and
-    create ``results.json`` file, but tmt itself will always stick to YAML,
-    the final results would be provided in ``results.yaml`` file in any case.
+  Tests may choose JSON instead of YAML for their custom results file and
+  create ``results.json`` file, but tmt itself will always stick to YAML,
+  the final results would be provided in ``results.yaml`` file in any case.
 
-    Results are saved as a single list of dictionaries, each describing
-    a single test result.
+  Results are saved as a single list of dictionaries, each describing
+  a single test result.
 
-    .. code-block::
+  .. code-block::
 
-       # String, name of the test.
+     # String, name of the test.
+     name: /test/one
+
+     # fmf ID of the test.
+     fmf_id:
+       url: http://some.git.host.com/project/tests.git
        name: /test/one
+       path: /
 
-       # fmf ID of the test.
-       fmf_id:
-         url: http://some.git.host.com/project/tests.git
-         name: /test/one
-         path: /
+     # String, outcome of the test execution.
+     result: "pass"|"fail"|"info"|"warn"|"error"
 
-       # String, outcome of the test execution.
-       result: "pass"|"fail"|"info"|"warn"|"error"
+     # String, optional comment to report with the result.
+     note: "Things were great."
 
-       # String, optional comment to report with the result.
-       note: "Things were great."
+     # List of strings, paths to file logs.
+     log:
+       - path/to/log1
+       - path/to/log1
+         ...
 
-       # List of strings, paths to file logs.
-       log:
-         - path/to/log1
-         - path/to/log1
-           ...
+     # Mapping, collection of various test IDs, if there are any to track.
+     ids:
+       some-id: foo
+       another-id: bar
 
-       # Mapping, collection of various test IDs, if there are any to track.
-       ids:
-         some-id: foo
-         another-id: bar
+     # String, when the test started, in an ISO 8601 format.
+     starttime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-       # String, when the test started, in an ISO 8601 format.
-       starttime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+     # String, when the test finished, in an ISO 8601 format.
+     endtime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-       # String, when the test finished, in an ISO 8601 format.
-       endtime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+     # String, how long did the test run.
+     duration: hh:mm:ss
 
-       # String, how long did the test run.
-       duration: hh:mm:ss
+     # Integer, serial number of the test in the sequence of all tests of a plan.
+     serialnumber: 1
 
-       # Integer, serial number of the test in the sequence of all tests of a plan.
-       serialnumber: 1
+     # Mapping, describes the guest on which the test was executed.
+     guest:
+       name: client-1
+       role: clients
 
-       # Mapping, describes the guest on which the test was executed.
-       guest:
-         name: client-1
-         role: clients
+  The ``result`` key can have the following values:
 
-    The ``result`` key can have the following values:
+  pass
+      Test execution successfully finished and passed.
 
-    pass
-        Test execution successfully finished and passed.
+  info
+      Test finished but only produced an informational
+      message. Represents a soft pass, used for skipped
+      tests and for tests with the :ref:`/spec/tests/result`
+      attribute set to ``ignore``. Automation must treat
+      this as a passed test.
 
-    info
-        Test finished but only produced an informational
-        message. Represents a soft pass, used for skipped
-        tests and for tests with the :ref:`/spec/tests/result`
-        attribute set to ``ignore``. Automation must treat
-        this as a passed test.
+  warn
+      A problem appeared during test execution which does
+      not affect test results but might be worth checking
+      and fixing. For example test cleanup phase failed.
+      Automation must treat this as a failed test.
 
-    warn
-        A problem appeared during test execution which does
-        not affect test results but might be worth checking
-        and fixing. For example test cleanup phase failed.
-        Automation must treat this as a failed test.
+  error
+      Undefined problem encountered during test execution.
+      Human inspection is needed to investigate whether it
+      was a test bug, infrastructure error or a real test
+      failure. Automation must treat it as a failed test.
 
-    error
-        Undefined problem encountered during test execution.
-        Human inspection is needed to investigate whether it
-        was a test bug, infrastructure error or a real test
-        failure. Automation must treat it as a failed test.
+  fail
+      Test execution successfully finished and failed.
 
-    fail
-        Test execution successfully finished and failed.
+  The ``name`` and ``result`` keys are required. Custom result files
+  may omit all other keys, although tmt plugins will strive to provide
+  as many keys as possible.
 
-    The ``name`` and ``result`` keys are required. Custom result files
-    may omit all other keys, although tmt plugins will strive to provide
-    as many keys as possible.
+  When importing the :ref:`custom results file </spec/tests/result>`, each
+  test name referenced in the file by the ``name`` key would be prefixed by
+  the original test name. A special case, ``name: /``, sets the result for
+  the original test itself.
 
-    When importing the :ref:`custom results file </spec/tests/result>`, each
-    test name referenced in the file by the ``name`` key would be prefixed by
-    the original test name. A special case, ``name: /``, sets the result for
-    the original test itself.
+  The ``log`` key must list **relative** paths. Paths in the custom
+  results file are treated as relative to ``${TMT_TEST_DATA}`` path.
+  Paths in the final results file, saved by the execute step, will be
+  relative to the location of the results file itself.
 
-    The ``log`` key must list **relative** paths. Paths in the custom
-    results file are treated as relative to ``${TMT_TEST_DATA}`` path.
-    Paths in the final results file, saved by the execute step, will be
-    relative to the location of the results file itself.
+  The first ``log`` item is considered to be the "main" log, presented
+  to the user by default.
 
-    The first ``log`` item is considered to be the "main" log, presented
-    to the user by default.
+  The ``serialnumber``, ``guest`` and ``fmf_id`` keys, if present in the
+  custom results file, will be overwritten by tmt during their import after
+  test completes. This happens on purpose, to assure this vital
+  information is correct.
 
-    The ``serialnumber``, ``guest`` and ``fmf_id`` keys, if present in the
-    custom results file, will be overwritten by tmt during their import after
-    test completes. This happens on purpose, to assure this vital
-    information is correct.
+  Similarly, the ``duration``, ``starttime`` and ``endtime`` keys, if
+  present in the special custom result, representing the original test
+  itself - ``name: /`` -, will be overwritten by tmt with actual
+  observed values. This also happens on purpose: while tmt cannot
+  tell how long it took to produce various custom results, it is still
+  able to report the duration of the whole test.
 
-    Similarly, the ``duration``, ``starttime`` and ``endtime`` keys, if
-    present in the special custom result, representing the original test
-    itself - ``name: /`` -, will be overwritten by tmt with actual
-    observed values. This also happens on purpose: while tmt cannot
-    tell how long it took to produce various custom results, it is still
-    able to report the duration of the whole test.
+  See also the complete `JSON schema`__.
 
-    See also the complete `JSON schema`__.
+  For custom results files in JSON format, the same rules and schema
+  apply.
 
-    For custom results files in JSON format, the same rules and schema
-    apply.
-
-    __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
+  __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 
 example:
   - |

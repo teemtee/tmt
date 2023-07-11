@@ -1,285 +1,282 @@
 story: 'As a user I want to execute tests easily'
 
 /default:
-    /run:
-        summary: 'Default should cover the most common use case'
-        story:
-            As a user I want to easily and safely execute all
-            available tests in the default environment.
-        description:
-            Run all relevant tests in a local virtual machine so
-            that the test environment can be safely prepared and
-            adjusted as needed without affecting or possibly
-            breaking user environment such as laptop.
-        link:
-          - implemented-by: /tmt/base.py
-          - documented-by: /docs/examples.rst#run
-          - documented-by: /docs/guide.rst
-        example: tmt run
-    /plan:
-        summary: 'Plan should not be required for test execution'
-        story:
-            As a tester I want to execute tests in the default
-            environment without having to define a plan.
-        description: |
-            Even if there are no :ref:`/spec/plans` defined it is
-            still possible to execute tests and custom scripts. In
-            that case the default :ref:`/spec/plans` configuration
-            is applied and tests are executed using the ``shell``
-            method.
+  /run:
+    summary: 'Default should cover the most common use case'
+    story: >
+      As a user I want to easily and safely execute all
+      available tests in the default environment.
+    description: >
+      Run all relevant tests in a local virtual machine so
+      that the test environment can be safely prepared and
+      adjusted as needed without affecting or possibly
+      breaking user environment such as laptop.
+    link:
+      - implemented-by: /tmt/base.py
+      - documented-by: /docs/examples.rst#run
+      - documented-by: /docs/guide.rst
+    example: tmt run
+  /plan:
+    summary: 'Plan should not be required for test execution'
+    story: >
+      As a tester I want to execute tests in the default
+      environment without having to define a plan.
+    description: |
+      Even if there are no :ref:`/spec/plans` defined it is
+      still possible to execute tests and custom scripts. In
+      that case the default :ref:`/spec/plans` configuration
+      is applied and tests are executed using the ``shell``
+      method.
 
-            In order to discover available tests, the ``fmf``
-            method is used if metadata tree is detected otherwise
-            test discovery defaults to the ``shell`` method as well.
+      In order to discover available tests, the ``fmf``
+      method is used if metadata tree is detected otherwise
+      test discovery defaults to the ``shell`` method as well.
 
-            Individual steps of the default plan can be adjusted
-            as needed in the same way as if it was a real plans.
-            For example use ``execute -h beakerlib`` to execute
-            tests using the beakerlib method.
-        example: |
-            /plans/default:
-                summary:
-                    Default plan when fmf metadata found
-                discover:
-                    how: fmf
-                execute:
-                    how: shell
+      Individual steps of the default plan can be adjusted
+      as needed in the same way as if it was a real plans.
+      For example use ``execute -h beakerlib`` to execute
+      tests using the beakerlib method.
+    example: |
+      /plans/default:
+          summary:
+              Default plan when fmf metadata found
+          discover:
+              how: fmf
+          execute:
+              how: shell
 
-            /plans/default:
-                summary:
-                    Default plan when no fmf metadata around
-                discover:
-                    how: shell
-                execute:
-                    how: shell
-        link:
-          - implemented-by: /tmt/base.py
-          - verified-by: /tests/run/default
-          - documented-by: /docs/examples.rst#run
+      /plans/default:
+          summary:
+              Default plan when no fmf metadata around
+          discover:
+              how: shell
+          execute:
+              how: shell
+    link:
+      - implemented-by: /tmt/base.py
+      - verified-by: /tests/run/default
+      - documented-by: /docs/examples.rst#run
 
 /select:
-    story: 'Select multiple steps to be executed'
+  story: 'Select multiple steps to be executed'
 
-    link:
-      - implemented-by: /tmt/base.py
-      - verified-by: /tests/steps/select
-      - documented-by: /docs/examples.rst#select-steps
+  link:
+    - implemented-by: /tmt/base.py
+    - verified-by: /tests/steps/select
+    - documented-by: /docs/examples.rst#select-steps
 
-    /pick:
-        story: 'Choose steps to be executed'
-        example:
-            - tmt run provision prepare
-            - tmt run discover provision prepare
-    /until:
-        story: 'Run given step and all preceding steps.'
-        example:
-            - tmt run --until prepare
-            - tmt run --until execute
-    /since:
-        story: 'Run given step and all following steps.'
-        example:
-            - tmt run --since prepare
-            - tmt run --since execute
-    /skip:
-        story: 'Skip given step during execution'
-        example:
-            - tmt run --skip prepare
-            - tmt run --skip finish
-    /all:
-        story: 'Run all test steps, customize some'
-        example:
-            - tmt run --all provision --how=container
+  /pick:
+    story: 'Choose steps to be executed'
+    example:
+      - tmt run provision prepare
+      - tmt run discover provision prepare
+  /until:
+    story: 'Run given step and all preceding steps.'
+    example:
+      - tmt run --until prepare
+      - tmt run --until execute
+  /since:
+    story: 'Run given step and all following steps.'
+    example:
+      - tmt run --since prepare
+      - tmt run --since execute
+  /skip:
+    story: 'Skip given step during execution'
+    example:
+      - tmt run --skip prepare
+      - tmt run --skip finish
+  /all:
+    story: 'Run all test steps, customize some'
+    example:
+      - tmt run --all provision --how=container
 
 /interactive:
-    story: 'Provide way similar to git rebase --interactive'
-    description:
-        Provide users with list of steps and let them edit them.
-        Allow adding commands between, or at least interactive "pause".
-        When user would be finished with single step, just continue recipe.
-        Do not force users to remember all steps when working with them.
-        Make it possible to repeat single step or abort current run.
-        Allow repeating some steps just by repeating lines with task.
-    example:
-        - tmt run --all --interactive
-        - tmt run --continue
-        - tmt run --abort
+  story: 'Provide way similar to git rebase --interactive'
+  description: >
+    Provide users with list of steps and let them edit them.
+    Allow adding commands between, or at least interactive "pause".
+    When user would be finished with single step, just continue recipe.
+    Do not force users to remember all steps when working with them.
+    Make it possible to repeat single step or abort current run.
+    Allow repeating some steps just by repeating lines with task.
+  example:
+    - tmt run --all --interactive
+    - tmt run --continue
+    - tmt run --abort
 
 /shortcuts:
-    story: 'Provide shortcuts for common scenarios'
-    /container:
-        example:
-            - tmt run --container=fedora:rawhide
-            - tmt run --container=fedora:rawhide --cap-add=SYS_ADMIN
-    /mock:
-        example:
-            - tmt --mock fedora-31-x86_64
-            - tmt --mock fedora-31-x86_64 --no-clean --enable-network
-            - tmt --mock fedora-31-x86_64 --enablerepo=updates-testing
+  story: 'Provide shortcuts for common scenarios'
+  /container:
+    example:
+      - tmt run --container=fedora:rawhide
+      - tmt run --container=fedora:rawhide --cap-add=SYS_ADMIN
+  /mock:
+    example:
+      - tmt --mock fedora-31-x86_64
+      - tmt --mock fedora-31-x86_64 --no-clean --enable-network
+      - tmt --mock fedora-31-x86_64 --enablerepo=updates-testing
 
 /filter:
-    /plan:
-        story: 'Select plans for execution'
-        example:
-            - tmt run plan --name=NAME
-            - tmt run plan --filter=FILTER
-            - tmt run plan --condition=CONDITION
-        link:
-          - implemented-by: /tmt/base.py
-          - documented-by: /docs/examples.rst#select-plans
-          - verified-by: /tests/plan/select
-    /test:
-        story: 'Select tests for execution'
-        example:
-            - tmt run test --name=NAME
-            - tmt run test --filter=FILTER
-            - tmt run test --condition=CONDITION
-            - tmt run plan --name=NAME2 test --name=NAME1
-        link:
-          - implemented-by: /tmt/base.py
-          - documented-by: /docs/examples.rst#select-tests
-          - verified-by: /tests/test/select
-
-/keep:
-    story: Store test step status, keep machines running
+  /plan:
+    story: 'Select plans for execution'
     example:
-        - tmt run --id ID provision prepare
-        - tmt run --id ID discover execute
-        - tmt run --id ID execute
-        - tmt run --id ID execute
-    link:
-      - implemented-by: /tmp/base.py
-      - documented-by: /docs/examples.rst#debug-tests
-
-/debug:
-    summary: Handsfree debugging
-    story:
-        As a test developer I want to automatically execute
-        tests upon saving the updated test code to disk.
-    description: |
-        A very common loop of modifying the source code and
-        re-executing the test should be accessible without
-        subsequent user interaction with the tool.
-
-        * run the tool once, keep it running
-        * observe the execution results
-        * open an editor in a separate window
-        * modify the file, save the changes
-        * observe the updated execution results
-        * ...
-
-        Prioritize latency and reuse as much as possible from the
-        previous execution. Ideally, start the re-execution from
-        the modified line.
-    example:
-        tmt run debug
-
-/smoke:
-    story:
-        As a developer I want to do a quick smoke test of my
-        freshly built rpm package.
-    example: |
-        tmt run --all \
-        prepare -h install -p tmt-0.4-1.fc29.noarch.rpm \
-        execute -h tmt --script 'tmt --help'
-    link:
-      - implemented-by: /tmt/steps/execute
-      - implemented-by: /tmt/steps/prepare/install.py
-
-/restraint:
-    story:
-        As a tester I want the option to execute tests using the
-        Restraint harness.
-    description:
-        Restraint is the default harness in beaker for RHEL8 and
-        beyond. In order to provide compatibility with beaker
-        style tests, I would like a way to invoke ``tmt`` using
-        the Restaint harness. This would enable Restraint tests to
-        be invoked by ``tmt`` without modification. Some common
-        commands include ``rstrnt-reboot``, ``rstrnt-abort``, and
-        ``rstrnt-report-result``.
-    example:
-        - tmt run --all execute --how restraint
-
-/last:
-    story: 'As a user I want to rerun tests easily'
-    description: |
-        Execute previous run without the need to specify the
-        previous run id. The command is a shortcut for:
-
-        .. code-block:: shell
-
-            tmt run --id PREVIOUS_RUN
-
-        Note that ``tmt`` saves last run id on each new execution.
+      - tmt run plan --name=NAME
+      - tmt run plan --filter=FILTER
+      - tmt run plan --condition=CONDITION
     link:
       - implemented-by: /tmt/base.py
-      - documented-by: /docs/examples.rst#debug-tests
+      - documented-by: /docs/examples.rst#select-plans
+      - verified-by: /tests/plan/select
+  /test:
+    story: 'Select tests for execution'
     example:
-        - tmt run -l
-        - tmt run --last
+      - tmt run test --name=NAME
+      - tmt run test --filter=FILTER
+      - tmt run test --condition=CONDITION
+      - tmt run plan --name=NAME2 test --name=NAME1
+    link:
+      - implemented-by: /tmt/base.py
+      - documented-by: /docs/examples.rst#select-tests
+      - verified-by: /tests/test/select
+
+/keep:
+  story: Store test step status, keep machines running
+  example:
+    - tmt run --id ID provision prepare
+    - tmt run --id ID discover execute
+    - tmt run --id ID execute
+    - tmt run --id ID execute
+  link:
+    - implemented-by: /tmp/base.py
+    - documented-by: /docs/examples.rst#debug-tests
+
+/debug:
+  summary: Handsfree debugging
+  story: >
+    As a test developer I want to automatically execute
+    tests upon saving the updated test code to disk.
+  description: |
+    A very common loop of modifying the source code and
+    re-executing the test should be accessible without
+    subsequent user interaction with the tool.
+
+    * run the tool once, keep it running
+    * observe the execution results
+    * open an editor in a separate window
+    * modify the file, save the changes
+    * observe the updated execution results
+    * ...
+
+    Prioritize latency and reuse as much as possible from the
+    previous execution. Ideally, start the re-execution from
+    the modified line.
+  example: tmt run debug
+
+/smoke:
+  story: >
+    As a developer I want to do a quick smoke test of my
+    freshly built rpm package.
+  example: |
+    tmt run --all \
+    prepare -h install -p tmt-0.4-1.fc29.noarch.rpm \
+    execute -h tmt --script 'tmt --help'
+  link:
+    - implemented-by: /tmt/steps/execute
+    - implemented-by: /tmt/steps/prepare/install.py
+
+/restraint:
+  story: >
+    As a tester I want the option to execute tests using the
+    Restraint harness.
+  description: >
+    Restraint is the default harness in beaker for RHEL8 and
+    beyond. In order to provide compatibility with beaker
+    style tests, I would like a way to invoke ``tmt`` using
+    the Restaint harness. This would enable Restraint tests to
+    be invoked by ``tmt`` without modification. Some common
+    commands include ``rstrnt-reboot``, ``rstrnt-abort``, and
+    ``rstrnt-report-result``.
+  example:
+    - tmt run --all execute --how restraint
+
+/last:
+  story: 'As a user I want to rerun tests easily'
+  description: |
+    Execute previous run without the need to specify the
+    previous run id. The command is a shortcut for:
+
+    .. code-block:: shell
+
+        tmt run --id PREVIOUS_RUN
+
+    Note that ``tmt`` saves last run id on each new execution.
+  link:
+    - implemented-by: /tmt/base.py
+    - documented-by: /docs/examples.rst#debug-tests
+  example:
+    - tmt run -l
+    - tmt run --last
 
 /login:
-    summary: 'Easily login into a provisioned guest'
-    story:
-        As a user I want to log into the provisioned guest so
-        that I can adjust the environment before the test is run
-        or investigate what happened after the test is finished.
+  summary: 'Easily login into a provisioned guest'
+  story: >
+    As a user I want to log into the provisioned guest so
+    that I can adjust the environment before the test is run
+    or investigate what happened after the test is finished.
 
-    link:
-      - implemented-by: /tmt/step
-      - verified-by: /tests/login
-      - documented-by: /docs/examples.rst#guest-login
+  link:
+    - implemented-by: /tmt/step
+    - verified-by: /tests/login
+    - documented-by: /docs/examples.rst#guest-login
 
-    /last:
-        summary: 'Log in at the end of the last enabled step'
-        story:
-            As a user I want to log into the provisioned guest
-            to investigate once the test execution has finished.
-        example:
-            tmt run --until execute login
+  /last:
+    summary: 'Log in at the end of the last enabled step'
+    story: >
+      As a user I want to log into the provisioned guest
+      to investigate once the test execution has finished.
+    example: tmt run --until execute login
 
-    /select:
-        summary: 'Log in at the end of the selected step'
-        story:
-            As a user I want to finish the guest preparation
-            manually at the end of the prepare step.
-        example: |
-            tmt run login --step prepare
-            tmt run login --step prepare:end
-            tmt run login --step prepare:90
+  /select:
+    summary: 'Log in at the end of the selected step'
+    story: >
+      As a user I want to finish the guest preparation
+      manually at the end of the prepare step.
+    example: |
+      tmt run login --step prepare
+      tmt run login --step prepare:end
+      tmt run login --step prepare:90
 
-    /start:
-        summary: 'Log in at the start of the selected step'
-        story:
-            As a user I want to manually enable extra package
-            repositories before the prepare step is run.
-        example: |
-            tmt run login --step prepare:start
-            tmt run login --step prepare:10
+  /start:
+    summary: 'Log in at the start of the selected step'
+    story: >
+      As a user I want to manually enable extra package
+      repositories before the prepare step is run.
+    example: |
+      tmt run login --step prepare:start
+      tmt run login --step prepare:10
 
-    /order:
-        summary: 'Log in at the selected phase of a step'
-        story:
-            As a user I want to select the exact phase during the
-            step execution to log into the guest.
-        example:
-            tmt run login --step prepare:75
+  /order:
+    summary: 'Log in at the selected phase of a step'
+    story: >
+      As a user I want to select the exact phase during the
+      step execution to log into the guest.
+    example: tmt run login --step prepare:75
 
-    /status:
-        summary: 'Log in when a test finished with given status'
-        story:
-            As a user I want to quickly investigate what exactly
-            happened on the guest if any test failed.
-        example: |
-            tmt run login --step execute --when fail
-            tmt run login --step execute --when error
-            tmt run login --step execute --when fail --when error
+  /status:
+    summary: 'Log in when a test finished with given status'
+    story: >
+      As a user I want to quickly investigate what exactly
+      happened on the guest if any test failed.
+    example: |
+      tmt run login --step execute --when fail
+      tmt run login --step execute --when error
+      tmt run login --step execute --when fail --when error
 
-    /experiment:
-        summary: 'Provision an environment for experimenting'
-        story:
-            As a user I want to easily provision a clean and safe
-            environment for experimenting and remove it when done.
-        example: |
-            tmt run provision login
-            tmt run --last finish
+  /experiment:
+    summary: 'Provision an environment for experimenting'
+    story: >
+      As a user I want to easily provision a clean and safe
+      environment for experimenting and remove it when done.
+    example: |
+      tmt run provision login
+      tmt run --last finish

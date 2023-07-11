@@ -1,35 +1,43 @@
--   id: tmt-lint
-    name: tmt lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt lint --failed-only --source $@" PAD
-    files: '.*\.fmf$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-lint
+  name: tmt lint
+  entry: >
+    bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(),
+    path=\".\").root)')/.fmf/version && tmt lint --failed-only --source $@" PAD
+  files: '.*\.fmf$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
 
--   id: tmt-tests-lint
-    name: tmt tests lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt tests lint --failed-only --source $@" PAD
-    files: '.*\.fmf$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-tests-lint
+  name: tmt tests lint
+  entry: >
+    bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(),
+    path=\".\").root)')/.fmf/version && tmt tests lint --failed-only --source $@" PAD
+  files: '.*\.fmf$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
 
--   id: tmt-plans-lint
-    name: tmt plans lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt plans lint --failed-only --source $@" PAD
-    files: '.*\.fmf$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-plans-lint
+  name: tmt plans lint
+  entry: >
+    bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(),
+    path=\".\").root)')/.fmf/version && tmt plans lint --failed-only --source $@" PAD
+  files: '.*\.fmf$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
 
--   id: tmt-stories-lint
-    name: tmt stories lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt stories lint --failed-only --source $@" PAD
-    files: '.*\.fmf$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-stories-lint
+  name: tmt stories lint
+  entry: >
+    bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(),
+    path=\".\").root)')/.fmf/version && tmt stories lint --failed-only --source $@" PAD
+  files: '.*\.fmf$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3

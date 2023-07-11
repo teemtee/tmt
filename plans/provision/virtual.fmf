@@ -1,9 +1,9 @@
 summary: Virtual machine via testcloud
 discover:
-    how: fmf
-    filter: 'tag:virtual & tier:1 | tag:provision-virtual-only'
+  how: fmf
+  filter: 'tag:virtual & tier:1 | tag:provision-virtual-only'
 provision:
-    how: virtual
+  how: virtual
 #    image: fedora
 #    memory: 2048
 #    disk: 10

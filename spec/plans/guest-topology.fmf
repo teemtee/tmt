@@ -3,104 +3,104 @@ title: Guest Topology Format
 order: 95
 
 description: |
-    The following text defines structure of files tmt uses for exposing
-    guest names, roles and other properties to tests and steps that run
-    on a guest (:ref:`prepare </spec/plans/prepare>`,
-    :ref:`execute </spec/plans/execute>`, :ref:`finish </spec/plans/finish>`).
-    tmt saves these files on every guest used, and exposes their paths to
-    processes started by tmt on these guests through environment variables:
+  The following text defines structure of files tmt uses for exposing
+  guest names, roles and other properties to tests and steps that run
+  on a guest (:ref:`prepare </spec/plans/prepare>`,
+  :ref:`execute </spec/plans/execute>`, :ref:`finish </spec/plans/finish>`).
+  tmt saves these files on every guest used, and exposes their paths to
+  processes started by tmt on these guests through environment variables:
 
-    * ``TMT_TOPOLOGY_YAML`` for a YAML file
-    * ``TMT_TOPOLOGY_BASH`` for a shell-friendly ``NAME=VALUE`` file
+  * ``TMT_TOPOLOGY_YAML`` for a YAML file
+  * ``TMT_TOPOLOGY_BASH`` for a shell-friendly ``NAME=VALUE`` file
 
-    Both files are always available, and both carry the same information.
+  Both files are always available, and both carry the same information.
 
-    .. warning::
+  .. warning::
 
-        The shell-friendly file contains arrays, therefore it's compatible
-        with Bash 4.x and newer.
+      The shell-friendly file contains arrays, therefore it's compatible
+      with Bash 4.x and newer.
 
-    .. note::
+  .. note::
 
-        The shell-friendly file is easy to ingest for a shell-based tests,
-        it can be simply ``source``-ed. For parsing the YAML file in shell,
-        pure shell parsers like https://github.com/sopos/yash can be used.
+      The shell-friendly file is easy to ingest for a shell-based tests,
+      it can be simply ``source``-ed. For parsing the YAML file in shell,
+      pure shell parsers like https://github.com/sopos/yash can be used.
 
-    .. code-block:: yaml
-        :caption: TMT_TOPOLOGY_YAML
+  .. code-block:: yaml
+      :caption: TMT_TOPOLOGY_YAML
 
-        # Guest on which the test or script is running.
-        guest:
-            name: ...
-            role: ...
-            hostname: ...
+      # Guest on which the test or script is running.
+      guest:
+          name: ...
+          role: ...
+          hostname: ...
 
-        # List of names of all provisioned guests.
-        guest-names:
-          - guest1
-          - guest2
+      # List of names of all provisioned guests.
+      guest-names:
+        - guest1
+        - guest2
+        ...
+
+      # Same as `guest`, but one for each provisioned guest, with guest names
+      # as keys.
+      guests:
+          guest1:
+              name: guest1
+              role: ...
+              hostname: ...
+          guest2:
+              name: guest2
+              role: ...
+              hostname: ...
           ...
 
-        # Same as `guest`, but one for each provisioned guest, with guest names
-        # as keys.
-        guests:
-            guest1:
-                name: guest1
-                role: ...
-                hostname: ...
-            guest2:
-                name: guest2
-                role: ...
-                hostname: ...
+      # List of all known roles.
+      role-names:
+        - role1
+        - role2
+        ...
+
+      # Roles and their guests, with role names as keys.
+      roles:
+          role1:
+            - guest1
+            - guest2
+            - ...
+          role2:
+            - guestN
             ...
 
-        # List of all known roles.
-        role-names:
-          - role1
-          - role2
-          ...
+  .. code-block:: bash
+      :caption: TMT_TOPOLOGY_BASH
 
-        # Roles and their guests, with role names as keys.
-        roles:
-            role1:
-              - guest1
-              - guest2
-              - ...
-            role2:
-              - guestN
-              ...
+      # Guest on which the test is running.
+      declare -A TMT_GUEST
+      TMT_GUEST[name]="..."
+      TMT_GUEST[role]="..."
+      TMT_GUEST[hostname]="..."
 
-    .. code-block:: bash
-        :caption: TMT_TOPOLOGY_BASH
+      # Space-separated list of names of all provisioned guests.
+      TMT_GUEST_NAMES="guest1 guest2 ..."
 
-        # Guest on which the test is running.
-        declare -A TMT_GUEST
-        TMT_GUEST[name]="..."
-        TMT_GUEST[role]="..."
-        TMT_GUEST[hostname]="..."
+      # Same as `guest`, but one for each provisioned guest. Keys are constructed
+      # from guest name and the property name.
+      declare -A TMT_GUESTS
+      TMT_GUESTS[guest1.name]="guest1"
+      TMT_GUESTS[guest1.role]="..."
+      TMT_GUESTS[guest1.hostname]="..."
+      TMT_GUESTS[guest2.name]="guest2"
+      TMT_GUESTS[guest2.role]="..."
+      TMT_GUESTS[guest2.hostname]="..."
+      ...
 
-        # Space-separated list of names of all provisioned guests.
-        TMT_GUEST_NAMES="guest1 guest2 ..."
+      # Space-separated list of all known roles.
+      TMT_ROLE_NAMES="client server"
 
-        # Same as `guest`, but one for each provisioned guest. Keys are constructed
-        # from guest name and the property name.
-        declare -A TMT_GUESTS
-        TMT_GUESTS[guest1.name]="guest1"
-        TMT_GUESTS[guest1.role]="..."
-        TMT_GUESTS[guest1.hostname]="..."
-        TMT_GUESTS[guest2.name]="guest2"
-        TMT_GUESTS[guest2.role]="..."
-        TMT_GUESTS[guest2.hostname]="..."
-        ...
-
-        # Space-separated list of all known roles.
-        TMT_ROLE_NAMES="client server"
-
-        # Roles and their guests, with role names as keys.
-        declare -A TMT_ROLES
-        TMT_ROLES[role1]="guest1 guest2 ..."
-        TMT_ROLES[role2]="guestN ..."
-        ...
+      # Roles and their guests, with role names as keys.
+      declare -A TMT_ROLES
+      TMT_ROLES[role1]="guest1 guest2 ..."
+      TMT_ROLES[role2]="guestN ..."
+      ...
 
 example:
   - |

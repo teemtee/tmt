@@ -1,5 +1,5 @@
 provision:
-    how: container
+  how: container
 
 # Run only during a full testing
 enabled: false

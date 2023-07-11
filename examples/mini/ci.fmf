@@ -1,2 +1,2 @@
 execute:
-    script: tmt --help
+  script: tmt --help

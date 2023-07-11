@@ -2,18 +2,18 @@
 # in just a single file which might be useful for small projects.
 
 /plan:
-    discover:
-        how: fmf
-    prepare:
-        how: ansible
-        playbook: packages.yaml
-    execute:
-        how: shell
+  discover:
+    how: fmf
+  prepare:
+    how: ansible
+    playbook: packages.yaml
+  execute:
+    how: shell
 
 /tests:
-    /smoke:
-        test: python3 -c "import time"
-        path: /
-    /full:
-        test: make check
-        path: /
+  /smoke:
+    test: python3 -c "import time"
+    path: /
+  /full:
+    test: make check
+    path: /

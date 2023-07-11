@@ -6,34 +6,34 @@ prepare:
     script: python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --upgrade pip
     order: 80
 execute:
-    how: tmt
+  how: tmt
 
 /mini:
-    summary+: " (mini)"
-    discover:
-        tests:
-          - name: /install
-            test: /tmp/venv/bin/pip install .
-            require:
-              - gcc
-              - python3
-              - python3-devel
-          - name: /help
-            test: /tmp/venv/bin/tmt --help
+  summary+: ' (mini)'
+  discover:
+    tests:
+      - name: /install
+        test: /tmp/venv/bin/pip install .
+        require:
+          - gcc
+          - python3
+          - python3-devel
+      - name: /help
+        test: /tmp/venv/bin/tmt --help
 
 /full:
-    summary+: " (full)"
-    discover:
-        tests:
-          - name: /install
-            test: /tmp/venv/bin/pip install .[all]
-            require:
-              - gcc
-              - python3
-              - python3-devel
-              - libvirt-devel
-              - krb5-devel
-              - libpq-devel
-              - redhat-rpm-config
-          - name: /help
-            test: /tmp/venv/bin/tmt run --help
+  summary+: ' (full)'
+  discover:
+    tests:
+      - name: /install
+        test: /tmp/venv/bin/pip install .[all]
+        require:
+          - gcc
+          - python3
+          - python3-devel
+          - libvirt-devel
+          - krb5-devel
+          - libpq-devel
+          - redhat-rpm-config
+      - name: /help
+        test: /tmp/venv/bin/tmt run --help

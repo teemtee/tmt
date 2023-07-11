@@ -1,20 +1,19 @@
-summary:
-    Install specific packages
-story:
-    As a developer I would like to install certain packages
-    required for testing.
-description:
-    In case of execution from CI I want these packages to be
-    installed from a given Koji build, even if they have same or
-    lower NVR. I have conflicting subpackages in my package. The
-    specification for local execution and CI should be the same.
+summary: Install specific packages
+story: >
+  As a developer I would like to install certain packages
+  required for testing.
+description: >
+  In case of execution from CI I want these packages to be
+  installed from a given Koji build, even if they have same or
+  lower NVR. I have conflicting subpackages in my package. The
+  specification for local execution and CI should be the same.
 example: |
-    /plan/curl:
-        prepare:
-        - how: install
-          package: curl
+  /plan/curl:
+      prepare:
+      - how: install
+        package: curl
 
-    /plan/curl-minimal:
-        prepare:
-        - how: install
-          package: curl-minimal
+  /plan/curl-minimal:
+      prepare:
+      - how: install
+        package: curl-minimal

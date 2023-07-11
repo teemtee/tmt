@@ -1,5 +1,4 @@
-summary:
-    Select the desired architecture
+summary: Select the desired architecture
 example:
   - |
     # Architecture (any of well-known short architecture names,

@@ -1,23 +1,23 @@
 summary: Beaker machine using mrack plugin
 
-description:
-    Run a simple smoke test on a guest provisioned by Beaker. As
-    for now this plan is to be run only manually as Beaker needs
-    Kerberos ticket to authenticate to BeakerHub.
+description: >
+  Run a simple smoke test on a guest provisioned by Beaker. As
+  for now this plan is to be run only manually as Beaker needs
+  Kerberos ticket to authenticate to BeakerHub.
 
-    Make sure that the beaker client package is installed and
-    configured on the test runner and run 'kinit $USER' command to
-    obtain Kerberos credentials.
+  Make sure that the beaker client package is installed and
+  configured on the test runner and run 'kinit $USER' command to
+  obtain Kerberos credentials.
 
 discover:
-    how: fmf
-    test: /tests/core/smoke
+  how: fmf
+  test: /tests/core/smoke
 
 provision:
-    how: beaker
-    image: fedora
+  how: beaker
+  image: fedora
 
 enabled: false
 adjust:
-    when: how == beaker
-    enabled: true
+  when: how == beaker
+  enabled: true

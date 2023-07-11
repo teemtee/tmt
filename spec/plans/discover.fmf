@@ -1,308 +1,308 @@
 summary: Discover tests relevant for execution
 
 description: |
-    Gather information about tests which are supposed to be run.
-    Provide method ``tests()`` returning a list of discovered
-    tests and ``requires()`` returning a list of all required
-    packages aggregated from the `require`_ attribute of the
-    individual test metadata.
+  Gather information about tests which are supposed to be run.
+  Provide method ``tests()`` returning a list of discovered
+  tests and ``requires()`` returning a list of all required
+  packages aggregated from the `require`_ attribute of the
+  individual test metadata.
 
-    .. _require: https://tmt.readthedocs.io/en/latest/spec/tests.html#require
+  .. _require: https://tmt.readthedocs.io/en/latest/spec/tests.html#require
 
-    Store the list of aggregated tests with their corresponding
-    metadata in the ``tests.yaml`` file. The format must be a
-    list of dictionaries structured in the following way:
+  Store the list of aggregated tests with their corresponding
+  metadata in the ``tests.yaml`` file. The format must be a
+  list of dictionaries structured in the following way:
 
-    .. code-block:: yaml
+  .. code-block:: yaml
 
-        - name: /test/one
-          summary: Short test summary.
-          description: Long test description.
-          contact: Petr Šplíchal <psplicha@redhat.com>
-          component: [tmt]
-          test: tmt --help
-          path: /test/path/
-          require: [package1, package2]
-          environment:
-              key1: value1
-              key2: value2
-              key3: value3
-          duration: 5m
-          enabled: true
-          result: respect
-          tag: [tag]
-          tier: 1
-          serialnumber: 1
+      - name: /test/one
+        summary: Short test summary.
+        description: Long test description.
+        contact: Petr Šplíchal <psplicha@redhat.com>
+        component: [tmt]
+        test: tmt --help
+        path: /test/path/
+        require: [package1, package2]
+        environment:
+            key1: value1
+            key2: value2
+            key3: value3
+        duration: 5m
+        enabled: true
+        result: respect
+        tag: [tag]
+        tier: 1
+        serialnumber: 1
 
-        - name: /test/two
-          summary: Short test summary.
-          description: Long test description.
-          ...
+      - name: /test/two
+        summary: Short test summary.
+        description: Long test description.
+        ...
 
 /shell:
-    summary: Provide a manual list of shell test cases
-    description: |
-        List of test cases to be executed can be defined manually
-        directly in the plan as a list of dictionaries containing
-        test ``name`` and actual ``test`` script. Optionally it is
-        possible to define any other :ref:`/spec/tests` attributes
-        such as ``path`` or ``duration`` here as well. The default
-        :ref:`/spec/tests/duration` for tests defined directly in
-        the discover step is ``1h``.
+  summary: Provide a manual list of shell test cases
+  description: |
+    List of test cases to be executed can be defined manually
+    directly in the plan as a list of dictionaries containing
+    test ``name`` and actual ``test`` script. Optionally it is
+    possible to define any other :ref:`/spec/tests` attributes
+    such as ``path`` or ``duration`` here as well. The default
+    :ref:`/spec/tests/duration` for tests defined directly in
+    the discover step is ``1h``.
 
-        It is possible to fetch code from a remote git repository
-        using ``url``. In that case repository is cloned and all
-        paths are relative to the remote git root. Using remote
-        repo and local test code at the same time is not possible
-        within the same discover config, use
-        :ref:`multiple-configs` instead.
+    It is possible to fetch code from a remote git repository
+    using ``url``. In that case repository is cloned and all
+    paths are relative to the remote git root. Using remote
+    repo and local test code at the same time is not possible
+    within the same discover config, use
+    :ref:`multiple-configs` instead.
 
-        url
-            Git repository, used directly as a git clone argument.
+    url
+        Git repository, used directly as a git clone argument.
 
-        ref
-            Branch, tag or commit specifying the desired git
-            revision. Defaults to the remote repository's default
-            branch.
+    ref
+        Branch, tag or commit specifying the desired git
+        revision. Defaults to the remote repository's default
+        branch.
 
-        keep-git-metadata
-            By default the ``.git`` directory is removed to save
-            disk space. Set to ``true`` to sync the git metadata
-            to guest as well.
+    keep-git-metadata
+        By default the ``.git`` directory is removed to save
+        disk space. Set to ``true`` to sync the git metadata
+        to guest as well.
 
-        There is a support for discovering tests from extracted
-        (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
+    There is a support for discovering tests from extracted
+    (rpm) sources. Needs to run on top of the supported
+    DistGit (Fedora, CentOS), ``url`` can be used to point to
+    such repository, ``path`` denotes path to the metadata
+    tree root within extracted sources. At this moment no
+    patches are applied, only tarball extraction happens.
 
-        dist-git-source
-            Set to ``true`` to enable extracting sources.
-        dist-git-type
-            The DistGit auto detection is based on git remotes.
-            Use this option to specify it directly. At least
-            ``Fedora`` and ``CentOS`` are supported as values,
-            help will print all possible values.
+    dist-git-source
+        Set to ``true`` to enable extracting sources.
+    dist-git-type
+        The DistGit auto detection is based on git remotes.
+        Use this option to specify it directly. At least
+        ``Fedora`` and ``CentOS`` are supported as values,
+        help will print all possible values.
 
-    example:
-      - |
-        # Define several local tests
-        discover:
-            how: shell
-            tests:
-              - name: /help/main
-                test: tmt --help
-              - name: /help/test
-                test: tmt test --help
-              - name: /help/smoke
-                test: ./smoke.sh
-                path: /tests/shell
-                duration: 1m
-      - |
-        # Fetch tests from a remote repository
-        discover:
-            how: shell
-            url: https://github.com/teemtee/tmt
-            tests:
-              - name: Use tests/full/test.sh from the remote repo
-                path: /tests/full
-                test: ./test.sh
+  example:
+    - |
+      # Define several local tests
+      discover:
+          how: shell
+          tests:
+            - name: /help/main
+              test: tmt --help
+            - name: /help/test
+              test: tmt test --help
+            - name: /help/smoke
+              test: ./smoke.sh
+              path: /tests/shell
+              duration: 1m
+    - |
+      # Fetch tests from a remote repository
+      discover:
+          how: shell
+          url: https://github.com/teemtee/tmt
+          tests:
+            - name: Use tests/full/test.sh from the remote repo
+              path: /tests/full
+              test: ./test.sh
 
-    link:
-      - implemented-by: /tmt/steps/discover/shell.py
+  link:
+    - implemented-by: /tmt/steps/discover/shell.py
 
 /fmf:
-    summary: Discover available tests using the fmf format
-    description: |
-        Use the `Flexible Metadata Format`_ to explore all
-        available tests in given repository. The following
-        parameters are supported:
+  summary: Discover available tests using the fmf format
+  description: |
+    Use the `Flexible Metadata Format`_ to explore all
+    available tests in given repository. The following
+    parameters are supported:
 
-        url
-            Git repository containing the metadata tree.
-            Current git repository used by default.
-        ref
-            Branch, tag or commit specifying the desired git
-            revision. Defaults to the remote repository's default
-            branch if url given or to the current ``HEAD`` if url
-            not provided.
+    url
+        Git repository containing the metadata tree.
+        Current git repository used by default.
+    ref
+        Branch, tag or commit specifying the desired git
+        revision. Defaults to the remote repository's default
+        branch if url given or to the current ``HEAD`` if url
+        not provided.
 
-            Additionally, one can set ``ref`` dynamically. This is
-            possible using a special file in tmt format stored in
-            the *default* branch of a tests repository. This special
-            file should contain rules assigning attribute ``ref``
-            in an `adjust` block, for example depending on a test
-            run context.
+        Additionally, one can set ``ref`` dynamically. This is
+        possible using a special file in tmt format stored in
+        the *default* branch of a tests repository. This special
+        file should contain rules assigning attribute ``ref``
+        in an `adjust` block, for example depending on a test
+        run context.
 
-            Dynamic ``ref`` assignment is enabled whenever a test
-            plan reference has the format ``ref: @FILEPATH``.
-        path
-            Path to the metadata tree root. Must be relative to
-            the git repository root if url provided, absolute
-            local filesystem path otherwise. By default ``.`` is
-            used.
+        Dynamic ``ref`` assignment is enabled whenever a test
+        plan reference has the format ``ref: @FILEPATH``.
+    path
+        Path to the metadata tree root. Must be relative to
+        the git repository root if url provided, absolute
+        local filesystem path otherwise. By default ``.`` is
+        used.
 
-        See also the `fmf identifier`_ documentation for details.
-        Use the following keys to limit the test discovery by test
-        name, an advanced filter or link:
+    See also the `fmf identifier`_ documentation for details.
+    Use the following keys to limit the test discovery by test
+    name, an advanced filter or link:
 
-        test
-            List of test names or regular expressions used to
-            select tests by name. Duplicate test names are allowed
-            to enable repetitive test execution, preserving the
-            listed test order.
-        link
-            Select tests using the :ref:`/spec/core/link` keys.
-            Values must be in the form of ``RELATION:TARGET``,
-            tests containing at least one of them are selected.
-            Regular expressions are supported for both relation
-            and target. Relation part can be omitted to match all
-            relations.
-        filter
-            Apply advanced filter based on test metadata
-            attributes. See ``pydoc fmf.filter`` for more info.
-        exclude
-            Exclude tests which match a regular expression.
+    test
+        List of test names or regular expressions used to
+        select tests by name. Duplicate test names are allowed
+        to enable repetitive test execution, preserving the
+        listed test order.
+    link
+        Select tests using the :ref:`/spec/core/link` keys.
+        Values must be in the form of ``RELATION:TARGET``,
+        tests containing at least one of them are selected.
+        Regular expressions are supported for both relation
+        and target. Relation part can be omitted to match all
+        relations.
+    filter
+        Apply advanced filter based on test metadata
+        attributes. See ``pydoc fmf.filter`` for more info.
+    exclude
+        Exclude tests which match a regular expression.
 
-        It is also possible to limit tests only to those that have
-        changed in git since a given revision. This can be
-        particularly useful when testing changes to tests
-        themselves (e.g. in a pull request CI). Related config
-        options (all optional) are:
+    It is also possible to limit tests only to those that have
+    changed in git since a given revision. This can be
+    particularly useful when testing changes to tests
+    themselves (e.g. in a pull request CI). Related config
+    options (all optional) are:
 
-        modified-only
-            Set to True if you want to filter modified tests only.
-            The test is modified if its name starts with the name
-            of any directory modified since modified-ref.
-        modified-url
-            An additional remote repository to be used as the
-            reference for comparison. Will be fetched as a
-            ``reference`` remote in the test dir.
-        modified-ref
-            The ref to compare against. Defaults to the local
-            repository's default branch. Note that you need to
-            specify ``reference/<branch>`` to compare to a branch
-            from the repository specified in ``modified-url``.
+    modified-only
+        Set to True if you want to filter modified tests only.
+        The test is modified if its name starts with the name
+        of any directory modified since modified-ref.
+    modified-url
+        An additional remote repository to be used as the
+        reference for comparison. Will be fetched as a
+        ``reference`` remote in the test dir.
+    modified-ref
+        The ref to compare against. Defaults to the local
+        repository's default branch. Note that you need to
+        specify ``reference/<branch>`` to compare to a branch
+        from the repository specified in ``modified-url``.
 
-        There is a support for discovering tests from extracted
-        (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
+    There is a support for discovering tests from extracted
+    (rpm) sources. Needs to run on top of the supported
+    DistGit (Fedora, CentOS), ``url`` can be used to point to
+    such repository, ``path`` denotes path to the metadata
+    tree root within extracted sources. At this moment no
+    patches are applied, only tarball extraction happens.
 
-        dist-git-source
-            Set to ``true`` to enable extracting sources.
-        dist-git-type
-            The DistGit auto detection is based on git remotes.
-            Use this option to specify it directly. At least
-            ``Fedora`` and ``CentOS`` are supported as values,
-            help will print all possible values.
+    dist-git-source
+        Set to ``true`` to enable extracting sources.
+    dist-git-type
+        The DistGit auto detection is based on git remotes.
+        Use this option to specify it directly. At least
+        ``Fedora`` and ``CentOS`` are supported as values,
+        help will print all possible values.
 
-        .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
-        .. _Flexible Metadata Format: https://fmf.readthedocs.io/
-    example: |
-        # Discover all fmf tests in the current repository
-        discover:
-            how: fmf
+    .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
+    .. _Flexible Metadata Format: https://fmf.readthedocs.io/
+  example: |
+    # Discover all fmf tests in the current repository
+    discover:
+      how: fmf
 
-        # Fetch tests from a remote repo, filter by name/tier
-        discover:
-            how: fmf
-            url: https://github.com/teemtee/tmt
-            ref: main
-            path: /metadata/tree/path
-            test: [regexp]
-            filter: tier:1
+    # Fetch tests from a remote repo, filter by name/tier
+    discover:
+        how: fmf
+        url: https://github.com/teemtee/tmt
+        ref: main
+        path: /metadata/tree/path
+        test: [regexp]
+        filter: tier:1
 
-        # Choose tests verifying given issue
-        discover:
-            how: fmf
-            link: verifies:issues/123$
+    # Choose tests verifying given issue
+    discover:
+        how: fmf
+        link: verifies:issues/123$
 
-        # Select only tests which have been modified
-        discover:
-            how: fmf
-            modified-only: true
-            modified-url: https://github.com/teemtee/tmt-official
-            modified-ref: reference/main
+    # Select only tests which have been modified
+    discover:
+        how: fmf
+        modified-only: true
+        modified-url: https://github.com/teemtee/tmt-official
+        modified-ref: reference/main
 
-        # Extract tests from the distgit sources
-        discover:
-            how: fmf
-            dist-git-source: true
-    link:
-      - implemented-by: /tmt/steps/discover/fmf.py
+    # Extract tests from the distgit sources
+    discover:
+        how: fmf
+        dist-git-source: true
+  link:
+    - implemented-by: /tmt/steps/discover/fmf.py
 
 /where:
-    summary: Execute tests on selected guests
-    description: |
-        In the :ref:`/spec/plans/provision/multihost` scenarios it
-        is often necessary to execute test code on selected guests
-        only or execute different test code on individual guests.
-        The ``where`` key allows to select guests where the tests
-        should be executed by providing their ``name`` or the
-        ``role`` they play in the scenario. Use a list to specify
-        multiple names or roles. By default, when the ``where`` key
-        is not defined, tests are executed on all provisioned
-        guests.
+  summary: Execute tests on selected guests
+  description: |
+    In the :ref:`/spec/plans/provision/multihost` scenarios it
+    is often necessary to execute test code on selected guests
+    only or execute different test code on individual guests.
+    The ``where`` key allows to select guests where the tests
+    should be executed by providing their ``name`` or the
+    ``role`` they play in the scenario. Use a list to specify
+    multiple names or roles. By default, when the ``where`` key
+    is not defined, tests are executed on all provisioned
+    guests.
 
-        There is also an alternative to the syntax using a ``where``
-        dictionary encapsulating the ``discover`` config under keys
-        corresponding to guest names or roles. This can result in
-        much more concise config especially when defining several
-        shell scripts for each guest or role.
+    There is also an alternative to the syntax using a ``where``
+    dictionary encapsulating the ``discover`` config under keys
+    corresponding to guest names or roles. This can result in
+    much more concise config especially when defining several
+    shell scripts for each guest or role.
 
-    example:
-      - |
-        # Run different script for each guest or role
-        discover:
-            how: shell
-            tests:
-              - name: run-the-client-code
-                test: client.py
-                where: client
-              - name: run-the-server-code
-                test: server.py
-                where: server
+  example:
+    - |
+      # Run different script for each guest or role
+      discover:
+          how: shell
+          tests:
+            - name: run-the-client-code
+              test: client.py
+              where: client
+            - name: run-the-server-code
+              test: server.py
+              where: server
 
-      - |
-        # Filter different set of tests for each guest or role
-        discover:
-          - how: fmf
-            filter: tag:client-tests
-            where: client
-          - how: fmf
-            filter: tag:server-tests
-            where: server
+    - |
+      # Filter different set of tests for each guest or role
+      discover:
+        - how: fmf
+          filter: tag:client-tests
+          where: client
+        - how: fmf
+          filter: tag:server-tests
+          where: server
 
-      - |
-        # Alternative syntax using the 'where' dictionary
-        # encapsulating for tests defined by fmf
-        discover:
-            where:
-                client:
-                  - how: fmf
-                    filter: tag:client-tests
-                server:
-                  - how: fmf
-                    filter: tag:server-tests
+    - |
+      # Alternative syntax using the 'where' dictionary
+      # encapsulating for tests defined by fmf
+      discover:
+          where:
+              client:
+                - how: fmf
+                  filter: tag:client-tests
+              server:
+                - how: fmf
+                  filter: tag:server-tests
 
-      - |
-        # Alternative syntax using the 'where' dictionary
-        # encapsulating for shell script tests
-        discover:
-            where:
-                server:
-                    how: shell
-                    tests:
-                      - test: first server script
-                      - test: second server script
-                      - test: third server script
-                client:
-                    how: shell
-                    tests:
-                      - test: first client script
-                      - test: second client script
-                      - test: third client script
+    - |
+      # Alternative syntax using the 'where' dictionary
+      # encapsulating for shell script tests
+      discover:
+          where:
+              server:
+                  how: shell
+                  tests:
+                    - test: first server script
+                    - test: second server script
+                    - test: third server script
+              client:
+                  how: shell
+                  tests:
+                    - test: first client script
+                    - test: second client script
+                    - test: third client script

@@ -1,190 +1,191 @@
 summary: Report test results
-story:
-    As a tester I want to have a nice overview of results once
-    the testing if finished.
-description:
-    Report test results according to user preferences.
+story: >
+  As a tester I want to have a nice overview of results once
+  the testing if finished.
+description: >
+  Report test results according to user preferences.
 
 /display:
-    summary: Show results in the terminal window
-    story:
-        As a tester I want to see test results in the plain text
-        form in my shell session.
-    description:
-        Test results will be displayed as part of the command line
-        tool output directly in the terminal. Allows to select the
-        desired level of verbosity
-    example: |
-        tmt run -l report        # overall summary only
-        tmt run -l report -v     # individual test results
-        tmt run -l report -vv    # show full paths to logs
-        tmt run -l report -vvv   # provide complete test output
-    link:
-      - implemented-by: /tmt/steps/report/display.py
+  summary: Show results in the terminal window
+  story: >
+    As a tester I want to see test results in the plain text
+    form in my shell session.
+  description: >
+    Test results will be displayed as part of the command line
+    tool output directly in the terminal. Allows to select the
+    desired level of verbosity
+  example: |
+    tmt run -l report        # overall summary only
+    tmt run -l report -v     # individual test results
+    tmt run -l report -vv    # show full paths to logs
+    tmt run -l report -vvv   # provide complete test output
+  link:
+    - implemented-by: /tmt/steps/report/display.py
 
 /html:
-    summary: Generate a web page with test results
-    story:
-        As a tester I want to review results in a nicely arranged
-        web page with links to detailed test output.
-    description:
-        Create a local ``html`` file with test results arranged in
-        a table. Optionally open the page in the default browser.
-    example: |
-        # Enable html report from the command line
-        tmt run --all report --how html
-        tmt run --all report --how html --open
-        tmt run -l report -h html -o
+  summary: Generate a web page with test results
+  story: >
+    As a tester I want to review results in a nicely arranged
+    web page with links to detailed test output.
+  description: >
+    Create a local ``html`` file with test results arranged in
+    a table. Optionally open the page in the default browser.
+  example: |
+    # Enable html report from the command line
+    tmt run --all report --how html
+    tmt run --all report --how html --open
+    tmt run -l report -h html -o
 
-        # Use html as the default report for given plan
-        report:
-            how: html
-            open: true
-    link:
-      - implemented-by: /tmt/steps/report/html.py
+    # Use html as the default report for given plan
+    report:
+        how: html
+        open: true
+  link:
+    - implemented-by: /tmt/steps/report/html.py
 
 /junit:
-    summary: Generate a JUnit report file
-    story:
-        As a tester I want to review results in a JUnit xml file.
-    description:
-        Create a JUnit file ``junit.xml`` with test results.
-    example: |
-        # Enable junit report from the command line
-        tmt run --all report --how junit
-        tmt run --all report --how junit --file test.xml
+  summary: Generate a JUnit report file
+  story: >
+    As a tester I want to review results in a JUnit xml file.
+  description: >
+    Create a JUnit file ``junit.xml`` with test results.
+  example: |
+    # Enable junit report from the command line
+    tmt run --all report --how junit
+    tmt run --all report --how junit --file test.xml
 
-        # Use junit as the default report for given plan
-        report:
-            how: junit
-            file: test.xml
-    link:
-        - implemented-by: /tmt/steps/report/junit.py
+    # Use junit as the default report for given plan
+    report:
+        how: junit
+        file: test.xml
+  link:
+    - implemented-by: /tmt/steps/report/junit.py
 
 /polarion:
-    summary: Generate a xUnit file and export it into Polarion
-    story:
-        As a tester I want to review tests in Polarion
-        and have all results linked to existing test cases there.
-    description:
-        Create a xUnit file ``xunit.xml`` with test results
-        and Polarion properties so the xUnit can then be
-        exported into Polarion.
-    example: |
-        # Enable polarion report from the command line
-        tmt run --all report --how polarion --project-id TMT
-        tmt run --all report --how polarion --project-id TMT --no-upload --file test.xml
+  summary: Generate a xUnit file and export it into Polarion
+  story: >
+    As a tester I want to review tests in Polarion
+    and have all results linked to existing test cases there.
+  description: >
+    Create a xUnit file ``xunit.xml`` with test results
+    and Polarion properties so the xUnit can then be
+    exported into Polarion.
+  example: |
+    # Enable polarion report from the command line
+    tmt run --all report --how polarion --project-id TMT
+    tmt run --all report --how polarion --project-id TMT --no-upload --file test.xml
 
-        # Use polarion as the default report for given plan
-        report:
-            how: polarion
-            file: test.xml
-            project-id: TMT
-            title: tests_that_pass
-            planned-in: RHEL-9.1.0
-            pool-team: sst_tmt
-    link:
-        - implemented-by: /tmt/steps/report/polarion.py
+    # Use polarion as the default report for given plan
+    report:
+      how: polarion
+      file: test.xml
+      project-id: TMT
+      title: tests_that_pass
+      planned-in: RHEL-9.1.0
+      pool-team: sst_tmt
+  link:
+    - implemented-by: /tmt/steps/report/polarion.py
 
 /reportportal:
-    summary: Report test results to a ReportPortal instance
-    story:
-        As a tester I want to review results in a nicely arranged
-        web page, filter them via context attributes and get links
-        to detailed test output and other test information.
-    description:
-        Fill json with test results and other fmf data per each plan,
-        and send it to a Report Portal instance via its API.
-    example:
-      - |
-        # Set environment variables with the server url and token
-        export TMT_REPORT_REPORTPORTAL_URL=<url-to-RP-instance>
-        export TMT_REPORT_REPORTPORTAL_TOKEN=<token-from-RP-profile>
-      - |
-        # Enable ReportPortal report from the command line
-        tmt run --all report --how reportportal --project=baseosqe
-        tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
-        tmt run --all report --how reportportal --project=baseosqe --launch=test_plan
-        tmt run --all report --how reportportal --project=baseosqe --url=... --token=...
-      - |
-        # Use ReportPortal as the default report for given plan
-        report:
-            how: reportportal
-            project: baseosqe
+  summary: Report test results to a ReportPortal instance
+  story: >
+    As a tester I want to review results in a nicely arranged
+    web page, filter them via context attributes and get links
+    to detailed test output and other test information.
+  description: >
+    Fill json with test results and other fmf data per each plan,
+    and send it to a Report Portal instance via its API.
+  example:
+    - |
+      # Set environment variables with the server url and token
+      export TMT_REPORT_REPORTPORTAL_URL=<url-to-RP-instance>
+      export TMT_REPORT_REPORTPORTAL_TOKEN=<token-from-RP-profile>
+    - |
+      # Enable ReportPortal report from the command line
+      tmt run --all report --how reportportal --project=baseosqe
+      tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+      tmt run --all report --how reportportal --project=baseosqe --launch=test_plan
+      tmt run --all report --how reportportal --project=baseosqe --url=... --token=...
+    - |
+      # Use ReportPortal as the default report for given plan
+      report:
+        how: reportportal
+        project: baseosqe
 
-        # Report context attributes for given plan
-        context:
-            ...
-      - |
-        # Report description, contact, id and environment variables for given test
-        summary: ...
-        contact: ...
-        id: ...
-        environment:
-            ...
-    link:
-        - implemented-by: /tmt/steps/report/reportportal.py
+      # Report context attributes for given plan
+      context:
+          ...
+    - |
+      # Report description, contact, id and environment variables for given test
+      summary: ...
+      contact: ...
+      id: ...
+      environment:
+          ...
+  link:
+    - implemented-by: /tmt/steps/report/reportportal.py
 
 /file:
-    description: |
+  description: |
 
-        Save the report into a ``report.yaml`` file with the
-        following format:
+    Save the report into a ``report.yaml`` file with the
+    following format:
 
-        .. code-block:: yaml
+    .. code-block:: yaml
 
-            result: OVERALL_RESULT
-            plans:
-                /plan/one:
-                    result: PLAN_RESULT
-                    tests:
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
+        result: OVERALL_RESULT
+        plans:
+          /plan/one:
+            result: PLAN_RESULT
+            tests:
+              /test/one:
+                result: TEST_RESULT
+                log:
+                  - LOG_PATH
 
-                        /test/two:
-                            result: TEST_RESULT
-                            log:
-                                - LOG_PATH
-                                - LOG_PATH
-                                - LOG_PATH
-                /plan/two:
-                    result: PLAN_RESULT
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
+              /test/two:
+                result: TEST_RESULT
+                log:
+                  - LOG_PATH
+                  - LOG_PATH
+                  - LOG_PATH
+          /plan/two:
+            result: PLAN_RESULT
+            tests:
+              /test/one:
+                result: TEST_RESULT
+                log:
+                  - LOG_PATH
 
-        Where ``OVERALL_RESULT`` is the overall result of all plan
-        results. It is counted the same way as ``PLAN_RESULT``.
+    Where ``OVERALL_RESULT`` is the overall result of all plan
+    results. It is counted the same way as ``PLAN_RESULT``.
 
-        Where ``TEST_RESULT`` is the same as in `execute`_ step
-        definition:
+    Where ``TEST_RESULT`` is the same as in `execute`_ step
+    definition:
 
-            * info - test finished and produced only information
-              message
-            * passed - test finished and passed
-            * failed - test finished and failed
-            * error - a problem encountered during test execution
+        * info - test finished and produced only information
+          message
+        * passed - test finished and passed
+        * failed - test finished and failed
+        * error - a problem encountered during test execution
 
-        Note the priority  of test results is as written above,
-        with ``info`` having the lowest priority and ``error`` has
-        the highest. This is important for ``PLAN_RESULT``.
+    Note the priority  of test results is as written above,
+    with ``info`` having the lowest priority and ``error`` has
+    the highest. This is important for ``PLAN_RESULT``.
 
-        Where ``PLAN_RESULT`` is the overall result or all test
-        results for the plan run. It has the same values as
-        ``TEST_RESULT``. Plan result is counted according to the
-        priority of the test outcome values. For example:
+    Where ``PLAN_RESULT`` is the overall result or all test
+    results for the plan run. It has the same values as
+    ``TEST_RESULT``. Plan result is counted according to the
+    priority of the test outcome values. For example:
 
-            * if the test results are info, passed, passed - the
-              plan result will be passed
-            * if the test results are info, passed, failed - the
-              plan result will be failed
-            * if the test results are failed, error, passed - the
-              plan result will be error
+        * if the test results are info, passed, passed - the
+          plan result will be passed
+        * if the test results are info, passed, failed - the
+          plan result will be failed
+        * if the test results are failed, error, passed - the
+          plan result will be error
 
-        Where ``LOG_PATH`` is the test log output path, relative
-        to the execute step plan run directory. The ``log`` key
-        will be a list of such paths, even if there is just a single
-        log.
+    Where ``LOG_PATH`` is the test log output path, relative
+    to the execute step plan run directory. The ``log`` key
+    will be a list of such paths, even if there is just a single
+    log.

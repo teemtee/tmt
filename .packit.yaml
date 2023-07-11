@@ -11,19 +11,18 @@ upstream_project_url: https://github.com/teemtee/tmt
 issue_repository: https://github.com/teemtee/tmt
 
 actions:
-    post-upstream-clone:
-      - make bump2dev
-    create-archive:
-      - make tarball
-    get-current-version:
-      - make version
+  post-upstream-clone:
+    - make bump2dev
+  create-archive:
+    - make tarball
+  get-current-version:
+    - make version
 
 srpm_build_deps:
   - make
   - python3-docutils
 
 jobs:
-
   # Build pull requests
   - job: copr_build
     trigger: pull_request
@@ -31,7 +30,7 @@ jobs:
       - fedora-all
       - epel-8
       - epel-9
-    enable_net: False
+    enable_net: false
 
   # Test pull requests
   - job: tests
@@ -44,34 +43,34 @@ jobs:
   # Test internal plugins
   - job: tests
     trigger: pull_request
-    identifier: "internal-plugins"
+    identifier: 'internal-plugins'
     targets:
       - fedora-latest-stable
-    use_internal_tf: True
-    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
+    use_internal_tf: true
+    fmf_url: 'https://gitlab.cee.redhat.com/baseos-qe/tmt.git'
     # Tag cloud resources for tmt
     tf_extra_params:
-        environments:
-          - settings:
-                provisioning:
-                    tags:
-                        BusinessUnit: tmt
+      environments:
+        - settings:
+            provisioning:
+              tags:
+                BusinessUnit: tmt
 
   # Test internal wow
   - job: tests
     trigger: pull_request
-    identifier: "internal-wow"
+    identifier: 'internal-wow'
     targets:
       - fedora-latest-stable
-    use_internal_tf: True
-    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
-    tmt_plan: "/tmt/integration/plan"
+    use_internal_tf: true
+    fmf_url: 'https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git'
+    tmt_plan: '/tmt/integration/plan'
     tf_extra_params:
-        environments:
-          - settings:
-                provisioning:
-                    tags:
-                        BusinessUnit: tmt
+      environments:
+        - settings:
+            provisioning:
+              tags:
+                BusinessUnit: tmt
 
   # Build commits to main
   - job: copr_build
@@ -81,9 +80,9 @@ jobs:
       - fedora-all
       - epel-8
       - epel-9
-    enable_net: False
-    list_on_homepage: True
-    preserve_project: True
+    enable_net: true
+    list_on_homepage: true
+    preserve_project: true
     owner: psss
     project: tmt
 
@@ -97,8 +96,8 @@ jobs:
 
   - job: koji_build
     trigger: commit
-    allowed_pr_authors: ["packit", "psss", "lzachar"]
-    allowed_committers: ["packit", "psss", "lzachar"]
+    allowed_pr_authors: ['packit', 'psss', 'lzachar']
+    allowed_committers: ['packit', 'psss', 'lzachar']
     dist_git_branches:
       - fedora-all
       - epel-8

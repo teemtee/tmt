@@ -1,8 +1,7 @@
-summary:
-    Basic smoke test for the httpd web server
+summary: Basic smoke test for the httpd web server
 provision:
-    how: virtual
-    memory: 4096
+  how: virtual
+  memory: 4096
 prepare:
   - name: packages
     how: install
@@ -11,7 +10,7 @@ prepare:
     how: shell
     script: systemctl start httpd
 execute:
-    how: shell
-    script:
-      - echo foo > /var/www/html/index.html
-      - curl http://localhost/ | grep foo
+  how: shell
+  script:
+    - echo foo > /var/www/html/index.html
+    - curl http://localhost/ | grep foo

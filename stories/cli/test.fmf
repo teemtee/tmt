@@ -1,124 +1,124 @@
 story: 'As a user I want to comfortably work with tests'
 
 /ls:
-    story: 'List available tests'
-    example: tmt test ls
-    link:
-      - implemented-by: /tmt/cli.py
-      - verified-by: /tests/core/ls
-      - documented-by: /docs/examples.rst#explore-tests
+  story: 'List available tests'
+  example: tmt test ls
+  link:
+    - implemented-by: /tmt/cli.py
+    - verified-by: /tests/core/ls
+    - documented-by: /docs/examples.rst#explore-tests
 
 /show:
-    story: 'Show test metadata'
-    example: tmt test show
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /docs/examples.rst#explore-tests
+  story: 'Show test metadata'
+  example: tmt test show
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /docs/examples.rst#explore-tests
 
 /lint:
-    story: 'Check test against the L1 metadata specification'
-    description:
-        Verify that test metadata are aligned with the
-        specification, e.g. that all required attributes are
-        present and that all attributes have correct type.
-    example: tmt test lint
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /docs/examples.rst#lint-tests
+  story: 'Check test against the L1 metadata specification'
+  description: >
+    Verify that test metadata are aligned with the
+    specification, e.g. that all required attributes are
+    present and that all attributes have correct type.
+  example: tmt test lint
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /docs/examples.rst#lint-tests
 
 /create:
-    story: 'Create a new test skeleton'
-    description:
-        Provide an easy way how to create a new test. Ideally
-        with support for multiple test skeletons. Similarly as
-        beaker-wizard (which should be obsoleted by this) the
-        tool should prompt for required values if not provided
-        on the command line.
-    example:
-        - tmt test create
-        - tmt test create /tests/area/feature
-        - tmt test create /tests/area/feature --skeleton beakerlib
-        - tmt test create /tests/area/feature --duration=1h
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /docs/examples.rst#create-tests
+  story: 'Create a new test skeleton'
+  description: >
+    Provide an easy way how to create a new test. Ideally
+    with support for multiple test skeletons. Similarly as
+    beaker-wizard (which should be obsoleted by this) the
+    tool should prompt for required values if not provided
+    on the command line.
+  example:
+    - tmt test create
+    - tmt test create /tests/area/feature
+    - tmt test create /tests/area/feature --skeleton beakerlib
+    - tmt test create /tests/area/feature --duration=1h
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /docs/examples.rst#create-tests
 
 /import:
-    story: 'As a tester I want to import test metadata.'
-    example: tmt test import
-    link:
-      - implemented-by: /tmt/convert.py
-      - verified-by: /tests/test_convert
-      - documented-by: /docs/examples.rst#convert-tests
+  story: 'As a tester I want to import test metadata.'
+  example: tmt test import
+  link:
+    - implemented-by: /tmt/convert.py
+    - verified-by: /tests/test_convert
+    - documented-by: /docs/examples.rst#convert-tests
 
 /export:
-    story: 'As a tester I want to export test metadata.'
+  story: 'As a tester I want to export test metadata.'
 
-    /format:
-        story: 'I want to export test metadata into given format.'
-        example: tmt test export --format yaml
-        link:
-          - implemented-by: /tmt/base.py
-
-    /nitrate:
-        story: 'I want to export test metadata into nitrate.'
-        example: tmt test export --nitrate
-        description: |
-            In order to keep metadata in sync with the old test
-            case management system we need to export selected set
-            of attributes back to nitrate. The full fmf object
-            identifier should be added to the structured field
-            under the key ``fmf``. A warning should be added to
-            the structured field informing users that the test
-            metadata are now maintained in git.
-
-            Below is the list of supported ``fmf`` attributes and
-            corresponding nitrate fields:
-
-            * component — components tab
-            * contact — default tester
-            * description — purpose-file in the structured field
-            * duration — estimated time
-            * enabled — status
-            * environment — arguments
-            * path — not synced
-            * result — not synced
-            * summary — description in the structured field
-            * tag — tags tab
-            * test — not synced
-            * tier — tags (e.g. ``1`` synced to the ``Tier1`` tag)
-
-            The following attributes, if present, should be
-            exported as well:
-
-            * extra-summary — test case summary
-            * extra-hardware — hardware in the structured field
-            * extra-pepa — pepa in the structured field
-
-            They have the ``extra`` prefix as they are not part of
-            the L1 Metadata Specification and are supposed to be
-            synced temporarily to keep backward compatibility.
-
-            After a successful export, special tag ``fmf-export``
-            should be added to the nitrate test case in order to
-            allow easy search for migrated test cases directly
-            from the web interface.
-        link:
-          - implemented-by: /tmt/export.py
-          - documented-by: /docs/questions#nitrate-migration
-
-/filter:
-    story: 'Filter available tests'
-    description:
-        Search tests using a regular expression or a filter.
-        Use ``.`` to select tests under the current directory.
-    example:
-        - tmt test ls .
-        - tmt test ls REGEXP
-        - tmt test show --filter tier:1
-        - tmt test show --condition 'int(tier) < 2'
-        - tmt test show --condition '"gcc" in require'
+  /format:
+    story: 'I want to export test metadata into given format.'
+    example: tmt test export --format yaml
     link:
       - implemented-by: /tmt/base.py
-      - documented-by: /docs/examples.rst#filter-tests
-      - verified-by: /tests/test/select
+
+  /nitrate:
+    story: 'I want to export test metadata into nitrate.'
+    example: tmt test export --nitrate
+    description: |
+      In order to keep metadata in sync with the old test
+      case management system we need to export selected set
+      of attributes back to nitrate. The full fmf object
+      identifier should be added to the structured field
+      under the key ``fmf``. A warning should be added to
+      the structured field informing users that the test
+      metadata are now maintained in git.
+
+      Below is the list of supported ``fmf`` attributes and
+      corresponding nitrate fields:
+
+      * component — components tab
+      * contact — default tester
+      * description — purpose-file in the structured field
+      * duration — estimated time
+      * enabled — status
+      * environment — arguments
+      * path — not synced
+      * result — not synced
+      * summary — description in the structured field
+      * tag — tags tab
+      * test — not synced
+      * tier — tags (e.g. ``1`` synced to the ``Tier1`` tag)
+
+      The following attributes, if present, should be
+      exported as well:
+
+      * extra-summary — test case summary
+      * extra-hardware — hardware in the structured field
+      * extra-pepa — pepa in the structured field
+
+      They have the ``extra`` prefix as they are not part of
+      the L1 Metadata Specification and are supposed to be
+      synced temporarily to keep backward compatibility.
+
+      After a successful export, special tag ``fmf-export``
+      should be added to the nitrate test case in order to
+      allow easy search for migrated test cases directly
+      from the web interface.
+    link:
+      - implemented-by: /tmt/export.py
+      - documented-by: /docs/questions#nitrate-migration
+
+/filter:
+  story: 'Filter available tests'
+  description: >
+    Search tests using a regular expression or a filter.
+    Use ``.`` to select tests under the current directory.
+  example:
+    - tmt test ls .
+    - tmt test ls REGEXP
+    - tmt test show --filter tier:1
+    - tmt test show --condition 'int(tier) < 2'
+    - tmt test show --condition '"gcc" in require'
+  link:
+    - implemented-by: /tmt/base.py
+    - documented-by: /docs/examples.rst#filter-tests
+    - verified-by: /tests/test/select

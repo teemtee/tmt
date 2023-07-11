@@ -1,11 +1,11 @@
 summary: Python unit tests
-description:
-    Run all available python unit tests using pytest.
+description: >
+  Run all available python unit tests using pytest.
 discover:
-    tests:
-      - name: /unit
-        test: python3 -m pytest
-        path: /tests/unit
+  tests:
+    - name: /unit
+      test: python3 -m pytest
+      path: /tests/unit
 prepare+:
   - name: pytest
     how: install

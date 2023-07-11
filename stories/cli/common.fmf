@@ -1,87 +1,87 @@
-story:
-    I want to have common command line options consistenly
-    used across all supported commands and subcommands.
+story: >
+  I want to have common command line options consistenly
+  used across all supported commands and subcommands.
 
 /verbose:
-    summary: Enable verbose output of the command
-    story:
-        As a user I want to see more detailed information for
-        particular command.
-    description: |
-        Different verbose levels can be enabled by using the
-        option several times. For example, discover step shows
-        only number of tests by default, list of tests in verbose
-        level one and could show some further test details in
-        higher verbose levels.
-    example:
-        - tmt test show -v
-        - tmt test show -vvv
-        - tmt test show --verbose
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
-      - verified-by: /tests/core/dry
+  summary: Enable verbose output of the command
+  story: >
+    As a user I want to see more detailed information for
+    particular command.
+  description: |
+    Different verbose levels can be enabled by using the
+    option several times. For example, discover step shows
+    only number of tests by default, list of tests in verbose
+    level one and could show some further test details in
+    higher verbose levels.
+  example:
+    - tmt test show -v
+    - tmt test show -vvv
+    - tmt test show --verbose
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /tmt/cli.py
+    - verified-by: /tests/core/dry
 
 /quiet:
-    summary: Enable quiet mode of the command
-    example:
-        - tmt test show -q
-        - tmt test show --quiet
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+  summary: Enable quiet mode of the command
+  example:
+    - tmt test show -q
+    - tmt test show --quiet
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /tmt/cli.py
 
 /force:
-    summary: Force dangerous operations like overwriting files
-    example:
-        - tmt test create -f
-        - tmt test create --force
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
-      - relates: /stories/cli/test/create
+  summary: Force dangerous operations like overwriting files
+  example:
+    - tmt test create -f
+    - tmt test create --force
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /tmt/cli.py
+    - relates: /stories/cli/test/create
 
 /format:
-    summary: Provide machine readable output in given format
-    example:
-        - tmt test ls --format json
-        - tmt plan show --format yaml
-        - tmt story export --format rst
-    link:
-      - implemented-by: /tmt/cli.py
-      - implemented-by: /tmt/base.py
-      - documented-by: /tmt/cli.py
+  summary: Provide machine readable output in given format
+  example:
+    - tmt test ls --format json
+    - tmt plan show --format yaml
+    - tmt story export --format rst
+  link:
+    - implemented-by: /tmt/cli.py
+    - implemented-by: /tmt/base.py
+    - documented-by: /tmt/cli.py
 
 /debug:
-    summary: Print additional information for debugging
-    story:
-        As a tmt developer I want to see as much details about
-        what's happening during execution so that I can easily
-        reveal bugs in the code.
-    description:
-        Debug level can be used to show detailed implementation
-        steps, revealing what's happening under the hood, so that
-        tool developers are able to more easily find bugs in the
-        code. Use the option multiple times to increase verbosity.
-    example:
-        - tmt run -d
-        - tmt run -ddd
-        - tmt run --debug
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
-      - verified-by: /tests/core/dry
+  summary: Print additional information for debugging
+  story: >
+    As a tmt developer I want to see as much details about
+    what's happening during execution so that I can easily
+    reveal bugs in the code.
+  description: >
+    Debug level can be used to show detailed implementation
+    steps, revealing what's happening under the hood, so that
+    tool developers are able to more easily find bugs in the
+    code. Use the option multiple times to increase verbosity.
+  example:
+    - tmt run -d
+    - tmt run -ddd
+    - tmt run --debug
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /tmt/cli.py
+    - verified-by: /tests/core/dry
 
 /dry:
-    summary: Run in dry mode, just let me know what would be done
-    story:
-        As a user I want to run commands in dry mode so that I can
-        see what would happen if I run the command but no actions
-        are performed or changes saved to disk.
-    example:
-        - tmt run -n
-        - tmt run --dry
-    link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
-      - verified-by: /tests/core/dry
+  summary: Run in dry mode, just let me know what would be done
+  story: >
+    As a user I want to run commands in dry mode so that I can
+    see what would happen if I run the command but no actions
+    are performed or changes saved to disk.
+  example:
+    - tmt run -n
+    - tmt run --dry
+  link:
+    - implemented-by: /tmt/cli.py
+    - documented-by: /tmt/cli.py
+    - verified-by: /tests/core/dry

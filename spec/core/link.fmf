@@ -1,114 +1,114 @@
 summary: Link related objects
 
-story:
-    As a user I want to link related tests, stories or external
-    issues so that I can easily find out what the test, plan or
-    story is addressing.
+story: >
+  As a user I want to link related tests, stories or external
+  issues so that I can easily find out what the test, plan or
+  story is addressing.
 
 description: |
-    The core attribute ``link`` is used to track relevant objects
-    such as user stories or external issues verified by the given
-    test, source code implementing particular story, blocking
-    issues or parent-child relations.
+  The core attribute ``link`` is used to track relevant objects
+  such as user stories or external issues verified by the given
+  test, source code implementing particular story, blocking
+  issues or parent-child relations.
 
-    The value can be a single link or a list of links. There are
-    two options how to specify the ``target`` of the reference:
+  The value can be a single link or a list of links. There are
+  two options how to specify the ``target`` of the reference:
 
-    string
-        This can be either a ``name`` of the fmf node within the
-        same metadata tree, a file ``path`` from the tree root to
-        the application or documentation source code or a ``URL``
-        to an external issue tracker.
+  string
+      This can be either a ``name`` of the fmf node within the
+      same metadata tree, a file ``path`` from the tree root to
+      the application or documentation source code or a ``URL``
+      to an external issue tracker.
 
-    dict
-        In order to reference remote fmf objects use a dictionary
-        with the full `fmf identifier`__.
+  dict
+      In order to reference remote fmf objects use a dictionary
+      with the full `fmf identifier`__.
 
-    By default, the link between the two objects is interpreted in
-    a generic way as ``relates``. To explicitly define a different
-    connection to the target reference, use a dictionary and set
-    the key to one of the supported relations:
+  By default, the link between the two objects is interpreted in
+  a generic way as ``relates``. To explicitly define a different
+  connection to the target reference, use a dictionary and set
+  the key to one of the supported relations:
 
-    verifies
-        This object (a test or a plan) verifies functionality
-        defined in the target (a story, an issue, a bug).
+  verifies
+      This object (a test or a plan) verifies functionality
+      defined in the target (a story, an issue, a bug).
 
-    verified-by
-        The functionality (described in a story, an issue or a
-        bug) is verified by the target (a test or a plan).
+  verified-by
+      The functionality (described in a story, an issue or a
+      bug) is verified by the target (a test or a plan).
 
-    implements
-        This object (source code) implements functionality defined
-        in the target (a story describing the feature).
+  implements
+      This object (source code) implements functionality defined
+      in the target (a story describing the feature).
 
-    implemented-by
-        The functionality (described in a story) is implemented by
-        the target (source code).
+  implemented-by
+      The functionality (described in a story) is implemented by
+      the target (source code).
 
-    documents
-        This object (a guide or examples) documents the target (a
-        story).
+  documents
+      This object (a guide or examples) documents the target (a
+      story).
 
-    documented-by
-        The functionality (described in a story) is documented by
-        the target (a guide or examples).
+  documented-by
+      The functionality (described in a story) is documented by
+      the target (a guide or examples).
 
-    blocks
-        This object is blocking the target.
+  blocks
+      This object is blocking the target.
 
-    blocked-by
-        This object is blocked by the target.
+  blocked-by
+      This object is blocked by the target.
 
-    duplicates
-        This object is a duplicate of the target.
+  duplicates
+      This object is a duplicate of the target.
 
-    duplicated-by
-        This object is duplicated by the target.
+  duplicated-by
+      This object is duplicated by the target.
 
-    parent
-        This object is a child of the target parent.
+  parent
+      This object is a child of the target parent.
 
-    child
-        This object is a parent of the target child.
+  child
+      This object is a parent of the target child.
 
-    relates
-        This object relates to the provided target.
-        This is the **default** relation.
+  relates
+      This object relates to the provided target.
+      This is the **default** relation.
 
-    test-script
-        Web link to the location of the testing script, intended
-        for cases where the tests are stored in a different
-        directory or repository than the metadata files.
+  test-script
+      Web link to the location of the testing script, intended
+      for cases where the tests are stored in a different
+      directory or repository than the metadata files.
 
-    An optional key ``note`` can be used to add an arbitrary
-    comment describing the relation.
+  An optional key ``note`` can be used to add an arbitrary
+  comment describing the relation.
 
-    __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
+  __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
 example: |
-    # A related issue
-    link: https://github.com/teemtee/tmt/issues/461
+  # A related issue
+  link: https://github.com/teemtee/tmt/issues/461
 
-    # A test verifying a story
-    link:
-        verifies: /stories/cli/init/base
+  # A test verifying a story
+  link:
+    verifies: /stories/cli/init/base
 
-    # A test verifying a story and a bug
-    link:
-      - verifies: /stories/cli/init/base
-      - verifies: https://bugzilla.redhat.com/show_bug.cgi?id=1234
+  # A test verifying a story and a bug
+  link:
+    - verifies: /stories/cli/init/base
+    - verifies: https://bugzilla.redhat.com/show_bug.cgi?id=1234
 
-    # An implemented story covered by both tests and docs
-    link:
-      - implemented-by: /tmt/cli.py
-      - verified-by: /tests/init/base
-      - documented-by: /docs/guide.rst
+  # An implemented story covered by both tests and docs
+  link:
+    - implemented-by: /tmt/cli.py
+    - verified-by: /tests/init/base
+    - documented-by: /docs/guide.rst
 
-    # A story blocked by a remote story with optional note
-    link:
-        blocked-by:
-            url: https://github.com/teemtee/fmf
-            name: /stories/select/filter/regexp
-        note: Need to get the regexp filter working first.
+  # A story blocked by a remote story with optional note
+  link:
+    blocked-by:
+      url: https://github.com/teemtee/fmf
+      name: /stories/select/filter/regexp
+    note: Need to get the regexp filter working first.
 link:
   - implemented-by: /tmt/base.py

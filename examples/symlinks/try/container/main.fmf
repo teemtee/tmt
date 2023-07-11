@@ -1,10 +1,10 @@
 # Run tests in a container
 provision:
-    how: container
+  how: container
 #    image: fedora
 #    pull: false
 
 # Enable special container filter
 /core:
-    discover+:
-        filter: 'tier:0 & tag:container'
+  discover+:
+    filter: 'tier:0 & tag:container'

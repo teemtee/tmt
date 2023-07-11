@@ -1,16 +1,16 @@
 summary: Name of the tier set this the object belongs to
 
-story:
-    As a tester testing a security advisory I want to run the
-    stable set of important tests which cover the most essential
-    functionality and can provide test results in a short time.
+story: >
+  As a tester testing a security advisory I want to run the
+  stable set of important tests which cover the most essential
+  functionality and can provide test results in a short time.
 
-description:
-    It's quite common to organize tests or plans into "tiers"
-    based on their importance, stability, duration and other
-    aspects. For this tags have been used quite often in the past,
-    now there is a dedicated field for this use case. Should be a
-    ``string``.
+description: >
+  It's quite common to organize tests or plans into "tiers"
+  based on their importance, stability, duration and other
+  aspects. For this tags have been used quite often in the past,
+  now there is a dedicated field for this use case. Should be a
+  ``string``.
 
 example:
   - |

@@ -7,19 +7,19 @@ repos:
       - id: autopep8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: 'v4.4.0'
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.3.0"
+    rev: 'v1.3.0'
     hooks:
       - id: mypy
-        # Do not install *types-click* - it's not recommended with Click 8 & newer,
-        # which is the version a developer encounters given the requirements are not
-        # frozen.
+        # Do not install *types-click* - it's not recommended
+        # with Click 8 & newer, which is the version a developer
+        # encounters given the requirements are not frozen.
         additional_dependencies:
           - click
           - types-Markdown
@@ -33,17 +33,22 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.23.1"
+    rev: '0.23.1'
     hooks:
       - id: check-metaschema
-        name: "Check JSON schemas validity"
+        name: 'Check JSON schemas validity'
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.32.0
     hooks:
       - id: yamllint
-        files: ^tmt/schemas/.*\.yaml
+        types:
+          - text
+        files: '\.(fmf|yaml)$'
+        exclude: '^tmt/(?!schemas/)|tests/.*$'
+        args:
+          ['-d', '{extends: default, rules: {line-length: {max: 120}, document-start: disable}}']
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.0.274
@@ -56,4 +61,4 @@ repos:
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.24.1
     hooks:
-    - id: tmt-lint
+      - id: tmt-lint

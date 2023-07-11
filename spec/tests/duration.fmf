@@ -1,15 +1,15 @@
 summary: Maximum time for test execution
 
-story:
-    As a test harness I need to know after how long time I should
-    kill test if it is still running to prevent resource wasting.
+story: >
+  As a test harness I need to know after how long time I should
+  kill test if it is still running to prevent resource wasting.
 
-description:
-    In order to prevent stuck tests consuming resources we define a
-    maximum time for test execution. If the limit is exceeded the
-    running test is killed by the test harness. Use the same
-    format as the ``sleep`` command. Must be a ``string``. The
-    default value is ``5m``.
+description: >
+  In order to prevent stuck tests consuming resources we define a
+  maximum time for test execution. If the limit is exceeded the
+  running test is killed by the test harness. Use the same
+  format as the ``sleep`` command. Must be a ``string``. The
+  default value is ``5m``.
 
 example:
   - |
@@ -34,7 +34,6 @@ example:
     adjust:
         duration+: 15m
         when: arch == aarch64
-
 
 link:
   - implemented-by: /tmt/base
