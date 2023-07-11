@@ -14,14 +14,14 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.3.0"
+    rev: "v1.4.1"
     hooks:
       - id: mypy
         # Do not install *types-click* - it's not recommended with Click 8 & newer,
         # which is the version a developer encounters given the requirements are not
         # frozen.
         additional_dependencies:
-          - click
+          - click<8.1.4  # TODO github.com/pallets/click/issues/2558
           - types-Markdown
           - types-requests
           - types-setuptools
