@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import errno
 import logging
 import os
 import sys
@@ -91,8 +92,16 @@ def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
         # HAX remove mrack stdout and move the logfile to /tmp
         mrack.logger.removeHandler(mrack.console_handler)
         mrack.logger.removeHandler(mrack.file_handler)
-        if os.stat("mrack.log"):
+
+        try:
             os.remove("mrack.log")
+        except OSError:
+            # We only accept the in case the mrack.log does exists
+            # or could not be deleted as we need to replace
+            # it is not fatal here to not do anything and just continue
+            # with the execution and replacing the FileHandler file
+            pass
+
         logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
 
         providers.register(BEAKER, BeakerProvider)
