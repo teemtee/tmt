@@ -726,12 +726,7 @@ class Core(
 
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
-        fmf_id = tmt.utils.fmf_id(
-            name=self.name,
-            fmf_root=Path(self.node.root),
-            always_get_ref=True,
-            logger=self._logger)
-        if fmf_id.ref is None or fmf_id.url is None:
+        if self.fmf_id.ref is None or self.fmf_id.url is None:
             return None
 
         # Detect relative path of the last source from the metadata tree root
@@ -739,10 +734,10 @@ class Core(
         relative_path = Path('/') if str(relative_path) == '.' else Path('/') / relative_path
 
         # Add fmf path if the tree is nested deeper in the git repo
-        if fmf_id.path:
-            relative_path = fmf_id.path / relative_path.relative_to('/')
+        if self.fmf_id.path:
+            relative_path = self.fmf_id.path / relative_path.relative_to('/')
 
-        return tmt.utils.web_git_url(fmf_id.url, fmf_id.ref, relative_path)
+        return tmt.utils.web_git_url(self.fmf_id.url, self.fmf_id.ref, relative_path)
 
     @classmethod
     def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
