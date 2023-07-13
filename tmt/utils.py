@@ -4839,6 +4839,7 @@ def field(
         envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
+        show_default: bool = False,
         # Input data normalization - not needed, the field is a boolean
         # flag.
         # normalize: Optional[NormalizeCallback[T]] = None
@@ -4862,6 +4863,7 @@ def field(
         envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
+        show_default: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -4884,6 +4886,7 @@ def field(
         envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
+        show_default: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -4906,6 +4909,7 @@ def field(
         envvar: Optional[str] = None,
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
+        show_default: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -4945,6 +4949,8 @@ def field(
     :param help: the help string for the command-line option. Multiline strings
         can be used, :py:func:`textwrap.dedent` is applied before passing
         ``help`` to :py:func:`click.option`.
+    :param show_default: show default value
+        Passed directly to :py:func:`click.option`.
     :param normalize: a callback for normalizing the input value. Consumed by
         :py:class:`NormalizeKeysMixin`.
     :param serialize: a callback for custom serialization of the field value.
@@ -4968,6 +4974,7 @@ def field(
             'metavar': metavar,
             'envvar': envvar,
             'help': help,
+            'show_default': show_default,
             'deprecated': deprecated
             }
         metadata.option_choices = choices

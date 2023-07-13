@@ -29,6 +29,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         default=True,
         option=('--upload / --no-upload'),
         is_flag=True,
+        show_default=True,
         help="Whether to upload results to Polarion."
         )
 
@@ -50,10 +51,20 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
             'also uses environment variable TMT_PLUGIN_REPORT_POLARION_TITLE.')
         )
 
+    template: Optional[str] = field(
+        default=None,
+        option='--template',
+        metavar='TEMPLATE',
+        help=(
+            'Use specific test run template, '
+            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_TEMPLATE.')
+        )
+
     use_facts: bool = field(
         default=False,
         option=('--use-facts / --no-use-facts'),
         is_flag=True,
+        show_default=True,
         help='Use hostname and arch from guest facts.'
         )
 
@@ -169,8 +180,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
                 datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")))
         title = title.replace('-', '_')
         project_id = self.get('project-id', os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID'))
-        upload = self.get('upload')
-        use_facts = self.get('use-facts')
+        template = self.get('template', os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE'))
+        upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
+        use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
         other_testrun_fields = [
             'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build', 'sample_image',
             'logs', 'compose_id']
@@ -190,8 +202,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
             if param:
                 properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
         if use_facts:
-            properties['polarion_custom_hostname'] = self.step.plan.provision.guests()[0].guest
-            properties['polarion_custom_arch'] = self.step.plan.provision.guests()[0].facts.arch
+            properties['polarion-custom-hostname'] = self.step.plan.provision.guests()[0].guest
+            properties['polarion-custom-arch'] = self.step.plan.provision.guests()[0].facts.arch
+        if template:
+            properties['polarion-testrun-template-id'] = template
         testsuites_properties = ElementTree.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
             ElementTree.SubElement(testsuites_properties, 'property', attrib={
