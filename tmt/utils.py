@@ -5106,7 +5106,9 @@ class NormalizeKeysMixin(_CommonBase):
 
         for keyname, keytype in self._iter_key_annotations():
             key_address = f'{key_source_name}:{keyname}'
+
             source_keyname = key_to_option(keyname)
+            source_keyname_cli = keyname
 
             # Do not indent this particular entry like the rest, so it could serve
             # as a "header" for a single key processing.
@@ -5138,17 +5140,24 @@ class NormalizeKeysMixin(_CommonBase):
                 # try+except seems to work better than get(), especially when
                 # semantic of fmf.Tree.get() is slightly different than that
                 # of dict().get().
-                try:
+                if source_keyname in key_source:
                     value = key_source[source_keyname]
 
-                except KeyError:
+                elif source_keyname_cli in key_source:
+                    value = key_source[source_keyname_cli]
+
+                else:
                     value = default_value
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))
 
             else:
-                value = key_source.get(source_keyname)
+                if source_keyname in key_source:
+                    value = key_source[source_keyname]
+
+                elif source_keyname_cli in key_source:
+                    value = key_source[source_keyname_cli]
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))

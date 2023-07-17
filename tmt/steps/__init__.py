@@ -3,6 +3,7 @@
 
 import collections
 import dataclasses
+import functools
 import itertools
 import re
 import shutil
@@ -75,10 +76,12 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
     option(
         '--insert',
         is_flag=True,
+        default=False,
         help='Add this phase instead of overwriting the existing ones.'),
     option(
         '--update',
         is_flag=True,
+        default=False,
         help='Update existing phase. Use --name to specify which one.'),
     option(
         '--name',
@@ -90,6 +93,34 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
         default=DEFAULT_PLUGIN_METHOD_ORDER,
         help='Order in which the phase should be handled.')
     ])
+
+
+class DefaultNameGenerator:
+    def __init__(self, known_names: List[str]) -> None:
+        self.known_names = known_names
+
+        self.restart()
+
+    def restart(self) -> None:
+        def _generator() -> Generator[str, None, None]:
+            for i in itertools.count(start=0):
+                name = f'{DEFAULT_NAME}-{i}'
+
+                if name in self.known_names:
+                    continue
+
+                self.known_names.append(name)
+                yield name
+
+        self.generator = _generator()
+
+    def reset(self) -> None:
+        self.known_names = []
+
+        self.restart()
+
+    def get(self) -> str:
+        return next(self.generator)
 
 
 class Phase(tmt.utils.Common):
@@ -501,6 +532,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Instead, iterate over raw data, and replace incompatible plugins with the one given
         # on command line. There is no reason to ever let dropped plugin's `StepData` to
         # materialize when it's going to be thrown away anyway.
+        debug = functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
+
+        debug('update phases by CLI invocations')
+
         def _to_raw_step_datum(options: Dict[str, Any]) -> _RawStepData:
             options = options.copy()
 
@@ -510,36 +545,37 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return cast(_RawStepData, options)
 
         raw_data: List[_RawStepData] = self._raw_data[:]
-        collected_names: List[Optional[str]] = [raw_datum.get('name') for raw_datum in raw_data]
 
-        def _generate_default_name() -> Generator[str, None, None]:
-            for i in itertools.count():
-                name = f'{DEFAULT_NAME}-{i}'
+        collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
+        name_generator = DefaultNameGenerator([name for name in collected_name_keys if name])
 
-                if name in collected_names:
-                    continue
+        def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
+            if not raw_datum.get('name'):
+                raw_datum['name'] = name_generator.get()
 
-                collected_names.append(name)
-                yield name
-
-        default_name_generator = _generate_default_name()
+            return raw_datum
 
         for invocation in self.__class__.cli_invocations:
+            debug('invocation', invocation)
+
             how: Optional[str] = invocation.options.get('how')
 
             if how is None:
                 # non-phase invocation (>>>report -vvv<<< report ...)
+                debug('non-phase invocation')
                 continue
 
             if invocation.options.get('insert'):
+                debug('inserting new phase')
+
                 raw_datum = _to_raw_step_datum(invocation.options)
+                raw_datum = _ensure_name(raw_datum)
 
-                if 'name' not in raw_datum:
-                    raw_datum['name'] = next(default_name_generator)
-
-                raw_data.append(_to_raw_step_datum(invocation.options))
+                raw_data.append(raw_datum)
 
             elif invocation.options.get('update'):
+                debug('updating existing phase')
+
                 needle = invocation.options.get('name')
 
                 if not needle:
@@ -558,18 +594,24 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     raise GeneralError('baz')
 
             else:
-                raw_datum = _to_raw_step_datum(invocation.options)
+                debug('overriding all existing phases')
 
-                if 'name' not in raw_datum:
-                    raw_datum['name'] = next(default_name_generator)
+                # Reset the name generator - whatever names we used, we can use
+                # again because all previous phases are now gone.
+                name_generator.reset()
+
+                raw_datum = _to_raw_step_datum(invocation.options)
+                raw_datum = _ensure_name(raw_datum)
 
                 raw_data = [raw_datum]
+
+        debug('updated raw data', str(raw_data))
 
         self._set_default_values(raw_data)
         self.data = self._normalize_data(raw_data, self._logger)
         self._raw_data = raw_data
 
-        self.debug('updated data', str(self.data), level=4)
+        debug('updated data', str(self.data))
 
     def setup_actions(self) -> None:
         """ Insert login and reboot plugins if requested """
