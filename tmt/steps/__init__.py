@@ -114,8 +114,8 @@ class DefaultNameGenerator:
 
         self.generator = _generator()
 
-    def reset(self) -> None:
-        self.known_names = []
+    def reset(self, known_names: Optional[List[str]] = None) -> None:
+        self.known_names = known_names or []
 
         self.restart()
 
@@ -545,9 +545,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return cast(_RawStepData, options)
 
         raw_data: List[_RawStepData] = self._raw_data[:]
+        optionless_invocations: List['tmt.cli.CLIInvocation'] = []
 
         collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
-        name_generator = DefaultNameGenerator([name for name in collected_name_keys if name])
+        actual_name_keys = [name for name in collected_name_keys if name]
+
+        name_generator = DefaultNameGenerator(actual_name_keys)
 
         def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
             if not raw_datum.get('name'):
@@ -561,7 +564,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             how: Optional[str] = invocation.options.get('how')
 
             if how is None:
-                # non-phase invocation (>>>report -vvv<<< report ...)
+                # TODO: non-phase invocation (>>>report -vvv<<< report ...)
                 debug('non-phase invocation')
                 continue
 
@@ -594,16 +597,39 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     raise GeneralError('baz')
 
             else:
-                debug('overriding all existing phases')
+                optionless_invocations.append(invocation)
 
-                # Reset the name generator - whatever names we used, we can use
-                # again because all previous phases are now gone.
-                name_generator.reset()
+        for invocation in optionless_invocations:
+            debug('invocation without action', invocation)
 
-                raw_datum = _to_raw_step_datum(invocation.options)
-                raw_datum = _ensure_name(raw_datum)
+            pruned_raw_data: List[_RawStepData] = []
+            incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
-                raw_data = [raw_datum]
+            how = invocation.options['how']
+
+            assert how is not None  # narrow type
+
+            for raw_datum in raw_data:
+                if raw_datum['how'] == how:
+                    debug(f'  compatible step data: {raw_datum}')
+
+                else:
+                    debug(f'  incompatible step data: {raw_datum}')
+
+                    raw_datum = {
+                        'name': raw_datum['name'],
+                        'how': how
+                        }
+
+                for key, value in incoming_raw_datum.items():
+                    if key in ('how', 'name'):
+                        continue
+
+                    raw_datum[key] = value  # type: ignore[literal-required]
+
+                pruned_raw_data.append(raw_datum)
+
+            raw_data = pruned_raw_data
 
         debug('updated raw data', str(raw_data))
 
