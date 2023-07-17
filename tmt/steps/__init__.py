@@ -3,6 +3,7 @@
 
 import collections
 import dataclasses
+import itertools
 import re
 import shutil
 import textwrap
@@ -33,7 +34,15 @@ import tmt.options
 import tmt.utils
 from tmt.options import option, show_step_method_hints
 from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
-from tmt.utils import EnvironmentType, GeneralError, Path, cached_property, field, flatten
+from tmt.utils import (
+    DEFAULT_NAME,
+    EnvironmentType,
+    GeneralError,
+    Path,
+    cached_property,
+    field,
+    flatten,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -501,6 +510,19 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return cast(_RawStepData, options)
 
         raw_data: List[_RawStepData] = self._raw_data[:]
+        collected_names: List[Optional[str]] = [raw_datum.get('name') for raw_datum in raw_data]
+
+        def _generate_default_name() -> Generator[str, None, None]:
+            for i in itertools.count():
+                name = f'{DEFAULT_NAME}-{i}'
+
+                if name in collected_names:
+                    continue
+
+                collected_names.append(name)
+                yield name
+
+        default_name_generator = _generate_default_name()
 
         for invocation in self.__class__.cli_invocations:
             how: Optional[str] = invocation.options.get('how')
@@ -510,6 +532,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 continue
 
             if invocation.options.get('insert'):
+                raw_datum = _to_raw_step_datum(invocation.options)
+
+                if 'name' not in raw_datum:
+                    raw_datum['name'] = next(default_name_generator)
+
                 raw_data.append(_to_raw_step_datum(invocation.options))
 
             elif invocation.options.get('update'):
@@ -531,7 +558,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     raise GeneralError('baz')
 
             else:
-                raw_data = [_to_raw_step_datum(invocation.options)]
+                raw_datum = _to_raw_step_datum(invocation.options)
+
+                if 'name' not in raw_datum:
+                    raw_datum['name'] = next(default_name_generator)
+
+                raw_data = [raw_datum]
 
         self._set_default_values(raw_data)
         self.data = self._normalize_data(raw_data, self._logger)
