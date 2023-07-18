@@ -644,6 +644,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     if value is None or value == [] or value == () or value is False:
                         continue
 
+                    # TODO: this is not good, default values sneak in from options and overwrite
+                    # valid keys :(((
                     raw_datum[key] = value  # type: ignore[literal-required]
 
                     # tmt.utils.dataclass_normalize_field(
