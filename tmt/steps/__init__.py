@@ -478,6 +478,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 StepData.unserialize(raw_datum, self._logger)
                 for raw_datum in raw_step_data['data']
                 ]
+            self._raw_data = [
+                datum.to_spec()
+                for datum in self.data
+                ]
             self.status(raw_step_data['status'])
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -534,7 +538,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # materialize when it's going to be thrown away anyway.
         debug = functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
-        debug('update phases by CLI invocations')
+        debug('updating phases by CLI invocations')
 
         def _to_raw_step_datum(options: Dict[str, Any]) -> _RawStepData:
             options = options.copy()
@@ -558,18 +562,21 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             return raw_datum
 
-        for invocation in self.__class__.cli_invocations:
-            debug('invocation', invocation)
+        for i, raw_datum in enumerate(raw_data):
+            debug(f'raw step datum #{i}', str(raw_datum))
+
+        for i, invocation in enumerate(self.__class__.cli_invocations):
+            debug(f'invocation #{i}', str(invocation.options))
 
             how: Optional[str] = invocation.options.get('how')
 
             if how is None:
-                # TODO: non-phase invocation (>>>report -vvv<<< report ...)
-                postponed_invocations.append(invocation)
-                continue
+                debug('  how-less phase (postponed)')
 
-            if invocation.options.get('insert'):
-                debug('inserting new phase')
+                postponed_invocations.append(invocation)
+
+            elif invocation.options.get('insert'):
+                debug('  inserting new phase')
 
                 raw_datum = _to_raw_step_datum(invocation.options)
                 raw_datum = _ensure_name(raw_datum)
@@ -577,7 +584,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 raw_data.append(raw_datum)
 
             elif invocation.options.get('update'):
-                debug('updating existing phase')
+                debug('  updating existing phase')
 
                 needle = invocation.options.get('name')
 
@@ -597,25 +604,29 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     raise GeneralError('baz')
 
             else:
+                debug('  action-less phase (postponed)')
+
                 postponed_invocations.append(invocation)
 
-        for invocation in postponed_invocations:
-            debug('postponed invocation', invocation)
+        for i, invocation in enumerate(postponed_invocations):
+            debug(f'postponed invocation #{i}', str(invocation.options))
 
             pruned_raw_data: List[_RawStepData] = []
             incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
             how = invocation.options['how']
 
-            for raw_datum in raw_data:
+            for j, raw_datum in enumerate(raw_data):
+                debug(f'raw step datum #{j}', str(raw_datum))
+
                 if how is None:
-                    debug(f'  compatible step data (how-less invocation): {raw_datum}')
+                    debug('  compatible step data (how-less invocation)')
 
                 elif raw_datum['how'] == how:
-                    debug(f'  compatible step data: {raw_datum}')
+                    debug('  compatible step data')
 
                 else:
-                    debug(f'  incompatible step data: {raw_datum}')
+                    debug('  incompatible step data')
 
                     raw_datum = {
                         'name': raw_datum['name'],
@@ -642,13 +653,15 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             raw_data = pruned_raw_data
 
-        debug('updated raw data', str(raw_data))
+        for i, raw_datum in enumerate(raw_data):
+            debug(f'updated raw step datum #{i}', str(raw_datum))
 
         self._set_default_values(raw_data)
         self.data = self._normalize_data(raw_data, self._logger)
         self._raw_data = raw_data
 
-        debug('updated data', str(self.data))
+        for i, datum in enumerate(self.data):
+            debug(f'final step data #{i}', str(datum))
 
     def setup_actions(self) -> None:
         """ Insert login and reboot plugins if requested """

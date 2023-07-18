@@ -183,6 +183,20 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         default=False,
         help="Keep the git metadata if a repo is synced to guest.")
 
+    # ignore[override]: expected, we do want to accept more specific
+    # type than the one declared in superclass.
+    def to_spec(self) -> tmt.steps._RawStepData:  # type: ignore[override]
+        """ Convert to a form suitable for saving in a specification file """
+
+        data = super().to_spec()
+        # ignore[typeddict-unknown-key]: the `tests` key is unknown to generic raw step data,
+        # but it's right to be here.
+        data['tests'] = [  # type: ignore[typeddict-unknown-key]
+            test.to_spec() for test in self.tests
+            ]
+
+        return data
+
 
 @tmt.steps.provides_method('shell')
 class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
