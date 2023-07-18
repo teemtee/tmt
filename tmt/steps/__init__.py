@@ -625,7 +625,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     if key in ('how', 'name'):
                         continue
 
+                    # TODO: this test is incorrect. It should not test for false-ish values,
+                    # but rather check whether the value returned by `self.opt()` is or is
+                    # not option default. And that's apparently not trivial with current CLI
+                    # handling.
+                    if value is None or value == [] or value == () or value is False:
+                        continue
+
                     raw_datum[key] = value  # type: ignore[literal-required]
+
+                    # tmt.utils.dataclass_normalize_field(
+                    #     self.data, f'{self.name}:{keyname}', keyname, value, self._logger)
 
                 pruned_raw_data.append(raw_datum)
 
