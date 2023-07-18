@@ -545,7 +545,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return cast(_RawStepData, options)
 
         raw_data: List[_RawStepData] = self._raw_data[:]
-        optionless_invocations: List['tmt.cli.CLIInvocation'] = []
+        postponed_invocations: List['tmt.cli.CLIInvocation'] = []
 
         collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
         actual_name_keys = [name for name in collected_name_keys if name]
@@ -565,7 +565,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             if how is None:
                 # TODO: non-phase invocation (>>>report -vvv<<< report ...)
-                debug('non-phase invocation')
+                postponed_invocations.append(invocation)
                 continue
 
             if invocation.options.get('insert'):
@@ -597,20 +597,21 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     raise GeneralError('baz')
 
             else:
-                optionless_invocations.append(invocation)
+                postponed_invocations.append(invocation)
 
-        for invocation in optionless_invocations:
-            debug('invocation without action', invocation)
+        for invocation in postponed_invocations:
+            debug('postponed invocation', invocation)
 
             pruned_raw_data: List[_RawStepData] = []
             incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
             how = invocation.options['how']
 
-            assert how is not None  # narrow type
-
             for raw_datum in raw_data:
-                if raw_datum['how'] == how:
+                if how is None:
+                    debug(f'  compatible step data (how-less invocation): {raw_datum}')
+
+                elif raw_datum['how'] == how:
                     debug(f'  compatible step data: {raw_datum}')
 
                 else:
