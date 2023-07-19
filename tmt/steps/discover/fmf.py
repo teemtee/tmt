@@ -34,6 +34,7 @@ def normalize_ref(
 
 @dataclasses.dataclass
 class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
+    # Basic options
     url: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-u', '--url'),
@@ -50,6 +51,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-p', '--path'),
         metavar='ROOT',
         help='Path to the metadata tree root.')
+
+    # Selecting tests
     test: List[str] = field(
         default_factory=list,
         option=('-t', '--test'),
@@ -71,6 +74,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         multiple=True,
         help='Include only tests matching the filter.',
         normalize=tmt.utils.normalize_string_list)
+    exclude: List[str] = field(
+        default_factory=list,
+        option=('-x', '--exclude'),
+        metavar='REGEXP',
+        multiple=True,
+        help="Exclude tests matching given regular expression.",
+        normalize=tmt.utils.normalize_string_list)
+
+    # Modified only
     modified_only: bool = field(
         default=False,
         option=('-m', '--modified-only'),
@@ -87,6 +99,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         metavar='REVISION',
         help='Branch, tag or commit specifying the reference git '
         'revision (if not provided, the default branch is used).')
+
+    # Dist git integration
     dist_git_init: bool = field(
         default=False,
         option='--dist-git-init',
@@ -110,25 +124,19 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help='What to copy from extracted sources, globbing is supported. '
         'Defaults to the top fmf root if it is present, otherwise top '
         'directory (shortcut "/").')
-    fmf_id: bool = field(
-        default=False,
-        option='--fmf-id',
-        is_flag=True,
-        help='Show fmf identifiers for tests discovered in plan.')
-    exclude: List[str] = field(
-        default_factory=list,
-        option=('-x', '--exclude'),
-        metavar='REGEXP',
-        multiple=True,
-        help="Exclude a regular expression from search result.",
-        normalize=tmt.utils.normalize_string_list)
 
+    # Special options
     sync_repo: bool = field(
         default=False,
         option='--sync-repo',
         is_flag=True,
         help='Force the sync of the whole git repo. By default, the '
         'repo is copied only if the used options require it.')
+    fmf_id: bool = field(
+        default=False,
+        option='--fmf-id',
+        is_flag=True,
+        help='Only print fmf identifiers of discovered tests to the standard output and exit.')
 
     # Legacy fields
     repository: Optional[str] = None
