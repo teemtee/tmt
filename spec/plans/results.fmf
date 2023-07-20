@@ -60,6 +60,29 @@ description: |
          name: client-1
          role: clients
 
+      # List of all before/after test checks and their results. Their fields
+      # have the same meaning as fields of the "parent" test result, but relate
+      # to the check itself.
+      checks:
+          # String, outcome of the test execution.
+        - result: "pass"|"fail"|"info"|"warn"|"error"
+
+          # String, optional comment to report with the result.
+          note: "Things were great."
+
+          # List of strings, paths to file logs.
+          log:
+            - path/to/check/log1
+            - path/to/check/log1
+              ...
+
+          # String, name of the checks. Corresponds to the name used in test
+          # metadata.
+          name: dummy
+
+          # String, the place in test workflow when the check was executed.
+          event: "before-test"|"after-test"
+
     The ``result`` key can have the following values:
 
     pass
@@ -87,9 +110,10 @@ description: |
     fail
         Test execution successfully finished and failed.
 
-    The ``name`` and ``result`` keys are required. Custom result files
-    may omit all other keys, although tmt plugins will strive to provide
-    as many keys as possible.
+    The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
+    and ``event`` keys are required for entries under ``check`` key. Custom
+    result files may omit all other keys, although tmt plugins will strive to
+    provide as many keys as possible.
 
     When importing the :ref:`custom results file </spec/tests/result>`, each
     test name referenced in the file by the ``name`` key would be prefixed by
@@ -179,6 +203,33 @@ example:
 
     - name: /test/failing
       result: fail
+
+  - |
+    # Example of test check results
+    - name: /test/passing
+      result: pass
+      serialnumber: 1
+      log:
+        - pass_log
+      starttime: "2023-03-10T09:44:14.439120+00:00"
+      endtime: "2023-03-10T09:44:24.242227+00:00"
+      duration: 00:00:09
+      note: good result
+      ids:
+        extra-nitrate: some-nitrate-id
+      guest:
+        name: default-0
+      checks:
+        - name: abrt
+          event: after-test
+          result: pass
+          log: []
+          note:
+        - name: kernel-panic
+          event: after-test
+          result: pass
+          log: []
+          note:
 
   - |
     # syntax: json

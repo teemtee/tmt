@@ -394,7 +394,28 @@ definitions:
       - fail
       - custom
 
+  result_note:
+    type: string
+
+  result_log:
+    type: array
+    items:
+      type: string
+
   timestamp:
     type: string
     # yamllint disable-line rule:line-length
     pattern: "^\\d{2,}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2}:\\d{2}$"
+
+  check:
+    type: object
+    properties:
+      name:
+        type: string
+
+      enable:
+        type: boolean
+
+    required:
+      - name
+      - enable

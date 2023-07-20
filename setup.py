@@ -41,6 +41,7 @@ __pkgs__ = [
     'tmt/steps/execute',
     'tmt/steps/report',
     'tmt/steps/finish',
+    'tmt/test_checks',
     ]
 __provides__ = ['tmt']
 __desc__ = 'Test Management Tool'

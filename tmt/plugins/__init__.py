@@ -65,7 +65,8 @@ def _discover_packages() -> List[Tuple[str, Path]]:
         ] + [
         ('tmt.plugins', Path('plugins')),
         ('tmt.export', Path('export')),
-        ('tmt.frameworks', Path('frameworks'))
+        ('tmt.frameworks', Path('frameworks')),
+        ('tmt.test_checks', Path('test_checks')),
         ]
 
 

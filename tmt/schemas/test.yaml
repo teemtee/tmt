@@ -51,6 +51,17 @@ properties:
       - beakerlib
       - shell
 
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#check
+  check:
+    anyOf:
+      - type: string
+      - $ref: "/schemas/common#/definitions/check"
+      - type: array
+        items:
+          anyOf:
+            - type: string
+            - $ref: "/schemas/common#/definitions/check"
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#id
   id:
     $ref: "/schemas/core#/definitions/id"

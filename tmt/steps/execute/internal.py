@@ -16,7 +16,7 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.utils
 from tmt.base import Test
-from tmt.result import Result, ResultOutcome
+from tmt.result import Result, ResultOutcome, TestCheckResult
 from tmt.steps.execute import (
     SCRIPTS,
     TEST_OUTPUT_FILENAME,
@@ -173,9 +173,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             test: Test,
             guest: Guest,
             extra_environment: Optional[EnvironmentType] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> List[TestCheckResult]:
         """ Run test on the guest """
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
+
+        test_check_results: List[TestCheckResult] = []
 
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
@@ -246,8 +248,18 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 level=level,
                 topic=topic)
 
+        # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
+        # to use some reusable decorator.
+        test_check_results += self.run_checks_before_test(
+            guest=guest,
+            test=test,
+            environment=environment,
+            logger=logger
+            )
+
         # Execute the test, save the output and return code
         starttime = datetime.datetime.now(datetime.timezone.utc)
+
         try:
             output = guest.execute(
                 remote_command,
@@ -271,9 +283,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
 
+        # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
+        # to use some reusable decorator.
+        test_check_results += self.run_checks_after_test(
+            guest=guest,
+            test=test,
+            environment=environment,
+            logger=logger
+            )
+
         test.starttime = self.format_timestamp(starttime)
         test.endtime = self.format_timestamp(endtime)
         test.real_duration = self.format_duration(endtime - starttime)
+
+        return test_check_results
 
     def _will_reboot(self, test: Test, guest: Guest) -> bool:
         """ True if reboot is requested """
@@ -375,7 +398,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             logger.verbose(
                 'test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-            self.execute(
+            test_check_results: List[TestCheckResult] = self.execute(
                 test=test,
                 guest=guest,
                 extra_environment=extra_environment,
@@ -386,6 +409,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 extend_options=test.test_framework.get_pull_options(self, test, guest, logger))
 
             results = self.extract_results(test, guest, logger)  # Produce list of results
+
+            for result in results:
+                result.checks = test_check_results
+
             assert test.real_duration is not None  # narrow type
             duration = click.style(test.real_duration, fg='cyan')
             shift = 1 if self.verbosity_level < 2 else 2

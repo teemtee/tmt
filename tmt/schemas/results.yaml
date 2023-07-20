@@ -40,7 +40,7 @@ items:
       $ref: "/schemas/common#/definitions/result_outcome"
 
     note:
-      type: string
+      $ref: "/schemas/common#/definitions/result_note"
 
     starttime:
       $ref: "/schemas/common#/definitions/timestamp"
@@ -59,9 +59,35 @@ items:
           type: string
 
     log:
+      $ref: "/schemas/common#/definitions/result_log"
+
+    checks:
       type: array
       items:
-        type: string
+        type: object
+        properties:
+          name:
+            type: string
+
+          event:
+            type: string
+            enum:
+              - "before-test"
+              - "after-test"
+
+          result:
+            $ref: "/schemas/common#/definitions/result_outcome"
+
+          note:
+            $ref: "/schemas/common#/definitions/result_note"
+
+          log:
+            $ref: "/schemas/common#/definitions/result_log"
+
+        required:
+          - name
+          - event
+          - result
 
   required:
     - name

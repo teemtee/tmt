@@ -7,6 +7,7 @@ import click
 import fmf
 
 import tmt.utils
+from tmt.test_checks import TestCheckEvent
 from tmt.utils import Path, field
 
 if TYPE_CHECKING:
@@ -78,31 +79,54 @@ def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
 
 
 @dataclasses.dataclass
-class Result(tmt.utils.SerializableContainer):
-    """ Describes what tmt knows about a single test result """
+class BaseResult(tmt.utils.SerializableContainer):
+    """ Describes what tmt knows about a result """
 
     name: str
-    serialnumber: int = 0
-    fmf_id: Optional['tmt.base.FmfId'] = field(
-        default=cast(Optional['tmt.base.FmfId'], None),
-        serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
-        unserialize=_unserialize_fmf_id
-        )
     result: ResultOutcome = field(
         default=ResultOutcome.PASS,
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
     note: Optional[str] = None
-    ids: Dict[str, Optional[str]] = field(default_factory=dict)
     log: List[Path] = field(
         default_factory=list,
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
+
+
+@dataclasses.dataclass
+class TestCheckResult(BaseResult):
+    """ Describes what tmt knows about a single test check result """
+
+    event: TestCheckEvent = field(
+        default=TestCheckEvent.BEFORE_TEST,
+        serialize=lambda event: event.value,
+        unserialize=TestCheckEvent.from_spec)
+
+
+@dataclasses.dataclass
+class Result(BaseResult):
+    """ Describes what tmt knows about a single test result """
+
+    serialnumber: int = 0
+    fmf_id: Optional['tmt.base.FmfId'] = field(
+        default=cast(Optional['tmt.base.FmfId'], None),
+        serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
+        unserialize=_unserialize_fmf_id
+        )
+    ids: Dict[str, Optional[str]] = field(default_factory=dict)
     guest: ResultGuestData = field(
         default_factory=ResultGuestData,
         serialize=lambda value: value.to_serialized(),  # type: ignore[attr-defined]
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
+        )
+
+    checks: List[TestCheckResult] = field(
+        default_factory=list,
+        serialize=lambda results: [result.to_serialized() for result in results],
+        unserialize=lambda serialized: [
+            TestCheckResult.from_serialized(check) for check in serialized]
         )
 
     starttime: Optional[str] = None

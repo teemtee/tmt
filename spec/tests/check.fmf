@@ -1,0 +1,37 @@
+summary: Additional test checks
+
+story:
+    As a tester I want to employ additional checks during and after
+    test execution. These checks would complement the actual test by
+    monitoring various aspects and side-effects of the test
+    execution.
+
+description: |
+    In some cases we want to run additional checks while running a
+    test. A nice example is a check for unexpected SELinux AVCs
+    produced during the test, this can point to additional issues
+    the user can run into. Another useful checks would be kernel
+    panic detection, core dump collection or collection of system
+    logs.
+
+    To control checks for a given test, use L1 ``check`` key.
+
+example:
+  - |
+    # Enable a single check, AVC denial detection
+    check: avc
+
+  - |
+    # Enable multiple checks
+    check
+      - avc
+      - kernel-panic
+
+  - |
+    # Enable multiple checks, one of them would be specified by left disabled
+    # temporarily
+    check
+      - avc
+      - kernel-panic
+      - name: test-inspector
+        enable: false
