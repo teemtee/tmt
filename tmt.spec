@@ -49,9 +49,6 @@ BuildRequires: python%{python3_pkgversion}-markdown
 BuildRequires: python%{python3_pkgversion}-junit_xml
 BuildRequires: python%{python3_pkgversion}-ruamel-yaml
 BuildRequires: python%{python3_pkgversion}-jinja2
-%if 0%{?rhel} >= 9 || 0%{?fedora}
-BuildRequires: python%{python3_pkgversion}-mrack-beaker >= 1.12.1
-%endif
 # Only needed for rhel-8 (it has python3.6)
 %if 0%{?rhel} == 8
 BuildRequires: python%{python3_pkgversion}-typing-extensions
