@@ -3083,6 +3083,7 @@ class Run(tmt.utils.Common):
         # Show run id / workdir path
         self.info(str(self.workdir), color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
+        self.debug('tmt command line', str(Command(*sys.argv)))
         # Attempt to load run data
         self.load()
         # Follow log instead of executing the run
