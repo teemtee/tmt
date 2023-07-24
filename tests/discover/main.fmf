@@ -1,3 +1,5 @@
+tier: 3
+
 /options:
     summary: Check that all supported options are present
     test: ./options.sh
@@ -11,7 +13,6 @@
     description:
         Make sure that all combinations of 'url', 'ref' and 'path'
         parameters work as expected.
-    tier: 2
     /fmf:
         test: ./references.sh
     /shell:

@@ -4,4 +4,4 @@ description:
     should fetch them properly
 require:
 - git-core
-tier: 2
+tier: 4

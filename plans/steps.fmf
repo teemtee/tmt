@@ -1,0 +1,31 @@
+summary: Verify functionality of individual steps
+description:
+    Test coverage focused on features related to execution of
+    individual steps.
+discover:
+    how: fmf
+    filter: "tier: 3"
+
+/discover:
+    discover+:
+        test: "^/tests/discover"
+
+/provision:
+    discover+:
+        test: "^/tests/provision"
+
+/prepare:
+    discover+:
+        test: "^/tests/prepare"
+
+/execute:
+    discover+:
+        test: "^/tests/execute"
+
+/report:
+    discover+:
+        test: "^/tests/report"
+
+/finish:
+    discover+:
+        test: "^/tests/finish"
