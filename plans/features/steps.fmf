@@ -17,6 +17,16 @@ discover:
 /prepare:
     discover+:
         test: "^/tests/prepare"
+    prepare+:
+      - name: Refresh dnf cache to speed up execution
+        how: shell
+        script: |
+            podman run -itd --name fresh-fedora fedora
+            podman exec fresh-fedora dnf makecache
+            podman commit fresh-fedora fedora
+            podman run -itd --name fresh-centos centos:stream8
+            podman exec fresh-centos dnf makecache
+            podman commit fresh-centos centos:stream8
 
 /execute:
     discover+:
