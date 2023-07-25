@@ -195,4 +195,4 @@ example:
 
 link:
   - verified-by: /tests/execute/result
-  - implemented-by: /tmp/result.py
+  - implemented-by: /tmt/result.py

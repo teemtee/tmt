@@ -63,4 +63,4 @@ example:
 link:
   - relates: https://github.com/teemtee/tmt/issues/975
   - verified-by: /tests/plan/import
-  - implemented-by: /tmp/base.py
+  - implemented-by: /tmt/base.py

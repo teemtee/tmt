@@ -7,3 +7,5 @@ example:
   - |
     tpm:
         version: "2.0"
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py

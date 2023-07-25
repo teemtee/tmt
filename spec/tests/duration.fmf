@@ -37,6 +37,6 @@ example:
 
 
 link:
-  - implemented-by: /tmt/base
+  - implemented-by: /tmt/base.py
   - verified-by: /tests/discover/duration
   - verified-by: /tests/execute/duration

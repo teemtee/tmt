@@ -12,3 +12,6 @@ example:
         distro:
           - rhel-8
           - rhel-9
+
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py

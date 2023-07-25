@@ -105,7 +105,7 @@ story: 'As a user I want to comfortably work with tests'
             from the web interface.
         link:
           - implemented-by: /tmt/export.py
-          - documented-by: /docs/questions#nitrate-migration
+          - documented-by: /docs/questions.rst#nitrate-migration
 
 /filter:
     story: 'Filter available tests'

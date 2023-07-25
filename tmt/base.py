@@ -650,6 +650,7 @@ class Core(
     def __init__(self,
                  *,
                  node: fmf.Tree,
+                 tree: Optional['Tree'] = None,
                  parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger,
                  **kwargs: Any) -> None:
@@ -657,6 +658,7 @@ class Core(
         super().__init__(node=node, logger=logger, parent=parent, name=node.name, **kwargs)
 
         self.node = node
+        self.tree = tree
 
         # Verify id is not inherited from parent.
         if self.id and not tmt.utils.is_key_origin(node, 'id'):
@@ -1054,6 +1056,7 @@ class Test(
             self,
             *,
             node: fmf.Tree,
+            tree: Optional['Tree'] = None,
             skip_validation: bool = False,
             raise_on_validation_error: bool = False,
             logger: tmt.log.Logger,
@@ -1084,6 +1087,7 @@ class Test(
 
         super().__init__(
             node=node,
+            tree=tree,
             logger=logger,
             skip_validation=skip_validation,
             raise_on_validation_error=raise_on_validation_error,
@@ -1442,6 +1446,7 @@ class Plan(
             self,
             *,
             node: fmf.Tree,
+            tree: Optional['Tree'] = None,
             run: Optional['Run'] = None,
             skip_validation: bool = False,
             raise_on_validation_error: bool = False,
@@ -1451,6 +1456,7 @@ class Plan(
         kwargs.setdefault('run', run)
         super().__init__(
             node=node,
+            tree=tree,
             logger=logger,
             parent=run,
             skip_validation=skip_validation,
@@ -2297,13 +2303,19 @@ class Story(
             self,
             *,
             node: fmf.Tree,
+            tree: Optional['Tree'] = None,
             skip_validation: bool = False,
             raise_on_validation_error: bool = False,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
         """ Initialize the story """
-        super().__init__(node=node, logger=logger, skip_validation=skip_validation,
-                         raise_on_validation_error=raise_on_validation_error, **kwargs)
+        super().__init__(
+            node=node,
+            tree=tree,
+            logger=logger,
+            skip_validation=skip_validation,
+            raise_on_validation_error=raise_on_validation_error,
+            **kwargs)
         self._update_metadata()
 
     # Override the parent implementation - it would try to call `Tree.storys()`...
@@ -2684,6 +2696,7 @@ class Tree(tmt.utils.Common):
                     selected_tests = [
                         Test(
                             node=test,
+                            tree=self,
                             logger=logger.descend(
                                 logger_name=test.get('name', None)
                                 )  # .apply_verbosity_options(**self._options),
@@ -2694,6 +2707,7 @@ class Tree(tmt.utils.Common):
                 selected_tests = [
                     Test(
                         node=test,
+                        tree=self,
                         logger=logger.descend(
                             logger_name=test.get('name', None)
                             )  # .apply_verbosity_options(**self._options),
@@ -2750,6 +2764,7 @@ class Tree(tmt.utils.Common):
         plans = [
             Plan(
                 node=plan,
+                tree=self,
                 logger=logger.descend(
                     logger_name=plan.get('name', None),
                     extra_shift=0
@@ -2817,7 +2832,7 @@ class Tree(tmt.utils.Common):
 
         # Build the list, convert to objects, sort and filter
         stories = [
-            Story(node=story, logger=logger.descend()) for story
+            Story(node=story, tree=self, logger=logger.descend()) for story
             in self.tree.prune(keys=keys, names=names, whole=whole, sources=sources)]
         return self._filters_conditions(
             sorted(stories, key=lambda story: story.order),

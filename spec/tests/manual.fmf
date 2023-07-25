@@ -77,4 +77,4 @@ example: |
   test: manual.md
 
 link:
-  - implemented-by: /tmp/base.py
+  - implemented-by: /tmt/base.py

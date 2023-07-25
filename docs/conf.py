@@ -266,6 +266,7 @@ tmt.plugins.explore_export_package(logger)
 
 # Generate stories
 tree = tmt.Tree(logger=logger, path=Path.cwd())
+story_template_filepath = Path('story.rst.j2')
 
 areas = {
     '/stories/docs': 'Documentation',
@@ -289,9 +290,16 @@ for area in areas:
         doc.write(f"{areas[area]}\n{'=' * len(areas[area])}\n")
         # Included stories
         for story in tree.stories(names=[area], whole=True):
-            if story.enabled:
-                doc.write(story.export(format='rst', include_title=story.name != area))
-                doc.write('\n\n')
+            if not story.enabled:
+                continue
+
+            rendered = story.export(
+                format='rst',
+                include_title=story.name != area,
+                template=story_template_filepath)
+
+            doc.write(rendered)
+            doc.write('\n\n')
 
 
 # Render list of lint checks

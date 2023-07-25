@@ -1,0 +1,194 @@
+{#
+    A Jinja2 template for rendering stories in tmt's own docs.
+
+    The template is based on a template bundled with tmt as an
+    example on template/rst export. The difference is how links
+    are rendered: the default template renders just the very basic
+    info about idea vs. implemented/verified, this template tries
+    to render links related to tmt docs and sources as usable HTTP
+    links.
+#}
+
+{% macro render_example(example) %}
+    {% set example = example.strip() %}
+    {% set syntax = example | regex_search('^# syntax: ([a-z]+)') %}
+    {% if syntax %}
+        {% set example = '\n'.join(example.splitlines()[1:]) %}
+        {% set syntax = syntax[0] %}
+    {% else %}
+        {% set syntax = 'yaml' %}
+    {% endif %}
+
+.. code-block:: {{ syntax }}
+
+   {{ example | indent(width=3, first=False, blank=False) | trim }}
+{% endmacro %}
+
+{#
+    Convert link relation into a nicely formatted string.
+
+    :param link: tmt.base.Link instance.
+#}
+{% macro printable_relation(link) %}{{ link.relation.replace('relates', 'relates-to').replace('-', ' ').capitalize() }}{% endmacro %}
+
+{#
+    Emit a remote link.
+
+    :param link: tmt.base.Link instance.
+    :param label: HTML link label.
+    :param url: HTML link URL.
+#}
+{% macro _emit_remote_link(link, label, url) %}
+* {{ printable_relation(link) }} `{{ label }} <{{ url }}>`_ {% if link.note %}({{ link.note }}){% endif %}
+{% endmacro %}
+
+{#
+    Emit a link leading to tmt's upstream repository.
+
+    :param link: tmt.base.Link instance.
+    :param pattern: used to extract link label from its target. It shall include
+        one capturing group, representing the label.
+    :param suffix: optional suffix to attach to link's target.
+#}
+{% macro emit_tmt_repo_link(link, pattern, suffix) %}
+{{ _emit_remote_link(link, link.target, "https://github.com/teemtee/tmt/tree/main/" + link.target.lstrip('/') + (suffix or '')) }}
+{% endmacro %}
+
+{#
+    Emit a link leading to an object in tmt's upstream repository - a test,
+    story, source file.
+
+    If we're able to identify the object in story's tree, we will use its
+    :py:meth:`Core.web_link` method to get the proper URL. Othwerise, a URL
+    would be constructed from link's target.
+
+    :param link: tmt.base.Link instance.
+    :param pattern: used to extract link label from its target. It shall include
+        one capturing group, representing the label.
+    :param suffix: optional suffix to attach to link's target.
+#}
+{% macro emit_tmt_object_link(link, suffix) %}
+{% if link.target.startswith('/tests') %}
+  {% set objects = STORY.tree.tests(names=["^" + link.target + "$"]) %}
+{% elif link.target.startswith('/plans') %}
+  {% set objects = STORY.tree.plans(names=["^" + link.target + "$"]) %}
+{% else %}
+  {% set objects = [] %}
+{% endif %}
+{% if objects %}
+  {% set url = objects[0].web_link() %}
+{% else %}
+  {% set url = "https://github.com/teemtee/tmt/tree/main/" + link.target.lstrip('/') + (suffix or default('')) %}
+{% endif %}
+{{ _emit_remote_link(link, link.target, url) }}
+{% endmacro %}
+
+{#
+    Emit a link leading to tmt's own docs/ directory.
+
+    :param link: tmt.base.Link instance.
+    :param pattern: used to extract page and fragment from link's target. It
+        shall include two capturing groups, representing the page and optional
+        fragment.
+#}
+{% macro emit_docs_link(link) %}
+{% set matched = link.target | match('^/docs/(.+?)\\.rst(?:#([a-z\-]+))?$') %}
+* {{ printable_relation(link) }} :ref:`{{ matched.group(1) }}{# {% if matched.group(2) %}:{{ matched.group(2).replace('-', ' ') }}{% endif %} #}`
+{% endmacro %}
+
+{% if INCLUDE_TITLE %}
+{% set depth = STORY.name | findall('/') | length - 1 %}
+{% set title_underline = '=~^:-><'[depth] %}
+{% if STORY.title and STORY.title != STORY.node.parent.get('title') %}
+    {% set title = STORY.title %}
+{% else %}
+    {% set title = STORY.name | regex_replace('.*/', '') %}
+{% endif %}
+
+.. _{{ STORY.name | strip }}:
+
+{{ title | strip }}
+{{ title_underline * title | length }}
+{% endif %}
+
+{# Summary, story and description #}
+{% if STORY.summary and STORY.summary != STORY.node.parent.get('summary') %}
+{{ STORY.summary | strip }}
+{% endif %}
+
+{% if STORY.story != STORY.node.parent.get('story') %}
+*{{ STORY.story | strip }}*
+{% endif %}
+
+{# Insert note about unimplemented feature (leaf nodes only) #}
+{% if not STORY.node.children and not STORY.implemented %}
+.. note:: This is a draft, the story is not implemented yet.
+{% endif %}
+
+{% if STORY.description and STORY.description != STORY.node.parent.get('description') %}
+{{ STORY.description }}
+{% endif %}
+
+{# Examples #}
+{% if STORY.example and STORY.example != STORY.node.parent.get('example') %}
+    {% for example in STORY.example %}
+        {% if example == STORY.example | first %}
+**Examples:**
+        {% endif %}
+
+{{ render_example(example) }}
+    {% endfor %}
+{% endif %}
+
+{# Status #}
+{% if not STORY.node.children %}
+    {% if STORY.status %}
+**Status:** {{ STORY.status | listed }}
+    {% else %}
+**Status:** idea
+    {% endif %}
+{% endif %}
+
+{# Links #}
+{% for link in STORY.link.get() %}
+{# Links pointing to docs #}
+{% if link.target | match('^/docs/') %}
+{{ emit_docs_link(link) }}
+
+{# Links pointing to step core implementation #}
+{% elif link.target | match('^/tmt/steps(?:/__init__.py)?$') %}
+{{ emit_tmt_repo_link(link, '/tmt/(steps)(?:/__init__.py)?') }}
+
+{# Links pointing to step implementations #}
+{% elif link.target | match('^/tmt/steps/([a-z_]+)(?:$|(?:/__init__.py))$') %}
+{{ emit_tmt_repo_link(link, '/tmt/steps/([a-z_]+)(?:$|(?:/__init__.py))') }}
+
+{# Links pointing to step plugins #}
+{% elif link.target | match('^/tmt/steps/([a-z_]+/[a-z_]+)\\.py$') %}
+{{ emit_tmt_repo_link(link, '/tmt/steps/([a-z_]+/[a-z_]+)\\.py') }}
+
+{# Links pointing to other tmt code #}
+{% elif link.target.startswith('/tmt') %}
+{{ emit_tmt_repo_link(link, '/(.*)') }}
+
+{# Links pointing to stories #}
+{% elif link.target | match('^/stories') %}
+* {{ printable_relation(link) }} :ref:`{{ link.target }}`
+
+{# Links pointing to tests #}
+{% elif link.target | match ('^/tests') %}
+{{ emit_tmt_object_link(link, '.fmf') }}
+
+{# Links pointing to plans #}
+{% elif link.target | match ('^/plans') %}
+{{ emit_tmt_object_link(link, '.fmf') }}
+
+{# Links pointing to websites #}
+{% elif link.target | match('^https?://') %}
+* {{ printable_relation(link) }} `{{ link.target}} <{{ link.target }}>`_
+
+{# Links pointing to anything else #}
+{% else %}
+* {{ printable_relation(link) }} ``{{ link.target }}``
+{% endif %}
+{% endfor %}

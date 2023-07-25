@@ -7,3 +7,6 @@ example:
       - type: eth
         vendor-name: ~ ^Broadcom
         device-name: ~ ^NetXtreme II BCM
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py
+    note: "``network.type`` only"

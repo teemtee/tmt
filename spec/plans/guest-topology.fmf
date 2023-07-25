@@ -111,4 +111,4 @@ example:
 
 link:
   - verified-by: /tests/multihost/complete
-  - implemented-by: /tmp/steps/__init__.py
+  - implemented-by: /tmt/steps/__init__.py

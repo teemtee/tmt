@@ -34,3 +34,4 @@ example:
           - "!= smep"
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+    note: "``cpu.flag`` not supported yet"
