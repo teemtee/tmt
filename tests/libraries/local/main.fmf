@@ -5,5 +5,5 @@ description:
     modifies it a bit, references it from a test and verifies the
     changed functionality by running the test in a container.
 require+: [tmt-provision-container]
-tier: 3
+tier: 4
 duration: 15m

@@ -3,7 +3,7 @@ require:
 - pre-commit
 - git-core
 - tmt
-tier: 3
+tier: 4
 adjust:
 -   when: distro is not defined
     enabled: false

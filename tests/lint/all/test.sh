@@ -43,7 +43,7 @@ rlJournalStart
         rlAssertGrep "fail T001 unknown key \"summarrry\" is used" $rlRun_LOG
         rlAssertGrep "pass T002 test script is defined" $rlRun_LOG
         rlAssertGrep "pass T003 directory path is absolute" $rlRun_LOG
-        rlAssertGrep "pass T004 test path '.*/tests/lint/data/tests/bad' does exist" $rlRun_LOG
+        rlAssertGrep "pass T004 test path '.*/tests/lint/all/data/tests/bad' does exist" $rlRun_LOG
         rlAssertGrep "skip T005 legacy relevancy not detected" $rlRun_LOG
         rlAssertGrep "skip T006 legacy 'coverage' field not detected" $rlRun_LOG
         rlAssertGrep "skip T007 not a manual test" $rlRun_LOG

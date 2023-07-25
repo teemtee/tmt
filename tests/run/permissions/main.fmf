@@ -4,7 +4,7 @@ description:
     even when it is recreated after deletion. Otherwise no other
     user than the one who created it is able to use tmt from that
     point.
-tier: "3"
+tier: "4"
 require+:
   - coreutils
 

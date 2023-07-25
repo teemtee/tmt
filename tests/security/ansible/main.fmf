@@ -1,4 +1,5 @@
 summary: Check whether an injected shell code is executed
+tier: 4
 
 # By default, we run under a container only
 environment:

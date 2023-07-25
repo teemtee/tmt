@@ -5,7 +5,7 @@ description:
     installation works as expected. These can take some time.
 discover:
     how: fmf
-    filter: 'tier: 3'
+    filter: 'tier: 4'
 adjust+:
 -   when: distro == centos-stream, rhel
     because: pre-commit is not available from epel, use pip instead
