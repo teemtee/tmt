@@ -10,10 +10,6 @@ discover:
     discover+:
         test: "^/tests/discover"
 
-/provision:
-    discover+:
-        test: "^/tests/provision"
-
 /prepare:
     discover+:
         test: "^/tests/prepare"
@@ -32,10 +28,6 @@ discover:
     discover+:
         test: "^/tests/execute"
 
-/report:
+/the-rest:
     discover+:
-        test: "^/tests/report"
-
-/finish:
-    discover+:
-        test: "^/tests/finish"
+        test: "^/tests/(provision|report|finish)"

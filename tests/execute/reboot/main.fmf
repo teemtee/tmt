@@ -1,4 +1,5 @@
 duration: 20m
+tier: 4
 
 /basic:
     summary: Verify that reboot during test works
