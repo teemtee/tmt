@@ -5142,6 +5142,10 @@ def render_template_file(
 
         return template.render(**variables).strip()
 
+    except FileNotFoundError as exc:
+        raise GeneralError(
+            f"Could not open template '{template_filepath}'.") from exc
+
     except jinja2.exceptions.TemplateSyntaxError as exc:
         raise GeneralError(
             f"Could not parse template '{template_filepath}' at line {exc.lineno}.") from exc

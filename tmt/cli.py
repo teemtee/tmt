@@ -773,7 +773,7 @@ _test_export_default = 'yaml'
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    help="Path to a template to use for rendering the export. Used with '--how=rst|template' only."
     )
 def tests_export(
         context: Context,
@@ -1004,7 +1004,7 @@ _plan_export_default = 'yaml'
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    help="Path to a template to use for rendering the export. Used with '--how=rst|template' only."
     )
 def plans_export(
         context: Context,
@@ -1260,7 +1260,7 @@ _story_export_default = 'yaml'
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=template' only."
+    help="Path to a template to use for rendering the export. Used with '--how=rst|template' only."
     )
 def stories_export(
         context: Context,
