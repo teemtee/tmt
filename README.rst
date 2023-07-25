@@ -387,7 +387,7 @@ TMT_FORCE_COLOR
 TMT_SHOW_TRACEBACK
     By default, when tmt reports an error, the corresponding
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
-    set to any string except ``0``, tracebac would be printed out.
+    set to any string except ``0``, traceback would be printed out.
 
 
 Step Variables

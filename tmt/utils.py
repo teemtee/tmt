@@ -1581,7 +1581,7 @@ def render_exception(exception: BaseException) -> List[str]:
             *render_run_exception(exception)
             ]
 
-    if 'TMT_SHOW_TRACEBACK' in os.environ and os.environ['TMT_SHOW_TRACEBACK'] != '0':
+    if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
         formatted_exc = traceback.format_exception(
             type(exception),
             exception,
