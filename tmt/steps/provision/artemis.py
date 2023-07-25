@@ -1,7 +1,7 @@
 import dataclasses
 import datetime
 import sys
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import requests
 
@@ -49,6 +49,16 @@ SUPPORTED_API_VERSIONS = (
     )
 
 
+# TODO: Artemis does not have any whoami endpoint which would report
+# available log types. But it would be nice.
+SUPPORTED_LOG_TYPES = [
+    'console:dump/blob',
+    'console:dump/url',
+    'console:interactive/url',
+    'sys.log:dump/url'
+    ]
+
+
 # The default Artemis API version - the most recent supported versions
 # should be perfectly fine.
 DEFAULT_API_VERSION = SUPPORTED_API_VERSIONS[0]
@@ -92,6 +102,20 @@ def _normalize_user_data(
 
     raise tmt.utils.NormalizationError(
         key_address, value, 'a dictionary or a list of KEY=VALUE strings')
+
+
+def _normalize_log_type(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> List[str]:
+    if isinstance(raw_value, str):
+        return [raw_value]
+
+    if isinstance(raw_value, (list, tuple)):
+        return [str(item) for item in raw_value]
+
+    raise tmt.utils.NormalizationError(
+        key_address, raw_value, 'a string or a list of strings')
 
 
 @dataclasses.dataclass
@@ -153,6 +177,14 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
         normalize=_normalize_user_data)
+
+    log_type: List[str] = field(
+        default_factory=list,
+        option='--log-type',
+        choices=SUPPORTED_LOG_TYPES,
+        help='Log types the guest must support.',
+        multiple=True,
+        normalize=_normalize_log_type)
 
     # Provided by Artemis response
     guestname: Optional[str] = None
@@ -367,6 +399,7 @@ class GuestArtemis(tmt.GuestSsh):
     keyname: str
     user_data: Dict[str, str]
     kickstart: Dict[str, str]
+    log_type: List[str]
 
     # Provided by Artemis response
     guestname: Optional[str]
@@ -436,7 +469,9 @@ class GuestArtemis(tmt.GuestSsh):
         # TODO: snapshots
         # TODO: spot instance
         # TODO: post-install script
-        # TODO: log types
+
+        if self.log_type:
+            data['log_types'] = list({tuple(log.split('/', 1)) for log in self.log_type})
 
         response = self.api.create('/guests/', data)
 
@@ -615,6 +650,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             image=self.get('image'),
             hardware=self.get('hardware'),
             kickstart=self.get('kickstart'),
+            log_type=self.get('log_type'),
             pool=self.get('pool'),
             priority_group=self.get('priority-group'),
             keyname=self.get('keyname'),

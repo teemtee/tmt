@@ -87,5 +87,22 @@ properties:
     type: integer
     minimum: 1
 
+  log-type:
+    anyOf:
+      - type: string
+        enum:
+          - "console:dump/blob"
+          - "console:dump/url"
+          - "console:interactive/url"
+          - "sys.log:dump/url"
+      - type: array
+        items:
+          type: string
+          enum:
+            - "console:dump/blob"
+            - "console:dump/url"
+            - "console:interactive/url"
+            - "sys.log:dump/url"
+
 required:
   - how
