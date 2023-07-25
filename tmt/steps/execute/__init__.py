@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import datetime
+import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
@@ -265,8 +266,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             or an empty list if the file does not exist.
         """
         report_result_path = self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / TMT_REPORT_RESULT_SCRIPT.created_file
+            / tmt.steps.execute.TEST_DATA
 
         # Nothing to do if there's no result file
         if not report_result_path.exists():
@@ -274,33 +274,73 @@ class ExecutePlugin(tmt.steps.Plugin):
             return []
 
         # Check the test result
-        self.debug(f"tmt-report-results file '{report_result_path} detected.")
+        self.debug(f"tmt-report-results file '{report_result_path}' detected.")
 
-        with open(report_result_path) as result_file:
-            result_list = [line for line in result_file.readlines() if "TESTRESULT" in line]
-        if not result_list:
-            raise tmt.utils.ExecuteError(
-                f"Test result not found in result file '{report_result_path}'.")
-        result = result_list[0].split("=")[1].strip()
+        if not report_result_path.glob(r'*restraint-result.*'):
+            self.debug(f"tmt-report-results file '{report_result_path}' is empty.")
+            return []
 
-        # Map the restraint result to the corresponding tmt value
-        actual_result = ResultOutcome.ERROR
-        note: Optional[str] = None
+        all_results = []
+        for f in sorted(report_result_path.glob(r'*restraint-result.*'), \
+        key=os.path.getmtime):
+            self.debug(f"tmt-report-results file '{f}' detected.")
+            with open(f) as result_file:
+                result_list = [line for line in result_file.readlines() if "TESTRESULT" in line]
+            with open(f) as result_file:
+                log_list = [line for line in result_file.readlines() if "OUTPUTFILE" in line]
+            with open(f) as result_file:
+                name_list = [line for line in result_file.readlines() if "TESTNAME" in line]
 
-        try:
-            actual_result = ResultOutcome(result.lower())
-        except ValueError:
-            if result == 'SKIP':
-                actual_result = ResultOutcome.INFO
+            if not result_list:
+                raise tmt.utils.ExecuteError(
+                    f"Test result not found in result file '{f}'.")
             else:
-                note = f"invalid test result '{result}' in result file"
+                if len(result_list[0].split("=")) == 2:
+                    result = result_list[0].split("=")[1].strip()
 
-        return [tmt.Result.from_test(
-            test=test,
-            result=actual_result,
-            log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
-            note=note,
-            guest=guest)]
+            if not log_list:
+                self.debug(f"Test log not found in result file '{f}'.")
+                logfile=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)]
+            else:
+                if len(log_list[0].split("=")) == 2:
+                    logname = log_list[0].split("=")[1].strip()
+                    if logname == '':
+                        logfile = \
+                            [self.data_path(test, guest, TEST_OUTPUT_FILENAME)]
+                    else:
+                        logfile = [self.data_path(test, guest, full=True) \
+                                / tmt.steps.execute.TEST_DATA / logname]
+
+            if not name_list:
+                self.debug(f"Test name not found in result file '{f}'.")
+                resultname = test.name
+            else:
+                if len(name_list[0].split("=")) == 2:
+                    resultname = name_list[0].split("=")[1].strip()
+                else:
+                    resultname = test.name
+
+            # Map the restraint result to the corresponding tmt value
+            actual_result = ResultOutcome.ERROR
+            note: Optional[str] = None
+
+            try:
+                actual_result = ResultOutcome(result.lower())
+            except ValueError:
+                if result == 'SKIP':
+                    actual_result = ResultOutcome.INFO
+                else:
+                    note = f"invalid test result '{result}' in result file"
+
+            all_results.append(tmt.Result.from_test(
+                test=test,
+                subresultname=resultname,
+                result=actual_result,
+                log=logfile,
+                note=note,
+                guest=guest))
+
+        return all_results
 
     def load_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """

@@ -1,13 +1,6 @@
 #!/bin/bash
 set -o errexit -o pipefail -o noclobber -o nounset
 
-server=
-outputFile=
-disablePlugin=
-port=
-message=
-help=False
-
 die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 
@@ -38,12 +31,41 @@ check_opt_args () {
     shift $((OPTIND-1)) # remove parsed options and args from $@ list
     position=$((OPTIND-1))
 }
-# Options wrapped in quotes to ensure -t/--message argument is parsed as a string phrase
-# rather than just the first string until a whitespace is encountered.
+
+write_report_file () {
+    #rm -f $REPORT_RESULT_OUTPUTFILE
+    if [ -e $REPORT_RESULT_CNT_FILE ]
+    then
+        local cnt=$(cat $REPORT_RESULT_CNT_FILE | wc -l)
+    else
+        local cnt=0
+    fi
+    echo "SERVER=$server" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "PORT=$port" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "MESSAGE=$message" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "OUTPUTFILE=$resultfile" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "DISABLEPLUGIN=$disablePlugin" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "TESTNAME=$TESTNAME" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "TESTNAME=$TESTNAME" >> $REPORT_RESULT_CNT_FILE
+    echo "TESTRESULT=$TESTRESULT" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+    echo "METRIC=$METRIC" >> $REPORT_RESULT_OUTPUTFILE.$cnt
+}
+
+server=
+outputFile=
+disablePlugin=
+port=
+message=
+help=False
+
+# Options wrapped in quotes to ensure -t/--message argument is parsed as a
+# string phrase rather than just the first string until a whitespace
+# is encountered.
 check_opt_args "$@"
 shift $position # remove parsed options and args from $@ list
 # Return help options when command issued with no options or arguments.
-if [ $# -lt 2 ] || [ $help == True ]; then
+if ([ $# -lt 2 ] || [ $help == True ]) && [[ $0 =~ "rstrnt-report-result" ]]
+then
     echo "Usage:"
     echo "  rstrnt-report-result [OPTION?] TASK_PATH RESULT [SCORE]"
     echo ""
@@ -62,12 +84,27 @@ if [ $# -lt 2 ] || [ $help == True ]; then
     echo "  -o, --outputfile=FILE           Log to upload with result, \$OUTPUTFILE is used by default"
     echo "  -p, --disable-plugin=PLUGIN     don't run plugin on server side"
     echo "  --no-plugins                    don't run any plugins on server side"
-    echo ""
+    exit 1
+fi
+if ([ $# -lt 2 ] || [ $help == True ]) && [[ $0 =~ "rhts-report-result" ]]
+then
+    echo "Usage: rhts-report-result TESTNAME TESTRESULT LOGFILE [METRIC]"
+    echo "where TESTNAME is the name of the test result being reported"
+    echo "      TESTRESULT should be PASS or FAIL"
+    echo "      LOGFILE is the name of the log file to be uploaded"
+    echo "      METRIC is an optional numeric metric (e.g. a performance figure)"
     exit 1
 fi
 TESTNAME=$1
 TESTRESULT=$2
 shift 2 #$((OPTIND-1)) # remove parsed options and args from $@ list
+
+# the third postion parameter of the rhts helper is log file
+if [[ $0 =~ "rhts-report-result" ]]
+then
+    outputFile=$1
+    shift 1
+fi
 METRIC=
 if [ $# -gt 0 ];then
     value1=$1
@@ -79,48 +116,16 @@ if [ $# -gt 0 ];then
     check_opt_args "$@"
 fi
 
-write_report_file () {
-    rm -f $REPORT_RESULT_OUTPUTFILE
-    echo "SERVER=$server" >> $REPORT_RESULT_OUTPUTFILE
-    echo "PORT=$port" >> $REPORT_RESULT_OUTPUTFILE
-    echo "MESSAGE=$message" >> $REPORT_RESULT_OUTPUTFILE
-    echo "OUTPUTFILE=$outputFile" >> $REPORT_RESULT_OUTPUTFILE
-    echo "DISABLEPLUGIN=$disablePlugin" >> $REPORT_RESULT_OUTPUTFILE
-    echo "TESTNAME=$TESTNAME" >> $REPORT_RESULT_OUTPUTFILE
-    echo "TESTRESULT=$TESTRESULT" >> $REPORT_RESULT_OUTPUTFILE
-    echo "METRIC=$METRIC" >> $REPORT_RESULT_OUTPUTFILE
-}
+if [ -n "$outputFile" ] && [ -f $outputFile ]
+then
+    resultfile=$(mktemp -u result.XXXXXX)
+    cp -f "$outputFile" "$TMT_TEST_DATA"/$resultfile
+else
+    resultfile=""
+fi
 
-
-declare -A RESULTS_HIERARCHY=( ["FAIL"]=4 ["WARN"]=3 ["PASS"]=2 ["SKIP"]=1 )
 # Create the output file in which to store the results.
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/restraint-result"
-if [ -e "$REPORT_RESULT_OUTPUTFILE" ]; then
-    # Check the existing output file.
-    # If new result is higher on the hierarchy
-    # or no result is contained in the file
-    # then overwrite the file with the new
-    # report contents.
-    fileResult=$(/usr/bin/grep "TESTRESULT" $REPORT_RESULT_OUTPUTFILE |
-    cut -d = -f 2)
-    if [ ! $fileResult ]; then
-        write_report_file;
-        exit 0
-    elif [ ! $TESTRESULT ]; then
-        exit 0
-    fi
-    fileHierarchy="${RESULTS_HIERARCHY[$fileResult]}"
-    # Compare the current result hierarchy against
-    # the hierarchy result retrieved from the file.
-    # Overwrite the file if the current hierachy is higher.
-    thisResultHierarchy="${RESULTS_HIERARCHY[$TESTRESULT]}"
-    if [ $thisResultHierarchy -gt $fileHierarchy ]; then
-        write_report_file
-        exit 0
-    fi
-
-else
-    # Create the output file with the report contents.
-    write_report_file
-    exit 0
-fi
+REPORT_RESULT_CNT_FILE="$TMT_TEST_DATA/restraint-result-cnt"
+write_report_file
+exit 0

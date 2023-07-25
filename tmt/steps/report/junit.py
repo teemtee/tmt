@@ -68,7 +68,7 @@ def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> JunitTestSuite:
             main_log = None
         case = junit_xml.TestCase(
             result.name,
-            classname=None,
+            classname=result.classname,
             elapsed_sec=duration_to_seconds(result.duration),
             stdout=main_log)
         # Map tmt OUTCOME to JUnit states
