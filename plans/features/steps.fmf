@@ -30,4 +30,4 @@ discover:
 
 /the-rest:
     discover+:
-        test: "^/tests/(provision|report|finish)"
+        test: "^/tests/(?!discover|prepare|execute)"
