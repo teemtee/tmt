@@ -37,5 +37,8 @@ properties:
   hardware:
     $ref: "/schemas/provision/hardware#/definitions/hardware"
 
+  role:
+    $ref: "/schemas/common#/definitions/role"
+
 required:
   - how
