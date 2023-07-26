@@ -2878,8 +2878,18 @@ def public_git_url(url: str) -> str:
     :returns: URL that is publicly accessible without authentication,
         or the original URL if no applicable conversion was found.
     """
+    return modify_git_url(url, PUBLIC_GIT_URL_PATTERNS)
 
-    for pattern, replacement in PUBLIC_GIT_URL_PATTERNS:
+
+def modify_git_url(url: str, patterns: List[Tuple[str, str]]) -> str:
+    """
+    Modify git url based on supplied patterns
+
+    :param url: an URL to modify
+    :param patterns: List of pattern to try in order
+    :returns: Modified url or the original one if no pattern was be applied.
+    """
+    for pattern, replacement in patterns:
         public_url = re.sub(pattern, replacement, url)
 
         # If we got different string, `pattern` matched the URL and
@@ -2889,6 +2899,25 @@ def public_git_url(url: str) -> str:
 
     # Otherwise return unmodified
     return url
+
+
+CLONABLE_GIT_URL_PATTERNS: List[Tuple[str, str]] = [
+    # git:// protocol is not possible for r/o access
+    # old: git://pkgs.devel.redhat.com/tests/bash
+    # new: https://pkgs.devel.redhat.com/git/tests/bash
+    (
+        r'git://(pkgs\.devel\.redhat\.com)/(.*)',
+        r'https://\1/git/\2'
+        ),
+    ]
+
+
+def clonable_git_url(url: str) -> str:
+    """
+    Modify the git repo url so it can be cloned
+    """
+    # TODO - inject oauth2 tokens for github/gitlab private repos
+    return modify_git_url(url, CLONABLE_GIT_URL_PATTERNS)
 
 
 def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
@@ -3885,7 +3914,8 @@ def git_clone(
         destination: Path,
         common: Common,
         env: Optional[EnvironmentType] = None,
-        shallow: bool = False
+        shallow: bool = False,
+        can_change: bool = True,
         ) -> CommandOutput:
     """
     Git clone url to destination, retry without shallow if necessary
@@ -3895,8 +3925,13 @@ def git_clone(
 
     Common instance is used to run the command for appropriate logging.
     Environment is updated by 'env' dictionary.
+
+    Url can be modified with hardcode rules unless can_change=False is set.
     """
     depth = ['--depth=1'] if shallow else []
+
+    if can_change:
+        url = clonable_git_url(url)
     try:
         return common.run(
             Command(
@@ -3908,8 +3943,8 @@ def git_clone(
         if not shallow:
             # Do not retry if shallow was not used
             raise
-        # Git server might not support shallow cloning, try again
-        return git_clone(url, destination, common, env, shallow=False)
+        # Git server might not support shallow cloning, try again (do not modify url)
+        return git_clone(url, destination, common, env, shallow=False, can_change=False)
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because

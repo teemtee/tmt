@@ -28,6 +28,7 @@ from tmt.utils import (
     WaitingIncompleteError,
     WaitingTimedOutError,
     _CommonBase,
+    clonable_git_url,
     duration_to_seconds,
     filter_paths,
     listify,
@@ -132,6 +133,15 @@ def test_public_git_url(original: str, expected: str) -> None:
     """ Verify url conversion """
 
     assert public_git_url(original) == expected
+
+
+def test_clonable_git_url():
+    assert clonable_git_url('git://pkgs.devel.redhat.com/tests/bash') \
+        == 'https://pkgs.devel.redhat.com/git/tests/bash'
+    assert clonable_git_url('git+ssh://pkgs.devel.redhat.com/tests/bash') \
+        == 'git+ssh://pkgs.devel.redhat.com/tests/bash'
+    assert clonable_git_url('git://example.com') \
+        == 'git://example.com'
 
 
 def test_listify():
