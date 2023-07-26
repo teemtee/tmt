@@ -2878,15 +2878,15 @@ def public_git_url(url: str) -> str:
     :returns: URL that is publicly accessible without authentication,
         or the original URL if no applicable conversion was found.
     """
-    return modify_git_url(url, PUBLIC_GIT_URL_PATTERNS)
+    return rewrite_git_url(url, PUBLIC_GIT_URL_PATTERNS)
 
 
-def modify_git_url(url: str, patterns: List[Tuple[str, str]]) -> str:
+def rewrite_git_url(url: str, patterns: List[Tuple[str, str]]) -> str:
     """
-    Modify git url based on supplied patterns
+    Rewrite git url based on supplied patterns
 
     :param url: an URL to modify
-    :param patterns: List of pattern to try in order
+    :param patterns: List of patterns to try in order
     :returns: Modified url or the original one if no pattern was be applied.
     """
     for pattern, replacement in patterns:
@@ -2917,7 +2917,7 @@ def clonable_git_url(url: str) -> str:
     Modify the git repo url so it can be cloned
     """
     # TODO - inject oauth2 tokens for github/gitlab private repos
-    return modify_git_url(url, CLONABLE_GIT_URL_PATTERNS)
+    return rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
 
 
 def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
