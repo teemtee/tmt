@@ -46,8 +46,8 @@ test: ./certificate.sh
         The optional key 'destination' can be used to store
         fetched content to a custom directory.
     require:
-      - url: https://github.com/beakerlib/openssl
-        name: /certgen
+      - url: https://github.com/beakerlib/example
+        name: /file
         destination: custom
         type: library
 

@@ -32,8 +32,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Destination"
-        rlRun -s "$tmt destination" 0
-        rlAssertGrep 'Cloning into.*custom/openssl' $rlRun_LOG
+        rlRun -s "tmt run --id $tmp/destination --keep discover -vvvddd plan --name destination"
+        rlAssertGrep "custom/example" $rlRun_LOG -s
+        rlAssertExists "$tmp/destination/plan/certificate/destination/discover/default-0/custom/example/file/lib.sh"
     rlPhaseEnd
 
     rlPhaseStartTest "Missing"
