@@ -28,6 +28,7 @@ from typing import (
 
 import click
 from click import echo
+from click.core import ParameterSource
 
 import tmt.export
 import tmt.log
@@ -43,7 +44,7 @@ from tmt.utils import (
     cached_property,
     field,
     flatten,
-)
+    )
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -562,6 +563,15 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             return raw_datum
 
+        def _patch_raw_datum(raw_datum: _RawStepData, incoming_raw_datum: _RawStepData) -> None:
+            for key, value in incoming_raw_datum.items():
+                if key in ('how', 'name'):
+                    continue
+
+                if invocation.option_sources.get(key) in (
+                        ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
+                    raw_datum[key] = value  # type: ignore[literal-required]
+
         for i, raw_datum in enumerate(raw_data):
             debug(f'raw step datum #{i}', str(raw_datum))
 
@@ -597,7 +607,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     if raw_datum['name'] != needle:
                         continue
 
-                    raw_datum.update(incoming_raw_datum)
+                    _patch_raw_datum(raw_datum, incoming_raw_datum)
+
                     break
 
                 else:
@@ -633,23 +644,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                         'how': how
                         }
 
-                for key, value in incoming_raw_datum.items():
-                    if key in ('how', 'name'):
-                        continue
-
-                    # TODO: this test is incorrect. It should not test for false-ish values,
-                    # but rather check whether the value returned by `self.opt()` is or is
-                    # not option default. And that's apparently not trivial with current CLI
-                    # handling.
-                    if value is None or value == [] or value == () or value is False:
-                        continue
-
-                    # TODO: this is not good, default values sneak in from options and overwrite
-                    # valid keys :(((
-                    raw_datum[key] = value  # type: ignore[literal-required]
-
-                    # tmt.utils.dataclass_normalize_field(
-                    #     self.data, f'{self.name}:{keyname}', keyname, value, self._logger)
+                _patch_raw_datum(raw_datum, incoming_raw_datum)
 
                 pruned_raw_data.append(raw_datum)
 

@@ -26,7 +26,7 @@ import tmt.steps
 import tmt.templates
 import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Path
+from tmt.utils import Path, cached_property
 
 if TYPE_CHECKING:
     import tmt.steps.discover
@@ -105,6 +105,13 @@ class CLIInvocation:
     @classmethod
     def from_context(cls, context: Context) -> 'CLIInvocation':
         return CLIInvocation(context=context, options=context.params)
+
+    @cached_property
+    def option_sources(self) -> Dict[str, click.core.ParameterSource]:
+        if not self.context:
+            return {}
+
+        return self.context._parameter_source
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

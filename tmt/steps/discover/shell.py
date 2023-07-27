@@ -183,9 +183,7 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         default=False,
         help="Keep the git metadata if a repo is synced to guest.")
 
-    # ignore[override]: expected, we do want to accept more specific
-    # type than the one declared in superclass.
-    def to_spec(self) -> tmt.steps._RawStepData:  # type: ignore[override]
+    def to_spec(self) -> tmt.steps._RawStepData:
         """ Convert to a form suitable for saving in a specification file """
 
         data = super().to_spec()
