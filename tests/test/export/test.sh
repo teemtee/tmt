@@ -45,7 +45,7 @@ rlJournalStart
             # different wording & quotes.
             rlAssertgrep "Error: Invalid value for \"-h\" / \"--how\": invalid choice: weird. (choose from dict, json, nitrate, polarion, yaml)" $rlRun_LOG
         else
-            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'json', 'nitrate', 'polarion', 'yaml'." $rlRun_LOG
+            rlAssertGrep "Error: Invalid value for '-h' / '--how': 'weird' is not one of 'dict', 'json', 'nitrate', 'polarion', 'template', 'yaml'." $rlRun_LOG
         fi
     rlPhaseEnd
 
