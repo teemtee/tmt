@@ -2919,11 +2919,13 @@ def inject_auth_git_url(url: str) -> str:
         # First one which matches url is taken into the account
         if name.startswith(INJECT_CREDENTIALS_URL_PREFIX) and re.search(value, url):
             unique_suffix = name[len(INJECT_CREDENTIALS_URL_PREFIX):]
+            variable_with_value = f'{INJECT_CREDENTIALS_VALUE_PREFIX}{unique_suffix}'
             # Get credentials value
             try:
-                creds = os.environ[f'{INJECT_CREDENTIALS_VALUE_PREFIX}{unique_suffix}']
+                creds = os.environ[variable_with_value]
             except KeyError:
-                raise GitUrlError(f'Missing variable with credentials for "{url}"')
+                raise GitUrlError(
+                    f'Missing "{variable_with_value}" variable with credentials for "{url}"')
             # Return original url if credentials is an empty value
             if not creds:
                 return url
