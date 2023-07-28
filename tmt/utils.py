@@ -2928,7 +2928,7 @@ def inject_auth_git_url(url: str) -> str:
             if not creds:
                 return url
             # Finally inject credentials into the url and return it
-            return re.sub(r'([^/]+://)([^/]+)', r'\1' + f'{creds}@' + r'\2', url)
+            return re.sub(r'([^/]+://)([^/]+)', rf'\1{creds}@\2', url)
     # Otherwise return unmodified
     return url
 

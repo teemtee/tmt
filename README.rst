@@ -389,8 +389,8 @@ TMT_SHOW_TRACEBACK
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
     set to any string except ``0``, traceback would be printed out.
 
-TMT_GIT_CREDENTIALS_URL\_, TMT_GIT_CREDENTIALS_VALUE\_
-    Prefixes of variable pairs used to provide credentials to clone git
+TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
+    Variable pairs used to provide credentials to clone git
     repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
 
     The ``TMT_GIT_CREDENTIALS_URL_<suffix>`` contains regexp to search against
