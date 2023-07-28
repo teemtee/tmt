@@ -64,6 +64,7 @@ class Topic(enum.Enum):
     KEY_NORMALIZATION = 'key-normalization'
     CLI_INVOCATIONS = 'cli-invocations'
     COMMAND_EVENTS = 'command-events'
+    ADJUST_DECISIONS = 'adjust-decisions'
 
 
 DEFAULT_TOPICS: Set[Topic] = set()

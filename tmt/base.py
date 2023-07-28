@@ -335,6 +335,46 @@ _RawAdjustRule = TypedDict(
     )
 
 
+def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
+    """
+    Create a custom callback for fmf's adjust.
+
+    Given the ``adjust`` rules are applied on many places, for
+    proper logging they need their own specific logger. Create
+    a callback closure with the given logger.
+    """
+
+    def callback(
+            node: fmf.Tree,
+            rule: _RawAdjustRule,
+            applied: Optional[bool]) -> None:
+        if applied is None:
+            logger.verbose(
+                f"Adjust rule skipped on '{node.name}'",
+                tmt.utils.format_value(rule, key_color='cyan'),
+                color='blue',
+                level=3,
+                topic=tmt.log.Topic.ADJUST_DECISIONS)
+
+        elif applied is False:
+            logger.verbose(
+                f"Adjust rule not applied to '{node.name}'",
+                tmt.utils.format_value(rule, key_color='cyan'),
+                color='red',
+                level=3,
+                topic=tmt.log.Topic.ADJUST_DECISIONS)
+
+        else:
+            logger.verbose(
+                f"Adjust rule applied to '{node.name}'",
+                tmt.utils.format_value(rule, key_color='cyan'),
+                color='green',
+                level=3,
+                topic=tmt.log.Topic.ADJUST_DECISIONS)
+
+    return callback
+
+
 # Types describing content accepted by various require-like keys: strings, fmf ids,
 # paths, or lists mixing various types.
 #
@@ -2628,7 +2668,10 @@ class Tree(tmt.utils.Common):
             except fmf.utils.FileError as error:
                 raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}")
             # Adjust metadata for current fmf context
-            self._tree.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
+            self._tree.adjust(
+                fmf.context.Context(**self._fmf_context),
+                case_sensitive=False,
+                decision_callback=create_adjust_callback(self._logger))
         return self._tree
 
     @tree.setter
@@ -3931,7 +3974,10 @@ def resolve_dynamic_ref(
     reference_tree = fmf.Tree(data=data)
     if not plan:
         raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
-    reference_tree.adjust(fmf.context.Context(**plan._fmf_context), case_sensitive=False)
+    reference_tree.adjust(
+        fmf.context.Context(**plan._fmf_context),
+        case_sensitive=False,
+        decision_callback=create_adjust_callback(logger))
     # Also temporarily build a plan so that env and context variables are expanded
     Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
     ref = reference_tree.get("ref")
