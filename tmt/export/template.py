@@ -6,6 +6,9 @@ import tmt.utils
 from tmt.utils import Path
 
 
+@tmt.base.FmfId.provides_export('template')
+@tmt.base.Test.provides_export('template')
+@tmt.base.Plan.provides_export('template')
 @tmt.base.Story.provides_export('template')
 class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
