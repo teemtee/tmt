@@ -389,6 +389,29 @@ TMT_SHOW_TRACEBACK
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
     set to any string except ``0``, traceback would be printed out.
 
+TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
+    Variable pairs used to provide credentials to clone git
+    repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
+
+    The ``TMT_GIT_CREDENTIALS_URL_<suffix>`` contains regexp to search against
+    url to clone. For first successful search the content of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
+    variable is used as the credential value. When it is set to an empty string, unmodified url is used.
+
+    Example usage:
+
+    `GitLab`__ credentials need to contain nonempty username followed by colon and token value::
+
+        TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
+        TMT_GIT_CREDENTIALS_VALUE_lab='foo:secrettoken'
+
+    `GitHub`__ credentials contain just the token value::
+
+        TMT_GIT_CREDENTIALS_URL_hub='github.com/teemtee'
+        TMT_GIT_CREDENTIALS_VALUE_hub='secrettoken'
+
+__ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
+__ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
+.. versionadded:: 1.26
 
 Step Variables
 --------------

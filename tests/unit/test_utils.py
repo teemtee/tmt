@@ -31,6 +31,7 @@ from tmt.utils import (
     clonable_git_url,
     duration_to_seconds,
     filter_paths,
+    inject_auth_git_url,
     listify,
     public_git_url,
     validate_git_status,
@@ -142,6 +143,44 @@ def test_clonable_git_url():
         == 'git+ssh://pkgs.devel.redhat.com/tests/bash'
     assert clonable_git_url('git://example.com') \
         == 'git://example.com'
+
+
+def test_inject_auth_git_url(monkeypatch) -> None:
+    """ Verify injecting tokens """
+
+    # empty environment
+    monkeypatch.setattr('os.environ', {})
+    assert inject_auth_git_url('input_text') == 'input_text'
+
+    suffix = '_glab'
+    # https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
+    # username can be anything but cannot be an empty string
+    monkeypatch.setattr('os.environ', {
+        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
+        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
+        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+        })
+    assert inject_auth_git_url('https://gitlab.com/namespace/project') \
+        == 'https://foo:abcdefgh@gitlab.com/namespace/project'
+
+    suffix = '_ghub'
+    # https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
+    # just token or username is used (value before @)
+    monkeypatch.setattr('os.environ', {
+        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
+        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
+        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
+        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
+        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
+        })
+    assert inject_auth_git_url('https://github.com/namespace/project') \
+        == 'https://abcdefgh@github.com/namespace/project'
+    assert inject_auth_git_url('https://github.com/other_namespace/project') \
+        == 'https://xyzabcde@github.com/other_namespace/project'
+
+    with pytest.raises(tmt.utils.GitUrlError):
+        inject_auth_git_url('https://example.com/broken/something')
 
 
 def test_listify():

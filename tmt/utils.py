@@ -2901,6 +2901,40 @@ def rewrite_git_url(url: str, patterns: List[Tuple[str, str]]) -> str:
     return url
 
 
+# Environment variable prefixes
+INJECT_CREDENTIALS_URL_PREFIX = 'TMT_GIT_CREDENTIALS_URL_'
+INJECT_CREDENTIALS_VALUE_PREFIX = 'TMT_GIT_CREDENTIALS_VALUE_'
+
+
+def inject_auth_git_url(url: str) -> str:
+    """
+    Inject username or token to the git url
+
+    :param url: original git repo url
+    :returns: URL with injected authentification based on pattern from the environment
+        or unmodified URL
+    """
+    # Try all environement variables sorted by their name
+    for name, value in sorted(os.environ.items(), key=lambda x: x[0]):
+        # First one which matches url is taken into the account
+        if name.startswith(INJECT_CREDENTIALS_URL_PREFIX) and re.search(value, url):
+            unique_suffix = name[len(INJECT_CREDENTIALS_URL_PREFIX):]
+            variable_with_value = f'{INJECT_CREDENTIALS_VALUE_PREFIX}{unique_suffix}'
+            # Get credentials value
+            try:
+                creds = os.environ[variable_with_value]
+            except KeyError:
+                raise GitUrlError(
+                    f'Missing "{variable_with_value}" variable with credentials for "{url}"')
+            # Return original url if credentials is an empty value
+            if not creds:
+                return url
+            # Finally inject credentials into the url and return it
+            return re.sub(r'([^/]+://)([^/]+)', rf'\1{creds}@\2', url)
+    # Otherwise return unmodified
+    return url
+
+
 CLONABLE_GIT_URL_PATTERNS: List[Tuple[str, str]] = [
     # git:// protocol is not possible for r/o access
     # old: git://pkgs.devel.redhat.com/tests/bash
@@ -2916,8 +2950,8 @@ def clonable_git_url(url: str) -> str:
     """
     Modify the git repo url so it can be cloned
     """
-    # TODO - inject oauth2 tokens for github/gitlab private repos
-    return rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
+    url = rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
+    return inject_auth_git_url(url)
 
 
 def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
