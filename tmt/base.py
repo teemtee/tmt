@@ -1815,8 +1815,12 @@ class Plan(
             echo(tmt.utils.format(
                 'environment', self.environment, key_color='blue'))
         if self._fmf_context:
-            echo(tmt.utils.format(
-                'context', self._fmf_context, key_color='blue'))
+            echo(
+                tmt.utils.format(
+                    'context',
+                    self._fmf_context,
+                    key_color='blue',
+                    list_format=tmt.utils.ListFormat.SHORT))
 
         # The rest
         echo(tmt.utils.format('enabled', self.enabled, key_color='cyan'))
@@ -2445,6 +2449,9 @@ class Story(
             if key == 'priority' and value is not None:
                 value = cast(StoryPriority, value).value
             if key == 'order' and value == DEFAULT_ORDER:
+                continue
+            if key == 'example' and value:
+                echo(tmt.utils.format(key, value, wrap=False))
                 continue
             if value is not None and value != []:
                 wrap: tmt.utils.FormatWrap = False if key == 'example' else 'auto'

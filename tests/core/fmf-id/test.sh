@@ -23,9 +23,9 @@ rlJournalStart
 
         rlRun -s "tmt test -vvvv show /test-with-valid-ref"
         rlAssertNotGrep "warn:" $rlRun_LOG
-        rlAssertGrep "{'ref': 'branch-or-tag-ref', 'type': 'library'}" $rlRun_LOG
-        rlAssertGrep "{'ref': '8deadbeaf8', 'type': 'library'}" $rlRun_LOG
-        rlAssertGrep "some-package" $rlRun_LOG
+        rlRun "grep -Pzo \"(?s)- ref: branch-or-tag-ref.*?\\s*type: library\" $rlRun_LOG > /dev/null"
+        rlRun "grep -Pzo \"(?s)- ref: 8deadbeaf8.*?\\s*type: library\" $rlRun_LOG > /dev/null"
+        rlAssertGrep "- some-package" $rlRun_LOG
 
         rlRun -s "tmt test -vvvv show /test-with-invalid-ref" 2
         rlAssertGrep "warn: /test-with-invalid-ref:require .* is not valid under any of the given schemas" $rlRun_LOG

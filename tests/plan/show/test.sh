@@ -135,7 +135,7 @@ rlJournalStart
 
         # Extra
         rlAssertGrep "environment KEY: VAL" $rlRun_LOG
-        rlAssertGrep "context distro: \['fedora'\]" $rlRun_LOG
+        rlAssertGrep "context distro: fedora" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "List all plans by default"

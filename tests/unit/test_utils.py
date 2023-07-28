@@ -7,7 +7,7 @@ import time
 import unittest
 import unittest.mock
 from datetime import timedelta
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import fmf
 import pytest
@@ -1205,3 +1205,309 @@ def test_locate_key_origin_empty_defined(id_tree_empty: fmf.Tree) -> None:
     node = id_tree_empty.find('/some/structure')
 
     assert tmt.utils.locate_key_origin(node, 'id') is None
+
+
+_test_format_value_complex_structure = {
+    'foo': [
+        'bar',
+        'baz',
+        {
+            'qux': 'fred',
+            'xyyzy': [1, False, 17.19]
+            },
+        'corge'
+        ],
+    'nested1': {
+        'n2': {
+            'nest3': True
+            },
+        'n4': True,
+        'n5': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',  # noqa: E501
+        },
+    'some boolean': True,
+    'empty list': [],
+    'nested empty list': [1, False, [], 17.19],
+    'single item list': [False],
+    'another single item list': ['foo\nbar'],
+    }
+
+_test_format_value_big_list = list(range(1, 20))
+
+
+@pytest.mark.parametrize(
+    ('value', 'window_size', 'expected'),
+    [
+        # NOTE: each test case is prefixed with a comment matching its id
+        # in the `ids` list given to `parametrize` below. Keep it that way
+        # for easier search.
+
+        # true
+        (True, None, 'true'),
+        # false
+        (False, None, 'false'),
+        # list listed
+        (
+            [1, 2.34, 'foo', False],
+            None,
+            """
+            1
+            2.34
+            foo
+            false
+            """
+            ),
+        # list within huge window
+        (
+            [1, 2.34, 'foo', False],
+            120,
+            "'1', '2.34', 'foo' and 'false'"
+            ),
+        # list within small window
+        (
+            [1, 2.34, 'foo', False],
+            10,
+            """
+            1
+            2.34
+            foo
+            false
+            """
+            ),
+        # dict
+        (
+            {'foo': 1, 'bar': 2.34, 'baz': 'qux', 'corge': False},
+            None,
+            """
+            foo: 1
+            bar: 2.34
+            baz: qux
+            corge: false
+            """
+            ),
+        # string
+        (
+            'foo',
+            None,
+            'foo'
+            ),
+        # multiline string
+        (
+            'foo\nbar\nbaz\n',
+            None,
+            """
+            foo
+            bar
+            baz
+            """
+            ),
+        # long string
+        (
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',  # noqa: E501
+            None,
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',  # noqa: E501
+        ),
+        # long string without a window
+        (
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',  # noqa: E501
+            72,
+            """
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+            velit esse cillum dolore eu fugiat nulla pariatur.
+            """
+        ),
+        # complex structure
+        (
+            _test_format_value_complex_structure,
+            None,
+            """
+            foo:
+              - bar
+              - baz
+              - qux: fred
+                xyyzy:
+                  - 1
+                  - false
+                  - 17.19
+              - corge
+            nested1:
+                n2:
+                    nest3: true
+                n4: true
+                n5: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            some boolean: true
+            empty list:
+            nested empty list:
+              - 1
+              - false
+              - []
+              - 17.19
+            single item list: false
+            another single item list:
+              - foo
+                bar
+            """  # noqa: E501
+            ),
+        # complex structure within small window
+        (
+            _test_format_value_complex_structure,
+            30,
+            """
+            foo:
+              - bar
+              - baz
+              - qux: fred
+                xyyzy:
+                  - 1
+                  - false
+                  - 17.19
+              - corge
+            nested1:
+                n2:
+                    nest3: true
+                n4: true
+                n5:
+                    Lorem ipsum dolor
+                    sit amet,
+                    consectetur
+                    adipiscing elit,
+                    sed do eiusmod
+                    tempor incididunt
+                    ut labore et
+                    dolore magna
+                    aliqua.
+            some boolean: true
+            empty list:
+            nested empty list:
+              - 1
+              - false
+              - []
+              - 17.19
+            single item list: false
+            another single item list:
+              - foo
+                bar
+            """
+            ),
+        # complex structure within huge window
+        (
+            _test_format_value_complex_structure,
+            120,
+            """
+            foo:
+              - bar
+              - baz
+              - qux: fred
+                xyyzy: '1', 'false' and '17.19'
+              - corge
+            nested1:
+                n2:
+                    nest3: true
+                n4: true
+                n5:
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                    dolore magna aliqua.
+            some boolean: true
+            empty list:
+            nested empty list: '1', 'false', [] and '17.19'
+            single item list: false
+            another single item list:
+              - foo
+                bar
+            """  # noqa: E501
+            ),
+        # long list
+        (
+            _test_format_value_big_list,
+            None,
+            """
+            1
+            2
+            3
+            4
+            5
+            6
+            7
+            8
+            9
+            10
+            11
+            12
+            13
+            14
+            15
+            16
+            17
+            18
+            19
+            """
+            ),
+        # long list within small window
+        (
+            _test_format_value_big_list,
+            10,
+            """
+            1
+            2
+            3
+            4
+            5
+            6
+            7
+            8
+            9
+            10
+            11
+            12
+            13
+            14
+            15
+            16
+            17
+            18
+            19
+            """
+            ),
+        # long list within huge window
+        (
+            _test_format_value_big_list,
+            120,
+            """
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18' and '19'
+            """  # noqa: E501
+            )
+        ],
+    ids=(
+        'true',
+        'false',
+        'list listed',
+        'list within huge window',
+        'list within small window',
+        'dict',
+        'string',
+        'long string',
+        'long string without a window',
+        'multiline string',
+        'complex structure',
+        'complex structure within small window',
+        'complex structure within huge window',
+        'long list',
+        'long list within small window',
+        'long list within huge window',
+        )
+    )
+def test_format_value(value: Any, window_size: Optional[int], expected: str) -> None:
+    expected = textwrap.dedent(expected).strip('\n')
+    actual = tmt.utils.format_value(value, window_size=window_size)
+
+    print('actual vvvvv')
+    print(actual)
+    print('^^^^^')
+
+    print('expected vvvvv')
+    print(expected)
+    print('^^^^^')
+
+    assert actual == expected

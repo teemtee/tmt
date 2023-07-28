@@ -120,7 +120,7 @@ rlJournalStart
         rlRun -s "$import --type all"
         rlAssertGrep "tag: Multihost Sanity KernelTier1" $rlRun_LOG
         rlRun -s 'tmt test show'
-        rlAssertGrep "tag Multihost, Sanity and KernelTier1" $rlRun_LOG
+        rlAssertGrep "tag 'Multihost', 'Sanity' and 'KernelTier1'" $rlRun_LOG
         rlRun -s "$import --type KernelTier1"
         rlAssertGrep 'tag: KernelTier1$' $rlRun_LOG
         rlRun -s 'tmt test show'

@@ -4,6 +4,7 @@ import contextlib
 import copy
 import dataclasses
 import datetime
+import enum
 import functools
 import io
 import json
@@ -50,6 +51,7 @@ from typing import (
 
 import click
 import fmf
+import fmf.utils
 import jinja2
 import jinja2.exceptions
 import jsonschema
@@ -2836,68 +2838,484 @@ def verdict(
     return decision
 
 
+#
+# Value formatting a.k.a. pretty-print
+#
+# (And `pprint` is ugly and `dict_to_yaml` too YAML-ish...)
+#
+# NOTE: there are comments prefixed by "UX": these try to document
+# various tweaks and "exceptions" we need to employ to produce nicely
+# readable output for common inputs and corner cases.
+#
+
 FormatWrap = Literal[True, False, 'auto']
+
+
+class ListFormat(enum.Enum):
+    """ How to format lists """
+
+    #: Use :py:func:`fmf.utils.listed`.
+    LISTED = enum.auto()
+
+    #: Produce comma-separated list.
+    SHORT = enum.auto()
+
+    #: One list item per line.
+    LONG = enum.auto()
+
+
+#: How dictionary key/value pairs are indented in their container.
+_FORMAT_VALUE_DICT_ENTRY_INDENT = ' ' * INDENT
+#: How list items are indented below their container.
+_FORMAT_VALUE_LIST_ENTRY_INDENT = '  - '
+
+
+def _format_bool(
+        value: bool,
+        window_size: Optional[int],
+        key_color: Optional[str],
+        list_format: ListFormat,
+        wrap: FormatWrap) -> Generator[str, None, None]:
+    """ Format a ``bool`` value """
+
+    yield 'true' if value else 'false'
+
+
+def _format_list(
+        value: List[Any],
+        window_size: Optional[int],
+        key_color: Optional[str],
+        list_format: ListFormat,
+        wrap: FormatWrap) -> Generator[str, None, None]:
+    """ Format a list """
+
+    # UX: if the list is empty, don't bother checking `listed()` or counting
+    # spaces.
+    if not value:
+        yield '[]'
+        return
+
+    # UX: if there's just a single item, it's also a trivial case.
+    if len(value) == 1:
+        yield '\n'.join(_format_value(
+            value[0],
+            window_size=window_size,
+            key_color=key_color,
+            wrap=wrap))
+        return
+
+    # Render each item in the list. We get a list of possibly multiline strings,
+    # one for each item in `value`.
+    formatted_items = [
+        '\n'.join(_format_value(item, window_size=window_size, key_color=key_color, wrap=wrap))
+        for item in value
+        ]
+
+    # There are nice ways how to format a string, but those can be tried out
+    # only when:
+    #
+    # * there is no multiline item,
+    # * there is no item containing a space,
+    # * the window size has been set.
+    #
+    # If one of these conditions is violated, we fall back to one-item-per-line
+    # rendering.
+    has_multiline = any('\n' in item for item in formatted_items)
+    has_space = any(' ' in item for item in formatted_items)
+
+    if not has_multiline and not has_space and window_size:
+        if list_format is ListFormat.LISTED:
+            listed_value: str = fmf.utils.listed(formatted_items, quote="'")
+
+            # UX: an empty list, as an item, would be rendered as "[]". Thanks
+            # to `quote="'"`, it would be wrapped with quotes, but that looks
+            # pretty ugly: foo: 'bar', 'baz' and '[]'. Drop the quotes to make
+            # the output a bit nicer.
+            listed_value = listed_value.replace("'[]'", '[]')
+
+            if len(listed_value) < window_size:
+                yield listed_value
+                return
+
+        elif list_format is ListFormat.SHORT:
+            short_value = ', '.join(formatted_items)
+
+            if len(short_value) < window_size:
+                yield short_value
+                return
+
+    yield from formatted_items
+
+
+def _format_str(
+        value: str,
+        window_size: Optional[int],
+        key_color: Optional[str],
+        list_format: ListFormat,
+        wrap: FormatWrap) -> Generator[str, None, None]:
+    """ Format a string """
+
+    # UX: if the window size is known, rewrap lines to fit in. Otherwise, put
+    # each line on its own, well, line.
+    # Work with *paragraphs* - lines within a paragraph may get reformatted to
+    # fit the line, but we should preserve empty lines between paragraps as
+    # much as possible.
+    is_multiline = bool('\n' in value)
+
+    if window_size:
+        for paragraph in value.rstrip().split('\n\n'):
+            stripped_paragraph = paragraph.rstrip()
+
+            if not stripped_paragraph:
+                yield ''
+
+            elif wrap is False:
+                yield stripped_paragraph
+
+                if is_multiline:
+                    yield ''
+
+            else:
+                if all(len(line) <= window_size for line in stripped_paragraph.splitlines()):
+                    yield from stripped_paragraph.splitlines()
+
+                else:
+                    yield from textwrap.wrap(stripped_paragraph, width=window_size)
+
+                if is_multiline:
+                    yield ''
+
+    else:
+        if not value.rstrip():
+            yield ''
+
+        else:
+            yield from value.rstrip().split('\n')
+
+
+def _format_dict(
+        value: Dict[Any, Any],
+        window_size: Optional[int],
+        key_color: Optional[str],
+        list_format: ListFormat,
+        wrap: FormatWrap) -> Generator[str, None, None]:
+    """ Format a dictionary """
+
+    for k, v in value.items():
+        # First, render the key.
+        k_formatted = click.style(k, fg=key_color) if key_color else k
+        k_size = len(k) + 2
+
+        # Then, render the value. If the window size is known, the value must be
+        # propagated, but it must be updated to not include the space consumed by
+        # key.
+        if window_size:
+            v_formatted = _format_value(
+                v,
+                window_size=window_size - k_size,
+                key_color=key_color,
+                wrap=wrap)
+        else:
+            v_formatted = _format_value(
+                v,
+                key_color=key_color,
+                wrap=wrap)
+
+        # Now attach key and value in a nice and respectful way.
+        if len(v_formatted) == 0:
+            # This should never happen, even an empty list should be
+            # formatted as a list with one item.
+            raise AssertionError
+
+        def _emit_list_entries(lines: List[str]) -> Generator[str, None, None]:
+            for i, line in enumerate(lines):
+                if i == 0:
+                    yield f'{_FORMAT_VALUE_LIST_ENTRY_INDENT}{line}'
+
+                else:
+                    yield f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}'
+
+        def _emit_dict_entry(lines: List[str]) -> Generator[str, None, None]:
+            yield from (f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}' for line in lines)
+
+        # UX: special handling of containers with just a single item, i.e. the
+        # key value fits into a single line of text.
+        if len(v_formatted) == 1:
+            # UX: special tweaks when `v` is a dictionary
+            if isinstance(v, dict):
+                # UX: put the `v` on its own line. This way, we get `k` followed
+                # by a nested and indented key/value pair.
+                #
+                # foo:
+                #     bar: ...
+                if v:
+                    yield f'{k_formatted}:'
+                    yield from _emit_dict_entry(v_formatted)
+
+                # UX: an empty dictionary shall lead to just a key being emitted
+                #
+                # foo:<nothing>
+                else:
+                    yield f'{k_formatted}:'
+
+            # UX: special tweaks when `v` is a list
+            elif isinstance(v, list):
+                # UX: put both key and value on the same line. We have a list
+                # with a single item, trivial case.
+                if v:
+                    lines = v_formatted[0].splitlines()
+
+                    # UX: If there is just a single line, put key and value on the
+                    # same line.
+                    if len(lines) <= 1:
+                        yield f'{k_formatted}: {lines[0]}'
+
+                    # UX: Otherwise, put lines under the key, and mark the first
+                    # line with the list-entry prefix to make it clear the key
+                    # holds a list. Remaining lines are indented as well.
+                    else:
+                        yield f'{k_formatted}:'
+                        yield from _emit_list_entries(lines)
+
+                # UX: an empty list, just like an empty dictionary, shall lead to
+                # just a key being emitted
+                #
+                # foo:<nothing>
+                else:
+                    yield f'{k_formatted}:'
+
+            # UX: every other type
+            else:
+                lines = v_formatted[0].splitlines()
+
+                # UX: If there is just a single line, put key and value on the
+                # same line.
+                if len(lines) <= 1:
+                    yield f'{k_formatted}: {lines[0]}'
+
+                # UX: Otherwise, put lines under the key, and indent them.
+                else:
+                    yield f'{k_formatted}:'
+                    yield from _emit_dict_entry(lines)
+
+        # UX: multi-item dictionaries are much less complicated, there is no
+        # chance to simplify the output. Each key would land on its own line,
+        # with content well-aligned.
+        else:
+            yield f'{k_formatted}:'
+
+            # UX: when rendering a list, indent the lines properly with the
+            # first one
+            if isinstance(v, list):
+                for item in v_formatted:
+                    yield from _emit_list_entries(item.splitlines())
+
+            else:
+                yield from _emit_dict_entry(v_formatted)
+
+
+#: A type describing a per-type formatting helper.
+ValueFormatter = Callable[
+    [Any, Optional[int], Optional[str], ListFormat, FormatWrap],
+    Generator[str, None, None]
+    ]
+
+
+#: Available formatters, as ``type``/``formatter`` pairs. If a value is instance
+#: of ``type``, the ``formatter`` is called to render it.
+_VALUE_FORMATTERS: List[Tuple[Any, ValueFormatter]] = [
+    (bool, _format_bool),
+    (str, _format_str),
+    (list, _format_list),
+    (dict, _format_dict),
+    ]
+
+
+def _format_value(
+        value: Any,
+        window_size: Optional[int] = None,
+        key_color: Optional[str] = None,
+        list_format: ListFormat = ListFormat.LISTED,
+        wrap: FormatWrap = 'auto') -> List[str]:
+    """
+    Render a nicely-formatted string representation of a value.
+
+    A main workhorse for :py:func:`format_value` and value formatters
+    defined for various types. This function is responsible for
+    picking the right one.
+
+    :param value: an object to format.
+    :param window_size: if set, rendering will try to produce
+        lines whose length would not exceed ``window_size``. A
+        window not wide enough may result into not using
+        :py:func:`fmf.utils.listed`, or wrapping lines in a text
+        paragraph.
+    :param key_color: if set, dictionary keys would be colorized by
+        this color.
+    :param list_format: preferred list formatting. It may be ignored
+        if ``window_size`` is set and not wide enough to hold the
+        desired formatting; :py:member:`ListFormat.LONG` would be
+        the fallback choice.
+    :returns: a list of lines representing the formatted string
+        representation of ``value``.
+    """
+
+    for type_, formatter in _VALUE_FORMATTERS:
+        if isinstance(value, type_):
+            return list(formatter(value, window_size, key_color, list_format, wrap))
+
+    return [str(value)]
+
+
+def format_value(
+        value: Any,
+        window_size: Optional[int] = None,
+        key_color: Optional[str] = None,
+        list_format: ListFormat = ListFormat.LISTED,
+        wrap: FormatWrap = 'auto') -> str:
+    """
+    Render a nicely-formatted string representation of a value.
+
+    :param value: an object to format.
+    :param window_size: if set, rendering will try to produce
+        lines whose length would not exceed ``window_size``. A
+        window not wide enough may result into not using
+        :py:func:`fmf.utils.listed`, or wrapping lines in a text
+        paragraph.
+    :param key_color: if set, dictionary keys would be colorized by
+        this color.
+    :param list_format: preferred list formatting. It may be ignored
+        if ``window_size`` is set and not wide enough to hold the
+        desired formatting; :py:member:`ListFormat.LONG` would be
+        the fallback choice.
+    :returns: a formatted string representation of ``value``.
+    """
+
+    formatted_value = _format_value(
+        value,
+        window_size=window_size,
+        key_color=key_color,
+        list_format=list_format,
+        wrap=wrap)
+
+    # UX: post-process lists: this top-level is the "container" of the list,
+    # and therefore needs to apply indentation and prefixes.
+    if isinstance(value, list):
+        # UX: an empty list should be represented as an empty string.
+        # We get a nice `foo <nothing>` from `format()` under
+        # various `show` commands.
+        if not value:
+            return ''
+
+        # UX: if there is just a single formatted item, prefixing it with `-`
+        # would not help readability.
+        if len(value) == 1:
+            return formatted_value[0]
+
+        # UX: if there are multiple items, we do not add prefixes as long as
+        # there are no multi-line items - once there is just a single one item
+        # rendered across multiple lines, we need to add `-` prefix & indentation
+        # to signal where items start and end visualy.
+        if len(value) > 1 and any('\n' in formatted_item for formatted_item in formatted_value):
+            prefixed: List[str] = []
+
+            for item in formatted_value:
+                for i, line in enumerate(item.splitlines()):
+                    if i == 0:
+                        prefixed.append(f'- {line}')
+
+                    else:
+                        prefixed.append(f'  {line}')
+
+            return '\n'.join(prefixed)
+
+    return '\n'.join(formatted_value)
 
 
 def format(
         key: str,
         value: Union[None, bool, str, List[Any], Dict[Any, Any]] = None,
         indent: int = 24,
-        width: int = 72,
+        window_size: int = 72,
         wrap: FormatWrap = 'auto',
         key_color: Optional[str] = 'green',
-        value_color: Optional[str] = 'black') -> str:
+        value_color: Optional[str] = 'black',
+        list_format: ListFormat = ListFormat.LISTED) -> str:
     """
     Nicely format and indent a key-value pair
 
-    The following values for 'wrap' are supported:
-
-        True .... always reformat text and wrap long lines
-        False ... preserve text, no new line changes
-        auto .... wrap only if text contains a long line
+    :param key: a key introducing the value.
+    :param value: an object to format.
+    :param indent: the key would be right-justified to this column.
+    :param window_size: rendering will try to fit produce lines
+        whose length would exceed ``window_size``. A window not wide
+        enough may result into not using :py:func:`fmf.utils.listed`
+        for lists, or wrapping lines in a text paragraph.
+    :param wrap: if set to ``True``, always reformat text and wrap
+        long lines; if set to ``False``, preserve text formatting
+        and make no changes; the default, ``auto``, tries to rewrap
+        lines as needed to obey ``window_size``.
+    :param key_color: if set, dictionary keys would be colorized by
+        this color.
+    :param list_format: preferred list formatting. It may be ignored
+        if ``window_size`` is set and not wide enough to hold the
+        desired formatting; :py:member:`ListFormat.LONG` would be
+        the fallback choice.
+    :returns: a formatted string representation of ``value``.
     """
+
     indent_string = (indent + 1) * ' '
-    # Key
+
+    # Format the key first
     output = f"{str(key).rjust(indent, ' ')} "
     if key_color is not None:
         output = style(output, fg=key_color)
-    # Bool
-    if isinstance(value, bool):
-        output += ('true' if value else 'false')
-    # List
-    elif isinstance(value, list):
-        # Make sure everything is string, prepare list, check for spaces
-        value = [str(item) for item in value]
-        listed_text = fmf.utils.listed(value)
-        has_spaces = any(item.find(' ') > -1 for item in value)
-        # Use listed output only for short lists without spaces
-        if len(listed_text) < width - indent and not has_spaces:
-            output += listed_text
-        # Otherwise just place each item on a new line
-        else:
-            output += ('\n' + indent_string).join(value)
-    # Dictionary
-    elif isinstance(value, dict):
-        # Place each key value pair on a separate line
-        output += ('\n' + indent_string).join(
-            f'{item[0]}: {item[1]}' for item in value.items())
-    # Text
-    elif isinstance(value, str):
+
+    # Then the value
+    formatted_value = format_value(
+        value,
+        window_size=window_size - indent,
+        key_color=key_color,
+        list_format=list_format,
+        wrap=wrap)
+
+    # A special care must be taken when joining key and some types of values
+    if isinstance(value, list):
+        value_as_lines = formatted_value.splitlines()
+
+        if len(value_as_lines) == 1:
+            return output + formatted_value
+
+        return output + ('\n' + indent_string).join(value_as_lines)
+
+    if isinstance(value, dict):
+        return output + ('\n' + indent_string).join(formatted_value.splitlines())
+
+    # TODO: the whole text wrap should be handled by the `_format_value()`!
+    if isinstance(value, str):
+        value_as_lines = formatted_value.splitlines()
+
+        # Undo the line rewrapping. This would be resolved once `_format_value`
+        # takes over.
+        if wrap is False:
+            return output + ''.join(value_as_lines)
+
         # In 'auto' mode enable wrapping when long lines present
         if wrap == 'auto':
-            wrap = any(len(line) + indent - 7 > width for line in value.split('\n'))
+            wrap = any(len(line) + indent - 7 > window_size for line in value_as_lines)
+
         if wrap:
-            output += (wrap_text(
-                value, width=width,
-                preserve_paragraphs=True,
-                initial_indent=indent_string,
-                subsequent_indent=indent_string).lstrip())
-        else:
-            output += (('\n' + indent_string).join(
-                value.rstrip().split('\n')))
-    else:
-        output += str(value)
-    return output
+            return output \
+                + wrap_text(
+                    value,
+                    width=window_size,
+                    preserve_paragraphs=True,
+                    initial_indent=indent_string,
+                    subsequent_indent=indent_string).lstrip()
+
+        return output + ('\n' + indent_string).join(value_as_lines)
+
+    return output + formatted_value
 
 
 def create_directory(
