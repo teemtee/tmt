@@ -40,6 +40,7 @@ docs: man
 man: source
 	cp docs/header.txt $(TMP)/man.rst
 	tail -n+8 README.rst >> $(TMP)/man.rst
+	sed '/versionadded::/d' -i $(TMP)/man.rst
 	rst2man $(TMP)/man.rst > $(TMP)/$(PACKAGE)/tmt.1
 
 
