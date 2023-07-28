@@ -172,11 +172,15 @@ def test_inject_auth_git_url(monkeypatch) -> None:
         f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
         f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
         f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
+        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
         })
     assert inject_auth_git_url('https://github.com/namespace/project') \
         == 'https://abcdefgh@github.com/namespace/project'
     assert inject_auth_git_url('https://github.com/other_namespace/project') \
         == 'https://xyzabcde@github.com/other_namespace/project'
+
+    with pytest.raises(tmt.utils.GitUrlError):
+        inject_auth_git_url('https://example.com/broken/something')
 
 
 def test_listify():
