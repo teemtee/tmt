@@ -265,7 +265,18 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
             raise tmt.utils.GeneralError(
                 f"Invalid '{self}' config in '{self.plan}'.")
 
-        for i, raw_datum in enumerate(self._raw_data):
+        self._set_default_values(self._raw_data)
+
+    def _check_duplicate_names(self, raw_data: List[_RawStepData]) -> None:
+        """ Check for duplicate names in phases """
+
+        for name in tmt.utils.duplicates(raw_datum.get('name', None) for raw_datum in raw_data):
+            raise tmt.utils.GeneralError(f"Duplicate phase name '{name}' in step '{self.name}'.")
+
+    def _set_default_values(self, raw_data: List[_RawStepData]) -> List[_RawStepData]:
+        """ Set default values for ``name`` and ``how`` fields if not specified """
+
+        for i, raw_datum in enumerate(raw_data):
             # Add default unique names even to multiple configs so that the users
             # don't need to specify it if they don't care about the name
             if raw_datum.get('name', None) is None:
@@ -274,6 +285,8 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
             # Set 'how' to the default if not specified
             if raw_datum.get('how', None) is None:
                 raw_datum['how'] = self.DEFAULT_HOW
+
+        return raw_data
 
     def _normalize_data(
             self,
@@ -287,6 +300,8 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
         is derived from a plugin identified by raw data's ``how`` field
         and step's plugin registry.
         """
+
+        self._check_duplicate_names(raw_data)
 
         data: List[StepData] = []
 
@@ -479,6 +494,7 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
                         'how': how
                         })
 
+            self._set_default_values(_raw_data)
             self.data = self._normalize_data(_raw_data, self._logger)
             self._raw_data = _raw_data
 

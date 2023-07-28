@@ -58,6 +58,7 @@ rlJournalStart
         rlAssertGrep "pass P003 execute step methods are all known" $rlRun_LOG
         rlAssertGrep "skip P004 discover step is not defined" $rlRun_LOG
         rlAssertGrep "skip P005 no remote fmf ids defined" $rlRun_LOG
+        rlAssertGrep "pass P006 phases have unique names" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Check --fix for tests"

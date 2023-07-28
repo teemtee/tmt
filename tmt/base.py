@@ -1949,6 +1949,19 @@ class Plan(
 
         yield LinterOutcome.SKIP, 'no remote fmf ids defined'
 
+    def lint_unique_names(self) -> LinterReturn:
+        """ P006: phases must have unique names """
+        passed = True
+        for step_name in self.step_names(enabled=True, disabled=True):
+            phase_name: str
+            for phase_name in tmt.utils.duplicates(
+                    phase.get('name', None) for phase in self._step_phase_nodes(step_name)):
+                passed = False
+                yield LinterOutcome.FAIL, \
+                    f"duplicate phase name '{phase_name}' in step '{step_name}'"
+        if passed:
+            yield LinterOutcome.PASS, 'phases have unique names'
+
     def go(self) -> None:
         """ Execute the plan """
         # Show plan name and summary (one blank line to separate plans)

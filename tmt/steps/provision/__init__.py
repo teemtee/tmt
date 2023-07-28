@@ -1592,24 +1592,6 @@ class Provision(tmt.steps.Step):
         self._guest_data: Dict[str, GuestData] = {}
         self.is_multihost = False
 
-    def _normalize_data(
-            self,
-            raw_data: List[tmt.steps._RawStepData],
-            logger: tmt.log.Logger) -> List[tmt.steps.StepData]:
-        data = super()._normalize_data(raw_data, logger)
-
-        # Check that the names are unique
-        names = [datum.name for datum in data]
-        names_count = collections.Counter(names)
-        if len(data) > 1 and names_count.most_common(1)[0][1] > 1:
-            duplicate_names = [name for name in names_count.elements() if names_count[name] > 1]
-            duplicate_string = ', '.join(duplicate_names)
-            raise tmt.utils.GeneralError(
-                f"Provision step names must be unique for multihost testing. "
-                f"Duplicate names: '{duplicate_string}' in plan '{self.plan.name}'.")
-
-        return data
-
     def load(self) -> None:
         """ Load guest data from the workdir """
         super().load()

@@ -13,7 +13,7 @@ rlJournalStart
     rlPhaseStartTest "Wrong provision"
         rlRun -s "tmt run $opt plan -n wrong provision finish" \
             2 "Names not unique"
-        rlAssertGrep "must be unique" $rlRun_LOG
+        rlAssertGrep "Duplicate phase name 'client' in step 'provision'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Correct provision without roles"

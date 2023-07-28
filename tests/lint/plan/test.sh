@@ -34,6 +34,10 @@ rlJournalStart
         rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
         rlAssertGrep "fail P002 execute step must be defined with \"how\"" $rlRun_LOG
 
+        rlRun -s "$tmt plan lint duplicate_names" 1
+        rlAssertGrep "fail P006 duplicate phase name 'duplicate' in step 'discover'" $rlRun_LOG
+        rlAssertGrep "fail P006 duplicate phase name 'duplicate' in step 'prepare'" $rlRun_LOG
+
         rlRun -s "$tmt plan lint invalid_how" 1
         rlAssertGrep "warn C000 value of \"how\" is not \"shell\"" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"fmf\"" $rlRun_LOG

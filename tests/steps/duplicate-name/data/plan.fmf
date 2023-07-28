@@ -1,0 +1,13 @@
+summary: Duplicate phase name plan
+discover:
+  - how: fmf
+    name: unique
+    test: /tests/unique
+  - how: fmf
+    name: duplicate
+    test: /tests/duplicate
+  - how: fmf
+    name: duplicate
+    test: /tests/duplicate2
+execute:
+    how: tmt

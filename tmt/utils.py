@@ -22,7 +22,7 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from contextlib import suppress
 from functools import lru_cache
 from threading import Thread
@@ -1636,6 +1636,15 @@ def show_exception(exception: BaseException) -> None:
 def uniq(values: List[T]) -> List[T]:
     """ Return a list of all unique items from ``values`` """
     return list(set(values))
+
+
+def duplicates(values: Iterable[Optional[T]]) -> Generator[T, None, None]:
+    """ Iterate over all duplicate values in ``values`` """
+    seen = Counter(values)
+    for value, count in seen.items():
+        if value is None or count == 1:
+            continue
+        yield value
 
 
 def flatten(lists: Generator[List[T], None, None], unique: bool = False) -> List[T]:

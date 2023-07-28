@@ -1044,6 +1044,23 @@ def test_uniq(values: List[Any], expected: List[Any]) -> None:
 
 
 @pytest.mark.parametrize(
+    ('values', 'expected'),
+    [
+        ([], []),
+        ([1, 2, 3, 4, 5], []),
+        ([1, 2, 1, 2, 3, 4, 4], [1, 2, 4])
+        ],
+    ids=(
+        'empty-list',
+        'no-duplicates',
+        'duplicates'
+        )
+    )
+def test_duplicates(values: List[Any], expected: List[Any]) -> None:
+    assert list(tmt.utils.duplicates(values)) == expected
+
+
+@pytest.mark.parametrize(
     ('lists', 'unique', 'expected'),
     [
         ([], False, []),
