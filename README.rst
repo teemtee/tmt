@@ -384,6 +384,11 @@ TMT_FORCE_COLOR
     and ``TMT_NO_COLOR``. If user tries both to disable and enable
     colorization, output would be colorized.
 
+TMT_SHOW_TRACEBACK
+    By default, when tmt reports an error, the corresponding
+    traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
+    set to any string except ``0``, traceback would be printed out.
+
 
 Step Variables
 --------------

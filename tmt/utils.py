@@ -19,6 +19,7 @@ import sys
 import tempfile
 import textwrap
 import time
+import traceback
 import unicodedata
 import urllib.parse
 from collections import OrderedDict
@@ -1563,6 +1564,13 @@ def render_run_exception(exception: RunError) -> List[str]:
 def render_exception(exception: BaseException) -> List[str]:
     """ Render the exception and its causes for printing """
 
+    def _indent(iterable: Iterable[str]) -> List[str]:
+        return [
+            f'{INDENT * " "}{line}'
+            for item in iterable
+            for line in item.splitlines()
+            ]
+
     lines = [
         click.style(str(exception), fg='red')
         ]
@@ -1573,15 +1581,24 @@ def render_exception(exception: BaseException) -> List[str]:
             *render_run_exception(exception)
             ]
 
+    if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
+        formatted_exc = traceback.format_exception(
+            type(exception),
+            exception,
+            exception.__traceback__,
+            chain=False)
+
+        lines += [
+            '',
+            *_indent(formatted_exc)]
+
     # Follow the chain and render all causes
     def _render_cause(number: int, cause: BaseException) -> List[str]:
         return [
             '',
             f'Cause number {number}:',
-            ''
-            ] + [
-            f'{INDENT * " "}{line}' for line in render_exception(cause)
-            ]
+            '',
+            *_indent(render_exception(cause))]
 
     def _render_causes(causes: List[BaseException]) -> List[str]:
         lines: List[str] = [
