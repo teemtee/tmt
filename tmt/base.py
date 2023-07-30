@@ -1948,6 +1948,69 @@ class Plan(
         if passed:
             yield LinterOutcome.PASS, 'phases have unique names'
 
+    def lint_phases_have_guests(self) -> LinterReturn:
+        """ P007: step phases require existing guests and roles """
+
+        guest_names: List[str] = []
+        guest_roles: List[str] = []
+
+        for i, phase in enumerate(self._step_phase_nodes('provision')):
+            guest_name = cast(Optional[str], phase.get('name'))
+
+            if not guest_name:
+                guest_name = f'{tmt.utils.DEFAULT_NAME}-{i}'
+
+            guest_names.append(guest_name)
+
+            if phase.get('role'):
+                guest_roles.append(phase['role'])
+
+        names_formatted = ', '.join(f"'{name}'" for name in sorted(tmt.utils.uniq(guest_names)))
+        roles_formatted = ', '.join(f"'{role}'" for role in sorted(tmt.utils.uniq(guest_roles)))
+
+        def _lint_step(step: str) -> LinterReturn:
+            for phase in self._step_phase_nodes(step):
+                wheres = tmt.utils.normalize_string_list(
+                    f'{self.name}:{step}',
+                    phase.get('where'),
+                    self._logger)
+
+                if not wheres:
+                    yield LinterOutcome.PASS, \
+                        f"{step} phase '{phase.get('name')}' does not require specific guest"
+                    continue
+
+                for where in wheres:
+                    if where in guest_names:
+                        yield LinterOutcome.PASS, \
+                            f"{step} phase '{phase.get('name')}' shall run on guest '{where}'"
+                        continue
+
+                    if where in guest_roles:
+                        yield LinterOutcome.PASS, \
+                            f"{step} phase '{phase.get('name')}' shall run on role '{where}'"
+                        continue
+
+                    if guest_names and guest_roles:
+                        yield LinterOutcome.FAIL, \
+                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
+                            f"guests {names_formatted} " \
+                            f"and roles {roles_formatted} were found"
+
+                    elif guest_names:
+                        yield LinterOutcome.FAIL, \
+                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
+                            f"guests {names_formatted} and no roles were found"
+
+                    else:
+                        yield LinterOutcome.FAIL, \
+                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
+                            f"roles {roles_formatted} and no guests were found"
+
+        yield from _lint_step('prepare')
+        yield from _lint_step('execute')
+        yield from _lint_step('finish')
+
     def go(self) -> None:
         """ Execute the plan """
         # Show plan name and summary (one blank line to separate plans)

@@ -69,6 +69,22 @@ rlJournalStart
         rlAssertGrep "fail P001 unknown key \"summaryABCDEF\" is used" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "P007: step phases require existing guests and roles"
+        rlRun -s "$tmt plan lint --list-checks"
+        rlAssertGrep "P007: step phases require existing guests and roles" $rlRun_LOG
+
+        rlRun -s "$tmt plan lint /where-guest-role-mismatch" 1
+        rlAssertGrep "fail P007 prepare phase 'default-0' needs guest or role 'client-1', guests 'server-1', 'server-2' and roles 'server' were found" $rlRun_LOG
+        rlAssertGrep "pass P007 prepare phase 'default-1' shall run on guest 'server-1'" $rlRun_LOG
+        rlAssertGrep "pass P007 prepare phase 'default-2' shall run on role 'server'" $rlRun_LOG
+        rlAssertGrep "fail P007 execute phase 'default-0' needs guest or role 'client-1', guests 'server-1', 'server-2' and roles 'server' were found" $rlRun_LOG
+        rlAssertGrep "pass P007 execute phase 'default-1' shall run on guest 'server-1'" $rlRun_LOG
+        rlAssertGrep "pass P007 execute phase 'default-2' shall run on role 'server'" $rlRun_LOG
+        rlAssertGrep "fail P007 finish phase 'default-0' needs guest or role 'client-2', guests 'server-1', 'server-2' and roles 'server' were found" $rlRun_LOG
+        rlAssertGrep "pass P007 finish phase 'default-1' shall run on guest 'server-2'" $rlRun_LOG
+        rlAssertGrep "pass P007 finish phase 'default-2' shall run on role 'server'" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         if [ "$EXPLICIT_ROOT" != "yes" ]; then
             rlRun "popd"

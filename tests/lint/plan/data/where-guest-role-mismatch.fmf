@@ -1,0 +1,46 @@
+summary: This is a plan with phases for non-existent guests and roles
+
+prepare:
+  - how: shell
+    script: /bin/true
+    where: client-1
+
+  - how: shell
+    script: /bin/true
+    where: server-1
+
+  - how: shell
+    script: /bin/true
+    where: server
+
+execute:
+  - how: tmt
+    where: client-1
+
+  - how: tmt
+    where: server-1
+
+  - how: tmt
+    where: server
+
+finish:
+  - how: shell
+    script: /bin/true
+    where: client-2
+
+  - how: shell
+    script: /bin/true
+    where: server-2
+
+  - how: shell
+    script: /bin/true
+    where: server
+
+provision:
+  - how: container
+    name: server-1
+    role: server
+
+  - how: container
+    name: server-2
+    role: server
