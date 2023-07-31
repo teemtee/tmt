@@ -1,0 +1,29 @@
+---
+
+#
+# JSON Schema definition for `feature` prepare plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-feature
+#
+
+$id: /schemas/prepare/feature
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - feature
+
+  epel:
+    type: string
+    enum:
+      - enabled
+      - disabled
+
+required:
+  - how
