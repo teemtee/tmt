@@ -1,9 +1,9 @@
 import dataclasses
 import datetime
-import errno
 import logging
 import os
 import sys
+from contextlib import suppress
 from typing import Any, Dict, Optional, Tuple, cast
 
 import tmt
@@ -93,14 +93,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
         mrack.logger.removeHandler(mrack.console_handler)
         mrack.logger.removeHandler(mrack.file_handler)
 
-        try:
+        with suppress(OSError):
             os.remove("mrack.log")
-        except OSError:
-            # We only accept the in case the mrack.log does exists
-            # or could not be deleted as we need to replace
-            # it is not fatal here to not do anything and just continue
-            # with the execution and replacing the FileHandler file
-            pass
 
         logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
 
