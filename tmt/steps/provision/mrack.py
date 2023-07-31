@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import sys
+from contextlib import suppress
 from typing import Any, Dict, Optional, Tuple, cast
 
 import tmt
@@ -91,8 +92,10 @@ def import_and_load_mrack_deps(workdir: Any, name: str) -> None:
         # HAX remove mrack stdout and move the logfile to /tmp
         mrack.logger.removeHandler(mrack.console_handler)
         mrack.logger.removeHandler(mrack.file_handler)
-        if os.stat("mrack.log"):
+
+        with suppress(OSError):
             os.remove("mrack.log")
+
         logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
 
         providers.register(BEAKER, BeakerProvider)
