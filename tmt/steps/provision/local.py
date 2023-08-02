@@ -26,10 +26,33 @@ class GuestLocal(tmt.Guest):
         """ Local is always ready """
         return True
 
-    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
-        """ Prepare localhost using ansible playbook """
+    def _run_ansible(
+            self,
+            playbook: Path,
+            extra_args: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            silent: bool = False) -> tmt.utils.CommandOutput:
+        """
+        Run an Ansible playbook on the guest.
+
+        This is a main workhorse for :py:meth:`ansible`. It shall run the
+        playbook in whatever way is fitting for the guest and infrastructure.
+
+        :param playbook: path to the playbook to run.
+        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+            via ``--extra-args``.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        """
+
         playbook = self._ansible_playbook_path(playbook)
-        output = self.run(
+
+        return self._run_guest_command(
             Command(
                 'sudo', '-E',
                 'ansible-playbook',
@@ -38,8 +61,10 @@ class GuestLocal(tmt.Guest):
                 '-c', 'local',
                 '-i', 'localhost,',
                 str(playbook)),
-            env=self._prepare_environment())
-        self._ansible_summary(output.stdout)
+            env=self._prepare_environment(),
+            friendly_command=friendly_command,
+            log=log,
+            silent=silent)
 
     def execute(self,
                 command: Union[Command, ShellScript],
@@ -59,18 +84,16 @@ class GuestLocal(tmt.Guest):
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
 
-        if friendly_command is None:
-            friendly_command = str(actual_command)
-
         # Run the command under the prepared environment
-        return self.run(actual_command,
-                        env=environment,
-                        log=log if log else self._command_verbose_logger,
-                        friendly_command=friendly_command,
-                        silent=silent,
-                        cwd=cwd,
-                        interactive=interactive,
-                        **kwargs)
+        return self._run_guest_command(
+            actual_command,
+            env=environment,
+            log=log,
+            friendly_command=friendly_command,
+            silent=silent,
+            cwd=cwd,
+            interactive=interactive,
+            **kwargs)
 
     def stop(self) -> None:
         """ Stop the guest """

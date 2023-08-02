@@ -139,8 +139,29 @@ class GuestContainer(tmt.Guest):
         self.podman(Command('container', 'restart', self.container))
         return self.reconnect(timeout=timeout or CONNECTION_TIMEOUT)
 
-    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
-        """ Prepare container using ansible playbook """
+    def _run_ansible(
+            self,
+            playbook: Path,
+            extra_args: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            silent: bool = False) -> tmt.utils.CommandOutput:
+        """
+        Run an Ansible playbook on the guest.
+
+        This is a main workhorse for :py:meth:`ansible`. It shall run the
+        playbook in whatever way is fitting for the guest and infrastructure.
+
+        :param playbook: path to the playbook to run.
+        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+            via ``--extra-args``.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        """
         playbook = self._ansible_playbook_path(playbook)
 
         # As non-root we must run with podman unshare
@@ -156,15 +177,17 @@ class GuestContainer(tmt.Guest):
             '-c', 'podman', '-i', f'{self.container},', str(playbook)
             ]
 
-        output = self.run(
+        return self._run_guest_command(
             podman_command,
             cwd=self.parent.plan.worktree,
-            env=self._prepare_environment())
-        self._ansible_summary(output.stdout)
+            env=self._prepare_environment(),
+            friendly_command=friendly_command,
+            log=log,
+            silent=silent)
 
     def podman(self, command: Command, **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Run given command via podman """
-        return self.run(Command('podman') + command, **kwargs)
+        return self._run_guest_command(Command('podman') + command, **kwargs)
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -212,7 +235,7 @@ class GuestContainer(tmt.Guest):
         return self.podman(
             podman_command,
             log=log if log else self._command_verbose_logger,
-            friendly_command=friendly_command or command,
+            friendly_command=friendly_command,
             silent=silent,
             interactive=interactive,
             **kwargs)
@@ -231,7 +254,7 @@ class GuestContainer(tmt.Guest):
         assert self.parent.plan.workdir is not None  # narrow type
         # Relabel workdir to container_file_t if SELinux supported
         if tmt.utils.is_selinux_supported():
-            self.run(Command(
+            self._run_guest_command(Command(
                 "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
                 ), shell=False)
         # In case explicit destination is given, use `podman cp` to copy data
