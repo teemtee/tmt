@@ -598,21 +598,24 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
                 needle = invocation.options.get('name')
 
-                if not needle:
-                    raise GeneralError('bar')
+                if needle:
+                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
-                incoming_raw_datum = _to_raw_step_datum(invocation.options)
+                    for raw_datum in raw_data:
+                        if raw_datum['name'] != needle:
+                            continue
 
-                for raw_datum in raw_data:
-                    if raw_datum['name'] != needle:
-                        continue
+                        _patch_raw_datum(raw_datum, incoming_raw_datum)
 
-                    _patch_raw_datum(raw_datum, incoming_raw_datum)
+                        break
 
-                    break
+                    else:
+                        raise GeneralError('baz')
 
                 else:
-                    raise GeneralError('baz')
+                    debug('  needle-less update (postponed)')
+
+                    postponed_invocations.append(invocation)
 
             else:
                 debug('  action-less phase (postponed)')
