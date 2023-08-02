@@ -8,6 +8,7 @@ import tmt
 import tmt.base
 from tmt.base import DependencyFmfId, DependencySimple
 from tmt.convert import write
+from tmt.steps.discover import Discover
 from tmt.utils import Command, Path
 
 from . import Library, LibraryError
@@ -254,11 +255,28 @@ class BeakerLib(Library):
                     # Use the default branch if no ref provided
                     if self.ref is None:
                         self.ref = self.default_branch
+                    # Apply the dynamic reference if provided
+                    try:
+                        if hasattr(self.parent.parent, 'plan'):
+                            plan = cast(Discover, self.parent.parent).plan
+                        else:
+                            plan = None
+                        dynamic_ref = tmt.base.resolve_dynamic_ref(
+                            workdir=clone_dir,
+                            ref=self.ref,
+                            plan=plan,
+                            logger=self._logger)
+                    except tmt.utils.FileError as error:
+                        raise tmt.utils.DiscoverError(
+                            f"Failed to resolve dynamic ref of '{self.ref}'.") from error
                     # Check out the requested branch
                     try:
-                        if self.ref is not None:
+                        if dynamic_ref is not None:
+                            # We won't change self.ref directly since we want to preserve a check
+                            # for not fetching two distinct 'ref's. Simply put, only the same
+                            # @dynamic_ref filepath can be used by other tests.
                             self.parent.run(
-                                Command('git', 'checkout', self.ref), cwd=clone_dir)
+                                Command('git', 'checkout', dynamic_ref), cwd=clone_dir)
                     except tmt.utils.RunError:
                         # Fallback to install during the prepare step if in rpm format
                         if self.format == 'rpm':

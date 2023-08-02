@@ -3753,7 +3753,7 @@ def resolve_dynamic_ref(
         *,
         workdir: Path,
         ref: Optional[str],
-        plan: Plan,
+        plan: Optional[Plan] = None,
         logger: tmt.log.Logger) -> Optional[str]:
     """
     Get the final value for the dynamic reference
@@ -3782,10 +3782,11 @@ def resolve_dynamic_ref(
         raise tmt.utils.FileError(f"Failed to read '{ref_filepath}'.") from error
     # Build a dynamic reference tree, adjust ref based on the context
     reference_tree = fmf.Tree(data=data)
+    if not plan:
+        raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
     reference_tree.adjust(fmf.context.Context(**plan._fmf_context))
     # Also temporarily build a plan so that env and context variables are expanded
     Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
     ref = reference_tree.get("ref")
-
-    # RET504: Unnecessary variable assignment before `return` statement. Keeping for readability.
-    return ref  # noqa: RET504
+    logger.debug(f"Dynamic 'ref' resolved as '{ref}'.")
+    return ref

@@ -1,0 +1,6 @@
+summary: Evaluate dynamic ref when fetching a library
+description:
+    Library can be cloned from a dynamically resolved branch.
+require:
+  - git-core
+tier: 4
