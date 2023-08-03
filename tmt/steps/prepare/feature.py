@@ -1,5 +1,5 @@
 import dataclasses
-import re
+import enum
 from typing import List, Optional
 
 import tmt
@@ -13,6 +13,18 @@ from tmt.steps.provision import Guest
 from tmt.utils import Command, field
 
 
+class Distro(enum.Enum):
+    FEDORA = enum.auto()
+    RHEL_7 = enum.auto()
+    RHEL_8 = enum.auto()
+    RHEL_9 = enum.auto()
+    RHEL_10 = enum.auto()
+    CENTOS_LINUX_7 = enum.auto()
+    CENTOS_STREAM_8 = enum.auto()
+    CENTOS_STREAM_9 = enum.auto()
+    CENTOS_STREAM_10 = enum.auto()
+
+
 class Feature(tmt.utils.Common):
     """ Base class for feature implementations """
 
@@ -21,31 +33,40 @@ class Feature(tmt.utils.Common):
     def __init__(
             self,
             *,
-            parent: tmt.steps.prepare.PreparePlugin,
+            parent: 'PrepareFeature',
             guest: Guest,
             logger: tmt.log.Logger) -> None:
         """ Initialize feature data """
         super().__init__(logger=logger, parent=parent, relative_indent=0)
         self.guest = guest
 
-    def get_guest_distro(self, guest: Guest, logger: tmt.log.Logger) -> Optional[str]:
+    def get_guest_distro(self, guest: Guest, logger: tmt.log.Logger) -> Optional[Distro]:
         """ Get guest distro by parsing the guest facts """
-        distro = self.guest.facts.distro
-        if distro is None:
+        os_release = guest.facts.os_release_content
+        if os_release is None:
             return None
 
-        if re.search(r'Fedora Linux \d+', distro):
-            return 'Fedora'
-        if re.search(r'CentOS Linux.*7\.', distro):
-            return 'CentOS-7'
-        if re.search(r'CentOS Stream.*8', distro):
-            return 'CentOS-Stream-8'
-        if re.search(r'CentOS Stream.*9', distro):
-            return 'CentOS-Stream-9'
-        if re.search(r'Red Hat Enterprise Linux.*8\.', distro):
-            return 'RHEL-8'
-        if re.search(r'Red Hat Enterprise Linux.*9\.', distro):
-            return 'RHEL-9'
+        if os_release.get('NAME') == 'Fedora Linux':
+            return Distro.FEDORA
+
+        if os_release.get('NAME') == 'Red Hat Enterprise Linux':
+            if os_release.get('VERSION_ID', '').startswith('9'):
+                return Distro.RHEL_9
+            if os_release.get('VERSION_ID', '').startswith('8'):
+                return Distro.RHEL_8
+            if os_release.get('VERSION_ID', '').startswith('7'):
+                return Distro.RHEL_7
+
+        if os_release.get('NAME') == 'CentOS Linux' and os_release.get(
+                'VERSION_ID', '').startswith('7'):
+            return Distro.CENTOS_LINUX_7
+
+        if os_release.get('NAME') == 'CentOS Stream':
+            if os_release.get('VERSION_ID', '').startswith('8'):
+                return Distro.CENTOS_STREAM_8
+            if os_release.get('VERSION_ID', '').startswith('9'):
+                return Distro.CENTOS_STREAM_9
+
         return None
 
 
@@ -75,9 +96,9 @@ class EPEL(ToggleableFeature):
         if guest_distro is None:
             raise tmt.utils.PrepareError('The distro of the guest is not supported.')
 
-        if guest_distro == 'Fedora':
+        if guest_distro == Distro.FEDORA:
             self.info('Enable EPEL on Fedora, do nothing ...')
-        elif guest_distro == 'CentOS-Stream-8':
+        elif guest_distro == Distro.CENTOS_STREAM_8:
             # dnf config-manager --set-enabled powertools
             # dnf install epel-release epel-next-release
             self.info('Enable EPEL on CentOS Stream 8')
@@ -89,7 +110,7 @@ class EPEL(ToggleableFeature):
                                          'epel-release', 'epel-next-release')
             self.guest.execute(command1, silent=True)
             self.guest.execute(command2, silent=True)
-        elif guest_distro == 'RHEL-8':
+        elif guest_distro == Distro.RHEL_8:
             # subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
             self.info('Enable EPEL on RHEL 8')
@@ -112,7 +133,7 @@ class EPEL(ToggleableFeature):
         if guest_distro is None:
             raise tmt.utils.PrepareError('The distro of the guest is not supported.')
 
-        if guest_distro == 'Fedora':
+        if guest_distro == Distro.FEDORA:
             # XXX: What to do?
             self.info('Disable epel on Fedora, do nothing ...')
         else:
