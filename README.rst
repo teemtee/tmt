@@ -82,9 +82,9 @@ Run all or selected steps for each plan::
 
 List tests, show details, check against the specification::
 
-    tmt test ls
-    tmt test show
-    tmt test lint
+    tmt tests ls
+    tmt tests show
+    tmt tests lint
 
 Create a new test, import test metadata from other formats::
 
@@ -93,22 +93,22 @@ Create a new test, import test metadata from other formats::
 
 List plans, show details, check against the specification::
 
-    tmt plan ls
-    tmt plan show
-    tmt plan lint
+    tmt plans ls
+    tmt plans show
+    tmt plans lint
 
 List stories, check details, show coverage status::
 
-    tmt story ls
-    tmt story show
-    tmt story coverage
+    tmt stories ls
+    tmt stories show
+    tmt stories coverage
 
 Many commands support regular expression filtering and other
 specific options::
 
-    tmt story ls cli
-    tmt story show create
-    tmt story coverage --implemented
+    tmt stories ls cli
+    tmt stories show create
+    tmt stories coverage --implemented
 
 Check help message of individual commands for the full list of
 available options.
@@ -145,8 +145,8 @@ finish
     Perform the finishing tasks and clean up provisioned guests.
 
 
-Test
-----
+Tests
+-----
 
 Manage tests (L1 metadata). Check available tests, inspect their
 metadata, gather old metadata from various sources and stored them
@@ -164,8 +164,8 @@ import
     Convert old test metadata into the new fmf format.
 
 
-Plan
-----
+Plans
+-----
 
 Manage test plans (L2 metadata). Search for available plans.
 Explore detailed test step configuration.
@@ -178,8 +178,8 @@ lint
     Check plans against the L2 metadata specification.
 
 
-Story
------
+Stories
+-------
 
 Manage user stories. Check available user stories. Explore
 coverage (test, implementation, documentation).

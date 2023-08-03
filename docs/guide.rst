@@ -268,9 +268,9 @@ An example story can look like this:
         As a user I want to see more detailed information for
         particular command.
     example:
-      - tmt test show -v
-      - tmt test show -vvv
-      - tmt test show --verbose
+      - tmt tests show -v
+      - tmt tests show -vvv
+      - tmt tests show --verbose
 
 In order to start experimenting with the complete set of examples
 covering all metadata levels, use the ``full`` template which
@@ -365,8 +365,8 @@ create a new plan with templates:
 
 .. code-block:: shell
 
-    tmt plans create --template mini /plans/smoke
-    tmt plans create --t full /plans/features
+    tmt plan create --template mini /plans/smoke
+    tmt plan create --t full /plans/features
 
 When creating many plans, for example when migrating the whole
 test coverage from a different tooling, it might be handy to
@@ -443,7 +443,7 @@ see ``tmt lint --help``.
     tmt lint --list-checks
 
     # All checks tmt has for tests
-    tmt test lint --list-checks
+    tmt tests lint --list-checks
 
 You should run ``tmt lint`` before pushing changes, ideally even
 before you commit your changes. You can set up `pre-commit`__ to
