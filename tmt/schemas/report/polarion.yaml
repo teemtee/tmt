@@ -28,6 +28,12 @@ properties:
   title:
     type: string
 
+  template:
+    type: string
+
+  use-facts:
+    type: boolean
+
   upload:
     type: boolean
 
