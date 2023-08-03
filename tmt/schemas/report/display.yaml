@@ -19,5 +19,8 @@ properties:
     enum:
       - display
 
+  name:
+    type: string
+
 required:
   - how

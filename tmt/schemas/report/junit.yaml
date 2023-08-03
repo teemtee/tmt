@@ -19,6 +19,9 @@ properties:
     enum:
       - junit
 
+  name:
+    type: string
+
   file:
     type: string
 

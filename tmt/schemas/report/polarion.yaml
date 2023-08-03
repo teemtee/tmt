@@ -19,6 +19,9 @@ properties:
     enum:
       - polarion
 
+  name:
+    type: string
+
   file:
     type: string
 

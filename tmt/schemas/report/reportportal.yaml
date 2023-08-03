@@ -19,6 +19,9 @@ properties:
     enum:
       - reportportal
 
+  name:
+    type: string
+
   url:
     type: string
 

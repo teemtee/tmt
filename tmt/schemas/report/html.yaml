@@ -19,6 +19,9 @@ properties:
     enum:
       - html
 
+  name:
+    type: string
+
   open:
     type: boolean
 
