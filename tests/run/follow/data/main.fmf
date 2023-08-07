@@ -1,0 +1,10 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/test:
+    test: for i in {00..05}; do echo step-$i; sleep 1; done

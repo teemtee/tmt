@@ -3102,12 +3102,12 @@ class Run(tmt.utils.Common):
                 if read_lines > FOLLOW_LINES:
                     break
 
-        while True:
-            line = logfile.readline()
-            if line:
-                print(line, end='')
-            else:
-                time.sleep(0.5)
+            while True:
+                line = logfile.readline()
+                if line:
+                    print(line, end='')
+                else:
+                    time.sleep(0.5)
 
     def go(self) -> None:
         """ Go and do test steps for selected plans """
