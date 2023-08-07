@@ -1,4 +1,3 @@
-import os
 import re
 from tempfile import TemporaryDirectory
 from typing import Dict, Optional, Set, Union, cast
@@ -334,19 +333,3 @@ class BeakerLib(Library):
             f'{self.name}:require', library_node.get('require', []), self.parent._logger)
         self.recommend = tmt.base.normalize_require(
             f'{self.name}:recommend', library_node.get('recommend', []), self.parent._logger)
-
-        # Create a symlink if the library is deep in the structure
-        # FIXME: hot fix for https://github.com/beakerlib/beakerlib/pull/72
-        # Covers also cases when library is stored more than 2 levels deep
-        if os.path.dirname(self.name).lstrip('/'):
-            link = Path(self.name.lstrip('/'))
-            path = Path(self.tree.root) / Path(self.name).name
-            self.parent.debug(
-                f"Create a '{link}' symlink as the library is stored "
-                f"deep in the directory structure.")
-            try:
-                path.symlink_to(link)
-            except OSError as error:
-                self.parent.warn(
-                    f"Unable to create a '{link}' symlink "
-                    f"for a deep library ({error}).")
