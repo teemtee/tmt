@@ -71,7 +71,7 @@ install_requires.append("importlib_metadata; python_version < '3.9'")
 extras_require = {
     'docs': [
         'sphinx>=3',
-        'sphinx_rtd_theme'],
+        'sphinx-rtd-theme==1.3.0rc1'],
     'tests': [
         'flake8',
         'pytest',
