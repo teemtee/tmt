@@ -34,7 +34,7 @@ require:
 recommend:
 - guestfs-tools
 - python3-docutils
-duration: 4h
+duration: 12h
 extra-hardware: |
   keyvalue=HVM=1
   hostrequire=memory >= 6144
