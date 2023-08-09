@@ -12,7 +12,7 @@ show_error_codes = true
 # annotations across module boundaries.
 follow_imports = "normal"
 
-python_version = "3.7"
+python_version = "3.9"
 files = ["bin/tmt", "tmt/", "setup.py"]
 
 [[tool.mypy.overrides]]
@@ -27,7 +27,6 @@ module = [
     "nitrate.*",
     "pylero.*",
     "testcloud.*",
-    "importlib_metadata",
     "mrack.*",
 ]
 ignore_missing_imports = true

@@ -36,6 +36,7 @@ from typing import (
     Generic,
     Iterable,
     List,
+    Literal,
     Optional,
     Pattern,
     Sequence,
@@ -63,11 +64,6 @@ from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 import tmt.log
 
@@ -98,7 +94,7 @@ class Path(pathlib.PosixPath):
     # implementation considers to not be relative to each other. Therefore, we
     # need to override `is_relative_to()` even for other Python versions, to not
     # depend on `ValueError` raised by the original `relative_to()`.
-    def is_relative_to(self, other: 'Path') -> bool:
+    def is_relative_to(self, other: 'Path') -> bool:  # type: ignore[override]
         # NOTE: the following is not perfect, but it should be enough for
         # what tmt needs to know about its paths.
 
@@ -1700,40 +1696,11 @@ def copytree(
         dirs_exist_ok: bool = False,
         ) -> Path:
     """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
-    # No need to reimplement for newer python or if argument is not requested
-    # ignore[call-arg] needed when running type-checks with Python < 3.8
-    if not dirs_exist_ok or sys.version_info >= (3, 8):
-        return cast(
-            Path,
-            shutil.copytree(src=src, dst=dst, symlinks=symlinks,  # type: ignore[call-arg]
-                            dirs_exist_ok=dirs_exist_ok))
-    # Choice was to either copy python implementation and change ONE line
-    # or use rsync (or cp with shell)
-    # We need to copy CONTENT of src into dst
-    # so src has to end with / and dst cannot
-    rsync_src, rsync_dst = str(src), str(dst)
-    if rsync_src[-1] != '/':
-        rsync_src += '/'
-    if rsync_dst[-1] == '/':
-        rsync_dst = rsync_dst[:-1]
-
-    dst.mkdir(parents=True, exist_ok=dirs_exist_ok)
-    command = ["rsync", "-r"]
-    if symlinks:
-        command.append('-l')
-    command.extend([rsync_src, rsync_dst])
-
-    log.debug(f"Calling command '{command}'.")
-    outcome = subprocess.run(
-        command,
-        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, universal_newlines=True)
-
-    if outcome.returncode != 0:
-        raise shutil.Error(
-            [f"Unable to copy '{src}' into '{dst}' using rsync.",
-             outcome.returncode, outcome.stdout])
-    return dst
+    # FIXME fix all usages, we don't need this function any more
+    return cast(
+        Path,
+        shutil.copytree(src=src, dst=dst, symlinks=symlinks,
+                        dirs_exist_ok=dirs_exist_ok))
 
 
 def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:

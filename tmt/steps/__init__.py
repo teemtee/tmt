@@ -5,7 +5,6 @@ import collections
 import dataclasses
 import re
 import shutil
-import sys
 import textwrap
 from typing import (
     TYPE_CHECKING,
@@ -18,16 +17,12 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     cast,
     overload,
     )
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
 
 import click
 from click import echo

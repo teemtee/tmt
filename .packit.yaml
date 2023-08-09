@@ -29,7 +29,6 @@ jobs:
     trigger: pull_request
     targets:
       - fedora-all
-      - epel-8
       - epel-9
     enable_net: False
 
@@ -38,7 +37,6 @@ jobs:
     trigger: pull_request
     targets:
       - fedora-all
-      - epel-8
       - epel-9
 
   # Test internal plugins
@@ -79,7 +77,6 @@ jobs:
     branch: main
     targets:
       - fedora-all
-      - epel-8
       - epel-9
     enable_net: False
     list_on_homepage: True
@@ -92,7 +89,6 @@ jobs:
     trigger: release
     dist_git_branches:
       - fedora-all
-      - epel-8
       - epel-9
     actions:
         post-upstream-clone: []
@@ -103,12 +99,10 @@ jobs:
     allowed_committers: ["packit", "psss", "lzachar"]
     dist_git_branches:
       - fedora-all
-      - epel-8
       - epel-9
 
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
       - fedora-branched
-      - epel-8
       - epel-9

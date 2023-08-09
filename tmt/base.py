@@ -20,10 +20,12 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     cast,
@@ -66,11 +68,6 @@ from tmt.utils import (
     normalize_shell_script,
     verdict,
     )
-
-if sys.version_info >= (3, 8):
-    from typing import Literal, TypedDict
-else:
-    from typing_extensions import Literal, TypedDict
 
 if TYPE_CHECKING:
     import tmt.cli

@@ -347,17 +347,8 @@ def run_tests(context: Context, **kwargs: Any) -> None:
     tmt.base.Test._save_cli_context(context)
 
 
-# FIXME: click 8.0 renamed resultcallback to result_callback. The former
-#        name will be removed in click 8.1. However, click 8.0 will not
-#        be added to F33 and F34. Get rid of this workaround once
-#        all Fedora + EPEL releases have click 8.0 or newer available.
-run_callback = run.result_callback
-if run_callback is None:
-    run_callback = run.resultcallback
-
-
 # TODO: commands is unknown, needs revisit
-@run_callback()
+@run.result_callback()
 @click.pass_context
 def finito(
         click_context: Context,
@@ -1522,13 +1513,7 @@ def clean(context: Context, **kwargs: Any) -> None:
         raise SystemExit(exit_code)
 
 
-# FIXME: Click deprecation, see function finito for more info
-clean_callback = clean.result_callback
-if clean_callback is None:
-    clean_callback = clean.resultcallback
-
-
-@clean_callback()
+@clean.result_callback()
 @click.pass_context
 def perform_clean(
         click_context: Context,
