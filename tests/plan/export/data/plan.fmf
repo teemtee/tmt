@@ -31,3 +31,8 @@ execute:
         import:
             url: https://github.com/teemtee/tmt
             name: /plans/features/basic
+
+/with-envvars:
+    prepare:
+      how: shell
+      script: "$ENV_SCRIPT"

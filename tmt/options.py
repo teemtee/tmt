@@ -289,6 +289,22 @@ LINT_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 
+ENVIRONMENT_OPTIONS: List[ClickOptionDecoratorType] = [
+    option(
+        '-e', '--environment',
+        metavar='KEY=VALUE|@FILE',
+        multiple=True,
+        help='Set environment variable. Can be specified multiple times. The '
+             '"@" prefix marks a file to load (yaml or dotenv formats supported).'),
+    option(
+        '--environment-file',
+        metavar='FILE|URL',
+        multiple=True,
+        help='Set environment variables from file or url (yaml or dotenv formats '
+             'are supported). Can be specified multiple times.')
+    ]
+
+
 def create_options_decorator(options: List[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
     def common_decorator(fn: FC) -> FC:
         for option in reversed(options):

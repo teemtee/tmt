@@ -138,6 +138,7 @@ fmf_source_options = create_options_decorator(tmt.options.FMF_SOURCE_OPTIONS)
 story_flags_filter_options = create_options_decorator(tmt.options.STORY_FLAGS_FILTER_OPTIONS)
 remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
+environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -249,14 +250,6 @@ def main(
 @option(
     '-S', '--skip', type=click.Choice(tmt.steps.STEPS),
     help='Skip given step(s) during test run execution.', multiple=True)
-@option(
-    '-e', '--environment', metavar='KEY=VALUE|@FILE', multiple=True,
-    help='Set environment variable. Can be specified multiple times. The '
-         '"@" prefix marks a file to load (yaml or dotenv formats supported).')
-@option(
-    '--environment-file', metavar='FILE|URL', multiple=True,
-    help='Set environment variables from file or url (yaml or dotenv formats '
-         'are supported). Can be specified multiple times.')
 @click.option(
     '--on-plan-error',
     type=click.Choice(['quit', 'continue']),
@@ -264,6 +257,7 @@ def main(
     help='What to do when plan fails to finish. Quit by default, or continue'
          'with the next plan.'
     )
+@environment_options
 @verbosity_options
 @force_dry_options
 def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
@@ -874,6 +868,7 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
 @plans.command(name='show')
 @click.pass_context
 @filter_options
+@environment_options
 @verbosity_options
 @remote_plan_options
 def plans_show(context: Context, **kwargs: Any) -> None:
@@ -997,6 +992,7 @@ _plan_export_default = 'yaml'
     '--template', metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only."
     )
+@environment_options
 def plans_export(
         context: Context,
         how: str,

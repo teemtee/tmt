@@ -176,6 +176,14 @@ rlJournalStart
         rlAssertGrep "enabled false" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Show and honor envvars"
+        rlRun -s "tmt plan show /plans/envvars" 0 "Show plan"
+        rlAssertEquals "script shall be an envvar" "$(grep ' script ' $rlRun_LOG | awk '{print $2}')" "\$ENV_SCRIPT"
+
+        rlRun -s "tmt plan show -e ENV_SCRIPT=dummy-script /plans/envvars" 0 "Export plan"
+        rlAssertEquals "script shall be an replaced" "$(grep ' script ' $rlRun_LOG | awk '{print $2}')" "dummy-script"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"

@@ -2002,6 +2002,101 @@ def environment_files_to_dict(
     return result
 
 
+def environment_from_spec(
+        *,
+        raw_fmf_environment: Any = None,
+        raw_fmf_environment_files: Any = None,
+        raw_cli_environment: Any = None,
+        raw_cli_environment_files: Any = None,
+        file_root: Optional[Path] = None,
+        key_address: Optional[str] = None,
+        logger: tmt.log.Logger) -> EnvironmentType:
+    """
+    Extract environment variables from various sources.
+
+    Combines various raw sources into a set of environment variables. Calls
+    necessary functions to process environment files, dictionaries and CLI
+    inputs.
+
+    All inputs are optional, and there is a clear order of preference, which is,
+    from the most prefered:
+
+    * ``--environment`` CLI option (``raw_cli_environment``)
+    * ``--environment-file`` CLI option (``raw_cli_environment_files``)
+    * ``environment`` fmf key (``raw_fmf_environment``)
+    * ``environment-file`` fmf key (``raw_fmf_environment_files``)
+
+    :param raw_fmf_environment: content of ``environment`` fmf key. ``None``
+        and a dictionary are accepted.
+    :param raw_fmf_environment_files: content of ``environment-file`` fmf key.
+        ``None`` and a list of paths are accepted.
+    :param raw_cli_environment: content of ``--environment`` CLI option.
+        ``None``, a tuple or a list are accepted.
+    :param raw_cli_environment_files: content of `--environment-file`` CLI
+        option. ``None``, a tuple or a list are accepted.
+    :raises NormalizationError: when an input is of a type which is not allowed
+        for that particular source.
+    """
+
+    key_address_prefix = f'{key_address}:' if key_address else ''
+
+    from_fmf_files: EnvironmentType = {}
+    from_fmf_dict: EnvironmentType = {}
+    from_cli_files: EnvironmentType = {}
+    from_cli: EnvironmentType = {}
+
+    if raw_fmf_environment_files is None:
+        pass
+    elif isinstance(raw_fmf_environment_files, list):
+        from_fmf_files = environment_files_to_dict(
+            filenames=raw_fmf_environment_files,
+            root=file_root,
+            logger=logger)
+    else:
+        raise NormalizationError(
+            f'{key_address_prefix}environment-file',
+            raw_fmf_environment_files,
+            'unset or a list of paths')
+
+    if raw_fmf_environment is None:
+        pass
+    elif isinstance(raw_fmf_environment, dict):
+        from_fmf_dict = {
+            str(key): str(value)
+            for key, value in raw_fmf_environment.items()}
+    else:
+        raise NormalizationError(
+            f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary')
+
+    if raw_cli_environment_files is None:
+        pass
+    elif isinstance(raw_cli_environment_files, (list, tuple)):
+        from_cli_files = environment_files_to_dict(
+            filenames=raw_cli_environment_files,
+            root=file_root,
+            logger=logger)
+    else:
+        raise NormalizationError(
+            'environment-file', raw_cli_environment_files, 'unset or a list of paths')
+
+    if raw_cli_environment is None:
+        pass
+    elif isinstance(raw_cli_environment, (list, tuple)):
+        from_cli = environment_to_dict(variables=list(raw_cli_environment), logger=logger)
+    else:
+        raise NormalizationError(
+            'environment', raw_cli_environment, 'unset or a list of key/value pairs')
+
+    # Combine all sources into one mapping, honor the order in which they override
+    # other sources.
+    return {
+        **from_fmf_files,
+        **from_fmf_dict,
+        **from_cli_files,
+        **from_cli
+        }
+
+
 @contextlib.contextmanager
 def modify_environ(
         new_elements: EnvironmentType) -> Generator[None, None, None]:

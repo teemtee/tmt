@@ -1456,7 +1456,15 @@ class Plan(
             self._initialize_data_directory()
 
         # Store 'environment' and 'environment-file' keys content
-        self._environment = self._get_environment_vars(node)
+        self._environment = tmt.utils.environment_from_spec(
+            raw_fmf_environment_files=node.get("environment-file") or [],
+            raw_fmf_environment=node.get('environment', {}),
+            raw_cli_environment_files=self.opt('environment-file') or [],
+            raw_cli_environment=self.opt('environment'),
+            file_root=Path(node.root) if node.root else None,
+            key_address=node.name,
+            logger=self._logger)
+
         # Expand all environment and context variables in the node
         with tmt.utils.modify_environ(self.environment):
             self._expand_node_data(node.data, {
@@ -1570,30 +1578,8 @@ class Plan(
             # And tree path if possible
             if self.worktree:
                 combined["TMT_TREE"] = str(self.worktree)
-
             return combined
         return self._environment
-
-    def _get_environment_vars(self, node: fmf.Tree) -> EnvironmentType:
-        """ Get variables from 'environment' and 'environment-file' keys """
-        # Environment variables from files
-        environment_files = node.get("environment-file") or []
-        if not isinstance(environment_files, list):
-            raise tmt.utils.NormalizationError(
-                f'{self.name}:environment-file', environment_files, 'unset or a list of paths')
-        combined = tmt.utils.environment_files_to_dict(
-            filenames=environment_files,
-            root=Path(node.root) if node.root else None,
-            logger=self._logger)
-
-        # Environment variables from key, make sure that values are string
-        environment = {
-            key: str(value) for key, value
-            in node.get('environment', {}).items()}
-
-        # Combine both sources into one ('environment' key takes precendence)
-        combined.update(environment)
-        return combined
 
     def _initialize_worktree(self) -> None:
         """
@@ -2935,17 +2921,13 @@ class Run(tmt.utils.Common):
         # Gather environment variables from options only once
         if self._environment_from_options is None:
             assert self.tree is not None  # narrow type
-            self._environment_from_options = {}
-            # Variables gathered from 'environment-file' options
-            self._environment_from_options.update(
-                tmt.utils.environment_files_to_dict(
-                    filenames=(self.opt('environment-file') or []),
-                    root=self.tree.root,
-                    logger=self._logger))
-            # Variables from 'environment' options (highest priority)
-            self._environment_from_options.update(
-                tmt.utils.environment_to_dict(
-                    variables=self.opt('environment'), logger=self._logger))
+
+            self._environment_from_options = tmt.utils.environment_from_spec(
+                raw_cli_environment_files=self.opt('environment-file') or [],
+                raw_cli_environment=self.opt('environment'),
+                file_root=Path(self.tree.root) if self.tree.root else None,
+                logger=self._logger
+                )
 
         # Combine workdir and command line
         combined = self._environment_from_workdir.copy()
