@@ -36,6 +36,7 @@ from typing import (
     Generic,
     Iterable,
     List,
+    Literal,
     Optional,
     Pattern,
     Sequence,
@@ -63,11 +64,6 @@ from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 import tmt.log
 

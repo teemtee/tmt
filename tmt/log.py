@@ -30,15 +30,9 @@ import logging
 import logging.handlers
 import os
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Protocol, Set, Tuple, TypedDict, cast
 
 import click
-
-if sys.version_info >= (3, 8):
-    from typing import Protocol, TypedDict
-else:
-    from typing_extensions import Protocol, TypedDict
-
 
 if TYPE_CHECKING:
     import tmt.utils

@@ -1,10 +1,11 @@
+import asyncio
 import dataclasses
 import datetime
 import logging
 import os
-import sys
 from contextlib import suppress
-from typing import Any, Dict, Optional, Tuple, cast
+from functools import wraps
+from typing import Any, Dict, Optional, Tuple, TypedDict, cast
 
 import tmt
 import tmt.options
@@ -12,14 +13,6 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.utils import ProvisionError, field, updatable_message
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
-import asyncio
-from functools import wraps
 
 mrack = Any
 providers = Any

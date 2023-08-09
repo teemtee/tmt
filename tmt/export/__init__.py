@@ -6,7 +6,6 @@ export of tests, plans or stories.
 """
 
 import re
-import sys
 import traceback
 import types
 import xmlrpc.client
@@ -19,17 +18,13 @@ from typing import (
     Generic,
     List,
     Optional,
+    Protocol,
     Tuple,
     Type,
     TypeVar,
     Union,
     cast,
     )
-
-if sys.version_info >= (3, 8):
-    from typing import Protocol
-else:
-    from typing_extensions import Protocol
 
 import fmf
 import fmf.utils

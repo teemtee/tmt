@@ -1,8 +1,7 @@
 import dataclasses
 import re
 import shutil
-import sys
-from typing import List, Optional, Tuple, cast
+from typing import List, Literal, Optional, Tuple, cast
 
 import fmf
 import fmf.utils
@@ -16,12 +15,6 @@ import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest, GuestPackageManager
 from tmt.utils import Command, Path, ShellScript, field
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
-
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 

@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
-import sys
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, TypedDict, cast
 
 import requests
 
@@ -12,12 +11,6 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.utils import ProvisionError, cached_property, field, retry_session, updatable_message
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to
