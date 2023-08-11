@@ -662,7 +662,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
                     raise tmt.utils.NormalizationError(
                         f'{self.name}:{int_key}', value, 'an integer') from exc
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'virtual' provision plugin does not support hardware requirements.")

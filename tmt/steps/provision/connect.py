@@ -85,7 +85,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
             key=self.get('key')
             )
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.password:
             self.debug('Using password authentication.')

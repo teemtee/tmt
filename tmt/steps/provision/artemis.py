@@ -656,7 +656,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
             ssh_option=self.get('ssh-option')
             )
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         self._guest = GuestArtemis(
             logger=self._logger,

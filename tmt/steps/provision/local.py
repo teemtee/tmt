@@ -139,7 +139,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
             role=self.get('role')
             )
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")

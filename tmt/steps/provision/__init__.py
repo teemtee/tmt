@@ -424,17 +424,20 @@ class GuestData(tmt.utils.SerializableContainer):
             # TODO: teach GuestFacts to cooperate with show() methods, honor
             # the verbosity at the same time.
             if key == 'facts':
-                return
+                continue
 
             value = getattr(self, key)
 
-            if value is None:
-                return
+            if value == self.default(key):
+                continue
 
             # TODO: it seems tmt.utils.format() needs a key, and logger.info()
             # does not accept already formatted string.
             if isinstance(value, (list, tuple)):
                 printable_value = fmf.utils.listed(value)
+
+            elif isinstance(value, tmt.hardware.Hardware):
+                printable_value = tmt.utils.dict_to_yaml(value.to_spec())
 
             else:
                 printable_value = str(value)

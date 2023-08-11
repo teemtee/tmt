@@ -306,7 +306,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
 
         data = PodmanGuestData(**data_from_options)
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'container' provision plugin does not support hardware requirements.")

@@ -671,7 +671,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
             provision_tick=self.get('provision-tick'),
             )
 
-        data.show(verbose=self.get('verbose'), logger=self._logger)
+        data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware:
             data.hardware.report_support(
