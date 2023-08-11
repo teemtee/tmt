@@ -1,0 +1,27 @@
+#
+# Thanks to no "standard" public Artemis instance being available, Artemis
+# tests must be fed with credentials and setup to match the Artemis instance
+# one wishes to use for testing. To run this plan, perform the following steps:
+#
+# $ export TMT_PLUGIN_PROVISION_ARTEMIS_API_URL="..."
+# $ export TMT_PLUGIN_PROVISION_ARTEMIS_API_VERSION="..."
+# $ export TMT_PLUGIN_PROVISION_ARTEMIS_IMAGE="..."
+# $ export TMT_PLUGIN_PROVISION_ARTEMIS_KEYNAME="..."
+#
+# $ tmt -vv -c how=artemis run -a provision --how artemis plan --name artemis
+#
+
+discover:
+    how: fmf
+    filter: 'tag: artemis'
+
+provision:
+    how: artemis
+
+    # NOTE: the required keys are missing *on purpose* - they must be given
+    # on command-line.
+
+enabled: false
+adjust:
+  when: how == artemis
+  enabled: true
