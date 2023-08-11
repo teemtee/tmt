@@ -138,8 +138,13 @@ LinterReturn = Generator[Tuple[LinterOutcome, str], None, None]
 #: A linter itself, a callable method.
 LinterCallback = Callable[['Lintable'], LinterReturn]
 
-_LINTER_DESCRIPTION_PATTERN = re.compile(
-    r'(?m)^(?P<id>[CTPS]\d\d\d):\s*(?P<short>.+)$')
+_LINTER_DESCRIPTION_PATTERN = re.compile(r"""
+    ^                      # must match the whole string
+    (?P<id>[CTPS]\d\d\d):  # check ID, the class initials & a three-digit number
+    \s*                    # optional white space
+    (?P<short>.+)          # check description
+    $                      # must match the whole string
+    """, re.VERBOSE)
 
 
 @dataclasses.dataclass(init=False)
