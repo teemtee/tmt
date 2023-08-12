@@ -14,7 +14,6 @@ from typing import (
 
 import click
 import fmf
-import pkg_resources
 
 import tmt
 import tmt.base
@@ -49,8 +48,7 @@ TEST_OUTPUT_FILENAME = 'output.txt'
 TEST_METADATA_FILENAME = 'metadata.yaml'
 
 # Scripts source directory
-SCRIPTS_SRC_DIR = Path(pkg_resources.resource_filename(
-    'tmt', 'steps/execute/scripts'))
+SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
 
 @dataclass
