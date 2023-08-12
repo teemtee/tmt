@@ -28,7 +28,6 @@ from typing import (
 
 import fmf
 import fmf.utils
-import pkg_resources
 from click import echo, style
 
 import tmt
@@ -40,7 +39,7 @@ from tmt.utils import Path
 if TYPE_CHECKING:
     import tmt.base
 
-TEMPLATES_DIRECTORY = Path(pkg_resources.resource_filename('tmt', 'export/templates'))
+TEMPLATES_DIRECTORY = tmt.utils.resource_files('export/templates')
 
 bugzilla: Optional[types.ModuleType] = None
 

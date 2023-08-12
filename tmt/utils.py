@@ -6,6 +6,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import importlib.resources
 import io
 import json
 import os
@@ -27,6 +28,7 @@ from collections import Counter, OrderedDict
 from contextlib import suppress
 from functools import lru_cache
 from threading import Thread
+from types import ModuleType
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -55,7 +57,6 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 import jsonschema
-import pkg_resources
 import requests
 import requests.adapters
 import urllib3
@@ -4766,8 +4767,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
     """
 
     if not schema_filepath.is_absolute():
-        schema_filepath = Path(pkg_resources.resource_filename('tmt', 'schemas')) \
-            / schema_filepath
+        schema_filepath = resource_files('schemas') / schema_filepath
 
     try:
         with open(schema_filepath, encoding='utf-8') as f:
@@ -4805,22 +4805,17 @@ def load_schema_store() -> SchemaStore:
     """
 
     store: SchemaStore = {}
-
-    schema_dirpath = Path(pkg_resources.resource_filename('tmt', 'schemas'))
+    schema_dirpath = resource_files('schemas')
 
     try:
-        for dirpath, _, filenames in os.walk(
-                schema_dirpath, followlinks=True):
-            for filename in filenames:
-                filepath = Path(dirpath) / filename
+        for filepath in schema_dirpath.glob('**/*ml'):
+            # Ignore all files but YAML files.
+            if filepath.suffix.lower() not in ('.yaml', '.yml'):
+                continue
 
-                # Ignore all files but YAML files.
-                if filepath.suffix.lower() not in ('.yaml', '.yml'):
-                    continue
+            schema = _load_schema(filepath)
 
-                schema = _load_schema(filepath)
-
-                store[schema['$id']] = schema
+            store[schema['$id']] = schema
 
     except Exception as exc:
         raise FileError(f"Failed to discover schema files\n{exc}")
@@ -5909,3 +5904,20 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     origin = locate_key_origin(node, key)
 
     return origin is not None and node.name == origin.name
+
+
+def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tmt") -> Path:
+    """
+    Helper function to get path of package file or directory.
+
+    A thin wrapper for :py:func:`importlib.resources.files`:
+    ``files()`` returns ``Traversable`` object, though in our use-case
+    it should always produce a :py:class:`pathlib.PosixPath` object.
+    Converting it to :py:class:`tmt.utils.Path` instance should be
+    safe and stick to the "``Path`` only!" rule in tmt's code base.
+
+    :param path: file or directory path to retrieve, relative to the ``package`` root.
+    :param package: package in which to search for the file/directory.
+    :returns: an absolute path to the requested file or directory.
+    """
+    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
