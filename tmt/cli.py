@@ -254,7 +254,7 @@ def main(
     '--on-plan-error',
     type=click.Choice(['quit', 'continue']),
     default='quit',
-    help='What to do when plan fails to finish. Quit by default, or continue'
+    help='What to do when plan fails to finish. Quit by default, or continue '
          'with the next plan.'
     )
 @environment_options
