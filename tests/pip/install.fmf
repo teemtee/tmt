@@ -24,5 +24,5 @@ tier: null
         /tmp/venv/bin/tmt --help
     adjust:
         result: xfail
-        when: distro == fedora-rawhide
+        when: distro >= fedora-39
         because: https://github.com/aio-libs/aiohttp/issues/7229
