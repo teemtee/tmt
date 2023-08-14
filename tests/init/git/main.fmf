@@ -1,0 +1,4 @@
+summary: Test if tmt automatically adds '.fmf' directory into git.
+description:
+    If 'tmt init ...' is executed in a git repository, '.fmf' directory
+    should be automatically added into git index.

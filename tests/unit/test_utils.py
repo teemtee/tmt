@@ -31,6 +31,7 @@ from tmt.utils import (
     clonable_git_url,
     duration_to_seconds,
     filter_paths,
+    git_add,
     inject_auth_git_url,
     listify,
     public_git_url,
@@ -78,6 +79,17 @@ def origin_and_local_git_repo(local_git_repo: Path) -> Tuple[Path, Path]:
     run(ShellScript('git config --local user.name LZachar').to_shell_command(),
         cwd=fork_dir)
     return local_git_repo, fork_dir
+
+
+@pytest.fixture()
+def nested_file(tmppath: Path) -> Tuple[Path, Path, Path]:
+    top_dir = tmppath / 'top_dir'
+    top_dir.mkdir()
+    sub_dir = top_dir / 'sub_dir'
+    sub_dir.mkdir()
+    file = sub_dir / 'file.txt'
+    file.touch()
+    return top_dir, sub_dir, file
 
 
 _test_public_git_url_input = [
@@ -775,6 +787,10 @@ class TestValidateGitStatus:
     def test_untracked_fmf_root(cls, local_git_repo: Path, root_logger):
         # local repo is enough since this can't get passed 'is pushed' check
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
+        # Make sure fmf root is not tracked
+        run(
+            ShellScript('git rm --cached .fmf/version').to_shell_command(),
+            cwd=local_git_repo)
         local_git_repo.joinpath('main.fmf').write_text('test: echo')
         run(
             ShellScript('git add main.fmf').to_shell_command(),
@@ -857,6 +873,33 @@ class TestValidateGitStatus:
 
         assert validation_result == (
             False, 'Not pushed changes in .fmf/version main.fmf')
+
+
+class TestGitAdd:
+    @classmethod
+    def test_not_in_repository(
+            cls,
+            nested_file: Tuple[Path, Path, Path],
+            root_logger):
+        top_dir, sub_dir, file = nested_file
+
+        with pytest.raises(GeneralError, match=r"Failed to add path .* to git index."):
+            git_add(path=sub_dir, logger=root_logger)
+
+    @classmethod
+    def test_in_repository(
+            cls,
+            nested_file: Tuple[Path, Path, Path],
+            root_logger):
+        top_dir, sub_dir, file = nested_file
+        run(ShellScript('git init').to_shell_command(), cwd=top_dir)
+
+        git_add(path=sub_dir, logger=root_logger)
+
+        # Check git status
+        result = run(ShellScript('git diff --cached --name-only').to_shell_command(), cwd=top_dir)
+        assert result.stdout is not None
+        assert result.stdout.strip() == 'sub_dir/file.txt'
 
 
 #

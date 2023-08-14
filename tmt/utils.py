@@ -3271,6 +3271,22 @@ def git_root(*, fmf_root: Path, logger: tmt.log.Logger) -> Optional[Path]:
         return None
 
 
+def git_add(*, path: Path, logger: tmt.log.Logger) -> None:
+    """
+    Add path to the git index.
+
+    :param path: path to add to the git index.
+    :param logger: used for logging.
+    """
+    path = path.resolve()
+
+    try:
+        Command("git", "add", str(path)).run(cwd=path.parent, logger=logger)
+
+    except RunError as error:
+        raise GeneralError(f"Failed to add path '{path}' to git index.") from error
+
+
 def default_branch(
         *,
         repository: Path,

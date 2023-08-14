@@ -2841,6 +2841,21 @@ class Tree(tmt.utils.Common):
                         f"Failed to initialize tree in '{path}': {error}")
                 echo(f"Tree '{tree.root}' initialized.")
 
+        # Add .fmf directory to the git index if possible
+        if tmt.utils.git_root(fmf_root=path, logger=logger):
+            fmf_dir = path / '.fmf'
+            if dry:
+                echo(f"Path '{fmf_dir}' would be added to git index.")
+            else:
+                try:
+                    tmt.utils.git_add(path=fmf_dir, logger=logger)
+                    echo(f"Path '{fmf_dir}' added to git index.")
+                except tmt.utils.GeneralError as error:
+                    message = error.message
+                    if isinstance(error.__cause__, tmt.utils.RunError) and error.__cause__.stderr:
+                        message += " " + " ".join(error.__cause__.stderr.splitlines())
+                    echo(message)
+
         # Populate the tree with example objects if requested
         if template == 'empty':
             choices = listed(tmt.templates.INIT_TEMPLATES, join='or')
