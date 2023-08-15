@@ -1577,6 +1577,8 @@ class Plan(
             # And tree path if possible
             if self.worktree:
                 combined["TMT_TREE"] = str(self.worktree)
+            # And tmt version
+            combined["TMT_VERSION"] = tmt.__version__
             return combined
         return self._environment
 
