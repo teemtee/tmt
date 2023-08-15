@@ -426,6 +426,8 @@ TMT_PLAN_DATA
     back from the guest and available for inspection after the
     plan is completed.
 
+TMT_VERSION
+    The version of tmt.
 
 Test Variables
 --------------
