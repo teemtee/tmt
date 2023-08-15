@@ -111,12 +111,12 @@ class EPEL(ToggleableFeature):
     def enable(self, guest: Guest, logger: tmt.log.Logger) -> None:
         guest_distro = self.get_guest_distro(guest=guest, logger=logger)
         if guest_distro is None:
-            raise tmt.utils.PrepareError('The distro of the guest is not supported.')
+            raise tmt.utils.PrepareError('The distro of the guest is unsupported.')
 
         sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
 
         if guest_distro == Distro.FEDORA:
-            self.info('Enable EPEL on Fedora, do nothing ...')
+            self.info('Nothing to do on Fedora for EPEL')
         elif guest_distro == Distro.CENTOS_7:
             # yum install epel-release
             self.info('Enable EPEL on CentOS 7')
@@ -161,18 +161,17 @@ class EPEL(ToggleableFeature):
             shscript2 = ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_9_PACKAGES)}')
             self.guest.execute(shscript1 + shscript2, silent=True)
         else:
-            pass
+            self.warn('The distro of the guest is unsupported.')
 
     def disable(self, guest: Guest, logger: tmt.log.Logger) -> None:
         guest_distro = self.get_guest_distro(guest=guest, logger=logger)
         if guest_distro is None:
-            raise tmt.utils.PrepareError('The distro of the guest is not supported.')
+            raise tmt.utils.PrepareError('The distro of the guest is unsupported.')
 
         sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
 
         if guest_distro == Distro.FEDORA:
-            # XXX: What to do?
-            self.info('Disable epel on Fedora, do nothing ...')
+            self.info('Nothing to do on Fedora for EPEL')
         elif guest_distro == Distro.RHEL_8:
             # subscription-manager repos --disable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y remove epel-release
@@ -188,7 +187,7 @@ class EPEL(ToggleableFeature):
             shscript2 = ShellScript(f'{sudo} dnf -y remove epel-release')
             self.guest.execute(shscript1 + shscript2, silent=True)
         else:
-            pass
+            self.warn('The distro of the guest is unsupported.')
 
 
 _FEATURES = {
