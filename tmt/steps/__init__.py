@@ -15,6 +15,7 @@ from typing import (
     DefaultDict,
     Dict,
     Generator,
+    Iterable,
     List,
     Optional,
     Tuple,
@@ -101,6 +102,13 @@ class DefaultNameGenerator:
         self.known_names = known_names
 
         self.restart()
+
+    @classmethod
+    def from_raw_phases(cls, raw_data: Iterable['_RawStepData']) -> 'DefaultNameGenerator':
+        collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
+        actual_name_keys = [name for name in collected_name_keys if name]
+
+        return DefaultNameGenerator(actual_name_keys)
 
     def restart(self) -> None:
         def _generator() -> Generator[str, None, None]:
@@ -345,11 +353,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def _set_default_values(self, raw_data: List[_RawStepData]) -> List[_RawStepData]:
         """ Set default values for ``name`` and ``how`` fields if not specified """
 
-        for i, raw_datum in enumerate(raw_data):
+        name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
+
+        for _i, raw_datum in enumerate(raw_data):
             # Add default unique names even to multiple configs so that the users
             # don't need to specify it if they don't care about the name
             if raw_datum.get('name', None) is None:
-                raw_datum['name'] = f'{tmt.utils.DEFAULT_NAME}-{i}'
+                raw_datum['name'] = name_generator.get()
 
             # Set 'how' to the default if not specified
             if raw_datum.get('how', None) is None:
@@ -552,10 +562,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         raw_data: List[_RawStepData] = self._raw_data[:]
         postponed_invocations: List['tmt.cli.CLIInvocation'] = []
 
-        collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
-        actual_name_keys = [name for name in collected_name_keys if name]
-
-        name_generator = DefaultNameGenerator(actual_name_keys)
+        name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
         def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
             if not raw_datum.get('name'):
