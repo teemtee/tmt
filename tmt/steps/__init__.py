@@ -370,7 +370,7 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
         # Give a hint about detailed help
         name = cls.__name__.lower()
         usage += (
-            f"\n\nUse 'tmt run {name} --help --how <method>' to learn more "
+            f"\n\nUse 'tmt run {name} --how <method> --help' to learn more "
             f"about given {name} method and all its supported options.")
         return usage
 
