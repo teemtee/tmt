@@ -148,6 +148,13 @@ default-1:html:never"
         check "with-order" "A single 'html' phase with preserved order shall exist" "default-0:html:60"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test /with-order with --update"
+        rlRun -s "$run plan -n /with-order \
+            report --update --name default-0 --order 40"
+
+        check "with-order" "A single 'html' phase with modified order shall exist" "default-0:html:40"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $rundir"

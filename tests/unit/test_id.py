@@ -11,9 +11,9 @@ import tmt.log
 from tmt.identifier import ID_KEY
 from tmt.utils import Path
 
-from .. import CLIRunner
+from .. import CliRunner
 
-runner = CLIRunner()
+runner = CliRunner()
 test_path = Path(__file__).parent / "id"
 root_logger = tmt.log.Logger.create()
 

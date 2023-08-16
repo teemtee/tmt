@@ -6,7 +6,7 @@ from fmf import Tree
 import tmt.cli
 from tmt.identifier import ID_KEY
 
-from .. import CLIRunner
+from .. import CliRunner
 from .test_nitrate import TEST_DIR, Base
 
 
@@ -19,7 +19,7 @@ class PolarionExport(Base):
         assert ID_KEY not in fmf_node.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CLIRunner()
+        runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--create", "."])
@@ -32,7 +32,7 @@ class PolarionExport(Base):
         assert ID_KEY not in fmf_node_before.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CLIRunner()
+        runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "polarion", "--create", "--dry", "."],
@@ -47,7 +47,7 @@ class PolarionExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CLIRunner()
+        runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--create", "."])
@@ -60,7 +60,7 @@ class PolarionExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
-        runner = CLIRunner()
+        runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli.main,
             ["test", "export", "--how", "polarion", "--debug", "--dry",
@@ -73,7 +73,7 @@ class PolarionExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CLIRunner()
+        runner = CliRunner()
         self.runner_output = runner.invoke(tmt.cli.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--bugzilla", "."])

@@ -1,3 +1,1 @@
 summary: Verify fmf and CLI phases play nicely together
-test: ./test.sh
-framework: beakerlib

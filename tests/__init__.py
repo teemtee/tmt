@@ -28,7 +28,7 @@ def reset_common() -> None:
         klass.cli_invocation = None
 
 
-class CLIRunner(click.testing.CliRunner):
+class CliRunner(click.testing.CliRunner):
     def invoke(
             self,
             cli: click.core.BaseCommand,

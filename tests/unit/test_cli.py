@@ -11,7 +11,7 @@ import pytest
 import tmt.cli
 import tmt.log
 
-from .. import CLIRunner
+from .. import CliRunner
 
 # Prepare path to examples
 PATH = os.path.dirname(os.path.realpath(__file__))
@@ -22,7 +22,7 @@ def example(name):
     return os.path.join(PATH, "../../examples/", name)
 
 
-runner = CLIRunner()
+runner = CliRunner()
 
 
 def test_mini():

@@ -10,9 +10,9 @@ import tmt.cli
 from tmt.base import FmfId, Link, LinkNeedle, Links
 from tmt.utils import Path, SpecificationError
 
-from .. import CLIRunner
+from .. import CliRunner
 
-runner = CLIRunner()
+runner = CliRunner()
 
 
 def test_invalid_yaml_syntax():

@@ -893,7 +893,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     # context tracking.
     #
     # The "later use" means the context is often used when looking for options
-    # like --how or --dry.
+    # like --how or --dry, may affect step data from fmf or even spawn new phases.
     cli_invocation: Optional['tmt.cli.CLIInvocation'] = None
 
     @classmethod
@@ -914,7 +914,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         if cls.cli_invocation is not None:
             raise GeneralError(
-                f"{cls.__name__} attempted to save second CLI context: {cls.cli_invocation}")
+                f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}")
 
         cls.cli_invocation = tmt.cli.CLIInvocation.from_context(context)
         return cls.cli_invocation
@@ -924,7 +924,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         CLI invocation attached to this instance or its parents.
 
-        :returns: instance-level CLI invocation, or, it there is none,
+        :returns: instance-level CLI invocation, or, if there is none,
             current class and its parent classes are inspected for their
             class-level invocations.
         """
@@ -4715,10 +4715,10 @@ def dataclass_normalize_field(
 
     value = normalize_callback(key_address, raw_value, logger) if normalize_callback else raw_value
 
-    # As mentioned in BasePlugin._update_data_from_options, the test
-    # performed there is questionable. To gain more visibility into how
-    # normalization and CLI updates work together, a bit of logging of
-    # values the CLI update process does not consider.
+    # TODO: we already access parameter source when importing CLI invocations in `Step.wake()`,
+    # we should do the same here as well. It will require adding (optional) Click context
+    # as one of the inputs, but that's acceptable. Then we can get rid of this less-than-perfect
+    # test.
     #
     # Keep for debugging purposes, as long as normalization settles down.
     if value is None or value == [] or value == ():
@@ -5137,9 +5137,6 @@ class NormalizeKeysMixin(_CommonBase):
                 debug('default value', str(default_value))
                 debug('default value type', str(type(default_value)))
 
-                # try+except seems to work better than get(), especially when
-                # semantic of fmf.Tree.get() is slightly different than that
-                # of dict().get().
                 if source_keyname in key_source:
                     value = key_source[source_keyname]
 
