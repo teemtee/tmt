@@ -551,7 +551,7 @@ class Logger:
 
     def apply_verbosity_options(
             self,
-            cli_invocation: Optional['tmt.cli.CLIInvocation'] = None,
+            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             **kwargs: Any) -> 'Logger':
         """
         Update logger's settings to match given CLI options.

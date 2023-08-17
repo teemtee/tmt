@@ -87,7 +87,7 @@ class Context(click.Context):
 
 
 @dataclasses.dataclass
-class CLIInvocation:
+class CliInvocation:
     """
     A single CLI invocation of a tmt subcommand.
 
@@ -103,8 +103,8 @@ class CLIInvocation:
     options: Dict[str, Any]
 
     @classmethod
-    def from_context(cls, context: Context) -> 'CLIInvocation':
-        return CLIInvocation(context=context, options=context.params)
+    def from_context(cls, context: Context) -> 'CliInvocation':
+        return CliInvocation(context=context, options=context.params)
 
     @cached_property
     def option_sources(self) -> Dict[str, click.core.ParameterSource]:
@@ -297,7 +297,7 @@ def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
     run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
-        cli_invocation=CLIInvocation.from_context(context),
+        cli_invocation=CliInvocation.from_context(context),
         logger=logger
         )
     context.obj.run = run
@@ -1468,7 +1468,7 @@ def status(
 
     status_obj = tmt.Status(
         logger=context.obj.logger.clone().apply_verbosity_options(**kwargs),
-        cli_invocation=CLIInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context))
     status_obj.show()
 
 
@@ -1503,7 +1503,7 @@ def clean(context: Context, **kwargs: Any) -> None:
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger,
         parent=context.obj.common,
-        cli_invocation=CLIInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context))
     context.obj.clean = clean_obj
     exit_code = 0
     if context.invoked_subcommand is None:
@@ -1518,7 +1518,7 @@ def clean(context: Context, **kwargs: Any) -> None:
             .descend(logger_name='clean-images', extra_shift=0)
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
-            cli_invocation=CLIInvocation.from_context(context))
+            cli_invocation=CliInvocation.from_context(context))
         if tmt.utils.WORKDIR_ROOT.exists():
             if not clean_obj.guests():
                 exit_code = 1
@@ -1595,7 +1595,7 @@ def clean_runs(
         .descend(logger_name='clean-runs', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CLIInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context))
     context.obj.clean_partials["runs"].append(clean_obj.runs)
 
 
@@ -1636,7 +1636,7 @@ def clean_guests(
         .descend(logger_name='clean-guests', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CLIInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context))
     context.obj.clean_partials["guests"].append(clean_obj.guests)
 
 
@@ -1661,7 +1661,7 @@ def clean_images(context: Context, **kwargs: Any) -> None:
         .descend(logger_name='clean-images', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CLIInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context))
     context.obj.clean_partials["images"].append(clean_obj.images)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

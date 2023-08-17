@@ -592,7 +592,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # compatible, `--update` without `--name` should result in all phases being converted into
         # what the `--update` brings in. In this list, we will collect "postponed" CLI invocations,
         # and we will get back to them once we're done with those we can apply immediately.
-        postponed_invocations: List['tmt.cli.CLIInvocation'] = []
+        postponed_invocations: List['tmt.cli.CliInvocation'] = []
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 

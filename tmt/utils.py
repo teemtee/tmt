@@ -817,7 +817,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
             relative_indent: int = 1,
-            cli_invocation: Optional['tmt.cli.CLIInvocation'] = None,
+            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
         """
@@ -894,10 +894,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     #
     # The "later use" means the context is often used when looking for options
     # like --how or --dry, may affect step data from fmf or even spawn new phases.
-    cli_invocation: Optional['tmt.cli.CLIInvocation'] = None
+    cli_invocation: Optional['tmt.cli.CliInvocation'] = None
 
     @classmethod
-    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CLIInvocation':
+    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
         """
         Record a CLI invocation and options it carries for later use.
 
@@ -916,11 +916,11 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             raise GeneralError(
                 f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}")
 
-        cls.cli_invocation = tmt.cli.CLIInvocation.from_context(context)
+        cls.cli_invocation = tmt.cli.CliInvocation.from_context(context)
         return cls.cli_invocation
 
     @property
-    def _inherited_cli_invocation(self) -> Optional['tmt.cli.CLIInvocation']:
+    def _inherited_cli_invocation(self) -> Optional['tmt.cli.CliInvocation']:
         """
         CLI invocation attached to this instance or its parents.
 
@@ -1392,17 +1392,17 @@ class _MultiInvokableCommonMeta(_CommonMeta):
     def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
         super().__init__(*args, **kwargs)
 
-        cls.cli_invocations: List['tmt.cli.CLIInvocation'] = []
+        cls.cli_invocations: List['tmt.cli.CliInvocation'] = []
 
 
 class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
-    cli_invocations: List['tmt.cli.CLIInvocation']
+    cli_invocations: List['tmt.cli.CliInvocation']
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
     @classmethod
-    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CLIInvocation':
+    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
         """
         Save a CLI context and options it carries for later use.
 
@@ -1419,7 +1419,7 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
         :param context: CLI context to save.
         """
 
-        invocation = tmt.cli.CLIInvocation.from_context(context)
+        invocation = tmt.cli.CliInvocation.from_context(context)
 
         cls.cli_invocations.append(invocation)
 

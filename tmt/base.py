@@ -739,7 +739,7 @@ class Core(
     @classmethod
     def store_cli_invocation(
             cls,
-            context: 'tmt.cli.Context') -> 'tmt.cli.CLIInvocation':
+            context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
         """ Save provided command line context for future use """
         invocation = super().store_cli_invocation(context)
 
@@ -2931,7 +2931,7 @@ class Run(tmt.utils.Common):
                  *,
                  id_: Optional[Path] = None,
                  tree: Optional[Tree] = None,
-                 cli_invocation: Optional['tmt.cli.CLIInvocation'] = None,
+                 cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
@@ -3213,7 +3213,7 @@ class Run(tmt.utils.Common):
                 cli_invocation = klass.cli_invocation
 
                 if cli_invocation is None:
-                    klass.cli_invocation = tmt.cli.CLIInvocation(
+                    klass.cli_invocation = tmt.cli.CliInvocation(
                         context=None, options={'dry': True})
 
                 else:
@@ -3437,7 +3437,7 @@ class Clean(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  name: Optional[str] = None,
                  workdir: tmt.utils.WorkdirArgumentType = None,
-                 cli_invocation: Optional['tmt.cli.CLIInvocation'] = None,
+                 cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """
         Initialize name and relation with the parent object
