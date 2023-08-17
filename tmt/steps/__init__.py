@@ -1523,7 +1523,7 @@ class Login(Action):
             help='Log in during given phase of selected step(s).')
         @option(
             '-w', '--when', metavar='RESULT', multiple=True,
-            type=click.Choice([m.value for m in ResultOutcome.__members__.values()]),
+            choices=[m.value for m in ResultOutcome.__members__.values()],
             help='Log in if a test finished with given result(s).')
         @option(
             '-c', '--command', metavar='COMMAND',

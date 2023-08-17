@@ -264,23 +264,23 @@ def main(
 @option(
     '-a', '--all', help='Run all steps, customize some.', is_flag=True)
 @option(
-    '-u', '--until', type=click.Choice(tmt.steps.STEPS),
+    '-u', '--until', choices=tmt.steps.STEPS,
     help='Enable given step and all preceding steps.')
 @option(
-    '-s', '--since', type=click.Choice(tmt.steps.STEPS),
+    '-s', '--since', choices=tmt.steps.STEPS,
     help='Enable given step and all following steps.')
 @option(
-    '-A', '--after', type=click.Choice(tmt.steps.STEPS),
+    '-A', '--after', choices=tmt.steps.STEPS,
     help='Enable all steps after the given one.')
 @option(
-    '-B', '--before', type=click.Choice(tmt.steps.STEPS),
+    '-B', '--before', choices=tmt.steps.STEPS,
     help='Enable all steps before the given one.')
 @option(
-    '-S', '--skip', type=click.Choice(tmt.steps.STEPS),
+    '-S', '--skip', choices=tmt.steps.STEPS,
     help='Skip given step(s) during test run execution.', multiple=True)
-@click.option(
+@option(
     '--on-plan-error',
-    type=click.Choice(['quit', 'continue']),
+    choices=['quit', 'continue'],
     default='quit',
     help='What to do when plan fails to finish. Quit by default, or continue '
          'with the next plan.'
@@ -744,12 +744,12 @@ _test_export_default = 'yaml'
 @option(
     '-h', '--how', default=_test_export_default, show_default=True,
     help='Output format.',
-    type=click.Choice(choices=_test_export_formats))
+    choices=_test_export_formats)
 @option(
     '--format', default=_test_export_default, show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    type=click.Choice(choices=_test_export_formats))
+    choices=_test_export_formats)
 @option(
     '--nitrate', is_flag=True,
     help="Export test metadata to Nitrate.",
@@ -1028,12 +1028,12 @@ _plan_export_default = 'yaml'
 @option(
     '-h', '--how', default=_plan_export_default, show_default=True,
     help='Output format.',
-    type=click.Choice(choices=_plan_export_formats))
+    choices=_plan_export_formats)
 @option(
     '--format', default=_plan_export_default, show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    type=click.Choice(choices=_plan_export_formats))
+    choices=_plan_export_formats)
 @option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
@@ -1293,12 +1293,12 @@ _story_export_default = 'yaml'
 @option(
     '-h', '--how', default=_story_export_default, show_default=True,
     help='Output format.',
-    type=click.Choice(choices=_story_export_formats))
+    choices=_story_export_formats)
 @option(
     '--format', default=_story_export_default, show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    type=click.Choice(choices=_story_export_formats))
+    choices=_story_export_formats)
 @option(
     '-d', '--debug', is_flag=True,
     help='Provide as much debugging details as possible.')
@@ -1427,7 +1427,7 @@ def stories_id(
 @click.argument('path', default='.')
 @option(
     '-t', '--template', default='empty',
-    type=click.Choice(['empty', *tmt.templates.INIT_TEMPLATES]),
+    choices=['empty', *tmt.templates.INIT_TEMPLATES],
     help="Use this template to populate the tree.")
 @verbosity_options
 @force_dry_options

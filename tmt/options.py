@@ -4,7 +4,7 @@ import contextlib
 import dataclasses
 import re
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
 import click
 
@@ -78,6 +78,7 @@ def option(
         prompt: Optional[str] = None,
         envvar: Optional[str] = None,
         # Following parameters are our additions.
+        choices: Optional[Sequence[str]] = None,
         deprecated: Optional[Deprecated] = None) -> ClickOptionDecoratorType:
     """
     Attaches an option to the command.
@@ -86,6 +87,9 @@ def option(
     meaning as those of ``click.option()``, and are passed to ``click.option()``,
     with the exception of ``deprecated`` parameter.
 
+    :param choices: if set, it sets ``type`` of the option to
+        :py:class:`click.Choices`, and limits option values to those
+        listed in ``choices``.
     :param deprecated: if set, it is rendered and appended to ``help``. This
         parameter is **not** passed to :py:func:`click.option`.
     """
@@ -101,6 +105,9 @@ def option(
         else:
             help = deprecated.rendered
 
+    if choices is not None:
+        type = click.Choice(choices)
+
     # Add a metavar listing choices unless an explicit metavar has been provided
     if isinstance(type, click.Choice) and metavar is None:
         metavar = '|'.join(type.choices)
@@ -110,6 +117,7 @@ def option(
     # not accepted by click and the positional parameter.
     kwargs = locals().copy()
     kwargs.pop('param_decls')
+    kwargs.pop('choices')
     kwargs.pop('deprecated')
 
     return click.option(*param_decls, **kwargs)
@@ -128,7 +136,7 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
         help='Be quiet. Exit code is just enough for me.'),
     option(
         '--log-topic',
-        type=click.Choice([topic.value for topic in tmt.log.Topic]),
+        choices=[topic.value for topic in tmt.log.Topic],
         multiple=True,
         help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
@@ -284,7 +292,7 @@ LINT_OPTIONS: List[ClickOptionDecoratorType] = [
     option(
         '--outcome-only',
         multiple=True,
-        type=click.Choice(_lint_outcomes),
+        choices=_lint_outcomes,
         help='Display only checks with the given outcome.')
     ]
 

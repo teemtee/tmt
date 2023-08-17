@@ -2361,10 +2361,10 @@ class FieldMetadata(Generic[T]):
             from tmt.options import option
 
             if isinstance(self.option_choices, (list, tuple)):
-                self.option_kwargs['type'] = click.Choice(self.option_choices)
+                self.option_kwargs['choices'] = self.option_choices
 
             elif callable(self.option_choices):
-                self.option_kwargs['type'] = click.Choice(self.option_choices())
+                self.option_kwargs['choices'] = self.option_choices()
 
             self._option = option(
                 *self.option_args,
