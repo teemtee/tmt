@@ -74,6 +74,44 @@ rlJournalStart
             0 "Check testing comment was not overwritten"
     rlPhaseEnd
 
+    rlPhaseStartTest "Using the --link option"
+        default_relation="relates"
+        relation_taget_01="RT01"
+        relation_taget_02="https://foo.redhat.com/RT02"
+        relation_taget_03="verifies:https://foo.redhat.com/RT03"
+
+        rlRun "rm -rf $tmp/test_link" "0-255"
+        rlRun "tmt test create test_link --template shell"
+        rlAssertExists "$tmp/test_link/main.fmf"
+        rlAssertNotGrep "^link:" "$tmp/test_link/main.fmf"
+
+        rlRun "rm -rf $tmp/test_link" "0-255"
+        rlRun -s "tmt test create test_link --template shell --link ''" "1-255"
+        rlAssertNotExists "$tmp/test_link/main.fmf"
+        rlAssertGrep "Invalid spec" "${rlRun_LOG}"
+
+        rlRun "rm -rf $tmp/test_link" "0-255"
+        rlRun "tmt test create test_link --template shell --link $relation_taget_01"
+        rlAssertExists "$tmp/test_link/main.fmf"
+        rlRun -s "yq -ry .link[0] $tmp/test_link/main.fmf"
+        rlAssertGrep "$default_relation: $relation_taget_01" "${rlRun_LOG}"
+
+        rlRun "rm -rf $tmp/test_link" "0-255"
+        rlRun "tmt test create test_link --template shell --link $relation_taget_02"
+        rlAssertExists "$tmp/test_link/main.fmf"
+        rlRun -s "yq -ry .link[0] $tmp/test_link/main.fmf"
+        rlAssertGrep "$default_relation: $relation_taget_02" "${rlRun_LOG}"
+
+        rlRun "rm -rf $tmp/test_link" "0-255"
+        rlRun "tmt test create test_link --template shell \
+              --link $relation_taget_02 --link $relation_taget_03"
+        rlAssertExists "$tmp/test_link/main.fmf"
+        rlRun -s "yq -ry .link[0] $tmp/test_link/main.fmf"
+        rlAssertGrep "$default_relation: $relation_taget_02" "${rlRun_LOG}"
+        rlRun -s "yq -ry .link[1] $tmp/test_link/main.fmf"
+        rlAssertGrep "verifies: ${relation_taget_03#verifies:}" "${rlRun_LOG}"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"

@@ -569,6 +569,9 @@ _test_templates = listed(tmt.templates.TEST, join='or')
     '-t', '--template', metavar='TEMPLATE',
     help=f'Test template ({_test_templates}).',
     prompt=f'Template ({_test_templates})')
+@option(
+    '--link', metavar='[RELATION:]TARGET', multiple=True,
+    help='Link to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def tests_create(

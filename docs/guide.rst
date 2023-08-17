@@ -351,6 +351,15 @@ directly on the command line using ``-t`` or ``--template``:
     $ tmt test create --template shell /tests/smoke
     $ tmt test create --t beakerlib /tests/smoke
 
+If you'd like to link relevant issues when creating a test, specify
+the links via ``[RELATION:]TARGET`` on the command line using
+``--link``:
+
+.. code-block:: shell
+
+    $ tmt test create /tests/smoke --link foo
+    $ tmt test create /tests/smoke --link foo --link verifies:https://foo.com/a/b/c
+
 In a similar way, the ``tmt plan create`` command can be used to
 create a new plan with templates:
 
