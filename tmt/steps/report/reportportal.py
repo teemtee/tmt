@@ -36,8 +36,10 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         option="--exclude-variables",
         metavar="PATTERN",
         default="^TMT_.*",
-        help="Regular expression for excluding environment variables "
-             "from reporting to ReportPortal ('^TMT_.*' used by default).")
+        help="""
+             Regular expression for excluding environment variables from reporting to ReportPortal
+             ('^TMT_.*' used by default).
+             """)
 
 
 @tmt.steps.provides_method("reportportal")

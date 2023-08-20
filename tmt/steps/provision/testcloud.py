@@ -179,8 +179,10 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
         metavar='IMAGE',
-        help='Select image to be used. Provide a short name, '
-        'full path to a local file or a complete url.')
+        help="""
+             Select image to be used. Provide a short name, full path to a local file
+             or a complete url.
+             """)
     memory: int = field(
         default=DEFAULT_MEMORY,
         option=('-m', '--memory'),
