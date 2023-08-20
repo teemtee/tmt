@@ -164,8 +164,10 @@ WORKDIR_ROOT_OPTIONS: List[ClickOptionDecoratorType] = [
     option(
         '--workdir-root', metavar='PATH', envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
-        help=f"Path to root directory containing run workdirs. "
-             f"Defaults to '{tmt.utils.WORKDIR_ROOT}'.")
+        help=f"""
+             Path to root directory containing run workdirs.
+             Defaults to '{tmt.utils.WORKDIR_ROOT}'.
+             """)
     ]
 
 
@@ -186,8 +188,10 @@ FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
         help="Show only disabled tests, plans or stories."),
     option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
-        help="Filter by linked objects (regular expressions are "
-             "supported for both relation and target)."),
+        help="""
+             Filter by linked objects (regular expressions are supported for both relation and
+             target).
+             """),
     option(
         '-x', '--exclude', 'exclude', metavar='[REGEXP]', multiple=True,
         help="Exclude a regular expression from search result."),
@@ -211,8 +215,10 @@ FILTER_OPTIONS_LONG: List[ClickOptionDecoratorType] = [
         help="Show only disabled tests, plans or stories."),
     option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
-        help="Filter by linked objects (regular expressions are "
-             "supported for both relation and target)."),
+        help="""
+             Filter by linked objects (regular expressions are supported for both relation and
+             target).
+             """),
     option(
         '--exclude', 'exclude', metavar='[REGEXP]', multiple=True,
         help="Exclude a regular expression from search result."),
@@ -302,14 +308,18 @@ ENVIRONMENT_OPTIONS: List[ClickOptionDecoratorType] = [
         '-e', '--environment',
         metavar='KEY=VALUE|@FILE',
         multiple=True,
-        help='Set environment variable. Can be specified multiple times. The '
-             '"@" prefix marks a file to load (yaml or dotenv formats supported).'),
+        help="""
+             Set environment variable. Can be specified multiple times. The "@" prefix marks a file
+             to load (yaml or dotenv formats supported).
+             """),
     option(
         '--environment-file',
         metavar='FILE|URL',
         multiple=True,
-        help='Set environment variables from file or url (yaml or dotenv formats '
-             'are supported). Can be specified multiple times.')
+        help="""
+             Set environment variables from file or url (yaml or dotenv formats are supported). Can
+             be specified multiple times.
+             """)
     ]
 
 

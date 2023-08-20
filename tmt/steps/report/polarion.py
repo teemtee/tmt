@@ -37,27 +37,30 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         default=None,
         option='--project-id',
         metavar='ID',
-        help=(
-            'Use specific Polarion project ID, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PROJECT_ID.')
+        help="""
+             Use specific Polarion project ID,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_PROJECT_ID.
+             """
         )
 
     title: Optional[str] = field(
         default=None,
         option='--title',
         metavar='TITLE',
-        help=(
-            'Use specific test run title, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_TITLE.')
+        help="""
+             Use specific test run title,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_TITLE.
+             """
         )
 
     template: Optional[str] = field(
         default=None,
         option='--template',
         metavar='TEMPLATE',
-        help=(
-            'Use specific test run template, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_TEMPLATE.')
+        help="""
+             Use specific test run template,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_TEMPLATE.
+             """
         )
 
     use_facts: bool = field(
@@ -72,81 +75,90 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         default=None,
         option='--planned-in',
         metavar='PLANNEDIN',
-        help=(
-            'Select a specific release to mark this test run with, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLANNED_IN.')
+        help="""
+             Select a specific release to mark this test run with,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLANNED_IN.
+             """
         )
 
     assignee: Optional[str] = field(
         default=None,
         option='--assignee',
         metavar='ASSIGNEE',
-        help=(
-            'Who is responsible for this test run, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_ASSIGNEE.')
+        help="""
+             Who is responsible for this test run,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_ASSIGNEE.
+             """
         )
 
     pool_team: Optional[str] = field(
         default=None,
         option='--pool-team',
         metavar='POOLTEAM',
-        help=(
-            'Which subsystem is this test run relevant for, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_POOL_TEAM')
+        help="""
+             Which subsystem is this test run relevant for,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_POOL_TEAM.
+             """
         )
 
     arch: Optional[str] = field(
         default=None,
         option='--arch',
         metavar='ARCH',
-        help=(
-            'Which architecture was this run executed on, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_ARCH.')
+        help="""
+             Which architecture was this run executed on,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_ARCH.
+             """
         )
 
     platform: Optional[str] = field(
         default=None,
         option='--platform',
         metavar='PLATFORM',
-        help=(
-            'Which platform was this run executed on, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLATFORM.')
+        help="""
+             Which platform was this run executed on,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_PLATFORM.
+             """
         )
 
     build: Optional[str] = field(
         default=None,
         option='--build',
         metavar='BUILD',
-        help=(
-            'Which build was this run executed on, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_BUILD.')
+        help="""
+             Which build was this run executed on,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_BUILD.
+             """
         )
 
     sample_image: Optional[str] = field(
         default=None,
         option='--sample-image',
         metavar='SAMPLEIMAGE',
-        help=(
-            'Which sample image was this run executed on, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_SAMPLE_IMAGE.')
+        help="""
+             Which sample image was this run executed on,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_SAMPLE_IMAGE.
+             """
         )
 
     logs: Optional[str] = field(
         default=None,
         option='--logs',
         metavar='LOGLOCATION',
-        help=(
-            'Location of the logs for this test run, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_LOGS.')
+        help="""
+             Location of the logs for this test run,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_LOGS.
+             """
         )
 
     compose_id: Optional[str] = field(
         default=None,
         option='--compose-id',
         metavar='COMPOSEID',
-        help=(
-            'Compose ID of image used for this run, '
-            'also uses environment variable TMT_PLUGIN_REPORT_POLARION_COMPOSE_ID.')
+        help="""
+             Compose ID of image used for this run,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_COMPOSE_ID.
+             """
         )
 
 

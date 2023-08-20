@@ -187,44 +187,56 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_PROVISION_TIMEOUT,
         option='--provision-timeout',
         metavar='SECONDS',
-        help='How long to wait for provisioning to complete, '
-        f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.',
+        help=f"""
+             How long to wait for provisioning to complete,
+             {DEFAULT_PROVISION_TIMEOUT} seconds by default.
+             """,
         normalize=tmt.utils.normalize_int)
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
         metavar='SECONDS',
-        help=f'How often check Artemis API for provisioning status, '
-        f'{DEFAULT_PROVISION_TICK} seconds by default.',
+        help=f"""
+             How often check Artemis API for provisioning status,
+             {DEFAULT_PROVISION_TICK} seconds by default.
+             """,
         normalize=tmt.utils.normalize_int)
     api_timeout: int = field(
         default=DEFAULT_API_TIMEOUT,
         option='--api-timeout',
         metavar='SECONDS',
-        help=f'How long to wait for API operations to complete, '
-        f'{DEFAULT_API_TIMEOUT} seconds by default.',
+        help=f"""
+             How long to wait for API operations to complete,
+             {DEFAULT_API_TIMEOUT} seconds by default.
+             """,
         normalize=tmt.utils.normalize_int)
     api_retries: int = field(
         default=DEFAULT_API_RETRIES,
         option='--api-retries',
         metavar='COUNT',
-        help=f'How many attempts to use when talking to API, '
-        f'{DEFAULT_API_RETRIES} by default.',
+        help=f"""
+             How many attempts to use when talking to API,
+             {DEFAULT_API_RETRIES} by default.
+             """,
         normalize=tmt.utils.normalize_int)
     api_retry_backoff_factor: int = field(
         default=DEFAULT_RETRY_BACKOFF_FACTOR,
         option='--api-retry-backoff-factor',
         metavar='COUNT',
-        help=f'A factor for exponential API retry backoff, '
-        f'{DEFAULT_RETRY_BACKOFF_FACTOR} by default.',
+        help=f"""
+             A factor for exponential API retry backoff,
+            {DEFAULT_RETRY_BACKOFF_FACTOR} by default.
+            """,
         normalize=tmt.utils.normalize_int)
     # Artemis core already contains default values
     watchdog_dispatch_delay: Optional[int] = field(
         default=cast(Optional[int], None),
         option='--watchdog-dispatch-delay',
         metavar='SECONDS',
-        help='How long (seconds) before the guest "is-alive" watchdog is dispatched. '
-        'The dispatch timer starts once the guest is successfully provisioned.',
+        help="""
+             How long (seconds) before the guest "is-alive" watchdog is dispatched. The dispatch
+             timer starts once the guest is successfully provisioned.
+             """,
         normalize=tmt.utils.normalize_optional_int)
     watchdog_period_delay: Optional[int] = field(
         default=cast(Optional[int], None),

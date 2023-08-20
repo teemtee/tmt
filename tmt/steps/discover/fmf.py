@@ -65,8 +65,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option='--link',
         metavar="RELATION:TARGET",
         multiple=True,
-        help="Filter by linked objects (regular expressions are "
-        "supported for both relation and target).")
+        help="""
+             Filter by linked objects (regular expressions are supported for both relation and
+             target).
+             """)
     filter: List[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
@@ -97,22 +99,27 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=cast(Optional[str], None),
         option='--modified-ref',
         metavar='REVISION',
-        help='Branch, tag or commit specifying the reference git '
-        'revision (if not provided, the default branch is used).')
+        help="""
+            Branch, tag or commit specifying the reference git revision (if not provided, the
+            default branch is used).
+            """)
 
     # Dist git integration
     dist_git_init: bool = field(
         default=False,
         option='--dist-git-init',
         is_flag=True,
-        help='Initialize fmf root inside extracted sources '
-        '(at dist-git-extract or top directory).')
+        help="""
+             Initialize fmf root inside extracted sources (at dist-git-extract or top directory).
+             """)
     dist_git_remove_fmf_root: bool = field(
         default=False,
         option='--dist-git-remove-fmf-root',
         is_flag=True,
-        help='Remove fmf root from extracted source (top one or selected by copy-path, '
-        'happens before dist-git-extract.')
+        help="""
+             Remove fmf root from extracted source (top one or selected by copy-path, happens
+             before dist-git-extract.
+             """)
     dist_git_merge: bool = field(
         default=False,
         option='--dist-git-merge',
@@ -121,17 +128,20 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     dist_git_extract: Optional[str] = field(
         default=cast(Optional[str], None),
         option='--dist-git-extract',
-        help='What to copy from extracted sources, globbing is supported. '
-        'Defaults to the top fmf root if it is present, otherwise top '
-        'directory (shortcut "/").')
+        help="""
+             What to copy from extracted sources, globbing is supported. Defaults to the top fmf
+             root if it is present, otherwise top directory (shortcut "/").
+             """)
 
     # Special options
     sync_repo: bool = field(
         default=False,
         option='--sync-repo',
         is_flag=True,
-        help='Force the sync of the whole git repo. By default, the '
-        'repo is copied only if the used options require it.')
+        help="""
+             Force the sync of the whole git repo. By default, the repo is copied only if the used
+             options require it.
+             """)
     fmf_id: bool = field(
         default=False,
         option='--fmf-id',

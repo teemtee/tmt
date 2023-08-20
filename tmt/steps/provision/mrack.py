@@ -380,15 +380,19 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_PROVISION_TIMEOUT,
         option='--provision-timeout',
         metavar='SECONDS',
-        help=f'How long to wait for provisioning to complete, '
-        f'{DEFAULT_PROVISION_TIMEOUT} seconds by default.',
+        help="""
+             How long to wait for provisioning to complete,
+             {DEFAULT_PROVISION_TIMEOUT} seconds by default.
+             """,
         normalize=tmt.utils.normalize_int)
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
         metavar='SECONDS',
-        help=f'How often check Beaker for provisioning status, '
-        f'{DEFAULT_PROVISION_TICK} seconds by default.',
+        help=f"""
+             How often check Beaker for provisioning status,
+             {DEFAULT_PROVISION_TICK} seconds by default.
+             """,
         normalize=tmt.utils.normalize_int)
 
 

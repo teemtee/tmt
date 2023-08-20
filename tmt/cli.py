@@ -179,9 +179,11 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
     help="Path to the metadata tree root, '.' used by default.")
 @option(
     '-c', '--context', metavar='DATA', multiple=True,
-    help='Set the fmf context. Use KEY=VAL or KEY=VAL1,VAL2... format '
-         'to define individual dimensions or the @FILE notation to load data '
-         'from provided yaml file. Can be specified multiple times. ')
+    help="""
+         Set the fmf context. Use KEY=VAL or KEY=VAL1,VAL2... format to define individual
+         dimensions or the @FILE notation to load data from provided yaml file. Can be specified
+         multiple times.
+         """)
 @verbosity_options
 @option(
     '--version', is_flag=True,
@@ -253,8 +255,10 @@ def main(
     help='Remove the workdir when test run is finished.')
 @option(
     '-k', '--keep', is_flag=True,
-    help='Keep all files in the run workdir after testing is done '
-         '(skip pruning during the finish step).')
+    help="""
+         Keep all files in the run workdir after testing is done (skip pruning during the finish
+         step).
+         """)
 @option(
     '--scratch', is_flag=True,
     help='Remove the run workdir before executing to start from scratch.')
@@ -282,9 +286,9 @@ def main(
     '--on-plan-error',
     choices=['quit', 'continue'],
     default='quit',
-    help='What to do when plan fails to finish. Quit by default, or continue '
-         'with the next plan.'
-    )
+    help="""
+         What to do when plan fails to finish. Quit by default, or continue with the next plan.
+         """)
 @environment_options
 @verbosity_options
 @force_dry_options
@@ -327,8 +331,9 @@ run.add_command(tmt.steps.Reboot.command())
     help="Use arbitrary Python expression for filtering.")
 @option(
     '--link', 'links', metavar="RELATION:TARGET", multiple=True,
-    help="Filter by linked objects (regular expressions are "
-         "supported for both relation and target).")
+    help="""
+         Filter by linked objects (regular expressions are supported for both relation and target).
+         """)
 @option(
     '--default', is_flag=True,
     help="Use default plans even if others are available.")
@@ -356,8 +361,9 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     help="Use arbitrary Python expression for filtering.")
 @option(
     '--link', 'links', metavar="RELATION:TARGET", multiple=True,
-    help="Filter by linked objects (regular expressions are "
-         "supported for both relation and target).")
+    help="""
+         Filter by linked objects (regular expressions are supported for both relation and target).
+         """)
 @verbosity_options
 def run_tests(context: Context, **kwargs: Any) -> None:
     """
@@ -626,20 +632,25 @@ def tests_create(
     help='Convert restraint metadata file.')
 @option(
     '--general / --no-general', default=True, is_flag=True,
-    help='Detect components from linked nitrate general plans '
-         '(overrides Makefile/restraint component).')
+    help="""
+         Detect components from linked nitrate general plans (overrides Makefile/restraint
+         component).
+         """)
 @option(
     '--polarion-case-id', multiple=True,
-    help='Polarion Test case ID(s) to import data from. Can be provided multiple times. '
-         'Can provide also test case name like: TEST-123:test_name')
+    help="""
+         Polarion Test case ID(s) to import data from. Can be provided multiple times. Can provide
+         also test case name like: TEST-123:test_name
+         """)
 @option(
     '--link-polarion / --no-link-polarion', default=False, show_default=True, is_flag=True,
     help='Add Polarion link to fmf testcase metadata.')
 @option(
     '--type', 'types', metavar='TYPE', default=['multihost'], multiple=True,
     show_default=True,
-    help="Convert selected types from Makefile into tags. "
-         "Use 'all' to convert all detected types.")
+    help="""
+         Convert selected types from Makefile into tags. Use 'all' to convert all detected types.
+         """)
 @option(
     '--disabled', default=False, is_flag=True,
     help='Import disabled test cases from Nitrate as well.')
@@ -761,35 +772,46 @@ _test_export_default = 'yaml'
     help='Add Polarion link to fmf testcase metadata')
 @option(
     '--bugzilla', is_flag=True,
-    help="Link Nitrate case to Bugzilla specified in the 'link' attribute "
-         "with the relation 'verifies'.")
+    help="""
+         Link Nitrate case to Bugzilla specified in the 'link' attribute with the relation
+         'verifies'.
+         """)
 @option(
     '--ignore-git-validation', is_flag=True,
-    help="Ignore unpublished git changes and export to Nitrate. "
-    "The case might not be able to be scheduled!")
+    help="""
+         Ignore unpublished git changes and export to Nitrate. The case might not be able to be
+         scheduled!
+         """)
 @option(
     '--append-summary / --no-append-summary', default=False, is_flag=True,
-    help="Include test summary in the Nitrate/Polarion test case summary as well. "
-    "By default, only the repository name and test name are used."
-    )
+    help="""
+         Include test summary in the Nitrate/Polarion test case summary as well. By default, only
+         the repository name and test name are used.
+         """)
 @option(
     '--create', is_flag=True,
     help="Create test cases in nitrate if they don't exist.")
 @option(
     '--general / --no-general', default=False, is_flag=True,
-    help="Link Nitrate case to component's General plan. Disabled by default. "
-         "Note that this will unlink any previously connected general plans.")
+    help="""
+         Link Nitrate case to component's General plan. Disabled by default. Note that this will
+         unlink any previously connected general plans.
+         """)
 @option(
     '--link-runs / --no-link-runs', default=False, is_flag=True,
-    help="Link Nitrate case to all open runs of descendant plans of "
-         "General plan. Disabled by default. Implies --general option.")
+    help="""
+         Link Nitrate case to all open runs of descendant plans of General plan. Disabled by
+         default. Implies --general option.
+         """)
 @option(
     '--fmf-id', is_flag=True,
     help='Show fmf identifiers instead of test metadata.')
 @option(
     '--duplicate / --no-duplicate', default=False, show_default=True, is_flag=True,
-    help='Allow or prevent creating duplicates in Nitrate by searching for '
-         'existing test cases with the same fmf identifier.')
+    help="""
+         Allow or prevent creating duplicates in Nitrate by searching for existing test cases with
+         the same fmf identifier.
+         """)
 @option(
     '-n', '--dry', is_flag=True,
     help="Run in dry mode. No changes, please.")
@@ -1466,12 +1488,10 @@ def init(
     help='Run id (name or directory path) to show status of.')
 @option(
     '--abandoned', is_flag=True, default=False,
-    help='List runs which have provision step completed but finish step '
-         'not yet done.')
+    help='List runs which have provision step completed but finish step not yet done.')
 @option(
     '--active', is_flag=True, default=False,
-    help='List runs where at least one of the enabled steps has not '
-         'been finished.')
+    help='List runs where at least one of the enabled steps has not been finished.')
 @option(
     '--finished', is_flag=True, default=False,
     help='List all runs which have all enabled steps completed.')
@@ -1813,8 +1833,10 @@ def setup_completion(shell: str, install: bool) -> None:
 @click.pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
-    help="Persistently store the script to tmt's configuration directory "
-         "and set it up by modifying '~/.bashrc'.")
+    help="""
+         Persistently store the script to tmt's configuration directory and set it up by modifying
+         '~/.bashrc'.
+         """)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for bash.
@@ -1826,8 +1848,10 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
 @click.pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
-    help="Persistently store the script to tmt's configuration directory "
-         "and set it up by modifying '~/.zshrc'.")
+    help="""
+         Persistently store the script to tmt's configuration directory and set it up by modifying
+         '~/.zshrc'.
+         """)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for zsh.
@@ -1839,8 +1863,7 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 @click.pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
-    help="Persistently store the script to "
-         "'~/.config/fish/completions/tmt.fish'.")
+    help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for fish.

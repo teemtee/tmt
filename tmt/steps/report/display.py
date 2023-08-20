@@ -14,9 +14,10 @@ class ReportDisplayData(tmt.steps.report.ReportStepData):
         option='--display-guest',
         metavar='auto|always|never',
         choices=['auto', 'always', 'never'],
-        help="When to display full guest name in report:"
-             " when more than a single guest was involved (default), always, or never."
-        )
+        help="""
+             When to display full guest name in report: when more than a single guest was involved
+             (default), always, or never.
+             """)
 
 
 @tmt.steps.provides_method('display')
