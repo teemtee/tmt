@@ -155,6 +155,13 @@ default-1:html:never"
         check "with-order" "A single 'html' phase with modified order shall exist" "default-0:html:40"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test whether --update can change 'how'"
+        rlRun -s "$run plan -n /with-report \
+            report --update --name default-0 --how junit"
+
+        check "with-report" "A single 'junit' phase shall exist" "default-0:junit:50"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $rundir"

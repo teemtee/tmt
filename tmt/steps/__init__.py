@@ -84,7 +84,10 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
         '--update',
         is_flag=True,
         default=False,
-        help='Update existing phase. Use --name to specify which one.'),
+        help="""
+            Update existing phase. Use --name to specify which one, or omit --name
+            and update all existing phases.
+            """),
     option(
         '--name',
         type=str,
@@ -620,7 +623,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             """
 
             for key, value in incoming_raw_datum.items():
-                if key in ('how', 'name'):
+                if key == 'name':
                     continue
 
                 if invocation.option_sources.get(key) in (
