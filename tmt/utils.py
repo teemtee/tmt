@@ -5821,6 +5821,7 @@ def default_template_environment() -> jinja2.Environment:
 
         return match.groups()
 
+    environment.filters['basename'] = lambda x: Path(x).name
     environment.filters['findall'] = lambda s, pattern: re.findall(pattern, s)
     environment.filters['listed'] = fmf.utils.listed
     environment.filters['strip'] = lambda x: x.strip()

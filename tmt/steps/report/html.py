@@ -1,8 +1,6 @@
 import dataclasses
 import webbrowser
 
-import jinja2
-
 import tmt
 import tmt.options
 import tmt.steps
@@ -63,8 +61,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         super().go()
 
         # Prepare the template
-        environment = jinja2.Environment()
-        environment.filters["basename"] = lambda x: Path(x).name
+        environment = tmt.utils.default_template_environment()
 
         if self.get('absolute-paths'):
             environment.filters["linkable_path"] = lambda x: str(Path(x).absolute())
@@ -72,10 +69,6 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
             # Links used in html should be relative to a workdir
             assert self.workdir is not None  # narrow type
             environment.filters["linkable_path"] = lambda x: str(Path(x).relative_to(self.workdir))
-
-        environment.trim_blocks = True
-        environment.lstrip_blocks = True
-        template = environment.from_string(HTML_TEMPLATE_PATH.read_text())
 
         if self.get('display-guest') == 'always':
             display_guest = True
@@ -93,9 +86,12 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
 
         # Write the report
         filename = Path('index.html')
+
         self.write(
             filename,
-            data=template.render(
+            data=tmt.utils.render_template_file(
+                HTML_TEMPLATE_PATH,
+                environment,
                 results=self.step.plan.execute.results(),
                 base_dir=self.step.plan.execute.workdir,
                 plan=self.step.plan,
