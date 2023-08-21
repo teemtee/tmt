@@ -236,17 +236,24 @@ class ExecuteUpgrade(ExecuteInternal):
         """ Silently run discover upgrade """
         # Make it quiet, we do not want any output from discover
         assert self._discover_upgrade is not None
-        quiet = self._discover_upgrade._cli_options['quiet']
+
+        # Discover normally uses also options from global Test class
+        # (e.g. test -n foo). Ignore this when selecting upgrade tasks.
+        tmt.base.Test.ignore_class_options = True
+
+        cli_invocation = self._discover_upgrade.cli_invocation
+        if cli_invocation:
+            quiet, cli_invocation.options['quiet'] = cli_invocation.options['quiet'], True
+
         try:
-            self._discover_upgrade._cli_options['quiet'] = True
-            # Discover normally uses also options from global Test class
-            # (e.g. test -n foo). Ignore this when selecting upgrade tasks.
-            tmt.base.Test.ignore_class_options = True
             self._discover_upgrade.wake()
             self._discover_upgrade.go()
+
         finally:
-            self._discover_upgrade._cli_options['quiet'] = quiet
             tmt.base.Test.ignore_class_options = False
+
+            if cli_invocation:
+                cli_invocation.options['quiet'] = quiet
 
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
         """ Merge remote discover data with the local filters """

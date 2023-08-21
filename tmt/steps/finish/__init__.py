@@ -54,9 +54,10 @@ class FinishPlugin(tmt.steps.Plugin):
         @option(
             '-h', '--how', metavar='METHOD',
             help='Use specified method for finishing tasks.')
+        @tmt.steps.PHASE_OPTIONS
         def finish(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('finish')
-            Finish._save_cli_context(context)
+            Finish.store_cli_invocation(context)
 
         return finish
 

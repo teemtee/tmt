@@ -7,10 +7,11 @@ from typing import Tuple
 
 import _pytest.monkeypatch
 import pytest
-from click.testing import CliRunner
 
 import tmt.cli
 import tmt.log
+
+from .. import CliRunner
 
 # Prepare path to examples
 PATH = os.path.dirname(os.path.realpath(__file__))

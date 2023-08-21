@@ -3,7 +3,6 @@ import shutil
 import tempfile
 
 import nitrate
-from click.testing import CliRunner
 from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
@@ -12,6 +11,8 @@ import tmt.base
 import tmt.cli
 import tmt.log
 from tmt.utils import ConvertError, Path
+
+from .. import CliRunner
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent

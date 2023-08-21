@@ -1,12 +1,12 @@
 import os
 
 import pytest
-from click.testing import CliRunner
 from fmf import Tree
 
 import tmt.cli
 from tmt.identifier import ID_KEY
 
+from .. import CliRunner
 from .test_nitrate import TEST_DIR, Base
 
 

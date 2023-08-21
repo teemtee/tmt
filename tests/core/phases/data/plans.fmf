@@ -1,0 +1,24 @@
+discover:
+  how: fmf
+
+provision:
+  how: local
+
+execute:
+  how: tmt
+
+/default-plan:
+
+/with-report:
+  report:
+    how: html
+
+/with-multiple-reports:
+  report:
+    - how: html
+    - how: html
+
+/with-order:
+  report:
+    - how: html
+      order: 60

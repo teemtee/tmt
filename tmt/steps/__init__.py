@@ -3,6 +3,8 @@
 
 import collections
 import dataclasses
+import functools
+import itertools
 import re
 import shutil
 import textwrap
@@ -13,6 +15,7 @@ from typing import (
     DefaultDict,
     Dict,
     Generator,
+    Iterable,
     List,
     Optional,
     Tuple,
@@ -26,6 +29,7 @@ from typing import (
 
 import click
 from click import echo
+from click.core import ParameterSource
 
 import tmt.export
 import tmt.log
@@ -33,7 +37,15 @@ import tmt.options
 import tmt.utils
 from tmt.options import option, show_step_method_hints
 from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
-from tmt.utils import EnvironmentType, Path, cached_property, field, flatten
+from tmt.utils import (
+    DEFAULT_NAME,
+    EnvironmentType,
+    GeneralError,
+    Path,
+    cached_property,
+    field,
+    flatten,
+    )
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -60,6 +72,88 @@ PHASE_BASE = 50
 PHASE_END = 90
 
 TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
+
+
+PHASE_OPTIONS = tmt.options.create_options_decorator([
+    option(
+        '--insert',
+        is_flag=True,
+        default=False,
+        help='Add this phase instead of overwriting the existing ones.'),
+    option(
+        '--update',
+        is_flag=True,
+        default=False,
+        help="""
+            Update existing phase. Use --name to specify which one, or omit --name
+            and update all existing phases.
+            """),
+    option(
+        '--name',
+        type=str,
+        help="Name of the existing phase which should be updated when '--update' is used."),
+    option(
+        '--order',
+        type=int,
+        default=DEFAULT_PLUGIN_METHOD_ORDER,
+        help='Order in which the phase should be handled.')
+    ])
+
+
+class DefaultNameGenerator:
+    """
+    Generator of names for that do not have any.
+
+    If user did not set any ``name`` for one or more phases, tmt
+    will assign them a "dummy" name ``default-N``. This class wraps
+    the generator.
+    """
+
+    def __init__(self, known_names: List[str]) -> None:
+        """
+        Generator of names for that do not have any.
+
+        :param known_names: already existing names the generator
+            needs to avoid.
+        """
+
+        self.known_names = known_names
+
+        self.restart()
+
+    @classmethod
+    def from_raw_phases(cls, raw_data: Iterable['_RawStepData']) -> 'DefaultNameGenerator':
+        """
+        Create a generator based on available phase specifications.
+
+        A special constructor that extracts ``known_names`` from ``raw_data``.
+
+        :param raw_data: phase specifications as collected from fmf nodes and
+            CLI options.
+        """
+
+        collected_name_keys = [raw_datum.get('name') for raw_datum in raw_data]
+        actual_name_keys = [name for name in collected_name_keys if name]
+
+        return DefaultNameGenerator(actual_name_keys)
+
+    def restart(self) -> None:
+        """ Reset the generator and start from the beginning again """
+
+        def _generator() -> Generator[str, None, None]:
+            for i in itertools.count(start=0):
+                name = f'{DEFAULT_NAME}-{i}'
+
+                if name in self.known_names:
+                    continue
+
+                self.known_names.append(name)
+                yield name
+
+        self.generator = _generator()
+
+    def get(self) -> str:
+        return next(self.generator)
 
 
 class Phase(tmt.utils.Common):
@@ -101,6 +195,7 @@ _RawStepData = TypedDict('_RawStepData', {
     'how': str,
     'name': str
     }, total=False)
+
 
 RawStepDataArgument = Union[_RawStepData, List[_RawStepData]]
 
@@ -193,7 +288,7 @@ class WhereableStepData:
         )
 
 
-class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
+class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     """ Common parent of all test steps """
 
     # Default implementation for all steps is "shell", but some
@@ -232,7 +327,7 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Initialize and check the step data """
-        logger.apply_verbosity_options(**self.__class__._cli_options)
+        logger.apply_verbosity_options(cli_invocation=self.__class__.cli_invocation)
 
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
 
@@ -276,11 +371,13 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
     def _set_default_values(self, raw_data: List[_RawStepData]) -> List[_RawStepData]:
         """ Set default values for ``name`` and ``how`` fields if not specified """
 
-        for i, raw_datum in enumerate(raw_data):
+        name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
+
+        for _i, raw_datum in enumerate(raw_data):
             # Add default unique names even to multiple configs so that the users
             # don't need to specify it if they don't care about the name
             if raw_datum.get('name', None) is None:
-                raw_datum['name'] = f'{tmt.utils.DEFAULT_NAME}-{i}'
+                raw_datum['name'] = name_generator.get()
 
             # Set 'how' to the default if not specified
             if raw_datum.get('how', None) is None:
@@ -410,6 +507,10 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
                 StepData.unserialize(raw_datum, self._logger)
                 for raw_datum in raw_step_data['data']
                 ]
+            self._raw_data = [
+                datum.to_spec()
+                for datum in self.data
+                ]
             self.status(raw_step_data['status'])
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -456,52 +557,183 @@ class Step(tmt.utils.Common, tmt.export.Exportable['Step']):
             return
 
         # Override step data with command line options
-        how: str = self.opt('how')
-        if how is not None:
-            # If 'how' has been given, when it comes to current entries in `self.data`,
-            # there are two options:
-            #
-            # * entry's `how` is the same as the one given via command-line. Then we can
-            # keep step data we already have.
-            # * entry's `how` is different, and then we need to throw the entry away and
-            # replace it with new `how`.
-            #
-            # To handle both variants, we replace `self.data` with new set of entries,
-            # based on newly constructed set of raw data.
-            self.debug(f'CLI-provided how={how} overrides all existing step data', level=4)
+        #
+        # Do NOT iterate over `self.data`: reading `self.data` would trigger materialization
+        # of its content, calling plugins owning various raw step data to create corresponding
+        # `StepData` instances. That is actually harmful, as plugins that might be explicitly
+        # overriden by `--how` option, would run, with unexpected side-effects.
+        # Instead, iterate over raw data, and replace incompatible plugins with the one given
+        # on command line. There is no reason to ever let dropped plugin's `StepData` to
+        # materialize when it's going to be thrown away anyway.
+        debug = functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
-            _raw_data: List[_RawStepData] = []
+        debug('Update phases by CLI invocations')
 
-            # Do NOT iterate over `self.data`: reading `self.data` would trigger materialization
-            # of its content, calling plugins owning various raw step data to create corresponding
-            # `StepData` instances. That is actually harmful, as plugins that might be explicitly
-            # overriden by `--how` option, would run, with unexpected side-effects.
-            # Instead, iterate over raw data, and replace incompatible plugins with the one given
-            # on command line. There is no reason to ever let dropped plugin's `StepData` to
-            # materialize when it's going to be thrown away anyway.
-            for raw_datum in self._raw_data:
-                # We can re-use this one - to make handling easier, just dump it to "raw"
-                # form for _normalize_data().
-                if raw_datum['how'] == how:
-                    self.debug(f'  compatible step data:   {raw_datum}', level=4)
-                    _raw_data.append(raw_datum)
+        def _to_raw_step_datum(options: Dict[str, Any]) -> _RawStepData:
+            """
+            Convert CLI options to fmf-like raw step data dictionary.
 
-                # Mismatch, throwing away, replacing with new `how` - but we can keep the name.
+            This means dropping all keys that cannot come from an fmf node, like
+            keys representing CLI options.
+            """
+
+            options = options.copy()
+
+            options.pop('update', None)
+            options.pop('insert', None)
+
+            return cast(_RawStepData, options)
+
+        # In this list, we collect all known phases, represented by their raw step data. The list
+        # will be inspected by code below, e.g. when evaluationg `--update` CLI option, but also
+        # modified by `--insert`, and entries may be modified as well. Note that we do not process
+        # step data here, this list is not the input we iterate over - we process CLI invocations,
+        # and based on their content we modify this list and its content.
+        raw_data: List[_RawStepData] = self._raw_data[:]
+
+        # Some invocations cannot be easily evaluated when we first spot them. To remain backward
+        # compatible, `--update` without `--name` should result in all phases being converted into
+        # what the `--update` brings in. In this list, we will collect "postponed" CLI invocations,
+        # and we will get back to them once we're done with those we can apply immediately.
+        postponed_invocations: List['tmt.cli.CliInvocation'] = []
+
+        name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
+
+        def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
+            """ Make sure a phase specification does have a name """
+
+            if not raw_datum.get('name'):
+                raw_datum['name'] = name_generator.get()
+
+            return raw_datum
+
+        def _patch_raw_datum(raw_datum: _RawStepData, incoming_raw_datum: _RawStepData) -> None:
+            """
+            Copy options from one phase specification onto another.
+
+            Serves as a helper for "patching" a phase with options coming from
+            a command line. It must avoid copying options that were not really
+            given by user - because of how options are handled, simple
+            ``dict.update()`` would not do as ``incoming_raw_datum`` would
+            contain **all** options as long as they have a default value.
+
+            Click is therefore consulted for each key/option, whether it was
+            really specified on the command line (or by an environment
+            variable).
+            """
+
+            for key, value in incoming_raw_datum.items():
+                if key == 'name':
+                    continue
+
+                if invocation.option_sources.get(key) in (
+                        ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
+                    # ignore[literal-required]: since raw_datum is a typed dict,
+                    # mypy allows only know keys to be set & enforces use of
+                    # literals as keys. Use of a variable is frowned upon and
+                    # reported - but we define only the very basic keys in
+                    # `_RawStepData` and we do expect there are keys we do not
+                    # care about, keys that make sense to whatever plugin is
+                    # materialized from the raw step data.
+                    raw_datum[key] = value  # type: ignore[literal-required]
+
+        # A bit of logging before we start messing with step data
+        for i, raw_datum in enumerate(raw_data):
+            debug(f'raw step datum #{i}', str(raw_datum))
+
+        # The first pass, apply CLI invocations that can be applied
+        for i, invocation in enumerate(self.__class__.cli_invocations):
+            debug(f'invocation #{i}', str(invocation.options))
+
+            how: Optional[str] = invocation.options.get('how')
+
+            if how is None:
+                debug('  how-less phase (postponed)')
+
+                postponed_invocations.append(invocation)
+
+            elif invocation.options.get('insert'):
+                debug('  inserting new phase')
+
+                raw_datum = _to_raw_step_datum(invocation.options)
+                raw_datum = _ensure_name(raw_datum)
+
+                raw_data.append(raw_datum)
+
+            elif invocation.options.get('update'):
+                debug('  updating existing phase')
+
+                needle = invocation.options.get('name')
+
+                if needle:
+                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
+
+                    for raw_datum in raw_data:
+                        if raw_datum['name'] != needle:
+                            continue
+
+                        _patch_raw_datum(raw_datum, incoming_raw_datum)
+
+                        break
+
+                    else:
+                        raise GeneralError(
+                            f"Cannot update phase '{needle}', no such name was found.")
+
                 else:
-                    self.debug(f'  incompatible step data: {raw_datum}', level=4)
-                    _raw_data.append({
+                    debug('  needle-less update (postponed)')
+
+                    postponed_invocations.append(invocation)
+
+            else:
+                debug('  action-less phase (postponed)')
+
+                postponed_invocations.append(invocation)
+
+        # The second pass, evaluate postponed CLI invocations
+        for i, invocation in enumerate(postponed_invocations):
+            debug(f'postponed invocation #{i}', str(invocation.options))
+
+            pruned_raw_data: List[_RawStepData] = []
+            incoming_raw_datum = _to_raw_step_datum(invocation.options)
+
+            how = invocation.options['how']
+
+            for j, raw_datum in enumerate(raw_data):
+                debug(f'raw step datum #{j}', str(raw_datum))
+
+                if how is None:
+                    debug('  compatible step data (how-less invocation)')
+
+                elif raw_datum['how'] == how:
+                    debug('  compatible step data')
+
+                else:
+                    debug('  incompatible step data')
+
+                    raw_datum = {
                         'name': raw_datum['name'],
                         'how': how
-                        })
+                        }
 
-            self._set_default_values(_raw_data)
-            self.data = self._normalize_data(_raw_data, self._logger)
-            self._raw_data = _raw_data
+                _patch_raw_datum(raw_datum, incoming_raw_datum)
 
-            self.debug('updated data', str(self.data), level=4)
+                pruned_raw_data.append(raw_datum)
 
-        else:
-            self.debug('CLI did not change existing step data', level=4)
+            raw_data = pruned_raw_data
+
+        # And bit of logging after re're done with CLI invocations
+        for i, raw_datum in enumerate(raw_data):
+            debug(f'updated raw step datum #{i}', str(raw_datum))
+
+        self._set_default_values(raw_data)
+        self.data = self._normalize_data(raw_data, self._logger)
+        self._raw_data = raw_data
+
+        # A final bit of logging, to record what we ended up with after all inputs and fixups were
+        # applied.
+        for i, datum in enumerate(self.data):
+            debug(f'final step data #{i}', str(datum))
 
     def setup_actions(self) -> None:
         """ Insert login and reboot plugins if requested """
@@ -734,7 +966,7 @@ class BasePlugin(Phase):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Store plugin name, data and parent step """
-        logger.apply_verbosity_options(**self.__class__._cli_options)
+        logger.apply_verbosity_options(cli_invocation=self.__class__.cli_invocation)
 
         # Store name, data and parent step
         super().__init__(
@@ -1036,31 +1268,6 @@ class BasePlugin(Phase):
 
         return any(destination in (guest.name, guest.role) for destination in where)
 
-    def _update_data_from_options(self, keys: Optional[List[str]] = None) -> None:
-        """
-        Update plugin data with values provided by CLI options.
-
-        Called by the plugin wake-up mechanism to allow CLI options to take an
-        effect.
-
-        :param keys: if specified, only the listed keys would be affected.
-        """
-
-        keys = keys or list(self.data.keys())
-
-        for keyname in keys:
-            value = self.opt(tmt.utils.key_to_option(keyname))
-
-            # TODO: this test is incorrect. It should not test for false-ish values,
-            # but rather check whether the value returned by `self.opt()` is or is
-            # not option default. And that's apparently not trivial with current CLI
-            # handling.
-            if value is None or value == [] or value == () or value is False:
-                continue
-
-            tmt.utils.dataclass_normalize_field(
-                self.data, f'{self.name}:{keyname}', keyname, value, self._logger)
-
     def wake(self) -> None:
         """
         Wake up the plugin, process data, apply options
@@ -1091,8 +1298,6 @@ class BasePlugin(Phase):
         #         f'how "{self.opt("how")}", ' \
         #         f'supported methods {", ".join([method.name for method in self.methods()])}, ' \
         #         f'current data is {self.data}'
-
-        self._update_data_from_options()
 
     # NOTE: it's tempting to rename this method to `go()` and use more natural
     # `super().go()` in child classes' `go()` methods. But, `go()` does not have
@@ -1163,7 +1368,7 @@ class Plugin(BasePlugin):
         self.go_prolog(logger)
 
 
-class Action(Phase):
+class Action(Phase, tmt.utils.MultiInvokableCommon):
     """ A special action performed during a normal step. """
 
     # Dictionary containing list of requested phases for each enabled step
@@ -1264,7 +1469,7 @@ class Reboot(Action):
             help='Hard reboot of the machine. Unsaved data may be lost.')
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """ Reboot the guest. """
-            Reboot._save_cli_context(context)
+            Reboot.store_cli_invocation(context)
             Reboot._enabled = True
 
         return reboot
@@ -1353,7 +1558,7 @@ class Login(Action):
             the tests finished with given result (pass, info, fail,
             warn, error).
             """
-            Login._save_cli_context(context)
+            Login.store_cli_invocation(context)
             Login._enabled = True
 
         return login

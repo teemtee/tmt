@@ -759,7 +759,21 @@ class _CommonBase:
             super().__init__(**kwargs)
 
 
-class Common(_CommonBase):
+class _CommonMeta(type):
+    """
+    A meta class for all :py:class:`Common` classes.
+
+    Takes care of properly resetting :py:attr:`Common.cli_invocation` attribute
+    that cannot be shared among classes.
+    """
+
+    def __init__(cls, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        cls.cli_invocation = None
+
+
+class Common(_CommonBase, metaclass=_CommonMeta):
     """
     Common shared stuff
 
@@ -768,28 +782,6 @@ class Common(_CommonBase):
     Implements read() and write() for comfortable file access.
     Provides the run() method for easy command execution.
     """
-
-    # CLI context and options it carries are saved for later use. This happens
-    # when Click subcommand (or "group" command) runs, and saves its context
-    # in a class corresponding to the subcommand/group. For example, in command
-    # like `tmt run report -h foo --bar=baz`, `report` subcommand would save
-    # its context inside `tmt.steps.report.Report` class.
-    #
-    # The context can be also saved on the instance level, for more fine-grained
-    # context tracking.
-    #
-    # The "later use" means the context is often used when looking for options
-    # like --how, --dry or --verbose.
-    #
-    # TODO: Unfortunately, there's just a single "slot", and there can be only
-    # one saved context on class level. This prevents repeated use of
-    # subcommands, i.e. create multiple phases of a step via CLI. While it's
-    # perfectly fine to define multiple report plugins in plan's fmf data,
-    # doing so via CLI - `report -h display report -h html` - is not supported.
-    _cli_context: Optional['tmt.cli.Context'] = None
-    # FIXME: The class inheritance sets the same instance of _cli_options
-    # dictionary to all child class and causes error in certain cases.
-    _cli_options: Dict[str, Any] = {}
 
     # When set to true, _opt will be ignored (default will be returned)
     ignore_class_options: bool = False
@@ -824,8 +816,8 @@ class Common(_CommonBase):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
-            cli_context: Optional['tmt.cli.Context'] = None,
             relative_indent: int = 1,
+            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
         """
@@ -841,7 +833,6 @@ class Common(_CommonBase):
             parent=parent,
             name=name,
             workdir=workdir,
-            cli_context=cli_context,
             relative_indent=relative_indent,
             logger=logger,
             **kwargs)
@@ -850,13 +841,7 @@ class Common(_CommonBase):
         self.name = name or self.__class__.__name__.lower()
         self.parent = parent
 
-        # Store command line context
-        if cli_context:
-            self._save_cli_context_to_instance(cli_context)
-
-            # TODO: not needed here, apparently, it's applied elsewhere, not to
-            # each and every Common child.
-            # logger.apply_verbosity_options(**self._options)
+        self.cli_invocation = cli_invocation
 
         self.inject_logger(logger)
 
@@ -894,65 +879,115 @@ class Common(_CommonBase):
         """ Name is the default string representation """
         return self.name
 
+    #
+    # Invokability via CLI
+    #
+
+    # CLI invocation of (sub)command represented by the class or instance.
+    # When Click subcommand (or "group" command) runs, saves the Click context
+    # in a class corresponding to the subcommand/group. For example, in command
+    # like `tmt run report -h foo --bar=baz`, `report` subcommand would save
+    # its context inside `tmt.steps.report.Report` class.
+    #
+    # The context can be also saved on the instance level, for more fine-grained
+    # context tracking.
+    #
+    # The "later use" means the context is often used when looking for options
+    # like --how or --dry, may affect step data from fmf or even spawn new phases.
+    cli_invocation: Optional['tmt.cli.CliInvocation'] = None
+
     @classmethod
-    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
+    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
         """
-        Save a CLI context and options it carries for later use.
+        Record a CLI invocation and options it carries for later use.
 
         .. warning::
 
            The given context is saved into a class variable, therefore it will
            function as a "default" context for instances on which
-           :py:meth:`_save_cli_context_to_instance` has not been called.
+           :py:meth:`store_cli_invocation` has not been called.
 
-        .. warning::
-
-           The given context will overwrite any previously saved context.
-
-        :param context: CLI context to save.
+        :param context: CLI context representing the invocation.
+        :raises GeneralError: when there was a previously saved invocation
+            already. Multiple invocations are not allowed.
         """
 
-        cls._cli_context = context
-        cls._cli_options = cls._cli_context.params
+        if cls.cli_invocation is not None:
+            raise GeneralError(
+                f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}")
 
-    def _save_cli_context_to_instance(self, context: 'tmt.cli.Context') -> None:
+        cls.cli_invocation = tmt.cli.CliInvocation.from_context(context)
+        return cls.cli_invocation
+
+    @property
+    def _inherited_cli_invocation(self) -> Optional['tmt.cli.CliInvocation']:
         """
-        Save a CLI context and options it carries for later use.
+        CLI invocation attached to this instance or its parents.
 
-        .. warning::
-
-           The given context will overwrite any previously saved context.
-
-        :param context: CLI context to save.
+        :returns: instance-level CLI invocation, or, if there is none,
+            current class and its parent classes are inspected for their
+            class-level invocations.
         """
 
-        self._cli_context = context
-        self._cli_options = self._cli_context.params
+        if self.cli_invocation is not None:
+            return self.cli_invocation
+
+        for klass in self.__class__.__mro__:
+            if not issubclass(klass, Common):
+                continue
+
+            if klass.cli_invocation:
+                return klass.cli_invocation
+
+        return None
 
     @property
     def _cli_context_object(self) -> Optional['tmt.cli.ContextObject']:
         """
-        A CLI context object with tmt info relevant for command execution.
+        A CLI context object attached to the CLI invocation.
 
-        :returns: CLI context object, or ``None`` if the CLI context itself
-            has not been set.
+        :returns: a CLI context object, or ``None`` if there is no
+            CLI invocation attached to this instance or any of its
+            parent classes.
         """
 
-        # TODO: can this even happen? Common._save_cli_context() is called
-        # from tmt.cli:main(), would this act as an initializer for all
-        # derived classes?
-        if self._cli_context is None:
+        invocation = self._inherited_cli_invocation
+
+        if invocation is None:
             return None
 
-        return self._cli_context.obj
+        if invocation.context is None:
+            return None
+
+        return invocation.context.obj
+
+    @property
+    def _cli_options(self) -> Dict[str, Any]:
+        """
+        CLI options attached to the CLI invocation.
+
+        :returns: CLI options, or an empty dictionary if there is no
+            CLI invocation attached to this instance or any of its
+            parent classes.
+        """
+
+        invocation = self._inherited_cli_invocation
+
+        if invocation is None:
+            return {}
+
+        return invocation.options
 
     @property
     def _cli_fmf_context(self) -> FmfContext:
-        """ An fmf context set for this object via CLI """
+        """
+        An fmf context attached to the CLI invocation.
 
-        # TODO: can this even happen? Common._save_cli_context() is called
-        # from tmt.cli:main(), would this act as an initializer for all
-        # derived classes?
+        :returns: an fmf context, or an empty fmf context if there
+            is no CLI invocation attached to this instance or any of
+            its parent classes.
+        """
+
         if self._cli_context_object is None:
             return FmfContext()
 
@@ -982,7 +1017,11 @@ class Common(_CommonBase):
         """ Get an option from the command line context (class version) """
         if cls.ignore_class_options:
             return default
-        return cls._cli_options.get(option, default)
+
+        if cls.cli_invocation is None:
+            return default
+
+        return cls.cli_invocation.options.get(option, default)
 
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
         """
@@ -1001,8 +1040,11 @@ class Common(_CommonBase):
         """
         # Translate dashes to underscores to match click's conversion
         option = option.replace('-', '_')
+
         # Get local option
-        local = self._cli_options.get(option, default)
+        local = self._inherited_cli_invocation.options.get(
+            option, default) if self._inherited_cli_invocation else None
+
         # Check parent option
         parent = None
         if self.parent:
@@ -1336,6 +1378,55 @@ class Common(_CommonBase):
             self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
         return self._clone_dirpath
+
+
+class _MultiInvokableCommonMeta(_CommonMeta):
+    """
+    A meta class for all :py:class:`Common` classes.
+
+    Takes care of properly resetting :py:attr:`Common.cli_invocation` attribute
+    that cannot be shared among classes.
+    """
+
+    # N805: ruff does not recognize this as a metaclass, `cls` is correct
+    def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
+        super().__init__(*args, **kwargs)
+
+        cls.cli_invocations: List['tmt.cli.CliInvocation'] = []
+
+
+class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
+    cli_invocations: List['tmt.cli.CliInvocation']
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+    @classmethod
+    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
+        """
+        Save a CLI context and options it carries for later use.
+
+        .. warning::
+
+           The given context is saved into a class variable, therefore it will
+           function as a "default" context for instances on which
+           :py:meth:`_save_cli_context_to_instance` has not been called.
+
+        .. warning::
+
+           The given context will overwrite any previously saved context.
+
+        :param context: CLI context to save.
+        """
+
+        invocation = tmt.cli.CliInvocation.from_context(context)
+
+        cls.cli_invocations.append(invocation)
+
+        cls.cli_invocation = invocation
+
+        return invocation
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Exceptions
@@ -4624,10 +4715,10 @@ def dataclass_normalize_field(
 
     value = normalize_callback(key_address, raw_value, logger) if normalize_callback else raw_value
 
-    # As mentioned in BasePlugin._update_data_from_options, the test
-    # performed there is questionable. To gain more visibility into how
-    # normalization and CLI updates work together, a bit of logging of
-    # values the CLI update process does not consider.
+    # TODO: we already access parameter source when importing CLI invocations in `Step.wake()`,
+    # we should do the same here as well. It will require adding (optional) Click context
+    # as one of the inputs, but that's acceptable. Then we can get rid of this less-than-perfect
+    # test.
     #
     # Keep for debugging purposes, as long as normalization settles down.
     if value is None or value == [] or value == ():
@@ -5015,7 +5106,9 @@ class NormalizeKeysMixin(_CommonBase):
 
         for keyname, keytype in self._iter_key_annotations():
             key_address = f'{key_source_name}:{keyname}'
+
             source_keyname = key_to_option(keyname)
+            source_keyname_cli = keyname
 
             # Do not indent this particular entry like the rest, so it could serve
             # as a "header" for a single key processing.
@@ -5044,20 +5137,24 @@ class NormalizeKeysMixin(_CommonBase):
                 debug('default value', str(default_value))
                 debug('default value type', str(type(default_value)))
 
-                # try+except seems to work better than get(), especially when
-                # semantic of fmf.Tree.get() is slightly different than that
-                # of dict().get().
-                try:
+                if source_keyname in key_source:
                     value = key_source[source_keyname]
 
-                except KeyError:
+                elif source_keyname_cli in key_source:
+                    value = key_source[source_keyname_cli]
+
+                else:
                     value = default_value
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))
 
             else:
-                value = key_source.get(source_keyname)
+                if source_keyname in key_source:
+                    value = key_source[source_keyname]
+
+                elif source_keyname_cli in key_source:
+                    value = key_source[source_keyname_cli]
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))

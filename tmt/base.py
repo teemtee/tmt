@@ -737,9 +737,11 @@ class Core(
         return tmt.utils.web_git_url(self.fmf_id.url, self.fmf_id.ref, relative_path)
 
     @classmethod
-    def _save_cli_context(cls, context: 'tmt.cli.Context') -> None:
+    def store_cli_invocation(
+            cls,
+            context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
         """ Save provided command line context for future use """
-        super()._save_cli_context(context)
+        invocation = super().store_cli_invocation(context)
 
         # Handle '.' as an alias for the current working directory
         names = cls._opt('names')
@@ -754,8 +756,10 @@ class Core(
             else:
                 # Prevent matching common prefix from other directories
                 pattern = f"{current.relative_to(root)}(/|$)"
-            cls._cli_options['names'] = tuple(
+            invocation.options['names'] = tuple(
                 pattern if name == '.' else name for name in names)
+
+        return invocation
 
     def name_and_summary(self) -> str:
         """ Node name and optional summary """
@@ -1392,11 +1396,6 @@ class Plan(
         tmt.export.Exportable['Plan'],
         tmt.lint.Lintable['Plan']):
     """ Plan object (L2 Metadata) """
-
-    # The class variable _cli_options need to be reassigned with a new empty
-    # dictionary instance. Otherwise, it would use the shared dictionary
-    # from Common class and causes error in certain cases.
-    _cli_options = {}
 
     # `environment` and `environment-file` are NOT promoted to instance variables.
     context: FmfContext = field(
@@ -2727,7 +2726,7 @@ class Tree(tmt.utils.Common):
                 logger=logger.descend(
                     logger_name=plan.get('name', None),
                     extra_shift=0
-                    ).apply_verbosity_options(**Plan._cli_options),
+                    ).apply_verbosity_options(cli_invocation=Plan.cli_invocation),
                 run=run) for plan in [
                 *
                 self.tree.prune(
@@ -2932,24 +2931,25 @@ class Run(tmt.utils.Common):
                  *,
                  id_: Optional[Path] = None,
                  tree: Optional[Tree] = None,
-                 cli_context: Optional['tmt.cli.Context'] = None,
+                 cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
         self.config = tmt.utils.Config()
-        if cli_context is not None:
-            if cli_context.params.get('last'):
+
+        if cli_invocation is not None:
+            if cli_invocation.options.get('last'):
                 id_ = self.config.last_run
                 if id_ is None:
                     raise tmt.utils.GeneralError(
                         "No last run id found. Have you executed any run?")
-            if cli_context.params.get('follow') and id_ is None:
+            if cli_invocation.options.get('follow') and id_ is None:
                 raise tmt.utils.GeneralError(
                     "Run id has to be specified in order to use --follow.")
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(cli_context=cli_context, logger=logger)
+        super().__init__(cli_invocation=cli_invocation, logger=logger)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree = tree
         self._plans: Optional[List[Plan]] = None
@@ -3204,9 +3204,20 @@ class Run(tmt.utils.Common):
         # Propagate dry mode from provision to prepare, execute and finish
         # (basically nothing can be done if there is no guest provisioned)
         if tmt.steps.provision.Provision._opt("dry"):
-            tmt.steps.prepare.Prepare._cli_options["dry"] = True
-            tmt.steps.execute.Execute._cli_options["dry"] = True
-            tmt.steps.finish.Finish._cli_options["dry"] = True
+            for _klass in (
+                    tmt.steps.prepare.Prepare,
+                    tmt.steps.execute.Execute,
+                    tmt.steps.finish.Finish):
+                klass = cast(Type[tmt.steps.Step], _klass)
+
+                cli_invocation = klass.cli_invocation
+
+                if cli_invocation is None:
+                    klass.cli_invocation = tmt.cli.CliInvocation(
+                        context=None, options={'dry': True})
+
+                else:
+                    cli_invocation.options['dry'] = True
 
         # Enable selected steps
         assert self._cli_context_object is not None  # narrow type
@@ -3411,7 +3422,7 @@ class Status(tmt.utils.Common):
                 logger=self._logger,
                 id_=abs_path,
                 tree=self._cli_context_object.tree,
-                cli_context=self._cli_context)
+                cli_invocation=self.cli_invocation)
             self.process_run(run)
 
 
@@ -3426,22 +3437,24 @@ class Clean(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  name: Optional[str] = None,
                  workdir: tmt.utils.WorkdirArgumentType = None,
-                 cli_context: Optional['tmt.cli.Context'] = None,
+                 cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """
         Initialize name and relation with the parent object
 
         Always skip to initialize the work tree.
         """
+
         # Set the option to skip to initialize the work tree
-        if cli_context:
-            cli_context.params[tmt.utils.PLAN_SKIP_WORKTREE_INIT] = True
+        if cli_invocation and cli_invocation.context:
+            cli_invocation.context.params[tmt.utils.PLAN_SKIP_WORKTREE_INIT] = True
+
         super().__init__(
             logger=logger,
             parent=parent,
             name=name,
             workdir=workdir,
-            cli_context=cli_context)
+            cli_invocation=cli_invocation)
 
     def images(self) -> bool:
         """ Clean images of provision plugins """
@@ -3486,8 +3499,10 @@ class Clean(tmt.utils.Common):
                                  f"plan '{plan.name}'.", shift=1)
                     # Set --quiet to avoid finish logging to terminal
 
-                    quiet = self._cli_options['quiet']
-                    self._cli_options['quiet'] = True
+                    assert self.cli_invocation is not None  # narrow type
+
+                    quiet = self.cli_invocation.options['quiet']
+                    self.cli_invocation.options['quiet'] = True
                     try:
                         plan.finish.go()
                     except tmt.utils.GeneralError as error:
@@ -3495,7 +3510,7 @@ class Clean(tmt.utils.Common):
                                   f"'{run.workdir}': {error}.", shift=1)
                         successful = False
                     finally:
-                        self._cli_options['quiet'] = quiet
+                        self.cli_invocation.options['quiet'] = quiet
         return successful
 
     def guests(self) -> bool:
@@ -3508,7 +3523,7 @@ class Clean(tmt.utils.Common):
             # Pass the context containing --last to Run to choose
             # the correct one.
             return self._stop_running_guests(
-                Run(logger=self._logger, cli_context=self._cli_context))
+                Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
         for abs_path in tmt.utils.generate_runs(root_path, id_):
@@ -3516,7 +3531,7 @@ class Clean(tmt.utils.Common):
                 logger=self._logger,
                 id_=abs_path,
                 tree=self._cli_context_object.tree,
-                cli_context=self._cli_context)
+                cli_invocation=self.cli_invocation)
             if not self._stop_running_guests(run):
                 successful = False
         return successful
@@ -3543,7 +3558,7 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
-            last_run = Run(logger=self._logger, cli_context=self._cli_context)
+            last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
