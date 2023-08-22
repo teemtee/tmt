@@ -880,8 +880,11 @@ def read_polarion_case(
     # Update component
     if polarion_case.casecomponent:
         current_data['component'] = []
-        for component in polarion_case.casecomponent:
-            current_data['component'].append(str(component))
+        if isinstance(polarion_case.casecomponent, str):
+            current_data['component'].append(str(polarion_case.casecomponent))
+        else:
+            for component in polarion_case.casecomponent:
+                current_data['component'].append(str(component))
         echo(style('component: ', fg='green') + ' '.join(current_data['component']))
 
     # Update tags
