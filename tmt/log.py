@@ -51,6 +51,7 @@ DEFAULT_DEBUG_LEVEL = 0
 class Topic(enum.Enum):
     KEY_NORMALIZATION = 'key-normalization'
     CLI_INVOCATIONS = 'cli-invocations'
+    COMMAND_EVENTS = 'command-events'
 
 
 DEFAULT_TOPICS: Set[Topic] = set()
