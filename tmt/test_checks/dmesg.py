@@ -1,19 +1,19 @@
 import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.result import TestCheckResult
-from tmt.test_checks import TestCheckPlugin
-from tmt.utils import Path
+from tmt.result import ResultOutcome, TestCheckResult
+from tmt.test_checks import TestCheckEvent, TestCheckPlugin
+from tmt.utils import Path, render_run_exception_streams
 
 if TYPE_CHECKING:
     from tmt.base import TestCheck
 
 
-TEST_POST_DMESG_FILENAME = 'tmt-dmesg.txt'
+TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
 
 @TestCheckPlugin.provides_check('dmesg')
@@ -47,7 +47,8 @@ class DmesgTestCheck(TestCheckPlugin):
             plugin: tmt.steps.execute.ExecutePlugin,
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
-            logger: tmt.log.Logger) -> Path:
+            event: TestCheckEvent,
+            logger: tmt.log.Logger) -> Tuple[ResultOutcome, Path]:
 
         from tmt.steps.execute import ExecutePlugin
 
@@ -55,20 +56,29 @@ class DmesgTestCheck(TestCheckPlugin):
 
         timestamp = ExecutePlugin.format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
-        dmesg_output = cls._fetch_dmesg(guest, logger)
-
         path = plugin.data_path(
             test,
             guest,
-            filename=TEST_POST_DMESG_FILENAME,
+            filename=TEST_POST_DMESG_FILENAME.format(event=event.value),
             create=True,
             full=True)
 
+        try:
+            dmesg_output = cls._fetch_dmesg(guest, logger)
+
+        except tmt.utils.RunError as exc:
+            outcome = ResultOutcome.ERROR
+            output = "\n".join(render_run_exception_streams(exc.stdout, exc.stderr, verbose=1))
+
+        else:
+            outcome = ResultOutcome.PASS
+            output = dmesg_output.stdout or ''
+
         plugin.write(
             path,
-            f'# Acquired at {timestamp}\n{dmesg_output.stdout or ""}')
+            f'# Acquired at {timestamp}\n{output}')
 
-        return path.relative_to(plugin.step.workdir)
+        return outcome, path.relative_to(plugin.step.workdir)
 
     @classmethod
     def before_test(
@@ -80,14 +90,9 @@ class DmesgTestCheck(TestCheckPlugin):
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> List[TestCheckResult]:
-        return [
-            TestCheckResult(
-                name='dmesg',
-                log=[
-                    cls._save_dmesg(plugin, guest, test, logger)
-                    ]
-                )
-            ]
+        outcome, path = cls._save_dmesg(plugin, guest, test, TestCheckEvent.BEFORE_TEST, logger)
+
+        return [TestCheckResult(name='dmesg', result=outcome, log=[path])]
 
     @classmethod
     def after_test(
@@ -99,11 +104,6 @@ class DmesgTestCheck(TestCheckPlugin):
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> List[TestCheckResult]:
-        return [
-            TestCheckResult(
-                name='dmesg',
-                log=[
-                    cls._save_dmesg(plugin, guest, test, logger)
-                    ]
-                )
-            ]
+        outcome, path = cls._save_dmesg(plugin, guest, test, TestCheckEvent.AFTER_TEST, logger)
+
+        return [TestCheckResult(name='dmesg', result=outcome, log=[path])]

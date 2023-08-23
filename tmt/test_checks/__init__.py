@@ -16,6 +16,8 @@ TestCheckPluginClass = Type['TestCheckPlugin']
 
 
 class TestCheckEvent(enum.Enum):
+    """ Events in test runtime when a check can be executed """
+
     BEFORE_TEST = 'before-test'
     AFTER_TEST = 'after-test'
 

@@ -60,9 +60,9 @@ description: |
          name: client-1
          role: clients
 
-      # List of all before/after test checks and their results. Their fields
-      # have the same meaning as fields of the "parent" test result, but relate
-      # to the check itself.
+      # Represents results of all test checks executed as driven by test's `check`
+      # key. Fields have the same meaning as fields of the "parent" test result, but
+      # relate to each check alone.
       checks:
           # String, outcome of the test execution.
         - result: "pass"|"fail"|"info"|"warn"|"error"
@@ -76,7 +76,7 @@ description: |
             - path/to/check/log1
               ...
 
-          # String, name of the checks. Corresponds to the name used in test
+          # String, name of the check. Corresponds to the name used in test
           # metadata.
           name: dummy
 

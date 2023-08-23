@@ -1,0 +1,11 @@
+summary: Test test checks
+tier: 2
+
+environment:
+    PROVISION_METHODS: local container
+
+adjust:
+  - when: how == full
+    environment:
+        PROVISION_METHODS: local container virtual
+    tag+: [additional_coverage]

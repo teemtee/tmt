@@ -1,0 +1,4 @@
+test: /bin/true
+
+check:
+  - name: dmesg

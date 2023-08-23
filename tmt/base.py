@@ -953,6 +953,8 @@ class _RawTestCheck(TypedDict, total=False):
 class TestCheck(
         tmt.utils.SpecBasedContainer[_RawTestCheck, _RawTestCheck],
         tmt.utils.SerializableContainer):
+    """ Represents a single check from test's ``check`` field """
+
     name: str
     enable: bool = field(default=True)
 
