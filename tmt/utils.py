@@ -201,6 +201,9 @@ class FmfContext(Dict[str, List[str]]):
     and https://fmf.readthedocs.io/en/latest/context.html.
     """
 
+    def __init__(self, data: Optional[Dict[str, List[str]]] = None) -> None:
+        super().__init__(data or {})
+
     @classmethod
     def _normalize_command_line(cls, spec: List[str], logger: tmt.log.Logger) -> 'FmfContext':
         """
@@ -2359,6 +2362,10 @@ class FieldMetadata(Generic[T]):
     # :py:class:`SerializableContainer`).
     serialize_callback: Optional['SerializeCallback[T]'] = None
     unserialize_callback: Optional['SerializeCallback[T]'] = None
+
+    #: An export callback to call when exporting the field (performed by
+    #: :py:class:`tmt.export.Exportable`).
+    export_callback: Optional['FieldExporter[T]'] = None
 
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
@@ -5627,6 +5634,9 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
 
 FieldCLIOption = Union[str, Sequence[str]]
 
+#: A callback to use to convert a field value into exportable type.
+FieldExporter = Callable[[T], Any]
+
 
 @overload
 def field(
@@ -5648,6 +5658,8 @@ def field(
         # Custom serialization
         # serialize: Optional[SerializeCallback[bool]] = None,
         # unserialize: Optional[UnserializeCallback[bool]] = None
+        # Custom exporter
+        # exporter: Optional[FieldExporter[T]] = None
         ) -> bool:
     pass
 
@@ -5670,7 +5682,9 @@ def field(
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
         serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None
+        unserialize: Optional[UnserializeCallback[T]] = None,
+        # Custom exporter
+        exporter: Optional[FieldExporter[T]] = None
         ) -> T:
     pass
 
@@ -5693,7 +5707,9 @@ def field(
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
         serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None
+        unserialize: Optional[UnserializeCallback[T]] = None,
+        # Custom exporter
+        exporter: Optional[FieldExporter[T]] = None
         ) -> T:
     pass
 
@@ -5716,7 +5732,9 @@ def field(
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
         serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None
+        unserialize: Optional[UnserializeCallback[T]] = None,
+        # Custom exporter
+        exporter: Optional[FieldExporter[T]] = None
         ) -> Any:
     """
     Define a :py:class:`DataContainer` field.
@@ -5759,6 +5777,8 @@ def field(
         Consumed by :py:class:`SerializableKeysMixin`.
     :param unserialize: a callback for custom unserialization of the field value.
         Consumed by :py:class:`SerializableKeysMixin`.
+    :param exporter: a callback for custom export of the field value.
+        Consumed by :py:class:`tmt.export.Exportable`.
     """
 
     if default is dataclasses.MISSING and default_factory is dataclasses.MISSING:
@@ -5789,6 +5809,7 @@ def field(
 
     metadata.serialize_callback = serialize
     metadata.unserialize_callback = unserialize
+    metadata.export_callback = exporter
 
     # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
