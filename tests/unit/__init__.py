@@ -85,7 +85,7 @@ def _assert_log(
     for field_name, expected_value in tests.items():
         if field_name.startswith('details_'):
             field_name = field_name.replace('details_', '')
-            def field_getter(record, name): return record.details.get(name, None)
+            def field_getter(record, name): return getattr(record.details, name, None)
 
         else:
             def field_getter(record, name): return getattr(record, name)

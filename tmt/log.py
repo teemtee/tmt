@@ -24,13 +24,14 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import dataclasses
 import enum
 import itertools
 import logging
 import logging.handlers
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Set, Tuple, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Set, Tuple, cast
 
 import click
 
@@ -203,29 +204,30 @@ def indent(
         + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
 
 
-class LogRecordDetails(TypedDict, total=False):
+@dataclasses.dataclass
+class LogRecordDetails:
     """ tmt's log message components attached to log records """
 
     key: str
-    value: Optional[str]
+    value: Optional[str] = None
 
-    color: Optional[str]
-    shift: int
+    color: Optional[str] = None
+    shift: int = 0
 
-    logger_labels: List[str]
-    logger_labels_padding: int
+    logger_labels: List[str] = dataclasses.field(default_factory=list)
+    logger_labels_padding: int = 0
 
-    logger_verbosity_level: int
-    message_verbosity_level: Optional[int]
+    logger_verbosity_level: int = 0
+    message_verbosity_level: Optional[int] = None
 
-    logger_debug_level: int
-    message_debug_level: Optional[int]
+    logger_debug_level: int = 0
+    message_debug_level: Optional[int] = None
 
-    logger_quiet: bool
-    ignore_quietness: bool
+    logger_quiet: bool = False
+    ignore_quietness: bool = False
 
-    logger_topics: Set[Topic]
-    message_topic: Optional[Topic]
+    logger_topics: Set[Topic] = dataclasses.field(default_factory=set)
+    message_topic: Optional[Topic] = None
 
 
 class LogfileHandler(logging.FileHandler):
@@ -322,12 +324,10 @@ class VerbosityLevelFilter(logging.Filter):
         if details is None:
             return True
 
-        message_verbosity_level = details.get('message_verbosity_level', None)
-
-        if message_verbosity_level is None:
+        if details.message_verbosity_level is None:
             return True
 
-        return details['logger_verbosity_level'] >= message_verbosity_level
+        return details.logger_verbosity_level >= details.message_verbosity_level
 
 
 class DebugLevelFilter(logging.Filter):
@@ -340,12 +340,10 @@ class DebugLevelFilter(logging.Filter):
         if details is None:
             return True
 
-        message_debug_level = details.get('message_debug_level', None)
-
-        if message_debug_level is None:
+        if details.message_debug_level is None:
             return True
 
-        return details['logger_debug_level'] >= message_debug_level
+        return details.logger_debug_level >= details.message_debug_level
 
 
 class QuietnessFilter(logging.Filter):
@@ -358,10 +356,10 @@ class QuietnessFilter(logging.Filter):
         if details is None:
             return False
 
-        if not details.get('logger_quiet', False):
+        if not details.logger_quiet:
             return True
 
-        if details.get('ignore_quietness', False):
+        if details.ignore_quietness:
             return True
 
         return False
@@ -377,12 +375,10 @@ class TopicFilter(logging.Filter):
         if details is None:
             return False
 
-        message_topic = details.get('message_topic', None)
-
-        if message_topic is None:
+        if details.message_topic is None:
             return True
 
-        if message_topic in details['logger_topics']:
+        if details.message_topic in details.logger_topics:
             return True
 
         return False
@@ -647,23 +643,23 @@ class Logger:
         workflow and carrying extra information for our custom filters and handlers.
         """
 
-        details['logger_labels'] = self.labels
-        details['logger_labels_padding'] = self.labels_padding
+        details.logger_labels = self.labels
+        details.logger_labels_padding = self.labels_padding
 
-        details['logger_verbosity_level'] = self.verbosity_level
-        details['logger_debug_level'] = self.debug_level
-        details['logger_quiet'] = self.quiet
-        details['logger_topics'] = self.topics
+        details.logger_verbosity_level = self.verbosity_level
+        details.logger_debug_level = self.debug_level
+        details.logger_quiet = self.quiet
+        details.logger_topics = self.topics
 
-        details['shift'] = details.get('shift', 0) + self._base_shift
+        details.shift = details.shift + self._base_shift
 
         if not message:
             message = indent(
-                details['key'],
-                value=details['value'],
+                details.key,
+                value=details.value,
                 # Always apply colors - message can be decolorized later.
-                color=details.get('color', None),
-                level=details.get('shift', 0),
+                color=details.color,
+                level=details.shift,
                 labels=self.labels,
                 labels_padding=self.labels_padding)
 
@@ -678,13 +674,12 @@ class Logger:
             ) -> None:
         self._log(
             logging.INFO,
-            {
-                'key': key,
-                'value': value,
-                'color': color,
-                'shift': shift,
-                'ignore_quietness': True
-                }
+            LogRecordDetails(
+                key=key,
+                value=value,
+                color=color,
+                shift=shift,
+                ignore_quietness=True)
             )
 
     def info(
@@ -696,12 +691,11 @@ class Logger:
             ) -> None:
         self._log(
             logging.INFO,
-            {
-                'key': key,
-                'value': value,
-                'color': color,
-                'shift': shift
-                }
+            LogRecordDetails(
+                key=key,
+                value=value,
+                color=color,
+                shift=shift)
             )
 
     def verbose(
@@ -715,14 +709,13 @@ class Logger:
             ) -> None:
         self._log(
             logging.INFO,
-            {
-                'key': key,
-                'value': value,
-                'color': color,
-                'shift': shift,
-                'message_verbosity_level': level,
-                'message_topic': topic
-                }
+            LogRecordDetails(
+                key=key,
+                value=value,
+                color=color,
+                shift=shift,
+                message_verbosity_level=level,
+                message_topic=topic)
             )
 
     def debug(
@@ -736,14 +729,13 @@ class Logger:
             ) -> None:
         self._log(
             logging.DEBUG,
-            {
-                'key': key,
-                'value': value,
-                'color': color,
-                'shift': shift,
-                'message_debug_level': level,
-                'message_topic': topic
-                }
+            LogRecordDetails(
+                key=key,
+                value=value,
+                color=color,
+                shift=shift,
+                message_debug_level=level,
+                message_topic=topic)
             )
 
     def warn(
@@ -753,12 +745,11 @@ class Logger:
             ) -> None:
         self._log(
             logging.WARN,
-            {
-                'key': 'warn',
-                'value': message,
-                'color': 'yellow',
-                'shift': shift
-                }
+            LogRecordDetails(
+                key='warn',
+                value=message,
+                color='yellow',
+                shift=shift)
             )
 
     def fail(
@@ -768,12 +759,11 @@ class Logger:
             ) -> None:
         self._log(
             logging.ERROR,
-            {
-                'key': 'fail',
-                'value': message,
-                'color': 'red',
-                'shift': shift
-                }
+            LogRecordDetails(
+                key='fail',
+                value=message,
+                color='red',
+                shift=shift)
             )
 
     _bootstrap_logger: Optional['Logger'] = None

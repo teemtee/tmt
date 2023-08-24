@@ -8,6 +8,7 @@ import pytest
 from tmt.log import (
     DebugLevelFilter,
     Logger,
+    LogRecordDetails,
     QuietnessFilter,
     Topic,
     TopicFilter,
@@ -137,10 +138,10 @@ def test_verbosity_filter(
 
     assert filter.filter(logging.makeLogRecord({
         'levelno': logging.INFO,
-        'details': {
-            'logger_verbosity_level': logger_verbosity,
-            'message_verbosity_level': message_verbosity
-            }
+        'details': LogRecordDetails(
+            key='dummy key',
+            logger_verbosity_level=logger_verbosity,
+            message_verbosity_level=message_verbosity)
         })) == filter_outcome
 
 
@@ -183,10 +184,10 @@ def test_debug_filter(
 
     assert filter.filter(logging.makeLogRecord({
         'levelno': logging.DEBUG,
-        'details': {
-            'logger_debug_level': logger_debug,
-            'message_debug_level': message_debug
-            }
+        'details': LogRecordDetails(
+            key='dummy key',
+            logger_debug_level=logger_debug,
+            message_debug_level=message_debug)
         })) == filter_outcome
 
 
@@ -351,8 +352,8 @@ def test_topic_filter(
 
     assert filter.filter(logging.makeLogRecord({
         'levelno': logging.INFO,
-        'details': {
-            'logger_topics': logger_topics,
-            'message_topic': message_topic
-            }
+        'details': LogRecordDetails(
+            key='dummy key',
+            logger_topics=logger_topics,
+            message_topic=message_topic)
         })) == filter_outcome
