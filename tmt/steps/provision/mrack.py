@@ -63,17 +63,31 @@ OPERATOR_SIGN_TO_OPERATOR = {
     }
 
 
-def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> Tuple[str, str]:
+def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> Tuple[str, str, bool]:
     """
     Convert constraint operator to Beaker "op".
+
+    :param operator: operator to convert.
+    :param value: value operator works with. It shall be a string representation
+        of the the constraint value, as converted for the Beaker job XML.
+    :returns: tuple of three items: Beaker operator, fit for ``op`` attribute
+        of XML filters, a value to go with it instead of the input one, and
+        a boolean signalizing whether the filter, constructed by the caller,
+        should be negated.
     """
 
     if operator in OPERATOR_SIGN_TO_OPERATOR:
-        return OPERATOR_SIGN_TO_OPERATOR[operator], value
+        return OPERATOR_SIGN_TO_OPERATOR[operator], value, True
 
     # MATCH has special handling - convert the pattern to a wildcard form -
     # and that may be weird :/
-    return 'like', value.replace('.*', '%').replace('.+', '%')
+    if operator == tmt.hardware.Operator.MATCH:
+        return 'like', value.replace('.*', '%').replace('.+', '%'), False
+
+    if operator == tmt.hardware.Operator.NOTMATCH:
+        return 'like', value.replace('.*', '%').replace('.+', '%'), True
+
+    raise ProvisionError(f"Hardware requirement operator '{operator}' is not supported.")
 
 
 # Transcription of our HW constraints into Mrack's own representation. It's based
@@ -166,13 +180,22 @@ class MrackHWOrGroup(MrackHWGroup):
     name: str = 'or'
 
 
-def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> MrackBaseHWElement:
+@dataclasses.dataclass
+class MrackHWNotGroup(MrackHWGroup):
+    """ Represents ``<not/>`` element """
+
+    name: str = 'not'
+
+
+def constraint_to_beaker_filter(
+        constraint: tmt.hardware.BaseConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
     """ Convert a hardware constraint into a Mrack-compatible filter """
 
     if isinstance(constraint, tmt.hardware.And):
         return MrackHWAndGroup(
             children=[
-                constraint_to_beaker_filter(child_constraint)
+                constraint_to_beaker_filter(child_constraint, logger)
                 for child_constraint in constraint.constraints
                 ]
             )
@@ -180,7 +203,7 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
     if isinstance(constraint, tmt.hardware.Or):
         return MrackHWOrGroup(
             children=[
-                constraint_to_beaker_filter(child_constraint)
+                constraint_to_beaker_filter(child_constraint, logger)
                 for child_constraint in constraint.constraints
                 ]
             )
@@ -190,7 +213,7 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
     name, _, child_name = constraint.expand_name()
 
     if name == 'memory':
-        beaker_operator, actual_value = operator_to_beaker_op(
+        beaker_operator, actual_value, _ = operator_to_beaker_op(
             constraint.operator,
             str(int(cast('tmt.hardware.Size', constraint.value).to('MiB').magnitude)))
 
@@ -199,7 +222,7 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
             children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
 
     if name == "disk" and child_name == 'size':
-        beaker_operator, actual_value = operator_to_beaker_op(
+        beaker_operator, actual_value, _ = operator_to_beaker_op(
             constraint.operator,
             str(int(cast('tmt.hardware.Size', constraint.value).to('B').magnitude))
             )
@@ -211,9 +234,14 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
     if name == 'hostname':
         assert isinstance(constraint.value, str)
 
-        beaker_operator, actual_value = operator_to_beaker_op(
+        beaker_operator, actual_value, negate = operator_to_beaker_op(
             constraint.operator,
             constraint.value)
+
+        if negate:
+            return MrackHWNotGroup(children=[
+                MrackHWBinOp('hostname', beaker_operator, actual_value)
+                ])
 
         return MrackHWBinOp(
             'hostname',
@@ -221,7 +249,7 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
             actual_value)
 
     if name == "cpu":
-        beaker_operator, actual_value = operator_to_beaker_op(
+        beaker_operator, actual_value, _ = operator_to_beaker_op(
             constraint.operator,
             str(constraint.value))
 
@@ -235,8 +263,13 @@ def constraint_to_beaker_filter(constraint: tmt.hardware.BaseConstraint) -> Mrac
                 'cpu',
                 children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
-    raise tmt.utils.ProvisionError(
-        f"Unsupported hardware constraint '{constraint.printable_name}'.")
+    # Unsupported constraint has been already logged via report_support(). Make
+    # sure user is aware it would have no effect, and since we have to return
+    # something, return an empty `or` group - no harm done, composable with other
+    # elements.
+    logger.warn(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+
+    return MrackHWOrGroup()
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
@@ -287,11 +320,11 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             transformed = MrackHWAndGroup(
                 children=[
-                    constraint_to_beaker_filter(constraint)
+                    constraint_to_beaker_filter(constraint, logger)
                     for constraint in hw.constraint.variant()
                     ])
 
-            logger.info('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
+            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
 
             return {
                 'hostRequires': transformed.to_mrack()
