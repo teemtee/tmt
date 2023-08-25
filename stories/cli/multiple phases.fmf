@@ -1,5 +1,6 @@
 story: |
-    As a user I want to add, remove and adjust multiple phases via command line.
+    As a user I want to add, remove and adjust one or more step phases via command
+    line.
     I should be able to add new phases, without overwriting those loaded from fmf,
     adjust existing phases and their keys, and remove any of the existing phases.
     I should be able to adjust or remove either all phases or just a single phase
@@ -27,7 +28,7 @@ story: |
       - implemented-by: /tmt/steps
       - verified-by: /tests/core/phases
 
-/adjust:
+/update:
     summary: Allow adjusting multiple phases via command line
 
     example:
