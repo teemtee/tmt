@@ -532,6 +532,11 @@ class Constraint(BaseConstraint):
         if as_quantity:
             value: ConstraintValue = UNITS(raw_value)
 
+            # Number-like raw_value, without units, get converted into pure `int`
+            # or `float`. Stick to `Quantity` for quantities.
+            if not isinstance(value, pint.Quantity):
+                value = pint.Quantity(value)
+
         elif as_cast is not None:
             value = as_cast(raw_value)
 
@@ -874,6 +879,19 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             'threads',
             'cores-per-socket',
             'threads-per-core',
+            'model',
+            'family'
+            )
+        if constraint_name in spec
+        ]
+
+    group.constraints += [
+        Constraint.from_specification(
+            f'cpu.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            as_quantity=False
+            )
+        for constraint_name in (
             'model',
             'family'
             )
