@@ -1652,11 +1652,17 @@ def render_exception(exception: BaseException) -> List[str]:
     """ Render the exception and its causes for printing """
 
     def _indent(iterable: Iterable[str]) -> List[str]:
-        return [
-            f'{INDENT * " "}{line}'
-            for item in iterable
-            for line in item.splitlines()
-            ]
+        lines: List[str] = []
+
+        for item in iterable:
+            if not item:
+                lines.append(item)
+
+            else:
+                for line in item.splitlines():
+                    lines.append(f'{INDENT * " "}{line}')
+
+        return lines
 
     lines = [
         click.style(str(exception), fg='red')
