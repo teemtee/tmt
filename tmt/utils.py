@@ -1628,34 +1628,28 @@ class FinishError(GeneralError):
 def render_run_exception_streams(
         stdout: Optional[str],
         stderr: Optional[str],
-        verbose: int = 0) -> List[str]:
+        verbose: int = 0) -> Generator[str, None, None]:
     """ Render run exception output streams for printing """
 
-    lines: List[str] = []
-
-    for name, stream in (('stdout', stdout), ('stderr', stderr)):
-        if stream is None:
+    for name, output in (('stdout', stdout), ('stderr', stderr)):
+        if not output:
             continue
-
-        stream_lines = stream.strip().split('\n')
-
+        output_lines = output.strip().split('\n')
         # Show all lines in verbose mode, limit to maximum otherwise
         if verbose > 0:
-            line_summary = f"{len(stream_lines)}"
+            line_summary = f"{len(output_lines)}"
         else:
-            line_summary = f"{min(len(stream_lines), OUTPUT_LINES)}/{len(stream_lines)}"
-            stream_lines = stream_lines[-OUTPUT_LINES:]
+            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
+            output_lines = output_lines[-OUTPUT_LINES:]
 
-        lines += [f'{name} ({line_summary} lines)',
-                  OUTPUT_WIDTH * '~',
-                  *stream_lines,
-                  OUTPUT_WIDTH * '~',
-                  '']
-
-    return lines
+        yield f'{name} ({line_summary} lines)'
+        yield OUTPUT_WIDTH * '~'
+        yield from output_lines
+        yield OUTPUT_WIDTH * '~'
+        yield ''
 
 
-def render_run_exception(exception: RunError) -> List[str]:
+def render_run_exception(exception: RunError) -> Generator[str, None, None]:
     """ Render detailed output upon command execution errors for printing """
 
     # Check verbosity level used during raising exception,
@@ -1666,34 +1660,26 @@ def render_run_exception(exception: RunError) -> List[str]:
     else:
         verbose = 0
 
-    return render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
+    yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
-def render_exception(exception: BaseException) -> List[str]:
+def render_exception(exception: BaseException) -> Generator[str, None, None]:
     """ Render the exception and its causes for printing """
 
-    def _indent(iterable: Iterable[str]) -> List[str]:
-        lines: List[str] = []
-
+    def _indent(iterable: Iterable[str]) -> Generator[str, None, None]:
         for item in iterable:
             if not item:
-                lines.append(item)
+                yield item
 
             else:
                 for line in item.splitlines():
-                    lines.append(f'{INDENT * " "}{line}')
+                    yield f'{INDENT * " "}{line}'
 
-        return lines
-
-    lines = [
-        click.style(str(exception), fg='red')
-        ]
+    yield click.style(str(exception), fg='red')
 
     if isinstance(exception, RunError):
-        lines += [
-            '',
-            *render_run_exception(exception)
-            ]
+        yield ''
+        yield from render_run_exception(exception)
 
     if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
         formatted_exc = traceback.format_exception(
@@ -1702,28 +1688,22 @@ def render_exception(exception: BaseException) -> List[str]:
             exception.__traceback__,
             chain=False)
 
-        lines += [
-            '',
-            *_indent(formatted_exc)]
+        yield ''
+        yield from _indent(formatted_exc)
 
     # Follow the chain and render all causes
-    def _render_cause(number: int, cause: BaseException) -> List[str]:
-        return [
-            '',
-            f'Cause number {number}:',
-            '',
-            *_indent(render_exception(cause))]
+    def _render_cause(number: int, cause: BaseException) -> Generator[str, None, None]:
+        yield ''
+        yield f'Cause number {number}:'
+        yield ''
+        yield from _indent(render_exception(cause))
 
-    def _render_causes(causes: List[BaseException]) -> List[str]:
-        lines: List[str] = [
-            '',
-            f'The exception was caused by {len(causes)} earlier exceptions',
-            ]
+    def _render_causes(causes: List[BaseException]) -> Generator[str, None, None]:
+        yield ''
+        yield f'The exception was caused by {len(causes)} earlier exceptions'
 
         for number, cause in enumerate(causes, start=1):
-            lines += _render_cause(number, cause)
-
-        return lines
+            yield from _render_cause(number, cause)
 
     causes: List[BaseException] = []
 
@@ -1734,9 +1714,7 @@ def render_exception(exception: BaseException) -> List[str]:
         causes += [exception.__cause__]
 
     if causes:
-        lines += _render_causes(causes)
-
-    return lines
+        yield from _render_causes(causes)
 
 
 def show_exception(exception: BaseException) -> None:
