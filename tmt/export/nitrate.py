@@ -369,7 +369,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     duplicate = test.opt('duplicate')
     link_bugzilla = test.opt('bugzilla')
     ignore_git_validation = test.opt('ignore_git_validation')
-    dry_mode = test.opt('dry')
+    dry_mode = test.is_dryrun
     append_summary = test.opt('append-summary')
 
     if link_runs:

@@ -582,7 +582,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
-        if self.opt('dry'):
+        if self.is_dryrun:
             return
 
         # Pick the right implementation

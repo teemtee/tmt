@@ -168,7 +168,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     create = test.opt('create')
     link_bugzilla = test.opt('bugzilla')
     project_id = test.opt('project_id')
-    dry_mode = test.opt('dry')
+    dry_mode = test.is_dryrun
     duplicate = test.opt('duplicate')
     link_polarion = test.opt('link_polarion')
     append_summary = test.opt('append-summary')

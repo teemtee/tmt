@@ -1058,9 +1058,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         parent = None
         if self.parent:
             parent = self.parent.opt(option)
-        # Special handling for special flags (parent's yes always wins)
-        if option in ['force', 'dry']:
-            return parent if parent else local
         return parent if parent is not None else local
 
     @property
@@ -1080,6 +1077,45 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """ The current quietness level applied to this object """
 
         return self._logger.quiet
+
+    # TODO: interestingly, the option has its own default, right? So why do we
+    # need a default of our own? Because sometimes commands have not been
+    # invoked, and there's not CLI invocation to ask for the default value.
+    # Maybe se should add some kind of "default invocation"...
+    def _get_cli_flag(self, key: str, option: str, default: bool) -> bool:
+        """
+        Find the eventual value of a CLI-provided flag option.
+
+        :param key: in the tree of :py:class:`Common` instance, the
+            flag is represented by this attribute.
+        :param option: a CLI option name of the flag.
+        :param default: default value if the option has not been specified.
+        """
+
+        if self.parent:
+            parent = cast(bool, getattr(self.parent, key))
+
+            if parent:
+                return parent
+
+        invocation = self._inherited_cli_invocation
+
+        if invocation:
+            return invocation.options.get(option, default)
+
+        return default
+
+    @property
+    def is_dryrun(self) -> bool:
+        """ Whether the current run is a dry-run """
+
+        return self._get_cli_flag('is_dryrun', 'dry', False)
+
+    @property
+    def is_forcedrun(self) -> bool:
+        """ Whether the current run is allowed to overwrite files and data """
+
+        return self._get_cli_flag('is_forcedrun', 'force', False)
 
     def _level(self) -> int:
         """ Hierarchy level """
@@ -1200,7 +1236,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         Returns named tuple CommandOutput.
         """
 
-        dryrun_actual = self.opt('dry')
+        dryrun_actual = self.is_dryrun
 
         if ignore_dry:
             dryrun_actual = False
@@ -1244,7 +1280,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         action = 'Append to' if mode == 'a' else 'Write'
         self.debug(f"{action} file '{path}'.", level=level)
         # Dry mode
-        if self.opt('dry'):
+        if self.is_dryrun:
             return
         try:
             with open(path, mode, encoding='utf-8', errors='replace') as file:

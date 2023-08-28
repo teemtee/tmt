@@ -81,7 +81,7 @@ class GuestContainer(tmt.Guest):
 
     def start(self) -> None:
         """ Start provisioned guest """
-        if self.opt('dry'):
+        if self.is_dryrun:
             return
         # Check if the image is available
         assert self.image is not None
@@ -211,7 +211,7 @@ class GuestContainer(tmt.Guest):
                 interactive: bool = False,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute given commands in podman via shell """
-        if not self.container and not self.opt('dry'):
+        if not self.container and not self.is_dryrun:
             raise tmt.utils.ProvisionError(
                 'Could not execute without provisioned container.')
 
