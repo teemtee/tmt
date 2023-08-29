@@ -1,0 +1,67 @@
+story: |
+    As a user I want to add, remove and adjust one or more step phases via command
+    line.
+    I should be able to add new phases, without overwriting those loaded from fmf,
+    adjust existing phases and their keys, and remove any of the existing phases.
+    I should be able to adjust or remove either all phases or just a single phase
+    by its name.
+    I should be able to change even ``how`` key of phases, i.e. change the plugin
+    of phases.
+    I should be able to adjust or remove phases no matter what their source was,
+    both phases loaded from fmf or added via CLI should be affected in the same
+    way.
+
+/add:
+    summary: Allow adding new phases via command line
+
+    example:
+      - |
+        # Use --insert to add a phase without overwriting phases loaded from fmf.
+        # Both default `display`` and newly added `html` would run.
+        tmt run -a report --insert html
+
+      - |
+        # Add an extra report phase to create a junit report, make it run as soon as possible
+        tmt run -a report --insert --how html --order 1
+
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/core/phases
+
+/update:
+    summary: Allow adjusting multiple phases via command line
+
+    example:
+      - |
+        # Set the default report phase to be a HTML report
+        tmt run -a report --how html
+
+      - |
+        # When specified multiple times, only the last phase mentioned would be honored.
+        # In this case, only a `junit` report would run.
+        tmt run -a report --how html report --how junit
+
+      - |
+        # Use --update to adjust a particular phase only
+        tmt run -a report --update --name dummy-html-report --how html --display-guest never
+
+      - |
+        # Use --update without --name to adjust all phases. All phases would turn into
+        # `html` and would not display guest names in their output.
+        tmt run -a report --update --how html --display-guest never
+
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/core/phases
+
+/remove:
+    summary: Allow removing phases via command line
+
+    example:
+      - |
+        # Use --remove to drop an existing phase
+        tmt run -a report --remove --name dummy-html-report
+
+      - |
+        # Use --remove without --name to drop all existing phases
+        tmt run -a report --remove
