@@ -7,7 +7,7 @@ import click
 import fmf
 
 import tmt.utils
-from tmt.test_checks import TestCheckEvent
+from tmt.checks import CheckEvent
 from tmt.utils import Path, field
 
 if TYPE_CHECKING:
@@ -96,13 +96,13 @@ class BaseResult(tmt.utils.SerializableContainer):
 
 
 @dataclasses.dataclass
-class TestCheckResult(BaseResult):
+class CheckResult(BaseResult):
     """ Describes what tmt knows about a single test check result """
 
-    event: TestCheckEvent = field(
-        default=TestCheckEvent.BEFORE_TEST,
+    event: CheckEvent = field(
+        default=CheckEvent.BEFORE_TEST,
         serialize=lambda event: event.value,
-        unserialize=TestCheckEvent.from_spec)
+        unserialize=CheckEvent.from_spec)
 
 
 @dataclasses.dataclass
@@ -122,11 +122,11 @@ class Result(BaseResult):
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
-    checks: List[TestCheckResult] = field(
+    checks: List[CheckResult] = field(
         default_factory=list,
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
-            TestCheckResult.from_serialized(check) for check in serialized]
+            CheckResult.from_serialized(check) for check in serialized]
         )
 
     starttime: Optional[str] = None

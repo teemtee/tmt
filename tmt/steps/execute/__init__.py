@@ -21,13 +21,13 @@ import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.utils
+from tmt.checks import CheckEvent, CheckPlugin, CheckPluginClass
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
-from tmt.result import Result, ResultGuestData, ResultOutcome, TestCheckResult
+from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.test_checks import TestCheckEvent, TestCheckPlugin, TestCheckPluginClass
 from tmt.utils import Path, field
 
 if TYPE_CHECKING:
@@ -457,8 +457,8 @@ class ExecutePlugin(tmt.steps.Plugin):
         raise NotImplementedError
 
     @classmethod
-    def _get_test_check_plugin(cls, check: str) -> TestCheckPluginClass:
-        plugin = TestCheckPlugin.get_test_check_plugin_registry().get_plugin(check)
+    def _get_test_check_plugin(cls, check: str) -> CheckPluginClass:
+        plugin = CheckPlugin.get_test_check_plugin_registry().get_plugin(check)
 
         if plugin is None:
             raise tmt.utils.GeneralError(
@@ -469,13 +469,13 @@ class ExecutePlugin(tmt.steps.Plugin):
     def _run_checks_for_test(
             self,
             *,
-            event: TestCheckEvent,
+            event: CheckEvent,
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
+            logger: tmt.log.Logger) -> List[CheckResult]:
 
-        results: List[TestCheckResult] = []
+        results: List[CheckResult] = []
 
         for check in test.check:
             if not check.enable:
@@ -483,7 +483,7 @@ class ExecutePlugin(tmt.steps.Plugin):
 
             plugin = self._get_test_check_plugin(check.name)
 
-            if event == TestCheckEvent.BEFORE_TEST:
+            if event == CheckEvent.BEFORE_TEST:
                 results += plugin.before_test(
                     check=check,
                     plugin=self,
@@ -492,7 +492,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                     environment=environment,
                     logger=logger)
 
-            elif event == TestCheckEvent.AFTER_TEST:
+            elif event == CheckEvent.AFTER_TEST:
                 results += plugin.after_test(
                     check=check,
                     plugin=self,
@@ -515,9 +515,9 @@ class ExecutePlugin(tmt.steps.Plugin):
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
+            logger: tmt.log.Logger) -> List[CheckResult]:
         return self._run_checks_for_test(
-            event=TestCheckEvent.BEFORE_TEST,
+            event=CheckEvent.BEFORE_TEST,
             guest=guest,
             test=test,
             environment=environment,
@@ -530,9 +530,9 @@ class ExecutePlugin(tmt.steps.Plugin):
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
+            logger: tmt.log.Logger) -> List[CheckResult]:
         return self._run_checks_for_test(
-            event=TestCheckEvent.AFTER_TEST,
+            event=CheckEvent.AFTER_TEST,
             guest=guest,
             test=test,
             environment=environment,

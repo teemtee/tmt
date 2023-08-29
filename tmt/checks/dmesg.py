@@ -5,19 +5,19 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.result import ResultOutcome, TestCheckResult
-from tmt.test_checks import TestCheckEvent, TestCheckPlugin
+from tmt.checks import CheckEvent, CheckPlugin
+from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, render_run_exception_streams
 
 if TYPE_CHECKING:
-    from tmt.base import TestCheck
+    from tmt.base import Check
 
 
 TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
 
-@TestCheckPlugin.provides_check('dmesg')
-class DmesgTestCheck(TestCheckPlugin):
+@CheckPlugin.provides_check('dmesg')
+class DmesgCheck(CheckPlugin):
     @classmethod
     def _fetch_dmesg(
             cls,
@@ -47,7 +47,7 @@ class DmesgTestCheck(TestCheckPlugin):
             plugin: tmt.steps.execute.ExecutePlugin,
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
-            event: TestCheckEvent,
+            event: CheckEvent,
             logger: tmt.log.Logger) -> Tuple[ResultOutcome, Path]:
 
         from tmt.steps.execute import ExecutePlugin
@@ -84,26 +84,26 @@ class DmesgTestCheck(TestCheckPlugin):
     def before_test(
             cls,
             *,
-            check: 'TestCheck',
+            check: 'Check',
             plugin: tmt.steps.execute.ExecutePlugin,
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
-        outcome, path = cls._save_dmesg(plugin, guest, test, TestCheckEvent.BEFORE_TEST, logger)
+            logger: tmt.log.Logger) -> List[CheckResult]:
+        outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.BEFORE_TEST, logger)
 
-        return [TestCheckResult(name='dmesg', result=outcome, log=[path])]
+        return [CheckResult(name='dmesg', result=outcome, log=[path])]
 
     @classmethod
     def after_test(
             cls,
             *,
-            check: 'TestCheck',
+            check: 'Check',
             plugin: tmt.steps.execute.ExecutePlugin,
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
-        outcome, path = cls._save_dmesg(plugin, guest, test, TestCheckEvent.AFTER_TEST, logger)
+            logger: tmt.log.Logger) -> List[CheckResult]:
+        outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.AFTER_TEST, logger)
 
-        return [TestCheckResult(name='dmesg', result=outcome, log=[path])]
+        return [CheckResult(name='dmesg', result=outcome, log=[path])]

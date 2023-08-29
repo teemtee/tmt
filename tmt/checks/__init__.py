@@ -7,32 +7,32 @@ import tmt.utils
 from tmt.plugins import PluginRegistry
 
 if TYPE_CHECKING:
-    from tmt.base import TestCheck
-    from tmt.result import TestCheckResult
+    from tmt.base import Check
+    from tmt.result import CheckResult
     from tmt.steps.execute import ExecutePlugin
 
 
-TestCheckPluginClass = Type['TestCheckPlugin']
+CheckPluginClass = Type['CheckPlugin']
 
 
-class TestCheckEvent(enum.Enum):
+class CheckEvent(enum.Enum):
     """ Events in test runtime when a check can be executed """
 
     BEFORE_TEST = 'before-test'
     AFTER_TEST = 'after-test'
 
     @classmethod
-    def from_spec(cls, spec: str) -> 'TestCheckEvent':
+    def from_spec(cls, spec: str) -> 'CheckEvent':
         try:
-            return TestCheckEvent(spec)
+            return CheckEvent(spec)
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
 
 
-class TestCheckPlugin(tmt.utils._CommonBase):
+class CheckPlugin(tmt.utils._CommonBase):
     """ Base class for plugins providing extra checks before, during and after tests """
 
-    _test_check_plugin_registry: ClassVar[PluginRegistry[TestCheckPluginClass]]
+    _test_check_plugin_registry: ClassVar[PluginRegistry[CheckPluginClass]]
 
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -40,7 +40,7 @@ class TestCheckPlugin(tmt.utils._CommonBase):
 
     # Cannot use @property as this must remain classmethod
     @classmethod
-    def get_test_check_plugin_registry(cls) -> PluginRegistry[TestCheckPluginClass]:
+    def get_test_check_plugin_registry(cls) -> PluginRegistry[CheckPluginClass]:
         """ Return - or initialize - export plugin registry """
 
         if not hasattr(cls, '_test_check_plugin_registry'):
@@ -49,14 +49,14 @@ class TestCheckPlugin(tmt.utils._CommonBase):
         return cls._test_check_plugin_registry
 
     @classmethod
-    def provides_check(cls, check: str) -> Callable[[TestCheckPluginClass], TestCheckPluginClass]:
+    def provides_check(cls, check: str) -> Callable[[CheckPluginClass], CheckPluginClass]:
         """
         A decorator for registering test checks.
 
         Decorate a test check plugin class to register its checks.
         """
 
-        def _provides_check(check_cls: TestCheckPluginClass) -> TestCheckPluginClass:
+        def _provides_check(check_cls: CheckPluginClass) -> CheckPluginClass:
             cls.get_test_check_plugin_registry().register_plugin(
                 plugin_id=check,
                 plugin=check_cls,
@@ -70,22 +70,22 @@ class TestCheckPlugin(tmt.utils._CommonBase):
     def before_test(
             cls,
             *,
-            check: 'TestCheck',
+            check: 'Check',
             plugin: 'ExecutePlugin',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List['TestCheckResult']:
+            logger: tmt.log.Logger) -> List['CheckResult']:
         return []
 
     @classmethod
     def after_test(
             cls,
             *,
-            check: 'TestCheck',
+            check: 'Check',
             plugin: 'ExecutePlugin',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List['TestCheckResult']:
+            logger: tmt.log.Logger) -> List['CheckResult']:
         return []

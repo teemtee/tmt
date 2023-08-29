@@ -944,14 +944,14 @@ class Core(
 
 
 # A "raw" test check as stored in fmf node data.
-class _RawTestCheck(TypedDict, total=False):
+class _RawCheck(TypedDict, total=False):
     name: str
     enable: bool
 
 
 @dataclasses.dataclass
-class TestCheck(
-        tmt.utils.SpecBasedContainer[_RawTestCheck, _RawTestCheck],
+class Check(
+        tmt.utils.SpecBasedContainer[_RawCheck, _RawCheck],
         tmt.utils.SerializableContainer):
     """ Represents a single check from test's ``check`` field """
 
@@ -962,15 +962,15 @@ class TestCheck(
 def normalize_test_check(
         key_address: str,
         raw_test_check: Any,
-        logger: tmt.log.Logger) -> TestCheck:
+        logger: tmt.log.Logger) -> Check:
     """ Normalize a single test check """
 
     if isinstance(raw_test_check, str):
-        return TestCheck(name=raw_test_check)
+        return Check(name=raw_test_check)
 
     if isinstance(raw_test_check, dict):
         try:
-            return TestCheck(**raw_test_check)
+            return Check(**raw_test_check)
 
         except Exception:
             raise tmt.utils.NormalizationError(
@@ -984,30 +984,30 @@ def normalize_test_check(
         'a string or a dictionary')
 
 
-def normalize_test_checks(
+def normalize_checks(
         key_address: str,
-        raw_test_checks: Any,
-        logger: tmt.log.Logger) -> List[TestCheck]:
-    """ Normalize test checks """
+        raw_checks: Any,
+        logger: tmt.log.Logger) -> List[Check]:
+    """ Normalize (prepare/finish/test) checks """
 
-    if raw_test_checks is None:
+    if raw_checks is None:
         return []
 
-    if isinstance(raw_test_checks, str):
-        return [normalize_test_check(key_address, raw_test_checks, logger)]
+    if isinstance(raw_checks, str):
+        return [normalize_test_check(key_address, raw_checks, logger)]
 
-    if isinstance(raw_test_checks, dict):
-        return [normalize_test_check(key_address, raw_test_checks, logger)]
+    if isinstance(raw_checks, dict):
+        return [normalize_test_check(key_address, raw_checks, logger)]
 
-    if isinstance(raw_test_checks, list):
+    if isinstance(raw_checks, list):
         return [
             normalize_test_check(f'{key_address}[{i}]', raw_test_check, logger)
-            for i, raw_test_check in enumerate(raw_test_checks)
+            for i, raw_test_check in enumerate(raw_checks)
             ]
 
     raise tmt.utils.NormalizationError(
         key_address,
-        raw_test_checks,
+        raw_checks,
         'a string, a dictionary, or a list of their combinations')
 
 
@@ -1056,11 +1056,11 @@ class Test(
 
     where: List[str] = field(default_factory=list)
 
-    check: List[TestCheck] = field(
+    check: List[Check] = field(
         default_factory=list,
-        normalize=normalize_test_checks,
+        normalize=normalize_checks,
         serialize=lambda checks: [check.to_spec() for check in checks],
-        unserialize=lambda serialized: [TestCheck.from_spec(**check) for check in serialized]
+        unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized]
         )
 
     serialnumber: int = 0
@@ -1190,7 +1190,7 @@ class Test(
 
             elif key == 'check':
                 data[key] = [
-                    check.to_minimal_spec() for check in cast(List[TestCheck], value)
+                    check.to_minimal_spec() for check in cast(List[Check], value)
                     ]
 
             # Combining `if` branches using `or` here would result in long, complex line.

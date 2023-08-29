@@ -16,7 +16,7 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.utils
 from tmt.base import Test
-from tmt.result import Result, ResultOutcome, TestCheckResult
+from tmt.result import CheckResult, Result, ResultOutcome
 from tmt.steps.execute import (
     SCRIPTS,
     TEST_OUTPUT_FILENAME,
@@ -173,11 +173,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             test: Test,
             guest: Guest,
             extra_environment: Optional[EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[TestCheckResult]:
+            logger: tmt.log.Logger) -> List[CheckResult]:
         """ Run test on the guest """
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
-        test_check_results: List[TestCheckResult] = []
+        test_check_results: List[CheckResult] = []
 
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
@@ -398,7 +398,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             logger.verbose(
                 'test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-            test_check_results: List[TestCheckResult] = self.execute(
+            test_check_results: List[CheckResult] = self.execute(
                 test=test,
                 guest=guest,
                 extra_environment=extra_environment,

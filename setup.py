@@ -30,6 +30,7 @@ __pkgdata__ = {
 __pkgdir__: Dict[str, str] = {}
 __pkgs__ = [
     'tmt',
+    'tmt/checks',
     'tmt/export',
     'tmt/frameworks',
     'tmt/libraries',
@@ -41,7 +42,6 @@ __pkgs__ = [
     'tmt/steps/execute',
     'tmt/steps/report',
     'tmt/steps/finish',
-    'tmt/test_checks',
     ]
 __provides__ = ['tmt']
 __desc__ = 'Test Management Tool'
