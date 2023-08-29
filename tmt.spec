@@ -16,6 +16,7 @@ URL: https://github.com/teemtee/tmt
 Source0: https://github.com/teemtee/tmt/releases/download/%{version}/tmt-%{version}.tar.gz
 
 %define workdir_root /var/tmp/tmt
+%define usr_local_bin /usr/local/bin
 
 # Main tmt package requires the Python module
 Requires: python%{python3_pkgversion}-%{name} == %{version}-%{release}
@@ -172,6 +173,11 @@ chmod 1777 %{buildroot}%{workdir_root}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
+mkdir -p %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-file-submit  %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-abort  %{buildroot}%{usr_local_bin}
+install -pm 755 tmt/steps/execute/scripts/tmt-report-result  %{buildroot}%{usr_local_bin}
+
 %check
 %{__python3} -m pytest -vv -m 'not web' --ignore=tests/integration
 
@@ -182,6 +188,9 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files
 %{_mandir}/man1/*
 %{_bindir}/%{name}
+%{usr_local_bin}/tmt-file-submit
+%{usr_local_bin}/tmt-abort
+%{usr_local_bin}/tmt-report-result
 %doc README.rst examples
 %license LICENSE
 /etc/bash_completion.d/tmt

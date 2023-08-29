@@ -419,3 +419,19 @@ tmt example plan (L2 metadata):
 
 See the :ref:`/spec/plans/discover/fmf` plugin documentation for
 more details.
+
+
+Restraint compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Backward-compatibility with the `restraint`__ framework is provided for following commands.
+
+* ``rstrnt-reboot`` covered by ``tmt-reboot``, see :ref:`/stories/features/reboot` feature
+* ``rstrnt-abort``  covered by ``tmt-abort``, see  :ref:`/stories/features/abort` feature
+* ``rstrnt-report-log`` covered by ``tmt-file-submit``, see :ref:`/stories/features/report-log` feature
+
+No other restraint (or legacy rhts command) is supported by tmt.
+
+Native tmt commands are available under their rstrnt- and rhts- names so no changes to the test code are required.
+
+__ https://restraint.readthedocs.io/en/latest/commands.html
