@@ -63,6 +63,7 @@ from tmt.utils import (
     Path,
     ShellScript,
     WorkdirArgumentType,
+    dict_to_yaml,
     field,
     git_clone,
     normalize_shell_script,
@@ -1140,15 +1141,19 @@ class Test(
 
         # Create metadata
         try:
-            metadata_path = directory_path / 'main.fmf'
-            tmt.utils.create_file(
-                path=metadata_path,
-                content=tmt.templates.TEST_METADATA[template],
-                name='test metadata',
-                dry=dry,
-                force=force)
+            content = tmt.templates.TEST_METADATA[template]
         except KeyError:
             raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
+        # Append link with appropriate relation
+        links = Links(data=list(cast(List[_RawLink], Test._opt('link', []))))
+        if links:  # Output 'links' if and only if it is not empty
+            content += dict_to_yaml({
+                'link': links.to_spec()
+                })
+        metadata_path = directory_path / 'main.fmf'
+        tmt.utils.create_file(
+            path=metadata_path, content=content,
+            name='test metadata', dry=dry, force=force)
 
         # Create script
         script_path = directory_path / 'test.sh'
@@ -3666,10 +3671,21 @@ class Link(tmt.utils.SpecBasedContainer[Any, _RawLinkRelation]):
         # `spec` can be either a string, fmf id, or relation:target mapping with
         # a single key (modulo `note` key, of course).
 
-        # String is simple: if `spec` is a string, it represents a target,
-        # and we use the default relationship.
+        # String is simple: if `spec` is a string, it represents a [relation:]target,
+        # and we use the default relationship if relation is not specified.
         if isinstance(spec, str):
-            return Link(relation=Link.DEFAULT_RELATIONSHIP, target=spec)
+            pattern = rf'(?:(?P<relation>{"|".join(Links._relations)}):)?(?P<target>.+)'
+            result = re.match(pattern, spec)
+            if result is None:
+                raise tmt.utils.SpecificationError(
+                    f"Invalid spec '{spec}' (should be [relation:]<target>).")
+
+            relation_target_pair = result.groupdict()
+            assert relation_target_pair['target'] is not None
+            relation = cast(_RawLinkRelationName, relation_target_pair['relation']
+                            or Link.DEFAULT_RELATIONSHIP)
+            target = relation_target_pair['target']
+            return Link(relation=relation, target=target)
 
         # From now on, `spec` is a mapping, and may contain the optional
         # `note` key. Extract the key for later.
