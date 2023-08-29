@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseStartTest "Explore Plans"
         rlRun -s "tmt plan"
         rlAssertNotGrep "warn" $rlRun_LOG
-        rlAssertGrep "Found 5 plans" $rlRun_LOG
+        rlAssertGrep "Found 6 plans" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Show Plans (deep)"
