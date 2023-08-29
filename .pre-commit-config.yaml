@@ -21,7 +21,7 @@ repos:
         # which is the version a developer encounters given the requirements are not
         # frozen.
         additional_dependencies:
-          - click<8.1.4  # TODO github.com/pallets/click/issues/2558
+          - click!=8.1.4  # TODO github.com/pallets/click/issues/2558
           - types-Markdown
           - types-requests
           - types-setuptools
