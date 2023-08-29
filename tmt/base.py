@@ -2195,6 +2195,11 @@ class Plan(
             raise tmt.utils.DiscoverError(
                 f"Failed to find plan '{plan_id.name}' "
                 f"at 'url: {plan_id.url}, 'ref: {plan_id.ref}'.")
+
+        # Adjust the imported tree, to let any `adjust` rules defined in it take
+        # action.
+        node.adjust(fmf.context.Context(**self._fmf_context))
+
         # Override the plan name with the local one to ensure unique names
         node.name = self.name
         # Create the plan object, save links between both plans
