@@ -381,7 +381,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.key:
             self.debug("Extract public key from the provided private one.")
             command = Command("ssh-keygen", "-f", str(self.key[0]), "-y")
-            public_key = self._run_guest_command(command).stdout
+            public_key = self._run_guest_command(command, silent=True).stdout
         # Generate new ssh key pair
         else:
             self.debug('Generating an ssh key.')
@@ -390,7 +390,7 @@ class GuestTestcloud(tmt.GuestSsh):
             command = Command("ssh-keygen", "-f", str(self.key[0]), "-N", "")
             if key_type is not None:
                 command += Command("-t", key_type)
-            self._run_guest_command(command)
+            self._run_guest_command(command, silent=True)
             self.verbose('key', str(self.key[0]), 'green')
             with open(self.workdir / f'{key_name}.pub') as pubkey_file:
                 public_key = pubkey_file.read()
