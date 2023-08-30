@@ -695,10 +695,112 @@ class Guest(tmt.utils.Common):
             for variable in tmt.utils.shell_variables(environment)
             ]
 
-    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
-        """ Prepare guest using ansible playbook """
+    def _run_guest_command(
+            self,
+            command: Command,
+            friendly_command: Optional[str] = None,
+            silent: bool = False,
+            cwd: Optional[Path] = None,
+            env: Optional[tmt.utils.EnvironmentType] = None,
+            interactive: bool = False,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            **kwargs: Any) -> tmt.utils.CommandOutput:
+        """
+        Run a command, local or remote, related to the guest.
+
+        A rather thin wrapper of :py:meth:`run` whose purpose is to be a single
+        point through all commands related to a guest must go through. We expect
+        consistent logging from such commands, be it an ``ansible-playbook`
+        running on the control host or a test script on the guest.
+
+        :param command: a command to execute.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        :param cwd: if set, command would be executed in the given directory,
+            otherwise the current working directory is used.
+        :param env: environment variables to combine with the current environment
+            before running the command.
+        :param interactive: if set, the command would be executed in an interactive
+            manner, i.e. with stdout and stdout connected to terminal for live
+            interaction with user.
+        :param log: a logging function to use for logging of command output. By
+            default, ``self._logger.debug`` is used.
+        :returns: command output, bundled in a :py:class:`CommandOutput` tuple.
+        """
+
+        if friendly_command is None:
+            friendly_command = str(command)
+
+        return self.run(
+            command,
+            friendly_command=friendly_command,
+            silent=silent,
+            cwd=cwd,
+            env=env,
+            interactive=interactive,
+            log=log if log else self._command_verbose_logger,
+            **kwargs)
+
+    def _run_ansible(
+            self,
+            playbook: Path,
+            extra_args: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            silent: bool = False) -> tmt.utils.CommandOutput:
+        """
+        Run an Ansible playbook on the guest.
+
+        This is a main workhorse for :py:meth:`ansible`. It shall run the
+        playbook in whatever way is fitting for the guest and infrastructure.
+
+        :param playbook: path to the playbook to run.
+        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+            via ``--extra-args``.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        """
 
         raise NotImplementedError
+
+    def ansible(
+            self,
+            playbook: Path,
+            extra_args: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            silent: bool = False) -> None:
+        """
+        Run an Ansible playbook on the guest.
+
+        A wrapper for :py:meth:`_run_ansible` which is reponsible for running
+        the playbook while this method makes sure our logging is consistent.
+
+        :param playbook: path to the playbook to run.
+        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+            via ``--extra-args``.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        """
+
+        output = self._run_ansible(
+            playbook,
+            extra_args=extra_args,
+            friendly_command=friendly_command,
+            log=log if log else self._command_verbose_logger,
+            silent=silent)
+
+        self._ansible_summary(output.stdout)
 
     @overload
     def execute(self,
@@ -1036,8 +1138,29 @@ class GuestSsh(Guest):
 
         return command + self._ssh_options()
 
-    def ansible(self, playbook: Path, extra_args: Optional[str] = None) -> None:
-        """ Prepare guest using ansible playbook """
+    def _run_ansible(
+            self,
+            playbook: Path,
+            extra_args: Optional[str] = None,
+            friendly_command: Optional[str] = None,
+            log: Optional[tmt.log.LoggingFunction] = None,
+            silent: bool = False) -> tmt.utils.CommandOutput:
+        """
+        Run an Ansible playbook on the guest.
+
+        This is a main workhorse for :py:meth:`ansible`. It shall run the
+        playbook in whatever way is fitting for the guest and infrastructure.
+
+        :param playbook: path to the playbook to run.
+        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+            via ``--extra-args``.
+        :param friendly_command: if set, it would be logged instead of the
+            command itself, to improve visibility of the command in logging output.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        """
         playbook = self._ansible_playbook_path(playbook)
 
         ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
@@ -1053,11 +1176,13 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        output = self.run(
+        return self._run_guest_command(
             ansible_command,
+            friendly_command=friendly_command,
+            silent=silent,
             cwd=parent.plan.worktree,
-            env=self._prepare_environment())
-        self._ansible_summary(output.stdout)
+            env=self._prepare_environment(),
+            log=log)
 
     @property
     def is_ready(self) -> bool:
@@ -1129,12 +1254,9 @@ class GuestSsh(Guest):
 
         self.debug(f"Execute command '{remote_command}' on guest '{self.guest}'.")
 
-        if friendly_command is None:
-            friendly_command = str(command)
-
-        return self.run(
+        return self._run_guest_command(
             ssh_command,
-            log=log if log else self._command_verbose_logger,
+            log=log,
             friendly_command=friendly_command,
             silent=silent,
             cwd=cwd,
@@ -1187,13 +1309,13 @@ class GuestSsh(Guest):
             if superuser and self.user != 'root':
                 cmd += ['--rsync-path', 'sudo rsync']
 
-            self.run(Command(
+            self._run_guest_command(Command(
                 *cmd,
                 *options,
                 "-e", self._ssh_command().to_element(),
                 str(source),
                 f"{self._ssh_guest()}:{destination}"
-                ))
+                ), silent=True)
 
         # Try to push twice, check for rsync after the first failure
         try:
@@ -1252,13 +1374,13 @@ class GuestSsh(Guest):
             assert source
             assert destination
 
-            self.run(Command(
+            self._run_guest_command(Command(
                 "rsync",
                 *options,
                 "-e", self._ssh_command().to_element(),
                 f"{self._ssh_guest()}:{source}",
                 str(destination)
-                ))
+                ), silent=True)
 
         # Try to pull twice, check for rsync after the first failure
         try:
