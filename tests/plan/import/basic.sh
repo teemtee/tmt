@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseStartTest "Explore Plans"
         rlRun -s "tmt plan"
         rlAssertNotGrep "warn" $rlRun_LOG
-        rlAssertGrep "Found 5 plans" $rlRun_LOG
+        rlAssertGrep "Found 6 plans" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Show Plans (deep)"
@@ -61,7 +61,8 @@ rlJournalStart
     rlPhaseStartTest "Discover Tests"
         # Exclude /plans/dynamic-ref as dynamic ref cannot be evaluated in dry mode
         rlRun -s "tmt run discover -v plan -n '/plans/[^d]'"
-        rlAssertGrep "/plans/full" $rlRun_LOG
+        rlAssertGrep "/plans/full/fmf" $rlRun_LOG
+        rlAssertGrep "/plans/full/tmt" $rlRun_LOG
         rlAssertGrep "/tests/basic/ls" $rlRun_LOG
         rlAssertGrep "/tests/basic/show" $rlRun_LOG
         rlAssertGrep "/plans/minimal" $rlRun_LOG
@@ -86,10 +87,20 @@ rlJournalStart
         rlAssertGrep "import name: /plans/smoke" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Make sure context is applied to plan itself"
+        rlRun -s "tmt plan show -vvvv /plans/full/tmt"
+        rlAssertGrep "enabled false" $rlRun_LOG
+
+        rlRun -s "tmt -c how=full plan show -vvvv /plans/full/tmt"
+        rlAssertGrep "enabled true" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Run Tests"
         # Exclude /plans/dynamic-ref as dynamic ref cannot be evaluated in dry mode
         rlRun -s "tmt run --verbose --dry plan -n '/plans/[^d]'" 0 "Run tests (dry mode)"
-        rlRun -s "tmt run --verbose" 0 "Run tests"
+        # TODO: skip full/tmt plan, because of https://github.com/teemtee/tmt/issues/2297
+        # all its tests would be executed even though the plan is not enabled.
+        rlRun -s "tmt run --verbose       plan -n '/plans/(?!full/tmt)'" 0 "Run tests"
         rlAssertGrep "pass /tests/basic/ls" $rlRun_LOG
         rlAssertGrep "pass /lint/tests" $rlRun_LOG
     rlPhaseEnd
