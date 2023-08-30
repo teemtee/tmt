@@ -1315,7 +1315,7 @@ class GuestSsh(Guest):
                 "-e", self._ssh_command().to_element(),
                 str(source),
                 f"{self._ssh_guest()}:{destination}"
-                ))
+                ), silent=True)
 
         # Try to push twice, check for rsync after the first failure
         try:
@@ -1380,7 +1380,7 @@ class GuestSsh(Guest):
                 "-e", self._ssh_command().to_element(),
                 f"{self._ssh_guest()}:{source}",
                 str(destination)
-                ))
+                ), silent=True)
 
         # Try to pull twice, check for rsync after the first failure
         try:
