@@ -946,7 +946,7 @@ class Core(
 # A "raw" test check as stored in fmf node data.
 class _RawCheck(TypedDict, total=False):
     name: str
-    enable: bool
+    enabled: bool
 
 
 @dataclasses.dataclass
@@ -956,7 +956,7 @@ class Check(
     """ Represents a single check from test's ``check`` field """
 
     name: str
-    enable: bool = field(default=True)
+    enabled: bool = field(default=True)
 
 
 def normalize_test_check(
@@ -1091,6 +1091,7 @@ class Test(
         'enabled',
         'order',
         'result',
+        'check',
 
         # Filtering attributes
         'tag',
@@ -1297,6 +1298,12 @@ class Test(
                 echo(tmt.utils.format(
                     key,
                     [dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)]
+                    ))
+                continue
+            if key == 'check' and value:
+                echo(tmt.utils.format(
+                    key,
+                    [check.to_spec() for check in cast(List[Check], value)]
                     ))
                 continue
             if value not in [None, [], {}]:

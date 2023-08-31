@@ -413,9 +413,8 @@ definitions:
       name:
         type: string
 
-      enable:
+      enabled:
         type: boolean
 
     required:
       - name
-      - enable

@@ -478,7 +478,7 @@ class ExecutePlugin(tmt.steps.Plugin):
         results: List[CheckResult] = []
 
         for check in test.check:
-            if not check.enable:
+            if not check.enabled:
                 continue
 
             plugin = self._get_test_check_plugin(check.name)
