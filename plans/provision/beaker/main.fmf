@@ -1,0 +1,12 @@
+discover:
+    how: fmf
+    test: /tests/core/smoke
+
+provision:
+    how: beaker
+    image: fedora
+
+enabled: false
+adjust:
+    when: how == beaker
+    enabled: true
