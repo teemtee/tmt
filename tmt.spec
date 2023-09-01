@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.26.0
+Version: 1.26.1
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -247,6 +247,9 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Fri Sep 01 2023 Lukáš Zachar <lzachar@redhat.com> - 1.26.1
+- Rewrite git url for discover fmf: modified-only
+
 * Mon Jul 31 2023 Lukáš Zachar <lzachar@redhat.com> - 1.26.0
 - Do not throw an exception on missing mrack.log
 - Allow injecting credentials for git clone
