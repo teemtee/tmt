@@ -507,7 +507,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         modified_only = self.get('modified-only')
         modified_url = self.get('modified-url')
         if modified_url:
+            previous = modified_url
+            modified_url = tmt.utils.clonable_git_url(modified_url)
             self.info('modified-url', modified_url, 'green')
+            if previous != modified_url:
+                self.debug(f"Original url was '{previous}'.")
             self.debug(f"Fetch also '{modified_url}' as 'reference'.")
             self.run(Command('git', 'remote', 'add', 'reference', modified_url),
                      cwd=self.testdir)
