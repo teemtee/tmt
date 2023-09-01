@@ -379,6 +379,12 @@ class DependencyFmfId(
     # allowed `type` value.
     type: str = 'library'
 
+    # TODO: frozen=True would be better, but our containers may get modified,
+    # and fixing that would result in a big patch. To allow use of dependencies
+    # in sets, provide __hash__ & fix the rest later.
+    def __hash__(self) -> int:
+        return hash((getattr(self, key) for key in self.VALID_KEYS))
+
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_dict(self) -> _RawDependencyFmfId:  # type: ignore[override]
@@ -451,6 +457,15 @@ class DependencyFile(
     pattern: List[str] = tmt.utils.field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
+
+    # TODO: frozen=True would be better, but our containers may get modified,
+    # and fixing that would result in a big patch. To allow use of dependencies
+    # in sets, provide __hash__ & fix the rest later.
+    def __hash__(self) -> int:
+        values = tuple(getattr(self, key) for key in self.VALID_KEYS if key != 'pattern') \
+            + tuple(pattern for pattern in self.pattern)
+
+        return hash(values)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
