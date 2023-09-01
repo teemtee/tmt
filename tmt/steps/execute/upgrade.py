@@ -23,7 +23,7 @@ DURING_UPGRADE_PREFIX = 'upgrade'
 AFTER_UPGRADE_PREFIX = 'new'
 UPGRADE_DIRECTORY = 'upgrade'
 
-PROPAGATE_TO_DISCOVER_KEYS = ['url', 'ref', 'filter', 'test', 'exclude']
+PROPAGATE_TO_DISCOVER_KEYS = ['url', 'ref', 'filter', 'test', 'exclude', 'upgrade_path']
 
 
 @dataclasses.dataclass

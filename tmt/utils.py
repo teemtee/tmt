@@ -1938,6 +1938,8 @@ def filter_paths(directory: Path, searching: List[str], files_only: bool = False
     found_paths: List[str] = []
 
     for search_string in searching:
+        if search_string == '/':
+            return all_paths
         regex = re.compile(search_string)
 
         if not files_only:

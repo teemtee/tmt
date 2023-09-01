@@ -82,3 +82,4 @@ class File(Library):
                 target_path = target_path / path.name
                 if not target_path.exists():
                     shutil.copyfile(path, target_path)
+                    shutil.copymode(path, target_path)

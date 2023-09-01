@@ -66,3 +66,7 @@ tier: 3
 /sanitize-metadata-name:
     summary: Test for plan/test name having control character
     test: ./sanitize-metadata-name.sh
+
+/pruning:
+    summary: Test pruning was done for tests
+    test: ./prune.sh

@@ -147,6 +147,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option='--fmf-id',
         is_flag=True,
         help='Only print fmf identifiers of discovered tests to the standard output and exit.')
+    prune: bool = field(
+        default=False,
+        option=('--prune / --no-prune'),
+        is_flag=True,
+        show_default=True,
+        help="Copy only immediate directories of executed tests and their required files.")
+
+    # Upgrade plan path so the plan is not pruned
+    upgrade_path: Optional[str] = None
 
     # Legacy fields
     repository: Optional[str] = None
@@ -273,6 +282,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         dist_git_init = self.get('dist-git-init', False)
         dist_git_extract = self.get('dist-git-extract', None)
         dist_git_remove_fmf_root = self.get('dist-git-remove-fmf-root', False)
+        prune = self.get('prune')
 
         # Self checks
         if dist_git_source and not dist_git_merge and (ref or url):
@@ -400,9 +410,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if ref:
             self.info('ref', ref, 'green')
             self.debug(f"Checkout ref '{ref}'.")
-            self.run(
-                Command('git', 'checkout', '-f', ref),
-                cwd=self.testdir)
+            self.run(Command('git', 'checkout', '-f', ref), cwd=self.testdir)
 
         # Show current commit hash if inside a git repository
         if self.testdir.is_dir():
@@ -453,8 +461,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                             "explicit use of the '--dist-git-merge' option.")
                         self.debug(f"Copy '{git_root}' to '{self.testdir}'.")
                         if not self.is_dry_run:
-                            shutil.copytree(
-                                git_root, self.testdir, symlinks=True)
+                            shutil.copytree(git_root, self.testdir, symlinks=True)
 
             # Initialize or remove fmf root
             if dist_git_init:
@@ -513,8 +520,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for link_needle in link_needles:
             self.info('link', str(link_needle), 'green')
 
-        excludes = list(tmt.base.Test._opt('exclude')
-                        or self.get('exclude', []))
+        excludes = list(
+            tmt.base.Test._opt('exclude') or self.get('exclude', []))
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')
@@ -561,10 +568,42 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             links=link_needles,
             excludes=excludes)
 
+        if prune:
+            # Save fmf metadata
+            clonedir = self.clone_dirpath / 'tests'
+            for path in tmt.utils.filter_paths(self.testdir, ['.fmf']):
+                tmt.utils.copytree(
+                    path, clonedir / path.relative_to(self.testdir), dirs_exist_ok=True)
+
+            # Save upgrade plan
+            upgrade_path = self.get('upgrade_path')
+            if upgrade_path:
+                upgrade_path = f"{upgrade_path.lstrip('/')}.fmf"
+                (clonedir / upgrade_path).parent.mkdir()
+                shutil.copyfile(self.testdir / upgrade_path, clonedir / upgrade_path)
+                shutil.copymode(self.testdir / upgrade_path, clonedir / upgrade_path)
+
         # Prefix tests and handle library requires
         for test in self._tests:
             # Propagate `where` key
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
+
+            if prune:
+                # Save only current test data
+                assert test.path is not None  # narrow type
+                relative_test_path = test.path.unrooted()
+                tmt.utils.copytree(
+                    self.testdir / relative_test_path,
+                    clonedir / relative_test_path,
+                    dirs_exist_ok=True)
+                # Copy all parent main.fmf files
+                parent_dir = relative_test_path
+                while parent_dir.resolve() != Path.cwd().resolve():
+                    if (self.testdir / parent_dir / 'main.fmf').exists():
+                        shutil.copyfile(
+                            self.testdir / parent_dir / 'main.fmf',
+                            clonedir / parent_dir / 'main.fmf')
+                    parent_dir = parent_dir.parent
 
             # Prefix test path with 'tests' and possible 'path' prefix
             assert test.path is not None  # narrow type
@@ -576,9 +615,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     original_recommend=test.recommend,
                     parent=self,
                     logger=self._logger,
-                    # TODO: Change with pruning for tests
-                    source_location=self.workdir / 'tests',
-                    target_location=self.workdir / 'tests')
+                    source_location=self.testdir,
+                    target_location=clonedir if prune else self.testdir)
+
+        if prune:
+            # Clean self.testdir and copy back only required tests and files from clonedir
+            # This is to have correct paths in tests
+            shutil.rmtree(self.testdir, ignore_errors=True)
+            shutil.copytree(clonedir, self.testdir)
 
         # Cleanup clone directories
         if self.clone_dirpath.exists():

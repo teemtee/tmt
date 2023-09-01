@@ -1,0 +1,7 @@
+discover:
+    how: fmf
+    prune: true
+provision:
+    how: local
+execute:
+    how: tmt

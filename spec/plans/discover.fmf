@@ -153,6 +153,11 @@ description: |
             attributes. See ``pydoc fmf.filter`` for more info.
         exclude
             Exclude tests which match a regular expression.
+        prune
+            Copy only immediate directories of executed tests and
+            their required files.
+
+            .. versionadded:: 1.29
 
         It is also possible to limit tests only to those that have
         changed in git since a given revision. This can be

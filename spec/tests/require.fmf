@@ -32,11 +32,6 @@ description: |
     default everything under test :ref:`/spec/tests/path` is
     copied over to the system.
 
-    For now everything is still copied over to the system,
-    this addition is just giving you the ability to change
-    your metadata to reflect required files for your tests/libraries,
-    before the pruning is actually done.
-
     By default, fetched repositories are stored in the discover
     step workdir under the ``libs`` directory. Use optional key
     ``destination`` to choose a different location. The ``nick``

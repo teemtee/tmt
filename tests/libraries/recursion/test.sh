@@ -13,8 +13,11 @@ rlJournalStart
 test: bash ../test.sh
 framework: beakerlib
 require:
+- type: file
+  pattern: test.sh
 - name: /second
   url: $repo1
+  type: library
 EOF
         rlRun "tmt init $repo1"
         rlRun "cp -r $repo1/first $repo1/second"
