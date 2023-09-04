@@ -82,6 +82,7 @@ class Result(tmt.utils.SerializableContainer):
     """ Describes what tmt knows about a single test result """
 
     name: str
+    classname: str
     serialnumber: int = 0
     fmf_id: Optional['tmt.base.FmfId'] = field(
         default=cast(Optional['tmt.base.FmfId'], None),
@@ -115,6 +116,7 @@ class Result(tmt.utils.SerializableContainer):
             *,
             test: 'tmt.base.Test',
             result: ResultOutcome,
+            subresultname: Optional[str] = None,
             note: Optional[str] = None,
             ids: Optional[Dict[str, Optional[str]]] = None,
             log: Optional[List[Path]] = None,
@@ -156,8 +158,12 @@ class Result(tmt.utils.SerializableContainer):
         guest_data = ResultGuestData(name=guest.name, role=guest.role) if guest is not None \
             else ResultGuestData()
 
+        if not subresultname:
+            subresultname = test.name
+
         _result = Result(
-            name=test.name,
+            classname=test.name,
+            name=subresultname,
             serialnumber=test.serialnumber,
             fmf_id=test.fmf_id,
             result=result,
