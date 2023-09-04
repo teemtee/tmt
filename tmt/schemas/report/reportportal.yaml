@@ -34,6 +34,11 @@ properties:
   launch:
     type: string
 
+  attributes:
+    type: array
+    items:
+      type: string
+
   exclude-variables:
     type: string
 

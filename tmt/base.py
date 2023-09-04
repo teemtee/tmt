@@ -3194,6 +3194,7 @@ class RunData(SerializableContainer):
     steps: list[str]
     environment: EnvironmentType
     remove: bool
+    rp_uuid: Optional[str]
 
 
 class Run(tmt.utils.Common):
@@ -3231,6 +3232,7 @@ class Run(tmt.utils.Common):
         self._environment_from_workdir: EnvironmentType = {}
         self._environment_from_options: Optional[EnvironmentType] = None
         self.remove = self.opt('remove')
+        self.rp_uuid = self.opt('rp-uuid')
 
     @tmt.utils.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
@@ -3307,7 +3309,8 @@ class Run(tmt.utils.Common):
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
             steps=list(self._cli_context_object.steps),
             environment=self.environment,
-            remove=self.remove
+            remove=self.remove,
+            rp_uuid=self.rp_uuid
             )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 

@@ -105,18 +105,20 @@ description:
         to detailed test output and other test information.
     description:
         Fill json with test results and other fmf data per each plan,
-        and send it to a Report Portal instance via its API.
+        and send it to a Report Portal instance via its API
+        with token, url and project name given.
     example:
       - |
-        # Set environment variables with the server url and token
-        export TMT_REPORT_REPORTPORTAL_URL=<url-to-RP-instance>
-        export TMT_REPORT_REPORTPORTAL_TOKEN=<token-from-RP-profile>
+        # Set environment variables accoriding to TMT_PLUGIN_REPORT_REPORTPORTAL_${OPTION}
+        export TMT_PLUGIN_REPORT_REPORTPORTAL_URL=${url-to-RP-instance}
+        export TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN=${token-from-RP-profile}
       - |
         # Enable ReportPortal report from the command line
         tmt run --all report --how reportportal --project=baseosqe
-        tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
         tmt run --all report --how reportportal --project=baseosqe --launch=test_plan
         tmt run --all report --how reportportal --project=baseosqe --url=... --token=...
+        tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+        tmt run -a report -h reportportal --merge --launch "Errata" --attributes "errata:123456"
       - |
         # Use ReportPortal as the default report for given plan
         report:
