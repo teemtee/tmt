@@ -89,7 +89,7 @@ class GuestLocal(tmt.Guest):
             actual_command,
             env=environment,
             log=log,
-            friendly_command=friendly_command,
+            friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
             interactive=interactive,

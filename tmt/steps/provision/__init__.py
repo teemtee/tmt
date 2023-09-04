@@ -1257,7 +1257,7 @@ class GuestSsh(Guest):
         return self._run_guest_command(
             ssh_command,
             log=log,
-            friendly_command=friendly_command,
+            friendly_command=friendly_command or str(command),
             silent=silent,
             cwd=cwd,
             interactive=interactive,
