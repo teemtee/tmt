@@ -3986,7 +3986,7 @@ def load_run(run: 'tmt.base.Run') -> Tuple[bool, Optional[Exception]]:
     except GeneralError as error:
         return False, error
     for plan in run.plans:
-        for step in plan.steps(disabled=True):
+        for step in plan.steps(enabled_only=False):
             step.load()
     return True, None
 

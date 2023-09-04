@@ -1756,47 +1756,49 @@ class Plan(
             name='plan', dry=dry, force=force)
 
     def _iter_steps(self,
-                    enabled: bool = True,
-                    disabled: bool = False,
+                    enabled_only: bool = True,
                     skip: Optional[List[str]] = None
                     ) -> Generator[Tuple[str, tmt.steps.Step], None, None]:
         """
-        Iterate over enabled / all steps
+        Iterate over steps.
 
-        Yields instances of all enabled steps by default.
-        Use 'disabled=True' to iterate over all.
-        Use 'skip' to pass the list of steps to be skipped.
+        :param enabled_only: if set, only enabled steps would be listed.
+        :param skip: if step name is in this list, it would be skipped.
+        :yields: tuple of two items, step name and corresponding instance of
+            :py:class:`tmt.step.Step`.
         """
         skip = skip or []
         for name in tmt.steps.STEPS:
             if name in skip:
                 continue
-            step = getattr(self, name)
-            if (enabled and step.enabled or disabled and not step.enabled):
+            step = cast(tmt.steps.Step, getattr(self, name))
+            if step.enabled or enabled_only is False:
                 yield (name, step)
 
-    def steps(self, enabled: bool = True, disabled: bool = False,
+    def steps(self,
+              enabled_only: bool = True,
               skip: Optional[List[str]] = None) -> Generator[tmt.steps.Step, None, None]:
         """
-        Iterate over enabled / all steps
+        Iterate over steps.
 
-        Yields instances of all enabled steps by default.
-        Use 'disabled=True' to iterate over all.
-        Use 'skip' to pass the list of steps to be skipped.
+        :param enabled_only: if set, only enabled steps would be listed.
+        :param skip: if step name is in this list, it would be skipped.
+        :yields: instance of :py:class:`tmt.step.Step`, representing each step.
         """
-        for _, step in self._iter_steps(enabled=enabled, disabled=disabled, skip=skip):
+        for _, step in self._iter_steps(enabled_only=enabled_only, skip=skip):
             yield step
 
-    def step_names(self, enabled: bool = True, disabled: bool = False,
+    def step_names(self,
+                   enabled_only: bool = True,
                    skip: Optional[List[str]] = None) -> Generator[str, None, None]:
         """
-        Iterate over enabled / all step names.
+        Iterate over step names.
 
-        Yields step names of all enabled steps by default.
-        Use 'disabled=True' to iterate over all.
-        Use 'skip' to pass the list of steps to be skipped.
+        :param enabled_only: if set, only enabled steps would be listed.
+        :param skip: if step name is in this list, it would be skipped.
+        :yields: step names.
         """
-        for name, _ in self._iter_steps(enabled=enabled, disabled=disabled, skip=skip):
+        for name, _ in self._iter_steps(enabled_only=enabled_only, skip=skip):
             yield name
 
     def show(self) -> None:
@@ -1809,7 +1811,7 @@ class Plan(
                 'description', self.description, key_color='green'))
 
         # Individual step details
-        for step in self.steps(disabled=True):
+        for step in self.steps(enabled_only=False):
             step.show()
 
         # Environment and context
@@ -1858,7 +1860,7 @@ class Plan(
         """ P001: all keys are known """
 
         invalid_keys = self._lint_keys(
-            list(self.step_names(enabled=True, disabled=True)) + self._extra_l2_keys)
+            list(self.step_names(enabled_only=False)) + self._extra_l2_keys)
 
         if invalid_keys:
             for key in invalid_keys:
@@ -1971,7 +1973,7 @@ class Plan(
     def lint_unique_names(self) -> LinterReturn:
         """ P006: phases must have unique names """
         passed = True
-        for step_name in self.step_names(enabled=True, disabled=True):
+        for step_name in self.step_names(enabled_only=False):
             phase_name: str
             for phase_name in tmt.utils.duplicates(
                     phase.get('name', None) for phase in self._step_phase_nodes(step_name)):
@@ -2060,7 +2062,7 @@ class Plan(
 
         # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
-        for step in self.steps(disabled=True):
+        for step in self.steps(enabled_only=False):
             self.debug(str(step), color='blue', level=2)
             try:
                 step.wake()
@@ -2074,7 +2076,7 @@ class Plan(
 
         # Set up login and reboot plugins for all steps
         self.debug("action", color="blue", level=2)
-        for step in self.steps(disabled=True):
+        for step in self.steps(enabled_only=False):
             step.setup_actions()
 
         # Check if steps are not in stand-alone mode
@@ -2253,7 +2255,7 @@ class Plan(
             logger.debug(f"Prune '{self.name}' worktree '{self.worktree}'.", level=3)
             shutil.rmtree(self.worktree)
 
-        for step in self.steps(disabled=True):
+        for step in self.steps(enabled_only=False):
             step.prune(logger=step._logger)
 
 
@@ -3418,7 +3420,7 @@ class Status(tmt.utils.Common):
         """ Display the status of each step of the given run """
         for plan in run.plans:
             if self.plan_matches_filters(plan):
-                for step in plan.steps(disabled=True):
+                for step in plan.steps(enabled_only=False):
                     column = (step.status() or '----') + ' '
                     echo(self.colorize_column(column), nl=False)
                 echo(f' {run.workdir}  {plan.name}')
