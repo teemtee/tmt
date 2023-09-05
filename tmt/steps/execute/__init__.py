@@ -502,7 +502,7 @@ class ExecutePlugin(tmt.steps.Plugin):
                     logger=logger)
 
             else:
-                raise tmt.utils.GeneralError('foo')
+                raise tmt.utils.GeneralError(f"Unsupported test check event '{check}'.")
 
         for result in results:
             result.event = event

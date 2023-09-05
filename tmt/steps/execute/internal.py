@@ -411,7 +411,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             results = self.extract_results(test, guest, logger)  # Produce list of results
 
             for result in results:
-                result.checks = test_check_results
+                result.check = test_check_results
 
             assert test.real_duration is not None  # narrow type
             duration = click.style(test.real_duration, fg='cyan')

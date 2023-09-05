@@ -18,17 +18,18 @@ description: |
 
 example:
   - |
-    # Enable a single check, AVC denial detection
+    # Enable a single check, AVC denial detection.
     check: avc
 
   - |
-    # Enable multiple checks
+    # Enable multiple checks, by listing their names. A list of names
+    # is acceptable as well as a single name.
     check:
       - avc
       - kernel-panic
 
   - |
-    # Enable multiple checks, one of them would be disabled temporarily
+    # Enable multiple checks, one of them would be disabled temporarily.
     check:
       - avc
       - kernel-panic

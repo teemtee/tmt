@@ -34,7 +34,7 @@ rlJournalStart
                 rlLogInfo "$(cat $dump_before)"
             fi
 
-            rlAssertExists "$run/plans/default/execute/data/guest/default-0/default-1/tmt-dmesg-after-test.txt"
+            rlAssertExists "$dump_after"
             if [ "$method" = "container" ]; then
                 assert_check_result "dmesg as a before-test should fail with containers" "error" "after-test"
 

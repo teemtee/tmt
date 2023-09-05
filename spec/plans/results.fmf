@@ -63,7 +63,7 @@ description: |
       # Represents results of all test checks executed as driven by test's `check`
       # key. Fields have the same meaning as fields of the "parent" test result, but
       # relate to each check alone.
-      checks:
+      check:
           # String, outcome of the test execution.
         - result: "pass"|"fail"|"info"|"warn"|"error"
 

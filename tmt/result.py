@@ -122,7 +122,7 @@ class Result(BaseResult):
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
-    checks: List[CheckResult] = field(
+    check: List[CheckResult] = field(
         default_factory=list,
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
