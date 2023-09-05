@@ -13,3 +13,17 @@ adjust:
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+
+    # Disable systemd-resolved to prevent dns failures
+    # See: https://github.com/teemtee/tmt/issues/2063
+  - prepare+:
+      - name: disable-systemd-resolved
+        how: shell
+        script: |
+            systemctl disable systemd-resolved
+            systemctl mask systemd-resolved
+            rm -f /etc/resolv.conf
+            systemctl restart NetworkManager
+            sleep 3
+            cat /etc/resolv.conf
+    when: initiator == packit and distro == fedora
