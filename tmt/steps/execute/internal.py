@@ -2,10 +2,12 @@ import dataclasses
 import json
 import os
 import sys
+import textwrap
 from contextlib import suppress
 from typing import Any, Dict, List, Optional, cast
 
 import click
+import jinja2
 
 import tmt
 import tmt.base
@@ -20,10 +22,85 @@ from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
 
+TEST_PIDFILE_FILENAME = 'tmt-test.pid'
+TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
+
+
+def effective_pidfile_root() -> Path:
+    """
+    Find out what the actual pidfile directory is.
+
+    If ``TMT_TEST_PIDFILE_ROOT`` variable is set, it is used. Otherwise,
+    the effective workdir root is picked.
+    """
+
+    if 'TMT_TEST_PIDFILE_ROOT' in os.environ:
+        return Path(os.environ['TMT_TEST_PIDFILE_ROOT'])
+
+    return tmt.utils.effective_workdir_root()
+
+
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 
-TEST_WRAPPER_INTERACTIVE = '{remote_command}'
-TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& cat'
+# tmt test wrapper is getting complex. Besides honoring the timeout
+# and interactivity request, it also must play nicely with reboots
+# and `tmt-reboot`. The wrapper must present consistent info on what
+# is the PID to kill from `tmt-reboot`, and where to save additional
+# reboot info.
+#
+# For the duration of the test, the wrapper creates so-called "test
+# pidfile". The pidfile contains test wrapper PID and path to the
+# reboot-request file corresponding to the test being run. All actions
+# against the pidfile must be taken while holding the pidfile lock,
+# to serialize access between the wrapper and `tmt-reboot`. The file
+# might be missing, that's allowed, but if it exists, it must contain
+# correct info.
+#
+# Before quitting the wrapper, the pidfile is removed. There seems
+# to be an apparent race condition: test quits -> `tmt-reboot` is
+# called from a parallel session, grabs a pidfile lock, inspects
+# pidfile, updates reboot-request, and sends signal to designed PID
+# -> wrapper grabs the lock & removes the pidfile. This leaves us
+# with `tmt-reboot` sending signal to non-existent PID - which is
+# reported by `tmt-reboot`, "try again later" - and reboot-request
+# file signaling reboot is needed *after the test is done*.
+#
+# This cannot be solved without the test being involved in the reboot,
+# which does not seem like a viable option. The test must be restartable
+# though, it may get restarted in this "weird" way. On the other hand,
+# this is probably not a problem in real-life scenarios: tests that
+# are to be interrupted by out-of-session reboot are expecting this
+# action, and they do not finish on their own.
+TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+{% macro enter() %}
+flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
+{%- endmacro %}
+
+{% macro exit() %}
+flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
+{%- endmacro %}
+
+[ ! -z "$TMT_DEBUG" ] && set -x
+
+test_pid="$$";
+
+mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
+
+{% if INTERACTIVE %}
+    {{ enter() }};
+    {{ REMOTE_COMMAND }};
+    _exit_code="$!";
+    {{ exit() }};
+{% else %}
+    set -o pipefail;
+    {{ enter() }};
+    {{ REMOTE_COMMAND }} </dev/null |& cat;
+    _exit_code="$?";
+    {{ exit () }};
+{% endif %}
+exit $_exit_code;
+"""  # noqa: E501
+))
 
 
 @dataclasses.dataclass
@@ -134,6 +211,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
 
+        environment['TMT_TEST_PIDFILE'] = str(
+            effective_pidfile_root() / TEST_PIDFILE_FILENAME)
+        environment['TMT_TEST_PIDFILE_LOCK'] = str(
+            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
         environment["TMT_TEST_NAME"] = test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
         environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serial_number)
@@ -218,15 +299,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             logger=logger))
 
         # Prepare the actual remote command
-        remote_command = ShellScript(f'./{test_wrapper_filename}')
-        if self.get('interactive'):
-            remote_command = ShellScript(
-                TEST_WRAPPER_INTERACTIVE.format(
-                    remote_command=remote_command))
-        else:
-            remote_command = ShellScript(
-                TEST_WRAPPER_NONINTERACTIVE.format(
-                    remote_command=remote_command))
+        remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
+            INTERACTIVE=self.get('interactive'),
+            REMOTE_COMMAND=ShellScript(f'./{test_wrapper_filename}')
+            ).strip())
 
         def _test_output_logger(
                 key: str,
@@ -271,9 +347,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 stdout = output.stdout
             except tmt.utils.RunError as error:
                 stdout = error.stdout
+
                 test.return_code = error.returncode
-                if test.return_code == tmt.utils.PROCESS_TIMEOUT:
+                if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
                     logger.debug(f"Test duration '{test.duration}' exceeded.")
+
+                elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+                    logger.warn('Test failed to manage its pidfile.')
 
         test.end_time = self.format_timestamp(timer.end_time)
         test.real_duration = self.format_duration(timer.duration)

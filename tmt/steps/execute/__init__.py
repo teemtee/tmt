@@ -78,6 +78,11 @@ TMT_REBOOT_SCRIPT = ScriptCreatingFile(
     created_file="reboot-request"
     )
 
+TMT_REBOOT_CORE_SCRIPT = Script(
+    path=Path("/usr/local/bin/tmt-reboot-core"),
+    aliases=[],
+    related_variables=[])
+
 # Script handling result reporting, in restraint compatible fashion
 TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
     path=Path("/usr/local/bin/tmt-report-result"),
@@ -113,6 +118,7 @@ SCRIPTS = (
     TMT_ABORT_SCRIPT,
     TMT_FILE_SUBMIT_SCRIPT,
     TMT_REBOOT_SCRIPT,
+    TMT_REBOOT_CORE_SCRIPT,
     TMT_REPORT_RESULT_SCRIPT,
     )
 

@@ -5,6 +5,17 @@ tier: 4
     summary: Verify that reboot during test works
     test: ./basic.sh
 
+/out-of-session:
+    summary: Verify that reboot induced from outside of test session works
+    test: ./out-of-session.sh
+
+    environment+:
+        PROVISION_METHODS: container
+
+    adjust+:
+        - when: how==full
+          environment+:
+            PROVISION_METHODS: container virtual
 
 # Disabled until the testing environment 'hardware specification' can be set.
 # https://tmt.readthedocs.io/en/stable/spec/plans.html#hardware

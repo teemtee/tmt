@@ -102,9 +102,13 @@ class Beakerlib(TestFramework):
 
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
-        if test.return_code == tmt.utils.PROCESS_TIMEOUT:
+        if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
             note = 'timeout'
             parent.timeout_hint(test, guest)
+
+        elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+            note = 'pidfile locking'
+
         # Test results should be in complete state
         elif state != 'complete':
             note = f"beakerlib: State '{state}'"

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+[ -n "$TMT_DEBUG" ] && set -x
+
+TMT_TEST_PIDFILE="${TMT_TEST_PIDFILE:-/var/tmp/tmt/tmt-test.pid}"
+
+if [ ! -e "$TMT_TEST_PIDFILE" ]; then
+    echo "There is no running test to signal the reboot to!"
+    exit 1
+fi
+
+command="$1"
+timeout="$2"
+
+# Thanks to being run while holding the pidfile lock, the file exists and should
+# no go away. It should be safe to read test PID and reboot-request filepath from
+# it.
+test_pid="$(awk '{print $1}' < "$TMT_TEST_PIDFILE")"
+test_reboot_file="$(awk '{print $2}' < "$TMT_TEST_PIDFILE")"
+
+mkdir -p "$(dirname "$test_reboot_file")"
+
+printf '{"command": "%s", "timeout": "%s"}' "$command" "$timeout" > "$test_reboot_file"
+kill "$test_pid"

@@ -44,9 +44,12 @@ class Shell(TestFramework):
         except KeyError:
             result = ResultOutcome.ERROR
             # Add note about the exceeded duration
-            if test.return_code == tmt.utils.PROCESS_TIMEOUT:
+            if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
                 note = 'timeout'
                 parent.timeout_hint(test, guest)
+
+            elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+                note = 'pidfile locking'
 
         return [tmt.Result.from_test(
             test=test,

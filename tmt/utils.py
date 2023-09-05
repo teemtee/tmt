@@ -166,8 +166,20 @@ DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 # Config directory
 CONFIG_PATH = Path('~/.config/tmt')
 
-# Special process return code
-PROCESS_TIMEOUT = 124
+# Special process return codes
+
+
+class ProcessExitCodes(enum.IntEnum):
+    TEST_PIDFILE_LOCK_FAILED = 122
+    TEST_PIDFILE_UNLOCK_FAILED = 123
+
+    TIMEOUT = 124
+
+    @classmethod
+    def is_pidfile(cls, exit_code: Optional[int]) -> bool:
+        return exit_code in (ProcessExitCodes.TEST_PIDFILE_LOCK_FAILED,
+                             ProcessExitCodes.TEST_PIDFILE_UNLOCK_FAILED)
+
 
 # Default select.select(timeout) in seconds
 DEFAULT_SELECT_TIMEOUT = 5
@@ -191,6 +203,20 @@ DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 
 # A stand-in variable for generic use.
 T = TypeVar('T')
+
+
+def effective_workdir_root() -> Path:
+    """
+    Find out what the actual workdir root is.
+
+    If ``TMT_WORKDIR_ROOT`` variable is set, it is used as the workdir root.
+    Otherwise, the default of :py:data:`WORKDIR_ROOT` is used.
+    """
+
+    if 'TMT_WORKDIR_ROOT' in os.environ:
+        return Path(os.environ['TMT_WORKDIR_ROOT'])
+
+    return WORKDIR_ROOT
 
 
 # TODO: yes, cached_property is available since Python 3.8, but 1. we still need
@@ -709,7 +735,7 @@ class Command:
             process.wait()
             log_event('kill confirmed')
 
-            process.returncode = PROCESS_TIMEOUT
+            process.returncode = ProcessExitCodes.TIMEOUT
 
         log_event('waiting for stream readers')
 
@@ -1328,17 +1354,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Initialize the work directory
 
-        The 'workdir_root' variable is initialized from TMT_WORKDIR_ROOT
-        environment variable, if present, otherwise defaults to WORKDIR_ROOT.
+        The workdir root is acquired by calling :py:func:`effective_workdir_root`.
 
         If 'id' is a path, that directory is used instead. Otherwise a
-        new workdir is created under the 'workdir_root' directory.
+        new workdir is created under the workdir root directory.
         """
 
-        if 'TMT_WORKDIR_ROOT' in os.environ:
-            workdir_root = Path(os.environ['TMT_WORKDIR_ROOT'])
-        else:
-            workdir_root = WORKDIR_ROOT
+        workdir_root = effective_workdir_root()
 
         # Prepare the workdir name from given id or path
         if isinstance(id_, Path):

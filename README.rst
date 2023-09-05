@@ -477,6 +477,16 @@ TMT_TOPOLOGY_BASH, TMT_TOPOLOGY_YAML
     is described in the ``Guest Topology Format`` section of the
     plan specification.
 
+TMT_TEST_PIDFILE, TMT_TEST_PIDFILE_LOCK
+    Path to a file storing the test process pid and path to its
+    reboot-request file, separated by a space. The "LOCK" variable
+    then holds path to a locking file which must be acquired before
+    making any changes to the pid file.
+
+TMT_TEST_PIDFILE_ROOT
+    By default, the test pidfile file is stored in the ``$TMT_WORKDIR_ROOT``
+    directory. If specified, the directory in this variable would be
+    used instead.
 
 Plugin Variables
 ----------------
