@@ -1,5 +1,5 @@
 Name: tmt
-Version: 1.26.0
+Version: 1.27.0
 Release: 1%{?dist}
 
 Summary: Test Management Tool
@@ -230,6 +230,48 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 
 %changelog
+* Wed Sep 06 2023 Petr Šplíchal <psplicha@redhat.com> - 1.27.0-1
+- Use `testcloud` domain API v2
+- Bootstrap before/after test checks (#2210)
+- Separate value formatting from key/value nature of tmt.utils.format()
+- Render `link` fields in tmt stories and specs
+- Render default friendly command for guest execution
+- Use consistently plural/singular forms in docs
+- Make file/fmf dependencies hashable
+- Rewrite git url for discover fmf: modified-only
+- Refactor Artemis and Beaker provision tests to make room for HW
+- Adjust imported plan to let its adjust rules make changes
+- Get Ansible logging on par with general command execution
+- Support Click versions newer than 8.1.4
+- Teach tmt test create to link relevant issues (#2273)
+- Add story describing CLI for multiple phases
+- When rendering exception, indetation was dropping empty lines
+- Expose tmt version as an environment variable
+- Fix handling of integers and hostname in Beaker plugin
+- Fix bug where polarion component is misinterpreted as list
+- Refactor recording of CLI subcommand invocations (#2188)
+- Put `--help` at the end of the CLI in the step usage
+- Extend the expected `pip install` fail to `f-39`
+- Make `tmt init` add .fmf directory into git index
+- Fix guest data show() and how it displays hardware requirements
+- Add lint check for matching guests, roles and where keys
+- Add -e/--environment/--environment-files to plan show/export
+- No more need to install `pre-commit` using `pip`
+- Ensure that step phases have unique names
+- Verbose regular expression for linter descriptions
+- Initial draft of hardware requirement helpers
+- Simplify the reportportal plugin test using `yq`
+- Add dynamic ref support to library type dependency
+- Remove `epel-8` and `python-3.6` specifics
+- Use the latest `sphinx-rtd-theme` for docs building
+- Full `pip install` expected to fail on `Rawhide`
+- Add missing name attribute to report plugins schema
+- Add missing arguments in polarion report schema
+- Extend sufficiently the full test suite duration
+- Add support for log types to Artemis plugin
+- Fix `tmt run --follow`, add test coverage for it
+- Remove the temporary hotfix for deep libraries
+
 * Mon Jul 31 2023 Lukáš Zachar <lzachar@redhat.com> - 1.26.0
 - Do not throw an exception on missing mrack.log
 - Allow injecting credentials for git clone
@@ -259,11 +301,6 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 * Mon Jul 10 2023 Lukáš Zachar <lzachar@redhat.com> - 1.25.0
 - Test for pruning needs VM
 - Internal anonymous git:// access is deprecated
-- Add tests and some modifications after rebases
-- Clone to tmp and use fmf.Tree.find instead of looping
-- Add clone_dirpath to Common
-- Fix bad usage of path and name
-- Fix multiple clones and inherited fmf metadata
 - Beakerlibs pruning and merge
 - Add dynamic ref evaluation support to plan import
 - Replace self.opt() when looking for debug/verbose/quiet setting
