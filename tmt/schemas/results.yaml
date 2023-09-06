@@ -61,7 +61,7 @@ items:
     log:
       $ref: "/schemas/common#/definitions/result_log"
 
-    checks:
+    check:
       type: array
       items:
         type: object
