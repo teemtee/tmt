@@ -30,6 +30,7 @@ __pkgdata__ = {
 __pkgdir__: Dict[str, str] = {}
 __pkgs__ = [
     'tmt',
+    'tmt/checks',
     'tmt/export',
     'tmt/frameworks',
     'tmt/libraries',

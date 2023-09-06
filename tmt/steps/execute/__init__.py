@@ -2,7 +2,15 @@ import copy
 import dataclasses
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+    )
 
 import click
 import fmf
@@ -10,12 +18,14 @@ import pkg_resources
 
 import tmt
 import tmt.base
+import tmt.log
 import tmt.steps
 import tmt.utils
+from tmt.checks import CheckEvent, CheckPlugin, CheckPluginClass
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
-from tmt.result import Result, ResultGuestData, ResultOutcome
+from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
 from tmt.utils import Path, field
@@ -445,6 +455,89 @@ class ExecutePlugin(tmt.steps.Plugin):
     def results(self) -> List["tmt.Result"]:
         """ Return test results """
         raise NotImplementedError
+
+    @classmethod
+    def _get_test_check_plugin(cls, check: str) -> CheckPluginClass:
+        plugin = CheckPlugin.get_test_check_plugin_registry().get_plugin(check)
+
+        if plugin is None:
+            raise tmt.utils.GeneralError(
+                f"Test check '{check}' was not found in check registry.")
+
+        return plugin
+
+    def _run_checks_for_test(
+            self,
+            *,
+            event: CheckEvent,
+            guest: Guest,
+            test: 'tmt.base.Test',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> List[CheckResult]:
+
+        results: List[CheckResult] = []
+
+        for check in test.check:
+            if not check.enabled:
+                continue
+
+            plugin = self._get_test_check_plugin(check.name)
+
+            if event == CheckEvent.BEFORE_TEST:
+                results += plugin.before_test(
+                    check=check,
+                    plugin=self,
+                    guest=guest,
+                    test=test,
+                    environment=environment,
+                    logger=logger)
+
+            elif event == CheckEvent.AFTER_TEST:
+                results += plugin.after_test(
+                    check=check,
+                    plugin=self,
+                    guest=guest,
+                    test=test,
+                    environment=environment,
+                    logger=logger)
+
+            else:
+                raise tmt.utils.GeneralError(f"Unsupported test check event '{check}'.")
+
+        for result in results:
+            result.event = event
+
+        return results
+
+    def run_checks_before_test(
+            self,
+            *,
+            guest: Guest,
+            test: 'tmt.base.Test',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> List[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.BEFORE_TEST,
+            guest=guest,
+            test=test,
+            environment=environment,
+            logger=logger
+            )
+
+    def run_checks_after_test(
+            self,
+            *,
+            guest: Guest,
+            test: 'tmt.base.Test',
+            environment: Optional[tmt.utils.EnvironmentType] = None,
+            logger: tmt.log.Logger) -> List[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.AFTER_TEST,
+            guest=guest,
+            test=test,
+            environment=environment,
+            logger=logger
+            )
 
 
 class Execute(tmt.steps.Step):

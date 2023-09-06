@@ -1617,10 +1617,38 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
-def render_run_exception(exception: RunError) -> List[str]:
-    """ Render detailed output upon command execution errors for printing """
+def render_run_exception_streams(
+        stdout: Optional[str],
+        stderr: Optional[str],
+        verbose: int = 0) -> List[str]:
+    """ Render run exception output streams for printing """
 
     lines: List[str] = []
+
+    for name, stream in (('stdout', stdout), ('stderr', stderr)):
+        if stream is None:
+            continue
+
+        stream_lines = stream.strip().split('\n')
+
+        # Show all lines in verbose mode, limit to maximum otherwise
+        if verbose > 0:
+            line_summary = f"{len(stream_lines)}"
+        else:
+            line_summary = f"{min(len(stream_lines), OUTPUT_LINES)}/{len(stream_lines)}"
+            stream_lines = stream_lines[-OUTPUT_LINES:]
+
+        lines += [f'{name} ({line_summary} lines)',
+                  OUTPUT_WIDTH * '~',
+                  *stream_lines,
+                  OUTPUT_WIDTH * '~',
+                  '']
+
+    return lines
+
+
+def render_run_exception(exception: RunError) -> List[str]:
+    """ Render detailed output upon command execution errors for printing """
 
     # Check verbosity level used during raising exception,
     if exception.logger:
@@ -1630,24 +1658,7 @@ def render_run_exception(exception: RunError) -> List[str]:
     else:
         verbose = 0
 
-    for name, output in (('stdout', exception.stdout), ('stderr', exception.stderr)):
-        if not output:
-            continue
-        output_lines = output.strip().split('\n')
-        # Show all lines in verbose mode, limit to maximum otherwise
-        if verbose > 0:
-            line_summary = f"{len(output_lines)}"
-        else:
-            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
-            output_lines = output_lines[-OUTPUT_LINES:]
-
-        lines += [f'{name} ({line_summary} lines)',
-                  OUTPUT_WIDTH * '~',
-                  *output_lines,
-                  OUTPUT_WIDTH * '~',
-                  '']
-
-    return lines
+    return render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
 def render_exception(exception: BaseException) -> List[str]:
