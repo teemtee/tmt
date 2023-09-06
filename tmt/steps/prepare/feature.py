@@ -39,10 +39,19 @@ class Feature(tmt.utils.Common):
         """ Initialize feature data """
         super().__init__(logger=logger, parent=parent, relative_indent=0)
         self.guest = guest
+        self.logger = logger
+        self.guest_sudo = self.get_guest_sudo()
+        self.guest_distro = self.get_guest_distro()
 
-    def get_guest_distro(self, guest: Guest, logger: tmt.log.Logger) -> Optional[Distro]:
+    def get_guest_sudo(self) -> str:
+        """ Return 'sudo' if guest is not superuser """
+        if not self.guest.facts.is_superuser:
+            return 'sudo'
+        return ''
+
+    def get_guest_distro(self) -> Optional[Distro]:
         """ Get guest distro by parsing the guest facts """
-        os_release = guest.facts.os_release_content
+        os_release = self.guest.facts.os_release_content
         if os_release is None:
             return None
 
@@ -71,10 +80,10 @@ class Feature(tmt.utils.Common):
 
 
 class ToggleableFeature(Feature):
-    def enable(self, guest: Guest, logger: tmt.log.Logger) -> None:
+    def enable(self) -> None:
         raise NotImplementedError
 
-    def disable(self, guest: Guest, logger: tmt.log.Logger) -> None:
+    def disable(self) -> None:
         raise NotImplementedError
 
 
@@ -108,22 +117,19 @@ RHEL_9_PACKAGES = ['https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.
 class EPEL(ToggleableFeature):
     KEY = 'epel'
 
-    def enable(self, guest: Guest, logger: tmt.log.Logger) -> None:
-        guest_distro = self.get_guest_distro(guest=guest, logger=logger)
-        if guest_distro is None:
-            raise tmt.utils.PrepareError('The distro of the guest is unsupported.')
+    def enable(self) -> None:
+        distro = self.guest_distro
+        sudo = self.guest_sudo
 
-        sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
-
-        if guest_distro == Distro.FEDORA:
+        if distro == Distro.FEDORA:
             self.info('Nothing to do on Fedora for EPEL')
-        elif guest_distro == Distro.CENTOS_7:
+        elif distro == Distro.CENTOS_7:
             # yum install epel-release
             self.info('Enable EPEL on CentOS 7')
             self.guest.execute(
                 ShellScript(f'{sudo} yum -y install {" ".join(CENTOS_7_PACKAGES)}'),
                 silent=True)
-        elif guest_distro == Distro.CENTOS_STREAM_8:
+        elif distro == Distro.CENTOS_STREAM_8:
             # dnf config-manager --set-enabled powertools
             # dnf -y install epel-release epel-next-release
             self.info('Enable EPEL on CentOS Stream 8')
@@ -131,7 +137,7 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} dnf config-manager --set-enabled {FEDORA_REPO}')
                 & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
-        elif guest_distro == Distro.CENTOS_STREAM_9:
+        elif distro == Distro.CENTOS_STREAM_9:
             # dnf config-manager --set-enabled crb
             # dnf -y install epel-release epel-next-release
             self.info('Enable EPEL on CentOS Stream 9')
@@ -139,7 +145,7 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} dnf config-manager --set-enabled {CENTOS_STREAM_9_REPO}')
                 & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
-        elif guest_distro == Distro.RHEL_7:
+        elif distro == Distro.RHEL_7:
             # subscription-manager repos --enable rhel-*-optional-rpms \
             #               --enable rhel-*-extras-rpms \
             #               --enable rhel-ha-for-rhel-*-server-rpms
@@ -149,7 +155,7 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_7_REPO}')
                 + ShellScript(f'{sudo} yum -y install {" ".join(RHEL_7_PACKAGES)}'),
                 silent=True)
-        elif guest_distro == Distro.RHEL_8:
+        elif distro == Distro.RHEL_8:
             # subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
             self.info('Enable EPEL on RHEL 8')
@@ -157,7 +163,7 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_8_REPO}')
                 + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_8_PACKAGES)}'),
                 silent=True)
-        elif guest_distro == Distro.RHEL_9:
+        elif distro == Distro.RHEL_9:
             # subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
             self.info('Enable EPEL on RHEL 9')
@@ -166,18 +172,15 @@ class EPEL(ToggleableFeature):
                 + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_9_PACKAGES)}'),
                 silent=True)
         else:
-            self.warn(f"The distro '{guest_distro}' of the guest is unsupported.")
+            self.warn(f"The distro '{distro}' of the guest is unsupported.")
 
-    def disable(self, guest: Guest, logger: tmt.log.Logger) -> None:
-        guest_distro = self.get_guest_distro(guest=guest, logger=logger)
-        if guest_distro is None:
-            raise tmt.utils.PrepareError('The distro of the guest is unsupported.')
+    def disable(self) -> None:
+        distro = self.guest_distro
+        sudo = self.guest_sudo
 
-        sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
-
-        if guest_distro == Distro.FEDORA:
+        if distro == Distro.FEDORA:
             self.info('Nothing to do on Fedora for EPEL')
-        elif guest_distro == Distro.RHEL_8:
+        elif distro == Distro.RHEL_8:
             # subscription-manager repos --disable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y remove epel-release
             self.info('Disable EPEL on RHEL 8')
@@ -185,7 +188,7 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_8_REPO}')
                 + ShellScript(f'{sudo} dnf -y remove epel-release'),
                 silent=True)
-        elif guest_distro == Distro.RHEL_9:
+        elif distro == Distro.RHEL_9:
             # subscription-manager repos --disable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y remove epel-release
             self.info('Disable EPEL on RHEL 9')
@@ -268,8 +271,8 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin):
                 else:
                     raise tmt.utils.GeneralError("Bad value")
             if value == 'enabled':
-                feature.enable(guest=guest, logger=logger)
+                feature.enable()
             elif value == 'disabled':
-                feature.disable(guest=guest, logger=logger)
+                feature.disable()
             else:
                 raise tmt.utils.GeneralError("Unknown method")
