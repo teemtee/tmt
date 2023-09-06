@@ -2315,7 +2315,7 @@ class Plan(
         # Override the plan name with the local one to ensure unique names
         node.name = self.name
         # Create the plan object, save links between both plans
-        self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger.descend())
+        self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger)
         self._imported_plan._original_plan = self
 
         # Update imported plan environment with the local environment
