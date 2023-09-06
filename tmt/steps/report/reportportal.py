@@ -15,22 +15,22 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     url: Optional[str] = field(
         option="--url",
         metavar="URL",
-        default=None,
+        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_URL'),
         help="The URL of the ReportPortal instance where the data should be sent to.")
     token: Optional[str] = field(
         option="--token",
         metavar="TOKEN",
-        default=None,
+        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN'),
         help="The token to use for upload to the ReportPortal instance (from the user profile).")
     project: Optional[str] = field(
         option="--project",
         metavar="PROJECT_NAME",
-        default=None,
+        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_PROJECT'),
         help="Name of the project into which the results should be uploaded.")
     launch: Optional[str] = field(
         option="--launch",
         metavar="LAUNCH_NAME",
-        default=None,
+        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH'),
         help="The launch name (name of plan per launch is used by default).")
     exclude_variables: str = field(
         option="--exclude-variables",
@@ -134,16 +134,16 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         super().go()
 
-        endpoint = self.get("url", os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_URL'))
+        endpoint = self.get("url")
         if not endpoint:
             raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
         endpoint = endpoint.rstrip("/")
 
-        project = self.get("project", os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_PROJECT'))
+        project = self.get("project")
         if not project:
             raise tmt.utils.ReportError("No ReportPortal project provided.")
 
-        token = self.get("token", os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN'))
+        token = self.get("token")
         if not token:
             raise tmt.utils.ReportError("No ReportPortal token provided.")
 
@@ -155,7 +155,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         launch_time = self.step.plan.execute.results()[0].starttime
         merge_bool = self.get("merge")
+
         rerun_bool = False
+        # TODO: implement rerun/retry
+
         create_launch = True
         launch_uuid = ""
         suite_uuid = ""
@@ -178,6 +181,20 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         # Communication with RP instance
         with tmt.utils.retry_session() as session:
 
+            # get defect type locator
+            response = session.get(
+                url=f"{url}/settings",
+                headers=headers)
+            self.handle_response(response)
+            defect_types = yaml_to_dict(response.text).get("subTypes")
+            dt_tmp = [dt['locator']
+                      for dt in defect_types['TO_INVESTIGATE'] if dt['longName'] == 'Idle']
+            dt_locator = dt_tmp[0] if dt_tmp else None
+            dt_locator = None
+            # TODO:
+            #       implement 'idle - update'
+            #       cover cases when there is no Idle defect type defined
+
             stored_launch_uuid = self.get("uuid") or self.step.plan.my_run.rp_uuid
             if merge_bool and stored_launch_uuid:
                 create_launch = False
@@ -192,8 +209,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 launch_url = f"{endpoint}/ui/#{project}/launches/all/{launch_id}"
             else:
                 # create_launch = True
-                launch_name = self.get("launch", os.getenv(
-                    'TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH')) or self.step.plan.name
+                launch_name = self.get("launch") or self.step.plan.name
 
                 # Create a launch
                 self.info("launch", launch_name, color="cyan")
@@ -311,7 +327,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                     json={
                         "launchUuid": launch_uuid,
                         "endTime": result.endtime,
-                        "status": status})
+                        "status": status,
+                        "issue": {"issueType": dt_locator or "ti001"}})
                 self.handle_response(response)
                 launch_time = result.endtime
 
