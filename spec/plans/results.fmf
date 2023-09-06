@@ -219,7 +219,7 @@ example:
         extra-nitrate: some-nitrate-id
       guest:
         name: default-0
-      checks:
+      check:
         - name: abrt
           event: after-test
           result: pass
