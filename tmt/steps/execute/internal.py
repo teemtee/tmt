@@ -25,10 +25,10 @@ from tmt.steps.execute import (
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, field
 
-TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
+WRAPPER_SUFFIX = "wrapper.sh"
 
-TEST_WRAPPER_INTERACTIVE = '{remote_command}'
-TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; {remote_command} </dev/null |& cat'
+TEST_WRAPPER_INTERACTIVE = './{remote_command}'
+TEST_WRAPPER_NONINTERACTIVE = 'set -eo pipefail; ./{remote_command} </dev/null |& cat'
 
 
 @dataclasses.dataclass
@@ -192,27 +192,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             extra_environment=extra_environment,
             logger=logger)
 
-        # tmt wrapper filename *must* be "unique" - the plugin might be handling
-        # the same `discover` phase for different guests at the same time, and
-        # must keep them isolated. The wrapper script, while being prepared, is
-        # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = f'{TEST_WRAPPER_FILENAME}.{guest.name}'
-        test_wrapper_filepath = workdir / test_wrapper_filename
-
-        logger.debug('test wrapper', str(test_wrapper_filepath))
-
-        # Prepare the test command
-        test_command = test.test_framework.get_test_command(self, test, guest, logger)
-        self.debug('Test script', str(test_command), level=3)
-
-        # Prepare the wrapper, push to guest
-        self.write(test_wrapper_filepath, str(test_command), 'w')
-        test_wrapper_filepath.chmod(0o755)
-        guest.push(
-            source=test_wrapper_filepath,
-            destination=test_wrapper_filepath,
-            options=["-s", "-p", "--chmod=755"])
-
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
         topology.guest = tmt.steps.GuestTopology(guest)
@@ -222,16 +201,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             guest=guest,
             logger=logger))
 
-        # Prepare the actual remote command
-        remote_command = ShellScript(f'./{test_wrapper_filename}')
         if self.get('interactive'):
-            remote_command = ShellScript(
-                TEST_WRAPPER_INTERACTIVE.format(
-                    remote_command=remote_command))
+            test_wrapper = TEST_WRAPPER_INTERACTIVE
         else:
-            remote_command = ShellScript(
-                TEST_WRAPPER_NONINTERACTIVE.format(
-                    remote_command=remote_command))
+            test_wrapper = TEST_WRAPPER_NONINTERACTIVE
 
         def _test_output_logger(
                 key: str,
@@ -248,6 +221,39 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                 level=level,
                 topic=topic)
 
+        def run_command(command: ShellScript, wrapper_filename: str) -> tmt.utils.CommandOutput:
+            wrapper_filepath = workdir / wrapper_filename
+
+            logger.debug('test wrapper', str(wrapper_filepath))
+
+            # Prepare the test command
+            test_command = test.test_framework.get_script(self, command, guest, logger)
+            self.debug('Test script', str(test_command), level=3)
+
+            # Prepare the wrapper, push to guest
+            self.write(wrapper_filepath, str(test_command), 'w')
+            wrapper_filepath.chmod(0o755)
+            guest.push(
+                source=wrapper_filepath,
+                destination=wrapper_filepath,
+                options=["-s", "-p", "--chmod=755"])
+
+            # Prepare the actual remote command
+            remote_command = ShellScript(
+                test_wrapper.format(remote_command=wrapper_filename)
+                )
+
+            return guest.execute(
+                remote_command,
+                cwd=workdir,
+                env=environment,
+                join=True,
+                interactive=self.get('interactive'),
+                log=_test_output_logger,
+                timeout=tmt.utils.duration_to_seconds(test.duration),
+                test_session=True,
+                friendly_command=str(command))
+
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         test_check_results += self.run_checks_before_test(
@@ -261,16 +267,27 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         starttime = datetime.datetime.now(datetime.timezone.utc)
 
         try:
-            output = guest.execute(
-                remote_command,
-                cwd=workdir,
-                env=environment,
-                join=True,
-                interactive=self.get('interactive'),
-                log=_test_output_logger,
-                timeout=tmt.utils.duration_to_seconds(test.duration),
-                test_session=True,
-                friendly_command=str(test.test))
+            for i, setup in enumerate(test.setup):
+                run_command(
+                    setup,
+                    f'tmt-setup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    )
+
+            # tmt wrapper filename *must* be "unique" - the plugin might be handling
+            # the same `discover` phase for different guests at the same time, and
+            # must keep them isolated. The wrapper script, while being prepared, is
+            # a shared global state, and we must prevent race conditions.
+            assert test.test is not None  # narrow type
+            output = run_command(
+                test.test,
+                f'tmt-test-{WRAPPER_SUFFIX}.{guest.name}'
+                )
+
+            for i, cleanup in enumerate(test.cleanup):
+                run_command(
+                    cleanup,
+                    f'tmt-cleanup-{i}-{WRAPPER_SUFFIX}.{guest.name}'
+                    )
             test.returncode = 0
             stdout = output.stdout
         except tmt.utils.RunError as error:
