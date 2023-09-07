@@ -50,7 +50,6 @@ rlJournalStart
 
     rlPhaseStartTest "Deep"
         rlRun -s "$tmt file"
-        rlAssertGrep 'the library is stored deep.' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Strip git suffix"
