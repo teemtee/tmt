@@ -75,8 +75,11 @@ images:
 wheel:
 	cp -a tmt/__init__.py tmt/__init__.py.backup
 	sed -i $(REPLACE_VERSION) tmt/__init__.py
+	cp -a README.rst README.rst.backup
+	sed '/versionadded::/d' -i README.rst
 	python3 setup.py bdist_wheel
 	mv tmt/__init__.py.backup tmt/__init__.py
+	mv README.rst.backup README.rst
 upload:
 	twine upload dist/*.whl
 
