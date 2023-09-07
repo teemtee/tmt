@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from tmt.base import Test
     from tmt.steps.execute import ExecutePlugin
     from tmt.steps.provision import Guest
+    from tmt.utils import ShellScript
 
 
 TestFrameworkClass = Type['TestFramework']
@@ -66,25 +67,23 @@ class TestFramework:
         return {}
 
     @classmethod
-    def get_test_command(
+    def get_script(
             cls,
             parent: 'ExecutePlugin',
-            test: 'Test',
+            script: 'ShellScript',
             guest: 'Guest',
             logger: tmt.log.Logger) -> tmt.utils.ShellScript:
         """
-        Provide a test command.
+        Provide a script command.
 
         :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
+        :param script: a command that would be executed.
         :param guest: a guest on which the test would run.
         :param logger: to use for logging.
         :returns: a command to use to run the test.
         """
 
-        assert test.test is not None  # narrow type
-
-        return test.test
+        return script
 
     @classmethod
     def get_pull_options(

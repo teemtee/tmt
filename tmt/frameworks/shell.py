@@ -12,20 +12,21 @@ if TYPE_CHECKING:
     from tmt.base import Test
     from tmt.steps.execute import ExecutePlugin
     from tmt.steps.provision import Guest
+    from tmt.utils import ShellScript
 
 
 @provides_framework('shell')
 class Shell(TestFramework):
     @classmethod
-    def get_test_command(
+    def get_script(
             cls,
             parent: 'ExecutePlugin',
-            test: 'Test',
+            script: 'ShellScript',
             guest: 'Guest',
             logger: tmt.log.Logger) -> tmt.utils.ShellScript:
 
         # Use default options for shell tests
-        return tmt.utils.ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {test.test}")
+        return tmt.utils.ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {script}")
 
     @classmethod
     def extract_results(
