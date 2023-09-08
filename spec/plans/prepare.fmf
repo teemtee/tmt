@@ -138,6 +138,8 @@ example: |
         # Enable copr repository, skip missing packages
         prepare:
             how: install
+            # Repository with a group owner (@ prefixed) requires quotes, e.g.
+            # copr: "@osci/rpminspect"
             copr: psss/tmt
             package: tmt-all
             missing: skip
