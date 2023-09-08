@@ -128,8 +128,9 @@ WORKDIR_MAX = 1000
 
 # Maximum number of lines of stdout/stderr to show upon errors
 OUTPUT_LINES = 100
-# Default output width
-OUTPUT_WIDTH = 79
+# Default & actual output width
+DEFAULT_OUTPUT_WIDTH = 79
+OUTPUT_WIDTH = int(os.getenv('TMT_TERM_WIDTH', DEFAULT_OUTPUT_WIDTH)) or DEFAULT_OUTPUT_WIDTH
 
 # Hierarchy indent
 INDENT = 4
@@ -3281,7 +3282,7 @@ def format(
         key: str,
         value: Union[None, bool, str, List[Any], Dict[Any, Any]] = None,
         indent: int = 24,
-        window_size: int = 72,
+        window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
         key_color: Optional[str] = 'green',
         value_color: Optional[str] = 'black',

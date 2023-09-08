@@ -384,6 +384,10 @@ TMT_SHOW_TRACEBACK
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
     set to any string except ``0``, traceback would be printed out.
 
+TMT_TERM_WIDTH
+    By default, the output width of commands like ``tmt * show`` is constrained
+    to 79 characters. Set this variable to an integer to change the limit.
+
 TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
     Variable pairs used to provide credentials to clone git
     repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
