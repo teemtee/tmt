@@ -132,6 +132,7 @@ class Result(BaseResult):
     starttime: Optional[str] = None
     endtime: Optional[str] = None
     duration: Optional[str] = None
+    data_path: Optional[str] = None
 
     @classmethod
     def from_test(
@@ -191,7 +192,8 @@ class Result(BaseResult):
             duration=test.real_duration,
             ids=ids,
             log=log or [],
-            guest=guest_data)
+            guest=guest_data,
+            data_path=test.data_path)
 
         return _result.interpret_result(
             ResultInterpret(test.result) if test.result else ResultInterpret.RESPECT)

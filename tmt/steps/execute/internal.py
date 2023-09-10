@@ -295,6 +295,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test.starttime = self.format_timestamp(starttime)
         test.endtime = self.format_timestamp(endtime)
         test.real_duration = self.format_duration(endtime - starttime)
+        test.data_path = self.data_path(test, guest, "data", full=True)
 
         return test_check_results
 

@@ -180,6 +180,7 @@
             <th>Guest</th>
 {% endif %}
             <th>Logs</th>
+            <th>Data</th>
         </tr>
     </thead>
     {% for result in results %}
@@ -194,6 +195,7 @@
             <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
         {% endfor %}
         </td>
+        <td class="data"><a href="{{ result.data_path }}">Data</a></td>
         {% if result.note %}
         <td class="note">{{ result.note|e }}</td>
         {% endif %}
