@@ -380,7 +380,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             else:
                 assert fmf_root is not None  # narrow type
                 directory = fmf_root
-            self.info('directory', str(directory), 'green')
+            self.info('directory', directory, 'green')
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
@@ -482,7 +482,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         if path is None or path.resolve() == Path.cwd().resolve():
             path = Path('')
         else:
-            self.info('path', str(path), 'green')
+            self.info('path', path, 'green')
 
         # Prepare the whole tree path and test path prefix
         tree_path = self.testdir / path.unrooted()

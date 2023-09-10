@@ -68,6 +68,7 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 import tmt.log
+from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
     import tmt.base
@@ -1140,7 +1141,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def print(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0) -> None:
         """ Print a message regardless the quiet mode """
@@ -1149,7 +1150,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def info(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0) -> None:
         """ Show a message unless in quiet mode """
@@ -1158,7 +1159,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def verbose(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0,
             level: int = 1,
@@ -1173,7 +1174,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def debug(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0,
             level: int = 1,
@@ -3036,6 +3037,11 @@ def _format_dict(
         list_format: ListFormat,
         wrap: FormatWrap) -> Generator[str, None, None]:
     """ Format a dictionary """
+
+    # UX: if the dictionary is empty, it's trivial to render.
+    if not value:
+        yield '{}'
+        return
 
     for k, v in value.items():
         # First, render the key.

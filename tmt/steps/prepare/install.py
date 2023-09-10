@@ -98,7 +98,7 @@ class InstallBase(tmt.utils.Common):
 
         # Check rpm packages in local directories
         for directory in self.directories:
-            self.info('directory', str(directory), 'green')
+            self.info('directory', directory, 'green')
             if not directory.is_dir():
                 raise tmt.utils.PrepareError(f"Packages directory '{directory}' not found.")
             for filepath in directory.iterdir():

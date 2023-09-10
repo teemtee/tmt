@@ -46,7 +46,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin):
             log_name = log_file.name
             full_path = self.step.plan.execute.workdir / log_file
             # List path to logs (-vv and more)
-            self.verbose(log_name, str(full_path), color='yellow', shift=2)
+            self.verbose(log_name, full_path, color='yellow', shift=2)
             # Show the whole test output (-vvv and more)
             if verbosity > 2 and log_name == TEST_OUTPUT_FILENAME:
                 self.verbose(

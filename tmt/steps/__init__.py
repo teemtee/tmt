@@ -795,7 +795,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         self.info(self.name, color='blue')
         # Show workdir in verbose mode
         if self.workdir:
-            self.debug('workdir', str(self.workdir), 'magenta')
+            self.debug('workdir', self.workdir, 'magenta')
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Remove all uninteresting files from the step workdir """
@@ -1322,7 +1322,7 @@ class BasePlugin(Phase):
         if not self.name.startswith(tmt.utils.DEFAULT_NAME):
             logger.info('name', self.name, 'magenta')
         # Include order in verbose mode
-        logger.verbose('order', str(self.order), 'magenta', level=3)
+        logger.verbose('order', self.order, 'magenta', level=3)
 
     def requires(self) -> List['tmt.base.Dependency']:
         """ All requirements of the plugin on the guest """
@@ -1808,7 +1808,7 @@ class Topology(tmt.utils.SerializableContainer):
         environment: EnvironmentType = {}
 
         for filepath in topology_filepaths:
-            logger.debug('test topology', str(filepath))
+            logger.debug('test topology', filepath)
 
             guest.push(
                 source=filepath,

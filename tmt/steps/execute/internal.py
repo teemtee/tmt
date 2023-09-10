@@ -199,11 +199,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         test_wrapper_filename = f'{TEST_WRAPPER_FILENAME}.{guest.name}'
         test_wrapper_filepath = workdir / test_wrapper_filename
 
-        logger.debug('test wrapper', str(test_wrapper_filepath))
+        logger.debug('test wrapper', test_wrapper_filepath)
 
         # Prepare the test command
         test_command = test.test_framework.get_test_command(self, test, guest, logger)
-        self.debug('Test script', str(test_command), level=3)
+        self.debug('Test script', test_command, level=3)
 
         # Prepare the wrapper, push to guest
         self.write(test_wrapper_filepath, str(test_command), 'w')

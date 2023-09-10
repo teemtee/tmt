@@ -193,7 +193,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> None:
         super().go(guest=guest, environment=environment, logger=logger)
-        logger.verbose('exit-first', str(self.data.exit_first), 'green', level=2)
+        logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
     def discover(self) -> tmt.steps.discover.Discover:

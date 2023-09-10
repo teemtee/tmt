@@ -140,6 +140,6 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
 
                     playbook_path = Path(file.name).relative_to(root_path)
 
-                logger.info('playbook-path', str(playbook_path), 'green')
+                logger.info('playbook-path', playbook_path, 'green')
 
             guest.ansible(playbook_path, self.get('extra-args'))

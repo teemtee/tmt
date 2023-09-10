@@ -359,7 +359,7 @@ class GuestTestcloud(tmt.GuestSsh):
             if key_type is not None:
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)
-            self.verbose('key', str(self.key[0]), 'green')
+            self.verbose('key', self.key[0], 'green')
             with open(self.workdir / f'{key_name}.pub') as pubkey_file:
                 public_key = pubkey_file.read()
 
@@ -523,7 +523,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self.guest = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
         self.verbose('ip', self.guest, 'green')
-        self.verbose('port', str(self.port), 'green')
+        self.verbose('port', self.port, 'green')
         self._instance.create_ip_file(self.guest)
 
         # Wait a bit until the box is up

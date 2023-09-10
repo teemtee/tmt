@@ -98,8 +98,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             raise tmt.utils.ReportError(
                 f"Received non-ok status code from ReportPortal: {response.text}")
 
-        self.debug("Response code from the server", str(response.status_code))
-        self.debug("Message from the server", str(response.text))
+        self.debug("Response code from the server", response.status_code)
+        self.debug("Message from the server", response.text)
 
     def go(self) -> None:
         """

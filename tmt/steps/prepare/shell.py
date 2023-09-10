@@ -88,6 +88,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
 
         # Execute each script on the guest (with default shell options)
         for script in scripts:
-            logger.verbose('script', str(script), 'green')
+            logger.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             guest.execute(script_with_options, cwd=self.step.plan.worktree, env=environment)

@@ -67,6 +67,7 @@ from tmt.utils import (
     WorkdirArgumentType,
     dict_to_yaml,
     field,
+    format_value,
     git_clone,
     normalize_shell_script,
     verdict,
@@ -2057,8 +2058,8 @@ class Plan(
         # Additional debug info like plan environment
         self.debug('info', color='cyan', shift=0, level=3)
         # TODO: something better than str()?
-        self.debug('environment', str(self.environment), 'magenta', level=3)
-        self.debug('context', str(self._fmf_context), 'magenta', level=3)
+        self.debug('environment', format_value(self.environment), 'magenta', level=3)
+        self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
 
         # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
@@ -3236,7 +3237,7 @@ class Run(tmt.utils.Common):
         # Show run id / workdir path
         self.info(str(self.workdir), color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
-        self.debug('tmt command line', str(Command(*sys.argv)))
+        self.debug('tmt command line', Command(*sys.argv))
         # Attempt to load run data
         self.load()
         # Follow log instead of executing the run

@@ -104,7 +104,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         # Show output file path
         assert self.workdir is not None
         target = self.workdir / filename
-        self.info("output", str(target), color='yellow')
+        self.info("output", target, color='yellow')
         if not self.get('open'):
             return
 

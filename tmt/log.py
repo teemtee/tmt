@@ -31,7 +31,18 @@ import logging
 import logging.handlers
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Set, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Set,
+    Tuple,
+    Union,
+    cast,
+    )
 
 import click
 
@@ -59,6 +70,16 @@ DEFAULT_TOPICS: Set[Topic] = set()
 
 
 LABEL_FORMAT = '[{label}]'
+
+
+LoggableValue = Union[
+    str,
+    int,
+    bool,
+    float,
+    'tmt.utils.Path',
+    'tmt.utils.Command',
+    'tmt.utils.ShellScript']
 
 
 def _debug_level_from_global_envvar() -> int:
@@ -149,7 +170,7 @@ def render_labels(labels: List[str]) -> str:
 
 def indent(
         key: str,
-        value: Optional[str] = None,
+        value: Optional[LoggableValue] = None,
         color: Optional[str] = None,
         level: int = 0,
         labels: Optional[List[str]] = None,
@@ -187,7 +208,9 @@ def indent(
 
     # Key + non-string values
     if not isinstance(value, str):
-        return f'{prefix}{indent}{key}: {value}'
+        from tmt.utils import format_value
+
+        value = format_value(value, wrap=False)
 
     # If there's just a single line (or less...), emit just that line,
     # with prefix and indentation, of course.
@@ -209,7 +232,7 @@ class LogRecordDetails:
     """ tmt's log message components attached to log records """
 
     key: str
-    value: Optional[str] = None
+    value: Optional[LoggableValue] = None
 
     color: Optional[str] = None
     shift: int = 0
@@ -668,7 +691,7 @@ class Logger:
     def print(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0,
             ) -> None:
@@ -685,7 +708,7 @@ class Logger:
     def info(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0
             ) -> None:
@@ -701,7 +724,7 @@ class Logger:
     def verbose(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0,
             level: int = 1,
@@ -721,7 +744,7 @@ class Logger:
     def debug(
             self,
             key: str,
-            value: Optional[str] = None,
+            value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0,
             level: int = 1,

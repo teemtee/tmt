@@ -69,6 +69,6 @@ class FinishShell(tmt.steps.finish.FinishPlugin):
 
         # Execute each script on the guest
         for script in scripts:
-            self.verbose('script', str(script), 'green')
+            self.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             guest.execute(script_with_options, cwd=self.step.plan.worktree)
