@@ -2,7 +2,6 @@
 
 import copy
 import os
-import pprint
 import re
 import shlex
 import subprocess
@@ -17,7 +16,7 @@ import tmt.base
 import tmt.export
 import tmt.identifier
 import tmt.utils
-from tmt.utils import ConvertError, GeneralError, Path
+from tmt.utils import ConvertError, GeneralError, Path, format_value
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -321,7 +320,7 @@ def read_datafile(
                 key, value = variable.split('=', maxsplit=1)
                 data['environment'][key] = value
             echo(style('environment:', fg='green'))
-            echo(pprint.pformat(data['environment']))
+            echo(format_value(data['environment']))
 
     def sanitize_name(name: str) -> str:
         """ Raise if package name starts with '-' (negative require) """
@@ -610,8 +609,8 @@ def read(
                 if parent.get(key) == test[key]:
                     test.pop(key)
 
-    log.debug('Common metadata:\n' + pprint.pformat(common_data))
-    log.debug('Individual metadata:\n' + pprint.pformat(individual_data))
+    log.debug('Common metadata:\n' + format_value(common_data))
+    log.debug('Individual metadata:\n' + format_value(individual_data))
     return common_data, individual_data
 
 
@@ -985,7 +984,7 @@ def read_nitrate_case(
             data.pop('environment')
         else:
             echo(style('environment:', fg='green'))
-            echo(pprint.pformat(data['environment']))
+            echo(format_value(data['environment']))
     # Possible multihost tag (detected in Makefile)
     if makefile_data:
         data['tag'].extend(makefile_data.get('tag', []))

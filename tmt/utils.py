@@ -11,7 +11,6 @@ import io
 import json
 import os
 import pathlib
-import pprint
 import re
 import shlex
 import shutil
@@ -603,7 +602,7 @@ class Command:
             actual_env = os.environ.copy()
             actual_env.update(env)
 
-        logger.debug('environment', pprint.pformat(actual_env), level=4)
+        logger.debug('environment', format_value(actual_env), level=4)
 
         # Set special executable only when shell was requested
         executable = DEFAULT_SHELL if shell else None
@@ -3091,7 +3090,10 @@ def _format_dict(
 
                 # UX: If there is just a single line, put key and value on the
                 # same line.
-                if len(lines) <= 1:
+                if not lines:
+                    yield f'{k_formatted}:'
+
+                elif len(lines) == 1:
                     yield f'{k_formatted}: {lines[0]}'
 
                 # UX: Otherwise, put lines under the key, and indent them.
@@ -4238,7 +4240,7 @@ class StructuredField:
         values = [escape.sub("", value) for value in parts[2::2]]
         for key, value in zip(keys, values):
             self.set(key, value)
-        log.debug(f"Parsed sections:\n{pprint.pformat(self._sections)}")
+        log.debug(f"Parsed sections:\n{format_value(self._sections)}")
 
     def _save_version_zero(self) -> str:
         """ Save version 0 format """
