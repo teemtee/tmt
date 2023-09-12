@@ -87,16 +87,6 @@ class ToggleableFeature(Feature):
         raise NotImplementedError
 
 
-class CRB(ToggleableFeature):
-    KEY = 'crb'
-    # TBD
-
-
-class FIPS(ToggleableFeature):
-    KEY = 'fips'
-    # TBD
-
-
 FEDORA_REPO = 'powertools'
 FEDORA_PACKAGES = ['epel-release', 'epel-next-release']
 
@@ -200,6 +190,28 @@ class EPEL(ToggleableFeature):
             self.warn('The distro of the guest is unsupported.')
 
 
+class CRB(ToggleableFeature):
+    KEY = 'crb'
+    # TBD
+
+    def enable(self) -> None:
+        pass
+
+    def disable(self) -> None:
+        pass
+
+
+class FIPS(ToggleableFeature):
+    KEY = 'fips'
+    # TBD
+
+    def enable(self) -> None:
+        pass
+
+    def disable(self) -> None:
+        pass
+
+
 _FEATURES = {
     EPEL.KEY: EPEL,
     CRB.KEY: CRB,
@@ -248,19 +260,11 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin):
         if self.opt('dry'):
             return
 
-        # Enable epel/crb/fips
-        for key, value in self.data.items():
-            # PrepareFeatureData(name='default-0',
-            #                    how='feature',
-            #                    order=50,
-            #                    summary=None,
-            #                    where=[],
-            #                    epel=['enabled'])
-            if key in ['name', 'how', 'order', 'summary', 'where']:
+        # Enable or disable epel/crb/fips
+        for key in _FEATURES:
+            value = getattr(self.data, key, None)
+            if value is None:
                 continue
-
-            if key not in _FEATURES:
-                raise tmt.utils.GeneralError("Unknown key")
 
             feature = _FEATURES[key](parent=self, guest=guest, logger=logger)
             if isinstance(feature, ToggleableFeature):
