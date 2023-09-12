@@ -77,7 +77,7 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> Tuple[
     """
 
     if operator in OPERATOR_SIGN_TO_OPERATOR:
-        return OPERATOR_SIGN_TO_OPERATOR[operator], value, True
+        return OPERATOR_SIGN_TO_OPERATOR[operator], value, False
 
     # MATCH has special handling - convert the pattern to a wildcard form -
     # and that may be weird :/
