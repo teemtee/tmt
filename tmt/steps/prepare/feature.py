@@ -170,6 +170,38 @@ class EPEL(ToggleableFeature):
 
         if distro == Distro.FEDORA:
             self.info('Nothing to do on Fedora for EPEL')
+        elif distro == Distro.CENTOS_7:
+            # yum -y remove epel-release
+            self.info('Disable EPEL on CentOS 7')
+            self.guest.execute(
+                ShellScript(f'{sudo} yum -y remove {" ".join(CENTOS_7_PACKAGES)}'),
+                silent=True)
+        elif distro == Distro.CENTOS_STREAM_8:
+            # dnf config-manager --set-disabled powertools
+            # dnf -y remove epel-release epel-next-release
+            self.info('Disable EPEL on CentOS Stream 8')
+            self.guest.execute(
+                ShellScript(f'{sudo} dnf config-manager --set-disabled {FEDORA_REPO}')
+                + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
+                silent=True)
+        elif distro == Distro.CENTOS_STREAM_9:
+            # dnf config-manager --set-disabled crb
+            # dnf -y remove epel-release epel-next-release
+            self.info('Disable EPEL on CentOS Stream 9')
+            self.guest.execute(
+                ShellScript(f'{sudo} dnf config-manager --set-disabled {CENTOS_STREAM_9_REPO}')
+                + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
+                silent=True)
+        elif distro == Distro.RHEL_7:
+            # subscription-manager repos --disable rhel-*-optional-rpms \
+            #               --disable rhel-*-extras-rpms \
+            #               --disable rhel-ha-for-rhel-*-server-rpms
+            # dnf -y remove epel-release
+            self.info('Disable EPEL on RHEL 7')
+            self.guest.execute(
+                ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_7_REPO}')
+                + ShellScript(f'{sudo} yum -y remove epel-release'),
+                silent=True)
         elif distro == Distro.RHEL_8:
             # subscription-manager repos --disable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y remove epel-release
