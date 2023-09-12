@@ -21,7 +21,7 @@ import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.utils
-from tmt.checks import CheckEvent, CheckPlugin, CheckPluginClass
+from tmt.checks import CheckEvent
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
@@ -456,16 +456,6 @@ class ExecutePlugin(tmt.steps.Plugin):
         """ Return test results """
         raise NotImplementedError
 
-    @classmethod
-    def _get_test_check_plugin(cls, check: str) -> CheckPluginClass:
-        plugin = CheckPlugin.get_test_check_plugin_registry().get_plugin(check)
-
-        if plugin is None:
-            raise tmt.utils.GeneralError(
-                f"Test check '{check}' was not found in check registry.")
-
-        return plugin
-
     def _run_checks_for_test(
             self,
             *,
@@ -478,31 +468,13 @@ class ExecutePlugin(tmt.steps.Plugin):
         results: List[CheckResult] = []
 
         for check in test.check:
-            if not check.enabled:
-                continue
-
-            plugin = self._get_test_check_plugin(check.name)
-
-            if event == CheckEvent.BEFORE_TEST:
-                results += plugin.before_test(
-                    check=check,
-                    plugin=self,
-                    guest=guest,
-                    test=test,
-                    environment=environment,
-                    logger=logger)
-
-            elif event == CheckEvent.AFTER_TEST:
-                results += plugin.after_test(
-                    check=check,
-                    plugin=self,
-                    guest=guest,
-                    test=test,
-                    environment=environment,
-                    logger=logger)
-
-            else:
-                raise tmt.utils.GeneralError(f"Unsupported test check event '{check}'.")
+            results += check.go(
+                event=event,
+                guest=guest,
+                test=test,
+                plugin=self,
+                environment=environment,
+                logger=logger)
 
         for result in results:
             result.event = event

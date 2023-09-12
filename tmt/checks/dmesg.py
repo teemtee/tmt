@@ -1,22 +1,18 @@
 import datetime
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.checks import CheckEvent, CheckPlugin
+from tmt.checks import Check, CheckEvent, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, render_run_exception_streams
-
-if TYPE_CHECKING:
-    from tmt.base import Check
-
 
 TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
 
-@CheckPlugin.provides_check('dmesg')
+@provides_check('dmesg')
 class DmesgCheck(CheckPlugin):
     @classmethod
     def _fetch_dmesg(

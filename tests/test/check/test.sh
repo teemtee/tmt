@@ -23,6 +23,8 @@ rlJournalStart
         rlPhaseStartTest "Test dmesg check with $method"
             rlRun "tmt run --id $run --scratch -a -vv provision -h $method"
 
+            rlRun "cat $results"
+
             rlAssertExists "$dump_before"
             if [ "$method" = "container" ]; then
                 assert_check_result "dmesg as a before-test should fail with containers" "error" "before-test"

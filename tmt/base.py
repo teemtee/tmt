@@ -39,6 +39,7 @@ from click import confirm, echo, style
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
+import tmt.checks
 import tmt.export
 import tmt.frameworks
 import tmt.identifier
@@ -54,6 +55,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultOutcome
 from tmt.utils import (
@@ -943,74 +945,6 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
-# A "raw" test check as stored in fmf node data.
-class _RawCheck(TypedDict, total=False):
-    name: str
-    enabled: bool
-
-
-@dataclasses.dataclass
-class Check(
-        tmt.utils.SpecBasedContainer[_RawCheck, _RawCheck],
-        tmt.utils.SerializableContainer):
-    """ Represents a single check from test's ``check`` field """
-
-    name: str
-    enabled: bool = field(default=True)
-
-
-def normalize_test_check(
-        key_address: str,
-        raw_test_check: Any,
-        logger: tmt.log.Logger) -> Check:
-    """ Normalize a single test check """
-
-    if isinstance(raw_test_check, str):
-        return Check(name=raw_test_check)
-
-    if isinstance(raw_test_check, dict):
-        try:
-            return Check(**raw_test_check)
-
-        except Exception:
-            raise tmt.utils.NormalizationError(
-                key_address,
-                raw_test_check,
-                'a string or a dictionary')
-
-    raise tmt.utils.NormalizationError(
-        key_address,
-        raw_test_check,
-        'a string or a dictionary')
-
-
-def normalize_checks(
-        key_address: str,
-        raw_checks: Any,
-        logger: tmt.log.Logger) -> List[Check]:
-    """ Normalize (prepare/finish/test) checks """
-
-    if raw_checks is None:
-        return []
-
-    if isinstance(raw_checks, str):
-        return [normalize_test_check(key_address, raw_checks, logger)]
-
-    if isinstance(raw_checks, dict):
-        return [normalize_test_check(key_address, raw_checks, logger)]
-
-    if isinstance(raw_checks, list):
-        return [
-            normalize_test_check(f'{key_address}[{i}]', raw_test_check, logger)
-            for i, raw_test_check in enumerate(raw_checks)
-            ]
-
-    raise tmt.utils.NormalizationError(
-        key_address,
-        raw_checks,
-        'a string, a dictionary, or a list of their combinations')
-
-
 Node = Core
 
 
@@ -1058,7 +992,7 @@ class Test(
 
     check: List[Check] = field(
         default_factory=list,
-        normalize=normalize_checks,
+        normalize=tmt.checks.normalize_checks,
         serialize=lambda checks: [check.to_spec() for check in checks],
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized]
         )
