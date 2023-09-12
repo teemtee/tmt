@@ -426,7 +426,7 @@ Migrating provision.fmf
 
 The ``provision.fmf`` file is used to specify storage and network
 devices. In this migration, the contents of the ``provision.fmf``
-file is moved to the ``provision`` step under ``hardware``
+file are moved to the ``provision`` step under ``hardware``
 specification.
 
 ``provision.fmf`` example:
