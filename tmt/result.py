@@ -24,6 +24,7 @@ class ResultOutcome(enum.Enum):
     INFO = 'info'
     WARN = 'warn'
     ERROR = 'error'
+    SKIP = 'skip'
 
     @classmethod
     def from_spec(cls, spec: str) -> 'ResultOutcome':
@@ -42,6 +43,7 @@ class ResultInterpret(enum.Enum):
     INFO = 'info'
     WARN = 'warn'
     ERROR = 'error'
+    SKIP = 'skip'
 
     # Special interpret values
     RESPECT = 'respect'
@@ -58,7 +60,9 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
     ResultOutcome.FAIL: 'red',
     ResultOutcome.INFO: 'blue',
     ResultOutcome.WARN: 'yellow',
-    ResultOutcome.ERROR: 'magenta'
+    ResultOutcome.ERROR: 'magenta',
+    # TODO (happz) make sure the color is visible for all terminals
+    ResultOutcome.SKIP: 'bright_black',
     }
 
 
@@ -279,6 +283,9 @@ class Result(BaseResult):
         if stats.get(ResultOutcome.FAIL):
             failed = ' ' + click.style('failed', fg='red')
             comments.append(fmf.utils.listed(stats[ResultOutcome.FAIL], 'test') + failed)
+        if stats.get(ResultOutcome.SKIP):
+            skipped = ' ' + click.style('skipped', fg='bright_black')
+            comments.append(fmf.utils.listed(stats[ResultOutcome.SKIP], 'test') + skipped)
         if stats.get(ResultOutcome.INFO):
             count, comment = fmf.utils.listed(stats[ResultOutcome.INFO], 'info').split()
             comments.append(count + ' ' + click.style(comment, fg='blue'))

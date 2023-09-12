@@ -51,3 +51,8 @@
   guest:
     name: client-1
     role: clients
+
+- name: /test/skipped
+  result: skip
+  duration: 00:00:00
+  serialnumber: 5

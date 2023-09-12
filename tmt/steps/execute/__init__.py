@@ -581,8 +581,17 @@ class Execute(tmt.steps.Step):
 
     def summary(self) -> None:
         """ Give a concise summary of the execution """
-        tests = fmf.utils.listed(self.results(), 'test')
-        self.info('summary', f'{tests} executed', 'green', shift=1)
+        executed_tests = [r for r in self.results() if r.result != ResultOutcome.SKIP]
+        skipped_tests = [r for r in self.results() if r.result == ResultOutcome.SKIP]
+
+        message = [
+            fmf.utils.listed(executed_tests, 'test') + ' executed'
+            ]
+
+        if skipped_tests:
+            message.append(fmf.utils.listed(skipped_tests, 'test') + ' skipped')
+
+        self.info('summary', ', '.join(message), 'green', shift=1)
 
     def go(self) -> None:
         """ Execute tests """

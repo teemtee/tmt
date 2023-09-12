@@ -27,7 +27,7 @@ description: |
          path: /
 
        # String, outcome of the test execution.
-       result: "pass"|"fail"|"info"|"warn"|"error"
+       result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
        # String, optional comment to report with the result.
        note: "Things were great."
@@ -68,7 +68,7 @@ description: |
       # relate to each check alone.
       check:
           # String, outcome of the test execution.
-        - result: "pass"|"fail"|"info"|"warn"|"error"
+        - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
@@ -102,10 +102,10 @@ description: |
 
     info
         Test finished but only produced an informational
-        message. Represents a soft pass, used for skipped
-        tests and for tests with the :ref:`/spec/tests/result`
-        attribute set to ``ignore``. Automation must treat
-        this as a passed test.
+        message. Represents a soft pass, used for tests
+        with the :ref:`/spec/tests/result` attribute set
+        to ``info``. Automation must treat this as a
+        passed test.
 
     warn
         A problem appeared during test execution which does
@@ -121,6 +121,11 @@ description: |
 
     fail
         Test execution successfully finished and failed.
+
+    skip
+        Test was discovered but not executed. Can be used when
+        a single process produces multiple results but not all
+        tests were run.
 
     The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
     and ``event`` keys are required for entries under ``check`` key. Custom

@@ -11,7 +11,7 @@ rlJournalStart
         rlAssertGrep "pass /report" $rlRun_LOG
         rlAssertGrep "pass /smoke/good" $rlRun_LOG
         rlAssertGrep "fail /smoke/bad" $rlRun_LOG
-        rlAssertGrep "info /smoke/skip" $rlRun_LOG
+        rlAssertGrep "skip /smoke/skip" $rlRun_LOG
         rlAssertGrep "warn /smoke/warn" $rlRun_LOG
     rlPhaseEnd
 
