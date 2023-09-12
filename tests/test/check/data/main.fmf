@@ -1,4 +1,18 @@
-test: /bin/true
+/dmesg:
+  test: /bin/true
 
-check:
-  - name: dmesg
+  check: dmesg
+
+/avc:
+  check:
+    - avc
+
+  /harmless:
+    test: /bin/true
+
+  /nasty:
+    test: |
+      set -x
+      sudo bash -c "passwd --help &> /root/passwd.log; \
+                    ls -alZ /root/passwd.log; \
+                    rm -f /root/passwd.log" || /bin/true

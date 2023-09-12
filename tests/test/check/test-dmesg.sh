@@ -11,9 +11,9 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
-        rlRun "results=$run/plans/default/execute/results.yaml"
-        rlRun "dump_before=$run/plans/default/execute/data/guest/default-0/default-1/tmt-dmesg-before-test.txt"
-        rlRun "dump_after=$run/plans/default/execute/data/guest/default-0/default-1/tmt-dmesg-after-test.txt"
+        rlRun "results=$run/plan/execute/results.yaml"
+        rlRun "dump_before=$run/plan/execute/data/guest/default-0/dmesg-1/tmt-dmesg-before-test.txt"
+        rlRun "dump_after=$run/plan/execute/data/guest/default-0/dmesg-1/tmt-dmesg-after-test.txt"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"
@@ -21,7 +21,7 @@ rlJournalStart
 
     for method in ${PROVISION_METHODS:-local}; do
         rlPhaseStartTest "Test dmesg check with $method"
-            rlRun "tmt run --id $run --scratch -a -vv provision -h $method"
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $method test -n dmesg"
 
             rlRun "cat $results"
 
@@ -46,7 +46,6 @@ rlJournalStart
 
                 rlLogInfo "$(cat $dump_after)"
             fi
-
         rlPhaseEnd
     done
 
