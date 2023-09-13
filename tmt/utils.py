@@ -6008,3 +6008,23 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
     :returns: an absolute path to the requested file or directory.
     """
     return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+
+
+class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
+    starttime: datetime.datetime
+    endtime: datetime.datetime
+
+    def __init__(self) -> None:
+        pass
+
+    def __enter__(self) -> 'Stopwatch':
+        self.starttime = datetime.datetime.now(datetime.timezone.utc)
+
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.endtime = datetime.datetime.now(datetime.timezone.utc)
+
+    @property
+    def duration(self) -> datetime.timedelta:
+        return self.endtime - self.starttime

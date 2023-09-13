@@ -94,6 +94,10 @@ class BaseResult(tmt.utils.SerializableContainer):
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
 
+    starttime: Optional[str] = None
+    endtime: Optional[str] = None
+    duration: Optional[str] = None
+
     def show(self) -> str:
         """ Return a nicely colored result with test name (and note) """
 
@@ -148,10 +152,6 @@ class Result(BaseResult):
         serialize=lambda path: None if path is None else str(path),
         unserialize=lambda value: None if value is None else Path(value)
         )
-
-    starttime: Optional[str] = None
-    endtime: Optional[str] = None
-    duration: Optional[str] = None
 
     @classmethod
     def from_test(

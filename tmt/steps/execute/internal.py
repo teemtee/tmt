@@ -1,5 +1,4 @@
 import dataclasses
-import datetime
 import json
 import os
 import sys
@@ -16,14 +15,10 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.utils
 from tmt.base import Test
-from tmt.result import CheckResult, Result, ResultOutcome
-from tmt.steps.execute import (
-    SCRIPTS,
-    TEST_OUTPUT_FILENAME,
-    TMT_REBOOT_SCRIPT,
-    )
+from tmt.result import BaseResult, CheckResult, Result, ResultOutcome
+from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT
 from tmt.steps.provision import Guest
-from tmt.utils import EnvironmentType, Path, ShellScript, field
+from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 
@@ -258,32 +253,30 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             )
 
         # Execute the test, save the output and return code
-        starttime = datetime.datetime.now(datetime.timezone.utc)
-        test.starttime = self.format_timestamp(starttime)
+        with Stopwatch() as timer:
+            test.starttime = self.format_timestamp(timer.starttime)
 
-        try:
-            output = guest.execute(
-                remote_command,
-                cwd=workdir,
-                env=environment,
-                join=True,
-                interactive=self.get('interactive'),
-                log=_test_output_logger,
-                timeout=tmt.utils.duration_to_seconds(test.duration),
-                test_session=True,
-                friendly_command=str(test.test))
-            test.returncode = 0
-            stdout = output.stdout
-        except tmt.utils.RunError as error:
-            stdout = error.stdout
-            test.returncode = error.returncode
-            if test.returncode == tmt.utils.PROCESS_TIMEOUT:
-                logger.debug(f"Test duration '{test.duration}' exceeded.")
+            try:
+                output = guest.execute(
+                    remote_command,
+                    cwd=workdir,
+                    env=environment,
+                    join=True,
+                    interactive=self.get('interactive'),
+                    log=_test_output_logger,
+                    timeout=tmt.utils.duration_to_seconds(test.duration),
+                    test_session=True,
+                    friendly_command=str(test.test))
+                test.returncode = 0
+                stdout = output.stdout
+            except tmt.utils.RunError as error:
+                stdout = error.stdout
+                test.returncode = error.returncode
+                if test.returncode == tmt.utils.PROCESS_TIMEOUT:
+                    logger.debug(f"Test duration '{test.duration}' exceeded.")
 
-        endtime = datetime.datetime.now(datetime.timezone.utc)
-        test.endtime = self.format_timestamp(endtime)
-
-        test.real_duration = self.format_duration(endtime - starttime)
+        test.endtime = self.format_timestamp(timer.endtime)
+        test.real_duration = self.format_duration(timer.duration)
 
         test.data_path = self.data_path(test, guest, "data")
 
@@ -439,10 +432,26 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                     # In case of aborted all results in list will be aborted
                     result.note = 'aborted'
             self._results.extend(results)
+
+            # If test duration information is missing, print 8 spaces to keep indention
+            def _format_duration(result: BaseResult) -> str:
+                return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
+
             for result in results:
-                # If test duration information is missing, print 8 spaces to keep indention
-                duration = click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
-                logger.verbose(f"{duration} {result.show()} [{progress}]", shift=shift)
+                logger.verbose(
+                    f"{_format_duration(result)} {result.show()} [{progress}]",
+                    shift=shift)
+
+                for check_result in result.check:
+                    # Indent the check one extra level, to make it clear it belongs to
+                    # a parent test.
+                    logger.verbose(
+                        f'{_format_duration(check_result)} '
+                        f'{" " * tmt.utils.INDENT}'
+                        f'{check_result.show()} '
+                        f'({check_result.event.value} check)',
+                        shift=shift)
+
             if (abort or self.data.exit_first and
                     result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)):
                 # Clear the progress bar before outputting

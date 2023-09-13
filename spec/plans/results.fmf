@@ -79,6 +79,15 @@ description: |
             - path/to/check/log1
               ...
 
+          # String, when the check started, in an ISO 8601 format.
+          starttime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
+          # String, when the check finished, in an ISO 8601 format.
+          endtime: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
+          # String, how long did the check run.
+          duration: hh:mm:ss
+
           # String, name of the check. Corresponds to the name used in test
           # metadata.
           name: dummy

@@ -27,7 +27,7 @@ from tmt.queue import TaskOutcome
 from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, field
+from tmt.utils import Path, Stopwatch, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -466,16 +466,23 @@ class ExecutePlugin(tmt.steps.Plugin):
         results: List[CheckResult] = []
 
         for check in test.check:
-            results += check.go(
-                event=event,
-                guest=guest,
-                test=test,
-                plugin=self,
-                environment=environment,
-                logger=logger)
+            with Stopwatch() as timer:
+                check_results = check.go(
+                    event=event,
+                    guest=guest,
+                    test=test,
+                    plugin=self,
+                    environment=environment,
+                    logger=logger)
 
-        for result in results:
-            result.event = event
+            for result in check_results:
+                result.event = event
+
+                result.starttime = self.format_timestamp(timer.starttime)
+                result.endtime = self.format_timestamp(timer.endtime)
+                result.duration = self.format_duration(timer.duration)
+
+            results += check_results
 
         return results
 
