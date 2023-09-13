@@ -185,9 +185,13 @@ class GuestContainer(tmt.Guest):
             log=log,
             silent=silent)
 
-    def podman(self, command: Command, **kwargs: Any) -> tmt.utils.CommandOutput:
+    def podman(
+            self,
+            command: Command,
+            silent: bool = True,
+            **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Run given command via podman """
-        return self._run_guest_command(Command('podman') + command, **kwargs)
+        return self._run_guest_command(Command('podman') + command, silent=silent, **kwargs)
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -256,7 +260,7 @@ class GuestContainer(tmt.Guest):
         if tmt.utils.is_selinux_supported():
             self._run_guest_command(Command(
                 "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
-                ), shell=False)
+                ), shell=False, silent=True)
         # In case explicit destination is given, use `podman cp` to copy data
         # to the container
         if source and destination:
