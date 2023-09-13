@@ -581,7 +581,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             raise ProvisionError(
                 f"Failed to create, response: '{response}'.")
 
-        self.job_id = response["id"] if not response["system"] else response["system"]
+        self.job_id = response["id"]
         self.info('job id', self.job_id, 'green')
 
         with updatable_message(
