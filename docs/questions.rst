@@ -419,3 +419,45 @@ tmt example plan (L2 metadata):
 
 See the :ref:`/spec/plans/discover/fmf` plugin documentation for
 more details.
+
+
+Migrating provision.fmf
+------------------------------------------------------------------
+
+The ``provision.fmf`` file is used to specify storage and network
+devices. In this migration, the contents of the ``provision.fmf``
+file are moved to the ``provision`` step under ``hardware``
+specification.
+
+``provision.fmf`` example:
+
+.. code-block:: yaml
+
+    standard-inventory-qcow2:
+        qemu:
+            drive:
+                - size: 10737418240
+                - size: 10737418240
+                - size: 10737418240
+
+tmt example plan (L2 metadata):
+
+.. code-block:: yaml
+
+    provision:
+        how: virtual
+        hardware:
+            disk:
+                - size: ">10GiB"
+                - size: ">10GiB"
+                - size: ">10GiB"
+
+See the :ref:`/spec/hardware/disk` and :ref:`/spec/hardware/network`
+documentation for more details about these hardware specifications
+in tmt plans.
+
+If you were using ``provision.fmf`` with Testing Farm, check out
+the `Testing Farm docs`__ on this HW requirement for more details
+and how Testing Farm works with tmt metadata.
+
+__ https://docs.testing-farm.io/general/0.1/test-request.html
