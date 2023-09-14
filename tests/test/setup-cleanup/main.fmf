@@ -1,0 +1,7 @@
+/local-script:
+  summary: Verify setup and cleanup functionality using local scripts
+  test: local.sh
+
+/timeout:
+  summary: Verify correct time out when test is running with setup and cleanup scripts
+  test: timeout.sh

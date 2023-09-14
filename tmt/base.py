@@ -67,6 +67,7 @@ from tmt.utils import (
     field,
     git_clone,
     normalize_shell_script,
+    normalize_shell_script_list,
     verdict,
     )
 
@@ -1041,6 +1042,12 @@ class Test(
         default=None,
         normalize=lambda key_address, raw_value, logger:
             None if raw_value is None else Path(raw_value))
+    setup: List[ShellScript] = field(
+        default_factory=list,
+        normalize=normalize_shell_script_list)
+    cleanup: List[ShellScript] = field(
+        default_factory=list,
+        normalize=normalize_shell_script_list)
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
@@ -1080,7 +1087,9 @@ class Test(
         'id',
 
         # Test execution data
+        'setup',
         'test',
+        'cleanup',
         'path',
         'framework',
         'manual',
@@ -1195,8 +1204,11 @@ class Test(
                     ]
 
             # Combining `if` branches using `or` here would result in long, complex line.
-            elif key == 'test' and isinstance(value, ShellScript):  # noqa: SIM114
+            elif key == 'test' and isinstance(value, ShellScript):
                 data[key] = str(value)
+
+            elif key in ['setup', 'cleanup'] and isinstance(value, list):
+                data[key] = list(map(str, value))
 
             elif key == 'path' and isinstance(value, Path):
                 data[key] = str(value)
