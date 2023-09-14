@@ -7,12 +7,14 @@ import platform
 import re
 import time
 import types
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 import click
+import pint
 import requests
 
 import tmt
+import tmt.hardware
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
@@ -28,6 +30,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.base
+    from tmt.hardware import Size
 
 
 libvirt: Optional[types.ModuleType] = None
@@ -155,11 +158,71 @@ NON_KVM_TIMEOUT_COEF = 10      # times
 SSH_KEYGEN_TYPE = "ecdsa"
 
 DEFAULT_USER = 'root'
-DEFAULT_MEMORY = 2048          # MB
-DEFAULT_DISK = 40              # GB (maximum size allowed)
+DEFAULT_CPU_COUNT = 2
+DEFAULT_MEMORY: 'Size' = tmt.hardware.UNITS('2048 MB')
+DEFAULT_DISK: 'Size' = tmt.hardware.UNITS('40 GB')
 DEFAULT_IMAGE = 'fedora'
 DEFAULT_CONNECTION = 'session'
 DEFAULT_ARCH = platform.machine()
+
+
+def normalize_memory_size(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> Optional['Size']:
+    """
+    Normalize memory size.
+
+    As of now, it's just a simple integer with implicit unit, ``MB``.
+    """
+
+    if value is None:
+        return None
+
+    if isinstance(value, pint.Quantity):
+        return value
+
+    if isinstance(value, str):
+        try:
+            magnitude = int(value)
+
+        except ValueError:
+            return tmt.hardware.UNITS(value)
+
+        return tmt.hardware.UNITS(f'{magnitude} MB')
+
+    if isinstance(value, int):
+        return tmt.hardware.UNITS(f'{value} MB')
+
+    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+
+
+def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) -> Optional['Size']:
+    """
+    Normalize disk size.
+
+    As of now, it's just a simple integer with implicit unit, ``GB``.
+    """
+
+    if value is None:
+        return None
+
+    if isinstance(value, pint.Quantity):
+        return value
+
+    if isinstance(value, str):
+        try:
+            magnitude = int(value)
+
+        except ValueError:
+            return tmt.hardware.UNITS(value)
+
+        return tmt.hardware.UNITS(f'{magnitude} GB')
+
+    if isinstance(value, int):
+        return tmt.hardware.UNITS(f'{value} GB')
+
+    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
 
 
 @dataclasses.dataclass
@@ -179,18 +242,24 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
              Select image to be used. Provide a short name, full path to a local file
              or a complete url.
              """)
-    memory: int = field(
-        default=DEFAULT_MEMORY,
+    memory: Optional['Size'] = field(
+        default=cast(Optional['Size'], None),
         option=('-m', '--memory'),
         metavar='SIZE',
         help='Set available memory in MB, 2048 MB by default.',
-        normalize=tmt.utils.normalize_storage_size)
-    disk: int = field(
-        default=DEFAULT_DISK,
+        normalize=normalize_memory_size,
+        serialize=lambda value: str(value) if value is not None else None,
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
+        if serialized is not None else None)
+    disk: Optional['Size'] = field(
+        default=cast(Optional['Size'], None),
         option=('-D', '--disk'),
         metavar='SIZE',
         help='Specify disk size in GB, 10 GB by default.',
-        normalize=tmt.utils.normalize_storage_size)
+        normalize=normalize_disk_size,
+        serialize=lambda value: str(value) if value is not None else None,
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
+        if serialized is not None else None)
     connection: str = field(
         default=DEFAULT_CONNECTION,
         option=('-c', '--connection'),
@@ -225,8 +294,10 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
         super().show(keys=super_keys, verbose=verbose, logger=logger)
 
-        logger.info('memory', f"{self.memory} MB", 'green')
-        logger.info('disk', f"{self.disk} GB", 'green')
+        # TODO: find formatting that would show "MB" instead of "megabyte"
+        # https://github.com/teemtee/tmt/issues/2410
+        logger.info('memory', f'{(self.memory or DEFAULT_MEMORY).to("MB")}', 'green')
+        logger.info('disk', f'{(self.disk or DEFAULT_DISK).to("GB")}', 'green')
 
 
 @dataclasses.dataclass
@@ -253,8 +324,8 @@ class GuestTestcloud(tmt.GuestSsh):
     image: str
     image_url: Optional[str]
     instance_name: Optional[str]
-    memory: int
-    disk: str
+    memory: Optional['Size']
+    disk: Optional['Size']
     connection: str
     arch: str
 
@@ -388,6 +459,127 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DATA_DIR = TESTCLOUD_DATA
         self.config.STORE_DIR = TESTCLOUD_IMAGES
 
+    def _combine_hw_memory(self) -> None:
+        """ Combine ``hardware`` with ``--memory`` option """
+
+        if not self.hardware:
+            self.hardware = tmt.hardware.Hardware.from_spec({})
+
+        if self.memory is None:
+            return
+
+        memory_constraint = tmt.hardware.Constraint.from_specification('memory', str(self.memory))
+
+        self.hardware.and_(memory_constraint)
+
+    def _combine_hw_disk_size(self) -> None:
+        """ Combine ``hardware`` with ``--memory`` option """
+
+        if not self.hardware:
+            self.hardware = tmt.hardware.Hardware.from_spec({})
+
+        if self.disk is None:
+            return
+
+        disk_size_constraint = tmt.hardware.Constraint.from_specification(
+            'disk[0].size',
+            str(self.disk))
+
+        self.hardware.and_(disk_size_constraint)
+
+    def _apply_hw_memory(self, domain: 'DomainConfiguration') -> None:
+        """ Apply ``memory`` constraint to given VM domain """
+
+        if not self.hardware or not self.hardware.constraint:
+            self.debug(
+                'memory',
+                f"set to '{DEFAULT_MEMORY}' because of no constraints",
+                level=4)
+
+            domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
+
+            return
+
+        variant = self.hardware.constraint.variant()
+
+        memory_constraints = [
+            constraint
+            for constraint in variant
+            if constraint.expand_name().name == 'memory']
+
+        if not memory_constraints:
+            self.debug(
+                'memory',
+                f"set to '{DEFAULT_MEMORY}' because of no 'memory' constraints",
+                level=4)
+
+            domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
+
+            return
+
+        for constraint in memory_constraints:
+            if constraint.operator not in (
+                    tmt.hardware.Operator.EQ,
+                    tmt.hardware.Operator.GTE,
+                    tmt.hardware.Operator.LTE):
+                raise ProvisionError(
+                    f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+
+            self.debug(
+                'memory',
+                f"set to '{constraint.value}' because of '{constraint}'",
+                level=4)
+
+            assert isinstance(constraint.value, pint.Quantity)
+            domain.memory_size = int(constraint.value.to('kB').magnitude)
+
+    def _apply_hw_disk_size(self, domain: 'DomainConfiguration') -> 'QCow2StorageDevice':
+        """ Apply ``disk`` constraint to given VM domain """
+
+        final_size: 'Size' = DEFAULT_DISK
+
+        if not self.hardware or not self.hardware.constraint:
+            self.debug(
+                'disk[0].size',
+                f"set to '{final_size}' because of no constraints",
+                level=4)
+
+            return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+
+        variant = self.hardware.constraint.variant()
+
+        disk_size_constraints = [
+            constraint
+            for constraint in variant
+            if constraint.expand_name().name == 'disk'
+            and constraint.expand_name().child_name == 'size']
+
+        if not disk_size_constraints:
+            self.debug(
+                'disk[0].size',
+                f"set to '{final_size}' because of no 'disk.size' constraints",
+                level=4)
+
+            return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+
+        for constraint in disk_size_constraints:
+            if constraint.operator not in (
+                    tmt.hardware.Operator.EQ,
+                    tmt.hardware.Operator.GTE,
+                    tmt.hardware.Operator.LTE):
+                raise ProvisionError(
+                    f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+
+            self.debug(
+                'disk[0].size',
+                f"set to '{constraint.value}' because of '{constraint}'",
+                level=4)
+
+            assert isinstance(constraint.value, pint.Quantity)
+            final_size = constraint.value
+
+        return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+
     def start(self) -> None:
         """ Start provisioned guest """
         if self.is_dry_run:
@@ -436,8 +628,27 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
-        self._domain.memory_size = self.memory * 1024
-        self._domain.cpu_count = 2  # Make configurable
+
+        # Process hardware and find a suitable HW properties
+        self._domain.cpu_count = DEFAULT_CPU_COUNT
+
+        self._combine_hw_memory()
+        self._combine_hw_disk_size()
+
+        if self.hardware:
+            self.verbose(
+                'effective hardware',
+                self.hardware.to_spec(),
+                color='green')
+
+            for line in self.hardware.format_variants():
+                self._logger.debug('effective hardware', line, level=4)
+
+        self._apply_hw_memory(self._domain)
+        storage_image = self._apply_hw_disk_size(self._domain)
+
+        self.debug('final domain memory', str(self._domain.memory_size))
+        self.debug('final domain disk size', str(storage_image.size))
 
         # Is the combination of host-requested architecture kvm capable?
         kvm = bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
@@ -484,8 +695,7 @@ class GuestTestcloud(tmt.GuestSsh):
         else:
             raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
 
-        image = QCow2StorageDevice(self._domain.local_disk, self.disk)
-        self._domain.storage_devices.append(image)
+        self._domain.storage_devices.append(storage_image)
 
         if not self._domain.coreos:
             seed_disk = RawStorageDevice(self._domain.seed_path)
@@ -653,7 +863,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         # click enforces int for cmdline and schema validation
         # will make sure 'int' gets from plan data.
         # Another key is 'port' however that is not exposed to the cli
-        for int_key in ["memory", "disk", "port"]:
+        for int_key in ["port"]:
             value = getattr(data, int_key)
             if value is not None:
                 try:
@@ -665,7 +875,38 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
-            self.warn("The 'virtual' provision plugin does not support hardware requirements.")
+            def _report_support(constraint: tmt.hardware.Constraint) -> bool:
+                if constraint.expand_name().name == 'memory' \
+                    and constraint.operator in (tmt.hardware.Operator.EQ,
+                                                tmt.hardware.Operator.GTE,
+                                                tmt.hardware.Operator.LTE):
+                    return True
+
+                if constraint.expand_name().name == 'disk' \
+                    and constraint.expand_name().child_name == 'size' \
+                    and constraint.operator in (tmt.hardware.Operator.EQ,
+                                                tmt.hardware.Operator.GTE,
+                                                tmt.hardware.Operator.LTE):
+                    return True
+
+                return False
+
+            data.hardware.report_support(check=_report_support, logger=self._logger)
+
+            for line in data.hardware.format_variants():
+                self._logger.debug('hardware', line, level=4)
+
+            if data.memory is not None and data.hardware.constraint.uses_constraint(
+                    'memory', self._logger):
+                self._logger.warn(
+                    "Hardware requirement 'memory' is specified in 'hardware' key,"
+                    " it will be overruled by 'memory' key.")
+
+            if data.disk is not None and data.hardware.constraint.uses_constraint(
+                    'disk.size', self._logger):
+                self._logger.warn(
+                    "Hardware requirement 'disk.size' is specified in 'hardware' key,"
+                    " it will be overruled by 'disk' key.")
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestTestcloud(

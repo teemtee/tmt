@@ -553,6 +553,9 @@ class Constraint(BaseConstraint):
             original_constraint=original_constraint
             )
 
+    def __repr__(self) -> str:
+        return f'{self.printable_name}: {self.operator.value} {self.value}'
+
     def to_spec(self) -> Spec:
         return {
             self.name.replace('_', '-'): f'{self.operator.value} {self.value}'
@@ -1187,6 +1190,22 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
     def to_minimal_spec(self) -> Spec:
         return self.spec
 
+    def and_(self, constraint: BaseConstraint) -> None:
+        if self.constraint:
+            group = And()
+
+            group.constraints = [
+                self.constraint,
+                constraint
+                ]
+
+            self.constraint = group
+
+        else:
+            self.constraint = constraint
+
+        self.spec = self.constraint.to_spec()
+
     def report_support(
             self,
             *,
@@ -1235,3 +1254,19 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
 
                 logger.warn(
                     f"Hardware requirement '{constraint.printable_name}' is not supported.")
+
+    def format_variants(self) -> Iterator[str]:
+        """
+        Format variants of constraints.
+
+        :yields: for each variant, which is nothing but a list of constraints,
+            method yields a string variant's serial number and formatted
+            constraints.
+        """
+
+        if self.constraint is None:
+            return
+
+        for i, constraints in enumerate(self.constraint.variants(), start=1):
+            for constraint in constraints:
+                yield f'variant #{i}: {constraint!s}'
