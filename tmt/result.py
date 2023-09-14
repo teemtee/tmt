@@ -128,11 +128,15 @@ class Result(BaseResult):
         unserialize=lambda serialized: [
             CheckResult.from_serialized(check) for check in serialized]
         )
+    data_path: Optional[Path] = field(
+        default=None,
+        serialize=lambda path: str(path),
+        unserialize=lambda value: Path(value)
+        )
 
     starttime: Optional[str] = None
     endtime: Optional[str] = None
     duration: Optional[str] = None
-    data_path: Optional[str] = None
 
     @classmethod
     def from_test(

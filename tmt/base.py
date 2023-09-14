@@ -999,6 +999,12 @@ class Test(
 
     serialnumber: int = 0
 
+    data_path: Optional[Path] = field(
+        default=None,
+        serialize=lambda path: str(path),
+        unserialize=lambda value: Path(value)
+        )
+
     returncode: Optional[int] = None
     starttime: Optional[str] = None
     endtime: Optional[str] = None

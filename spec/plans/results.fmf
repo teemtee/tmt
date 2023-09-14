@@ -60,6 +60,9 @@ description: |
          name: client-1
          role: clients
 
+       # String, path to /data directory storing possible test artifacts
+       data_path: path/to/test/data	
+
       # Represents results of all test checks executed as driven by test's `check`
       # key. Fields have the same meaning as fields of the "parent" test result, but
       # relate to each check alone.
