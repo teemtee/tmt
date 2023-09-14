@@ -180,7 +180,7 @@ class Finish(tmt.steps.Step):
 
         # Prune all irrelevant files and dirs
         assert self.plan.my_run is not None
-        if not (self.plan.my_run.opt('keep') or self.is_dryrun):
+        if not (self.plan.my_run.opt('keep') or self.is_dry_run):
             self.plan.prune()
 
         # Give a summary, update status and save

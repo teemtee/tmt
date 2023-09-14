@@ -98,7 +98,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
                 display_guest=display_guest))
 
         # Nothing more to do in dry mode
-        if self.is_dryrun:
+        if self.is_dry_run:
             return
 
         # Show output file path

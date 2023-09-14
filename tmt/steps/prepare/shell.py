@@ -71,7 +71,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin):
         overview = fmf.utils.listed(scripts, 'script')
         logger.info('overview', f'{overview} found', 'green')
 
-        if not self.is_dryrun and self.step.plan.worktree:
+        if not self.is_dry_run and self.step.plan.worktree:
             topology = tmt.steps.Topology(self.step.plan.provision.guests())
             topology.guest = tmt.steps.GuestTopology(guest)
 

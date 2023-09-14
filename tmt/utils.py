@@ -1080,8 +1080,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     # TODO: interestingly, the option has its own default, right? So why do we
     # need a default of our own? Because sometimes commands have not been
-    # invoked, and there's not CLI invocation to ask for the default value.
-    # Maybe se should add some kind of "default invocation"...
+    # invoked, and there's no CLI invocation to ask for the default value.
+    # Maybe we should add some kind of "default invocation"...
     def _get_cli_flag(self, key: str, option: str, default: bool) -> bool:
         """
         Find the eventual value of a CLI-provided flag option.
@@ -1106,16 +1106,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return default
 
     @property
-    def is_dryrun(self) -> bool:
+    def is_dry_run(self) -> bool:
         """ Whether the current run is a dry-run """
 
-        return self._get_cli_flag('is_dryrun', 'dry', False)
+        return self._get_cli_flag('is_dry_run', 'dry', False)
 
     @property
-    def is_forcedrun(self) -> bool:
+    def is_forced_run(self) -> bool:
         """ Whether the current run is allowed to overwrite files and data """
 
-        return self._get_cli_flag('is_forcedrun', 'force', False)
+        return self._get_cli_flag('is_forced_run', 'force', False)
 
     def _level(self) -> int:
         """ Hierarchy level """
@@ -1236,7 +1236,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         Returns named tuple CommandOutput.
         """
 
-        dryrun_actual = self.is_dryrun
+        dryrun_actual = self.is_dry_run
 
         if ignore_dry:
             dryrun_actual = False
@@ -1280,7 +1280,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         action = 'Append to' if mode == 'a' else 'Write'
         self.debug(f"{action} file '{path}'.", level=level)
         # Dry mode
-        if self.is_dryrun:
+        if self.is_dry_run:
             return
         try:
             with open(path, mode, encoding='utf-8', errors='replace') as file:
