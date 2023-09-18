@@ -662,7 +662,11 @@ class Command:
             return f'{time.monotonic() - start_timestamp:.4}'
 
         def log_event(msg: str) -> None:
-            logger.debug('Command event', f'{_event_timestamp()} {msg}', level=4)
+            logger.debug(
+                'Command event',
+                f'{_event_timestamp()} {msg}',
+                level=4,
+                topic=tmt.log.Topic.COMMAND_EVENTS)
 
         try:
             process.wait(timeout=timeout)
