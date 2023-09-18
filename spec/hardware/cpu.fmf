@@ -24,6 +24,8 @@ example:
         family-name: Comet Lake
         # CPU family number.
         family: 6
+        # CPU stepping.
+        stepping: 10
 
         # CPU flag(s) as reported with /proc/cpuinfo
         # Field applies an implicit "and" to listed flags
