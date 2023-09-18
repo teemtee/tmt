@@ -124,7 +124,7 @@ example: |
 
     link:
       - implemented-by: /tmt/steps/provision/mrack.py
-      - verified-by: /tests/provision/beaker
+      - verified-by: /plans/provision/beaker
 
 
 /connect:
