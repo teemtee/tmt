@@ -18,11 +18,9 @@ class Distro(enum.Enum):
     RHEL_7 = enum.auto()
     RHEL_8 = enum.auto()
     RHEL_9 = enum.auto()
-    RHEL_10 = enum.auto()
     CENTOS_7 = enum.auto()
     CENTOS_STREAM_8 = enum.auto()
     CENTOS_STREAM_9 = enum.auto()
-    CENTOS_STREAM_10 = enum.auto()
 
 
 class Feature(tmt.utils.Common):
@@ -42,6 +40,7 @@ class Feature(tmt.utils.Common):
         self.logger = logger
         self.guest_sudo = self.get_guest_sudo()
         self.guest_distro = self.get_guest_distro()
+        self.guest_arch = self.guest.facts.arch
 
     def get_guest_sudo(self) -> str:
         """ Return 'sudo' if guest is not superuser """
@@ -104,6 +103,9 @@ RHEL_9_REPO = 'codeready-builder-for-rhel-9-$(arch)-rpms'
 RHEL_9_PACKAGES = ['https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm']
 
 
+CRB_RHEL_8_REPO_X86_64 = ['codeready-builder-for-rhel-8-x86_64-rpms']
+
+
 class EPEL(ToggleableFeature):
     KEY = 'epel'
 
@@ -115,14 +117,14 @@ class EPEL(ToggleableFeature):
             self.info('Nothing to do on Fedora for EPEL')
         elif distro == Distro.CENTOS_7:
             # yum install epel-release
-            self.info('Enable EPEL on CentOS 7')
+            self.info(f"Enable {self.KEY.upper()} on CentOS 7")
             self.guest.execute(
                 ShellScript(f'{sudo} yum -y install {" ".join(CENTOS_7_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_8:
             # dnf config-manager --set-enabled powertools
             # dnf -y install epel-release epel-next-release
-            self.info('Enable EPEL on CentOS Stream 8')
+            self.info(f"Enable {self.KEY.upper()} on CentOS Stream 8")
             self.guest.execute(
                 ShellScript(f'{sudo} dnf config-manager --set-enabled {FEDORA_REPO}')
                 & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
@@ -130,7 +132,7 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.CENTOS_STREAM_9:
             # dnf config-manager --set-enabled crb
             # dnf -y install epel-release epel-next-release
-            self.info('Enable EPEL on CentOS Stream 9')
+            self.info(f"Enable {self.KEY.upper()} on CentOS Stream 9")
             self.guest.execute(
                 ShellScript(f'{sudo} dnf config-manager --set-enabled {CENTOS_STREAM_9_REPO}')
                 & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
@@ -140,7 +142,7 @@ class EPEL(ToggleableFeature):
             #               --enable rhel-*-extras-rpms \
             #               --enable rhel-ha-for-rhel-*-server-rpms
             # yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-            self.info('Enable EPEL on RHEL 7')
+            self.info(f"Enable {self.KEY.upper()} on RHEL 7")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_7_REPO}')
                 + ShellScript(f'{sudo} yum -y install {" ".join(RHEL_7_PACKAGES)}'),
@@ -148,7 +150,7 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.RHEL_8:
             # subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-            self.info('Enable EPEL on RHEL 8')
+            self.info(f"Enable {self.KEY.upper()} on RHEL 8")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_8_REPO}')
                 + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_8_PACKAGES)}'),
@@ -156,13 +158,13 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.RHEL_9:
             # subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-            self.info('Enable EPEL on RHEL 9')
+            self.info(f"Enable {self.KEY.upper()} on RHEL 9")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_9_REPO}')
                 + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_9_PACKAGES)}'),
                 silent=True)
         else:
-            self.warn(f"The distro '{distro}' of the guest is unsupported.")
+            self.warn(f"Enable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
     def disable(self) -> None:
         distro = self.guest_distro
@@ -172,14 +174,14 @@ class EPEL(ToggleableFeature):
             self.info('Nothing to do on Fedora for EPEL')
         elif distro == Distro.CENTOS_7:
             # yum -y remove epel-release
-            self.info('Disable EPEL on CentOS 7')
+            self.info(f"Disable {self.KEY.upper()} on CentOS 7")
             self.guest.execute(
                 ShellScript(f'{sudo} yum -y remove {" ".join(CENTOS_7_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_8:
             # dnf config-manager --set-disabled powertools
             # dnf -y remove epel-release epel-next-release
-            self.info('Disable EPEL on CentOS Stream 8')
+            self.info(f"Disable {self.KEY.upper()} on CentOS Stream 8")
             self.guest.execute(
                 ShellScript(f'{sudo} dnf config-manager --set-disabled {FEDORA_REPO}')
                 + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
@@ -187,7 +189,7 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.CENTOS_STREAM_9:
             # dnf config-manager --set-disabled crb
             # dnf -y remove epel-release epel-next-release
-            self.info('Disable EPEL on CentOS Stream 9')
+            self.info(f"Disable {self.KEY.upper()} on CentOS Stream 9")
             self.guest.execute(
                 ShellScript(f'{sudo} dnf config-manager --set-disabled {CENTOS_STREAM_9_REPO}')
                 + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
@@ -197,7 +199,7 @@ class EPEL(ToggleableFeature):
             #               --disable rhel-*-extras-rpms \
             #               --disable rhel-ha-for-rhel-*-server-rpms
             # dnf -y remove epel-release
-            self.info('Disable EPEL on RHEL 7')
+            self.info(f"Disable {self.KEY.upper()} on RHEL 7")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_7_REPO}')
                 + ShellScript(f'{sudo} yum -y remove epel-release'),
@@ -205,7 +207,7 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.RHEL_8:
             # subscription-manager repos --disable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y remove epel-release
-            self.info('Disable EPEL on RHEL 8')
+            self.info(f"Disable {self.KEY.upper()} on RHEL 8")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_8_REPO}')
                 + ShellScript(f'{sudo} dnf -y remove epel-release'),
@@ -213,35 +215,97 @@ class EPEL(ToggleableFeature):
         elif distro == Distro.RHEL_9:
             # subscription-manager repos --disable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y remove epel-release
-            self.info('Disable EPEL on RHEL 9')
+            self.info(f"Disable {self.KEY.upper()} on RHEL 9")
             self.guest.execute(
                 ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_9_REPO}')
                 + ShellScript(f'{sudo} dnf -y remove epel-release'),
                 silent=True)
         else:
-            self.warn('The distro of the guest is unsupported.')
+            self.warn(f"Disable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
 
 class CRB(ToggleableFeature):
     KEY = 'crb'
-    # TBD
 
     def enable(self) -> None:
-        pass
+        distro = self.guest_distro
+        sudo = self.guest_sudo
+
+        if distro == Distro.RHEL_8:
+            if self.guest_arch == 'x86_64':
+                # subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+                self.info(f"Enable {self.KEY.upper()} on RHEL 8")
+                self.guest.execute(
+                    ShellScript(f"{sudo} subscription-manager "
+                                f"repos --enable {' '.join(CRB_RHEL_8_REPO_X86_64)}"),
+                    silent=True)
+            else:
+                self.warn(f"Disable {self.KEY.upper()}: '{self.guest_arch}' "
+                          f"of the guest is unsupported.")
+        else:
+            self.warn(f"Enable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
     def disable(self) -> None:
-        pass
+        distro = self.guest_distro
+        sudo = self.guest_sudo
+
+        if distro == Distro.RHEL_8:
+            if self.guest_arch == 'x86_64':
+                # subscription-manager repos --disable codeready-builder-for-rhel-8-x86_64-rpms
+                self.info(f"Disable {self.KEY.upper()} on RHEL 8")
+                self.guest.execute(
+                    ShellScript(f"{sudo} subscription-manager "
+                                f"repos --disable {' '.join(CRB_RHEL_8_REPO_X86_64)}"),
+                    silent=True)
+            else:
+                self.warn(f"Disable {self.KEY.upper()}: '{self.guest_arch}' "
+                          f"of the guest is unsupported.")
+        else:
+            self.warn(f"Disable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
 
 class FIPS(ToggleableFeature):
     KEY = 'fips'
-    # TBD
 
     def enable(self) -> None:
-        pass
+        # Doc: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/\
+        #      security_hardening/using-the-system-wide-cryptographic-policies_security-hardening\
+        #      #switching-the-system-to-fips-mode_using-the-system-wide-cryptographic-policies
+        #
+        # 1. To switch the system to FIPS mode:
+        #    $ sudo fips-mode-setup --enable
+        # 2. Restart the system to allow the kernel to switch to FIPS mode:
+        #    $ sudo reboot
+        # 3. After the restart, check the current state of FIPS mode via:
+        #    $ sudo fips-mode-setup --check
+        distro = self.guest_distro
+        sudo = self.guest_sudo
+
+        if distro == Distro.FEDORA:
+            self.info(f"Enable {self.KEY.upper()} on Fedora")
+        elif distro == Distro.RHEL_8:
+            self.info(f"Enable {self.KEY.upper()} on RHEL 8")
+            self.guest.execute(ShellScript(f'{sudo} fips-mode-setup --enable'), silent=True)
+            self.info('reboot', 'Rebooting guest', color='yellow')
+            self.guest.reboot()
+            self.info('reboot', 'Reboot finished', color='yellow')
+        else:
+            self.warn(f"Enable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
     def disable(self) -> None:
-        pass
+        distro = self.guest_distro
+        sudo = self.guest_sudo
+
+        if distro == Distro.FEDORA:
+            self.info(f"Disable {self.KEY.upper()} on Fedora")
+        elif distro == Distro.RHEL_8:
+            self.info(f"Disable {self.KEY.upper()} on RHEL 8")
+            self.guest.execute(ShellScript(f'{sudo} fips-mode-setup --disable'), silent=True)
+            self.info('reboot', 'Rebooting guest', color='yellow')
+            self.guest.reboot()
+            self.info('reboot', 'Reboot finished', color='yellow')
+        else:
+            self.warn(f"Disable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
 
 
 _FEATURES = {
@@ -254,10 +318,24 @@ _FEATURES = {
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     epel: Optional[str] = field(
-        default='disabled',
+        default=None,
         option=('-e', '--epel'),
         metavar='EPEL',
         help='epel to be enabled.'
+        )
+
+    crb: Optional[str] = field(
+        default=None,
+        option=('-c', '--crb'),
+        metavar='CRB',
+        help='crb to be enabled.'
+        )
+
+    fips: Optional[str] = field(
+        default=None,
+        option=('-f', '--fips'),
+        metavar='FIPS',
+        help='fips to be enabled.'
         )
 
 
@@ -271,6 +349,8 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin):
         prepare:
             how: feature
             epel: enabled
+            crb: enabled
+            fips: enabled
 
     ...<TBD>...
     """
