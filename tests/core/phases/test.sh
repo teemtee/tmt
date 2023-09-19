@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "rundir=$(mktemp -d)"
         rlRun "pushd data"
 
-        run="tmt run -i $rundir --scratch -a"
+        run="tmt --log-topic=cli-invocations run -i $rundir --scratch -a"
 
         function check() {
             rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.order)\"' $rundir/plans/$1/report/step.yaml"
@@ -123,6 +123,19 @@ default-1:html:50"
 default-1:html:auto"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test /with-multiple-reports with --update-missing"
+        rlRun -s "$run plan -n /with-multiple-reports \
+            report --update-missing --name default-0 -h html --display-guest auto \
+            report --update-missing --name default-1 -h html --display-guest never"
+
+        check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
+default-1:html:50"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.display_guest)\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlAssertEquals "default-0 shall keep its setting, default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:always
+default-1:html:never"
+    rlPhaseEnd
+
     rlPhaseStartTest "Test /with-multiple-reports with --update without --name"
         rlRun -s "$run plan -n /with-multiple-reports \
             report --update -h html --display-guest never"
@@ -132,6 +145,18 @@ default-1:html:50"
 
         rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.display_guest)\"' $rundir/plans/with-multiple-reports/report/step.yaml"
         rlAssertEquals "default-0 and default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:never
+default-1:html:never"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test /with-multiple-reports with --update-missing without --name"
+        rlRun -s "$run plan -n /with-multiple-reports \
+            report --update-missing -h html --display-guest never"
+
+        check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
+default-1:html:50"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.display_guest)\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlAssertEquals "default-0 shall keep its setting, default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:always
 default-1:html:never"
     rlPhaseEnd
 

@@ -16,6 +16,7 @@ execute:
 /with-multiple-reports:
   report:
     - how: html
+      display-guest: always
     - how: html
 
 /with-order:

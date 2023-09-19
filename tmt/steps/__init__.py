@@ -45,6 +45,8 @@ from tmt.utils import (
     cached_property,
     field,
     flatten,
+    key_to_option,
+    option_to_key,
     )
 
 if TYPE_CHECKING:
@@ -87,6 +89,15 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
         help="""
             Update existing phase. Use --name to specify which one, or omit --name
             and update all existing phases.
+            """),
+    option(
+        '--update-missing',
+        is_flag=True,
+        default=False,
+        help="""
+            Update existing phase, but make changes to fields that were not set by fmf data
+            or previous command line options. Use --name to specify which one, or omit --name and
+            update all existing phases.
             """),
     option(
         '--name',
@@ -577,12 +588,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             keys representing CLI options.
             """
 
-            options = options.copy()
+            def _iter_options() -> Generator[Tuple[str, Any], None, None]:
+                for name, value in options.items():
+                    if name in ('update', 'update_missing', 'insert'):
+                        continue
 
-            options.pop('update', None)
-            options.pop('insert', None)
+                    yield key_to_option(name), value
 
-            return cast(_RawStepData, options)
+            return cast(
+                _RawStepData,
+                dict(_iter_options())
+                )
 
         # In this list, we collect all known phases, represented by their raw step data. The list
         # will be inspected by code below, e.g. when evaluationg `--update` CLI option, but also
@@ -607,7 +623,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             return raw_datum
 
-        def _patch_raw_datum(raw_datum: _RawStepData, incoming_raw_datum: _RawStepData) -> None:
+        def _patch_raw_datum(
+                raw_datum: _RawStepData,
+                incoming_raw_datum: _RawStepData,
+                invocation: 'tmt.cli.CliInvocation',
+                missing_only: bool = False) -> None:
             """
             Copy options from one phase specification onto another.
 
@@ -622,20 +642,39 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             variable).
             """
 
-            for key, value in incoming_raw_datum.items():
-                if key == 'name':
+            local_debug = functools.partial(debug, shift=1)
+
+            local_debug('raw step datum', str(raw_datum))
+            local_debug('incoming raw step datum', str(incoming_raw_datum))
+            local_debug('CLI invocation', str(invocation.options))
+
+            for opt, value in incoming_raw_datum.items():
+                if opt == 'name':
                     continue
 
-                if invocation.option_sources.get(key) in (
-                        ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
-                    # ignore[literal-required]: since raw_datum is a typed dict,
-                    # mypy allows only know keys to be set & enforces use of
-                    # literals as keys. Use of a variable is frowned upon and
-                    # reported - but we define only the very basic keys in
-                    # `_RawStepData` and we do expect there are keys we do not
-                    # care about, keys that make sense to whatever plugin is
-                    # materialized from the raw step data.
-                    raw_datum[key] = value  # type: ignore[literal-required]
+                key = option_to_key(opt)
+                value_source = invocation.option_sources.get(key)
+
+                local_debug(f'{opt=} {key=} {value=} {value_source=}')
+
+                # Ignore CLI input if it's been provided by option's default
+                if value_source not in (ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
+                    debug('value not really given via CLI/env, no effect', shift=2)
+                    continue
+
+                if missing_only and opt in raw_datum:
+                    debug('missing-only mode and key exists in raw datum, no effect', shift=2)
+                    continue
+
+                # ignore[literal-required]: since raw_datum is a typed dict,
+                # mypy allows only know keys to be set & enforces use of
+                # literals as keys. Use of a variable is frowned upon and
+                # reported - but we define only the very basic keys in
+                # `_RawStepData` and we do expect there are keys we do not
+                # care about, keys that make sense to whatever plugin is
+                # materialized from the raw step data.
+                debug('apply invocation value', shift=2)
+                raw_datum[opt] = value  # type: ignore[literal-required]
 
         # A bit of logging before we start messing with step data
         for i, raw_datum in enumerate(raw_data):
@@ -672,7 +711,36 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                         if raw_datum['name'] != needle:
                             continue
 
-                        _patch_raw_datum(raw_datum, incoming_raw_datum)
+                        _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
+
+                        break
+
+                    else:
+                        raise GeneralError(
+                            f"Cannot update phase '{needle}', no such name was found.")
+
+                else:
+                    debug('  needle-less update (postponed)')
+
+                    postponed_invocations.append(invocation)
+
+            elif invocation.options.get('update_missing'):
+                debug('  updating existing phase (missing fields only)')
+
+                needle = invocation.options.get('name')
+
+                if needle:
+                    incoming_raw_datum = _to_raw_step_datum(invocation.options)
+
+                    for raw_datum in raw_data:
+                        if raw_datum['name'] != needle:
+                            continue
+
+                        _patch_raw_datum(
+                            raw_datum,
+                            incoming_raw_datum,
+                            invocation,
+                            missing_only=True)
 
                         break
 
@@ -716,7 +784,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                         'how': how
                         }
 
-                _patch_raw_datum(raw_datum, incoming_raw_datum)
+                if invocation.options.get('update_missing'):
+                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
+
+                else:
+                    _patch_raw_datum(raw_datum, incoming_raw_datum, invocation)
 
                 pruned_raw_data.append(raw_datum)
 
