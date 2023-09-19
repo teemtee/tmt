@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import List, Optional
+from typing import Optional
 
 import tmt
 import tmt.base
@@ -253,13 +253,11 @@ _FEATURES = {
 
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
-    epel: List[str] = field(
-        default_factory=list,
+    epel: Optional[str] = field(
+        default='disabled',
         option=('-e', '--epel'),
         metavar='EPEL',
-        multiple=False,
-        help='epel to be enabled.',
-        normalize=tmt.utils.normalize_string_list
+        help='epel to be enabled.'
         )
 
 
@@ -299,13 +297,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin):
                 continue
 
             feature = _FEATURES[key](parent=self, guest=guest, logger=logger)
-            if isinstance(feature, ToggleableFeature):
-                if isinstance(value, str):
-                    value = value.lower()
-                elif isinstance(value, list):
-                    value = value[0].lower()
-                else:
-                    raise tmt.utils.GeneralError("Bad value")
+            value = value.lower() if isinstance(feature, ToggleableFeature) else None
             if value == 'enabled':
                 feature.enable()
             elif value == 'disabled':
