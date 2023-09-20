@@ -619,8 +619,9 @@ class Core(
         normalize=lambda key_address, raw_value, logger:
             DEFAULT_ORDER if raw_value is None else int(raw_value))
     link: Optional['Links'] = field(
-        default=None,
-        normalize=_normalize_link)
+        default=cast(Optional['Links'], None),
+        normalize=_normalize_link,
+        exporter=lambda value: value.to_spec() if value is not None else [])
     id: Optional[str] = None
     tag: List[str] = field(
         default_factory=list,
@@ -815,15 +816,11 @@ class Core(
 
             value = getattr(self, key)
 
-            if key == 'link' and value is not None:
-                # TODO: links must be saved in a form that can be than crunched by
-                # Links.__init__() method - it is tempting to use to_serialized()
-                # and from_unserialized(), but we don't use unserialization code
-                # when loading saved data back, so we can't go this way. Yet.
-                data[key] = cast('Links', value).to_spec()
+            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
+            export_callback = tmt.utils.dataclass_field_metadata(field).export_callback
 
-            elif isinstance(value, FmfId):
-                data[key] = value.to_dict()
+            if export_callback:
+                data[key] = export_callback(value)
 
             else:
                 data[key] = value
@@ -970,19 +967,23 @@ class Test(
     # `test` is mandatory, must exist, so how to initialize if it's missing :(
     test: Optional[ShellScript] = field(
         default=None,
-        normalize=normalize_shell_script)
+        normalize=normalize_shell_script,
+        exporter=lambda value: str(value) if isinstance(value, ShellScript) else None)
     path: Optional[Path] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger:
-            None if raw_value is None else Path(raw_value))
+            None if raw_value is None else Path(raw_value),
+        exporter=lambda value: str(value) if isinstance(value, Path) else None)
     framework: str = "shell"
     manual: bool = False
     require: List[Dependency] = field(
         default_factory=list,
-        normalize=normalize_require)
+        normalize=normalize_require,
+        exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
     recommend: List[Dependency] = field(
         default_factory=list,
-        normalize=normalize_require)
+        normalize=normalize_require,
+        exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
     environment: tmt.utils.EnvironmentType = field(default_factory=dict)
 
     duration: str = DEFAULT_TEST_DURATION_L1
@@ -994,8 +995,8 @@ class Test(
         default_factory=list,
         normalize=tmt.checks.normalize_checks,
         serialize=lambda checks: [check.to_spec() for check in checks],
-        unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized]
-        )
+        unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
+        exporter=lambda value: [check.to_minimal_spec() for check in value])
 
     serialnumber: int = 0
 
@@ -1119,29 +1120,6 @@ class Test(
             self.require.append(DependencySimple('beakerlib'))
 
         self._update_metadata()
-
-    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
-        data = super()._export(keys=keys)
-
-        for key, value in data.items():
-            if key in ('require', 'recommend') and value:
-                data[key] = [
-                    dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)
-                    ]
-
-            elif key == 'check':
-                data[key] = [
-                    check.to_minimal_spec() for check in cast(List[Check], value)
-                    ]
-
-            # Combining `if` branches using `or` here would result in long, complex line.
-            elif key == 'test' and isinstance(value, ShellScript):  # noqa: SIM114
-                data[key] = str(value)
-
-            elif key == 'path' and isinstance(value, Path):
-                data[key] = str(value)
-
-        return data
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -1451,7 +1429,10 @@ class Plan(
     # `environment` and `environment-file` are NOT promoted to instance variables.
     context: FmfContext = field(
         default_factory=FmfContext,
-        normalize=tmt.utils.FmfContext.from_spec)
+        normalize=tmt.utils.FmfContext.from_spec,
+        # ignore[attr-defined]: for some reason, mypy cannot infer `value` is an `FmfContext`
+        # instance.
+        exporter=lambda value: value.to_spec())  # type: ignore[attr-defined]
     gate: List[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
@@ -2146,9 +2127,6 @@ class Plan(
     def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys)
 
-        # Maybe we could have some `export` callback in `field()`...
-        data['context'] = data['context'].to_spec()
-
         for key in self._extra_l2_keys:
             value = self.node.data.get(key)
             if value:
@@ -2311,9 +2289,10 @@ class Story(
     story: Optional[str] = None
     title: Optional[str] = None
     priority: Optional[StoryPriority] = field(
-        default=None,
+        default=cast(Optional['StoryPriority'], None),
         normalize=lambda key_address, raw_value, logger:
-            None if raw_value is None else StoryPriority(raw_value))
+            None if raw_value is None else StoryPriority(raw_value),
+        exporter=lambda value: value.value if value is not None else None)
 
     _KEYS_SHOW_ORDER = [
         'summary',
@@ -2353,15 +2332,6 @@ class Story(
     @classmethod
     def from_tree(cls, tree: 'tmt.Tree') -> List['Story']:
         return tree.stories()
-
-    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
-        data = super()._export(keys=keys)
-
-        for key, value in data.items():
-            if key == 'priority' and value is not None:
-                data[key] = cast(StoryPriority, value).value
-
-        return data
 
     @property
     def documented(self) -> List['Link']:
