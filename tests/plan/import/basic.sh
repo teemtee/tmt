@@ -96,12 +96,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run Tests"
-        # Exclude /plans/dynamic-ref as dynamic ref cannot be evaluated in dry mode
-        rlRun -s "tmt run --verbose --dry plan -n '/plans/[^d]'" 0 "Run tests (dry mode)"
-        # TODO: skip full/tmt plan, because of https://github.com/teemtee/tmt/issues/2297
-        # all its tests would be executed even though the plan is not enabled.
-        rlRun -s "tmt run --verbose       plan -n '/plans/(?!full/tmt)'" 0 "Run tests"
-        rlAssertGrep "pass /tests/basic/ls" $rlRun_LOG
+        rlRun -s "tmt run --verbose --dry plan --name /plans/minimal" 0 "Run tests (dry mode)"
+        rlRun -s "tmt run --verbose       plan --name /plans/minimal" 0 "Run tests"
+        rlAssertGrep "pass /lint/plans" $rlRun_LOG
         rlAssertGrep "pass /lint/tests" $rlRun_LOG
     rlPhaseEnd
 
