@@ -32,32 +32,65 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="LAUNCH_NAME",
         default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH'),
         help="The launch name (name of plan per launch is used by default).")
+    launch_description: Optional[str] = field(
+        option="--launch-description",
+        metavar="LAUNCH_DESCRIPTION",
+        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH_DESCRIPTION'),
+        help="Pass the description for ReportPortal launch, especially with '--suite-per-plan' "
+             "option (Otherwise Summary from plan fmf data per each launch is used by default).")
+    ## launch_attributes: List[str] = field(
+    ## default_factory=list,
+    ## multiple=True,
+    ## normalize=tmt.utils.normalize_string_list,
+    ## option="--launch-attributes",
+    ## metavar="KEY:VALUE",
+    ## help="Additional attributes to be reported to ReportPortal,"
+    ## "especially launch attributes for merge option.")
+    launch_per_plan: bool = field(
+        option="--launch-per-plan",
+        default=False,
+        is_flag=True,
+        help="Mapping launch per plan, creating one or more launches with no suite structure.")
+    suite_per_plan: bool = field(
+        option="--suite-per-plan",
+        default=False,
+        is_flag=True,
+        help="Mapping suite per plan, creating one launch and continous uploading suites into it. "
+             "Can be used with '--upload-to-launch' option to avoid creating a new launch.")
+    upload_to_launch: Optional[str] = field(
+        option="--upload-to-launch",
+        metavar="LAUNCH_ID",
+        default=None,
+        help="Pass the launch ID for an additional test/suite upload to an existing launch. "
+             "ID can be found in the launch URL.")
+    upload_to_suite: Optional[str] = field(
+        option="--upload-to-suite",
+        metavar="LAUNCH_SUITE",
+        default=None,
+        help="Pass the suite ID for an additional test upload to an existing launch. "
+             "ID can be found in the suite URL.")
+    launch_rerun: bool = field(
+        option="--launch-rerun",
+        default=False,
+        is_flag=True,
+        help="Rerun the launch and create Retry version per each test. Note that mapping is "
+             "based on unique suite/test names and works with '--suite-per-plan' option only.")
+    defect_type: Optional[str] = field(
+        option="--defect-type",
+        metavar="DEFECT_NAME",
+        default=None,
+        help="Pass the defect type to be used for failed test "
+             "('To Investigate' is used by default).")
     exclude_variables: str = field(
         option="--exclude-variables",
         metavar="PATTERN",
         default="^TMT_.*",
         help="Regular expression for excluding environment variables "
              "from reporting to ReportPortal ('^TMT_.*' used by default).")
-    attributes: List[str] = field(
-        default_factory=list,
-        multiple=True,
-        normalize=tmt.utils.normalize_string_list,
-        option="--attributes",
-        metavar="KEY:VALUE",
-        help="Additional attributes to be reported to ReportPortal,"
-             "especially launch attributes for merge option.")
-    merge: bool = field(
-        option="--merge",
-        default=False,
-        is_flag=True,
-        help="Report suite per plan and merge them into one launch.")
-    uuid: Optional[str] = field(
-        option="--uuid",
-        metavar="LAUNCH_UUID",
-        default=None,
-        help="The launch uuid for additional merging to an existing launch.")
     launch_url: str = ""
     launch_uuid: str = ""
+    suite_uuid: str = ""
+    test_uuids: List[str] = []
 
 
 @tmt.steps.provides_method("reportportal")
@@ -99,6 +132,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
     aggregation for ReportPortal item if tmt id is not provided. Other
     reported fmf data are summary, id, web link and contact per test.
     """
+    # TODO: Finish the description ^ with the new options
 
     _data_class = ReportReportPortalData
 
@@ -154,51 +188,92 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             "Content-Type": "application/json"}
 
         launch_time = self.step.plan.execute.results()[0].starttime
-        merge_bool = self.get("merge")
 
-        rerun_bool = False
-        # TODO: implement rerun/retry
 
-        create_launch = True
-        launch_uuid = ""
-        suite_uuid = ""
+
+        # Create launch, suites (if "--suite_per_plan") and tests;
+        # or report to existing launch/suite if its id is given
+
+        # TODO: 
+        #       * upload_to_launch: change id to uuid
+        #       * launch_uuid: add the param per plan, and do the matching when uploading
+        #       * launch_uuid: add the param per plan, and do the matching when uploading
+
+        launch_uuid = self.get("launch_uuid") or self.step.plan.my_run.rp_uuid
+        suite_uuid =  self.get("suite_uuid")
+
+        launch_id = self.get("upload_to_launch")
+        suite_id = self.get("upload_to_suite")
+
+        suite_per_plan = self.get("suite_per_plan")
+        launch_per_plan = self.get("launch_per_plan")
+        if not launch_per_plan and not suite_per_plan:
+            launch_per_plan = True                  # default
+        elif launch_per_plan and suite_per_plan:
+            raise tmt.utils.ReportError("The options '--launch-per-plan' and "
+            "'--suite-per-plan' are mutually exclusive. Choose one of them only.")
+        
+        create_launch = not (launch_uuid or launch_id) and not suite_uuid
+        create_suite = suite_per_plan and not (suite_uuid or suite_id)
+
         launch_url = ""
-        launch_name = ""
+        launch_name = self.get("launch") or self.step.plan.name
 
+        launch_rerun = self.get("launch_rerun")
         envar_pattern = self.get("exclude-variables") or "$^"
-        extra_attributes = self.get("attributes")
-        launch_attributes = [
-            {'key': attribute.split(':', 2)[0], 'value': attribute.split(':', 2)[1]}
-            for attribute in extra_attributes] or []
+        defect_type = self.get("defect_type")
 
         attributes = [
             {'key': key, 'value': value[0]}
             for key, value in self.step.plan._fmf_context.items()]
-        for attr in launch_attributes:
-            if attr not in attributes:
-                attributes.append(attr)
+
+        if suite_per_plan:
+            launch_attributes = ""
+            # TODO: get common attributes from all plans
+        else:
+            launch_attributes = attributes.copy()
+
+        launch_description = self.get("launch_description") or self.step.plan.summary
 
         # Communication with RP instance
         with tmt.utils.retry_session() as session:
 
             # get defect type locator
-            response = session.get(
-                url=f"{url}/settings",
-                headers=headers)
-            self.handle_response(response)
-            defect_types = yaml_to_dict(response.text).get("subTypes")
-            dt_tmp = [dt['locator']
-                      for dt in defect_types['TO_INVESTIGATE'] if dt['longName'] == 'Idle']
-            dt_locator = dt_tmp[0] if dt_tmp else None
             dt_locator = None
-            # TODO:
-            #       implement 'idle - update'
-            #       cover cases when there is no Idle defect type defined
+            if defect_type:
+                response = session.get(url=f"{url}/settings", headers=headers)
+                self.handle_response(response)
+                defect_types = yaml_to_dict(response.text).get("subTypes")
+                dt_tmp = [dt['locator']
+                        for dt in defect_types['TO_INVESTIGATE'] if dt['longName'] == defect_type]
+                dt_locator = dt_tmp[0] if dt_tmp else None
+                # TODO: check the case when the given defect type is not defined
 
-            stored_launch_uuid = self.get("uuid") or self.step.plan.my_run.rp_uuid
-            if merge_bool and stored_launch_uuid:
-                create_launch = False
-                launch_uuid = stored_launch_uuid
+            if create_launch:
+
+                # Create a launch
+                self.info("launch", launch_name, color="cyan")
+                response = session.post(
+                           url=f"{url}/launch",
+                           headers=headers,
+                           json={ "name": launch_name,
+                                  "description": launch_description,
+                                  "attributes": launch_attributes,
+                                  "startTime": launch_time,
+                                  "rerun": launch_rerun})
+                self.handle_response(response)
+                launch_uuid = yaml_to_dict(response.text).get("id")
+                if suite_per_plan:
+                    self.step.plan.my_run.rp_uuid = launch_uuid
+            else:
+                # Get the launch_uuid or info to log
+
+                # TODO:     get launch_uuid from launch_id/suite_id
+                #   if launch_id:
+                #       response = ...
+                #   elif suite_ide:
+                #       response = ...
+
                 response = session.get(
                     url=f"{url}/launch/uuid/{launch_uuid}",
                     headers=headers)
@@ -207,31 +282,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 self.verbose("launch", launch_name, color="yellow")
                 launch_id = yaml_to_dict(response.text).get("id")
                 launch_url = f"{endpoint}/ui/#{project}/launches/all/{launch_id}"
-            else:
-                # create_launch = True
-                launch_name = self.get("launch") or self.step.plan.name
 
-                # Create a launch
-                self.info("launch", launch_name, color="cyan")
-                response = session.post(
-                    url=f"{url}/launch",
-                    headers=headers,
-                    json={
-                        "name": launch_name,
-                        "description": "" if merge_bool else self.step.plan.summary,
-                        "attributes": launch_attributes if merge_bool else attributes,
-                        "startTime": launch_time,
-                        "rerun": rerun_bool})
-                self.handle_response(response)
-                launch_uuid = yaml_to_dict(response.text).get("id")
-                assert launch_uuid is not None
-                if merge_bool:
-                    self.step.plan.my_run.rp_uuid = launch_uuid
-
+            assert launch_uuid is not None
             self.verbose("uuid", launch_uuid, "yellow", shift=1)
             self.data.launch_uuid = launch_uuid
 
-            if merge_bool:
+            if create_suite:
                 # Create a suite
                 suite_name = self.step.plan.name
                 self.info("suite", suite_name, color="cyan")
@@ -267,7 +323,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 # Create a test item
                 self.info("test", result.name, color="cyan")
                 response = session.post(
-                    url=f"{url}/item{f'/{suite_uuid}' if merge_bool else ''}",
+                    url=f"{url}/item{f'/{suite_uuid}' if suite_uuid else ''}",
                     headers=headers,
                     json={
                         "name": result.name,
@@ -320,6 +376,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                                 "time": result.endtime})
                         self.handle_response(response)
 
+                    # TODO: Add tmt files as attachments
+
                 # Finish the test item
                 response = session.put(
                     url=f"{url}/item/{item_uuid}",
@@ -332,7 +390,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 self.handle_response(response)
                 launch_time = result.endtime
 
-            if merge_bool:
+            if create_suite:
                 # Finish the test suite
                 response = session.put(
                     url=f"{url}/item/{suite_uuid}",
@@ -341,6 +399,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                         "launchUuid": launch_uuid,
                         "endTime": launch_time})
                 self.handle_response(response)
+
+            # TODO: Get if it is the last plan
+            #
+            #   if create_launch and (not suite_per_plan or
+            #   (suite_per_plan and this-is-the-last-plan)):
 
             if create_launch:
                 # Finish the launch
