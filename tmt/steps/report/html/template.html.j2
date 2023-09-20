@@ -195,7 +195,7 @@
             <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
         {% endfor %}
         </td>
-        <td class="data"><a href="{{ result.data_path }}">Data</a></td>
+        <td class="data"><a href="{{ result.data_path | linkable_path | urlencode }}">Data</a></td>
         {% if result.note %}
         <td class="note">{{ result.note|e }}</td>
         {% endif %}
