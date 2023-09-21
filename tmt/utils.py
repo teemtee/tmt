@@ -129,8 +129,18 @@ WORKDIR_MAX = 1000
 # Maximum number of lines of stdout/stderr to show upon errors
 OUTPUT_LINES = 100
 # Default & actual output width
-DEFAULT_OUTPUT_WIDTH = 79
-OUTPUT_WIDTH = int(os.getenv('TMT_TERM_WIDTH', DEFAULT_OUTPUT_WIDTH)) or DEFAULT_OUTPUT_WIDTH
+DEFAULT_OUTPUT_WIDTH: int = 79
+
+if 'TMT_TERM_WIDTH' not in os.environ:
+    OUTPUT_WIDTH: int = DEFAULT_OUTPUT_WIDTH
+
+else:
+    try:
+        OUTPUT_WIDTH = int(os.environ['TMT_TERM_WIDTH'])
+
+    except ValueError as exc:
+        # Cannot raise our GeneralError, it has not been defined yet...
+        raise Exception(f"Could not parse '{os.environ['TMT_TERM_WIDTH']}' as integer.") from exc
 
 # Hierarchy indent
 INDENT = 4
