@@ -30,9 +30,15 @@ description: |
     Plan steps must not be defined in the remote plan reference.
     Inheriting or overriding remote plan config with local plan
     steps might be possible in the future but currently is not
-    supported. The only way how to modify imported plan is via
-    environment variables. Variables defined in the plan override
-    any variables defined in the remote plan.
+    supported. The imported plan can be modified in only two ways.
+    First way is via environment variables. Variables defined
+    in the plan override any variables defined in the remote plan.
+
+    The imported plan can also be altered using the ``enabled`` key.
+    If the local plan is enabled, it will follow the status of the
+    remote plan – whether it's enabled or disabled. If the local
+    plan is disabled, the remote plan will also be disabled.
+    Adjust rules are respected during this process.
 
     .. versionadded:: 1.19
 

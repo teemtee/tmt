@@ -2377,6 +2377,10 @@ class Plan(
         # action.
         node.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
 
+        # If the local plan is disabled, disable the imported plan as well
+        if not self.enabled:
+            node.data['enabled'] = False
+
         # Override the plan name with the local one to ensure unique names
         node.name = self.name
         # Create the plan object, save links between both plans
@@ -2947,12 +2951,12 @@ class Tree(tmt.utils.Common):
                     sources=sources),
                 ]]
 
-        plans = self._filters_conditions(
+        if not Plan._opt('shallow'):
+            plans = [plan.import_plan() or plan for plan in plans]
+
+        return self._filters_conditions(
             sorted(plans, key=lambda plan: plan.order),
             filters, conditions, links, excludes)
-        if Plan._opt('shallow'):
-            return plans
-        return [plan.import_plan() or plan for plan in plans]
 
     def stories(
             self,

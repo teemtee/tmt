@@ -45,3 +45,27 @@
             ref: "@tests/discover/data/dynamic-ref.fmf"
             path: /tests/discover/data
             name: /plans/smoke
+
+/imported/enabled:
+    summary: Imported plan should be enabled by default
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            name: /plans/sanity/lint
+    enabled: true
+
+/imported/disabled:
+    summary: Imported plan should be disabled by default
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            name: /plans/provision
+    enabled: true
+
+/disabled:
+    summary: Imported plan will be disabled by local plan
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            name: /plans/sanity/lint
+    enabled: false
