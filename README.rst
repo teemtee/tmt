@@ -225,15 +225,14 @@ set of dependencies::
 In order to enable additional functionality, such as particular
 provision or report plugins, install the respective subpackage::
 
-    sudo dnf install tmt-test-convert
-    sudo dnf install tmt-report-html
-    sudo dnf install tmt-provision-container
-    sudo dnf install tmt-provision-virtual
+    sudo dnf install tmt+test-convert
+    sudo dnf install tmt+provision-container
+    sudo dnf install tmt+provision-virtual
 
 If you don't care about disk space and want to have all available
 features right at hand install everything::
 
-    sudo dnf install tmt-all
+    sudo dnf install tmt+all
 
 For CentOS and RHEL, first make sure that you have available the
 `EPEL <https://docs.fedoraproject.org/en-US/epel/>`_ repository.

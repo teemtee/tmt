@@ -35,7 +35,7 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartTest "Correct rpm ownership and permissions"
-        rlAssertEquals "Owned by python3-tmt" "$(rpm -qf $WORKDIR_ROOT --qf '%{name}')" "python3-tmt"
+        rlAssertEquals "Owned by tmt" "$(rpm -qf $WORKDIR_ROOT --qf '%{name}')" "tmt"
         rlAssertEquals "Correct permission" "$(stat --format '%a' $WORKDIR_ROOT)" "1777"
     rlPhaseEnd
 

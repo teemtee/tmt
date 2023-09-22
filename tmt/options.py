@@ -347,11 +347,11 @@ def show_step_method_hints(
     if step_name == 'provision':
         if how == 'virtual':
             logger.info(
-                'hint', "Install 'tmt-provision-virtual' "
+                'hint', "Install 'tmt+provision-virtual' "
                         "to run tests in a virtual machine.", color='blue')
         if how == 'container':
             logger.info(
-                'hint', "Install 'tmt-provision-container' "
+                'hint', "Install 'tmt+provision-container' "
                         "to run tests in a container.", color='blue')
         if how == 'minute':
             logger.info(
@@ -366,13 +366,9 @@ def show_step_method_hints(
             'hint', "See 'tmt run provision --help' for all "
                     "available provision options.", color='blue')
     elif step_name == 'report':
-        if how == 'html':
-            logger.info(
-                'hint', "Install 'tmt-report-html' to format results "
-                        "as a html report.", color='blue')
         if how == 'junit':
             logger.info(
-                'hint', "Install 'tmt-report-junit' to write results "
+                'hint', "Install 'tmt+report-junit' to write results "
                         "in JUnit format.", color='blue')
         logger.info(
             'hint', "Use the 'display' method to show test results "

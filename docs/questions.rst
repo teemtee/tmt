@@ -57,7 +57,7 @@ Virtualization Tips
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to safely run tests under a virtual machine started on
-your laptop you only need to install the ``tmt-provision-virtual``
+your laptop you only need to install the ``tmt+provision-virtual``
 package. By default the ``session`` connection is used so no other
 steps should be needed, just execute tests using the ``tmt run``
 command.

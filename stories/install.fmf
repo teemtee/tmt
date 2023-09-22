@@ -12,4 +12,4 @@ link:
 
 /all:
     summary: Install tmt with all available plugins and dependencies
-    example: dnf install tmt-all
+    example: dnf install tmt+all

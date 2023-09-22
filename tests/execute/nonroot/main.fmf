@@ -4,7 +4,7 @@ tag:
 - virtual
 require:
 - tmt
-- tmt-provision-virtual
+- tmt+provision-virtual
 tier: "3"
 
 enabled: false

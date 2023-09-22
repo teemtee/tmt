@@ -1,7 +1,7 @@
 # Setup
 1. Install tmt
 ```bash
-sudo dnf install -y tmt-all
+sudo dnf install -y tmt+all
 ```
 2. Create and use a brand new git repo
 ```bash

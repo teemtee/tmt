@@ -4,23 +4,25 @@ files_to_sync:
   - .packit.yaml
 sync_changelog: true
 
-upstream_project_name: tmt
+upstream_package_name: tmt
 downstream_package_name: tmt
 
 upstream_project_url: https://github.com/teemtee/tmt
 issue_repository: https://github.com/teemtee/tmt
 
 actions:
-    post-upstream-clone:
-      - make bump2dev
     create-archive:
-      - make tarball
+      - hatch run docs:man
+      - hatch build -t sdist
+      - bash -c "ls dist/tmt-*.tar.gz"
     get-current-version:
-      - make version
+      # Get rid of the the final version digits to make copr
+      # builds older than the official release
+      - bash -c "hatch version | sed -E 's/\\.[0-9]+\\.dev/.dev/'"
 
 srpm_build_deps:
-  - make
-  - python3-docutils
+  - hatch
+  - python3-hatch-vcs
 
 jobs:
 
@@ -34,6 +36,7 @@ jobs:
             additional_repos:
               - https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-39-x86_64/
     enable_net: False
+    release_suffix: "{PACKIT_PROJECT_BRANCH}"
 
   # Test pull requests
   - job: tests
@@ -86,6 +89,7 @@ jobs:
     preserve_project: True
     owner: psss
     project: tmt
+    release_suffix: "{PACKIT_PROJECT_BRANCH}"
 
   # Fedora releases
   - job: propose_downstream

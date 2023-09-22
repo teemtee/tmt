@@ -4,5 +4,5 @@ adjust:
     enabled: false
     because: needs to be able to spawn VM
 require:
-- tmt-provision-virtual
+- tmt+provision-virtual
 tag: [virtual, additional_coverage]

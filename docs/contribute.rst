@@ -71,90 +71,24 @@ that you have all required packages installed on your box:
 
 .. code-block:: shell
 
-    sudo dnf install gcc make git python3-docutils {python3,libvirt,krb5,libpq}-devel jq
+    make develop
 
-In case you're using Centos Stream 9 system you need to enable CRB
-repository first to make all the necessary packages available:
-
-.. code-block:: shell
-
-    sudo dnf config-manager --set-enabled crb # for CentOS Stream 9
-
-For CentOS Stream 8 install also:
+Create a development virtual environment with hatch:
 
 .. code-block:: shell
 
-    sudo dnf install python3-virtualenv
-
-Install ``python3-virtualenvwrapper`` to easily create and enable
-virtual environments using ``mkvirtualenv`` and ``workon``:
-
-.. code-block:: shell
-
-    sudo dnf install python3-virtualenvwrapper
-
-If ``python3-virtualenvwrapper`` package is not available for your
-system you can install it via ``pip``:
-
-.. code-block:: shell
-
-    pip install virtualenvwrapper --user # use pip3 in case of CentOS Stream 8
-
-Note that if you have freshly installed the package you need to
-open a new shell session to enable the wrapper functions. In case
-you installed package via ``pip``, you need to source
-``virtualenvwrapper.sh`` script. You can also consider adding
-following lines into your ``.bash_profile``:
-
-.. code-block:: shell
-
-    source ${HOME}/.local/bin/virtualenvwrapper.sh
-
-There is no default ``python`` in ``$PATH`` in case of CentOS Stream 8,
-which causes sourcing of ``virtualenvwrapper.sh`` script to fail.
-You can resolve it using ``alternatives``:
-
-.. code-block:: shell
-
-    alternatives --set python /usr/bin/python3
-
-Now let's create a new virtual environment and install ``tmt`` in
-editable mode there:
-
-.. code-block:: shell
-
-    mkvirtualenv tmt
     git clone https://github.com/teemtee/tmt
     cd tmt
-    pip install -e .
+    hatch env create dev
 
-The main ``tmt`` package contains only the core dependencies. For
-building documentation, testing changes, importing/exporting test
-cases or advanced provisioning options install the extra deps:
+Enter the environment by running:
 
 .. code-block:: shell
 
-    pip install -e '.[docs]'
-    pip install -e '.[tests]'
-    pip install -e '.[convert]'
-    pip install -e '.[provision]'
+    hatch -e dev shell
 
-Or simply install all extra dependencies to make sure you have
-everything needed for the tmt development ready on your system:
-
-.. code-block:: shell
-
-    pip install -e '.[all]'
-
-Install the ``pre-commit`` package to run all available checks for
+Install the ``pre-commit`` script to run all available checks for
 your commits to the project:
-
-.. code-block:: shell
-
-    sudo dnf install pre-commit # for Fedora
-    pip install pre-commit --user # for CentOS Stream
-
-Then you can install the hooks it via:
 
 .. code-block:: shell
 
@@ -227,25 +161,33 @@ Similar as above but run only tests which don't run for merge requests:
     cd tests/full
     make test-complement
 
-To run unit tests using pytest and generate coverage report:
+To run unit tests in hatch environment using pytest and generate coverage report:
 
 .. code-block:: shell
 
-    coverage run --source=tmt -m py.test tests
-    coverage report
+    make coverage
 
-Install pytest and coverage using dnf:
-
-.. code-block:: shell
-
-    dnf install python3-pytest python3-coverage
-
-or pip:
+To see all available scripts for running tests in hatch test virtual environments:
 
 .. code-block:: shell
 
-    # sudo required if not in a virtualenv
-    pip install pytest coveralls
+    hatch env show test
+
+To run 'unit' script for example, run:
+
+.. code-block:: shell
+
+    hatch run test:unit
+
+When running tests using hatch, there are multiple virtual environments
+available, each using a different Python interpreter
+(generally the lowest and highest version supported).
+To run the tests in all environments, install the required Python
+versions. For example:
+
+.. code-block:: shell
+
+    dnf install python3.9 python3.11
 
 .. note::
 
@@ -268,18 +210,6 @@ When submitting a change affecting user experience it's always
 good to include respective documentation. You can add or update
 the :ref:`specification`, extend the :ref:`examples` or write a
 new chapter for the user :ref:`guide`.
-
-For building documentation locally install necessary modules:
-
-.. code-block:: shell
-
-    pip install sphinx sphinx_rtd_theme
-
-Make sure docutils are installed in order to build man pages:
-
-.. code-block:: shell
-
-    dnf install python3-docutils
 
 By default, examples provided in the specification stories are
 rendered as ``yaml``. In order to select a different syntax

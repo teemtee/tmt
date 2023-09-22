@@ -1,2 +1,2 @@
 summary: Verify test import and metadata deduplication
-require+: [tmt-test-convert]
+require+: [tmt+test-convert]

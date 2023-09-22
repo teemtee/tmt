@@ -1,12 +1,5 @@
 # Prepare variables
 TMP = $(CURDIR)/tmp
-VERSION = $(shell grep ^Version tmt.spec | sed 's/.* //')
-COMMIT = $(shell git rev-parse --short HEAD)
-REPLACE_VERSION = "s/running from the source/$(VERSION) ($(COMMIT))/"
-PACKAGE = tmt-$(VERSION)
-FILES = LICENSE README.rst \
-		Makefile tmt.spec setup.py \
-		examples tmt bin tests .fmf
 
 # Define special targets
 all: docs packages
@@ -16,84 +9,68 @@ all: docs packages
 tmp:
 	mkdir -p $(TMP)/.fmf
 
-
 # Run the test suite, optionally with coverage
 test: tmp
-	python3 -m pytest -vvv -ra --showlocals tests/unit
+	hatch run test:unit
 smoke: tmp
-	python3 -m pytest -vvv -ra --showlocals tests/unit/test_cli.py
-coverage: tmp
-	coverage run --source=tmt,bin -m pytest -vvv -ra --showlocals tests
-	coverage report
-	coverage annotate
+	hatch run test:smoke
+coverage: tmp nitrateconf
+	hatch run test:coverage
+nitrateconf:
+	test -e ~/.nitrate || echo -en '[nitrate]\nurl = https://nitrate.server/xmlrpc/\n' | tee ~/.nitrate
+
 # Regenerate test data for integration tests
 # remove selected/all response files in tests/integration/test_data directory
 requre:
-	cd tests/integration; python3 -m pytest -vvv -ra --showlocals
-	# response files cleanup
-	requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*
-
+	hatch run test:requre
 
 # Build documentation, prepare man page
-docs: man
-	cd docs && make html
-man: source
-	cp docs/header.txt $(TMP)/man.rst
-	tail -n+8 README.rst >> $(TMP)/man.rst
-	# TODO rst2man cannot process this directive, removed for now
-	sed '/versionadded::/d' -i $(TMP)/man.rst
-	rst2man $(TMP)/man.rst > $(TMP)/$(PACKAGE)/tmt.1
+docs: clean
+	hatch run docs:html
+man:
+	hatch run docs:man
 
-
-# RPM packaging and Packit
-source: clean tmp
+# Packaging and Packit
+build: clean man
+	cp -a tmt/_version.py tmt/_version.py.backup
+	hatch build
+	mv tmt/_version.py.backup tmt/_version.py
+tarball: clean tmp build
 	mkdir -p $(TMP)/SOURCES
-	mkdir -p $(TMP)/$(PACKAGE)
-	cp -a $(FILES) $(TMP)/$(PACKAGE)
-	sed -i $(REPLACE_VERSION) $(TMP)/$(PACKAGE)/tmt/__init__.py
-tarball: source man
-	cd $(TMP) && tar cfz SOURCES/$(PACKAGE).tar.gz $(PACKAGE)
-	@echo ./tmp/SOURCES/$(PACKAGE).tar.gz
-version:
-	@echo "$(VERSION)"
-rpm: tarball
-	rpmbuild --define '_topdir $(TMP)' -bb tmt.spec
-srpm: tarball
+	cp dist/tmt-*.tar.gz $(TMP)/SOURCES
+rpm: tarball ver2spec
+	# If the build system is missing the required dependencies, use nosrc.rpm to install them
+	rpmbuild --define '_topdir $(TMP)' -bb tmt.spec || echo 'Hint: run `make deps` to install build dependencies'
+srpm: tarball ver2spec
 	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
+deps: tarball ver2spec
+	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 packages: rpm srpm
-bump2dev:
-	$(shell sed "s/^Version:.*/Version: $$(echo $(VERSION) | awk '{ split($$0,v,"."); printf "%s.%s.dev", v[1], v[2]+1 }')/" -i tmt.spec)
-
+version:
+	hatch version
+ver2spec:
+	$(shell sed -E "s/^(Version:[[:space:]]*).*/\1$$(hatch version)/" -i tmt.spec)
 
 # Containers
 images:
-	podman build -t tmt --squash -f ./containers/Dockerfile.mini .
-	podman build -t tmt-all --squash -f ./containers/Dockerfile.full .
+	podman build -t tmt --squash -f ./containers/Containerfile.mini .
+	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
-
-# Python packaging
-wheel:
-	cp -a tmt/__init__.py tmt/__init__.py.backup
-	sed -i $(REPLACE_VERSION) tmt/__init__.py
-	cp -a README.rst README.rst.backup
-	sed '/versionadded::/d' -i README.rst
-	python3 setup.py bdist_wheel
-	mv tmt/__init__.py.backup tmt/__init__.py
-	mv README.rst.backup README.rst
-upload:
-	twine upload dist/*.whl
-
+# Development
+develop:
+	sudo dnf --setopt=install_weak_deps=False install hatch gcc make git rpm-build python3-nitrate {python3,libvirt,krb5,libpq}-devel jq podman
 
 # Git vim tags and cleanup
 tags:
 	find tmt -name '*.py' | xargs ctags --python-kinds=-i
 clean:
-	rm -rf $(TMP) build dist .cache
+	rm -rf $(TMP) build dist tmt.1
+	rm -rf .cache .mypy_cache .ruff_cache
 	rm -rf docs/{_build,stories,spec}
 	find . -type f -name "*.py[co]" -delete
 	find . -type f -name "*,cover" -delete
 	find . -type d -name "__pycache__" -delete
 	find . -type d -name .pytest_cache -exec rm -rv {} +
 	rm -f .coverage tags
-	rm -rf examples/convert/{main.fmf,test.md,Manual}
+	rm -rf examples/convert/{main.fmf,test.md,Manual} Manual
 	rm -f tests/full/repo_copy.tgz

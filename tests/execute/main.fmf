@@ -1,2 +1,2 @@
-require+: [tmt-provision-container]
+require+: [tmt+provision-container]
 tier: 3

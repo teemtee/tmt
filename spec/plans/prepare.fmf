@@ -31,7 +31,7 @@ example: |
     prepare:
       - how: install
         copr: psss/tmt
-        package: tmt-all
+        package: tmt+all
 
     # Install required packages and start the service
     prepare:
@@ -131,8 +131,8 @@ example: |
             directory:
               - tmp/RPMS/noarch
             exclude:
-              - tmt-all
-              - tmt-provision-virtual
+              - tmt+all
+              - tmt+provision-virtual
 
       - |
         # Enable copr repository, skip missing packages

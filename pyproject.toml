@@ -1,3 +1,191 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tmt"
+dynamic = ["version"]
+description = "Test Management Tool"
+readme = "README.rst"
+license = "MIT"
+license-files = { paths = ["LICENSE"] }
+requires-python = ">=3.9"
+authors = [
+    { name = "Petr Splichal", email = "psplicha@redhat.com" },
+    ]
+maintainers = [
+    { name = "Petr Splichal", email = "psplicha@redhat.com" },
+    ]
+keywords = [
+    "metadata",
+    "testing",
+    ]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Utilities",
+    "Topic :: Software Development :: Testing",
+    "Operating System :: POSIX :: Linux",
+    ]
+dependencies = [              # F39 / PyPI
+    "click>=8.0.3,!=8.1.4",   # 8.1.3 / 8.1.6 TODO type annotations tmt.cli.Context -> click.core.Context click/issues/2558
+    "fmf>=1.2.1",
+    "jinja2>=2.11.3",         # 3.1.2 / 3.1.2
+    "pint>=0.16.1",           # 0.16.1 / 0.22
+    "requests>=2.25.1",       # 2.28.2 / 2.31.0
+    "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
+    "urllib3>=1.26.5, <2.0",  # 1.26.16 / 2.0.4
+    ]
+
+[project.optional-dependencies]
+test-convert = [
+    "html2text>=2020.1.16",
+    "markdown>=3.3.4",
+    "nitrate>=1.8.2",
+    "python-bugzilla>=3.2.0",
+    ]
+export-polarion = [
+    "pylero>=0.0.8",
+    ]
+provision-beaker = [
+    "mrack>=1.15.1",
+    ]
+provision-virtual = [
+    "testcloud>=0.9.10",
+    ]
+provision-container = []
+report-junit = [
+    "junit_xml>=1.9",
+    ]
+report-polarion = [
+    "tmt[report-junit]",
+    "tmt[export-polarion]",
+    ]
+all = [
+    "tmt[test-convert]",
+    "tmt[export-polarion]",
+    "tmt[provision-container]",
+    "tmt[provision-virtual]",
+    "tmt[provision-beaker]",
+    "tmt[report-junit]",
+    "tmt[report-polarion]",
+    ]
+# Needed for readthedocs and man page build. Not being packaged in rpm.
+docs = [
+    "sphinx_rtd_theme>=1.2.2", # The theme pulls a specific sphinx version
+    "docutils>=0.18.1",
+    ]
+
+[project.scripts]
+tmt = "tmt.__main__:run_cli"
+
+[project.urls]
+Homepage = "https://github.com/teemtee/tmt"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options.version_scheme = "release-branch-semver"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "tmt/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tmt",
+    "/LICENSE",
+    "/examples",
+    "/README.rst",
+    "/tests",
+    "/tmt.spec",
+    "/tmt.1",
+    "/completions",
+    ]
+
+[tool.hatch.envs.default]
+platforms = ["linux"]
+
+[tool.hatch.envs.dev]
+description = "Development environment"
+dependencies = [
+    "typing-extensions>=4.4.0; python_version < '3.10'", # TypeAlias introduced in 3.10, Self in 3.11
+    "autopep8",
+    "ruff",
+    "mypy",
+    "pre-commit",
+    "types-Markdown",
+    "types-requests",
+    "types-setuptools",
+    "types-jsonschema",
+    "types-urllib3",
+    "types-jinja2",
+    "types-babel",
+    ]
+features = [
+    "test-convert",
+    "export-polarion",
+    "provision-beaker",
+    "provision-container",
+    "provision-virtual",
+    "report-junit",
+    "report-polarion",
+    ]
+
+[tool.hatch.envs.dev.scripts]
+lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
+type = ["mypy {args:tmt}"]
+check = ["lint", "type"]
+
+[tool.hatch.envs.test]
+description = "Testing environment"
+system-packages = true  # Install python3-nitrate to skip building psycopg2
+dependencies = [
+    "pytest",
+    "python-coveralls",
+    "requre",
+    "yq==3.1.1",
+    ]
+features = [
+    "test-convert",
+    "report-junit",
+    ]
+
+[tool.hatch.envs.test.scripts]
+unit = "pytest -vvv -ra --showlocals tests/unit"
+smoke = "pytest -vvv -ra --showlocals tests/unit/test_cli.py"
+cov = [
+    "coverage run --source=tmt -m pytest -vvv -ra --showlocals tests",
+    "coverage report",
+    "coverage annotate",
+    ]
+requre = [
+    "cd {root}/tests/integration",
+    "pytest -vvv -ra --showlocals",
+    "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
+    ]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.9", "3.11"]
+
+[tool.hatch.envs.docs]
+dependencies = ["tmt[docs]"]
+detached = true
+
+[tool.hatch.envs.docs.scripts]
+html = "cd {root}/docs && make html"
+man = [
+    "cp {root}/docs/header.txt {root}/man.rst",
+    "tail -n+8 README.rst >> {root}/man.rst",
+    # TODO rst2man cannot process this directive, removed for now
+    "sed '/versionadded::/d' -i {root}/man.rst",
+    "rst2man.py {root}/man.rst > {root}/tmt.1",
+    "rm -f {root}/man.rst",
+    ]
+
+[dirs.env]
+virtual = ".venv"
+
 [tool.mypy]
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
 strict = true
@@ -13,7 +201,7 @@ show_error_codes = true
 follow_imports = "normal"
 
 python_version = "3.9"
-files = ["bin/tmt", "tmt/", "setup.py"]
+files = ["tmt/"]
 
 [[tool.mypy.overrides]]
 module = [
@@ -28,7 +216,7 @@ module = [
     "pylero.*",
     "testcloud.*",
     "mrack.*",
-]
+    ]
 ignore_missing_imports = true
 
 [tool.autopep8]
@@ -43,41 +231,26 @@ max-line-length = "99"
 
 [tool.ruff]
 line-length = 99
-src = ["tmt", "tests", "bin"]
-target-version = "py37"
+src = ["tmt", "tests"]
+target-version = "py39"
 select = [
     "F",  # pyflakes
     "E",  # pycodestyle
     "W",  # pycodestyle
-#    "C90",  # mccabe
     "I",  # isort
     "N",  # pep8-naming
-#    "UP",  # pyupgrade
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
     "YTT",  # flake8-2020
-#    "ANN",  # flake8-annotations
-#    "S",  # flake8-bandit
-#    "ISC",  # flake8-implicit-str-concat
-    "PT",   # flake8-pytest-style
+    "PT",  # flake8-pytest-style
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
-#    "ARG",  # flake8-unused-arguments
-#    "BLE",  # flake8-blind-except
-#    "FBT",  # flake8-boolean-trap
-#    "A",  # flake8-builtins
     "COM",  # flake8-commas
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
-#    "EM",  # flake8-errmsg
     "EXE",  # flake8-executable
-#    "G",  # flake8-logging-format
     "PIE",  # flake8-pie
-#    "T20",  # flake8-print
-#    "Q",  # flake8-quotes
     "RSE",  # flake8-raise
-#    "SLF",  # flake8-self
-#    "TCH",  # flake8-type-checking
     "PGH",  # pygrep-hooks
     "PLC",  # pylint-convention
     "PLE",  # pylint-error
@@ -85,10 +258,8 @@ select = [
     "PLR02",
     "PLR04",
     "PLR1",
-#    "PLW",  # pylint-warning
-#    "TRY",  # tryceratops
     "RUF",  # ruff
-]
+    ]
 ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
@@ -97,18 +268,13 @@ ignore = [
     "PLE1205",  # Too many arguments for `logging` format string
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013",  # PEP 484 prohibits implicit `Optional`
-]
+    ]
 
 [tool.ruff.flake8-bugbear]
-extend-immutable-calls = [ "tmt.utils.field" ]
+extend-immutable-calls = ["tmt.utils.field"]
 
 [tool.ruff.isort]
 known-first-party = ["tmt"]
 
-[tool.ruff.per-file-ignores]
-"tmt/steps/report/polarion.py" = ["DTZ005"]
-
 [tool.pytest.ini_options]
-markers = [
-    "web: tests which need to access the web"
-]
+markers = ["web: tests which need to access the web"]

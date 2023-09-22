@@ -21,17 +21,13 @@ JunitTestSuite = Any
 
 
 def import_junit_xml() -> None:
-    """
-    Import junit_xml module only when needed
-
-    Until we have a separate package for each plugin.
-    """
+    """ Import junit_xml module only when needed """
     global junit_xml
     try:
         import junit_xml
     except ImportError:
         raise tmt.utils.ReportError(
-            "Missing 'junit-xml', fixable by 'pip install tmt[report-junit]'.")
+            "Install 'tmt+report-junit' for JUnit XML reports")
 
 
 @overload

@@ -191,7 +191,14 @@ class GuestContainer(tmt.Guest):
             silent: bool = True,
             **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Run given command via podman """
-        return self._run_guest_command(Command('podman') + command, silent=silent, **kwargs)
+        try:
+            return self._run_guest_command(Command('podman') + command, silent=silent, **kwargs)
+        except tmt.utils.RunError as err:
+            if ("File 'podman' not found." in err.message or
+                    "File 'ansible-playbook' not found." in err.message):
+                raise tmt.utils.ProvisionError(
+                    "Install 'tmt+provision-container' to provision using this method.")
+            raise err
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],

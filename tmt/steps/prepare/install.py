@@ -555,7 +555,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
         prepare:
             how: install
             directory: tmp/RPMS/noarch
-            exclude: tmt-provision-virtual
+            exclude: tmt+provision-virtual
 
     Use 'order' attribute to select in which order preparation should
     happen if there are multiple configs. Default order is '50'.

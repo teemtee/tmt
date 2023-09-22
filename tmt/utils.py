@@ -2729,7 +2729,7 @@ def markdown_to_html(filename: Path) -> str:
     try:
         import markdown
     except ImportError:
-        raise ConvertError("Install tmt-test-convert to export tests.")
+        raise ConvertError("Install tmt+test-convert to export tests.")
 
     try:
         with open(filename) as file:

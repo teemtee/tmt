@@ -1,233 +1,150 @@
-Name: tmt
-Version: 1.27.0
-Release: 1%{?dist}
+Name:           tmt
+Version:        1.27.0.dev0
+Release:        %autorelease
+Summary:        Test Management Tool
 
-Summary: Test Management Tool
-License: MIT
-BuildArch: noarch
+License:        MIT
+URL:            https://github.com/teemtee/tmt
+Source:         %{url}/releases/download/%{version}/tmt-%{version}.tar.gz
 
-# Build only on arches where libguestfs (needed by testcloud) is available
-%{?kernel_arches:ExclusiveArch: %{kernel_arches} noarch}
-%if 0%{?rhel} >= 9
-ExcludeArch: %{power64}
-%endif
+BuildArch:      noarch
+BuildRequires:  python3-devel
 
-URL: https://github.com/teemtee/tmt
-Source0: https://github.com/teemtee/tmt/releases/download/%{version}/tmt-%{version}.tar.gz
+Requires:       git-core rsync sshpass
+
+Obsoletes:      python3-tmt < %{version}-%{release}
+Obsoletes:      tmt-report-html < %{version}-%{release}
+Obsoletes:      tmt-report-junit < %{version}-%{release}
+Obsoletes:      tmt-report-polarion < %{version}-%{release}
+Obsoletes:      tmt-report-reportportal < %{version}-%{release}
+
+Recommends:     bash-completion
 
 %define workdir_root /var/tmp/tmt
 
-# Main tmt package requires the Python module
-Requires: python%{python3_pkgversion}-%{name} == %{version}-%{release}
-Requires: git-core rsync sshpass
+%py_provides    python3-tmt
 
 %description
 The tmt Python module and command line tool implement the test
 metadata specification (L1 and L2) and allows easy test execution.
-This package contains the command line tool.
 
-%?python_enable_dependency_generator
+%pyproject_extras_subpkg -n tmt export-polarion
+%pyproject_extras_subpkg -n tmt report-junit
+%pyproject_extras_subpkg -n tmt report-polarion
 
+%package -n     tmt+test-convert
+Summary:        Dependencies required for tmt test import and export
+Obsoletes:      tmt-test-convert < %{version}-%{release}
+Requires:       tmt == %{version}-%{release}
+Requires:       make
+Requires:       python3-bugzilla
+Requires:       python3-nitrate
+Requires:       python3-html2text
+Requires:       python3-markdown
 
-%package -n     python%{python3_pkgversion}-%{name}
-Summary:        Python library for the %{summary}
-BuildRequires: python%{python3_pkgversion}-devel
-BuildRequires: python%{python3_pkgversion}-docutils
-BuildRequires: python%{python3_pkgversion}-setuptools
-BuildRequires: python%{python3_pkgversion}-pytest
-BuildRequires: python%{python3_pkgversion}-click
-BuildRequires: python%{python3_pkgversion}-fmf >= 1.2.0
-BuildRequires: python%{python3_pkgversion}-requests
-BuildRequires: python%{python3_pkgversion}-testcloud >= 0.9.10
-BuildRequires: python%{python3_pkgversion}-markdown
-BuildRequires: python%{python3_pkgversion}-junit_xml
-BuildRequires: python%{python3_pkgversion}-ruamel-yaml
-BuildRequires: python%{python3_pkgversion}-jinja2
-BuildRequires: python%{python3_pkgversion}-pint
-# TypeAlias is not available with python3.9 on RHEL9
-%if 0%{?rhel} == 9
-BuildRequires: python%{python3_pkgversion}-typing-extensions
-%endif
-# Required for tests
-BuildRequires: rsync
-%{?python_provide:%python_provide python%{python3_pkgversion}-%{name}}
+%description -n tmt+test-convert
+This is a metapackage bringing in extra dependencies for tmt.
+It contains no code, just makes sure the dependencies are installed.
 
-%description -n python%{python3_pkgversion}-%{name}
-The tmt Python module and command line tool implement the test
-metadata specification (L1 and L2) and allows easy test execution.
-This package contains the Python 3 module.
+%package -n     tmt+provision-container
+Summary:        Dependencies required for tmt container provisioner
+Obsoletes:      tmt-provision-container < %{version}-%{release}
+Obsoletes:      tmt-container < 0.17
+Requires:       tmt == %{version}-%{release}
+Requires:       podman
+Requires:       (ansible or ansible-collection-containers-podman)
 
-%package provision-container
-Summary: Container provisioner for the Test Management Tool
-Obsoletes: tmt-container < 0.17
-Requires: tmt == %{version}-%{release}
-Requires: podman
-Requires: (ansible or ansible-collection-containers-podman)
+%description -n tmt+provision-container
+This is a metapackage bringing in extra dependencies for tmt.
+It contains no code, just makes sure the dependencies are installed.
 
-%description provision-container
-Dependencies required to run tests in a container environment.
-
-%package provision-virtual
-Summary: Virtual machine provisioner for the Test Management Tool
-Obsoletes: tmt-testcloud < 0.17
-Requires: tmt == %{version}-%{release}
-Requires: python%{python3_pkgversion}-testcloud >= 0.9.2
-Requires: libvirt-daemon-config-network
-Requires: openssh-clients
-Requires: (ansible or ansible-core)
+%package -n     tmt+provision-virtual
+Summary:        Dependencies required for tmt virtual machine provisioner
+Obsoletes:      tmt-provision-virtual < %{version}-%{release}
+Obsoletes:      tmt-testcloud < 0.17
+Requires:       tmt == %{version}-%{release}
+Requires:       python3-testcloud >= 0.9.10
+Requires:       libvirt-daemon-config-network
+Requires:       openssh-clients
+Requires:       (ansible or ansible-core)
 # Recommend qemu system emulators for supported arches
 %if 0%{?fedora}
-Recommends: qemu-system-aarch64-core
-Recommends: qemu-system-ppc-core
-Recommends: qemu-system-s390x-core
-Recommends: qemu-system-x86-core
+Recommends:     qemu-system-aarch64-core
+Recommends:     qemu-system-ppc-core
+Recommends:     qemu-system-s390x-core
+Recommends:     qemu-system-x86-core
 %endif
 
-%package provision-beaker
-Summary: Beaker provisioner for the Test Management Tool
-Requires: tmt = %{version}-%{release}
-Requires: python3-mrack-beaker >= 1.12.1
+%description -n tmt+provision-virtual
+This is a metapackage bringing in extra dependencies for tmt.
+It contains no code, just makes sure the dependencies are installed.
 
-%description provision-beaker
-Dependencies required to run tests in a Beaker environment.
+%package -n     tmt+provision-beaker
+Summary:        Dependencies required for tmt beaker provisioner
+Provides:       tmt-provision-beaker == %{version}-%{release}
+Obsoletes:      tmt-provision-beaker < %{version}-%{release}
+Requires:       tmt == %{version}-%{release}
+Requires:       python3-mrack-beaker
 
-%description provision-virtual
-Dependencies required to run tests in a local virtual machine.
+%description -n tmt+provision-beaker
+This is a metapackage bringing in extra dependencies for tmt.
+It contains no code, just makes sure the dependencies are installed.
 
-%package test-convert
-Summary: Test import and export dependencies
-Requires: tmt == %{version}-%{release}
-Requires: make python3-nitrate python3-html2text python3-markdown
-Requires: python3-bugzilla
+# Replace with pyproject_extras_subpkg at some point
+%package -n     tmt+all
+Summary:        Extra dependencies for the Test Management Tool
+Provides:       tmt-all == %{version}-%{release}
+Obsoletes:      tmt-all < %{version}-%{release}
+Requires:       tmt+test-convert == %{version}-%{release}
+Requires:       tmt+export-polarion == %{version}-%{release}
+Requires:       tmt+provision-container == %{version}-%{release}
+Requires:       tmt+provision-virtual == %{version}-%{release}
+Requires:       tmt+provision-beaker == %{version}-%{release}
+Requires:       tmt+report-junit == %{version}-%{release}
+Requires:       tmt+report-polarion == %{version}-%{release}
 
-%description test-convert
-Additional dependencies needed for test metadata import and export.
-
-%package report-html
-Summary: Report plugin with support for generating web pages
-Requires: tmt == %{version}-%{release}
-
-%description report-html
-Generate test results in the html format. Quickly review test
-output thanks to direct links to output logs.
-
-%package report-junit
-Summary: Report plugin with support for generating JUnit output file
-Requires: tmt == %{version}-%{release}
-Requires: python3-junit_xml
-
-%description report-junit
-Generate test results in the JUnit format.
-
-%package report-polarion
-Summary: Report plugin with support for generating Polarion test runs
-Requires: tmt-report-junit >= %{version}
-Requires: python3-pylero
-
-%description report-polarion
-Generate test results in xUnit format for exporting to Polarion.
-
-%package report-reportportal
-Summary: Report step plugin for ReportPortal
-Requires: tmt == %{version}-%{release}
-Requires: tmt-report-junit == %{version}
-
-%description report-reportportal
-Report test results to a ReportPortal instance.
-
-%package all
-Summary: Extra dependencies for the Test Management Tool
-Requires: tmt >= %{version}
-Requires: tmt-provision-container >= %{version}
-Requires: tmt-provision-virtual >= %{version}
-Requires: tmt-test-convert >= %{version}
-Requires: tmt-report-html >= %{version}
-Requires: tmt-report-junit >= %{version}
-Requires: tmt-report-polarion >= %{version}
-Requires: tmt-report-reportportal >= %{version}
-Requires: tmt-provision-beaker >= %{version}
-
-%description all
+%description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this
 package to have all available plugins ready for testing.
 
-
 %prep
-%autosetup
+%autosetup -p1 -n tmt-%{version}
 
+%generate_buildrequires
+%pyproject_buildrequires
 
 %build
-%py3_build
-
+export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
+%pyproject_wheel
 
 %install
-%py3_install
+%pyproject_install
+%pyproject_save_files tmt
 
 mkdir -p %{buildroot}%{_mandir}/man1
-mkdir -p %{buildroot}/etc/bash_completion.d/
-install -pm 644 tmt.1* %{buildroot}%{_mandir}/man1
-install -pm 644 bin/complete %{buildroot}/etc/bash_completion.d/tmt
-mkdir -p %{buildroot}%{workdir_root}
-chmod 1777 %{buildroot}%{workdir_root}
+install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1
+mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
+install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
+mkdir -pm 1777 %{buildroot}%{workdir_root}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 %check
-%{__python3} -m pytest -vv -m 'not web' --ignore=tests/integration
+%pyproject_check_import
 
-
-%{!?_licensedir:%global license %%doc}
-
-
-%files
-%{_mandir}/man1/*
-%{_bindir}/%{name}
+%files -n tmt -f %{pyproject_files}
 %doc README.rst examples
-%license LICENSE
-/etc/bash_completion.d/tmt
-
-%files -n python%{python3_pkgversion}-%{name}
-%{python3_sitelib}/%{name}/
-%{python3_sitelib}/%{name}-*.egg-info/
-%license LICENSE
+%{_bindir}/tmt
+%{_mandir}/man1/tmt.1.gz
 %dir %{workdir_root}
-%exclude %{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}{podman,testcloud,mrack}.*
-%exclude %{python3_sitelib}/%{name}/steps/provision/mrack
-%exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
-%exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
-%exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
-%exclude %{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
+%{_datadir}/bash-completion/completions/%{name}
 
-%exclude %{_sysconfdir}/%{name}/mrack*
-
-%files provision-container
-%{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}podman.*
-
-%files provision-beaker
-%{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}mrack.*
+%files -n tmt+provision-container -f %{_pyproject_ghost_distinfo}
+%files -n tmt+provision-virtual -f %{_pyproject_ghost_distinfo}
+%files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
+%files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
+%files -n tmt+all -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
-
-%files provision-virtual
-%{python3_sitelib}/%{name}/steps/provision/{,__pycache__/}testcloud.*
-
-%files report-html
-%{python3_sitelib}/%{name}/steps/report/{,__pycache__/}html*
-
-%files report-junit
-%{python3_sitelib}/%{name}/steps/report/{,__pycache__/}junit.*
-
-%files report-polarion
-%{python3_sitelib}/%{name}/steps/report/{,__pycache__/}polarion.*
-
-%files report-reportportal
-%{python3_sitelib}/%{name}/steps/report/{,__pycache__/}reportportal.*
-
-%files test-convert
-%license LICENSE
-
-%files all
-%license LICENSE
-
 
 %changelog
 * Wed Sep 06 2023 Petr Šplíchal <psplicha@redhat.com> - 1.27.0-1

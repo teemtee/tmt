@@ -33,7 +33,7 @@ def import_polarion() -> None:
         from pylero.exceptions import PyleroLibException as PolarionException
     except ImportError:
         raise ConvertError(
-            "Run 'pip install tmt[export-polarion]' so pylero is installed.")
+            "Install 'tmt+export-polarion' to use Polarion API")
 
     try:
         from pylero.work_item import TestCase as PolarionTestCase

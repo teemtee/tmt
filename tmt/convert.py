@@ -133,7 +133,7 @@ def html_to_markdown(html: str) -> str:
         import html2text
         md_handler = html2text.HTML2Text()
     except ImportError:
-        raise ConvertError("Install tmt-test-convert to import tests.")
+        raise ConvertError("Install tmt+test-convert to import tests.")
 
     if html is None:
         markdown: str = ""
@@ -486,7 +486,7 @@ def read(
                 stdout=subprocess.DEVNULL)
         except FileNotFoundError:
             raise ConvertError(
-                f"Install tmt-test-convert to convert metadata from {filename}.")
+                f"Install tmt+test-convert to convert metadata from {filename}.")
         except subprocess.CalledProcessError:
             raise ConvertError(
                 "Failed to convert metadata using 'make testinfo.desc'.")
@@ -665,7 +665,7 @@ def read_nitrate(
         import gssapi
         import nitrate
     except ImportError:
-        raise ConvertError('Install tmt-test-convert to import metadata.')
+        raise ConvertError('Install tmt+test-convert to import metadata.')
 
     # Check test case
     echo(style('Nitrate ', fg='blue'), nl=False)

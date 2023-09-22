@@ -290,7 +290,7 @@ def get_bz_instance() -> BugzillaInstance:
         import bugzilla
     except ImportError:
         raise tmt.utils.ConvertError(
-            "Install 'tmt-test-convert' to link test to the bugzilla.")
+            "Install 'tmt+test-convert' to link test to the bugzilla.")
 
     try:
         bz_instance: BugzillaInstance = bugzilla.Bugzilla(url=BUGZILLA_XMLRPC_URL)

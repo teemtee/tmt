@@ -47,11 +47,7 @@ TPMConfiguration: Any
 
 
 def import_testcloud() -> None:
-    """
-    Import testcloud module only when needed
-
-    Until we have a separate package for each plugin.
-    """
+    """ Import testcloud module only when needed """
     global testcloud
     global libvirt
     global DomainConfiguration
@@ -83,7 +79,7 @@ def import_testcloud() -> None:
             )
     except ImportError as error:
         raise ProvisionError(
-            "Install 'testcloud' to provision using this method.") from error
+            "Install 'tmt+provision-virtual' to provision using this method.") from error
 
 
 # Testcloud cache to our tmt's workdir root

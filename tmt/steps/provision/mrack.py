@@ -273,11 +273,7 @@ def constraint_to_beaker_filter(
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
-    """
-    Import mrack module only when needed
-
-    Until we have a separate package for each plugin.
-    """
+    """ Import mrack module only when needed """
     global mrack
     global providers
     global ProvisioningError
@@ -307,7 +303,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         providers.register(BEAKER, BeakerProvider)
 
     except ImportError:
-        raise ProvisionError("Install 'mrack' to provision using this method.")
+        raise ProvisionError(
+            "Install 'tmt+provision-beaker' to provision using this method.")
 
     # ignore the misc because mrack sources are not typed and result into
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")

@@ -69,7 +69,7 @@ instead:
 
 .. code-block:: shell
 
-    sudo dnf install -y tmt-provision-container
+    sudo dnf install -y tmt+provision-container
     tmt run -a provision -h container
 
 Or even in a full virtual machine if the container environment is
@@ -79,16 +79,16 @@ dependencies here:
 
 .. code-block:: shell
 
-    sudo dnf install -y tmt-provision-virtual
+    sudo dnf install -y tmt+provision-virtual
     tmt run -a provision -h virtual
 
-Don't care about the disk space? Simply install ``tmt-all`` and
+Don't care about the disk space? Simply install ``tmt+all`` and
 you'll get all available functionality at hand. Check the help to
 list all supported provision methods:
 
 .. code-block:: shell
 
-    sudo dnf install tmt-all
+    sudo dnf install tmt+all
     tmt run provision --help
 
 Now when you've met your ``--help`` friend you know everything you
