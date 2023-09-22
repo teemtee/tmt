@@ -250,6 +250,17 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         metavar='SECONDS',
         help='How often (seconds) check that the guest "is-alive".',
         normalize=tmt.utils.normalize_optional_int)
+    skip_prepare_verify_ssh: bool = field(
+        default=False,
+        option='--skip-prepare-verify-ssh',
+        is_flag=True,
+        help='If set, skip verifiction of SSH connection in prepare state.'
+        )
+    post_install_script: Optional[str] = field(
+        default=None,
+        option='--post-install-script',
+        metavar='SCRIPT',
+        help='If set, this script will be executed on the guest after provisioning.')
 
 
 @dataclasses.dataclass
@@ -410,6 +421,8 @@ class GuestArtemis(tmt.GuestSsh):
     user_data: Dict[str, str]
     kickstart: Dict[str, str]
     log_type: List[str]
+    skip_prepare_verify_ssh: bool
+    post_install_script: Optional[str]
 
     # Provided by Artemis response
     guestname: Optional[str]
@@ -464,6 +477,14 @@ class GuestArtemis(tmt.GuestSsh):
         if self.hardware is not None:
             environment['hw']['constraints'] = self.hardware.to_spec()
 
+        if self.api_version >= "0.0.24":
+            if self.skip_prepare_verify_ssh:
+                data['skip_prepare_verify_ssh'] = self.skip_prepare_verify_ssh
+
+        elif self.skip_prepare_verify_ssh:
+            raise ProvisionError(
+                f"API version '{self.api_version}' does not support skip_prepare_verify_ssh.")
+
         if self.api_version >= "0.0.56":
             if self.watchdog_dispatch_delay:
                 data['watchdog_dispatch_delay'] = self.watchdog_dispatch_delay
@@ -476,7 +497,9 @@ class GuestArtemis(tmt.GuestSsh):
 
         # TODO: snapshots
         # TODO: spot instance
-        # TODO: post-install script
+
+        if self.post_install_script:
+            data['post_install_script'] = self.post_install_script
 
         if self.log_type:
             data['log_types'] = list({tuple(log.split('/', 1)) for log in self.log_type})
