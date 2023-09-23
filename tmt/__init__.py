@@ -1,8 +1,8 @@
 """ Test Management Tool """
 
-# starting with setuptools_scm 7.0 it's possible to import __version__ directly
-# to support setuptools_scm 6.0 (in EL9), we can only import version
-from tmt._version import version as __version__  # noqa: F401
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__name__)
 
 __all__ = [
     'Tree',

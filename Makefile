@@ -32,9 +32,7 @@ man:
 
 # Packaging and Packit
 build: clean man
-	cp -a tmt/_version.py tmt/_version.py.backup
 	hatch build
-	mv tmt/_version.py.backup tmt/_version.py
 tarball: clean tmp build
 	mkdir -p $(TMP)/SOURCES
 	cp dist/tmt-*.tar.gz $(TMP)/SOURCES

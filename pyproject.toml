@@ -88,9 +88,6 @@ Homepage = "https://github.com/teemtee/tmt"
 source = "vcs"
 raw-options.version_scheme = "release-branch-semver"
 
-[tool.hatch.build.hooks.vcs]
-version-file = "tmt/_version.py"
-
 [tool.hatch.build.targets.sdist]
 include = [
     "/tmt",
