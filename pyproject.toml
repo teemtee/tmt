@@ -110,6 +110,10 @@ dependencies = [
     "autopep8",
     "ruff",
     "mypy",
+    "pytest",
+    "python-coveralls",
+    "requre",
+    "yq==3.1.1",
     "pre-commit",
     "types-Markdown",
     "types-requests",
@@ -119,36 +123,13 @@ dependencies = [
     "types-jinja2",
     "types-babel",
     ]
-features = [
-    "test-convert",
-    "export-polarion",
-    "provision-beaker",
-    "provision-container",
-    "provision-virtual",
-    "report-junit",
-    "report-polarion",
-    ]
+features = ["all"]
 
 [tool.hatch.envs.dev.scripts]
 lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
 type = ["mypy {args:tmt}"]
 check = ["lint", "type"]
 
-[tool.hatch.envs.test]
-description = "Testing environment"
-system-packages = true  # Install python3-nitrate to skip building psycopg2
-dependencies = [
-    "pytest",
-    "python-coveralls",
-    "requre",
-    "yq==3.1.1",
-    ]
-features = [
-    "test-convert",
-    "report-junit",
-    ]
-
-[tool.hatch.envs.test.scripts]
 unit = "pytest -vvv -ra --showlocals tests/unit"
 smoke = "pytest -vvv -ra --showlocals tests/unit/test_cli.py"
 cov = [
@@ -161,6 +142,10 @@ requre = [
     "pytest -vvv -ra --showlocals",
     "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
     ]
+
+[tool.hatch.envs.test]
+template = "dev"
+description = "Run scripts with multiple Python versions"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.9", "3.11"]
