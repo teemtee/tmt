@@ -157,10 +157,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
         super().go()
 
         # Create a GuestLocal instance
-        data = tmt.steps.provision.GuestData(
-            guest='localhost',
-            role=self.get('role')
-            )
+        data = tmt.steps.provision.GuestData.from_plugin(self)
+        data.guest = 'localhost'
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 

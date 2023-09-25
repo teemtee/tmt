@@ -5,13 +5,19 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import field
+from tmt.utils import field, key_to_option
 
 DEFAULT_USER = "root"
 
 
 @dataclasses.dataclass
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
+    # Connect plugin actually allows `guest` key to be controlled by an option.
+    OPTIONLESS_FIELDS = tuple(
+        key for key in tmt.steps.provision.GuestSshData.OPTIONLESS_FIELDS
+        if key != 'guest'
+        )
+
     guest: Optional[str] = field(
         default=None,
         option=('-g', '--guest'),
@@ -75,15 +81,14 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
             raise tmt.utils.SpecificationError(
                 'Provide a host name or an ip address to connect.')
 
-        data = ConnectGuestData(
-            role=self.get('role'),
-            guest=self.get('guest'),
-            user=self.get('user'),
-            port=self.get('port'),
-            password=self.get('password'),
-            ssh_option=self.get('ssh-option'),
-            key=self.get('key')
-            )
+        data = ConnectGuestData(**{
+            key: self.get(key_to_option(key))
+            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+            # "Type[ConnectGuestData]" has no attribute "__iter__" (not iterable)
+            for key in ConnectGuestData.keys()  # noqa: SIM118
+            })
+
+        data = ConnectGuestData.from_plugin(self)
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 

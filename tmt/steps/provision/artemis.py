@@ -11,7 +11,13 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import ProvisionError, cached_property, field, retry_session, updatable_message
+from tmt.utils import (
+    ProvisionError,
+    cached_property,
+    field,
+    retry_session,
+    updatable_message,
+    )
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to
@@ -645,28 +651,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
         except ValueError:
             raise ProvisionError('Cannot parse user-data.')
 
-        data = ArtemisGuestData(
-            api_url=self.get('api-url'),
-            api_version=api_version,
-            arch=self.get('arch'),
-            image=self.get('image'),
-            hardware=self.get('hardware'),
-            kickstart=self.get('kickstart'),
-            log_type=self.get('log_type'),
-            pool=self.get('pool'),
-            priority_group=self.get('priority-group'),
-            keyname=self.get('keyname'),
-            user_data=user_data,
-            user=self.get('user'),
-            provision_timeout=self.get('provision-timeout'),
-            provision_tick=self.get('provision-tick'),
-            api_timeout=self.get('api-timeout'),
-            api_retries=self.get('api-retries'),
-            api_retry_backoff_factor=self.get('api-retry-backoff-factor'),
-            watchdog_dispatch_delay=self.get('watchdog-dispatch-delay'),
-            watchdog_period_delay=self.get('watchdog-period-delay'),
-            ssh_option=self.get('ssh-option')
-            )
+        data = ArtemisGuestData.from_plugin(self)
+        data.user_data = user_data
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 

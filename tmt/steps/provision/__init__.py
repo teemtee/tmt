@@ -40,7 +40,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, Path, ShellScript, cached_property, field
+from tmt.utils import Command, Path, ShellScript, cached_property, field, key_to_option
 
 if TYPE_CHECKING:
     import tmt.base
@@ -368,6 +368,9 @@ def normalize_hardware(
     return tmt.hardware.Hardware.from_spec(raw_hardware)
 
 
+GuestDataT = TypeVar('GuestDataT', bound='GuestData')
+
+
 @dataclasses.dataclass
 class GuestData(tmt.utils.SerializableContainer):
     """
@@ -375,6 +378,12 @@ class GuestData(tmt.utils.SerializableContainer):
 
     Very basic set of keys shared across all known guest classes.
     """
+
+    # TODO: it'd be nice to generate this from all fields, but it seems some
+    # fields are not created by `field()` - not sure why, but we can fix that
+    # later.
+    #: List of fields that are not allowed to be set via fmf keys/CLI options.
+    OPTIONLESS_FIELDS: Tuple[str, ...] = ('guest', 'facts')
 
     # guest role in the multihost scenario
     role: Optional[str] = None
@@ -397,6 +406,35 @@ class GuestData(tmt.utils.SerializableContainer):
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
         unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
         if serialized is not None else None)
+
+    # TODO: find out whether this could live in DataContainer. It probably could,
+    # but there are containers not backed by options... Maybe a mixin then?
+    @classmethod
+    def options(cls) -> Generator[Tuple[str, str], None, None]:
+        """
+        Iterate over option names.
+
+        Based on :py:meth:`keys`, but skips fields that cannot be set by options.
+
+        :yields: two-item tuples, a key and corresponding option name.
+        """
+
+        for f in dataclasses.fields(cls):
+            if f.name in cls.OPTIONLESS_FIELDS:
+                continue
+
+            yield f.name, key_to_option(f.name)
+
+    @classmethod
+    def from_plugin(cls: Type[GuestDataT], container: 'ProvisionPlugin') -> GuestDataT:
+        """ Create guest data from plugin and its current configuration """
+
+        return cls(**{
+            key: container.get(option)
+            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+            # "Type[ArtemisGuestData]" has no attribute "__iter__" (not iterable)
+            for key, option in cls.options()
+            })
 
     def show(
             self,

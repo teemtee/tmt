@@ -696,14 +696,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
 
         super().go()
 
-        data = BeakerGuestData(
-            arch=self.get('arch'),
-            image=self.get('image'),
-            hardware=self.get('hardware'),
-            user=self.get('user'),
-            provision_timeout=self.get('provision-timeout'),
-            provision_tick=self.get('provision-tick'),
-            )
+        data = BeakerGuestData.from_plugin(self)
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 

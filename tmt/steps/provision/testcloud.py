@@ -647,12 +647,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
             raise SystemExit(0)
 
         # Give info about provided data
-        data = TestcloudGuestData(**{
-            key: self.get(key)
-            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-            # "Type[TestcloudGuestData]" has no attribute "__iter__" (not iterable)
-            for key in TestcloudGuestData.keys()  # noqa: SIM118
-            })
+        data = TestcloudGuestData.from_plugin(self)
 
         # Once plan schema is enforced this won't be necessary
         # click enforces int for cmdline and schema validation

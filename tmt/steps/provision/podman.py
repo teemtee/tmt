@@ -331,14 +331,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
         super().go()
 
         # Prepare data for the guest instance
-        data_from_options = {
-            key: self.get(key)
-            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-            # "Type[PodmanGuestData]" has no attribute "__iter__" (not iterable)
-            for key in PodmanGuestData.keys()  # noqa: SIM118
-            }
-
-        data = PodmanGuestData(**data_from_options)
+        data = PodmanGuestData.from_plugin(self)
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
