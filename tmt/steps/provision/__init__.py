@@ -619,7 +619,7 @@ class Guest(tmt.utils.Common):
         self.info('multihost name', self.multihost_name, 'green')
 
         # Skip distro & kernel check in dry mode
-        if self.opt('dry'):
+        if self.is_dry_run:
             return
 
         self.info('arch', self.facts.arch or 'unknown', 'green')
@@ -1212,7 +1212,7 @@ class GuestSsh(Guest):
         """
 
         # Abort if guest is unavailable
-        if self.guest is None and not self.opt('dry'):
+        if self.guest is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         ssh_command: tmt.utils.Command = self._ssh_command()
@@ -1281,7 +1281,7 @@ class GuestSsh(Guest):
         sudo on the Guest (e.g. pushing to r/o destination)
         """
         # Abort if guest is unavailable
-        if self.guest is None and not self.opt('dry'):
+        if self.guest is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the push command
@@ -1348,7 +1348,7 @@ class GuestSsh(Guest):
         and 'extend_options' to extend them (e.g. by exclude).
         """
         # Abort if guest is unavailable
-        if self.guest is None and not self.opt('dry'):
+        if self.guest is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the pull command
@@ -1815,7 +1815,7 @@ class Provision(tmt.steps.Step):
                 finally:
                     if isinstance(phase, ProvisionPlugin):
                         guest = phase.guest()
-                        if guest and (guest.is_ready or self.opt('dry')):
+                        if guest and (guest.is_ready or self.is_dry_run):
                             self._guests.append(guest)
 
             # Give a summary, update status and save

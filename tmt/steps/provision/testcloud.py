@@ -390,7 +390,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def start(self) -> None:
         """ Start provisioned guest """
-        if self.opt('dry'):
+        if self.is_dry_run:
             return
         # Make sure required directories exist
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)

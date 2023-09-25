@@ -183,7 +183,7 @@ class ExecuteUpgrade(ExecuteInternal):
                     self.info(key, value, color='green')
 
         # Nothing to do in dry mode
-        if self.opt('dry'):
+        if self.is_dry_run:
             self._results = []
             return
 

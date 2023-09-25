@@ -365,7 +365,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
-        if self.opt('dry'):
+        if self.is_dry_run:
             self._results = []
             return
 

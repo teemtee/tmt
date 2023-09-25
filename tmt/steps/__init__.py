@@ -526,7 +526,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
         # Cleanup possible old workdir if called with --force
-        if self.opt('force'):
+        if self.is_forced_run:
             self._workdir_cleanup()
 
         # Load stored data

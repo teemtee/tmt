@@ -383,7 +383,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.info('directory', str(directory), 'green')
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
-                if not self.opt('dry'):
+                if not self.is_dry_run:
                     shutil.copytree(directory, self.testdir, symlinks=True)
 
         # Prepare path of the dynamic reference
@@ -449,7 +449,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                             "merging with plan data. Avoid this warning by "
                             "explicit use of the '--dist-git-merge' option.")
                         self.debug(f"Copy '{git_root}' to '{self.testdir}'.")
-                        if not self.opt('dry'):
+                        if not self.is_dry_run:
                             shutil.copytree(
                                 git_root, self.testdir, symlinks=True)
 
@@ -457,10 +457,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             if dist_git_init:
                 if not dist_git_extract:
                     dist_git_extract = sourcedir
-                if not self.opt('dry'):
+                if not self.is_dry_run:
                     fmf.Tree.init(dist_git_extract)
             elif dist_git_remove_fmf_root:
-                if not self.opt('dry'):
+                if not self.is_dry_run:
                     shutil.rmtree(os.path.join(
                         dist_git_extract or top_fmf_root, '.fmf'))
                 if not dist_git_extract:
@@ -471,7 +471,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 dist_git_extract = top_fmf_root
 
             # Now copy dist_git_extract into tests
-            if not self.opt('dry'):
+            if not self.is_dry_run:
                 tmt.utils.copytree(
                     dist_git_extract,
                     self.testdir,
@@ -486,7 +486,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
         # Prepare the whole tree path and test path prefix
         tree_path = self.testdir / path.unrooted()
-        if not tree_path.is_dir() and not self.opt('dry'):
+        if not tree_path.is_dir() and not self.is_dry_run:
             raise tmt.utils.DiscoverError(
                 f"Metadata tree path '{path}' not found.")
         prefix_path = Path('/tests') / path.unrooted()
@@ -543,7 +543,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
-        if self.opt('dry'):
+        if self.is_dry_run:
             self._tests = []
             return
         tree = tmt.Tree(

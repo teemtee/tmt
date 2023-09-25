@@ -2109,7 +2109,7 @@ class Plan(
                 step.go()
                 # Finish plan if no tests found (except dry mode)
                 if (isinstance(step, tmt.steps.discover.Discover) and not step.tests()
-                        and not self.opt('dry')):
+                        and not self.is_dry_run):
                     step.info(
                         'warning', 'No tests found, finishing plan.',
                         color='yellow', shift=1)
@@ -2155,7 +2155,7 @@ class Plan(
         self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
 
         # Clone the whole git repository if executing tests (run is attached)
-        if self.my_run and not self.my_run.opt('dry'):
+        if self.my_run and not self.my_run.is_dry_run:
             assert self.parent is not None  # narrow type
             assert self.parent.workdir is not None  # narrow type
             destination = self.parent.workdir / "import" / self.name.lstrip("/")
@@ -3178,7 +3178,7 @@ class Run(tmt.utils.Common):
 
         # Skip handling of the exit codes in dry mode and
         # when there are no interesting results available
-        if self.opt('dry') or not interesting_results:
+        if self.is_dry_run or not interesting_results:
             return
 
         # Return 0 if test execution has been intentionally skipped
@@ -3504,7 +3504,7 @@ class Clean(tmt.utils.Common):
         successful = True
         for method in tmt.steps.provision.ProvisionPlugin.methods():
             # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1599
-            if not method.class_.clean_images(self, self.opt('dry')):  # type: ignore[union-attr]
+            if not method.class_.clean_images(self, self.is_dry_run):  # type: ignore[union-attr]
                 successful = False
         return successful
 
@@ -3532,7 +3532,7 @@ class Clean(tmt.utils.Common):
                 plan.provision.wake()
                 if not self._matches_how(plan):
                     continue
-                if self.opt('dry'):
+                if self.is_dry_run:
                     self.verbose(
                         f"Would stop guests in run '{run.workdir}'"
                         f" plan '{plan.name}'.", shift=1)
@@ -3580,7 +3580,7 @@ class Clean(tmt.utils.Common):
 
     def _clean_workdir(self, path: Path) -> bool:
         """ Remove a workdir (unless in dry mode) """
-        if self.opt('dry'):
+        if self.is_dry_run:
             self.verbose(f"Would remove workdir '{path}'.", shift=1)
         else:
             self.verbose(f"Removing workdir '{path}'.", shift=1)
