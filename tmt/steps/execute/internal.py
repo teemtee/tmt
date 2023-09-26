@@ -259,6 +259,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # Execute the test, save the output and return code
         starttime = datetime.datetime.now(datetime.timezone.utc)
+        test.starttime = self.format_timestamp(starttime)
 
         try:
             output = guest.execute(
@@ -278,7 +279,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             test.returncode = error.returncode
             if test.returncode == tmt.utils.PROCESS_TIMEOUT:
                 logger.debug(f"Test duration '{test.duration}' exceeded.")
+
         endtime = datetime.datetime.now(datetime.timezone.utc)
+        test.endtime = self.format_timestamp(endtime)
+
+        test.real_duration = self.format_duration(endtime - starttime)
+
         self.write(
             self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
@@ -291,10 +297,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
             environment=environment,
             logger=logger
             )
-
-        test.starttime = self.format_timestamp(starttime)
-        test.endtime = self.format_timestamp(endtime)
-        test.real_duration = self.format_duration(endtime - starttime)
 
         return test_check_results
 
