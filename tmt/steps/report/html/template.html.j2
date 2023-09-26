@@ -36,6 +36,10 @@
             margin: -1ex 0ex 1ex 7px;
         }
 
+        p.header {
+            margin: 30px 7px 10px 7px;
+        }
+
         p.footer {
             margin: 30px 7px 0px 7px;
         }
@@ -82,6 +86,19 @@
         #results td.note {
             color: #c00;
         }
+
+        .context-dimension {
+            display: inline-block;
+            text-align: center;
+            vertical-align: baseline;
+            white-space: nowrap;
+            border-radius: 0.5ex;
+            padding: 0.4ex 1ex;
+            background: #eee;
+            font-family: ui-monospace,monospace;
+            font-size: 90%;
+        }
+
     </style>
     <script>
         var filter_values = {
@@ -157,6 +174,15 @@
 <div>
 <h1>{{ plan.name }}</h1>
 {% if plan.summary %}<h2>{{ plan.summary }}</h2>{% endif %}
+
+{% if plan._fmf_context %}
+<p class="header">
+Context:
+{% for key, values in plan._fmf_context.items() %}
+<span class="context-dimension">{{ key }} = {{ values | join(", ") }}</span>
+{% endfor %}
+</p>
+{% endif %}
 
 {% if results %}
 <table id="filters">
