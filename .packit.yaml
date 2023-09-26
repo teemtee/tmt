@@ -20,11 +20,8 @@ jobs:
   - job: copr_build
     trigger: pull_request
     targets:
-        fedora-all: {}
-        epel-9: {}
-        fedora-39:
-            additional_repos:
-              - https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-39-x86_64/
+      - fedora-all
+      - epel-9
     enable_net: False
     actions:
         create-archive:
@@ -88,7 +85,7 @@ jobs:
     enable_net: False
     list_on_homepage: True
     preserve_project: True
-    owner: psss
+    owner: "@teemtee"
     project: tmt
     release_suffix: "{PACKIT_PROJECT_BRANCH}"
     actions:
@@ -110,7 +107,7 @@ jobs:
     enable_net: False
     list_on_homepage: True
     preserve_project: True
-    owner: psss
+    owner: "@teemtee"
     project: tmt
     actions:
         create-archive:

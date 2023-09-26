@@ -254,7 +254,7 @@ Then you can install either everything or only those you need::
 Impatient to try the fresh features as soon as possible? Install
 the latest greatest version from the ``copr`` repository::
 
-    sudo dnf copr enable psss/tmt
+    sudo dnf copr enable @teemtee/tmt
     sudo dnf install tmt
 
 Not sure, just want to try out how it works? Experiment safely and
@@ -551,7 +551,7 @@ Releases:
 https://github.com/teemtee/tmt/releases
 
 Copr:
-http://copr.fedoraproject.org/coprs/psss/tmt
+https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
 
 PIP:
 https://pypi.org/project/tmt/
