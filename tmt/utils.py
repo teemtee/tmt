@@ -73,6 +73,7 @@ from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
+    from typing_extensions import Self
 
     import tmt.base
     import tmt.cli
@@ -4795,7 +4796,7 @@ def git_clone(
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
 # in Python 3.6 the class "is not subscriptable".
-class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
+class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-arg]
     """ Updatable message suitable for progress-bar-like reporting """
 
     def __init__(
@@ -4804,14 +4805,15 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
             enabled: bool = True,
             indent_level: int = 0,
             key_color: Optional[str] = None,
-            default_value_color: Optional[str] = None
+            default_value_color: Optional[str] = None,
+            clear_on_exit: bool = False
             ) -> None:
         """
         Updatable message suitable for progress-bar-like reporting.
 
         .. code:block:: python3
 
-           with updatable_message('foo') as message:
+           with UpdatableMessage('foo') as message:
                while ...:
                    ...
 
@@ -4825,6 +4827,8 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
         :param key_color: optional color to apply to ``key``.
         :param default_color: optional color to apply to value when
             :py:meth:`update` is called with ``color`` left out.
+        :param clear_on_exit: if set, the message area would be cleared when
+            leaving the progress bar when used as a context manager.
         """
 
         self.key = key
@@ -4832,6 +4836,7 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
         self.indent_level = indent_level
         self.key_color = key_color
         self.default_value_color = default_value_color
+        self.clear_on_exit = clear_on_exit
 
         # No progress if terminal not attached
         if not sys.stdout.isatty():
@@ -4839,14 +4844,36 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
 
         self._previous_line: Optional[str] = None
 
-    def __enter__(self) -> 'updatable_message':
+    def __enter__(self: 'Self') -> 'Self':
         return self
 
     def __exit__(self, *args: Any) -> None:
+        if self.clear_on_exit:
+            self.clear()
+
         sys.stdout.write('\n')
         sys.stdout.flush()
 
-    def update(self, value: str, color: Optional[str] = None) -> None:
+    def clear(self) -> None:
+        """ Clear the message area """
+
+        self._update_message_area('')
+
+    def _update_message_area(self, value: str, color: Optional[str] = None) -> None:
+        """
+        Update message area with given value.
+
+        .. note::
+
+            This method is the workhorse for :py:meth:`update` which, in our
+            basic implementation, is a thin wrapper for
+            :py:meth:`_update_message_area`.
+
+            Derived classes may choose to override the default implementation of
+            :py:meth:`update`, to simplify the message construction, and call
+            :py:meth:`_update_message_area` to emit the message.
+        """
+
         if not self.enabled:
             return
 
@@ -4868,6 +4895,16 @@ class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type
 
         sys.stdout.write(f"\r{message}")
         sys.stdout.flush()
+
+    def update(self, value: str, color: Optional[str] = None) -> None:
+        """
+        Update progress message.
+
+        :param value: new message to update message area with.
+        :param color: optional message color.
+        """
+
+        self._update_message_area(value, color=color)
 
 
 def find_fmf_root(path: Path) -> List[Path]:

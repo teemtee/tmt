@@ -1,7 +1,6 @@
 import dataclasses
 import json
 import os
-import sys
 import textwrap
 from contextlib import suppress
 from typing import Any, Dict, List, Optional, cast
@@ -103,6 +102,41 @@ exit $_exit_code;
 ))
 
 
+class UpdatableMessage(tmt.utils.UpdatableMessage):
+    """
+    Updatable message suitable for plan progress reporting.
+
+    Based on :py:class:`tmt.utils.UpdatableMessage`, simplifies
+    reporting of plan progress, namely by extracting necessary setup
+    parameters from the plugin.
+    """
+
+    def __init__(self, plugin: 'ExecuteInternal') -> None:
+        super().__init__(
+            key='progress',
+            enabled=not plugin.verbosity_level and not plugin.data.no_progress_bar,
+            indent_level=plugin._level(),
+            key_color='cyan',
+            clear_on_exit=True)
+
+        self.plugin = plugin
+        self.debug_level = plugin.debug_level
+
+    # ignore[override]: the signature differs on purpose, we wish to input raw
+    # values and let our `update()` construct the message.
+    def update(self, progress: str, test_name: str) -> None:  # type: ignore[override]
+        message = f'{test_name} [{progress}]'
+
+        # With debug mode enabled, we do not really update a single line. Instead,
+        # we shall emit each update as a distinct logging message, which would be
+        # mixed into the debugging output.
+        if self.debug_level:
+            self.plugin.info(message)
+
+        else:
+            self._update_message_area(message)
+
+
 @dataclasses.dataclass
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
     script: List[ShellScript] = field(
@@ -152,46 +186,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
         self.scripts = SCRIPTS
-
-    # TODO: consider switching to utils.updatable_message() - might need more
-    # work, since use of _show_progress is split over several methods.
-    def _show_progress(self, progress: str, test_name: str,
-                       finish: bool = False) -> None:
-        """
-        Show an interactive progress bar in non-verbose mode.
-
-        If the output is not an interactive terminal, or progress bar is
-        disabled using an option, just output the message as info without
-        utilising \r. If finish is True, overwrite the previous progress bar.
-        """
-        # Verbose mode outputs other information, using \r to
-        # create a status bar wouldn't work.
-        if self.verbosity_level:
-            return
-
-        # No progress if terminal not attached or explicitly disabled
-        if not sys.stdout.isatty() or self.data.no_progress_bar:
-            return
-
-        # For debug mode show just an info message (unless finishing)
-        message = f"{test_name} [{progress}]" if not finish else ""
-        if self.debug_level:
-            if not finish:
-                self.info(message, shift=1)
-            return
-
-        # Show progress bar in an interactive shell.
-        # We need to completely override the previous message, add
-        # spaces if necessary.
-        message = message.ljust(len(self._previous_progress_message))
-        self._previous_progress_message = message
-        message = self._indent('progress', message, color='cyan')
-        sys.stdout.write(f"\r{message}")
-        if finish:
-            # The progress has been overwritten, return back to the start
-            sys.stdout.write("\r")
-            self._previous_progress_message = ""
-        sys.stdout.flush()
 
     def _test_environment(
             self,
@@ -467,101 +461,101 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
         guest.push()
         # We cannot use enumerate here due to continue in the code
         index = 0
-        while index < len(tests):
-            test = tests[index]
 
-            progress = f"{index + 1}/{len(tests)}"
-            self._show_progress(progress, test.name)
-            logger.verbose(
-                'test', test.summary or test.name, color='cyan', shift=1, level=2)
+        with UpdatableMessage(self) as progress_bar:
+            while index < len(tests):
+                test = tests[index]
 
-            test_check_results: List[CheckResult] = self.execute(
-                test=test,
-                guest=guest,
-                extra_environment=extra_environment,
-                logger=logger)
-
-            guest.pull(
-                source=self.data_path(test, guest, full=True),
-                extend_options=test.test_framework.get_pull_options(self, test, guest, logger))
-
-            results = self.extract_results(test, guest, logger)  # Produce list of results
-
-            for result in results:
-                result.check = test_check_results
-
-            assert test.real_duration is not None  # narrow type
-            duration = click.style(test.real_duration, fg='cyan')
-            shift = 1 if self.verbosity_level < 2 else 2
-
-            # Handle reboot, abort, exit-first
-            if self._will_reboot(test, guest):
-                # Output before the reboot
+                progress = f"{index + 1}/{len(tests)}"
+                progress_bar.update(progress, test.name)
                 logger.verbose(
-                    f"{duration} {test.name} [{progress}]", shift=shift)
-                try:
-                    if self._handle_reboot(test, guest):
-                        continue
-                except tmt.utils.RebootTimeoutError:
-                    for result in results:
-                        result.result = ResultOutcome.ERROR
-                        result.note = 'reboot timeout'
-            abort = self.check_abort_file(test, guest)
-            if abort:
+                    'test', test.summary or test.name, color='cyan', shift=1, level=2)
+
+                test_check_results: List[CheckResult] = self.execute(
+                    test=test,
+                    guest=guest,
+                    extra_environment=extra_environment,
+                    logger=logger)
+
+                guest.pull(
+                    source=self.data_path(test, guest, full=True),
+                    extend_options=test.test_framework.get_pull_options(self, test, guest, logger))
+
+                results = self.extract_results(test, guest, logger)  # Produce list of results
+
                 for result in results:
-                    # In case of aborted all results in list will be aborted
-                    result.note = 'aborted'
-            self._results.extend(results)
+                    result.check = test_check_results
 
-            # If test duration information is missing, print 8 spaces to keep indention
-            def _format_duration(result: BaseResult) -> str:
-                return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
+                assert test.real_duration is not None  # narrow type
+                duration = click.style(test.real_duration, fg='cyan')
+                shift = 1 if self.verbosity_level < 2 else 2
 
-            for result in results:
-                logger.verbose(
-                    f"{_format_duration(result)} {result.show()} [{progress}]",
-                    shift=shift)
-
-                for check_result in result.check:
-                    # Indent the check one extra level, to make it clear it belongs to
-                    # a parent test.
+                # Handle reboot, abort, exit-first
+                if self._will_reboot(test, guest):
+                    # Output before the reboot
                     logger.verbose(
-                        f'{_format_duration(check_result)} '
-                        f'{" " * tmt.utils.INDENT}'
-                        f'{check_result.show()} '
-                        f'({check_result.event.value} check)',
+                        f"{duration} {test.name} [{progress}]", shift=shift)
+                    try:
+                        if self._handle_reboot(test, guest):
+                            continue
+                    except tmt.utils.RebootTimeoutError:
+                        for result in results:
+                            result.result = ResultOutcome.ERROR
+                            result.note = 'reboot timeout'
+                abort = self.check_abort_file(test, guest)
+                if abort:
+                    for result in results:
+                        # In case of aborted all results in list will be aborted
+                        result.note = 'aborted'
+                self._results.extend(results)
+
+                # If test duration information is missing, print 8 spaces to keep indention
+                def _format_duration(result: BaseResult) -> str:
+                    return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
+
+                for result in results:
+                    logger.verbose(
+                        f"{_format_duration(result)} {result.show()} [{progress}]",
                         shift=shift)
 
-            if (abort or self.data.exit_first and
-                    result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)):
-                # Clear the progress bar before outputting
-                self._show_progress('', '', True)
-                what_happened = "aborted" if abort else "failed"
-                self.warn(
-                    f'Test {test.name} {what_happened}, stopping execution.')
-                break
-            index += 1
+                    for check_result in result.check:
+                        # Indent the check one extra level, to make it clear it belongs to
+                        # a parent test.
+                        logger.verbose(
+                            f'{_format_duration(check_result)} '
+                            f'{" " * tmt.utils.INDENT}'
+                            f'{check_result.show()} '
+                            f'({check_result.event.value} check)',
+                            shift=shift)
 
-            # Log into the guest after each executed test if "login
-            # --test" option is provided
-            if self._login_after_test:
-                assert test.path is not None  # narrow type
+                if (abort or self.data.exit_first and
+                        result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)):
+                    # Clear the progress bar before outputting
+                    progress_bar.clear()
+                    what_happened = "aborted" if abort else "failed"
+                    self.warn(
+                        f'Test {test.name} {what_happened}, stopping execution.')
+                    break
+                index += 1
 
-                if self.discover.workdir is None:
-                    cwd = test.path.unrooted()
-                else:
-                    cwd = self.discover.workdir / test.path.unrooted()
-                self._login_after_test.after_test(
-                    result,
-                    cwd=cwd,
-                    env=self._test_environment(
-                        test=test,
-                        guest=guest,
-                        extra_environment=extra_environment,
-                        logger=logger),
-                    )
-        # Overwrite the progress bar, the test data is irrelevant
-        self._show_progress('', '', True)
+                # Log into the guest after each executed test if "login
+                # --test" option is provided
+                if self._login_after_test:
+                    assert test.path is not None  # narrow type
+
+                    if self.discover.workdir is None:
+                        cwd = test.path.unrooted()
+                    else:
+                        cwd = self.discover.workdir / test.path.unrooted()
+                    self._login_after_test.after_test(
+                        result,
+                        cwd=cwd,
+                        env=self._test_environment(
+                            test=test,
+                            guest=guest,
+                            extra_environment=extra_environment,
+                            logger=logger),
+                        )
 
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)

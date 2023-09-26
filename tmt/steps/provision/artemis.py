@@ -13,10 +13,10 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.utils import (
     ProvisionError,
+    UpdatableMessage,
     cached_property,
     field,
     retry_session,
-    updatable_message,
     )
 
 # List of Artemis API versions supported and understood by this plugin.
@@ -517,8 +517,7 @@ class GuestArtemis(tmt.GuestSsh):
         self.guestname = response.json()['guestname']
         self.info('guestname', self.guestname, 'green')
 
-        with updatable_message(
-                'state', indent_level=self._level()) as progress_message:
+        with UpdatableMessage('state', indent_level=self._level()) as progress_message:
 
             def get_new_state() -> GuestInspectType:
                 response = self.api.inspect(f'/guests/{self.guestname}')

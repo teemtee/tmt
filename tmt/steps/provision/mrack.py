@@ -14,7 +14,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import ProvisionError, field, updatable_message
+from tmt.utils import ProvisionError, UpdatableMessage, field
 
 mrack = Any
 providers = Any
@@ -584,8 +584,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.job_id = response["id"]
         self.info('job id', self.job_id, 'green')
 
-        with updatable_message(
-                "status", indent_level=self._level()) as progress_message:
+        with UpdatableMessage("status", indent_level=self._level()) as progress_message:
 
             def get_new_state() -> GuestInspectType:
                 response = self.api.inspect()
