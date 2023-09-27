@@ -2923,7 +2923,7 @@ def assert_window_size(window_size: Optional[int]) -> None:
         return
 
     raise GeneralError(
-        f"Allowed widht of terminal exhausted, output cannot fit into {OUTPUT_WIDTH} columns.")
+        f"Allowed width of terminal exhausted, output cannot fit into {OUTPUT_WIDTH} columns.")
 
 
 def _format_bool(
