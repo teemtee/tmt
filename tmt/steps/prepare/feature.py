@@ -58,21 +58,21 @@ class Feature(tmt.utils.Common):
             return Distro.FEDORA
 
         if os_release.get('NAME') == 'Red Hat Enterprise Linux':
-            if os_release.get('VERSION_ID', '').startswith('9'):
+            if os_release.get('VERSION_ID', '').startswith('9.'):
                 return Distro.RHEL_9
-            if os_release.get('VERSION_ID', '').startswith('8'):
+            if os_release.get('VERSION_ID', '').startswith('8.'):
                 return Distro.RHEL_8
-            if os_release.get('VERSION_ID', '').startswith('7'):
+            if os_release.get('VERSION_ID', '').startswith('7.'):
                 return Distro.RHEL_7
 
         if os_release.get('NAME') == 'CentOS Linux' and os_release.get(
-                'VERSION_ID', '').startswith('7'):
+                'VERSION_ID', '').startswith('7.'):
             return Distro.CENTOS_7
 
         if os_release.get('NAME') == 'CentOS Stream':
-            if os_release.get('VERSION_ID', '').startswith('8'):
+            if os_release.get('VERSION_ID', '').startswith('8.'):
                 return Distro.CENTOS_STREAM_8
-            if os_release.get('VERSION_ID', '').startswith('9'):
+            if os_release.get('VERSION_ID', '').startswith('9.'):
                 return Distro.CENTOS_STREAM_9
 
         return None
