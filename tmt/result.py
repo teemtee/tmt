@@ -94,6 +94,21 @@ class BaseResult(tmt.utils.SerializableContainer):
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
 
+    def show(self) -> str:
+        """ Return a nicely colored result with test name (and note) """
+
+        result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
+
+        components: List[str] = [
+            click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
+            self.name
+            ]
+
+        if self.note:
+            components.append(f'({self.note})')
+
+        return ' '.join(components)
+
 
 @dataclasses.dataclass
 class CheckResult(BaseResult):
