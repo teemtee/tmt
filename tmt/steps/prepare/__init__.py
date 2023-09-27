@@ -1,7 +1,7 @@
 import collections
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
 
 import click
 import fmf
@@ -37,6 +37,9 @@ class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
 
+PrepareStepDataT = TypeVar('PrepareStepDataT', bound=PrepareStepData)
+
+
 class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
     package: List[str]
     missing: str
@@ -46,10 +49,12 @@ class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
     summary: str
 
 
-class PreparePlugin(tmt.steps.Plugin):
+class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
     """ Common parent of prepare plugins """
 
-    _data_class = PrepareStepData
+    # ignore[assignment]: as a base class, PrepareStepData is not included in
+    # PrepareStepDataT.
+    _data_class = PrepareStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
@@ -127,7 +132,9 @@ class Prepare(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(PreparePlugin, PreparePlugin.delegate(self, data=data))
+            plugin = cast(
+                PreparePlugin[PrepareStepData],
+                PreparePlugin.delegate(self, data=data))
             plugin.wake()
             # Add plugin only if there are data
             if not plugin.data.is_bare:
@@ -246,7 +253,9 @@ class Prepare(tmt.steps.Step):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
-        queue = PhaseQueue('prepare', self._logger.descend(logger_name=f'{self}.queue'))
+        queue: PhaseQueue[PrepareStepData] = PhaseQueue(
+            'prepare',
+            self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, PreparePlugin)):
             queue.enqueue(
@@ -254,7 +263,7 @@ class Prepare(tmt.steps.Step):
                 guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                 )
 
-        failed_phases: List[TaskOutcome[QueuedPhase]] = []
+        failed_phases: List[TaskOutcome[QueuedPhase[PrepareStepData]]] = []
 
         for phase_outcome in queue.run():
             if not isinstance(phase_outcome.task.phase, PreparePlugin):

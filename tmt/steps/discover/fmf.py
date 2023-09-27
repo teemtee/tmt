@@ -166,7 +166,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
 
 
 @tmt.steps.provides_method('fmf')
-class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
+class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
     Discover available tests from fmf metadata
 

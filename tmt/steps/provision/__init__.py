@@ -459,7 +459,9 @@ class GuestData(SerializableContainer):
             yield f.name, key_to_option(f.name)
 
     @classmethod
-    def from_plugin(cls: Type[GuestDataT], container: 'ProvisionPlugin') -> GuestDataT:
+    def from_plugin(
+            cls: Type[GuestDataT],
+            container: 'ProvisionPlugin[ProvisionStepDataT]') -> GuestDataT:
         """ Create guest data from plugin and its current configuration """
 
         return cls(**{
@@ -1645,10 +1647,15 @@ class ProvisionStepData(tmt.steps.StepData):
         if serialized is not None else None)
 
 
-class ProvisionPlugin(tmt.steps.GuestlessPlugin):
+ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
+
+
+class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
     """ Common parent of provision plugins """
 
-    _data_class = ProvisionStepData
+    # ignore[assignment]: as a base class, ProvisionStepData is not included in
+    # ProvisionStepDataT.
+    _data_class = ProvisionStepData  # type: ignore[assignment]
     _guest_class = Guest
 
     # Default implementation for provision is a virtual machine
@@ -1823,7 +1830,9 @@ class Provision(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(ProvisionPlugin, ProvisionPlugin.delegate(self, data=data))
+            plugin = cast(
+                ProvisionPlugin[ProvisionStepData],
+                ProvisionPlugin.delegate(self, data=data))
             self._phases.append(plugin)
             # If guest data loaded, perform a complete wake up
             plugin.wake(data=self._guest_data.get(plugin.name))

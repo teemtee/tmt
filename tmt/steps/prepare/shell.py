@@ -35,7 +35,7 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
 
 
 @tmt.steps.provides_method('shell')
-class PrepareShell(tmt.steps.prepare.PreparePlugin):
+class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     """
     Prepare guest using shell (bash) scripts
 

@@ -10,7 +10,7 @@ from tmt.result import ResultOutcome
 
 if TYPE_CHECKING:
     from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin
+    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
     from tmt.steps.provision import Guest
 
 
@@ -19,7 +19,7 @@ class Shell(TestFramework):
     @classmethod
     def get_test_command(
             cls,
-            parent: 'ExecutePlugin',
+            parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
             logger: tmt.log.Logger) -> tmt.utils.ShellScript:
@@ -30,7 +30,7 @@ class Shell(TestFramework):
     @classmethod
     def extract_results(
             cls,
-            parent: 'ExecutePlugin',
+            parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
             logger: tmt.log.Logger) -> List[tmt.result.Result]:

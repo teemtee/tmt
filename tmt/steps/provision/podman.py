@@ -297,7 +297,7 @@ class GuestContainer(tmt.Guest):
 
 
 @tmt.steps.provides_method('container')
-class ProvisionPodman(tmt.steps.provision.ProvisionPlugin):
+class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     """
     Create a new container using podman
 

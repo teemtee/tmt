@@ -16,7 +16,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     from tmt.result import CheckResult
-    from tmt.steps.execute import ExecutePlugin
+    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
 
 
 CheckPluginClass = Type['CheckPlugin']
@@ -120,7 +120,7 @@ class Check(
             event: CheckEvent,
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
-            plugin: 'tmt.steps.execute.ExecutePlugin',
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> List['CheckResult']:
         """
@@ -185,7 +185,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin',
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
@@ -197,7 +197,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin',
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,

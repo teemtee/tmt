@@ -657,7 +657,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
 
 @tmt.steps.provides_method('beaker')
-class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin):
+class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     """
     Provision guest on Beaker system using mrack
 

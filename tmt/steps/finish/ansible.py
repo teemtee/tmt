@@ -5,7 +5,8 @@ from tmt.steps.prepare.ansible import PrepareAnsible
 
 
 @tmt.steps.provides_method('ansible')
-class FinishAnsible(tmt.steps.finish.FinishPlugin, PrepareAnsible):
+class FinishAnsible(
+        tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible):
     """
     Perform finishing tasks using ansible
 
@@ -31,8 +32,7 @@ class FinishAnsible(tmt.steps.finish.FinishPlugin, PrepareAnsible):
 
     # We are re-using "prepare" step for "finish",
     # and they both have different expectations
-    # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
-    _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData  # type: ignore[assignment]
+    _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData
 
     # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
     # Also, assigning class methods seems to cause trouble to mypy

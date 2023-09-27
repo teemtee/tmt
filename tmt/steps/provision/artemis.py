@@ -597,7 +597,7 @@ class GuestArtemis(tmt.GuestSsh):
 
 
 @tmt.steps.provides_method('artemis')
-class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin):
+class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]):
     """
     Provision guest using Artemis backend
 

@@ -38,7 +38,7 @@ class ProvisionConnectData(ConnectGuestData, tmt.steps.provision.ProvisionStepDa
 
 
 @tmt.steps.provides_method('connect')
-class ProvisionConnect(tmt.steps.provision.ProvisionPlugin):
+class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]):
     """
     Connect to a provisioned guest using ssh
 

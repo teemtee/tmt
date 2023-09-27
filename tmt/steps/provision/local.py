@@ -129,7 +129,7 @@ class GuestLocal(tmt.Guest):
 
 
 @tmt.steps.provides_method('local')
-class ProvisionLocal(tmt.steps.provision.ProvisionPlugin):
+class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     """
     Use local host for test execution
 

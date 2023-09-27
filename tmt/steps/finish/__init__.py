@@ -1,6 +1,6 @@
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, cast
 
 import click
 import fmf
@@ -29,10 +29,15 @@ class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
 
-class FinishPlugin(tmt.steps.Plugin):
+FinishStepDataT = TypeVar('FinishStepDataT', bound=FinishStepData)
+
+
+class FinishPlugin(tmt.steps.Plugin[FinishStepDataT]):
     """ Common parent of finish plugins """
 
-    _data_class = FinishStepData
+    # ignore[assignment]: as a base class, FinishStepData is not included in
+    # FinishStepDataT.
+    _data_class = FinishStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[Method] = PluginRegistry()
@@ -84,7 +89,9 @@ class Finish(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(FinishPlugin, FinishPlugin.delegate(self, data=data))
+            plugin = cast(
+                FinishPlugin[FinishStepData],
+                FinishPlugin.delegate(self, data=data))
             plugin.wake()
             # Add plugin only if there are data
             if not plugin.data.is_bare:
@@ -129,7 +136,9 @@ class Finish(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
-        queue = PhaseQueue('finish', self._logger.descend(logger_name=f'{self}.queue'))
+        queue: PhaseQueue[FinishStepData] = PhaseQueue(
+            'finish',
+            self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, FinishPlugin)):
             queue.enqueue(
@@ -137,7 +146,7 @@ class Finish(tmt.steps.Step):
                 guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                 )
 
-        failed_phases: List[TaskOutcome[QueuedPhase]] = []
+        failed_phases: List[TaskOutcome[QueuedPhase[FinishStepData]]] = []
 
         for phase_outcome in queue.run():
             if not isinstance(phase_outcome.task.phase, FinishPlugin):

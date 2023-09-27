@@ -1,5 +1,5 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, TypeVar, cast
 
 import click
 from fmf.utils import listed
@@ -38,10 +38,15 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         )
 
 
-class DiscoverPlugin(tmt.steps.GuestlessPlugin):
+DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
+
+
+class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
     """ Common parent of discover plugins """
 
-    _data_class = DiscoverStepData
+    # ignore[assignment]: as a base class, DiscoverStepData is not included in
+    # DiscoverStepDataT.
+    _data_class = DiscoverStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
@@ -251,7 +256,9 @@ class Discover(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(DiscoverPlugin, DiscoverPlugin.delegate(self, data=data))
+            plugin = cast(
+                DiscoverPlugin[DiscoverStepData],
+                DiscoverPlugin.delegate(self, data=data))
             self._phases.append(plugin)
             plugin.wake()
 

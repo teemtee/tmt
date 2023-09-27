@@ -14,6 +14,7 @@ from typing import (
     Callable,
     DefaultDict,
     Dict,
+    Generic,
     Iterable,
     Iterator,
     List,
@@ -215,7 +216,7 @@ _RawStepData = TypedDict('_RawStepData', {
 RawStepDataArgument = Union[_RawStepData, List[_RawStepData]]
 
 
-T = TypeVar('T', bound='StepData')
+StepDataT = TypeVar('StepDataT', bound='StepData')
 
 
 @dataclasses.dataclass
@@ -269,9 +270,9 @@ class StepData(
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
-            cls: Type[T],
+            cls: Type[StepDataT],
             raw_data: _RawStepData,
-            logger: tmt.log.Logger) -> T:
+            logger: tmt.log.Logger) -> StepDataT:
         """ Convert from a specification file or from a CLI option """
 
         cls.pre_normalization(raw_data, logger)
@@ -1018,7 +1019,11 @@ def provides_method(
         plugin_method = Method(name, class_=cls, doc=doc, order=order)
 
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
-        cast('BasePlugin', cls.__bases__[0])._supported_methods \
+        # TODO: BasePlugin[Any]: it's tempting to use StepDataT, but I was
+        # unable to introduce the type var into annotations. Apparently, `cls`
+        # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
+        # space for type var. But it's still something to fix later.
+        cast('BasePlugin[Any]', cls.__bases__[0])._supported_methods \
             .register_plugin(
                 plugin_id=name,
                 plugin=plugin_method,
@@ -1029,7 +1034,7 @@ def provides_method(
     return _method
 
 
-class BasePlugin(Phase):
+class BasePlugin(Phase, Generic[StepDataT]):
     """ Common parent of all step plugins """
 
     # Deprecated, use @provides_method(...) instead. left for backward
@@ -1049,8 +1054,8 @@ class BasePlugin(Phase):
     # subclasses.
     _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
-    _data_class: Type[StepData] = StepData
-    data: StepData
+    _data_class: Type[StepDataT]
+    data: StepDataT
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
@@ -1063,7 +1068,7 @@ class BasePlugin(Phase):
             self,
             *,
             step: Step,
-            data: StepData,
+            data: StepDataT,
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         """ Store plugin name, data and parent step """
@@ -1183,8 +1188,8 @@ class BasePlugin(Phase):
     def delegate(
             cls,
             step: Step,
-            data: Optional[StepData] = None,
-            raw_data: Optional[_RawStepData] = None) -> 'BasePlugin':
+            data: Optional[StepDataT] = None,
+            raw_data: Optional[_RawStepData] = None) -> 'BasePlugin[StepDataT]':
         """
         Return plugin instance implementing the data['how'] method
 
@@ -1451,7 +1456,7 @@ class BasePlugin(Phase):
             logger.warn(f"Unable to remove '{self.workdir}': {error}")
 
 
-class GuestlessPlugin(BasePlugin):
+class GuestlessPlugin(BasePlugin[StepDataT]):
     """ Common parent of all step plugins that do not work against a particular guest """
 
     def go(self) -> None:
@@ -1460,7 +1465,7 @@ class GuestlessPlugin(BasePlugin):
         self.go_prolog(self._logger)
 
 
-class Plugin(BasePlugin):
+class Plugin(BasePlugin[StepDataT]):
     """ Common parent of all step plugins that do work against a particular guest """
 
     def go(
@@ -1934,10 +1939,10 @@ class Topology(SerializableContainer):
 
 
 @dataclasses.dataclass
-class QueuedPhase(GuestlessTask, Task):
+class QueuedPhase(GuestlessTask, Task, Generic[StepDataT]):
     """ A phase to run on one or more guests """
 
-    phase: Union[Action, Plugin]
+    phase: Union[Action, Plugin[StepDataT]]
 
     # A cached environment, it will be initialized by `prepare_environment()`
     # on the first call.
@@ -1980,13 +1985,13 @@ class QueuedPhase(GuestlessTask, Task):
             yield from Task.go(self)
 
 
-class PhaseQueue(Queue[QueuedPhase]):
+class PhaseQueue(Queue[QueuedPhase[StepDataT]]):
     """ Queue class for running phases on guests """
 
     def enqueue(
             self,
             *,
-            phase: Union[Action, Plugin],
+            phase: Union[Action, Plugin[StepDataT]],
             guests: List['Guest']) -> None:
         """
         Add a phase to queue.

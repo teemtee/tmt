@@ -1967,7 +1967,7 @@ class Plan(
     def _lint_step_methods(
             self,
             step: str,
-            plugin_class: Type[tmt.steps.BasePlugin]) -> LinterReturn:
+            plugin_class: tmt.steps.PluginClass) -> LinterReturn:
         """ P003: execute step methods must be known """
 
         phases = self._step_phase_nodes(step)

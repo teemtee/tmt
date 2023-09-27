@@ -169,7 +169,7 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 
 
 @tmt.steps.provides_method('tmt')
-class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
+class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     """
     Use the internal tmt executor to execute tests
 

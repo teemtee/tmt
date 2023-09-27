@@ -43,7 +43,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
 
 @tmt.steps.provides_method("reportportal")
-class ReportReportPortal(tmt.steps.report.ReportPlugin):
+class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results to a ReportPortal instance via API.
 
@@ -111,21 +111,21 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
         super().go()
 
-        server = self.get("url")
+        server = self.data.url
         if not server:
             raise tmt.utils.ReportError("No ReportPortal server url provided.")
         server = server.rstrip("/")
 
-        project = self.get("project")
+        project = self.data.project
         if not project:
             raise tmt.utils.ReportError("No ReportPortal project provided.")
 
-        token = self.get("token")
+        token = self.data.token
         if not token:
             raise tmt.utils.ReportError("No ReportPortal token provided.")
 
         assert self.step.plan.name is not None
-        launch_name = self.get("launch") or self.step.plan.name
+        launch_name = self.data.launch or self.step.plan.name
 
         url = f"{server}/api/{self.DEFAULT_API_VERSION}/{project}"
         headers = {
@@ -133,7 +133,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             "accept": "*/*",
             "Content-Type": "application/json"}
 
-        envar_pattern = self.get("exclude-variables") or "$^"
+        envar_pattern = self.data.exclude_variables
         attributes = [
             {'key': key, 'value': value[0]}
             for key, value in self.step.plan._fmf_context.items()]

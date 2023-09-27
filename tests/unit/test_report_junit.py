@@ -22,17 +22,11 @@ def report_fix(tmppath: Path, root_logger):
 
     out_file_path = str(tmppath / "out.xml")
 
-    def get(key, default=None):
-        if key == "file":
-            return out_file_path
-        return default
-
     report = ReportJUnit(
         logger=root_logger,
         step=step_mock,
-        data=ReportJUnitData(name='x', how='junit'),
+        data=ReportJUnitData(name='x', how='junit', file=out_file_path),
         workdir=tmppath / 'junit')
-    report.get = get
     report.info = MagicMock()
 
     results = []

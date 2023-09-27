@@ -815,7 +815,7 @@ class _CommonBase:
         # https://github.com/python/mypy/issues/4177
         parent = mro[mro.index(__class__) + 1]  # type: ignore[name-defined]
 
-        if parent is object:
+        if parent in (object, Generic):
             super().__init__()
 
         else:

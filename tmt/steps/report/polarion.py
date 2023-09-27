@@ -9,7 +9,7 @@ from requests import post
 import tmt
 import tmt.steps
 import tmt.steps.report
-from tmt.utils import field
+from tmt.utils import Path, field
 
 from .junit import make_junit_xml
 
@@ -18,12 +18,12 @@ DEFAULT_NAME = 'xunit.xml'
 
 @dataclasses.dataclass
 class ReportPolarionData(tmt.steps.report.ReportStepData):
-    file: Optional[str] = field(
+    file: Optional[Path] = field(
         default=None,
         option='--file',
         metavar='FILE',
-        help='Path to the file to store xUnit in.'
-        )
+        help='Path to the file to store xUnit in.',
+        normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
 
     upload: bool = field(
         default=True,
@@ -163,7 +163,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
 
 
 @tmt.steps.provides_method('polarion')
-class ReportPolarion(tmt.steps.report.ReportPlugin):
+class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     """
     Write test results into a xUnit file and upload to Polarion
     """
@@ -183,16 +183,18 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
         from tmt.export.polarion import PolarionWorkItem
         assert PolarionWorkItem
 
-        title = self.get(
-            'title',
-            os.getenv(
+        title = self.data.title
+        if not title:
+            title = os.getenv(
                 'TMT_PLUGIN_REPORT_POLARION_TITLE',
                 self.step.plan.name.rsplit('/', 1)[1] +
                 # Polarion server running with UTC timezone
-                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")))
+                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"))
         title = title.replace('-', '_')
-        project_id = self.get('project-id', os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID'))
-        template = self.get('template', os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE'))
+        project_id = self.data.project_id or os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID')
+        template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')
+        # TODO: try use self.data instead - but these fields are not optional, they do have
+        # default values, do envvars even have any effect at all??
         upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
         other_testrun_fields = [
@@ -257,7 +259,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin):
 
         assert self.workdir is not None
 
-        f_path = self.get("file", self.workdir / DEFAULT_NAME)
+        f_path = self.data.file or self.workdir / DEFAULT_NAME
         with open(f_path, 'wb') as fw:
             ElementTree.ElementTree(xml_tree).write(fw)
 

@@ -39,7 +39,7 @@ class ReportHtmlData(tmt.steps.report.ReportStepData):
 
 
 @tmt.steps.provides_method('html')
-class ReportHtml(tmt.steps.report.ReportPlugin):
+class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     """
     Format test results into an html report
 
@@ -63,17 +63,17 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         # Prepare the template
         environment = tmt.utils.default_template_environment()
 
-        if self.get('absolute-paths'):
+        if self.data.absolute_paths:
             environment.filters["linkable_path"] = lambda x: str(Path(x).absolute())
         else:
             # Links used in html should be relative to a workdir
             assert self.workdir is not None  # narrow type
             environment.filters["linkable_path"] = lambda x: str(Path(x).relative_to(self.workdir))
 
-        if self.get('display-guest') == 'always':
+        if self.data.display_guest == 'always':
             display_guest = True
 
-        elif self.get('display-guest') == 'never':
+        elif self.data.display_guest == 'never':
             display_guest = False
 
         else:
@@ -105,7 +105,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin):
         assert self.workdir is not None
         target = self.workdir / filename
         self.info("output", target, color='yellow')
-        if not self.get('open'):
+        if not self.data.open:
             return
 
         # Open target in webbrowser

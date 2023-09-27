@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import tmt.log
 import tmt.steps.execute
@@ -8,6 +8,9 @@ import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, render_run_exception_streams
+
+if TYPE_CHECKING:
+    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
 
 TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
@@ -40,7 +43,7 @@ class DmesgCheck(CheckPlugin):
     @classmethod
     def _save_dmesg(
             cls,
-            plugin: tmt.steps.execute.ExecutePlugin,
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             event: CheckEvent,
@@ -81,7 +84,7 @@ class DmesgCheck(CheckPlugin):
             cls,
             *,
             check: 'Check',
-            plugin: tmt.steps.execute.ExecutePlugin,
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
@@ -95,7 +98,7 @@ class DmesgCheck(CheckPlugin):
             cls,
             *,
             check: 'Check',
-            plugin: tmt.steps.execute.ExecutePlugin,
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,

@@ -1,5 +1,5 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union, cast
 
 import click
 
@@ -19,10 +19,15 @@ class ReportStepData(tmt.steps.StepData):
     pass
 
 
-class ReportPlugin(tmt.steps.GuestlessPlugin):
+ReportStepDataT = TypeVar('ReportStepDataT', bound=ReportStepData)
+
+
+class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT]):
     """ Common parent of report plugins """
 
-    _data_class = ReportStepData
+    # ignore[assignment]: as a base class, ReportStepData is not included in
+    # ReportStepDataT.
+    _data_class = ReportStepData  # type: ignore[assignment]
 
     # Default implementation for report is display
     how = 'display'
@@ -70,7 +75,9 @@ class Report(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(ReportPlugin, ReportPlugin.delegate(self, data=data))
+            plugin = cast(
+                ReportPlugin[ReportStepData],
+                ReportPlugin.delegate(self, data=data))
             plugin.wake()
             self._phases.append(plugin)
 
@@ -106,7 +113,7 @@ class Report(tmt.steps.Step):
             # but pre-commit's mypy sees `Phase` - which should not be the right answer
             # since `classes` is clearly not `None`. Adding `cast()` to overcome this
             # because I can't find the actual error :/
-            cast(Union[Action, ReportPlugin], phase).go()
+            cast(Union[Action, ReportPlugin[ReportStepData]], phase).go()
 
         # Give a summary, update status and save
         self.summary()

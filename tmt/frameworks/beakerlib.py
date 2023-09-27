@@ -12,7 +12,7 @@ from tmt.utils import Path
 
 if TYPE_CHECKING:
     from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin
+    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
     from tmt.steps.provision import Guest
 
 
@@ -21,7 +21,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_environment_variables(
             cls,
-            parent: 'ExecutePlugin',
+            parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
             logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
@@ -34,7 +34,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_pull_options(
             cls,
-            parent: 'ExecutePlugin',
+            parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
             logger: tmt.log.Logger) -> List[str]:
@@ -46,7 +46,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def extract_results(
             cls,
-            parent: 'ExecutePlugin',
+            parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
             logger: tmt.log.Logger) -> List[tmt.result.Result]:

@@ -11,6 +11,7 @@ from tmt.utils import CommandOutput, Path, ShellScript, render_run_exception_str
 
 if TYPE_CHECKING:
     from tmt.base import Test
+    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
 
 TEST_POST_AVC_FILENAME = 'tmt-avc-{event}.txt'
 
@@ -20,7 +21,7 @@ class AvcDenials(CheckPlugin):
     @classmethod
     def _save_report(
             cls,
-            plugin: tmt.steps.execute.ExecutePlugin,
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'Test',
             event: CheckEvent,
@@ -172,7 +173,7 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
             cls,
             *,
             check: 'Check',
-            plugin: tmt.steps.execute.ExecutePlugin,
+            plugin: 'ExecutePlugin[ExecuteStepDataT]',
             guest: tmt.steps.provision.Guest,
             test: 'Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,

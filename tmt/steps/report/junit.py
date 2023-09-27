@@ -1,6 +1,6 @@
 import dataclasses
 import types
-from typing import Any, Optional, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, cast, overload
 
 import tmt
 import tmt.base
@@ -8,7 +8,10 @@ import tmt.options
 import tmt.result
 import tmt.steps
 import tmt.steps.report
-from tmt.utils import field
+from tmt.utils import Path, field
+
+if TYPE_CHECKING:
+    from tmt.steps.report import ReportPlugin, ReportStepDataT
 
 DEFAULT_NAME = "junit.xml"
 
@@ -50,7 +53,7 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
             f"Malformed duration '{duration}' ({error}).")
 
 
-def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> JunitTestSuite:
+def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> JunitTestSuite:
     """ Create junit xml object """
     import_junit_xml()
     assert junit_xml
@@ -84,16 +87,16 @@ def make_junit_xml(report: "tmt.steps.report.ReportPlugin") -> JunitTestSuite:
 
 @dataclasses.dataclass
 class ReportJUnitData(tmt.steps.report.ReportStepData):
-    file: Optional[str] = field(
+    file: Optional[Path] = field(
         default=None,
         option='--file',
         metavar='FILE',
-        help='Path to the file to store junit to.'
-        )
+        help='Path to the file to store junit to.',
+        normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
 
 
 @tmt.steps.provides_method('junit')
-class ReportJUnit(tmt.steps.report.ReportPlugin):
+class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     """
     Write test results in JUnit format
 
@@ -116,7 +119,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin):
         assert junit_xml  # narrow type
 
         assert self.workdir is not None
-        f_path = self.get("file", self.workdir / DEFAULT_NAME)
+        f_path = self.data.file or self.workdir / DEFAULT_NAME
         try:
             with open(f_path, 'w') as fw:
                 if hasattr(junit_xml, 'to_xml_report_file'):

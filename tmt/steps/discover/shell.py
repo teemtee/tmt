@@ -197,7 +197,7 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
 
 
 @tmt.steps.provides_method('shell')
-class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
+class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     """
     Use provided list of shell script tests
 
@@ -310,8 +310,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         dist_git_source = self.get('dist-git-source', False)
 
         # Check and process each defined shell test
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1540
-        for data in cast(DiscoverShellData, self.data).tests:
+        for data in self.data.tests:
             # Create data copy (we want to keep original data for save()
             data = copy.deepcopy(data)
             # Extract name, make sure it is present

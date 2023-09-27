@@ -46,7 +46,7 @@ class InstallBase(tmt.utils.Common):
     def __init__(
             self,
             *,
-            parent: tmt.steps.prepare.PreparePlugin,
+            parent: 'PrepareInstall',
             guest: Guest,
             logger: tmt.log.Logger) -> None:
         """ Initialize installation data """
@@ -54,10 +54,6 @@ class InstallBase(tmt.utils.Common):
         self.guest = guest
 
         # Get package related data from the plugin
-        assert self.parent is not None
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(tmt.steps.prepare.PreparePlugin, self.parent)
-
         self.packages = parent.get("package", [])
         self.directories = cast(List[Path], parent.get("directory", []))
         self.exclude = parent.get("exclude", [])
@@ -191,7 +187,7 @@ class InstallBase(tmt.utils.Common):
     def enable_copr(self) -> None:
         """ Enable requested copr repositories """
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        coprs = cast(tmt.steps.prepare.PreparePlugin, self.parent).get('copr')
+        coprs = cast(PrepareInstall, self.parent).get('copr')
         if not coprs:
             return
         # Try to install copr plugin
@@ -219,7 +215,7 @@ class InstallBase(tmt.utils.Common):
         """ Copy packages to the test system """
         assert self.parent is not None
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        workdir = cast(tmt.steps.prepare.PreparePlugin, self.parent).step.workdir
+        workdir = cast(PrepareInstall, self.parent).step.workdir
         if not workdir:
             raise tmt.utils.GeneralError('workdir should not be empty')
         self.rpms_directory = workdir / 'rpms'
@@ -524,7 +520,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
 
 
 @tmt.steps.provides_method('install')
-class PrepareInstall(tmt.steps.prepare.PreparePlugin):
+class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     """
     Install packages on the guest
 

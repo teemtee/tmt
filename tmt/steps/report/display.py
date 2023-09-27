@@ -28,7 +28,7 @@ class ReportDisplayData(tmt.steps.report.ReportStepData):
 
 
 @tmt.steps.provides_method('display')
-class ReportDisplay(tmt.steps.report.ReportPlugin):
+class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     """
     Show test results on the terminal
 
@@ -138,10 +138,10 @@ class ReportDisplay(tmt.steps.report.ReportPlugin):
         if not self.verbosity_level:
             return
 
-        if self.get('display-guest') == 'always':
+        if self.data.display_guest == 'always':
             display_guest = True
 
-        elif self.get('display-guest') == 'never':
+        elif self.data.display_guest == 'never':
             display_guest = False
 
         else:

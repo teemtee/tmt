@@ -2,15 +2,7 @@ import copy
 import dataclasses
 import datetime
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-    )
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, cast
 
 import click
 import fmf
@@ -25,7 +17,8 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.queue import TaskOutcome
 from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
-from tmt.steps import Action, PhaseQueue, QueuedPhase, Step, StepData
+from tmt.steps import Action, PhaseQueue, QueuedPhase, Step
+from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import Path, Stopwatch, field
 
@@ -138,11 +131,15 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         help='Stop execution after the first test failure.')
 
 
-class ExecutePlugin(tmt.steps.Plugin):
+ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
+
+
+class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     """ Common parent of execute plugins """
 
-    _data_class = ExecuteStepData
-    data: ExecuteStepData
+    # ignore[assignment]: as a base class, ExecuteStepData is not included in
+    # ExecuteStepDataT.
+    _data_class = ExecuteStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
@@ -161,7 +158,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             self,
             *,
             step: Step,
-            data: StepData,
+            data: ExecuteStepDataT,
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
@@ -202,14 +199,14 @@ class ExecutePlugin(tmt.steps.Plugin):
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
-    def discover(self) -> tmt.steps.discover.Discover:
+    def discover(self) -> Discover:
         """ Return discover plugin instance """
         # This is necessary so that upgrade plugin can inject a fake discover
 
         return self.step.plan.discover
 
     @discover.setter
-    def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
+    def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
 
     def data_path(
@@ -572,7 +569,9 @@ class Execute(tmt.steps.Step):
 
         # Choose the right plugin and wake it up
         # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-        executor = cast(ExecutePlugin, ExecutePlugin.delegate(self, data=self.data[0]))
+        executor = cast(
+            ExecutePlugin[ExecuteStepData],
+            ExecutePlugin.delegate(self, data=self.data[0]))
         executor.wake()
         self._phases.append(executor)
 
@@ -615,9 +614,9 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        from tmt.steps.discover import DiscoverPlugin
-
-        queue = PhaseQueue('execute', self._logger.descend(logger_name=f'{self}.queue'))
+        queue: PhaseQueue[ExecuteStepData] = PhaseQueue(
+            'execute',
+            self._logger.descend(logger_name=f'{self}.queue'))
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
@@ -641,7 +640,7 @@ class Execute(tmt.steps.Step):
                 # plugin, so we could point it to that discover phase rather than
                 # let is "see" all tests, or test in different discover phase.
                 for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
-                    phase_copy = cast(ExecutePlugin, copy.copy(phase))
+                    phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
                     phase_copy.discover_phase = discover.name
 
                     queue.enqueue(
@@ -652,7 +651,7 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_phases: List[TaskOutcome[QueuedPhase]] = []
+        failed_phases: List[TaskOutcome[QueuedPhase[ExecuteStepData]]] = []
 
         for phase_outcome in queue.run():
             if phase_outcome.exc:

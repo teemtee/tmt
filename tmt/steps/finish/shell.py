@@ -35,7 +35,7 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
 
 
 @tmt.steps.provides_method('shell')
-class FinishShell(tmt.steps.finish.FinishPlugin):
+class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
     """
     Perform finishing tasks using shell (bash) scripts
 

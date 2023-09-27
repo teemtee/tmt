@@ -57,7 +57,7 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
 
 
 @tmt.steps.provides_method('ansible')
-class PrepareAnsible(tmt.steps.prepare.PreparePlugin):
+class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     """
     Prepare guest using ansible
 

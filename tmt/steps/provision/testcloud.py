@@ -582,7 +582,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
 
 @tmt.steps.provides_method('virtual.testcloud')
-class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin):
+class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using testcloud
 

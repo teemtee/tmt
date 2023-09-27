@@ -11,7 +11,7 @@ import tmt.steps.discover.fmf
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.steps.discover import DiscoverPlugin
+from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
@@ -146,7 +146,7 @@ class ExecuteUpgrade(ExecuteInternal):
 
     @property  # type:ignore[override]
     def discover(self) -> Union[
-            'tmt.steps.discover.Discover',
+            Discover,
             DiscoverFmf]:
         """ Return discover plugin instance """
         # If we are in the second phase (upgrade), take tests from our fake
@@ -156,7 +156,7 @@ class ExecuteUpgrade(ExecuteInternal):
         return self.step.plan.discover
 
     @discover.setter
-    def discover(self, plugin: Optional['tmt.steps.discover.DiscoverPlugin']) -> None:
+    def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
 
     def go(
