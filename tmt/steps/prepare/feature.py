@@ -86,20 +86,10 @@ class ToggleableFeature(Feature):
         raise NotImplementedError
 
 
-FEDORA_REPO = 'powertools'
 FEDORA_PACKAGES = ['epel-release', 'epel-next-release']
-
 CENTOS_7_PACKAGES = ['epel-release']
-
-CENTOS_STREAM_9_REPO = 'crb'
-
-RHEL_7_REPO = 'rhel-*-optional-rpms rhel-*-extras-rpms rhel-ha-for-rhel-*-server-rpms'
 RHEL_7_PACKAGES = ['https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm']
-
-RHEL_8_REPO = 'codeready-builder-for-rhel-8-$(arch)-rpms'
 RHEL_8_PACKAGES = ['https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm']
-
-RHEL_9_REPO = 'codeready-builder-for-rhel-9-$(arch)-rpms'
 RHEL_9_PACKAGES = ['https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm']
 
 
@@ -122,46 +112,34 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} yum -y install {" ".join(CENTOS_7_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_8:
-            # dnf config-manager --set-enabled powertools
             # dnf -y install epel-release epel-next-release
             self.info(f"Enable {self.KEY.upper()} on CentOS Stream 8")
             self.guest.execute(
-                ShellScript(f'{sudo} dnf config-manager --set-enabled {FEDORA_REPO}')
-                & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_9:
-            # dnf config-manager --set-enabled crb
             # dnf -y install epel-release epel-next-release
             self.info(f"Enable {self.KEY.upper()} on CentOS Stream 9")
             self.guest.execute(
-                ShellScript(f'{sudo} dnf config-manager --set-enabled {CENTOS_STREAM_9_REPO}')
-                & ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y install {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.RHEL_7:
-            # subscription-manager repos --enable rhel-*-optional-rpms \
-            #               --enable rhel-*-extras-rpms \
-            #               --enable rhel-ha-for-rhel-*-server-rpms
             # yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
             self.info(f"Enable {self.KEY.upper()} on RHEL 7")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_7_REPO}')
-                + ShellScript(f'{sudo} yum -y install {" ".join(RHEL_7_PACKAGES)}'),
+                ShellScript(f'{sudo} yum -y install {" ".join(RHEL_7_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.RHEL_8:
-            # subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
             self.info(f"Enable {self.KEY.upper()} on RHEL 8")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_8_REPO}')
-                + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_8_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_8_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.RHEL_9:
-            # subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
             self.info(f"Enable {self.KEY.upper()} on RHEL 9")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --enable {RHEL_9_REPO}')
-                + ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_9_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y install {" ".join(RHEL_9_PACKAGES)}'),
                 silent=True)
         else:
             self.warn(f"Enable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
@@ -179,46 +157,34 @@ class EPEL(ToggleableFeature):
                 ShellScript(f'{sudo} yum -y remove {" ".join(CENTOS_7_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_8:
-            # dnf config-manager --set-disabled powertools
             # dnf -y remove epel-release epel-next-release
             self.info(f"Disable {self.KEY.upper()} on CentOS Stream 8")
             self.guest.execute(
-                ShellScript(f'{sudo} dnf config-manager --set-disabled {FEDORA_REPO}')
-                + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.CENTOS_STREAM_9:
-            # dnf config-manager --set-disabled crb
             # dnf -y remove epel-release epel-next-release
             self.info(f"Disable {self.KEY.upper()} on CentOS Stream 9")
             self.guest.execute(
-                ShellScript(f'{sudo} dnf config-manager --set-disabled {CENTOS_STREAM_9_REPO}')
-                + ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
+                ShellScript(f'{sudo} dnf -y remove {" ".join(FEDORA_PACKAGES)}'),
                 silent=True)
         elif distro == Distro.RHEL_7:
-            # subscription-manager repos --disable rhel-*-optional-rpms \
-            #               --disable rhel-*-extras-rpms \
-            #               --disable rhel-ha-for-rhel-*-server-rpms
             # dnf -y remove epel-release
             self.info(f"Disable {self.KEY.upper()} on RHEL 7")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_7_REPO}')
-                + ShellScript(f'{sudo} yum -y remove epel-release'),
+                ShellScript(f'{sudo} yum -y remove epel-release'),
                 silent=True)
         elif distro == Distro.RHEL_8:
-            # subscription-manager repos --disable codeready-builder-for-rhel-8-$(arch)-rpms
             # dnf -y remove epel-release
             self.info(f"Disable {self.KEY.upper()} on RHEL 8")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_8_REPO}')
-                + ShellScript(f'{sudo} dnf -y remove epel-release'),
+                ShellScript(f'{sudo} dnf -y remove epel-release'),
                 silent=True)
         elif distro == Distro.RHEL_9:
-            # subscription-manager repos --disable codeready-builder-for-rhel-9-$(arch)-rpms
             # dnf -y remove epel-release
             self.info(f"Disable {self.KEY.upper()} on RHEL 9")
             self.guest.execute(
-                ShellScript(f'{sudo} subscription-manager repos --disable {RHEL_9_REPO}')
-                + ShellScript(f'{sudo} dnf -y remove epel-release'),
+                ShellScript(f'{sudo} dnf -y remove epel-release'),
                 silent=True)
         else:
             self.warn(f"Disable {self.KEY.upper()}: '{distro}' of the guest is unsupported.")
