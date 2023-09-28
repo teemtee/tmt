@@ -1000,6 +1000,11 @@ class Test(
         exporter=lambda value: [check.to_minimal_spec() for check in value])
 
     serialnumber: int = 0
+    data_path: Optional[Path] = field(
+        default=None,
+        serialize=lambda path: None if path is None else str(path),
+        unserialize=lambda value: None if value is None else Path(value)
+        )
 
     returncode: Optional[int] = None
     starttime: Optional[str] = None

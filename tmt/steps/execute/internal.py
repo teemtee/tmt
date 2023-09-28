@@ -285,6 +285,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         test.real_duration = self.format_duration(endtime - starttime)
 
+        test.data_path = self.data_path(test, guest, "data")
+
         self.write(
             self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
