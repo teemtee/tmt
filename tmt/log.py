@@ -32,6 +32,7 @@ import logging.handlers
 import os
 import sys
 from typing import (
+    IO,
     TYPE_CHECKING,
     Any,
     Dict,
@@ -258,10 +259,7 @@ class LogfileHandler(logging.FileHandler):
         super().__init__(filepath, mode='a')
 
 
-# ignore[type-arg]: StreamHandler is a generic type, but such expression would be incompatible
-# with older Python versions. Since it's not critical to mark the handler as "str only", we can
-# ignore the issue for now.
-class ConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
+class ConsoleHandler(logging.StreamHandler[IO[str]]):
     pass
 
 

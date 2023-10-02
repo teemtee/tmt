@@ -174,7 +174,8 @@ T = TypeVar('T')
 # TODO: yes, cached_property is available since Python 3.8, but 1. we still need
 # to support Python 3.6, and 2. the type annotations are not perfect, depending
 # on what's in typing_extensions available in RPMs. Therefore adding a simplified
-# cached_property we would remove with Python 3.6 support.
+# cached_property, we might remove it in the future when type inference works well
+# enough.
 class cached_property(Generic[T]):  # noqa: N801
     def __init__(self, fn: Callable[[Any], T]) -> None:
         self.__doc__ = fn.__doc__
@@ -3730,9 +3731,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
         return super().increment(*args, **kwargs)
 
 
-# ignore[type-arg]: base class is a generic class, but we cannot list
-# its parameter type, because in Python 3.6 the class "is not subscriptable".
-class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
+class retry_session(contextlib.AbstractContextManager[requests.Session]):  # noqa: N801
     """
     Context manager for requests.Session() with retries and timeout
     """
@@ -4631,9 +4630,7 @@ def git_clone(
         return git_clone(url, destination, common, env, shallow=False, can_change=False)
 
 
-# ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
-# in Python 3.6 the class "is not subscriptable".
-class updatable_message(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
+class updatable_message(contextlib.AbstractContextManager['updatable_message']):  # noqa: N801
     """ Updatable message suitable for progress-bar-like reporting """
 
     def __init__(
