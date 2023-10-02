@@ -384,7 +384,7 @@ TMT_SHOW_TRACEBACK
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
     set to any string except ``0``, traceback would be printed out.
 
-TMT_TERM_WIDTH
+TMT_OUTPUT_WIDTH
     By default, the output width of commands like ``tmt * show`` is constrained
     to 79 characters. Set this variable to an integer to change the limit.
 

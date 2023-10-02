@@ -131,16 +131,16 @@ OUTPUT_LINES = 100
 # Default & actual output width
 DEFAULT_OUTPUT_WIDTH: int = 79
 
-if 'TMT_TERM_WIDTH' not in os.environ:
+if 'TMT_OUTPUT_WIDTH' not in os.environ:
     OUTPUT_WIDTH: int = DEFAULT_OUTPUT_WIDTH
 
 else:
     try:
-        OUTPUT_WIDTH = int(os.environ['TMT_TERM_WIDTH'])
+        OUTPUT_WIDTH = int(os.environ['TMT_OUTPUT_WIDTH'])
 
     except ValueError as exc:
         # Cannot raise our GeneralError, it has not been defined yet...
-        raise Exception(f"Could not parse '{os.environ['TMT_TERM_WIDTH']}' as integer.") from exc
+        raise Exception(f"Could not parse '{os.environ['TMT_OUTPUT_WIDTH']}' as integer.") from exc
 
 # Hierarchy indent
 INDENT = 4
@@ -2919,6 +2919,12 @@ _FORMAT_VALUE_LIST_ENTRY_INDENT = '  - '
 
 
 def assert_window_size(window_size: Optional[int]) -> None:
+    """
+    Raise an exception if window size is zero or a negative integer.
+
+    Protects possible underflows in formatters employed by :py:func:`format_value`.
+    """
+
     if window_size is None or window_size > 0:
         return
 
