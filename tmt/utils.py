@@ -128,8 +128,19 @@ WORKDIR_MAX = 1000
 
 # Maximum number of lines of stdout/stderr to show upon errors
 OUTPUT_LINES = 100
-# Default output width
-OUTPUT_WIDTH = 79
+# Default & actual output width
+DEFAULT_OUTPUT_WIDTH: int = 79
+
+if 'TMT_OUTPUT_WIDTH' not in os.environ:
+    OUTPUT_WIDTH: int = DEFAULT_OUTPUT_WIDTH
+
+else:
+    try:
+        OUTPUT_WIDTH = int(os.environ['TMT_OUTPUT_WIDTH'])
+
+    except ValueError as exc:
+        # Cannot raise our GeneralError, it has not been defined yet...
+        raise Exception(f"Could not parse '{os.environ['TMT_OUTPUT_WIDTH']}' as integer.") from exc
 
 # Hierarchy indent
 INDENT = 4
@@ -2907,6 +2918,20 @@ _FORMAT_VALUE_DICT_ENTRY_INDENT = ' ' * INDENT
 _FORMAT_VALUE_LIST_ENTRY_INDENT = '  - '
 
 
+def assert_window_size(window_size: Optional[int]) -> None:
+    """
+    Raise an exception if window size is zero or a negative integer.
+
+    Protects possible underflows in formatters employed by :py:func:`format_value`.
+    """
+
+    if window_size is None or window_size > 0:
+        return
+
+    raise GeneralError(
+        f"Allowed width of terminal exhausted, output cannot fit into {OUTPUT_WIDTH} columns.")
+
+
 def _format_bool(
         value: bool,
         window_size: Optional[int],
@@ -2914,6 +2939,8 @@ def _format_bool(
         list_format: ListFormat,
         wrap: FormatWrap) -> Generator[str, None, None]:
     """ Format a ``bool`` value """
+
+    assert_window_size(window_size)
 
     yield 'true' if value else 'false'
 
@@ -2925,6 +2952,8 @@ def _format_list(
         list_format: ListFormat,
         wrap: FormatWrap) -> Generator[str, None, None]:
     """ Format a list """
+
+    assert_window_size(window_size)
 
     # UX: if the list is empty, don't bother checking `listed()` or counting
     # spaces.
@@ -2992,6 +3021,8 @@ def _format_str(
         wrap: FormatWrap) -> Generator[str, None, None]:
     """ Format a string """
 
+    assert_window_size(window_size)
+
     # UX: if the window size is known, rewrap lines to fit in. Otherwise, put
     # each line on its own, well, line.
     # Work with *paragraphs* - lines within a paragraph may get reformatted to
@@ -3037,6 +3068,8 @@ def _format_dict(
         list_format: ListFormat,
         wrap: FormatWrap) -> Generator[str, None, None]:
     """ Format a dictionary """
+
+    assert_window_size(window_size)
 
     # UX: if the dictionary is empty, it's trivial to render.
     if not value:
@@ -3205,6 +3238,8 @@ def _format_value(
         representation of ``value``.
     """
 
+    assert_window_size(window_size)
+
     for type_, formatter in _VALUE_FORMATTERS:
         if isinstance(value, type_):
             return list(formatter(value, window_size, key_color, list_format, wrap))
@@ -3235,6 +3270,8 @@ def format_value(
         the fallback choice.
     :returns: a formatted string representation of ``value``.
     """
+
+    assert_window_size(window_size)
 
     formatted_value = _format_value(
         value,
@@ -3281,7 +3318,7 @@ def format(
         key: str,
         value: Union[None, bool, str, List[Any], Dict[Any, Any]] = None,
         indent: int = 24,
-        window_size: int = 72,
+        window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
         key_color: Optional[str] = 'green',
         value_color: Optional[str] = 'black',
@@ -3308,6 +3345,8 @@ def format(
         the fallback choice.
     :returns: a formatted string representation of ``value``.
     """
+
+    assert_window_size(window_size)
 
     indent_string = (indent + 1) * ' '
 
