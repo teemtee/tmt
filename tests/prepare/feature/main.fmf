@@ -1,0 +1,12 @@
+summary: Common feature to enable/disable EPEL
+description:
+    Make sure enable/disable EPEL work.
+environment:
+    PROVISION_METHODS: virtual
+adjust:
+  - when: trigger == commit
+    environment:
+        PROVISION_METHODS: container
+  - when: how == full
+    environment:
+        PROVISION_METHODS: container virtual

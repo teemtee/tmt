@@ -1,0 +1,3 @@
+prepare:
+    how: feature
+    epel: disabled
