@@ -2230,7 +2230,7 @@ class Plan(
 
         # Adjust the imported tree, to let any `adjust` rules defined in it take
         # action.
-        node.adjust(fmf.context.Context(**self._fmf_context))
+        node.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
 
         # Override the plan name with the local one to ensure unique names
         node.name = self.name
@@ -2628,7 +2628,7 @@ class Tree(tmt.utils.Common):
             except fmf.utils.FileError as error:
                 raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}")
             # Adjust metadata for current fmf context
-            self._tree.adjust(fmf.context.Context(**self._fmf_context))
+            self._tree.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
         return self._tree
 
     @tree.setter
@@ -3931,7 +3931,7 @@ def resolve_dynamic_ref(
     reference_tree = fmf.Tree(data=data)
     if not plan:
         raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
-    reference_tree.adjust(fmf.context.Context(**plan._fmf_context))
+    reference_tree.adjust(fmf.context.Context(**plan._fmf_context), case_sensitive=False)
     # Also temporarily build a plan so that env and context variables are expanded
     Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
     ref = reference_tree.get("ref")
