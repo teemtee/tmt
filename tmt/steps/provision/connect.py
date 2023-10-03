@@ -13,8 +13,8 @@ DEFAULT_USER = "root"
 @dataclasses.dataclass
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
     # Connect plugin actually allows `guest` key to be controlled by an option.
-    OPTIONLESS_FIELDS = tuple(
-        key for key in tmt.steps.provision.GuestSshData.OPTIONLESS_FIELDS
+    _OPTIONLESS_FIELDS = tuple(
+        key for key in tmt.steps.provision.GuestSshData._OPTIONLESS_FIELDS
         if key != 'guest'
         )
 

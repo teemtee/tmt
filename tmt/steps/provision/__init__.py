@@ -383,7 +383,7 @@ class GuestData(tmt.utils.SerializableContainer):
     # fields are not created by `field()` - not sure why, but we can fix that
     # later.
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
-    OPTIONLESS_FIELDS: Tuple[str, ...] = ('guest', 'facts')
+    _OPTIONLESS_FIELDS: Tuple[str, ...] = ('guest', 'facts')
 
     # guest role in the multihost scenario
     role: Optional[str] = None
@@ -420,7 +420,7 @@ class GuestData(tmt.utils.SerializableContainer):
         """
 
         for f in dataclasses.fields(cls):
-            if f.name in cls.OPTIONLESS_FIELDS:
+            if f.name in cls._OPTIONLESS_FIELDS:
                 continue
 
             yield f.name, key_to_option(f.name)

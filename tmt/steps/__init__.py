@@ -1236,6 +1236,11 @@ class BasePlugin(Phase):
             if value is None:
                 return
 
+            # TODO: we will have `internal` and better filtering to not spill
+            # internal fields. For now, a condition will do.
+            if key.startswith('_'):
+                return
+
             # TODO: hides keys that were used to be in the output...
             # if value == self.data.default(key):
             #     return
