@@ -184,7 +184,7 @@ class Discover(tmt.steps.Step):
                 if test.enabled is not True:
                     continue
 
-                exported_test = test._export()
+                exported_test = test._export(include_internal=True)
                 exported_test['discover_phase'] = phase_name
 
                 raw_test_data.append(exported_test)

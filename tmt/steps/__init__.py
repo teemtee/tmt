@@ -420,7 +420,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         return data
 
-    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+    def _export(
+            self,
+            *,
+            keys: Optional[List[str]] = None,
+            include_internal: bool = False) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
         return cast(tmt.export._RawExportedInstance, self._raw_data)

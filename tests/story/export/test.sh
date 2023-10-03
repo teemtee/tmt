@@ -1,6 +1,12 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
+function assert_internal_fields () {
+    log="$1"
+
+    rlAssertNotGrep " _" $log
+}
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd data"
@@ -11,7 +17,8 @@ rlJournalStart
         rlAssertGrep "name: /mini" $rlRun_LOG
         rlAssertGrep "order: 50" $rlRun_LOG
         rlAssertGrep "story: As a user I want this and that" $rlRun_LOG
-        rlAssertNotGrep " _" $rlRun_LOG
+
+        assert_internal_fields "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Export to yaml (full story)"
@@ -26,7 +33,7 @@ rlJournalStart
         rlAssertGrep "story: As a user I want this and that" $rlRun_LOG
         rlAssertGrep "title: A Concise Title" $rlRun_LOG
         rlAssertGrep "priority: must have" $rlRun_LOG
-        rlAssertNotGrep " _" $rlRun_LOG
+        assert_internal_fields "$rlRun_LOG"
         rlRun "yq .[].link[] $rlRun_LOG | grep -- 'implemented-by\": \"/some/code.py'"
         rlRun "yq .[].tag[] $rlRun_LOG | grep -- 'foo'"
         rlRun "yq .[].example[] $rlRun_LOG | grep -- 'An inspiring example'"

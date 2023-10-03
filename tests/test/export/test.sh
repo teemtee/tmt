@@ -2,6 +2,21 @@
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
+
+function assert_internal_fields () {
+    log="$1"
+
+    # Make sure internal fields are not exposed
+    rlAssertNotGrep " _" $rlRun_LOG
+    rlAssertNotGrep "serialnumber" $log
+    rlAssertNotGrep "data_path" $log
+    rlAssertNotGrep "returncode" $log
+    rlAssertNotGrep "starttime" $log
+    rlAssertNotGrep "endtime" $log
+    rlAssertNotGrep "real_duration" $log
+}
+
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd data"
@@ -20,6 +35,8 @@ rlJournalStart
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "name: $tname" $rlRun_LOG
+
+            assert_internal_fields "$rlRun_LOG"
         rlPhaseEnd
 
         cmd="tmt tests export --how dict $tname"
@@ -27,13 +44,14 @@ rlJournalStart
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "'name': '$tname'" $rlRun_LOG
             rlAssertNotGrep "'_" $rlRun_LOG
+            assert_internal_fields "$rlRun_LOG"
         rlPhaseEnd
 
         cmd="tmt tests export --how yaml $tname"
         rlPhaseStartTest "$cmd"
             rlRun -s "$cmd" 0 "Export test"
             rlAssertGrep "name: $tname" $rlRun_LOG
-            rlAssertNotGrep " _" $rlRun_LOG
+            assert_internal_fields "$rlRun_LOG"
         rlPhaseEnd
     done
 

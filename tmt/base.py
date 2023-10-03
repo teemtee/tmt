@@ -835,7 +835,11 @@ class Core(
         if summary and self.summary:
             echo(tmt.utils.format('summary', self.summary))
 
-    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
+    def _export(
+            self,
+            *,
+            keys: Optional[List[str]] = None,
+            include_internal: bool = False) -> tmt.export._RawExportedInstance:
         if keys is None:
             keys = self._keys()
 
@@ -858,7 +862,12 @@ class Core(
             value = getattr(self, key)
 
             field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
-            export_callback = tmt.utils.dataclass_field_metadata(field).export_callback
+            field_metadata = tmt.utils.dataclass_field_metadata(field)
+
+            if field_metadata.internal and not include_internal:
+                continue
+
+            export_callback = field_metadata.export_callback
 
             if export_callback:
                 data[key] = export_callback(value)
@@ -1039,18 +1048,21 @@ class Test(
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
         exporter=lambda value: [check.to_minimal_spec() for check in value])
 
-    serialnumber: int = 0
+    serialnumber: int = field(
+        default=0,
+        internal=True)
     data_path: Optional[Path] = field(
         default=None,
+        internal=True,
         serialize=lambda path: None if path is None else str(path),
         unserialize=lambda value: None if value is None else Path(value)
         )
 
-    returncode: Optional[int] = None
-    starttime: Optional[str] = None
-    endtime: Optional[str] = None
-    real_duration: Optional[str] = None
-    _reboot_count: int = 0
+    returncode: Optional[int] = field(default=None, internal=True)
+    starttime: Optional[str] = field(default=None, internal=True)
+    endtime: Optional[str] = field(default=None, internal=True)
+    real_duration: Optional[str] = field(default=None, internal=True)
+    _reboot_count: int = field(default=0, internal=True)
 
     _KEYS_SHOW_ORDER = [
         # Basic test information
@@ -1245,6 +1257,12 @@ class Test(
         """ Show test details """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
+            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
+            field_metadata = tmt.utils.dataclass_field_metadata(field)
+
+            if field_metadata.internal:
+                continue
+
             value = getattr(self, key)
             if key == 'link' and value is not None:
                 value.show()
@@ -1479,9 +1497,9 @@ class Plan(
 
     # When fetching remote plans we store links between the original
     # plan with the fmf id and the imported plan with the content.
-    _imported_plan: Optional['Plan'] = None
-    _original_plan: Optional['Plan'] = None
-    _remote_plan_fmf_id: Optional[FmfId] = None
+    _imported_plan: Optional['Plan'] = field(default=None, internal=True)
+    _original_plan: Optional['Plan'] = field(default=None, internal=True)
+    _remote_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
 
     _extra_l2_keys = [
         'context',
@@ -2166,8 +2184,12 @@ class Plan(
             if not abort and self.finish.enabled:
                 self.finish.go()
 
-    def _export(self, *, keys: Optional[List[str]] = None) -> tmt.export._RawExportedInstance:
-        data = super()._export(keys=keys)
+    def _export(
+            self,
+            *,
+            keys: Optional[List[str]] = None,
+            include_internal: bool = False) -> tmt.export._RawExportedInstance:
+        data = super()._export(keys=keys, include_internal=include_internal)
 
         for key in self._extra_l2_keys:
             value = self.node.data.get(key)
@@ -2177,7 +2199,7 @@ class Plan(
         for step_name in tmt.steps.STEPS:
             step = cast(tmt.steps.Step, getattr(self, step_name))
 
-            value = step._export()
+            value = step._export(include_internal=include_internal)
             if value:
                 data[step.step_name] = value
 
@@ -2481,6 +2503,12 @@ class Story(
         """ Show story details """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
+            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
+            field_metadata = tmt.utils.dataclass_field_metadata(field)
+
+            if field_metadata.internal:
+                continue
+
             value = getattr(self, key)
             if key == 'link':
                 value.show()

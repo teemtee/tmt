@@ -2371,6 +2371,8 @@ class FieldMetadata(Generic[T]):
     Attached to fields defined with :py:func:`field`
     """
 
+    internal: bool = False
+
     #: CLI option parameters, for lazy option creation.
     option_args: Optional['FieldCLIOption'] = None
     option_kwargs: Optional[Dict[str, Any]] = None
@@ -5713,6 +5715,7 @@ def field(
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         show_default: bool = False,
+        internal: bool = False,
         # Input data normalization - not needed, the field is a boolean
         # flag.
         # normalize: Optional[NormalizeCallback[T]] = None
@@ -5739,6 +5742,7 @@ def field(
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         show_default: bool = False,
+        internal: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -5764,6 +5768,7 @@ def field(
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         show_default: bool = False,
+        internal: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -5789,6 +5794,7 @@ def field(
         deprecated: Optional['tmt.options.Deprecated'] = None,
         help: Optional[str] = None,
         show_default: bool = False,
+        internal: bool = False,
         # Input data normalization
         normalize: Optional[NormalizeCallback[T]] = None,
         # Custom serialization
@@ -5832,6 +5838,9 @@ def field(
         ``help`` to :py:func:`click.option`.
     :param show_default: show default value
         Passed directly to :py:func:`click.option`.
+    :param internal: if set, the field is treated as internal-only, and will not
+        appear when showing objects via ``show()`` method, or in export created
+        by :py:meth:`Core._export`.
     :param normalize: a callback for normalizing the input value. Consumed by
         :py:class:`NormalizeKeysMixin`.
     :param serialize: a callback for custom serialization of the field value.
@@ -5845,7 +5854,7 @@ def field(
     if default is dataclasses.MISSING and default_factory is dataclasses.MISSING:
         raise GeneralError("Container field must define one of 'default' or 'default_factory'.")
 
-    metadata: FieldMetadata[T] = FieldMetadata()
+    metadata: FieldMetadata[T] = FieldMetadata(internal=internal)
 
     if option:
         assert is_flag is False or isinstance(default, bool)
