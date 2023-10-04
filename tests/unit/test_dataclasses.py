@@ -8,8 +8,7 @@ import tmt.log
 import tmt.utils
 from tmt.utils import (
     SerializableContainer,
-    dataclass_field_by_name,
-    dataclass_field_metadata,
+    container_field,
     dataclass_normalize_field,
     field,
     )
@@ -108,7 +107,7 @@ def test_normalize_callback_preferred(root_logger: tmt.log.Logger) -> None:
         _normalize_foo = MagicMock()
 
     data = DummyContainer()
-    foo_metadata = dataclass_field_metadata(dataclass_field_by_name(data, 'foo'))
+    foo_metadata = container_field(data, 'foo')[4]
 
     foo_metadata.normalize_callback = MagicMock()
 

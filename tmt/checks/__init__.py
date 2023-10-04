@@ -6,7 +6,13 @@ import tmt.log
 import tmt.steps.provision
 import tmt.utils
 from tmt.plugins import PluginRegistry
-from tmt.utils import cached_property, field
+from tmt.utils import (
+    NormalizeKeysMixin,
+    SerializableContainer,
+    SpecBasedContainer,
+    cached_property,
+    field,
+    )
 
 if TYPE_CHECKING:
     from tmt.result import CheckResult
@@ -74,9 +80,9 @@ class CheckEvent(enum.Enum):
 
 @dataclasses.dataclass
 class Check(
-        tmt.utils.SpecBasedContainer[_RawCheck, _RawCheck],
-        tmt.utils.SerializableContainer,
-        tmt.utils.NormalizeKeysMixin):
+        SpecBasedContainer[_RawCheck, _RawCheck],
+        SerializableContainer,
+        NormalizeKeysMixin):
     """
     Represents a single check from test's ``check`` field.
 

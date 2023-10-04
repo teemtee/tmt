@@ -17,12 +17,12 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, GeneralError, Path, flatten
+from tmt.utils import Command, GeneralError, Path, field, flatten
 
 
 @dataclasses.dataclass
 class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
-    dist_git_source: bool = tmt.utils.field(
+    dist_git_source: bool = field(
         default=False,
         option='--dist-git-source',
         is_flag=True,
@@ -30,7 +30,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         )
 
     # TODO: use enum!
-    dist_git_type: Optional[str] = tmt.utils.field(
+    dist_git_type: Optional[str] = field(
         default=None,
         option='--dist-git-type',
         choices=tmt.utils.get_distgit_handler_names,

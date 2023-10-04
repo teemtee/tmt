@@ -52,6 +52,7 @@ import pint
 
 import tmt.log
 import tmt.utils
+from tmt.utils import SpecBasedContainer
 
 if TYPE_CHECKING:
     from pint import Quantity
@@ -323,7 +324,7 @@ class ParseError(tmt.utils.MetadataError):
 #
 
 @dataclasses.dataclass(repr=False)
-class BaseConstraint(tmt.utils.SpecBasedContainer[Spec, Spec]):
+class BaseConstraint(SpecBasedContainer[Spec, Spec]):
     """
     Base class for all classes representing one or more constraints.
     """
@@ -1166,7 +1167,7 @@ def parse_hw_requirements(spec: Spec) -> BaseConstraint:
 
 
 @dataclasses.dataclass
-class Hardware(tmt.utils.SpecBasedContainer[Spec, Spec]):
+class Hardware(SpecBasedContainer[Spec, Spec]):
     constraint: Optional[BaseConstraint]
     spec: Spec
 

@@ -63,8 +63,11 @@ from tmt.utils import (
     EnvironmentType,
     FmfContext,
     Path,
+    SerializableContainer,
     ShellScript,
+    SpecBasedContainer,
     WorkdirArgumentType,
+    container_field,
     dict_to_yaml,
     field,
     format_value,
@@ -132,8 +135,8 @@ class _RawFmfId(TypedDict, total=False):
 # An internal fmf id representation.
 @dataclasses.dataclass
 class FmfId(
-        tmt.utils.SpecBasedContainer[_RawFmfId, _RawFmfId],
-        tmt.utils.SerializableContainer,
+        SpecBasedContainer[_RawFmfId, _RawFmfId],
+        SerializableContainer,
         tmt.export.Exportable['FmfId']):
 
     # The list of valid fmf id keys
@@ -406,7 +409,7 @@ class _RawDependencyFmfId(_RawFmfId):
 class DependencyFmfId(
         FmfId,
         # Repeat the SpecBasedContainer, with more fitting in/out spec type.
-        tmt.utils.SpecBasedContainer[_RawDependencyFmfId, _RawDependencyFmfId]):
+        SpecBasedContainer[_RawDependencyFmfId, _RawDependencyFmfId]):
     """
     A fmf ID as a dependency.
 
@@ -491,13 +494,13 @@ class _RawDependencyFile(TypedDict):
 
 @dataclasses.dataclass
 class DependencyFile(
-        tmt.utils.SpecBasedContainer[_RawDependencyFile, _RawDependencyFile],
-        tmt.utils.SerializableContainer,
+        SpecBasedContainer[_RawDependencyFile, _RawDependencyFile],
+        SerializableContainer,
         tmt.export.Exportable['DependencyFile']):
     VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
 
     type: str = 'file'
-    pattern: List[str] = tmt.utils.field(
+    pattern: List[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
 
@@ -859,18 +862,18 @@ class Core(
             if key == 'adjust':
                 continue
 
-            value = getattr(self, key)
+            # TODO: once `Core` classes become `DataContainers`, we would be able to get this
+            # done automagically. Until then, using proper conversion helpers to emit correct
+            # key/value pairs.
+            _, _, value, _, metadata = container_field(self, key)
 
-            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
-            field_metadata = tmt.utils.dataclass_field_metadata(field)
-
-            if field_metadata.internal and not include_internal:
+            if metadata.internal and not include_internal:
                 continue
 
-            export_callback = field_metadata.export_callback
-
-            if export_callback:
-                data[key] = export_callback(value)
+            # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
+            # https://github.com/teemtee/tmt/issues/2054
+            if metadata.export_callback:
+                data[key] = metadata.export_callback(value)
 
             else:
                 data[key] = value
@@ -1257,13 +1260,11 @@ class Test(
         """ Show test details """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
-            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
-            field_metadata = tmt.utils.dataclass_field_metadata(field)
+            _, _, value, _, metadata = container_field(self, key)
 
-            if field_metadata.internal:
+            if metadata.internal:
                 continue
 
-            value = getattr(self, key)
             if key == 'link' and value is not None:
                 value.show()
                 continue
@@ -2191,6 +2192,9 @@ class Plan(
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys, include_internal=include_internal)
 
+        # TODO: `key` is pretty much `option` here, no need for `key_to_option()` call, but we
+        # really need to either rename `_extra_l2_keys`, or make sure it does contain keys and
+        # not options. Which it does, now.
         for key in self._extra_l2_keys:
             value = self.node.data.get(key)
             if value:
@@ -2503,13 +2507,11 @@ class Story(
         """ Show story details """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
-            field: dataclasses.Field[Any] = tmt.utils.dataclass_field_by_name(self.__class__, key)
-            field_metadata = tmt.utils.dataclass_field_metadata(field)
+            _, _, value, _, metadata = container_field(self, key)
 
-            if field_metadata.internal:
+            if metadata.internal:
                 continue
 
-            value = getattr(self, key)
             if key == 'link':
                 value.show()
                 continue
@@ -3031,7 +3033,7 @@ class Tree(tmt.utils.Common):
 
 
 @dataclasses.dataclass
-class RunData(tmt.utils.SerializableContainer):
+class RunData(SerializableContainer):
     root: Optional[str]
     plans: Optional[List[str]]
     # TODO: this needs resolution - _context_object.steps is List[Step],
@@ -3753,7 +3755,7 @@ class LinkNeedle:
 
 
 @dataclasses.dataclass
-class Link(tmt.utils.SpecBasedContainer[Any, _RawLinkRelation]):
+class Link(SpecBasedContainer[Any, _RawLinkRelation]):
     """
     An internal "link" as defined by tmt specification.
 
@@ -3870,7 +3872,7 @@ class Link(tmt.utils.SpecBasedContainer[Any, _RawLinkRelation]):
         return spec
 
 
-class Links(tmt.utils.SpecBasedContainer[Any, List[_RawLinkRelation]]):
+class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
     """
     Collection of links in tests, plans and stories.
 
