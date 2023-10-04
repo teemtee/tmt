@@ -42,7 +42,11 @@ from tmt.utils import (
     EnvironmentType,
     GeneralError,
     Path,
+    SerializableContainer,
+    SpecBasedContainer,
     cached_property,
+    container_field,
+    container_keys,
     field,
     flatten,
     key_to_option,
@@ -216,9 +220,9 @@ T = TypeVar('T', bound='StepData')
 
 @dataclasses.dataclass
 class StepData(
-        tmt.utils.SpecBasedContainer[_RawStepData, _RawStepData],
+        SpecBasedContainer[_RawStepData, _RawStepData],
         tmt.utils.NormalizeKeysMixin,
-        tmt.utils.SerializableContainer):
+        SerializableContainer):
     """
     Keys necessary to describe, create, save and restore a step.
 
@@ -247,7 +251,7 @@ class StepData(
         """ Convert to a form suitable for saving in a specification file """
 
         return cast(_RawStepData, {
-            tmt.utils.key_to_option(key): value
+            key_to_option(key): value
             for key, value in self.items()
             })
 
@@ -427,6 +431,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
+        # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
+        # https://github.com/teemtee/tmt/issues/2054
         return cast(tmt.export._RawExportedInstance, self._raw_data)
 
     @property
@@ -1096,9 +1102,9 @@ class BasePlugin(Phase):
         # Include common options supported across all plugins
         return [
             metadata.option
-            for metadata in (
-                tmt.utils.dataclass_field_metadata(field)
-                for field in dataclasses.fields(cls._data_class)
+            for _, _, _, metadata in (
+                container_field(cls._data_class, key)
+                for key in container_keys(cls._data_class)
                 )
             if metadata.option is not None
             ] + tmt.options.VERBOSITY_OPTIONS + tmt.options.FORCE_DRY_OPTIONS
@@ -1239,7 +1245,7 @@ class BasePlugin(Phase):
     def default(self, option: str, default: Optional[Any] = None) -> Any:
         """ Return default data for given option """
 
-        value = self._data_class.default(tmt.utils.option_to_key(option), default=default)
+        value = self._data_class.default(option_to_key(option), default=default)
 
         if value is None:
             return default
@@ -1254,7 +1260,7 @@ class BasePlugin(Phase):
         # Since self.data is a dataclass instance, the option would probably exist.
         # As long as there's no typo in name, it would be defined. Which complicates
         # the handling of "default" as in "return *this* when attribute is unset".
-        key = tmt.utils.option_to_key(option)
+        key = option_to_key(option)
 
         try:
             value = getattr(self.data, key)
@@ -1335,7 +1341,7 @@ class BasePlugin(Phase):
             # if value == self.data.default(key):
             #     return
 
-            echo(tmt.utils.format(tmt.utils.key_to_option(key), value))
+            echo(tmt.utils.format(key_to_option(key), value))
 
         # First, follow the order prefered by step data, but emit only the keys
         # that are allowed. Each emitted key would be removed so we wouldn't
@@ -1723,7 +1729,7 @@ class Login(Action):
 
 
 @dataclasses.dataclass
-class GuestTopology(tmt.utils.SerializableContainer):
+class GuestTopology(SerializableContainer):
     """ Describes a guest in the topology of provisioned tmt guests """
 
     name: str
@@ -1737,7 +1743,7 @@ class GuestTopology(tmt.utils.SerializableContainer):
 
 
 @dataclasses.dataclass(init=False)
-class Topology(tmt.utils.SerializableContainer):
+class Topology(SerializableContainer):
     """ Describes the topology of provisioned tmt guests """
 
     guest: Optional[GuestTopology]

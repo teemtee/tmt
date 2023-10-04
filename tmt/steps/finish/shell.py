@@ -8,12 +8,12 @@ import tmt.steps
 import tmt.steps.finish
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript
+from tmt.utils import ShellScript, field
 
 
 @dataclasses.dataclass
 class FinishShellData(tmt.steps.finish.FinishStepData):
-    script: List[ShellScript] = tmt.utils.field(
+    script: List[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
         multiple=True,

@@ -7,6 +7,7 @@ import datetime
 import enum
 import functools
 import importlib.resources
+import inspect
 import io
 import json
 import os
@@ -71,10 +72,20 @@ import tmt.log
 from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
     import tmt.base
     import tmt.cli
     import tmt.options
     import tmt.steps
+
+    # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
+    # to avoid the necessity of requiring the package in runtime. This way,
+    # we can deal with it in build time and when running tests.
+    if sys.version_info >= (3, 10):
+        from typing import TypeAlias
+    else:
+        from typing_extensions import TypeAlias
 
 
 class Path(pathlib.PosixPath):
@@ -2351,6 +2362,33 @@ def json_to_list(data: Any) -> List[Any]:
     return loaded_data
 
 
+#: A type representing compatible sources of keys and values.
+KeySource = Union[Dict[str, Any], fmf.Tree]
+
+#: Type of field's normalization callback.
+NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
+
+#: Type of field's exporter callback.
+FieldExporter = Callable[[T], Any]
+
+#: Type of field's CLI option specification.
+FieldCLIOption = Union[str, Sequence[str]]
+
+#: Type of field's serialization callback.
+SerializeCallback = Callable[[T], Any]
+
+#: Type of field's unserialization callback.
+UnserializeCallback = Callable[[Any], T]
+
+#: Types for generic "data container" classes and instances. In tmt code, this
+#: reduces to data classes and data class instances. Our :py:class:`DataContainer`
+#: are perfectly compatible data classes, but some helper methods may be used
+#: on raw data classes, not just on ``DataContainer`` instances.
+ContainerClass: 'TypeAlias' = Type['DataclassInstance']
+ContainerInstance: 'TypeAlias' = 'DataclassInstance'
+Container = Union[ContainerClass, ContainerInstance]
+
+
 def key_to_option(key: str) -> str:
     """ Convert a key name to corresponding option name """
 
@@ -2413,7 +2451,50 @@ class FieldMetadata(Generic[T]):
         return self._option
 
 
-def dataclass_field_by_name(cls: Any, name: str) -> 'dataclasses.Field[T]':
+def container_fields(container: Container) -> Generator[dataclasses.Field[Any], None, None]:
+    yield from dataclasses.fields(container)
+
+
+def container_keys(container: Container) -> Generator[str, None, None]:
+    """ Iterate over key names in a container """
+
+    for field in container_fields(container):
+        yield field.name
+
+
+def container_values(container: ContainerInstance) -> Generator[Any, None, None]:
+    """ Iterate over values in a container """
+
+    for field in container_fields(container):
+        yield container.__dict__[field.name]
+
+
+def container_items(container: ContainerInstance) -> Generator[Tuple[str, Any], None, None]:
+    """ Iterate over key/value pairs in a container """
+
+    for field in container_fields(container):
+        yield field.name, container.__dict__[field.name]
+
+
+@overload
+def container_field(
+        container: ContainerClass,
+        key: str) -> Tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]']:
+    pass
+
+
+@overload
+def container_field(
+        container: ContainerInstance,
+        key: str) -> Tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
+    pass
+
+
+def container_field(
+        container: Container,
+        key: str) -> Union[
+            Tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]'],
+            Tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']]:
     """
     Return a dataclass/data container field info by the field's name.
 
@@ -2422,32 +2503,29 @@ def dataclass_field_by_name(cls: Any, name: str) -> 'dataclasses.Field[T]':
     retrieving a field when one knows its name.
 
     :param cls: a dataclass/data container class whose fields to search.
-    :param name: field name to retrieve.
+    :param key: field name to retrieve.
     :raises GeneralError: when the field does not exist.
     """
 
-    for field in dataclasses.fields(cls):
-        if field.name == name:
-            return field
+    for field in container_fields(container):
+        if field.name != key:
+            continue
 
-    else:
-        raise GeneralError(f"Could not find field '{name}' in class '{cls.__name__}'.")
+        metadata = field.metadata.get('tmt', FieldMetadata())
+        if inspect.isclass(container):
+            return field.name, key_to_option(field.name), field, metadata
 
+        return (
+            field.name,
+            key_to_option(field.name),
+            container.__dict__[field.name],
+            field, metadata)
 
-def dataclass_field_metadata(field: 'dataclasses.Field[T]') -> 'FieldMetadata[T]':
-    """
-    Return a dataclass/data container field metadata.
+    if isinstance(container, DataContainer):
+        raise GeneralError(
+            f"Could not find field '{key}' in class '{container.__class__.__name__}'.")
 
-    Dataclass fields have a mapping to hold fields' key/value metadata, and to
-    support linters in their job, instead of storing tmt's custom data directly
-    in the mapping, we use a special container to hold metadata we need.
-
-    :param field: a dataclass/container field to retrieve metadata for.
-    :returns: metadata container, either the one attached to the given field
-        or an empty one when field has no metadata.
-    """
-
-    return field.metadata.get('tmt', FieldMetadata())
+    raise GeneralError(f"Could not find field '{key}' in class '{container}'.")
 
 
 @dataclasses.dataclass
@@ -2461,10 +2539,7 @@ class DataContainer:
         See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
         """
 
-        return {
-            key: getattr(self, key)
-            for key in self.keys()  # noqa: SIM118  # self is *not* a dictionary
-            }
+        return dict(self.items())
 
     def to_minimal_dict(self) -> Dict[str, Any]:
         """
@@ -2474,7 +2549,7 @@ class DataContainer:
         """
 
         return {
-            key: value for key, value in self.to_dict().items() if value is not None
+            key: value for key, value in self.items() if value is not None
             }
 
     # This method should remain a class-method: 1. list of keys is known
@@ -2484,18 +2559,17 @@ class DataContainer:
     def keys(cls) -> Generator[str, None, None]:
         """ Iterate over key names """
 
-        for field in dataclasses.fields(cls):
-            yield field.name
+        yield from container_keys(cls)
 
     def values(self) -> Generator[Any, None, None]:
         """ Iterate over key values """
 
-        yield from self.to_dict().values()
+        yield from container_values(self)
 
     def items(self) -> Generator[Tuple[str, Any], None, None]:
         """ Iterate over key/value pairs """
 
-        yield from self.to_dict().items()
+        yield from container_items(self)
 
     @classmethod
     def _default(cls, key: str, default: Any = None) -> Any:
@@ -2511,7 +2585,7 @@ class DataContainer:
             default value.
         """
 
-        for field in dataclasses.fields(cls):
+        for field in container_fields(cls):
             if key != field.name:
                 continue
 
@@ -2533,7 +2607,7 @@ class DataContainer:
             or are not set at all, ``False`` otherwise.
         """
 
-        for field in dataclasses.fields(self):
+        for field in container_fields(self):
             value = getattr(self, field.name)
 
             if not isinstance(field.default_factory, dataclasses._MISSING_TYPE):
@@ -2614,10 +2688,6 @@ SerializableContainerDerivedType = TypeVar(
     bound='SerializableContainer')
 
 
-SerializeCallback = Callable[[T], Any]
-UnserializeCallback = Callable[[Any], T]
-
-
 @dataclasses.dataclass
 class SerializableContainer(DataContainer):
     """ A mixin class for saving and loading objects """
@@ -2667,24 +2737,27 @@ class SerializableContainer(DataContainer):
         See :py:meth:`from_serialized` for its counterpart.
         """
 
-        fields = self.to_dict()
+        def _produce_serialized() -> Generator[Tuple[str, Any], None, None]:
+            for key in container_keys(self):
+                _, _, value, _, metadata = container_field(self, key)
 
-        for name in fields:
-            field: dataclasses.Field[Any] = dataclass_field_by_name(self, name)
-            serialize_callback = dataclass_field_metadata(field).serialize_callback
+                # TODO: `key` is incorrect, `option` is the correct one, and this will happen to
+                # fix https://github.com/teemtee/tmt/issues/2054
+                if metadata.serialize_callback:
+                    yield key, metadata.serialize_callback(value)
 
-            if serialize_callback:
-                fields[name] = serialize_callback(getattr(self, name))
+                else:
+                    yield key, value
+
+        serialized = dict(_produce_serialized())
 
         # Add a special field tracking what class we just shattered to pieces.
-        fields.update({
-            '__class__': {
-                'module': self.__class__.__module__,
-                'name': self.__class__.__name__
-                }
-            })
+        serialized['__class__'] = {
+            'module': self.__class__.__module__,
+            'name': self.__class__.__name__
+            }
 
-        return fields
+        return serialized
 
     @classmethod
     def from_serialized(
@@ -2703,18 +2776,23 @@ class SerializableContainer(DataContainer):
         # already know what class to restore: this one.
         serialized.pop('__class__', None)
 
-        obj = cls(**serialized)
+        def _produce_unserialized() -> Generator[Tuple[str, Any], None, None]:
+            # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
+            # https://github.com/teemtee/tmt/issues/2054
+            for key, value in serialized.items():
+                _, _, _, metadata = container_field(cls, key)
 
-        for keyname, value in serialized.items():
-            field: dataclasses.Field[Any] = dataclass_field_by_name(obj, keyname)
-            unserialize_callback = dataclass_field_metadata(field).unserialize_callback
+                if metadata.unserialize_callback:
+                    yield key, metadata.unserialize_callback(value)
 
-            if unserialize_callback:
-                # Set attribute by adding it to __dict__ directly. Messing with setattr()
-                # might cause re-use of mutable values by other instances.
-                obj.__dict__[keyname] = unserialize_callback(value)
+                else:
+                    yield key, value
 
-        return obj
+        # Set attribute by adding it to __dict__ directly. Messing with setattr()
+        # might cause re-use of mutable values by other instances.
+        # obj.__dict__[keyname] = unserialize_callback(value)
+
+        return cls(**dict(_produce_unserialized()))
 
     # ignore[misc,type-var]: mypy is correct here, method does return a
     # TypeVar, but there is no way to deduce the actual type, because
@@ -5186,12 +5264,6 @@ class ValidateFmfMixin(_CommonBase):
         super().__init__(node=node, logger=logger, **kwargs)
 
 
-# A type representing compatible sources of keys and values.
-KeySource = Union[Dict[str, Any], fmf.Tree]
-
-NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
-
-
 def dataclass_normalize_field(
         container: Any,
         key_address: str,
@@ -5211,8 +5283,8 @@ def dataclass_normalize_field(
 
     # First try new-style fields, i.e. normalize callback stored in field metadata
     if dataclasses.is_dataclass(container):
-        field: dataclasses.Field[Any] = dataclass_field_by_name(type(container), keyname)
-        normalize_callback = dataclass_field_metadata(field).normalize_callback
+        _, _, _, metadata = container_field(type(container), keyname)
+        normalize_callback = metadata.normalize_callback
 
     if not normalize_callback:
         normalize_callback = getattr(container, f'_normalize_{keyname}', None)
@@ -5693,12 +5765,6 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
         self._load_keys(node.get(), node.name, logger)
 
         super().__init__(node=node, logger=logger, **kwargs)
-
-
-FieldCLIOption = Union[str, Sequence[str]]
-
-#: A callback to use to convert a field value into exportable type.
-FieldExporter = Callable[[T], Any]
 
 
 @overload

@@ -12,16 +12,16 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command, Path, ShellScript, field
+from tmt.utils import Command, Path, SerializableContainer, ShellScript, SpecBasedContainer, field
 
 T = TypeVar('T', bound='TestDescription')
 
 
 @dataclasses.dataclass
 class TestDescription(
-        tmt.utils.SpecBasedContainer[Dict[str, Any], Dict[str, Any]],
+        SpecBasedContainer[Dict[str, Any], Dict[str, Any]],
         tmt.utils.NormalizeKeysMixin,
-        tmt.utils.SerializableContainer):
+        SerializableContainer):
     """
     Keys necessary to describe a shell-based test.
 
@@ -165,19 +165,19 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
             ]
         )
 
-    url: Optional[str] = tmt.utils.field(
+    url: Optional[str] = field(
         option="--url",
         metavar='REPOSITORY',
         default=None,
         help="URL of the git repository with tests to be fetched.")
 
-    ref: Optional[str] = tmt.utils.field(
+    ref: Optional[str] = field(
         option="--ref",
         metavar='REVISION',
         default=None,
         help="Branch, tag or commit specifying the git revision.")
 
-    keep_git_metadata: Optional[bool] = tmt.utils.field(
+    keep_git_metadata: Optional[bool] = field(
         option="--keep-git-metadata",
         is_flag=True,
         default=False,

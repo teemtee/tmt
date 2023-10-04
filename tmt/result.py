@@ -8,7 +8,7 @@ import fmf
 
 import tmt.utils
 from tmt.checks import CheckEvent
-from tmt.utils import Path, field
+from tmt.utils import Path, SerializableContainer, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -67,7 +67,7 @@ RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
 
 
 @dataclasses.dataclass
-class ResultGuestData(tmt.utils.SerializableContainer):
+class ResultGuestData(SerializableContainer):
     """ Describes what tmt knows about a guest the result was produced on """
 
     name: str = f'{tmt.utils.DEFAULT_NAME}-0'
@@ -83,7 +83,7 @@ def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
 
 
 @dataclasses.dataclass
-class BaseResult(tmt.utils.SerializableContainer):
+class BaseResult(SerializableContainer):
     """ Describes what tmt knows about a result """
 
     name: str

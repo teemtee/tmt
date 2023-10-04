@@ -40,7 +40,15 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, Path, ShellScript, cached_property, field, key_to_option
+from tmt.utils import (
+    Command,
+    Path,
+    SerializableContainer,
+    ShellScript,
+    cached_property,
+    field,
+    key_to_option,
+    )
 
 if TYPE_CHECKING:
     import tmt.base
@@ -88,7 +96,7 @@ T = TypeVar('T')
 
 
 @dataclasses.dataclass
-class GuestFacts(tmt.utils.SerializableContainer):
+class GuestFacts(SerializableContainer):
     """
     Contains interesting facts about the guest.
 
@@ -372,7 +380,7 @@ GuestDataT = TypeVar('GuestDataT', bound='GuestData')
 
 
 @dataclasses.dataclass
-class GuestData(tmt.utils.SerializableContainer):
+class GuestData(SerializableContainer):
     """
     Keys necessary to describe, create, save and restore a guest.
 
@@ -1767,7 +1775,7 @@ class Provision(tmt.steps.Step):
             raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
 
             self._guest_data = {
-                name: tmt.utils.SerializableContainer.unserialize(guest_data, self._logger)
+                name: SerializableContainer.unserialize(guest_data, self._logger)
                 for name, guest_data in raw_guest_data.items()
                 }
 
