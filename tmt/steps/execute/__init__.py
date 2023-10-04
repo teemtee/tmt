@@ -226,7 +226,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             / TEST_DATA \
             / 'guest' \
             / guest.safe_name \
-            / f'{test.safe_name.lstrip("/") or "default"}-{test.serialnumber}'
+            / f'{test.safe_name.lstrip("/") or "default"}-{test.serial_number}'
         if create and not directory.is_dir():
             directory.joinpath(TEST_DATA).mkdir(parents=True)
         if not filename:
@@ -381,7 +381,7 @@ class ExecutePlugin(tmt.steps.Plugin):
             # data directories, they are all confined into its parent test's
             # directory. And the serial number correspondence in results.yaml
             # can be useful, for grouping results that belong to the same tests.
-            partial_result.serialnumber = test.serialnumber
+            partial_result.serial_number = test.serial_number
 
             # Enforce the correct guest info
             partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
@@ -389,8 +389,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             # For the result representing the test itself, set the duration
             # and timestamps to what tmt measured.
             if partial_result.name == test.name:
-                partial_result.starttime = test.starttime
-                partial_result.endtime = test.endtime
+                partial_result.start_time = test.start_time
+                partial_result.end_time = test.end_time
                 partial_result.duration = test.real_duration
 
             custom_results.append(partial_result)
@@ -478,8 +478,8 @@ class ExecutePlugin(tmt.steps.Plugin):
             for result in check_results:
                 result.event = event
 
-                result.starttime = self.format_timestamp(timer.starttime)
-                result.endtime = self.format_timestamp(timer.endtime)
+                result.start_time = self.format_timestamp(timer.start_time)
+                result.end_time = self.format_timestamp(timer.end_time)
                 result.duration = self.format_duration(timer.duration)
 
             results += check_results

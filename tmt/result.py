@@ -98,8 +98,8 @@ class BaseResult(SerializableContainer):
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
 
-    starttime: Optional[str] = None
-    endtime: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     duration: Optional[str] = None
 
     def show(self) -> str:
@@ -132,7 +132,7 @@ class CheckResult(BaseResult):
 class Result(BaseResult):
     """ Describes what tmt knows about a single test result """
 
-    serialnumber: int = 0
+    serial_number: int = 0
     fmf_id: Optional['tmt.base.FmfId'] = field(
         default=cast(Optional['tmt.base.FmfId'], None),
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
@@ -206,12 +206,12 @@ class Result(BaseResult):
 
         _result = Result(
             name=test.name,
-            serialnumber=test.serialnumber,
+            serial_number=test.serial_number,
             fmf_id=test.fmf_id,
             result=result,
             note=note,
-            starttime=test.starttime,
-            endtime=test.endtime,
+            start_time=test.start_time,
+            end_time=test.end_time,
             duration=test.real_duration,
             ids=ids,
             log=log or [],

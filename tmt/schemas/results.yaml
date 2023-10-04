@@ -33,7 +33,7 @@ items:
       type: string
       pattern: "^/.*"
 
-    serialnumber:
+    serial-number:
       type: integer
 
     result:
@@ -42,10 +42,10 @@ items:
     note:
       $ref: "/schemas/common#/definitions/result_note"
 
-    starttime:
+    start-time:
       $ref: "/schemas/common#/definitions/timestamp"
 
-    endtime:
+    end-time:
       $ref: "/schemas/common#/definitions/timestamp"
 
     duration:

@@ -7,7 +7,7 @@
     some-id: foo1
     another-id: bar1
   duration: 00:11:22
-  serialnumber: 1
+  serial-number: 1
   guest:
     name: client-1
     role: clients
@@ -21,7 +21,7 @@
     another-id: bar2
   duration: 00:22:33
   note: fail result
-  serialnumber: 2
+  serial-number: 2
   guest:
     name: client-1
     role: clients
@@ -34,7 +34,7 @@
     some-id: foo3
     another-id: bar3
   duration: 00:33:55
-  serialnumber: 3
+  serial-number: 3
   guest:
     name: client-2
     role: clients
@@ -47,7 +47,7 @@
     some-id: foo4
     another-id: bar4
   duration: 00:55:44
-  serialnumber: 4
+  serial-number: 4
   guest:
     name: client-1
     role: clients
@@ -55,4 +55,4 @@
 - name: /test/skipped
   result: skip
   duration: 00:00:00
-  serialnumber: 5
+  serial-number: 5

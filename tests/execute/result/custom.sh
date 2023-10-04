@@ -27,7 +27,7 @@ rlJournalStart
         rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *slash_log: \(.\+\)/\1/p' $rlRun_LOG)"
 
-        rlRun -s "yq -er '.[] | \"\\(.name) \\(.serialnumber) \\(.result) \\(.guest.name)\"' $run/plans/default/execute/results.yaml"
+        rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name)\"' $run/plans/default/execute/results.yaml"
         rlAssertGrep "/test/custom-results/test/passing 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG

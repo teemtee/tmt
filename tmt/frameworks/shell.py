@@ -35,16 +35,16 @@ class Shell(TestFramework):
             guest: 'Guest',
             logger: tmt.log.Logger) -> List[tmt.result.Result]:
         """ Check result of a shell test """
-        assert test.returncode is not None
+        assert test.return_code is not None
         note = None
 
         try:
             # Process the exit code and prepare the log path
-            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[test.returncode]
+            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[test.return_code]
         except KeyError:
             result = ResultOutcome.ERROR
             # Add note about the exceeded duration
-            if test.returncode == tmt.utils.PROCESS_TIMEOUT:
+            if test.return_code == tmt.utils.PROCESS_TIMEOUT:
                 note = 'timeout'
                 parent.timeout_hint(test, guest)
 

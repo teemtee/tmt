@@ -431,9 +431,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
-        # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
-        # https://github.com/teemtee/tmt/issues/2054
-        return cast(tmt.export._RawExportedInstance, self._raw_data)
+        def _export_datum(raw_datum: _RawStepData) -> _RawStepData:
+            return cast(
+                _RawStepData,
+                {key_to_option(key): value for key, value in raw_datum.items()})
+
+        return cast(
+            tmt.export._RawExportedInstance,
+            [_export_datum(raw_datum) for raw_datum in self._raw_data])
 
     @property
     def step_name(self) -> str:

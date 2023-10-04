@@ -2752,15 +2752,13 @@ class SerializableContainer(DataContainer):
 
         def _produce_serialized() -> Iterator[Tuple[str, Any]]:
             for key in container_keys(self):
-                _, _, value, _, metadata = container_field(self, key)
+                _, option, value, _, metadata = container_field(self, key)
 
-                # TODO: `key` is incorrect, `option` is the correct one, and this will happen to
-                # fix https://github.com/teemtee/tmt/issues/2054
                 if metadata.serialize_callback:
-                    yield key, metadata.serialize_callback(value)
+                    yield option, metadata.serialize_callback(value)
 
                 else:
-                    yield key, value
+                    yield option, value
 
         serialized = dict(_produce_serialized())
 
@@ -2790,9 +2788,9 @@ class SerializableContainer(DataContainer):
         serialized.pop('__class__', None)
 
         def _produce_unserialized() -> Iterator[Tuple[str, Any]]:
-            # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
-            # https://github.com/teemtee/tmt/issues/2054
-            for key, value in serialized.items():
+            for option, value in serialized.items():
+                key = option_to_key(option)
+
                 _, _, _, metadata = container_field(cls, key)
 
                 if metadata.unserialize_callback:
@@ -6099,20 +6097,20 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
-    starttime: datetime.datetime
-    endtime: datetime.datetime
+    start_time: datetime.datetime
+    end_time: datetime.datetime
 
     def __init__(self) -> None:
         pass
 
     def __enter__(self) -> 'Stopwatch':
-        self.starttime = datetime.datetime.now(datetime.timezone.utc)
+        self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
         return self
 
     def __exit__(self, *args: Any) -> None:
-        self.endtime = datetime.datetime.now(datetime.timezone.utc)
+        self.end_time = datetime.datetime.now(datetime.timezone.utc)
 
     @property
     def duration(self) -> datetime.timedelta:
-        return self.endtime - self.starttime
+        return self.end_time - self.start_time

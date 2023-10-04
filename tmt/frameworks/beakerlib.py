@@ -102,7 +102,7 @@ class Beakerlib(TestFramework):
 
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
-        if test.returncode == tmt.utils.PROCESS_TIMEOUT:
+        if test.return_code == tmt.utils.PROCESS_TIMEOUT:
             note = 'timeout'
             parent.timeout_hint(test, guest)
         # Test results should be in complete state

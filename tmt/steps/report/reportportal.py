@@ -137,7 +137,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         attributes = [
             {'key': key, 'value': value[0]}
             for key, value in self.step.plan._fmf_context.items()]
-        launch_time = self.step.plan.execute.results()[0].starttime
+        launch_time = self.step.plan.execute.results()[0].start_time
 
         # Communication with RP instance
         with tmt.utils.retry_session() as session:
@@ -160,7 +160,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             # For each test
             for result in self.step.plan.execute.results():
                 test = [test for test in self.step.plan.discover.tests()
-                        if test.serialnumber == result.serialnumber][0]
+                        if test.serial_number == result.serial_number][0]
                 # TODO: for happz, connect Test to Result if possible
 
                 item_attributes = attributes.copy()
@@ -185,7 +185,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                         "launchUuid": launch_uuid,
                         "type": "step",
                         "testCaseId": test.id or None,
-                        "startTime": result.starttime})
+                        "startTime": result.start_time})
                 self.handle_response(response)
                 item_uuid = yaml_to_dict(response.text).get("id")
                 assert item_uuid is not None
@@ -210,7 +210,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                             "itemUuid": item_uuid,
                             "launchUuid": launch_uuid,
                             "level": level,
-                            "time": result.endtime})
+                            "time": result.end_time})
                     self.handle_response(response)
 
                     # Write out failures
@@ -224,7 +224,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                                 "itemUuid": item_uuid,
                                 "launchUuid": launch_uuid,
                                 "level": "ERROR",
-                                "time": result.endtime})
+                                "time": result.end_time})
                         self.handle_response(response)
 
                 # Finish the test item
@@ -233,10 +233,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                     headers=headers,
                     json={
                         "launchUuid": launch_uuid,
-                        "endTime": result.endtime,
+                        "endTime": result.end_time,
                         "status": status})
                 self.handle_response(response)
-                launch_time = result.endtime
+                launch_time = result.end_time
 
             # Finish the launch
             response = session.put(

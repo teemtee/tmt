@@ -136,7 +136,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         environment["TMT_TEST_NAME"] = test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
-        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serialnumber)
+        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serial_number)
         environment["TMT_TEST_METADATA"] = str(
             data_directory / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = str(
@@ -254,7 +254,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
 
         # Execute the test, save the output and return code
         with Stopwatch() as timer:
-            test.starttime = self.format_timestamp(timer.starttime)
+            test.start_time = self.format_timestamp(timer.start_time)
 
             try:
                 output = guest.execute(
@@ -267,15 +267,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin):
                     timeout=tmt.utils.duration_to_seconds(test.duration),
                     test_session=True,
                     friendly_command=str(test.test))
-                test.returncode = 0
+                test.return_code = 0
                 stdout = output.stdout
             except tmt.utils.RunError as error:
                 stdout = error.stdout
-                test.returncode = error.returncode
-                if test.returncode == tmt.utils.PROCESS_TIMEOUT:
+                test.return_code = error.returncode
+                if test.return_code == tmt.utils.PROCESS_TIMEOUT:
                     logger.debug(f"Test duration '{test.duration}' exceeded.")
 
-        test.endtime = self.format_timestamp(timer.endtime)
+        test.end_time = self.format_timestamp(timer.end_time)
         test.real_duration = self.format_duration(timer.duration)
 
         test.data_path = self.data_path(test, guest, "data")

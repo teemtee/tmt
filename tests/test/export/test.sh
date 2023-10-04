@@ -8,12 +8,12 @@ function assert_internal_fields () {
 
     # Make sure internal fields are not exposed
     rlAssertNotGrep " _" $rlRun_LOG
-    rlAssertNotGrep "serialnumber" $log
-    rlAssertNotGrep "data_path" $log
-    rlAssertNotGrep "returncode" $log
-    rlAssertNotGrep "starttime" $log
-    rlAssertNotGrep "endtime" $log
-    rlAssertNotGrep "real_duration" $log
+    rlAssertNotGrep "serial-number" $log
+    rlAssertNotGrep "data-path" $log
+    rlAssertNotGrep "return-code" $log
+    rlAssertNotGrep "start-time" $log
+    rlAssertNotGrep "end-time" $log
+    rlAssertNotGrep "real-duration" $log
 }
 
 

@@ -17,7 +17,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, GeneralError, Path, field, flatten
+from tmt.utils import Command, GeneralError, Path, field, flatten, key_to_option
 
 
 @dataclasses.dataclass
@@ -158,7 +158,7 @@ class Discover(tmt.steps.Step):
             self._tests = {}
 
             for raw_test_datum in raw_test_data:
-                phase_name = raw_test_datum.pop('discover_phase')
+                phase_name = raw_test_datum.pop(key_to_option('discover_phase'))
 
                 if phase_name not in self._tests:
                     self._tests[phase_name] = []
@@ -185,7 +185,7 @@ class Discover(tmt.steps.Step):
                     continue
 
                 exported_test = test._export(include_internal=True)
-                exported_test['discover_phase'] = phase_name
+                exported_test[key_to_option('discover_phase')] = phase_name
 
                 raw_test_data.append(exported_test)
 
@@ -309,7 +309,7 @@ class Discover(tmt.steps.Step):
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
         for test in self.tests():
-            test.serialnumber = self.plan.draw_test_serial_number(test)
+            test.serial_number = self.plan.draw_test_serial_number(test)
 
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module

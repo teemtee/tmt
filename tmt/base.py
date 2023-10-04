@@ -864,18 +864,16 @@ class Core(
             # TODO: once `Core` classes become `DataContainers`, we would be able to get this
             # done automagically. Until then, using proper conversion helpers to emit correct
             # key/value pairs.
-            _, _, value, _, metadata = container_field(self, key)
+            _, option, value, _, metadata = container_field(self, key)
 
             if metadata.internal and not include_internal:
                 continue
 
-            # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
-            # https://github.com/teemtee/tmt/issues/2054
             if metadata.export_callback:
-                data[key] = metadata.export_callback(value)
+                data[option] = metadata.export_callback(value)
 
             else:
-                data[key] = value
+                data[option] = value
 
         return data
 
@@ -1050,9 +1048,10 @@ class Test(
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
         exporter=lambda value: [check.to_minimal_spec() for check in value])
 
-    serialnumber: int = field(
+    serial_number: int = field(
         default=0,
         internal=True)
+
     data_path: Optional[Path] = field(
         default=None,
         internal=True,
@@ -1060,9 +1059,9 @@ class Test(
         unserialize=lambda value: None if value is None else Path(value)
         )
 
-    returncode: Optional[int] = field(default=None, internal=True)
-    starttime: Optional[str] = field(default=None, internal=True)
-    endtime: Optional[str] = field(default=None, internal=True)
+    return_code: Optional[int] = field(default=None, internal=True)
+    start_time: Optional[str] = field(default=None, internal=True)
+    end_time: Optional[str] = field(default=None, internal=True)
     real_duration: Optional[str] = field(default=None, internal=True)
     _reboot_count: int = field(default=0, internal=True)
 
