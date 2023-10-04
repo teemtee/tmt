@@ -61,4 +61,6 @@ repos:
     hooks:
     - id: tmt-lint
       additional_dependencies:
+        # Make sure we use fmf compatible with tmt in the repo, not the 1.26.0 version.
+        - "fmf>=1.3.0"
         - pint==0.20
