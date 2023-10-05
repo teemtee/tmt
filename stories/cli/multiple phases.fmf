@@ -54,6 +54,26 @@ story: |
       - implemented-by: /tmt/steps
       - verified-by: /tests/core/phases
 
+/update-missing:
+    summary: Update phase fields only when not already set
+    description:
+        In some cases it is useful to only update those fields
+        which are not already set in the configuration. The
+        ``--update-missing`` option allows to fill these gaps with
+        information which cannot be hardcoded, for example the
+        current distro image under test.
+
+    example:
+      - |
+        # Use artemis as the provision plugin (unless other method
+        # is specified in the config) with the given distro image
+        # (for all guests which do not have the image defined)
+        tmt run -a provision --update-missing --how artemis --image fedora-38
+
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/core/phases
+
 /remove:
     summary: Allow removing phases via command line
 
