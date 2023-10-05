@@ -7,6 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     for method in ${PROVISION_METHODS:-"virtual"}; do
+	# EPEL
         rlPhaseStartTest "Enable EPEL"
             rlRun -s "tmt run plan --name epel-enable provision --how $method prepare"
             rlAssertGrep 'Repo epel.*enabled' "$rlRun_LOG"
@@ -23,6 +24,21 @@ rlJournalStart
             rlRun -s "tmt run plan --name epel-enable provision " \
                      "--how $method prepare --how feature --epel disabled"
             rlAssertGrep 'Repo epel.*disabled' "$rlRun_LOG"
+        rlPhaseEnd
+
+	# FIPS
+        rlPhaseStartTest "Enable FIPS"
+            rlRun -s "tmt run plan --name fips-enable provision --how $method prepare"
+
+            rlRun -s "tmt run plan --name fips-disable provision " \
+                     "--how $method prepare --how feature --fips enabled"
+        rlPhaseEnd
+
+        rlPhaseStartTest "Disable FIPS"
+            rlRun -s "tmt run plan --name fips-disable provision --how $method prepare"
+
+            rlRun -s "tmt run plan --name epel-enable provision " \
+                     "--how $method prepare --how feature --fips disabled"
         rlPhaseEnd
     done
 

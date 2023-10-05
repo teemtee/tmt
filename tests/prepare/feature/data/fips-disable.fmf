@@ -1,0 +1,8 @@
+provision+:
+    image: centos:stream8
+prepare:
+    how: feature
+    fips: disabled
+execute:
+    how: tmt
+    script: sudo fips-mode-setup --check | grep -iE 'fips.*disabled'

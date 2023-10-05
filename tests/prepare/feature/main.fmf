@@ -1,12 +1,12 @@
-summary: Common feature to enable/disable EPEL
+summary: Common feature to enable/disable EPEL/FIPS
 description:
-    Make sure enable/disable EPEL work.
+    Make sure enable/disable EPEL/FIPS work.
 environment:
-    PROVISION_METHODS: virtual
+    PROVISION_METHODS: virtual connect local
 adjust:
   - when: trigger == commit
     environment:
-        PROVISION_METHODS: container
+        PROVISION_METHODS: virtual
   - when: how == full
     environment:
-        PROVISION_METHODS: container virtual
+        PROVISION_METHODS: virtual
