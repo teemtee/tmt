@@ -1,3 +1,5 @@
+provision+:
+    image: centos:stream8
 prepare:
     how: feature
     epel: disabled
