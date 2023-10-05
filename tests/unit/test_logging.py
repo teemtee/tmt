@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional, Set
 
+import _pytest.capture
 import _pytest.logging
 import click
 import pytest
@@ -17,11 +18,12 @@ from tmt.log import (
     render_labels,
     )
 
-from . import assert_log
+from . import assert_log, assert_not_log
 
 
 def _exercise_logger(
         caplog: _pytest.logging.LogCaptureFixture,
+        capsys: _pytest.capture.CaptureFixture[str],
         logger: Logger,
         indent_by: str = '',
         labels: Optional[List[str]] = None,
@@ -40,12 +42,15 @@ def _exercise_logger(
     logger.warn('this is a warning')
     logger.fail('this is a failure')
 
-    assert_log(
+    captured = capsys.readouterr()
+
+    assert_not_log(
         caplog,
         message=f'{prefix}this is printed',
         details_key='this is printed',
         details_logger_labels=labels,
         levelno=logging.INFO)
+    assert captured.out == f'{prefix}this is printed\n'
     assert_log(
         caplog,
         message=f'{prefix}this is a debug message',
@@ -80,8 +85,11 @@ def _exercise_logger(
         levelno=logging.ERROR)
 
 
-def test_sanity(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
-    _exercise_logger(caplog, root_logger)
+def test_sanity(
+        caplog: _pytest.logging.LogCaptureFixture,
+        capsys: _pytest.capture.CaptureFixture[str],
+        root_logger: Logger) -> None:
+    _exercise_logger(caplog, capsys, root_logger)
 
 
 def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
@@ -93,10 +101,13 @@ def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger
     assert logger._logger is actual_logger
 
 
-def test_descend(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
+def test_descend(
+        caplog: _pytest.logging.LogCaptureFixture,
+        capsys: _pytest.capture.CaptureFixture[str],
+        root_logger: Logger) -> None:
     deeper_logger = root_logger.descend().descend().descend()
 
-    _exercise_logger(caplog, deeper_logger, indent_by='            ')
+    _exercise_logger(caplog, capsys, deeper_logger, indent_by='            ')
 
 
 @pytest.mark.parametrize(
@@ -213,20 +224,25 @@ def test_quietness_filter(levelno: int, filter_outcome: int) -> None:
         })) == filter_outcome
 
 
-def test_labels(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger) -> None:
-    _exercise_logger(caplog, root_logger, labels=[])
+def test_labels(
+        caplog: _pytest.logging.LogCaptureFixture,
+        capsys: _pytest.capture.CaptureFixture[str],
+        root_logger: Logger) -> None:
+    _exercise_logger(caplog, capsys, root_logger, labels=[])
 
     root_logger.labels += ['foo']
 
-    _exercise_logger(caplog, root_logger, labels=['foo'])
+    _exercise_logger(caplog, capsys, root_logger, labels=['foo'])
 
     root_logger.labels += ['bar']
 
-    _exercise_logger(caplog, root_logger, labels=['foo', 'bar'])
+    _exercise_logger(caplog, capsys, root_logger, labels=['foo', 'bar'])
 
 
-def test_bootstrap_logger(caplog: _pytest.logging.LogCaptureFixture) -> None:
-    _exercise_logger(caplog, Logger.get_bootstrap_logger())
+def test_bootstrap_logger(
+        caplog: _pytest.logging.LogCaptureFixture,
+        capsys: _pytest.capture.CaptureFixture[str]) -> None:
+    _exercise_logger(caplog, capsys, Logger.get_bootstrap_logger())
 
 
 # Helpers for the test below, to make strings slightly shorter: Rendered Labels...

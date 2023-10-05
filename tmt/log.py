@@ -34,6 +34,7 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
     Optional,
@@ -81,6 +82,29 @@ LoggableValue = Union[
     'tmt.utils.Path',
     'tmt.utils.Command',
     'tmt.utils.ShellScript']
+
+
+# TODO: this is an ugly hack, removing colors after they have been added...
+# Wouldn't it be better to not add them at first place?
+#
+# This is needed to deal with the code that colorizes just part of the message, like
+# tmt.result.Result outcomes: these are colorized, then merged with the number
+# of such outcomes, for example, and the string is handed over to logging method.
+# When colors are *not* to be applied, it's too late because colors have been
+# applied already. Something to fix...
+def create_decolorizer(apply_colors: bool) -> Callable[[str], str]:
+    if apply_colors:
+        def dont_decolorize(s: str) -> str:
+            return s
+
+        return dont_decolorize
+
+    def do_decolorize(s: str) -> str:
+        import tmt.utils
+
+        return tmt.utils.remove_color(s)
+
+    return do_decolorize
 
 
 def _debug_level_from_global_envvar() -> int:
@@ -272,23 +296,7 @@ class _Formatter(logging.Formatter):
 
         self.apply_colors = apply_colors
 
-        # TODO: this is an ugly hack, removing colors after they have been added...
-        # Wouldn't it be better to not add them at first place?
-        #
-        # This is needed to deal with the code that colorizes just part of the message, like
-        # tmt.result.Result outcomes: these are colorized, then merged with the number
-        # of such outcomes, for example, and the string is handed over to logging method.
-        # When colors are *not* to be applied, it's too late because colors have been
-        # applied already. Something to fix...
-        self._decolorize = self._dont_decolorize if apply_colors else self._do_decolorize
-
-    def _do_decolorize(self, s: str) -> str:
-        import tmt.utils
-
-        return tmt.utils.remove_color(s)
-
-    def _dont_decolorize(self, s: str) -> str:
-        return s
+        self._decolorize = create_decolorizer(apply_colors)
 
     def format(self, record: logging.LogRecord) -> str:
         if self.usesTime():
@@ -437,7 +445,9 @@ class Logger:
             verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
             debug_level: int = DEFAULT_DEBUG_LEVEL,
             quiet: bool = False,
-            topics: Optional[Set[Topic]] = None
+            topics: Optional[Set[Topic]] = None,
+            apply_colors_output: bool = True,
+            apply_colors_logging: bool = True
             ) -> None:
         """
         Create a ``Logger`` instance with given verbosity levels.
@@ -470,13 +480,21 @@ class Logger:
         self.quiet = quiet
         self.topics = topics or DEFAULT_TOPICS
 
+        self.apply_colors_output = apply_colors_output
+        self.apply_colors_logging = apply_colors_logging
+
+        self._decolorize_output = create_decolorizer(apply_colors_output)
+
     def __repr__(self) -> str:
         return '<Logger:' \
             f' name={self._logger.name}' \
             f' verbosity={self.verbosity_level}' \
             f' debug={self.debug_level}' \
             f' quiet={self.quiet}' \
-            f' topics={self.topics}>'
+            f' topics={self.topics}' \
+            f' apply_colors_output={self.apply_colors_output}' \
+            f' apply_colors_logging={self.apply_colors_logging}' \
+            '>'
 
     @property
     def labels_span(self) -> int:
@@ -510,7 +528,9 @@ class Logger:
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
             quiet=self.quiet,
-            topics=self.topics
+            topics=self.topics,
+            apply_colors_output=self.apply_colors_output,
+            apply_colors_logging=self.apply_colors_logging
             )
 
     def descend(
@@ -542,7 +562,9 @@ class Logger:
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
             quiet=self.quiet,
-            topics=self.topics
+            topics=self.topics,
+            apply_colors_output=self.apply_colors_output,
+            apply_colors_logging=self.apply_colors_logging
             )
 
     def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
@@ -556,12 +578,12 @@ class Logger:
 
         self._logger.addHandler(handler)
 
-    def add_console_handler(self, apply_colors: bool = False) -> None:
+    def add_console_handler(self) -> None:
         """ Attach console handler to this logger """
 
         handler = ConsoleHandler(stream=sys.stderr)
 
-        handler.setFormatter(ConsoleFormatter(apply_colors=apply_colors))
+        handler.setFormatter(ConsoleFormatter(apply_colors=self.apply_colors_logging))
 
         handler.addFilter(VerbosityLevelFilter())
         handler.addFilter(DebugLevelFilter())
@@ -633,6 +655,8 @@ class Logger:
     def create(
             cls,
             actual_logger: Optional[logging.Logger] = None,
+            apply_colors_output: bool = True,
+            apply_colors_logging: bool = True,
             **verbosity_options: Any) -> 'Logger':
         """
         Create a (root) tmt logger.
@@ -650,7 +674,10 @@ class Logger:
 
         actual_logger = actual_logger or cls._normalize_logger(logging.getLogger('tmt'))
 
-        return Logger(actual_logger) \
+        return Logger(
+            actual_logger,
+            apply_colors_output=apply_colors_output,
+            apply_colors_logging=apply_colors_logging) \
             .apply_verbosity_options(**verbosity_options)
 
     def _log(
@@ -691,20 +718,22 @@ class Logger:
 
     def print(
             self,
-            key: str,
-            value: Optional[LoggableValue] = None,
+            text: str,
             color: Optional[str] = None,
             shift: int = 0,
             ) -> None:
-        self._log(
-            logging.INFO,
-            LogRecordDetails(
-                key=key,
-                value=value,
-                color=color,
-                shift=shift,
-                ignore_quietness=True)
-            )
+
+        message = indent(
+            text,
+            # Always apply colors - message can be decolorized later.
+            color=color,
+            level=shift + self._base_shift,
+            labels=self.labels,
+            labels_padding=self.labels_padding)
+
+        message = self._decolorize_output(message)
+
+        print(message)
 
     def info(
             self,

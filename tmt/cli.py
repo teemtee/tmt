@@ -211,8 +211,11 @@ def main(
 
     apply_colors_output, apply_colors_logging = tmt.log.decide_colorization(no_color, force_color)
 
-    logger = tmt.log.Logger.create(**kwargs)
-    logger.add_console_handler(apply_colors=apply_colors_logging)
+    logger = tmt.log.Logger.create(
+        apply_colors_output=apply_colors_output,
+        apply_colors_logging=apply_colors_logging,
+        **kwargs)
+    logger.add_console_handler()
 
     # Propagate color setting to Click as well.
     click_contex.color = apply_colors_output

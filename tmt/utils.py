@@ -1162,12 +1162,21 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     def print(
             self,
-            key: str,
-            value: Optional[LoggableValue] = None,
+            text: str,
             color: Optional[str] = None,
             shift: int = 0) -> None:
-        """ Print a message regardless the quiet mode """
-        self._logger.print(key, value=value, color=color, shift=shift)
+        """
+        Print out an output.
+
+        This method is supposed to be used for emitting a command output. Not
+        to be mistaken with logging - errors, warnings, general command progress,
+        and so on.
+
+        ``print()`` emits even when ``--quiet`` is used, as the option suppresses
+        **logging** but not the actual command output.
+        """
+
+        self._logger.print(text, color=color, shift=shift)
 
     def info(
             self,
