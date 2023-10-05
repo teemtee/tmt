@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Type, TypedDict
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, TypedDict, cast
 
 import tmt.log
 import tmt.steps.provision
@@ -36,6 +36,22 @@ def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]
     return _provides_check
 
 
+def find_plugin(name: str) -> 'CheckPluginClass':
+    """
+    Find a plugin by its name.
+
+    :raises GeneralError: when the plugin does not exist.
+    """
+
+    plugin = _CHECK_PLUGIN_REGISTRY.get_plugin(name)
+
+    if plugin is None:
+        raise tmt.utils.GeneralError(
+            f"Test check '{name}' was not found in check registry.")
+
+    return plugin
+
+
 # A "raw" test check as stored in fmf node data.
 class _RawCheck(TypedDict, total=False):
     name: str
@@ -59,7 +75,8 @@ class CheckEvent(enum.Enum):
 @dataclasses.dataclass
 class Check(
         tmt.utils.SpecBasedContainer[_RawCheck, _RawCheck],
-        tmt.utils.SerializableContainer):
+        tmt.utils.SerializableContainer,
+        tmt.utils.NormalizeKeysMixin):
     """
     Represents a single check from test's ``check`` field.
 
@@ -72,13 +89,24 @@ class Check(
 
     @cached_property
     def plugin(self) -> 'CheckPluginClass':
-        plugin = _CHECK_PLUGIN_REGISTRY.get_plugin(self.name)
+        return find_plugin(self.name)
 
-        if plugin is None:
-            raise tmt.utils.GeneralError(
-                f"Test check '{self.name}' was not found in check registry.")
+    # ignore[override]: expected, we need to accept one extra parameter, `logger`.
+    @classmethod
+    def from_spec(  # type: ignore[override]
+            cls,
+            raw_data: _RawCheck,
+            logger: tmt.log.Logger) -> 'Check':
+        data = cls(name=raw_data['name'])
+        data._load_keys(cast(Dict[str, Any], raw_data), cls.__name__, logger)
 
-        return plugin
+        return data
+
+    def to_spec(self) -> _RawCheck:
+        return cast(_RawCheck, {
+            tmt.utils.key_to_option(key): value
+            for key, value in self.items()
+            })
 
     def go(
             self,
@@ -130,9 +158,21 @@ class Check(
 class CheckPlugin(tmt.utils._CommonBase):
     """ Base class for plugins providing extra checks before, during and after tests """
 
+    _check_class: Type[Check] = Check
+
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def delegate(
+            cls,
+            *,
+            raw_data: _RawCheck,
+            logger: tmt.log.Logger) -> Check:
+        """ Create a check data instance for the plugin """
+
+        return find_plugin(raw_data['name'])._check_class.from_spec(raw_data, logger)
 
     @classmethod
     def before_test(
@@ -166,17 +206,22 @@ def normalize_test_check(
     """ Normalize a single test check """
 
     if isinstance(raw_test_check, str):
-        return Check(name=raw_test_check)
+        try:
+            return CheckPlugin.delegate(raw_data={'name': raw_test_check}, logger=logger)
+
+        except Exception as exc:
+            raise tmt.utils.SpecificationError(
+                f"Cannot instantiate check from '{key_address}'.") from exc
 
     if isinstance(raw_test_check, dict):
         try:
-            return Check(**raw_test_check)
+            return CheckPlugin.delegate(
+                raw_data=cast(_RawCheck, raw_test_check),
+                logger=logger)
 
-        except Exception:
-            raise tmt.utils.NormalizationError(
-                key_address,
-                raw_test_check,
-                'a string or a dictionary')
+        except Exception as exc:
+            raise tmt.utils.SpecificationError(
+                f"Cannot instantiate check from '{key_address}'.") from exc
 
     raise tmt.utils.NormalizationError(
         key_address,
