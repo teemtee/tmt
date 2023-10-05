@@ -103,11 +103,6 @@ example: |
 
         __ https://github.com/neoave/mrack
 
-        .. note::
-
-            The beaker provision plugin is not available for
-            ``rhel-8`` or ``centos-stream-8``.
-
         .. versionadded:: 1.22
 
     example:
