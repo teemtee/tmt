@@ -887,7 +887,7 @@ def tests_id(context: Context, **kwargs: Any) -> None:
     """
     tmt.Test.store_cli_invocation(context)
     for test in context.obj.tree.tests():
-        tmt.identifier.id_command(test.node, "test", dry=kwargs["dry"])
+        tmt.identifier.id_command(context, test.node, "test", dry=kwargs["dry"])
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1108,7 +1108,7 @@ def plans_id(context: Context, **kwargs: Any) -> None:
     """
     tmt.Plan.store_cli_invocation(context)
     for plan in context.obj.tree.plans():
-        tmt.identifier.id_command(plan.node, "plan", dry=kwargs["dry"])
+        tmt.identifier.id_command(context, plan.node, "plan", dry=kwargs["dry"])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Story
@@ -1437,7 +1437,7 @@ def stories_id(
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
                         unimplemented, unverified, undocumented, uncovered):
-            tmt.identifier.id_command(story.node, "story", dry=kwargs["dry"])
+            tmt.identifier.id_command(context, story.node, "story", dry=kwargs["dry"])
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

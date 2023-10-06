@@ -37,10 +37,14 @@ class IdEmpty(TestCase):
         assert test.id is None
 
     def test_manually_add_id(self):
+        # TODO: it's really not possible to use fixtures with methods??
+        from tmt.log import Logger
+        root_logger = Logger.create(verbose=0, debug=0, quiet=False)
+
         node = self.base_tree.find("/some/structure")
         test = tmt.Test(logger=root_logger, node=node)
         assert test.id is None
-        identifier = tmt.identifier.add_uuid_if_not_defined(node, dry=False)
+        identifier = tmt.identifier.add_uuid_if_not_defined(node, False, root_logger)
         assert len(identifier) > 10
 
         self.base_tree = fmf.Tree(self.path)

@@ -587,7 +587,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             'Add migration warning to the test case notes.', fg='green'))
 
     # ID
-    uuid = tmt.identifier.add_uuid_if_not_defined(test.node, dry=dry_mode)
+    uuid = tmt.identifier.add_uuid_if_not_defined(test.node, dry_mode, test._logger)
     if not uuid:
         uuid = test.node.get(tmt.identifier.ID_KEY)
     struct_field.set(tmt.identifier.ID_KEY, uuid)

@@ -1,9 +1,13 @@
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 from uuid import uuid4
 
 import fmf
 
-from tmt.utils import is_key_origin, log
+from tmt.log import Logger
+from tmt.utils import is_key_origin
+
+if TYPE_CHECKING:
+    import tmt.cli
 
 # Name of the key holding the unique identifier
 ID_KEY = "id"
@@ -35,12 +39,12 @@ def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
     return cast(Optional[str], node.get(ID_KEY))
 
 
-def add_uuid_if_not_defined(node: fmf.Tree, dry: bool) -> Optional[str]:
+def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Optional[str]:
     """ Add UUID into node and return it unless already defined """
 
     # Already defined
     if is_key_origin(node, ID_KEY):
-        log.debug(
+        logger.debug(
             f"Id '{node.data[ID_KEY]}' already defined for '{node.name}'.")
         return None
 
@@ -49,17 +53,17 @@ def add_uuid_if_not_defined(node: fmf.Tree, dry: bool) -> Optional[str]:
     if not dry:
         with node as data:
             data[ID_KEY] = gen_uuid
-            log.debug(f"Generating UUID '{gen_uuid}' for '{node.name}'.")
+            logger.debug(f"Generating UUID '{gen_uuid}' for '{node.name}'.")
     return gen_uuid
 
 
-def id_command(node: fmf.Tree, node_type: str, dry: bool) -> None:
+def id_command(context: 'tmt.cli.Context', node: fmf.Tree, node_type: str, dry: bool) -> None:
     """
     Command line interfacing with output to terminal
 
     Show a brief summary when adding UUIDs to nodes.
     """
-    generated = add_uuid_if_not_defined(node, dry=dry)
+    generated = add_uuid_if_not_defined(node, dry, context.obj.logger)
     if generated:
         print(
             f"New id '{generated}' added to {node_type} '{node.name}'.")

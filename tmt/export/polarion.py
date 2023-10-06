@@ -207,7 +207,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         echo(style('title: ', fg='green') + test.summary)
 
     # Add id to Polarion case
-    uuid = add_uuid_if_not_defined(test.node, dry=dry_mode)
+    uuid = add_uuid_if_not_defined(test.node, dry_mode, test._logger)
     if not uuid:
         uuid = test.node.get(ID_KEY)
     if not dry_mode:
