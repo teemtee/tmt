@@ -15,8 +15,8 @@
         cat "$TMT_TOPOLOGY_BASH"
         . "$TMT_TOPOLOGY_BASH"
 
-        [[ $(hostname) == curl-client ]] && command="curl --silent"
-        [[ $(hostname) == wget-client ]] && command="wget --quiet -O -"
+        [[ ${TMT_GUEST[name]} == curl-client ]] && command="curl --silent"
+        [[ ${TMT_GUEST[name]} == wget-client ]] && command="wget --quiet -O -"
 
         for count in {1..33}; do
             echo "Get file using '$command', attempt $count."
