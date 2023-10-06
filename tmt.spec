@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.27.0.dev0
+Version:        1.28.0.dev0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -147,6 +147,61 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
 
 %changelog
+* Fri Oct 06 2023 Petr Šplíchal <psplicha@redhat.com> - 1.28.0
+- Update the `release` action with `hatch` changes
+- Fix the multihost web test to work with container
+- Add `skip` as a supported custom result outcome
+- Add docs for the new `--update-missing` option
+- Remove irrelevant mention of `rhel-8` in the spec
+- Record start/end time & duration of test checks
+- Add `--update-missing` to update phase fields only when not set by fmf
+- Add --skip-prepare-verify-ssh and --post-install-script to artemis plugin (#2347)
+- Force tmt-link pre-commit to use fmf 1.3.0 which brings new features (#2376)
+- Add logging of applied adjust rules
+- Handle all context dimension values case insensitive
+- Hide `OPTIONLESS_FIELDS` from `tmt plan show`
+- Add context into the `html` report
+- Display test check results in `display` report output
+- Fix creation of guest data from plugin options
+- Allow wider output
+- Beaker plugin is negating Beaker operators by default
+- Include link to the data directory in the html report
+- Teach logging methods to handle common types
+- Move the copr repository to the `teemtee` group
+- Add a new `cpu` property `stepping` to hardware
+- Extract beakerlib phase name to a failure log
+- Always show the real beaker job id
+- Create a production copr build for each release
+- AVC denials check for tests (#2331)
+- Add nice & colorfull help to "make" targets
+- Include more dependencies in the dev environment
+- Stop using the `_version.py` file
+- Replace `opt()` for `--dry/--force` with properties
+- Update build names for copr/main and pull requests
+- Use `hatch` and `pyproject`, refactor `tmt.spec`
+- Use dataclass for log record details instead of typed dict
+- Refactor html report plugin to use existing template rendering
+- Narrow type of hardware constraint variants
+- Refactor parameters of `Plan._iter_steps()`
+- Use `format_value()` instead of `pprint()`
+- Use the minimal plan to test imported plan execution
+- Refactor exception rendering to use generators
+- Add the `export` callback for fields (#2288)
+- Update a verified-by link for the beaker provision
+- Multi-string help texts converted to multiline strings
+- Make the upload to PyPI working again
+- Hide command event debug logs behind a log topic (#2281)
+- Replace `pkg_resources` with `importlib.resources`
+- Wrap `click.Choice` use with `choices` parameter
+- Lower unnecessary verbosity of podman commands
+- Move check-related code into `tmt.checks`
+- Disable `systemd-resolved` to prevent dns failures
+- Adjust test coverage for deep beakerlib libraries
+- Document migration from provision.fmf to tmt (#2325)
+- Remove TBD of initiator context for Packit
+- Fix output indentation of imported plans
+- Copr repo with a group owner requires quotes
+
 * Wed Sep 06 2023 Petr Šplíchal <psplicha@redhat.com> - 1.27.0-1
 - Use `testcloud` domain API v2
 - Bootstrap before/after test checks (#2210)

@@ -586,7 +586,8 @@ Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín,
 Lukáš Kotek, Daniel Diblík, Laura Barcziova, Marián Konček,
 Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
 Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
-Zhaojuan Guo, Natália Bubáková and Michal Josef Špaček.
+Zhaojuan Guo, Natália Bubáková, Michal Josef Špaček, Jiří Popelka,
+Matej Focko, Yulia Kopkova and Tomáš Bajer.
 
 
 Copyright
