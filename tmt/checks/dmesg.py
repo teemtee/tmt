@@ -150,6 +150,9 @@ class DmesgCheck(CheckPlugin[Check]):
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
+        if invocation.hard_reboot_requested:
+            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+
         outcome, path = cls._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]

@@ -814,7 +814,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 timeout=timeout,
                 tick=tick,
-                tick_increase=tick_increase)
+                tick_increase=tick_increase,
+                hard=True)
 
         return super().reboot(
             hard=hard,

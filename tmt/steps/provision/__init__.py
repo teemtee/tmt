@@ -7,9 +7,11 @@ import os
 import random
 import re
 import shlex
+import signal as _signal
 import string
 import subprocess
 import tempfile
+import threading
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
@@ -1248,25 +1250,38 @@ class GuestSsh(Guest):
     ssh_option: list[str]
 
     # Master ssh connection process and socket path
+    _ssh_master_process_lock: threading.Lock
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
-    _ssh_socket_path: Optional[Path] = None
 
+    def __init__(self,
+                 *,
+                 data: GuestData,
+                 name: Optional[str] = None,
+                 parent: Optional[tmt.utils.Common] = None,
+                 logger: tmt.log.Logger) -> None:
+        self._ssh_master_process_lock = threading.Lock()
+
+        super().__init__(data=data, logger=logger, parent=parent, name=name)
+
+    @tmt.utils.cached_property
     def _ssh_guest(self) -> str:
         """ Return user@guest """
         return f'{self.user}@{self.primary_address}'
 
-    def _ssh_socket(self) -> Path:
-        """ Prepare path to the master connection socket """
-        if not self._ssh_socket_path:
-            # Use '/run/user/uid' if it exists, '/tmp' otherwise
-            run_dir = Path(f"/run/user/{os.getuid()}")
-            socket_dir = run_dir / "tmt" if run_dir.is_dir() else Path("/tmp")
-            socket_dir.mkdir(exist_ok=True)
-            self._ssh_socket_path = Path(tempfile.mktemp(dir=socket_dir))
-        return self._ssh_socket_path
+    @tmt.utils.cached_property
+    def _ssh_master_socket_path(self) -> Path:
+        """ Return path to the SSH master socket """
 
+        # Use '/run/user/uid' if it exists, '/tmp' otherwise.
+        run_dir = Path(f"/run/user/{os.getuid()}")
+        socket_dir = run_dir / "tmt" if run_dir.is_dir() else Path("/tmp")
+        socket_dir.mkdir(exist_ok=True)
+        return Path(tempfile.mktemp(dir=socket_dir))
+
+    @property
     def _ssh_options(self) -> Command:
-        """ Return common ssh options (list or joined) """
+        """ Return common SSH options """
+
         options: tmt.utils.RawCommand = [
             '-oForwardX11=no',
             '-oStrictHostKeyChecking=no',
@@ -1294,38 +1309,96 @@ class GuestSsh(Guest):
             # by allowing proper re-try mechanisms to kick-in.
             options.extend(['-oPasswordAuthentication=no'])
 
-        # Use the shared master connection
-        options.append(f'-S{self._ssh_socket()}')
+        # Include the SSH master process
+        options.append(f'-S{self._ssh_master_socket_path}')
 
         options.extend([f'-o{option}' for option in self.ssh_option])
 
         return Command(*options)
 
-    def _ssh_master_connection(self, command: Command) -> None:
-        """ Check/create the master ssh connection """
-        if self._ssh_master_process:
-            return
+    @property
+    def _base_ssh_command(self) -> Command:
+        """ A base SSH command shared by all SSH processes """
 
-        # Do not modify the original command...
-        ssh_master_command = command + self._ssh_options() + Command("-MNnT", self._ssh_guest())
-        self.debug(f"Create the master ssh connection: {ssh_master_command}")
-        self._ssh_master_process = subprocess.Popen(
-            ssh_master_command.to_popen(),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-
-    def _ssh_command(self) -> Command:
-        """ Prepare an ssh command line for execution """
         command = Command(
             *(["sshpass", "-p", self.password] if self.password else []),
             "ssh"
             )
 
-        # Check the master connection
-        self._ssh_master_connection(command)
+        return command + self._ssh_options
 
-        return command + self._ssh_options()
+    def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
+        """ Spawn the SSH master process """
+
+        # NOTE: do not modify `command`, it might be re-used by the caller. To
+        # be safe, include it in our own command.
+        ssh_master_command = self._base_ssh_command \
+            + self._ssh_options \
+            + Command("-MNnT", self._ssh_guest)
+
+        self.debug(f"Spawning the SSH master process: {ssh_master_command}")
+
+        return subprocess.Popen(
+            ssh_master_command.to_popen(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+
+    def _cleanup_ssh_master_process(
+            self,
+            signal: _signal.Signals = _signal.SIGTERM,
+            logger: Optional[tmt.log.Logger] = None) -> None:
+        logger = logger or self._logger
+
+        with self._ssh_master_process_lock:
+            if self._ssh_master_process is None:
+                logger.debug('The SSH master process cannot be terminated because it is unset.',
+                             level=3)
+
+                return
+
+            logger.debug(
+                f'Terminating the SSH master process {self._ssh_master_process.pid}'
+                f' with {signal.name}.',
+                level=3)
+
+            self._ssh_master_process.send_signal(signal)
+
+            try:
+                # TODO: make the deadline configurable
+                self._ssh_master_process.wait(timeout=3)
+
+            except subprocess.TimeoutExpired:
+                logger.warn(
+                    f'Terminating the SSH master process {self._ssh_master_process.pid}'
+                    ' timed out.')
+
+            self._ssh_master_process = None
+
+    @property
+    def _ssh_command(self) -> Command:
+        """ A base SSH command shared by all SSH processes """
+
+        with self._ssh_master_process_lock:
+            if self._ssh_master_process is None:
+                self._ssh_master_process = self._spawn_ssh_master_process()
+
+        return self._base_ssh_command
+
+    def _unlink_ssh_master_socket_path(self) -> None:
+        with self._ssh_master_process_lock:
+            if not self._ssh_master_socket_path:
+                return
+
+            self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
+
+            try:
+                self._ssh_master_socket_path.unlink(missing_ok=True)
+
+            except OSError as error:
+                self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
+
+            del self._ssh_master_socket_path
 
     def _run_ansible(
             self,
@@ -1358,8 +1431,8 @@ class GuestSsh(Guest):
             ansible_command += self._ansible_extra_args(extra_args)
 
         ansible_command += Command(
-            '--ssh-common-args', self._ssh_options().to_element(),
-            '-i', f'{self._ssh_guest()},',
+            '--ssh-common-args', self._ssh_options.to_element(),
+            '-i', f'{self._ssh_guest},',
             playbook)
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
@@ -1425,7 +1498,7 @@ class GuestSsh(Guest):
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        ssh_command: tmt.utils.Command = self._ssh_command()
+        ssh_command: tmt.utils.Command = self._ssh_command
 
         # Run in interactive mode if requested
         if interactive:
@@ -1459,7 +1532,7 @@ class GuestSsh(Guest):
         remote_command = remote_commands.to_element()
 
         ssh_command += [
-            self._ssh_guest(),
+            self._ssh_guest,
             remote_command
             ]
 
@@ -1536,9 +1609,9 @@ class GuestSsh(Guest):
             self._run_guest_command(Command(
                 *cmd,
                 *options,
-                "-e", self._ssh_command().to_element(),
+                "-e", self._ssh_command.to_element(),
                 source,
-                f"{self._ssh_guest()}:{destination}"
+                f"{self._ssh_guest}:{destination}"
                 ), silent=True)
 
         # Try to push twice, check for rsync after the first failure
@@ -1601,8 +1674,8 @@ class GuestSsh(Guest):
             self._run_guest_command(Command(
                 "rsync",
                 *options,
-                "-e", self._ssh_command().to_element(),
-                f"{self._ssh_guest()}:{source}",
+                "-e", self._ssh_command.to_element(),
+                f"{self._ssh_guest}:{source}",
                 destination
                 ), silent=True)
 
@@ -1632,28 +1705,17 @@ class GuestSsh(Guest):
         """
 
         # Close the master ssh connection
-        if self._ssh_master_process:
-            self.debug("Close the master ssh connection.", level=3)
-            try:
-                self._ssh_master_process.terminate()
-                self._ssh_master_process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                pass
+        self._cleanup_ssh_master_process()
 
         # Remove the ssh socket
-        if self._ssh_socket_path and self._ssh_socket_path.exists():
-            self.debug(
-                f"Remove ssh socket '{self._ssh_socket_path}'.", level=3)
-            try:
-                self._ssh_socket_path.unlink()
-            except OSError as error:
-                self.debug(f"Failed to remove the socket: {error}", level=3)
+        self._unlink_ssh_master_socket_path()
 
     def perform_reboot(self,
                        command: Callable[[], tmt.utils.CommandOutput],
                        timeout: Optional[int] = None,
                        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-                       tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+                       tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+                       hard: bool = False) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
 
@@ -1680,7 +1742,7 @@ class GuestSsh(Guest):
 
             return int(match.group(1))
 
-        current_boot_time = get_boot_time()
+        current_boot_time = 0 if hard else get_boot_time()
 
         try:
             command()
@@ -1762,7 +1824,8 @@ class GuestSsh(Guest):
             lambda: self.execute(actual_command),
             timeout=timeout,
             tick=tick,
-            tick_increase=tick_increase)
+            tick_increase=tick_increase,
+            hard=hard)
 
     def remove(self) -> None:
         """

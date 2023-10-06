@@ -12,5 +12,14 @@ tier: 2
 /avc:
     test: ./test-avc.sh
     tag+:
+      - provision-only
       - provision-local
+      - provision-virtual
+
+/watchdog:
+    test: ./test-watchdog.sh
+    duration: 15m
+    tag+:
+      - provision-only
+      - provision-container
       - provision-virtual

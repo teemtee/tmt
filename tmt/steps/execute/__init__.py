@@ -165,6 +165,8 @@ class TestInvocation:
     results: list[Result] = dataclasses.field(default_factory=list)
     check_results: list[CheckResult] = dataclasses.field(default_factory=list)
 
+    check_data: dict[str, Any] = field(default_factory=dict)
+
     return_code: Optional[int] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
@@ -225,9 +227,18 @@ class TestInvocation:
         return self.test_data_path / TMT_REBOOT_SCRIPT.created_file
 
     @property
-    def reboot_requested(self) -> bool:
-        """ Whether a guest reboot has been requested by the test """
+    def soft_reboot_requested(self) -> bool:
+        """ If set, test requested a reboot """
         return self.reboot_request_path.exists()
+
+    #: If set, an asynchronous observer requested a reboot while the test was
+    #: running.
+    hard_reboot_requested: bool = False
+
+    @property
+    def reboot_requested(self) -> bool:
+        """ Whether a guest reboot has been requested while the test was running """
+        return self.soft_reboot_requested or self.hard_reboot_requested
 
     def handle_reboot(self) -> bool:
         """
@@ -247,29 +258,39 @@ class TestInvocation:
         self._reboot_count += 1
 
         self.logger.debug(
-            f"Reboot during test '{self.test}' with reboot count {self._reboot_count}.")
+            f"{'Hard' if self.hard_reboot_requested else 'Soft'} reboot during test '{self.test}'"
+            f" with reboot count {self._reboot_count}.")
 
-        with open(self.reboot_request_path) as reboot_file:
-            reboot_data = json.loads(reboot_file.read())
+        reboot_command: Optional[ShellScript] = None
+        timeout: Optional[int] = None
 
-        reboot_command = None
-        if reboot_data.get('command'):
-            with suppress(TypeError):
-                reboot_command = ShellScript(reboot_data.get('command'))
+        if self.hard_reboot_requested:
+            pass
 
-        try:
-            timeout = int(reboot_data.get('timeout'))
-        except ValueError:
-            timeout = None
+        elif self.soft_reboot_requested:
+            # Extract custom hints from the file, and reset it.
+            with open(self.reboot_request_path) as reboot_file:
+                reboot_data = json.loads(reboot_file.read())
 
-        # Reset the file
-        os.remove(self.reboot_request_path)
-        self.guest.push(self.test_data_path)
+            if reboot_data.get('command'):
+                with suppress(TypeError):
+                    reboot_command = ShellScript(reboot_data.get('command'))
+
+            try:
+                timeout = int(reboot_data.get('timeout'))
+            except ValueError:
+                timeout = None
+
+            os.remove(self.reboot_request_path)
+            self.guest.push(self.test_data_path)
 
         rebooted = False
 
         try:
-            rebooted = self.guest.reboot(command=reboot_command, timeout=timeout)
+            rebooted = self.guest.reboot(
+                hard=self.hard_reboot_requested,
+                command=reboot_command,
+                timeout=timeout)
 
         except tmt.utils.RunError:
             self.logger.fail(
@@ -285,6 +306,8 @@ class TestInvocation:
 
         if not rebooted:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")
+
+        self.hard_reboot_requested = False
 
         return True
 
@@ -319,6 +342,9 @@ class TestInvocation:
             logger.debug(f'Terminating process {self.process.pid} with {signal.name}.', level=3)
 
             self.process.send_signal(signal)
+
+            if isinstance(self.guest, tmt.steps.provision.GuestSsh):
+                self.guest._cleanup_ssh_master_process(signal, logger)
 
 
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):

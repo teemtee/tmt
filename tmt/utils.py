@@ -1305,6 +1305,8 @@ class Command:
                 level=4,
                 topic=tmt.log.Topic.COMMAND_EVENTS)
 
+        log_event('waiting for process to finish')
+
         try:
             process.wait(timeout=timeout)
 
@@ -1319,10 +1321,15 @@ class Command:
 
             process.returncode = ProcessExitCodes.TIMEOUT
 
+        else:
+            log_event('waiting for process completed')
+
         stdout: Optional[str]
         stderr: Optional[str]
 
         if interactive:
+            log_event('stream readers not active')
+
             stdout, stderr = None, None
 
         else:
@@ -6485,11 +6492,14 @@ def field(
         Consumed by :py:class:`tmt.export.Exportable`.
     """
 
-    if is_flag is False and isinstance(default, bool):
-        raise GeneralError("Container field must be a flag to have boolean default value.")
+    if option:
+        if is_flag is False and isinstance(default, bool):
+            raise GeneralError(
+                "Container field must be a flag to have boolean default value.")
 
-    if is_flag is True and not isinstance(default, bool):
-        raise GeneralError("Container field must have a boolean default value when it is a flag.")
+        if is_flag is True and not isinstance(default, bool):
+            raise GeneralError(
+                "Container field must have a boolean default value when it is a flag.")
 
     metadata: FieldMetadata[T] = FieldMetadata(
         internal=internal,

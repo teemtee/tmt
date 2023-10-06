@@ -123,7 +123,8 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
                         self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
                     timeout=timeout,
                     tick=tick,
-                    tick_increase=tick_increase)
+                    tick_increase=tick_increase,
+                    hard=True)
 
             if not hard and self.soft_reboot is not None:
                 self.debug(f"Reboot using the soft reboot command '{self.soft_reboot}'.")

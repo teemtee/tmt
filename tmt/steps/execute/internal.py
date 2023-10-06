@@ -365,7 +365,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
-        invocation.check_results += self.run_checks_before_test(
+        invocation.check_results = self.run_checks_before_test(
             invocation=invocation,
             environment=environment,
             logger=logger
@@ -423,9 +423,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        guest.pull(
-            source=invocation.path,
-            extend_options=test.test_framework.get_pull_options(invocation, logger))
+        if not invocation.hard_reboot_requested:
+            guest.pull(
+                source=invocation.path,
+                extend_options=test.test_framework.get_pull_options(invocation, logger))
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -438,11 +439,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             logger=logger
             )
 
-        # Fetch #2: after-test checks might have produced remote files as well,
-        # we need to fetch them too.
-        guest.pull(
-            source=invocation.path,
-            extend_options=test.test_framework.get_pull_options(invocation, logger))
+        if not invocation.hard_reboot_requested:
+            # Fetch #2: after-test checks might have produced remote files as well,
+            # we need to fetch them too.
+            guest.pull(
+                source=invocation.path,
+                extend_options=test.test_framework.get_pull_options(invocation, logger))
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might

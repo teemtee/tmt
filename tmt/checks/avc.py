@@ -330,6 +330,9 @@ class AvcDenials(CheckPlugin[Check]):
                 name='avc',
                 result=ResultOutcome.SKIP)]
 
+        if invocation.hard_reboot_requested:
+            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+
         assert invocation.phase.step.workdir is not None  # narrow type
 
         outcome, path = create_final_report(invocation, logger)

@@ -18,6 +18,12 @@ to TPM 2.0 for now, the future release of `testcloud`__, the
 library behing ``virtual`` plugin, will extend the support to more
 versions.
 
+A new :ref:`watchdog test check<plugins/test-checks/watchdog>` has been
+added. It monitors a guest running the test with either ping or SSH
+connections, and may force reboot of the guest when it becomes
+unresponsive. This is the first step towards helping tests handle kernel
+panics and similar situations.
+
 __ https://pagure.io/testcloud/
 
 
