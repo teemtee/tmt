@@ -126,6 +126,7 @@ tests which need the full virtualization support:
 
 .. code-block:: shell
 
+    make build-deps
     make rpm
     tmt -c how=full run
 

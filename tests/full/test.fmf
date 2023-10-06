@@ -24,6 +24,8 @@ adjust:
 - when: distro != fedora
   require+:
   - library(epel/epel)
+check:
+  - avc
 require:
 - rsync
 - git-core

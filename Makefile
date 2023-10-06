@@ -61,8 +61,11 @@ rpm: tarball ver2spec  ## Build RPMs
 srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
 
-deps: tarball ver2spec
-	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
+_deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
+	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build
+
+build-deps: _deps tarball ver2spec  ## Install build dependencies
+	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
 
@@ -82,8 +85,8 @@ images:  ## Build tmt images for podman/docker
 ##
 ## Development
 ##
-develop:  ## Install development requirements
-	sudo dnf --setopt=install_weak_deps=False install hatch gcc make git rpm-build python3-nitrate {python3,libvirt,krb5,libpq}-devel jq podman
+develop: _deps  ## Install development requirements
+	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq}-devel jq podman
 
 # Git vim tags and cleanup
 tags:

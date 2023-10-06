@@ -49,6 +49,7 @@ rlJournalStart
             # Better to install SOME tmt than none (python3-html2text missing on rhel-9)
             SKIP_BROKEN="--skip-broken"
         fi
+        rlRun "dnf update -y" 0 "Update all packages"
 
         rlFileBackup /etc/sudoers
         id $USER &>/dev/null && {
@@ -86,7 +87,7 @@ rlJournalStart
         [[ $PRE_RELEASE -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i tmt.spec"
 
         # Build tmt packages
-        rlRun "dnf builddep -y tmt.spec" 0 "Install build dependencies"
+        rlRun "make build-deps" 0 "Install build dependencies"
         rlRun "make rpm" || rlDie "Failed to build tmt rpms"
 
         # After this we can use tmt (install freshly built rpms)
@@ -124,12 +125,12 @@ rlJournalStart
         rlRun -s "su -l -c 'podman run --rm fedora cat /etc/os-release | grep CPE_NAME=' $USER"
         image_cpe_name="$(cat $rlRun_LOG)"
 
-        if [[ "$image_cpe_name" != "$(grep CPE_NAME= /etc/os_release)" ]]; then
+        if [[ "$image_cpe_name" != "$(grep CPE_NAME= /etc/os-release)" ]]; then
             rlLog "Host OS differs from default image OS, compile new rpms"
             CONTAINER=BUILDER_$$
             rlRun "podman run --rm -v $USER_HOME/tmt:/tmp/tmt:Z -itd --name $CONTAINER fedora"
-            rlRun "podman exec $CONTAINER dnf install -y 'dnf-command(builddep)' make rpm-build python3-docutils"
-            rlRun "podman exec -w /tmp/tmt $CONTAINER  dnf builddep -y tmt.spec"
+            rlRun "podman exec $CONTAINER dnf install -y 'dnf-command(builddep)' make"
+            rlRun "podman exec -w /tmp/tmt $CONTAINER make build-deps"
             rlRun "podman exec -w /tmp/tmt $CONTAINER make rpm"
             rlRun "podman kill $CONTAINER"
         else
@@ -186,6 +187,8 @@ EOF
             rlRun "su -l -c 'cd $USER_HOME/tmt; NO_COLOR=1 tmt -c how=full plans ls --enabled $FILTER > $USER_HOME/enabled_plans' $USER"
             PLANS="$(echo $(cat $USER_HOME/enabled_plans))"
         fi
+
+        rlRun "chown -R $USER:$USER $USER_HOME" 0 "Make sure all files are readable by $USER"
     rlPhaseEnd
 
     for plan in $PLANS; do
