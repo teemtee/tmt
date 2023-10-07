@@ -1,3 +1,4 @@
+import configparser
 import dataclasses
 import enum
 import re
@@ -140,34 +141,46 @@ class ToggleableFeature(Feature):
 class EPEL(ToggleableFeature):
     KEY = 'epel'
 
-    def _get_repos_status(self, repos: List[str]) -> Optional[Dict[str, str]]:
-        distro = self.guest_distro
+    def _get_repos_status(self, packages: List[str], repos: List[str]) -> Optional[Dict[str, str]]:
+        """
+        Get status of repos for CentOS Stream 8/9, RHEL 8/9 , CentOS 7 and RHEL 7
+        """
         sudo = self.guest_sudo
 
-        pkg_mgr = 'yum' if distro in (Distro.CENTOS_7, Distro.RHEL_7) else 'dnf'
-        result = self.guest.execute(
-            ShellScript(f"{sudo} {pkg_mgr} repolist --all {' '.join(repos)}"),
-            silent=True)
+        result = self.guest.execute(ShellScript(f"{sudo} rpm -ql {' '.join(packages)}"),
+                                    silent=True)
         if result is None or result.stdout is None:
             return None
 
+        repo_files = re.findall(r'/.*epel.*\.repo', result.stdout)
+        if not repo_files:
+            return None
+
+        result = self.guest.execute(ShellScript(f"{sudo} cat {' '.join(repo_files)}"),
+                                    silent=True)
+        if result is None or result.stdout is None:
+            return None
+
+        repo_text = result.stdout
+        config = configparser.ConfigParser()
+        config.read_string(repo_text)
         repo_status: Dict[str, str] = {}
-        for line in result.stdout.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            repo, *_, status = line.split()
-            if repo in repos:
-                repo_status[repo] = status
+        for repo in repos:
+            if config.has_option(repo, 'enabled'):
+                option_value = config.get(repo, 'enabled')
+                repo_status[repo] = 'disabled' if int(option_value) == 0 else 'enabled'
         return repo_status
 
     def _check_repos_status(self, repos: List[str], status: str) -> None:
-        repos_status = self._get_repos_status(repos)
-        if repos_status is None:
-            raise tmt.utils.GeneralError(f"Failed to get status of repos {' '.join(repos)}.")
+        packages = ['epel-release', 'epel-next-release']
+        if self.guest_distro in (Distro.CENTOS_7, Distro.RHEL_7):
+            packages = ['epel-release']
 
+        repos_status = self._get_repos_status(packages, repos)
+        if repos_status is None:
+            raise tmt.utils.GeneralError(f"Failed to get status of repos: {' '.join(repos)}.")
         for repo in repos:
-            repo_status = repos_status.get(repo)
+            repo_status = repos_status.get(repo, None)
             if repo_status != status:
                 raise tmt.utils.GeneralError(f"Repo {repo} is not {status} but {repo_status}.")
             self.info(f"Repo {repo} is {status}")
@@ -182,7 +195,8 @@ class EPEL(ToggleableFeature):
         epel_repos = cast(str, self.get_epel_repos())
         if distro == Distro.FEDORA:
             self.info(f"Nothing to do on {distro_name} for {key_name}")
-        elif distro in (Distro.CENTOS_7, Distro.RHEL_7):
+        elif distro in (Distro.CENTOS_7,
+                        Distro.RHEL_7):
             self.info(f"Enable {key_name} on {distro_name}")
             self.guest.execute(
                 ShellScript(f"""
@@ -193,8 +207,18 @@ class EPEL(ToggleableFeature):
                             """),
                 silent=True)
             self._check_repos_status(epel_repos.split(), 'enabled')
-        elif distro in (Distro.CENTOS_STREAM_8,
-                        Distro.CENTOS_STREAM_9,
+        elif distro == Distro.CENTOS_STREAM_8:
+            self.info(f"Enable {key_name} on {distro_name}")
+            self.guest.execute(
+                ShellScript(f"""
+                            set -x;
+                            rpm -q {epel_packages} || {sudo} dnf -y install {epel_packages};
+                            rpm -q yum-utils || {sudo} yum install -y yum-utils;
+                            {sudo} yum-config-manager --enable {epel_repos};
+                            """),
+                silent=True)
+            self._check_repos_status(epel_repos.split(), 'enabled')
+        elif distro in (Distro.CENTOS_STREAM_9,
                         Distro.RHEL_8,
                         Distro.RHEL_9):
             self.info(f"Enable {key_name} on {distro_name}")
@@ -224,7 +248,8 @@ class EPEL(ToggleableFeature):
         if distro == Distro.FEDORA:
             self.info(f"Nothing to do on {distro_name} for {key_name}")
         elif distro in (Distro.RHEL_7,
-                        Distro.CENTOS_7):
+                        Distro.CENTOS_7,
+                        Distro.CENTOS_STREAM_8):
             self.info(f"Disable {key_name} on {distro_name}")
             self.guest.execute(
                 ShellScript(f"""
@@ -236,7 +261,6 @@ class EPEL(ToggleableFeature):
             self._check_repos_status(epel_repos.split(), 'disabled')
         elif distro in (Distro.RHEL_8,
                         Distro.RHEL_9,
-                        Distro.CENTOS_STREAM_8,
                         Distro.CENTOS_STREAM_9):
             self.info(f"Disable {key_name} on {distro_name}")
             self.guest.execute(
@@ -253,30 +277,18 @@ class EPEL(ToggleableFeature):
 class CRB(ToggleableFeature):
     KEY = 'crb'
 
-    def get_epel_packages(self) -> Optional[str]:
-        """
-        Override the method of its parent class because command 'crb' is from package
-        'epel-release'.
-        """
-
-        if self.guest_distro in (Distro.FEDORA,
-                                 Distro.CENTOS_7,
-                                 Distro.CENTOS_STREAM_8,
-                                 Distro.CENTOS_STREAM_9):
-            return FEDORA_EPEL_PACKAGE
-        if self.guest_distro == Distro.RHEL_7:
-            return RHEL_7_EPEL_PACKAGE
-        if self.guest_distro == Distro.RHEL_8:
-            return RHEL_8_EPEL_PACKAGE
-        if self.guest_distro == Distro.RHEL_9:
-            return RHEL_9_EPEL_PACKAGE
+    def get_crp_repos(self) -> Optional[str]:
+        distro = self.guest_distro
+        if distro in (Distro.CENTOS_STREAM_8, Distro.CENTOS_STREAM_9):
+            return 'crb'
+        if distro in (Distro.RHEL_8, Distro.RHEL_9):
+            return 'rhel-CRB'
         return None
 
     def enable(self) -> None:
         """
-        Ensable CRB on the guest. Note that:
-        1) RHEL8, RHEL9, CentOS Stream 8 and CentOS Stream 9 are supported;
-        2) Package 'epel-release' should be installed because command 'crb' is from it.
+        Ensable CRB on the guest. Note that RHEL8, RHEL9, CentOS Stream 8 and CentOS Stream 9
+        are supported.
         """
 
         distro = self.guest_distro
@@ -284,7 +296,7 @@ class CRB(ToggleableFeature):
 
         key_name = self.KEY.upper()
         distro_name = cast(str, self.guest_distro_name)
-        epel_packages = cast(str, self.get_epel_packages())
+        crb_repos = cast(str, self.get_crp_repos())
 
         if distro in (Distro.CENTOS_STREAM_8,
                       Distro.CENTOS_STREAM_9,
@@ -294,8 +306,7 @@ class CRB(ToggleableFeature):
             self.guest.execute(
                 ShellScript(f"""
                             set -x;
-                            rpm -q {epel_packages} || {sudo} dnf -y install {epel_packages};
-                            {sudo} /usr/bin/crb enable
+                            {sudo} dnf config-manager --enable {crb_repos}
                             """),
                 silent=True)
         else:
@@ -303,15 +314,15 @@ class CRB(ToggleableFeature):
 
     def disable(self) -> None:
         """
-        Disable CRB on the guest. Note that RHEL8, RHEL9, CentOS Stream 8 and
-        CentOS Stream 9 are supported.
+        Disable CRB on the guest. Note that RHEL8, RHEL9, CentOS Stream 8 and CentOS Stream 9
+        are supported.
         """
         distro = self.guest_distro
         sudo = self.guest_sudo
 
         key_name = self.KEY.upper()
         distro_name = cast(str, self.guest_distro_name)
-        epel_packages = cast(str, self.get_epel_packages())
+        crb_repos = cast(str, self.get_crp_repos())
 
         if distro in (Distro.CENTOS_STREAM_8,
                       Distro.CENTOS_STREAM_9,
@@ -321,8 +332,7 @@ class CRB(ToggleableFeature):
             self.guest.execute(
                 ShellScript(f"""
                             set -x;
-                            rpm -q {epel_packages} || {sudo} dnf -y install {epel_packages};
-                            {sudo} /usr/bin/crb disable
+                            {sudo} dnf config-manager --disable {crb_repos}
                             """),
                 silent=True)
         else:
@@ -452,10 +462,11 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin):
         if self.opt('dry'):
             return
 
-        # XXX: Currently three provision methods in the following are supported:
+        # XXX: Currently four provision methods in the following are supported:
         #      1) connect
         #      2) virtual
         #      3) container
+        #      4) local
         if not isinstance(guest, (tmt.steps.provision.GuestSsh,
                                   tmt.steps.provision.testcloud.ProvisionTestcloud,
                                   tmt.steps.provision.podman.GuestContainer,
