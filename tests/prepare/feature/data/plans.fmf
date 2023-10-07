@@ -1,0 +1,37 @@
+provision:
+    how: container
+    image: centos:stream9
+
+execute:
+    how: tmt
+    script: bash -x ./check.sh
+
+/epel-enabled:
+    prepare:
+        how: feature
+        epel: enabled
+
+/epel-disabled:
+    prepare:
+        how: feature
+        epel: disabled
+
+/crb-enabled:
+    prepare:
+        how: feature
+        crb: enabled
+
+/crb-disabled:
+    prepare:
+        how: feature
+        crb: disabled
+
+/fips-enabled:
+    prepare:
+        how: feature
+        fips: enabled
+
+/fips-disabled:
+    prepare:
+        how: feature
+        fips: disabled

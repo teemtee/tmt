@@ -1,8 +1,0 @@
-provision+:
-    image: centos:stream8
-prepare:
-    how: feature
-    fips: enabled
-execute:
-    how: tmt
-    script: sudo fips-mode-setup --check | grep -iE 'fips.*enabled'
