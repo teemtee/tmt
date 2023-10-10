@@ -348,9 +348,7 @@ Release a new package to Fedora and EPEL repositories:
 
 * Move the ``fedora`` branch to point to the new release
 * Tag the commit with ``x.y.0``, push tags ``git push --tags``
-* Create a source tarball using the ``make tarball`` command
-* Draft a new `github release`__ based on the tag above
-* Upload tarball to the release attachments and publish it
+* Create a new `github release`__ based on the tag above
 * Check Fedora `pull requests`__, make sure tests pass and merge
 
 Finally, if everything went well:

@@ -5,7 +5,7 @@ Summary:        Test Management Tool
 
 License:        MIT
 URL:            https://github.com/teemtee/tmt
-Source:         %{url}/releases/download/%{version}/tmt-%{version}.tar.gz
+Source0:        %{pypi_source tmt}
 
 BuildArch:      noarch
 BuildRequires:  python3-devel

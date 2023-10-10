@@ -12,17 +12,32 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    # Needed for trusted publishing
+    permissions:
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v3
+
+      # Check out the repo
+      - uses: actions/checkout@v4
         if: ${{ github.event_name == 'release' }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           ref: ${{ github.event.inputs.ref }}
-      - name: Create dist
-        run: make wheel
+
+      # Setup python
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      # Build it
+      - name: Build a binary wheel and a source tarball
+        run: |
+            python -m pip install hatch
+            hatch build
+
+      # Publish it
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
