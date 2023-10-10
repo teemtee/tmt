@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.28.0.dev0
+Version:        1.28.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
