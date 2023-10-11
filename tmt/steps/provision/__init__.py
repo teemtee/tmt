@@ -1603,6 +1603,9 @@ class GuestSsh(Guest):
 
 @dataclasses.dataclass
 class ProvisionStepData(tmt.steps.StepData):
+    # guest role in the multihost scenario
+    role: Optional[str] = None
+
     hardware: Optional[tmt.hardware.Hardware] = field(
         default=cast(Optional[tmt.hardware.Hardware], None),
         normalize=normalize_hardware,
