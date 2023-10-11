@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.28.0
+Version:        1.28.1
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -147,6 +147,9 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
 
 %changelog
+* Wed Oct 11 2023 Petr Šplíchal <psplicha@redhat.com> - 1.28.1
+- Remove the `.dev0` suffix from the spec `Version`
+
 * Fri Oct 06 2023 Petr Šplíchal <psplicha@redhat.com> - 1.28.0
 - Update the `release` action with `hatch` changes
 - Fix the multihost web test to work with container
