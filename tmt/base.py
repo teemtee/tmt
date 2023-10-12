@@ -594,7 +594,7 @@ def normalize_require(
     if isinstance(raw_require, (str, dict)):
         return [dependency_factory(raw_require)]
 
-    if isinstance(raw_require, list):
+    if isinstance(raw_require, (list, tuple)):
         return [dependency_factory(require) for require in raw_require]
 
     raise tmt.utils.NormalizationError(

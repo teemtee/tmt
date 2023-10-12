@@ -32,6 +32,13 @@ rlJournalStart
         fi
     done
 
+    rlPhaseStartTest "Provide package on the command line"
+        rlRun "tmt run -vvvr plan --default \
+            provision --how container \
+            prepare --how install --package tree \
+            finish"
+    rlPhaseEnd
+
     rlPhaseStartTest "Just enable copr"
         rlRun "tmt run -adddvvvr plan --name copr"
     rlPhaseEnd
