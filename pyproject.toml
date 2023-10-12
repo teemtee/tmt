@@ -99,6 +99,7 @@ include = [
     "/tmt.spec",
     "/tmt.1",
     "/completions",
+    "/.fmf",
     ]
 
 [tool.hatch.envs.default]
