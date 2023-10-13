@@ -66,6 +66,7 @@ from tmt.utils import (
     ShellScript,
     SpecBasedContainer,
     WorkdirArgumentType,
+    cached_property,
     container_field,
     dict_to_yaml,
     field,
@@ -745,7 +746,7 @@ class Core(
         """ Show source files """
         if self.id is not None:
             echo(tmt.utils.format('id', self.id, key_color='magenta'))
-        echo(tmt.utils.format('sources', self.node.sources, key_color='magenta'))
+        echo(tmt.utils.format('sources', self.fmf_sources, key_color='magenta'))
         self._fmf_id()
         web_link = self.web_link()
         if web_link is not None:
@@ -785,13 +786,17 @@ class Core(
             always_get_ref=True,
             logger=self._logger)
 
+    @cached_property
+    def fmf_sources(self) -> List[Path]:
+        return [Path(source) for source in self.node.sources]
+
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
         if self.fmf_id.ref is None or self.fmf_id.url is None:
             return None
 
         # Detect relative path of the last source from the metadata tree root
-        relative_path = Path(self.node.sources[-1]).relative_to(self.node.root)
+        relative_path = self.fmf_sources[-1].relative_to(self.node.root)
         relative_path = Path('/') if str(relative_path) == '.' else Path('/') / relative_path
 
         # Add fmf path if the tree is nested deeper in the git repo
@@ -874,6 +879,8 @@ class Core(
 
             else:
                 data[option] = value
+
+        data['sources'] = [str(path) for path in self.fmf_sources]
 
         return data
 
@@ -1366,7 +1373,7 @@ class Test(
                 'relevancy detected but inherited from test parent, please, fix manually'
             return
 
-        filename = self.node.sources[-1]
+        filename = self.fmf_sources[-1]
         metadata = tmt.utils.yaml_to_dict(self.read(filename))
 
         metadata['adjust'] = tmt.convert.relevancy_to_adjust(metadata.pop('relevancy'))
@@ -1455,7 +1462,7 @@ class Test(
             yield LinterOutcome.FAIL, 'library/file requirements should specify type'
             return
 
-        filename = self.node.sources[-1]
+        filename = self.fmf_sources[-1]
         metadata = tmt.utils.yaml_to_dict(self.read(filename))
 
         if not tmt.utils.is_key_origin(self.node, 'require') \

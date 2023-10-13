@@ -4082,7 +4082,10 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
 
     When all checks pass returns (True, '').
     """
-    sources = [*test.node.sources, os.path.join(test.node.root, '.fmf', 'version')]
+    sources = [
+        *test.fmf_sources,
+        test.fmf_root / '.fmf' / 'version'
+        ]
 
     # Use tmt's run instead of subprocess.run
     run = Common(logger=test._logger).run
@@ -4092,7 +4095,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
         'git',
         'status', '--porcelain',
         '--',
-        *sources
+        *[str(source) for source in sources]
         )
     try:
         result = run(cmd, cwd=Path(test.node.root), join=True)
@@ -4131,7 +4134,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
         f'HEAD..{remote_ref}',
         '--name-status',
         '--',
-        *sources
+        *[str(source) for source in sources]
         )
     try:
         result = run(cmd, cwd=Path(test.node.root))
