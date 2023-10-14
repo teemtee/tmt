@@ -12,7 +12,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript, field
+from tmt.utils import Command, ShellScript, field
 
 
 class Distro(enum.Enum):
@@ -105,12 +105,60 @@ EPEL_REPOS = ['epel', 'epel-debuginfo', 'epel-source']
 EPEL_NEXT_REPOS = ['epel-next', 'epel-next-debuginfo', 'epel-next-source']
 
 
+class GuestConfigManager(enum.Enum):
+    DNFCM = 'dnf config-manager'
+    YUMCM = 'yum-config-manager'
+
+
 class ToggleableFeature(Feature):
     def enable(self) -> None:
         raise NotImplementedError
 
     def disable(self) -> None:
         raise NotImplementedError
+
+    def _execute(
+            self,
+            command: Command) -> Optional[tmt.utils.CommandOutput]:
+        """ Run a command on the guest. """
+
+        try:
+            return self.guest.execute(command, silent=True)
+
+        except tmt.utils.RunError as exc:
+            if exc.stdout and 'Please login as the user' in exc.stdout:
+                raise tmt.utils.GeneralError(f'Login to the guest failed.\n{exc.stdout}') from exc
+
+        return None
+
+    def _probe(self,
+               probes: List[Tuple[Command, GuestConfigManager]]) -> Optional[GuestConfigManager]:
+        """ Find a first successfull command. """
+
+        for command, outcome in probes:
+            if self._execute(self.guest, command):
+                return outcome
+
+        return None
+
+    def query_config_manager(self) -> Optional[GuestConfigManager]:
+        return self._probe([
+                (Command('dnf config-manager', '--version'), GuestConfigManager.DNFCM),
+                (Command('yum-config-manager', '--version'), GuestConfigManager.YUMCM)
+                ])
+
+    def get_config_manager_and_extra_packages(self) -> Tuple[str, List[str]]:
+        config_manager = self.query_config_manager()
+        if config_manager == GuestConfigManager.YUMCM:
+            cm = 'yum-config-manager'
+            packages = [YUM_UTILS_PACKAGE]
+        else:
+            cm = 'dnf config-manager'
+            packages = []
+        return (cm, packages)
+
+    def get_extra_packages(self, config_manager: GuestConfigManager) -> List[str]:
+        return [YUM_UTILS_PACKAGE] if GuestConfigManager == GuestConfigManager.YUMCM else []
 
     def get_guest_repos(self) -> Optional[List[str]]:
         """ Get all repos on the guest """
@@ -275,14 +323,14 @@ class RHEL7EPEL(CentOS7EPEL):
 
 class C8SEPEL(EPEL):
     def get_epel_source_packages(self) -> List[str]:
-        # XXX: Some CentOS 8 Stream or RHEL 8 distros don't support 'dnf config-manager'. Hence,
-        #      we have to use 'yum-config-manager' which is provided by package 'yum-utils'.
-        return [FEDORA_EPEL_PACKAGE, FEDORA_EPEL_NEXT_PACKAGE, YUM_UTILS_PACKAGE]
+        return [FEDORA_EPEL_PACKAGE, FEDORA_EPEL_NEXT_PACKAGE]
 
     def get_epel_target_packages(self) -> List[str]:
-        return [FEDORA_EPEL_PACKAGE, FEDORA_EPEL_NEXT_PACKAGE, YUM_UTILS_PACKAGE]
+        return [FEDORA_EPEL_PACKAGE, FEDORA_EPEL_NEXT_PACKAGE]
 
     def enable(self) -> None:
+        # XXX: Some CentOS 8 Stream or RHEL 8 distros don't support 'dnf config-manager'. Hence,
+        #      we have to use 'yum-config-manager' which is provided by package 'yum-utils'.
         sudo = self.guest_sudo
         distro_name = cast(str, self.guest_distro_name)
         target_packages = self.get_epel_target_packages()
@@ -290,40 +338,62 @@ class C8SEPEL(EPEL):
         repos = self.get_epel_repos()
 
         self.info(f"Enable {self.KEY.upper()} on {distro_name}")
+        config_manager, extra_packages = self.get_config_manager_and_extra_packages()
+        if not extra_packages:
+            self.guest.execute(
+                ShellScript(f"""
+                            set -x;
+                            rpm -q {' '.join(extra_packages)} || \
+                               {sudo} dnf -y install {' '.join(extra_packages)}
+                            """),
+                silent=True)
+
         self.guest.execute(
             ShellScript(f"""
                         set -x;
                         rpm -q {' '.join(target_packages)} || \
                             {sudo} dnf -y install {' '.join(source_packages)};
-                        {sudo} yum-config-manager --enable {' '.join(repos)};
+                        {sudo} {config_manager} --enable {' '.join(repos)};
                         """),
             silent=True)
+
         self.check_repos_status(repos, 'enabled')
 
     def disable(self) -> None:
+        # XXX: Some CentOS 8 Stream or RHEL 8 distros don't support 'dnf config-manager'. Hence,
+        #      we have to use 'yum-config-manager' which is provided by package 'yum-utils'.
         sudo = self.guest_sudo
         distro_name = cast(str, self.guest_distro_name)
-        package = YUM_UTILS_PACKAGE
-
         repos = self.get_epel_repos_to_disable()
+
         if not repos:
             self.info(f"Disable {self.KEY.upper()} on {distro_name}: nothing to do!")
             return
 
         self.info(f"Disable {self.KEY.upper()} on {distro_name}")
+        config_manager, extra_packages = self.get_config_manager_and_extra_packages()
+        if not extra_packages:
+            self.guest.execute(
+                ShellScript(f"""
+                            set -x;
+                            rpm -q {' '.join(extra_packages)} || \
+                               {sudo} dnf -y install {' '.join(extra_packages)}
+                            """),
+                silent=True)
+
         self.guest.execute(
             ShellScript(f"""
                         set -x;
-                        rpm -q {package} || {sudo} dnf -y install {package};
-                        {sudo} yum-config-manager --disable {' '.join(repos)}
+                        {sudo} {config_manager} --disable {' '.join(repos)};
                         """),
             silent=True)
+
         self.check_repos_status(repos, 'disabled')
 
 
 class RHEL8EPEL(C8SEPEL):
     def get_epel_source_packages(self) -> List[str]:
-        return [RHEL_8_EPEL_PACKAGE, RHEL_8_EPEL_NEXT_PACKAGE, YUM_UTILS_PACKAGE]
+        return [RHEL_8_EPEL_PACKAGE, RHEL_8_EPEL_NEXT_PACKAGE]
 
 
 class C9SEPEL(EPEL):
@@ -382,65 +452,196 @@ _EPEL_FEATURES = {
 class CRB(ToggleableFeature):
     KEY = 'crb'
 
-    def get_crp_repos(self) -> Optional[str]:
-        distro = self.guest_distro
-        if distro in (Distro.CENTOS_STREAM_8, Distro.CENTOS_STREAM_9):
-            return 'crb'
-        if distro in (Distro.RHEL_8, Distro.RHEL_9):
-            return 'rhel-CRB'
-        return None
+    def get_crb_repos(self) -> List[str]:
+        return ['crb']
+
+    def get_crb_repos_to_disable(self) -> List[str]:
+        return ['crb']
 
     def enable(self) -> None:
-        """
-        Ensable CRB on the guest. Note that RHEL8, RHEL9, CentOS Stream 8 and CentOS Stream 9
-        are supported.
-        """
-        distro = self.guest_distro
-        sudo = self.guest_sudo
-
-        key_name = self.KEY.upper()
-        distro_name = cast(str, self.guest_distro_name)
-        crb_repos = cast(str, self.get_crp_repos())
-
-        if distro in (Distro.CENTOS_STREAM_8,
-                      Distro.CENTOS_STREAM_9,
-                      Distro.RHEL_8,
-                      Distro.RHEL_9):
-            self.info(f"Enable {key_name} on '{distro_name}'")
-            self.guest.execute(
-                ShellScript(f"""
-                            set -x;
-                            {sudo} dnf config-manager --enable {crb_repos}
-                            """),
-                silent=True)
-        else:
-            self.warn(f"Enable {key_name}: '{distro_name}' of the guest is unsupported.")
+        crb_child = _CRB_FEATURES.get(cast(Distro, self.guest_distro), None)
+        if crb_child is None:
+            distro_name = cast(str, self.guest_distro_name)
+            self.warn(f"Enable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
+            return
+        feature = crb_child(parent=cast(PrepareFeature, self),
+                             guest=self.guest,
+                             logger=self.logger)
+        feature.enable()
 
     def disable(self) -> None:
-        """
-        Disable CRB on the guest. Note that RHEL8, RHEL9, CentOS Stream 8 and CentOS Stream 9
-        are supported.
-        """
-        distro = self.guest_distro
+        epel_child = _CRB_FEATURES.get(cast(Distro, self.guest_distro), None)
+        if epel_child is None:
+            distro_name = cast(str, self.guest_distro_name)
+            self.warn(f"Disable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
+            return
+        feature = epel_child(parent=cast(PrepareFeature, self),
+                             guest=self.guest,
+                             logger=self.logger)
+        feature.disable()
+
+
+class C8SCRB(CRB):
+    # XXX: DELETE ME>>> https://pagure.io/epel/issue/128
+    #      Well, RHEL is the only one using subscription-manager,
+    #      the rest use dnf config-manager.  We can have a script that checks for ID=rhel
+    #      and if not RHEL but rhel exists in ID_LIKE, then we can have it pick up the right
+    #      repo ID based on distro name, and have it fallback to
+    #      known names from CentOS (powertools for 8, crb for 9).
+    def get_crb_target_packages(self) -> List[str]:
+        return [YUM_UTILS_PACKAGE]
+
+    def get_crb_source_packages(self) -> List[str]:
+        return [YUM_UTILS_PACKAGE]
+
+    def enable(self) -> None:
         sudo = self.guest_sudo
-
-        key_name = self.KEY.upper()
         distro_name = cast(str, self.guest_distro_name)
-        crb_repos = cast(str, self.get_crp_repos())
+        target_packages = self.get_crb_target_packages()
+        source_packages = self.get_crb_source_packages()
+        repos = self.get_crb_repos()
+        self.info(f"Enable {self.KEY.upper()} on '{distro_name}'")
+        self.guest.execute(
+            ShellScript(f"""
+                        set -x;
+                        rpm -q {' '.join(target_packages)} || \
+                            {sudo} dnf -y install {' '.join(source_packages)};
+                        {sudo} yum-config-manager --enable {' '.join(repos)}
+                        """),
+            silent=True)
+        # FIXME: add the same line as 'epel'
+        # self.check_repos_status(repos, 'enabled')
 
-        if distro in (Distro.CENTOS_STREAM_8,
-                      Distro.CENTOS_STREAM_9,
-                      Distro.RHEL_8,
-                      Distro.RHEL_9):
-            self.info(f"Disable {key_name} on '{distro_name}'")
-            self.guest.execute(
-                ShellScript(f"""
-                            set -x;
-                            {sudo} dnf config-manager --disable {crb_repos}
-                            """),
-                silent=True)
-        else:
-            self.warn(f"Disable {key_name}: '{distro_name}' of the guest is unsupported.")
+    def disable(self) -> None:
+        sudo = self.guest_sudo
+        distro_name = cast(str, self.guest_distro_name)
+        package = YUM_UTILS_PACKAGE
+
+        repos = self.get_crb_repos_to_disable()
+        if not repos:
+            self.info(f"Disable {self.KEY.upper()} on {distro_name}: nothing to do!")
+            return
+
+        self.info(f"Disable {self.KEY.upper()} on {distro_name}")
+        self.guest.execute(
+            ShellScript(f"""
+                        set -x;
+                        rpm -q {package} || {sudo} dnf -y install {package};
+                        {sudo} yum-config-manager --disable {' '.join(repos)}
+                        """),
+            silent=True)
+        # FIXME: add the same line as 'epel'
+        # self.check_repos_status(repos, 'disabled')
+
+
+class RHEL8CRB(C8SCRB):
+    # XXX: https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder
+    #      https://linux.how2shout.com/enable-crb-code-ready-builder-powertools-in-almalinux-9/
+    #      What package includes repo 'rhel-CRB'?
+    def get_crb_repos(self) -> List[str]:
+        return ['rhel-CRB', 'beaker-CRB']
+
+    def enable(self) -> None:
+        sudo = self.guest_sudo
+        distro_name = cast(str, self.guest_distro_name)
+        repos = self.get_crb_repos()
+        self.info(f"Enable {self.KEY.upper()} on '{distro_name}'")
+        self.guest.execute(
+            ShellScript(f"""
+                        set -x;
+
+                        # Get repo list
+                        repos_file="/tmp/repolist.txt"
+                        dnf repolist > $repos_file
+
+                        # Enable repos related to CRB
+                        ret=0
+                        for repo in {repos}; do
+                            if grep -q $repo $repos_file; then
+                                {sudo} dnf config-manager --enable $repo
+                                ((ret += $?))
+                            fi
+                        done
+                        exit $ret
+                        """),
+            silent=True)
+
+
+class C9SCRB(CRB):
+    # XXX: https://linux.how2shout.com/enable-crb-code-ready-builder-powertools-in-almalinux-9/
+    #      Enable CRB in AlmaLinux or Rocky Linux 9
+    #
+    # root# cat /etc/*release | grep PRETTY_NAME
+    # PRETTY_NAME="CentOS Stream 9"
+    # root# grep 'crb' /etc/yum.repos.d/*.repo | awk -F':' '{print $1}' | uniq
+    # /etc/yum.repos.d/centos.repo
+    # root# grep '\[crb' /etc/yum.repos.d/centos.repo
+    # [crb]
+    # [crb-debuginfo]
+    # [crb-source]
+    # root# rpm -qf /etc/yum.repos.d/centos.repo
+    # centos-stream-repos-9.0-23.el9.noarch
+    def get_crb_target_packages(self) -> List[str]:
+        return ['centos-stream-repos']
+
+    def get_crb_source_packages(self) -> List[str]:
+        return ['centos-stream-repos']
+
+    def get_crb_repos(self) -> List[str]:
+        return ['crb', 'crb-debuginfo', 'crb-source']
+
+    def get_crb_repos_to_disable(self) -> List[str]:
+        return ['crb', 'crb-debuginfo', 'crb-source']
+
+    def enable(self) -> None:
+        sudo = self.guest_sudo
+        distro_name = cast(str, self.guest_distro_name)
+        target_packages = self.get_crb_target_packages()
+        source_packages = self.get_crb_source_packages()
+        repos = self.get_crb_repos()
+        self.info(f"Enable {self.KEY.upper()} on '{distro_name}'")
+        self.guest.execute(
+            ShellScript(f"""
+                        set -x;
+                        rpm -q {' '.join(target_packages)} || \
+                            {sudo} dnf -y install {' '.join(source_packages)};
+                        {sudo} dnf config-manager --enable {' '.join(repos)}
+                        """),
+            silent=True)
+        # FIXME: add the same line as 'epel'
+        # self.check_repos_status(repos, 'enabled')
+
+    def disable(self) -> None:
+        sudo = self.guest_sudo
+        distro_name = cast(str, self.guest_distro_name)
+
+        repos = self.get_crb_repos_to_disable()
+        if not repos:
+            self.info(f"Disable {self.KEY.upper()} on {distro_name}: nothing to do!")
+            return
+
+        self.info(f"Disable {self.KEY.upper()} on {distro_name}")
+        self.guest.execute(
+            ShellScript(f"""
+                        set -x;
+                        {sudo} dnf config-manager --disable {' '.join(repos)}
+                        """),
+            silent=True)
+        # FIXME: add the same line as 'epel'
+        # self.check_repos_status(repos, 'disabled')
+
+
+class RHEL9CRB(C9SCRB):
+    def get_crb_repos(self) -> List[str]:
+        return ['rhel-CRB', 'beaker-CRB']
+
+
+_CRB_FEATURES = {
+    Distro.CENTOS_STREAM_8: C8SEPEL,
+    Distro.CENTOS_STREAM_9: C9SEPEL,
+    Distro.RHEL_8: RHEL8EPEL,
+    Distro.RHEL_9: RHEL9EPEL
+    }
 
 
 class FIPS(ToggleableFeature):
