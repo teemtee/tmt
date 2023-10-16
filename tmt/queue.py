@@ -1,6 +1,6 @@
 import dataclasses
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Dict, Generator, Generic, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Dict, Generic, Iterator, List, Optional, TypeVar
 
 import fmf.utils
 
@@ -65,7 +65,7 @@ class _Task:
     def guest_ids(self) -> List[str]:
         return [guest.multihost_name for guest in self.guests]
 
-    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+    def go(self) -> Iterator[TaskOutcome['Self']]:
         """ Perform the task """
 
         raise NotImplementedError
@@ -87,7 +87,7 @@ class GuestlessTask(_Task):
     def run(self, logger: Logger) -> None:
         raise NotImplementedError
 
-    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+    def go(self) -> Iterator[TaskOutcome['Self']]:
         try:
             self.run(self.logger)
 
@@ -149,7 +149,7 @@ class Task(_Task):
 
         return loggers
 
-    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+    def go(self) -> Iterator[TaskOutcome['Self']]:
         multiple_guests = len(self.guests) > 1
 
         new_loggers = self.prepare_loggers(self.logger)
@@ -240,7 +240,7 @@ class Queue(List[TaskT]):
             f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
             color='cyan')
 
-    def run(self) -> Generator[TaskOutcome[TaskT], None, None]:
+    def run(self) -> Iterator[TaskOutcome[TaskT]]:
         """
         Start crunching the queued phases.
 

@@ -73,9 +73,9 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Generator,
     Generic,
     Iterable,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -134,7 +134,7 @@ _OUTCOME_TO_COLOR = {
 #: Info on how a linter decided: linter itself, its outcome & the message.
 LinterRuling = Tuple['Linter', LinterOutcome, LinterOutcome, str]
 #: A return value type of a single linter.
-LinterReturn = Generator[Tuple[LinterOutcome, str], None, None]
+LinterReturn = Iterator[Tuple[LinterOutcome, str]]
 #: A linter itself, a callable method.
 LinterCallback = Callable[['Lintable'], LinterReturn]
 
@@ -344,7 +344,7 @@ class Lintable(Generic[LintableT]):
 
 def filter_allowed_checks(
         rulings: Iterable[LinterRuling],
-        outcomes: Optional[List[LinterOutcome]] = None) -> Generator[LinterRuling, None, None]:
+        outcomes: Optional[List[LinterOutcome]] = None) -> Iterator[LinterRuling]:
     """
     Filter only rulings whose outcomes are allowed.
 
@@ -363,7 +363,7 @@ def filter_allowed_checks(
         yield (linter, actual_outcome, eventual_outcome, message)
 
 
-def format_rulings(rulings: Iterable[LinterRuling]) -> Generator[str, None, None]:
+def format_rulings(rulings: Iterable[LinterRuling]) -> Iterator[str]:
     """
     Format rulings for printing or logging.
 

@@ -14,8 +14,8 @@ from typing import (
     Callable,
     DefaultDict,
     Dict,
-    Generator,
     Iterable,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -155,7 +155,7 @@ class DefaultNameGenerator:
     def restart(self) -> None:
         """ Reset the generator and start from the beginning again """
 
-        def _generator() -> Generator[str, None, None]:
+        def _generator() -> Iterator[str]:
             for i in itertools.count(start=0):
                 name = f'{DEFAULT_NAME}-{i}'
 
@@ -598,7 +598,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             keys representing CLI options.
             """
 
-            def _iter_options() -> Generator[Tuple[str, Any], None, None]:
+            def _iter_options() -> Iterator[Tuple[str, Any]]:
                 for name, value in options.items():
                     if name in ('update', 'update_missing', 'insert'):
                         continue
@@ -1966,7 +1966,7 @@ class QueuedPhase(GuestlessTask, Task):
             guest=guest,
             logger=logger)
 
-    def go(self) -> Generator[TaskOutcome['Self'], None, None]:
+    def go(self) -> Iterator[TaskOutcome['Self']]:
         # Based on the phase, pick the proper parent class' go()
         if isinstance(self.phase, Action):
             yield from GuestlessTask.go(self)

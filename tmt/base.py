@@ -16,7 +16,6 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
-    Generator,
     Iterable,
     Iterator,
     List,
@@ -1823,7 +1822,7 @@ class Plan(
     def _iter_steps(self,
                     enabled_only: bool = True,
                     skip: Optional[List[str]] = None
-                    ) -> Generator[Tuple[str, tmt.steps.Step], None, None]:
+                    ) -> Iterator[Tuple[str, tmt.steps.Step]]:
         """
         Iterate over steps.
 
@@ -1842,7 +1841,7 @@ class Plan(
 
     def steps(self,
               enabled_only: bool = True,
-              skip: Optional[List[str]] = None) -> Generator[tmt.steps.Step, None, None]:
+              skip: Optional[List[str]] = None) -> Iterator[tmt.steps.Step]:
         """
         Iterate over steps.
 
@@ -1855,7 +1854,7 @@ class Plan(
 
     def step_names(self,
                    enabled_only: bool = True,
-                   skip: Optional[List[str]] = None) -> Generator[str, None, None]:
+                   skip: Optional[List[str]] = None) -> Iterator[str]:
         """
         Iterate over step names.
 
