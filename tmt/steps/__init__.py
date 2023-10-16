@@ -792,7 +792,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
                     # Copy compatible keys only, ignore everything else
                     # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-                    # "Type[StepData]" has no attribute "__iter__" (not iterable)
+                    # "Type[StepData]" has no attribute "__iter__" (not iterable), and
+                    # even though ruff thinks StepData looks like a dict, it's not one.
                     # ignore[literal-required]: we do create raw step data, but _RawStepData
                     # is very minimal.
                     raw_datum = cast(_RawStepData, {
