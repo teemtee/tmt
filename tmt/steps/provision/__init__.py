@@ -178,7 +178,7 @@ class GuestFacts(SerializableContainer):
 
         content: Dict[str, str] = {}
 
-        output = self._execute(guest, Command('cat', str(filepath)))
+        output = self._execute(guest, Command('cat', filepath))
 
         if not output or not output.stdout:
             return content
@@ -1132,7 +1132,7 @@ class GuestSsh(Guest):
 
     def _ssh_options(self) -> Command:
         """ Return common ssh options (list or joined) """
-        options = [
+        options: tmt.utils.RawCommand = [
             '-oForwardX11=no',
             '-oStrictHostKeyChecking=no',
             '-oUserKnownHostsFile=/dev/null',
@@ -1148,7 +1148,7 @@ class GuestSsh(Guest):
             options.append(f'-p{self.port}')
         if self.key:
             for key in self.key:
-                options.extend(['-i', str(key)])
+                options.extend(['-i', key])
         if self.password:
             options.extend(['-oPasswordAuthentication=yes'])
 
@@ -1218,7 +1218,7 @@ class GuestSsh(Guest):
         ansible_command += Command(
             '--ssh-common-args', self._ssh_options().to_element(),
             '-i', f'{self._ssh_guest()},',
-            str(playbook))
+            playbook)
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
@@ -1360,7 +1360,7 @@ class GuestSsh(Guest):
                 *cmd,
                 *options,
                 "-e", self._ssh_command().to_element(),
-                str(source),
+                source,
                 f"{self._ssh_guest()}:{destination}"
                 ), silent=True)
 
@@ -1426,7 +1426,7 @@ class GuestSsh(Guest):
                 *options,
                 "-e", self._ssh_command().to_element(),
                 f"{self._ssh_guest()}:{source}",
-                str(destination)
+                destination
                 ), silent=True)
 
         # Try to pull twice, check for rsync after the first failure

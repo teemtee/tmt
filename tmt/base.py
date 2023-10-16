@@ -1698,7 +1698,7 @@ class Plan(
 
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
-        self.run(Command("rsync", "-ar", "--exclude", ".git", f"{tree_root}/", str(self.worktree)))
+        self.run(Command("rsync", "-ar", "--exclude", ".git", f"{tree_root}/", self.worktree))
 
     def _initialize_data_directory(self) -> None:
         """

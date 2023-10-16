@@ -348,14 +348,14 @@ class GuestTestcloud(tmt.GuestSsh):
         # Use existing key
         if self.key:
             self.debug("Extract public key from the provided private one.")
-            command = Command("ssh-keygen", "-f", str(self.key[0]), "-y")
+            command = Command("ssh-keygen", "-f", self.key[0], "-y")
             public_key = self._run_guest_command(command, silent=True).stdout
         # Generate new ssh key pair
         else:
             self.debug('Generating an ssh key.')
             key_name = f"id_{key_type if key_type is not None else 'rsa'}"
             self.key = [self.workdir / key_name]
-            command = Command("ssh-keygen", "-f", str(self.key[0]), "-N", "")
+            command = Command("ssh-keygen", "-f", self.key[0], "-N", "")
             if key_type is not None:
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)

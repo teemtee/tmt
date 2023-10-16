@@ -283,7 +283,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin):
         if ref:
             self.info('ref', ref, 'green')
             self.debug(f"Checkout ref '{ref}'.")
-            self.run(Command('git', 'checkout', '-f', str(ref)), cwd=testdir)
+            self.run(Command('git', 'checkout', '-f', ref), cwd=testdir)
 
         # Remove .git so that it's not copied to the SUT
         # if 'keep-git-metadata' option is not specified

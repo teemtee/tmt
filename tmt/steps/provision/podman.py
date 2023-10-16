@@ -1,7 +1,7 @@
 import dataclasses
 import os
 from shlex import quote
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -170,12 +170,12 @@ class GuestContainer(tmt.Guest):
         if os.geteuid() != 0:
             podman_command += ['podman', 'unshare']
 
-        podman_command += [
+        podman_command += cast(tmt.utils.RawCommand, [
             'ansible-playbook',
             *self._ansible_verbosity(),
             *self._ansible_extra_args(extra_args),
-            '-c', 'podman', '-i', f'{self.container},', str(playbook)
-            ]
+            '-c', 'podman', '-i', f'{self.container},', playbook
+            ])
 
         return self._run_guest_command(
             podman_command,
@@ -266,12 +266,12 @@ class GuestContainer(tmt.Guest):
         # Relabel workdir to container_file_t if SELinux supported
         if tmt.utils.is_selinux_supported():
             self._run_guest_command(Command(
-                "chcon", "--recursive", "--type=container_file_t", str(self.parent.plan.workdir)
+                "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
                 ), shell=False, silent=True)
         # In case explicit destination is given, use `podman cp` to copy data
         # to the container
         if source and destination:
-            self.podman(Command("cp", str(source), f"{self.container}:{destination}"))
+            self.podman(Command("cp", source, f"{self.container}:{destination}"))
 
     def pull(
             self,

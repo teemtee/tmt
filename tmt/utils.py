@@ -440,6 +440,10 @@ CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
 
 #: A single element of command-line.
 _CommandElement = str
+#: A single element of raw command line in its ``list`` form.
+RawCommandElement = Union[str, Path]
+#: A raw command line form, a list of elements.
+RawCommand = List[RawCommandElement]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -505,13 +509,13 @@ class ShellScript:
 class Command:
     """ A command with its arguments. """
 
-    def __init__(self, *elements: _CommandElement) -> None:
-        self._command = elements
+    def __init__(self, *elements: RawCommandElement) -> None:
+        self._command = [str(element) for element in elements]
 
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', List[str]]) -> 'Command':
+    def __add__(self, other: Union['Command', RawCommand, List[str]]) -> 'Command':
         if isinstance(other, Command):
             return Command(*self._command, *other._command)
 
@@ -3969,7 +3973,7 @@ def git_add(*, path: Path, logger: tmt.log.Logger) -> None:
     path = path.resolve()
 
     try:
-        Command("git", "add", str(path)).run(cwd=path.parent, logger=logger)
+        Command("git", "add", path).run(cwd=path.parent, logger=logger)
 
     except RunError as error:
         raise GeneralError(f"Failed to add path '{path}' to git index.") from error
@@ -4749,7 +4753,7 @@ def git_clone(
             Command(
                 'git', 'clone',
                 *depth,
-                url, str(destination)
+                url, destination
                 ), env=env)
     except RunError:
         if not shallow:

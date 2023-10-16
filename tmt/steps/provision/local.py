@@ -60,7 +60,7 @@ class GuestLocal(tmt.Guest):
                 *self._ansible_extra_args(extra_args),
                 '-c', 'local',
                 '-i', 'localhost,',
-                str(playbook)),
+                playbook),
             env=self._prepare_environment(),
             friendly_command=friendly_command,
             log=log,

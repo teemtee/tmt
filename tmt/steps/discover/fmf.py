@@ -401,7 +401,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self.info('ref', ref, 'green')
             self.debug(f"Checkout ref '{ref}'.")
             self.run(
-                Command('git', 'checkout', '-f', str(ref)),
+                Command('git', 'checkout', '-f', ref),
                 cwd=self.testdir)
 
         # Show current commit hash if inside a git repository
