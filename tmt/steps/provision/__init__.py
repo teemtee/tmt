@@ -16,7 +16,7 @@ from typing import (
     Any,
     DefaultDict,
     Dict,
-    Generator,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -183,7 +183,7 @@ class GuestFacts(SerializableContainer):
         if not output or not output.stdout:
             return content
 
-        def _iter_pairs() -> Generator[Tuple[str, str], None, None]:
+        def _iter_pairs() -> Iterator[Tuple[str, str]]:
             assert output  # narrow type in a closure
             assert output.stdout  # narrow type in a closure
 
@@ -418,7 +418,7 @@ class GuestData(SerializableContainer):
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
     @classmethod
-    def options(cls) -> Generator[Tuple[str, str], None, None]:
+    def options(cls) -> Iterator[Tuple[str, str]]:
         """
         Iterate over option names.
 
