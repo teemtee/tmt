@@ -680,6 +680,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 debug('apply invocation value', shift=2)
                 raw_datum[opt] = value  # type: ignore[literal-required]
 
+            local_debug('patched step datum', str(raw_datum))
+
         # A bit of logging before we start messing with step data
         for i, raw_datum in enumerate(raw_data):
             debug(f'raw step datum #{i}', str(raw_datum))
@@ -783,10 +785,22 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     debug('  incompatible step data')
 
-                    raw_datum = {
-                        'name': raw_datum['name'],
-                        'how': how
-                        }
+                    data_base = self._plugin_base_class._data_class
+
+                    debug('  compatible base', f'{data_base.__module__}.{data_base.__name__}')
+                    debug('  compatible keys', list(data_base.keys()))
+
+                    # Copy compatible keys only, ignore everything else
+                    # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+                    # "Type[StepData]" has no attribute "__iter__" (not iterable), and
+                    # even though ruff thinks StepData looks like a dict, it's not one.
+                    # ignore[literal-required]: we do create raw step data, but _RawStepData
+                    # is very minimal.
+                    raw_datum = cast(_RawStepData, {
+                        key: raw_datum[key]  # type: ignore[literal-required]
+                        for key in data_base.keys()  # noqa: SIM118
+                        if key in raw_datum
+                        })
 
                 if invocation.options.get('update_missing'):
                     _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
