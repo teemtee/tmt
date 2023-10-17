@@ -35,9 +35,9 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Generator,
     Generic,
     Iterable,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -1686,7 +1686,7 @@ class FinishError(GeneralError):
 def render_run_exception_streams(
         stdout: Optional[str],
         stderr: Optional[str],
-        verbose: int = 0) -> Generator[str, None, None]:
+        verbose: int = 0) -> Iterator[str]:
     """ Render run exception output streams for printing """
 
     for name, output in (('stdout', stdout), ('stderr', stderr)):
@@ -1707,7 +1707,7 @@ def render_run_exception_streams(
         yield ''
 
 
-def render_run_exception(exception: RunError) -> Generator[str, None, None]:
+def render_run_exception(exception: RunError) -> Iterator[str]:
     """ Render detailed output upon command execution errors for printing """
 
     # Check verbosity level used during raising exception,
@@ -1721,10 +1721,10 @@ def render_run_exception(exception: RunError) -> Generator[str, None, None]:
     yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
-def render_exception(exception: BaseException) -> Generator[str, None, None]:
+def render_exception(exception: BaseException) -> Iterator[str]:
     """ Render the exception and its causes for printing """
 
-    def _indent(iterable: Iterable[str]) -> Generator[str, None, None]:
+    def _indent(iterable: Iterable[str]) -> Iterator[str]:
         for item in iterable:
             if not item:
                 yield item
@@ -1750,13 +1750,13 @@ def render_exception(exception: BaseException) -> Generator[str, None, None]:
         yield from _indent(formatted_exc)
 
     # Follow the chain and render all causes
-    def _render_cause(number: int, cause: BaseException) -> Generator[str, None, None]:
+    def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
         yield ''
         yield f'Cause number {number}:'
         yield ''
         yield from _indent(render_exception(cause))
 
-    def _render_causes(causes: List[BaseException]) -> Generator[str, None, None]:
+    def _render_causes(causes: List[BaseException]) -> Iterator[str]:
         yield ''
         yield f'The exception was caused by {len(causes)} earlier exceptions'
 
@@ -1792,7 +1792,7 @@ def uniq(values: List[T]) -> List[T]:
     return list(set(values))
 
 
-def duplicates(values: Iterable[Optional[T]]) -> Generator[T, None, None]:
+def duplicates(values: Iterable[Optional[T]]) -> Iterator[T]:
     """ Iterate over all duplicate values in ``values`` """
     seen = Counter(values)
     for value, count in seen.items():
@@ -1801,7 +1801,7 @@ def duplicates(values: Iterable[Optional[T]]) -> Generator[T, None, None]:
         yield value
 
 
-def flatten(lists: Generator[List[T], None, None], unique: bool = False) -> List[T]:
+def flatten(lists: Iterable[List[T]], unique: bool = False) -> List[T]:
     """
     "Flatten" a list of lists into a single-level list.
 
@@ -2253,7 +2253,7 @@ def environment_from_spec(
 
 @contextlib.contextmanager
 def modify_environ(
-        new_elements: EnvironmentType) -> Generator[None, None, None]:
+        new_elements: EnvironmentType) -> Iterator[None]:
     """ A context manager for os.environ that restores the initial state """
     environ_backup = os.environ.copy()
     os.environ.clear()
@@ -2451,25 +2451,25 @@ class FieldMetadata(Generic[T]):
         return self._option
 
 
-def container_fields(container: Container) -> Generator[dataclasses.Field[Any], None, None]:
+def container_fields(container: Container) -> Iterator[dataclasses.Field[Any]]:
     yield from dataclasses.fields(container)
 
 
-def container_keys(container: Container) -> Generator[str, None, None]:
+def container_keys(container: Container) -> Iterator[str]:
     """ Iterate over key names in a container """
 
     for field in container_fields(container):
         yield field.name
 
 
-def container_values(container: ContainerInstance) -> Generator[Any, None, None]:
+def container_values(container: ContainerInstance) -> Iterator[Any]:
     """ Iterate over values in a container """
 
     for field in container_fields(container):
         yield container.__dict__[field.name]
 
 
-def container_items(container: ContainerInstance) -> Generator[Tuple[str, Any], None, None]:
+def container_items(container: ContainerInstance) -> Iterator[Tuple[str, Any]]:
     """ Iterate over key/value pairs in a container """
 
     for field in container_fields(container):
@@ -2556,17 +2556,17 @@ class DataContainer:
     # already, therefore it's not necessary to create an instance, and
     # 2. some functionality makes use of this knowledge.
     @classmethod
-    def keys(cls) -> Generator[str, None, None]:
+    def keys(cls) -> Iterator[str]:
         """ Iterate over key names """
 
         yield from container_keys(cls)
 
-    def values(self) -> Generator[Any, None, None]:
+    def values(self) -> Iterator[Any]:
         """ Iterate over key values """
 
         yield from container_values(self)
 
-    def items(self) -> Generator[Tuple[str, Any], None, None]:
+    def items(self) -> Iterator[Tuple[str, Any]]:
         """ Iterate over key/value pairs """
 
         yield from container_items(self)
@@ -2737,7 +2737,7 @@ class SerializableContainer(DataContainer):
         See :py:meth:`from_serialized` for its counterpart.
         """
 
-        def _produce_serialized() -> Generator[Tuple[str, Any], None, None]:
+        def _produce_serialized() -> Iterator[Tuple[str, Any]]:
             for key in container_keys(self):
                 _, _, value, _, metadata = container_field(self, key)
 
@@ -2776,7 +2776,7 @@ class SerializableContainer(DataContainer):
         # already know what class to restore: this one.
         serialized.pop('__class__', None)
 
-        def _produce_unserialized() -> Generator[Tuple[str, Any], None, None]:
+        def _produce_unserialized() -> Iterator[Tuple[str, Any]]:
             # TODO: `key` is incorrect, `option` is the correct one, and this will happen to fix
             # https://github.com/teemtee/tmt/issues/2054
             for key, value in serialized.items():
@@ -3017,7 +3017,7 @@ def _format_bool(
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
-        wrap: FormatWrap) -> Generator[str, None, None]:
+        wrap: FormatWrap) -> Iterator[str]:
     """ Format a ``bool`` value """
 
     assert_window_size(window_size)
@@ -3030,7 +3030,7 @@ def _format_list(
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
-        wrap: FormatWrap) -> Generator[str, None, None]:
+        wrap: FormatWrap) -> Iterator[str]:
     """ Format a list """
 
     assert_window_size(window_size)
@@ -3098,7 +3098,7 @@ def _format_str(
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
-        wrap: FormatWrap) -> Generator[str, None, None]:
+        wrap: FormatWrap) -> Iterator[str]:
     """ Format a string """
 
     assert_window_size(window_size)
@@ -3146,7 +3146,7 @@ def _format_dict(
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
-        wrap: FormatWrap) -> Generator[str, None, None]:
+        wrap: FormatWrap) -> Iterator[str]:
     """ Format a dictionary """
 
     assert_window_size(window_size)
@@ -3182,7 +3182,7 @@ def _format_dict(
             # formatted as a list with one item.
             raise AssertionError
 
-        def _emit_list_entries(lines: List[str]) -> Generator[str, None, None]:
+        def _emit_list_entries(lines: List[str]) -> Iterator[str]:
             for i, line in enumerate(lines):
                 if i == 0:
                     yield f'{_FORMAT_VALUE_LIST_ENTRY_INDENT}{line}'
@@ -3190,7 +3190,7 @@ def _format_dict(
                 else:
                     yield f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}'
 
-        def _emit_dict_entry(lines: List[str]) -> Generator[str, None, None]:
+        def _emit_dict_entry(lines: List[str]) -> Iterator[str]:
             yield from (f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}' for line in lines)
 
         # UX: special handling of containers with just a single item, i.e. the
@@ -3275,7 +3275,7 @@ def _format_dict(
 #: A type describing a per-type formatting helper.
 ValueFormatter = Callable[
     [Any, Optional[int], Optional[str], ListFormat, FormatWrap],
-    Generator[str, None, None]
+    Iterator[str]
     ]
 
 
@@ -4114,7 +4114,7 @@ def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
 
 def generate_runs(
         path: Path,
-        id_: Optional[str] = None) -> Generator[Path, None, None]:
+        id_: Optional[str] = None) -> Iterator[Path]:
     """ Generate absolute paths to runs from path """
     # Prepare absolute workdir path if --id was used
     if id_:
@@ -4327,7 +4327,7 @@ class StructuredField:
         if text is not None:
             self.load(text)
 
-    def __iter__(self) -> Generator[str, None, None]:
+    def __iter__(self) -> Iterator[str]:
         """ By default iterate through all available section names """
         yield from self._order
 
@@ -4480,7 +4480,7 @@ class StructuredField:
     #  StructuredField Methods
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def iterate(self) -> Generator[Tuple[str, str], None, None]:
+    def iterate(self) -> Iterator[Tuple[str, str]]:
         """ Return (section, content) tuples for all sections """
         for section in self:
             yield section, self._sections[section]
@@ -5585,7 +5585,7 @@ class NormalizeKeysMixin(_CommonBase):
         return normalize_shell_script_list(key_address, value, logger)
 
     @classmethod
-    def _iter_key_annotations(cls) -> Generator[Tuple[str, Any], None, None]:
+    def _iter_key_annotations(cls) -> Iterator[Tuple[str, Any]]:
         """
         Iterate over keys' type annotations.
 
@@ -5597,7 +5597,7 @@ class NormalizeKeysMixin(_CommonBase):
             pairs of key name and its annotations.
         """
 
-        def _iter_class_annotations(klass: type) -> Generator[Tuple[str, Any], None, None]:
+        def _iter_class_annotations(klass: type) -> Iterator[Tuple[str, Any]]:
             # Skip, needs fixes to become compatible
             if klass is Common:
                 return
@@ -5615,7 +5615,7 @@ class NormalizeKeysMixin(_CommonBase):
             yield from _iter_class_annotations(klass)
 
     @classmethod
-    def keys(cls) -> Generator[str, None, None]:
+    def keys(cls) -> Iterator[str]:
         """
         Iterate over key names.
 
@@ -5630,7 +5630,7 @@ class NormalizeKeysMixin(_CommonBase):
         for keyname, _ in cls._iter_key_annotations():
             yield keyname
 
-    def items(self) -> Generator[Tuple[str, Any], None, None]:
+    def items(self) -> Iterator[Tuple[str, Any]]:
         """
         Iterate over keys and their values.
 

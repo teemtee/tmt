@@ -5,7 +5,7 @@ import os
 import pkgutil
 import sys
 from importlib.metadata import entry_points
-from typing import Any, Dict, Generator, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar
 
 import tmt
 import tmt.utils
@@ -24,7 +24,7 @@ ALREADY_EXPLORED = False
 _TMT_ROOT = Path(tmt.__file__).resolve().parent
 
 
-def discover(path: Path) -> Generator[str, None, None]:
+def discover(path: Path) -> Iterator[str]:
     """ Discover available plugins for given paths """
     for _, name, package in pkgutil.iter_modules([str(path)]):
         if not package:
@@ -292,8 +292,8 @@ class PluginRegistry(Generic[RegisterableT]):
 
         return self._plugins.get(plugin_id, None)
 
-    def iter_plugin_ids(self) -> Generator[str, None, None]:
+    def iter_plugin_ids(self) -> Iterator[str]:
         yield from self._plugins.keys()
 
-    def iter_plugins(self) -> Generator[RegisterableT, None, None]:
+    def iter_plugins(self) -> Iterator[RegisterableT]:
         yield from self._plugins.values()

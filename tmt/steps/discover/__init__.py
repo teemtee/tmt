@@ -1,5 +1,5 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, cast
 
 import click
 from fmf.utils import listed
@@ -343,11 +343,11 @@ class Discover(tmt.steps.Step):
             *,
             phase_name: Optional[str] = None,
             enabled: Optional[bool] = None) -> List['tmt.Test']:
-        def _iter_all_tests() -> Generator['tmt.Test', None, None]:
+        def _iter_all_tests() -> Iterator['tmt.Test']:
             for phase_tests in self._tests.values():
                 yield from phase_tests
 
-        def _iter_phase_tests() -> Generator['tmt.Test', None, None]:
+        def _iter_phase_tests() -> Iterator['tmt.Test']:
             assert phase_name is not None
 
             yield from self._tests[phase_name]
