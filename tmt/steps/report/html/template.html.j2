@@ -61,6 +61,7 @@
             text-align: center;
             text-shadow: 0px 0px 5px #555;
             color: white;
+            width: 7ex;
         }
 
         #results td.pass {
@@ -85,6 +86,20 @@
 
         #results td.note {
             color: #c00;
+        }
+
+        #results tr.check {
+            font-size: 90%;
+        }
+
+        #results tr.check td.result {
+            width: 5ex;
+        }
+
+        #results tr.check td.name {
+            color: #888;
+            padding-left: 5ex;
+            width: 22ex;
         }
 
         .context-dimension {
@@ -226,6 +241,25 @@ Context:
         <td class="note">{{ result.note|e }}</td>
         {% endif %}
     </tr>
+    {% if result.check %}
+    <tr class="check">
+        <td colspan="4">
+            <table>
+                {% for check in result.check %}
+                <tr>
+                    <td class="result {{ check.result.value | e }}">{{ check.result.value | e }}</td>
+                    <td class="name">{{ check.name | e }} ({{ check.event.value }})</td>
+                    <td class="log">
+                        {% for log in check.log %}
+                        <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </td>
+    </tr>
+    {% endif %}
     {% endfor %}
 </table>
 {% else %}
