@@ -290,8 +290,15 @@ class BeakerLib(Library):
                     library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
                     local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
                     if not library_path.exists():
-                        self.parent.debug(f"Failed to find library {self} at {self.url}")
-                        raise LibraryError
+                        tree = fmf.Tree(str(clone_dir)).find(self.name)
+                        if tree:
+                            full_lib_path = tree.data.get('path')
+                            if full_lib_path:
+                                library_path = clone_dir / full_lib_path.strip('/')
+                                local_library_path = directory / full_lib_path.strip('/')
+                        if not library_path.exists():
+                            self.parent.debug(f"Failed to find library {self} at {self.url}")
+                            raise LibraryError
                     self.parent.debug(f"Library {self} is copied into {directory}")
                     tmt.utils.copytree(library_path, local_library_path, dirs_exist_ok=True)
 
