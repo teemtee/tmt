@@ -164,10 +164,17 @@ Data related to provisioned guests:
 Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Hierarchy
+------------------------------------------------------------------
+
 Object hierarchy is following: ``Run`` -> ``Plans`` -> ``Steps``
 -> ``Plugins``, where the ``Run`` is on the top of this hierarchy.
 The objects have the ``parent`` attribute, that is pointing to
 the parent in which the current instance is contained.
+
+
+Nodes, Trees
+------------------------------------------------------------------
 
 The ``node`` attribute of ``Test``, ``Plan`` and ``Story``
 instances references the original leaf node of the fmf metadata
@@ -176,6 +183,27 @@ created.
 
 In a similar way, the ``tree`` property of the ``Tree`` instance
 points to the original ``fmf.Tree`` from which it was initialized.
+
+
+Keys, Fields, Options
+------------------------------------------------------------------
+
+Configuration options appear throughout the code in several forms,
+here's a summary of the differences and naming:
+
+key
+    a config input coming from the ``fmf`` files, consistently
+    using dashes, example: ``some-thing``
+
+field
+    defined by the ``tmt.utils.field()`` helper, is a python
+    attribute, using underscores, example: ``some_thing``
+
+option
+    coming from the command line, defined using the
+    ``tmt.options.option()`` helper, includes the ``--`` prefix,
+    example: ``--some-thing``
+
 
 
 Class Conversions
