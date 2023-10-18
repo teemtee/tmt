@@ -1,0 +1,3 @@
+summary: This is an example of the redis sync
+test: ./test.sh
+framework: shell

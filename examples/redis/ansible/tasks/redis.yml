@@ -1,0 +1,63 @@
+- name: setup syncing redis server
+  package: name={{ item }} state=present
+  with_items:
+  - redis
+  - firewalld
+  become: true
+
+- name: bind to all interfaces
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^bind '
+    line: "bind 0.0.0.0 -::0"
+  become: true
+
+- name: remove protected mode
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^protected-mode'
+    line: "protected-mode no"
+  become: true
+
+
+- name: Start redis service, if not started
+  ansible.builtin.service:
+    name: redis
+    state: restarted
+    enabled: yes
+  become: true
+
+
+- name: Start firewalld service, if not started
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: yes
+  become: true
+
+- name: add sshd to firewalld
+  ansible.posix.firewalld:
+    service: ssh
+    permanent: yes
+    state: enabled
+    immediate: true
+  become: true
+
+- name: add redis to firewalld
+  ansible.posix.firewalld:
+    service: redis
+    permanent: yes
+    state: enabled
+    immediate: true
+  become: true
+
+- name: add redis-sentinel to firewall
+  ansible.posix.firewalld:
+    service: redis-sentinel
+    permanent: yes
+    state: enabled
+    immediate: true
+  become: true
+
+# redis-cli -h $GUEST set variable value
+# redis-cli -h $GUEST get variable

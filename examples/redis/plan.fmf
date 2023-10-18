@@ -1,0 +1,43 @@
+description: |
+  This is an example how to use redis for data synchronization
+  between guests
+
+  how to send data to server:
+      redis-cli -h $GUEST set variable value
+
+  how to get data from server:
+      redis-cli -h $GUEST get variable
+
+  If you need more features like waiting for events or atomic
+  commands or deleting keys see doc for redis commands
+  https://redis.io/commands/
+
+discover:
+  - how: fmf
+    where:
+      - guest
+
+provision:
+  - how: virtual
+    role: server
+    image: fedora
+    connection: system
+  - how: virtual
+    role: guest
+    image: fedora
+    connection: system
+
+prepare:
+  - how: ansible
+    playbook:
+      - ansible/setup_server.yml
+    extra-args: '-vvv'
+    where:
+      - server
+  - how: install
+    package: redis
+    where:
+      - guest
+
+execute:
+  how: tmt

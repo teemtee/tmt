@@ -1,0 +1,8 @@
+---
+- hosts: all
+  vars:
+    - version: "{{ ansible_distribution_version }}"
+  tasks:
+    - import_tasks: tasks/redis.yml
+    - import_tasks: tasks/redis_variables.yml
+...

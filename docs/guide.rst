@@ -815,11 +815,17 @@ libraries, e.g. one of the following:
   * `a native beakerlib library`__ by Dalibor Pospisil, a
     distributed version of Ondrej Moris's library, supporting any
     number of hosts.
+  * `redis server`__ by Jan Scotka, a simple key-value exchange
+    solution between machines. The primary purpose is data
+    transfer. It is not a library prepared for synchronization,
+    but it's possible to use it as well. See the example to learn
+    how to set up a redis server and use it.
 
 __ https://github.com/beaker-project/rhts
 __ https://github.com/beakerlib/sync/tree/master/sync
 __ https://github.com/RedHat-SP-Security/keylime-tests/tree/main/Library/sync
 __ https://github.com/beakerlib/ControlFlow/tree/master/sync
+__ https://github.com/teemtee/tmt/tree/main/examples/redis
 
 
 Current Limits
