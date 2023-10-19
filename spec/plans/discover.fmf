@@ -307,3 +307,8 @@ description: |
                       - test: first client script
                       - test: second client script
                       - test: third client script
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/multihost/complete
+      - verified-by: /tests/multihost/web
+      - documented-by: /docs/guide.rst#multihost-testing

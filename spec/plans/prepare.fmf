@@ -171,3 +171,9 @@ example: |
           - how: ansible
             playbook: common.yaml
             where: [primary, replica]
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/multihost/complete
+      - verified-by: /tests/multihost/web
+      - verified-by: /tests/multihost/corner-cases
+      - documented-by: /docs/guide.rst
