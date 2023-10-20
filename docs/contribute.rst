@@ -264,21 +264,24 @@ squash the changes into a single commit. Use multiple commits to
 group relevant code changes if the pull request is too large for a
 single commit.
 
-Consider pasting the following checklist (or selected items which
-are applicable) to the pull request description to easily track
-progress of the implementation and prevent forgetting about
-essential steps to be completed before it is merged:
+The following checklist template is automatically added to the
+new pull request description to easily track progress of the
+implementation and prevent forgetting about essential steps to be
+completed before it is merged. Feel free to remove those which are
+irrelevant for your change.
 
 .. code-block:: markdown
 
+    Pull Request Checklist
+
     * [ ] implement the feature
-    * [ ] write documentation
+    * [ ] write the documentation
     * [ ] extend the test coverage
-    * [ ] update specification
-    * [ ] adjust module docs
-    * [ ] add a usage example
-    * [ ] modify json schema
-    * [ ] mention version
+
+    * [ ] update the specification
+    * [ ] adjust plugin docstring
+    * [ ] modify the json schema
+    * [ ] mention the version
 
 The version should be mentioned in the specification when a new
 essential feature is added so that users can easily check whether
