@@ -118,6 +118,32 @@ class GuestContainer(tmt.Guest):
             message=f"Pull image '{self.image}'."
             )
 
+    def _setup_network(self) -> list[str]:
+        """
+        Set up the desired network.
+        Will look for existing network using the tmt workdir name,
+        or will create that network if it doesn't exist.
+        Returns the network arguments to be used in podman run command.
+        """
+
+        run_id = self._tmt_name().split('-')[1]
+        self.network = f"tmt-{run_id}-network"
+
+        try:
+            self.podman(
+                Command('network', 'create', self.network),
+                message=f"Creating network '{self.network}'."
+                )
+        except tmt.utils.RunError as err:
+            if 'network already exists' in err.message:
+                # error string:
+                # https://github.com/containers/common/blob/main/libnetwork/types/define.go#L19
+                pass
+            else:
+                raise err
+
+        return ['--network', self.network]
+
     def start(self) -> None:
         """ Start provisioned guest """
         if self.is_dry_run:
@@ -151,15 +177,20 @@ class GuestContainer(tmt.Guest):
         self.container = self.guest = self._tmt_name()
         self.verbose('name', self.container, 'green')
 
+        additional_args = []
+
         # FIXME: Workaround for BZ#1900021 (f34 container on centos-8)
         workaround = ['--security-opt', 'seccomp=unconfined']
+        additional_args.extend(workaround)
+
+        additional_args.extend(self._setup_network())
 
         # Run the container
         self.debug(f"Start container '{self.image}'.")
         assert self.container is not None
         self.podman(Command(
             'run',
-            *workaround,
+            *additional_args,
             '--name', self.container,
             '-v', f'{workdir}:{workdir}:z',
             '-itd',
@@ -196,7 +227,7 @@ class GuestContainer(tmt.Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
-        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+        :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -337,6 +368,19 @@ class GuestContainer(tmt.Guest):
         if self.container:
             self.podman(Command('container', 'rm', '-f', self.container))
             self.info('container', 'removed', 'green')
+
+        if self.network:
+            # will remove the network if there are no more containers attached to it
+            try:
+                self.podman(Command('network', 'rm', self.network))
+                self.info('container', 'network removed', 'green')
+            except tmt.utils.RunError as err:
+                if 'network is being used' in err.message:
+                    # error string:
+                    # https://github.com/containers/podman/blob/main/libpod/define/errors.go#L180
+                    pass
+                else:
+                    raise err
 
 
 @tmt.steps.provides_method('container')
