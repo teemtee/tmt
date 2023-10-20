@@ -1,0 +1,6 @@
+summary: test for library with layered fmf
+test: ./test.sh
+require:
+  - path: PATH
+    name: /first/test
+    type: library

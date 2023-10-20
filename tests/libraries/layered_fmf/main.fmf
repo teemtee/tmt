@@ -1,0 +1,4 @@
+summary: Test that library can have layered fmf
+require:
+- git-core
+tier: 4
