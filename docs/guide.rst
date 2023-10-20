@@ -708,8 +708,9 @@ given task (test, preparation script, ansible playbook, etc.) on
 several guests at once. Tasks are assigned to provisioned guests by
 matching the ``where`` key from
 :ref:`discover</spec/plans/discover/where>`,
-:ref:`prepare</spec/plans/prepare/where>` and ``finish`` phases
-with corresponding guests by their
+:ref:`prepare</spec/plans/prepare/where>` and
+:ref:`finish</spec/plans/finish/where>`
+phases with corresponding guests by their
 :ref:`key and role keys</spec/plans/provision/multihost>`.
 Essentially, plan author tells tmt on which guest(s) a test or
 script should run by listing guest name(s) or guest role(s).

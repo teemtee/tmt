@@ -53,3 +53,24 @@ example: |
                 - https://foo.bar/rhel7-final-touches.yml
     link:
       - implemented-by: /tmt/steps/finish/ansible.py
+
+/where:
+    summary: Perform finishing tasks on selected guests
+    description: |
+        In the :ref:`/spec/plans/provision/multihost` scenarios it
+        is often necessary to perform different preparation tasks
+        on individual guests. The ``where`` key allows to select
+        guests where the finishing tasks should be applied by
+        providing their ``name`` or the ``role`` they play in the
+        scenario. Use a list to specify multiple names or roles.
+        By default, when the ``where`` key is not defined,
+        finishing tasks are performed on all provisioned guests.
+    example: |
+        # Stop Apache on the server
+        prepare:
+          - how: shell
+            script: systemctl stop httpd
+            where: server
+    link:
+      - implemented-by: /tmt/steps
+      - documented-by: /docs/guide.rst
