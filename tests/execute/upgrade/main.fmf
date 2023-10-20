@@ -21,6 +21,6 @@ tier: 4
     summary: Override the filter in remote upgrade path
     test: ./override.sh
 
-/ignore_test:
+/ignore-test:
     summary: Ignore test -n run subcommand in remote repo
     test: ./ignore-test.sh

@@ -31,7 +31,7 @@ tier: 4
         tag+: [additional_coverage]
 
 
-/reuse_provision:
+/reuse-provision:
     summary: Verify that provision can be reused for reboot
     test: ./reuse.sh
     enabled: false
