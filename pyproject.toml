@@ -247,6 +247,9 @@ select = [
 ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
+    # tmt codebase uses `warn` by default - disabling the check, switching to
+    # `warning` can be done in an extra patch.
+    "PGH002",  # `warn` is deprecated in favor of `warning`
     "PIE790",  # Unnecessary `pass` statement
     "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
     "PLE1205",  # Too many arguments for `logging` format string

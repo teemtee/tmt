@@ -10,7 +10,7 @@ def run_cli() -> None:
     tmt.utils, we would not be able to intercept the exception below.
     """
     try:
-        import tmt.utils  # noqaI001
+        import tmt.utils  # noqa: I001
         import tmt.cli
         tmt.cli.main()
     except ImportError as error:

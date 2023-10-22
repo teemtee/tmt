@@ -2162,7 +2162,7 @@ class Plan(
             assert self._cli_context_object is not None  # narrow type
             self._cli_context_object.steps = standalone
             self.debug(
-                f"Running the '{list(standalone)[0]}' step as standalone.")
+                f"Running the '{next(iter(standalone))}' step as standalone.")
 
         # Run enabled steps except 'finish'
         self.debug('go', color='cyan', shift=0, level=2)

@@ -462,12 +462,12 @@ class TestStructuredField(unittest.TestCase):
     def test_missing_end_tag(self):
         """ Missing end tag """
         text = "\n".join([self.header, self.sections, self.footer])
-        self.assertRaises(StructuredFieldError, StructuredField, text, 0)
+        pytest.raises(StructuredFieldError, StructuredField, text, 0)
 
     def test_broken_field(self):
         """ Broken field"""
         text = "[structured-field-start]"
-        self.assertRaises(StructuredFieldError, StructuredField, text)
+        pytest.raises(StructuredFieldError, StructuredField, text)
 
     def test_set_content(self):
         """ Set section content """
@@ -624,7 +624,7 @@ class TestStructuredField(unittest.TestCase):
         # Remove multiple values
         field.remove("section", "key")
         assert 'key = 1\nkey = 2\nkey = 3' not in field.save()
-        self.assertRaises(
+        pytest.raises(
             StructuredFieldError, field.get, "section", "key")
 
 
@@ -722,8 +722,8 @@ def test_get_distgit_handler():
     assert isinstance(returned_object, tmt.utils.CentOSDistGit)
     # RH Gitlab detection
     returned_object = tmt.utils.get_distgit_handler([
-        "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",  # noqa: E501
-    ])
+        "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",
+        ])
     assert isinstance(returned_object, tmt.utils.RedHatGitlab)
 
 
@@ -737,7 +737,7 @@ def test_fedora_dist_git(tmppath):
     (tmppath / 'sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
     (tmppath / 'tmt.spec').write_text('')
     fedora_sources_obj = tmt.utils.FedoraDistGit()
-    assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",  # noqa: E501
+    assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
             "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=tmppath)
 
 
