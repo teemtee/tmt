@@ -5408,23 +5408,20 @@ def dataclass_normalize_field(
     """
     Normalize and assign a value to container field.
 
-    If there is a normalization callback defined for the field, either in field
-    metadata or as a special ``_normalize_$keyname`` method, the method is
-    called for ``raw_value``, and its return value is assigned to container
-    field instead of ``value``.
+    If there is a normalization callback defined for the field via ``normalize``
+    parameter of :py:func:`field`, the callback is called to coerce ``raw_value``,
+    and the return value is assigned to container field instead of ``value``.
     """
 
-    normalize_callback: Optional[NormalizeCallback[Any]] = None
+    # Find out whether there's a normalization callback, and use it. Otherwise,
+    # the raw value is simply used.
+    value = raw_value
 
-    # First try new-style fields, i.e. normalize callback stored in field metadata
     if dataclasses.is_dataclass(container):
         _, _, _, metadata = container_field(type(container), keyname)
-        normalize_callback = metadata.normalize_callback
 
-    if not normalize_callback:
-        normalize_callback = getattr(container, f'_normalize_{keyname}', None)
-
-    value = normalize_callback(key_address, raw_value, logger) if normalize_callback else raw_value
+        if metadata.normalize_callback:
+            value = metadata.normalize_callback(key_address, raw_value, logger)
 
     # TODO: we already access parameter source when importing CLI invocations in `Step.wake()`,
     # we should do the same here as well. It will require adding (optional) Click context
@@ -5673,51 +5670,6 @@ class NormalizeKeysMixin(_CommonBase):
 
     # If specified, keys would be iterated over in the order as listed here.
     _KEYS_SHOW_ORDER: List[str] = []
-
-    # NOTE: these could be static methods, self is probably useless, but that would
-    # cause complications when classes assign these to their members. That makes them
-    # no longer static as far as class is concerned, which means they get called with
-    # `self` as the first argument. A workaround would be to assign staticmethod()-ized
-    # version of them, but that's too much repetition.
-    #
-    # TODO: wouldn't it be nice if these could be mention in dataclass.field()?
-    # It would require a clone of dataclass.field() though.
-    def _normalize_string_list(
-            self,
-            key_address: str,
-            value: Union[None, str, List[str]],
-            logger: tmt.log.Logger) -> List[str]:
-        if value is None:
-            return []
-
-        if isinstance(value, str):
-            return [value]
-
-        if isinstance(value, (list, tuple)):
-            return list(value)
-
-        raise NormalizationError(key_address, value, 'a string or a list of strings')
-
-    def _normalize_environment(
-            self,
-            key_address: str,
-            value: Optional[Dict[str, Any]],
-            logger: tmt.log.Logger) -> EnvironmentType:
-        if value is None:
-            return {}
-
-        return {
-            name: str(value) for name, value in value.items()
-            }
-
-    def _normalize_script(
-            self,
-            key_address: str,
-            value: Union[None, str, List[str]],
-            logger: tmt.log.Logger) -> List[ShellScript]:
-        """ Normalize inputs to a list of shell scripts """
-
-        return normalize_shell_script_list(key_address, value, logger)
 
     @classmethod
     def _iter_key_annotations(cls) -> Iterator[Tuple[str, Any]]:

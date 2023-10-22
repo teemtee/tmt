@@ -117,7 +117,10 @@ class TestDescription(
             for recommend in serialized_recommends
             ]
         )
-    environment: tmt.utils.EnvironmentType = field(default_factory=dict)
+    environment: tmt.utils.EnvironmentType = field(
+        default_factory=dict,
+        normalize=tmt.base.normalize_test_environment
+        )
     duration: str = '1h'
     result: str = 'respect'
 

@@ -380,6 +380,23 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
     return callback
 
 
+def normalize_test_environment(
+        key_address: str,
+        value: Optional[Dict[str, Any]],
+        logger: tmt.log.Logger) -> EnvironmentType:
+    """ Normalize value of tests' ``environment`` key """
+
+    if value is None:
+        return {}
+
+    if isinstance(value, dict):
+        return {
+            name: str(value) for name, value in value.items()
+            }
+
+    raise tmt.utils.NormalizationError(key_address, value, 'unset or a dictionary')
+
+
 # Types describing content accepted by various require-like keys: strings, fmf ids,
 # paths, or lists mixing various types.
 #
@@ -1043,7 +1060,9 @@ class Test(
         default_factory=list,
         normalize=normalize_require,
         exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
-    environment: tmt.utils.EnvironmentType = field(default_factory=dict)
+    environment: tmt.utils.EnvironmentType = field(
+        default_factory=dict,
+        normalize=normalize_test_environment)
 
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
