@@ -169,7 +169,7 @@ class NitrateExport(Base):
                 tmt.cli.main,
                 ["test", "export", "--nitrate", "--debug", "--dry", "--append-summary", "."],
                 catch_exceptions=False)
-        assert "Uncommitted changes" in str(error.exception)
+        assert "Uncommitted changes" in str(error.value)
 
     def test_export_forced_validation(self):
         os.chdir(self.tmpdir / "validation")
