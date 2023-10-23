@@ -8,6 +8,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
@@ -80,18 +81,15 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             topology = tmt.steps.Topology(self.step.plan.provision.guests())
             topology.guest = tmt.steps.GuestTopology(guest)
 
-            # Since we do not have the test data dir at hand, we must make the topology
-            # filename unique on our own, and include the phase name and guest name.
-            filename_base = f'{tmt.steps.TEST_TOPOLOGY_FILENAME_BASE}-{self.safe_name}-{guest.safe_name}'  # noqa: E501
-
             environment.update(
                 topology.push(
                     dirpath=workdir,
                     guest=guest,
                     logger=logger,
-                    filename_base=filename_base))
+                    filename_base=safe_filename(tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest)
+                    ))
 
-        prepare_wrapper_filename = f'{PREPARE_WRAPPER_FILENAME}-{self.safe_name}-{guest.safe_name}'
+        prepare_wrapper_filename = safe_filename(PREPARE_WRAPPER_FILENAME, self, guest)
         prepare_wrapper_path = workdir / prepare_wrapper_filename
 
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)

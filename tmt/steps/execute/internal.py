@@ -17,6 +17,7 @@ import tmt.steps.execute
 import tmt.utils
 from tmt.base import Test
 from tmt.result import BaseResult, CheckResult, Result, ResultOutcome
+from tmt.steps import safe_filename
 from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
@@ -269,7 +270,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # the same `discover` phase for different guests at the same time, and
         # must keep them isolated. The wrapper script, while being prepared, is
         # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = f'{TEST_WRAPPER_FILENAME}.{guest.name}'
+        test_wrapper_filename = safe_filename(TEST_WRAPPER_FILENAME, self, guest)
         test_wrapper_filepath = workdir / test_wrapper_filename
 
         logger.debug('test wrapper', test_wrapper_filepath)

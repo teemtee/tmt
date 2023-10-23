@@ -7,6 +7,7 @@ import tmt
 import tmt.steps
 import tmt.steps.finish
 import tmt.utils
+from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
@@ -71,7 +72,8 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
 
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
-        finish_wrapper_filename = f'{FINISH_WRAPPER_FILENAME}-{self.safe_name}-{guest.safe_name}'
+
+        finish_wrapper_filename = safe_filename(FINISH_WRAPPER_FILENAME, self, guest)
         finish_wrapper_path = workdir / finish_wrapper_filename
 
         logger.debug('finish wrapper', finish_wrapper_path, level=3)

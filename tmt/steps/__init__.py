@@ -1796,7 +1796,7 @@ class Topology(SerializableContainer):
 
         return data
 
-    def save_yaml(self, dirpath: Path, filename: Optional[str] = None) -> Path:
+    def save_yaml(self, dirpath: Path, filename: Optional[Path] = None) -> Path:
         """
         Save the topology in a YAML file.
 
@@ -1807,7 +1807,7 @@ class Topology(SerializableContainer):
         :returns: path to the saved file.
         """
 
-        filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.yaml'
+        filename = filename or Path(f'{TEST_TOPOLOGY_FILENAME_BASE}.yaml')
         filepath = dirpath / filename
 
         serialized = self.to_dict()
@@ -1822,7 +1822,7 @@ class Topology(SerializableContainer):
 
         return filepath
 
-    def save_bash(self, dirpath: Path, filename: Optional[str] = None) -> Path:
+    def save_bash(self, dirpath: Path, filename: Optional[Path] = None) -> Path:
         """
         Save the topology in a Bash-sourceable file.
 
@@ -1833,7 +1833,7 @@ class Topology(SerializableContainer):
         :returns: path to the saved file.
         """
 
-        filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.sh'
+        filename = filename or Path(f'{TEST_TOPOLOGY_FILENAME_BASE}.sh')
         filepath = dirpath / filename
 
         lines: list[str] = []
@@ -1882,7 +1882,7 @@ class Topology(SerializableContainer):
             self,
             *,
             dirpath: Path,
-            filename_base: Optional[str] = None) -> list[Path]:
+            filename_base: Optional[Path] = None) -> list[Path]:
         """
         Save the topology in files.
 
@@ -1893,16 +1893,19 @@ class Topology(SerializableContainer):
         """
 
         return [
-            self.save_yaml(dirpath, filename=(f'{filename_base}.yaml' if filename_base else None)),
-            self.save_bash(dirpath, filename=(f'{filename_base}.sh' if filename_base else None))
-            ]
+            self.save_yaml(
+                dirpath,
+                filename=Path(f'{filename_base}.yaml') if filename_base else None),
+            self.save_bash(
+                dirpath,
+                filename=Path(f'{filename_base}.sh') if filename_base else None)]
 
     def push(
             self,
             *,
             dirpath: Path,
             guest: 'Guest',
-            filename_base: Optional[str] = None,
+            filename_base: Optional[Path] = None,
             logger: tmt.log.Logger) -> EnvironmentType:
         """
         Save and push topology to a given guest.
@@ -2075,3 +2078,36 @@ def sync_with_guests(
         # Shall be fixed with https://github.com/teemtee/tmt/pull/2094
         raise tmt.utils.GeneralError(f'{step.__class__.__name__.lower()} step failed') \
             from failed_actions[0].exc
+
+
+def safe_filename(basename: str, phase: Phase, guest: 'Guest') -> Path:
+    """
+    Construct a non-conflicting filename safe for parallel tasks.
+
+    Function adds enough uniqueness to the starting base name by adding a phase
+    name and a guest name that the eventual filename would be safe against
+    conflicting access from a phase running on multiple guests, and against
+    re-use when created by the same plugin in different phases.
+
+    At first glance, the name might be an overkill: at one moment, there is
+    just one phase running on the given guest, why bother? No other phase
+    would touch the file on the guest. But:
+
+    1. filenames are created locally. One phase, running against multiple
+       guests, still needs the filename to be unique **on the tmt runner**.
+       Otherwise, phase running in different threads would contest a single
+       file.
+    2. while the scenario is unlikely, user may eventually convince tmt to
+       recognize two different names for the same machine, via ``-h connect
+       --guest $IP``. Therefore it may happen that one phase, running
+       against two guests, would actually run on the very same HW. Therefore
+       even the remote per-guest uniqueness is needed.
+    3. the phase name is included to avoid re-use of the filename by different
+       phases. A plugin may be invoked by multiple phases, and it might use a
+       "constant" name for the file. That would lead to the filename being
+       re-used by different plugin executions. Adding the phase name should
+       lower confusion: it would be immediately clear which phase used which
+       filename, or whether a filename was or was not created by given phase.
+    """
+
+    return Path(f'{basename}-{phase.safe_name}-{guest.safe_name}')
