@@ -832,7 +832,14 @@ class _CommonMeta(type):
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-        cls.cli_invocation = None
+        # TODO: repeat type annotation from `Common` - IIUIC, `cls` should be
+        # the class being created, in our case that would be a subclass of
+        # `Common`. For some reason, mypy is uncapable of detecting annotation
+        # of this attribute in `Common`, and infers its type is `None` because
+        # of the assignment below. That's incomplete, and leads to mypy warning
+        # about assignments of `CliInvocation` instances to this attribute.
+        # Repeating the annotation silences mypy, giving it better picture.
+        cls.cli_invocation: Optional['tmt.cli.CliInvocation'] = None
 
 
 class Common(_CommonBase, metaclass=_CommonMeta):
@@ -1154,7 +1161,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         invocation = self._inherited_cli_invocation
 
         if invocation:
-            return invocation.options.get(option, default)
+            return cast(bool, invocation.options.get(option, default))
 
         return default
 
@@ -5676,7 +5683,7 @@ class NormalizeKeysMixin(_CommonBase):
         """
         # SIM118 Use `{key} in {dict}` instead of `{key} in {dict}.keys().
         # "Type[SerializableContainerDerivedType]" has no attribute "__iter__" (not iterable)
-        for keyname in self.keys():  # noqa: SIM118
+        for keyname in self.keys():
             yield (keyname, getattr(self, keyname))
 
     # TODO: exists for backward compatibility for the transition period. Once full

@@ -3,6 +3,7 @@ import shutil
 import tempfile
 
 import nitrate
+import pytest
 from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
@@ -150,7 +151,7 @@ class NitrateExport(Base):
     def test_missing_user_dryrun(self):
         os.chdir(self.tmpdir / "existing_testcase_missing_user")
         runner = CliRunner()
-        with self.assertRaises(ConvertError):
+        with pytest.raises(ConvertError):
             self.runner_output = runner.invoke(
                 tmt.cli.main,
                 ["test", "export", "--how", "nitrate",
@@ -163,12 +164,12 @@ class NitrateExport(Base):
         with fmf_node as data:
             data['test'] = 'echo hello world'
         runner = CliRunner()
-        with self.assertRaises(ConvertError) as error:
+        with pytest.raises(ConvertError) as error:
             self.runner_output = runner.invoke(
                 tmt.cli.main,
                 ["test", "export", "--nitrate", "--debug", "--dry", "--append-summary", "."],
                 catch_exceptions=False)
-        assert "Uncommitted changes" in str(error.exception)
+        assert "Uncommitted changes" in str(error.value)
 
     def test_export_forced_validation(self):
         os.chdir(self.tmpdir / "validation")

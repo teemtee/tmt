@@ -159,8 +159,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
             # For each test
             for result in self.step.plan.execute.results():
-                test = [test for test in self.step.plan.discover.tests()
-                        if test.serial_number == result.serial_number][0]
+                test = next(test for test in self.step.plan.discover.tests()
+                            if test.serial_number == result.serial_number)
                 # TODO: for happz, connect Test to Result if possible
 
                 item_attributes = attributes.copy()

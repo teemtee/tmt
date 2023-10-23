@@ -1,13 +1,13 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: 'v2.0.2'
+  - repo: https://github.com/hhatto/autopep8
+    rev: 'v2.0.4'
     hooks:
       - id: autopep8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: "v4.5.0"
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
@@ -15,7 +15,7 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.4.1"
+    rev: "v1.6.1"
     hooks:
       - id: mypy
         # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -36,7 +36,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.23.3"
+    rev: "0.27.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -49,7 +49,7 @@ repos:
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.277
+    rev: v0.1.1
     hooks:
       - id: ruff
         args:
@@ -57,7 +57,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.26.0
+    rev: 1.28.2
     hooks:
     - id: tmt-lint
       additional_dependencies:
