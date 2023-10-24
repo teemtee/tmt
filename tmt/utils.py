@@ -195,6 +195,10 @@ ENVFILE_RETRY_SESSION_BACKOFF_FACTOR: float = 1
 DEFAULT_WAIT_TICK: float = 30.0
 DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 
+# Defaults for GIT attempts and interval
+DEFAULT_GIT_CLONE_ATTEMPTS: int = 3
+DEFAULT_GIT_CLONE_INTERVAL: int = 10
+
 # A stand-in variable for generic use.
 T = TypeVar('T')
 
@@ -1777,7 +1781,7 @@ class RetryError(GeneralError):
     """ Retries unsuccessful """
 
     def __init__(self, label: str, causes: list[Exception]) -> None:
-        super().__init__(f"Retries of {label} unsuccessful.", causes)
+        super().__init__(f"Retries of '{label}' unsuccessful.", causes)
 
 
 # Step exceptions
@@ -4868,41 +4872,88 @@ def distgit_download(
 
 
 def git_clone(
+        *,
         url: str,
         destination: Path,
-        common: Common,
-        env: Optional[EnvironmentType] = None,
         shallow: bool = False,
         can_change: bool = True,
-        ) -> CommandOutput:
+        env: Optional[EnvironmentType] = None,
+        attempts: Optional[int] = None,
+        interval: Optional[int] = None,
+        timeout: Optional[int] = None,
+        logger: tmt.log.Logger) -> CommandOutput:
     """
-    Git clone url to destination, retry without shallow if necessary
+    Clone git repository from provided url to the destination directory
 
-    For shallow=True attempt to clone repository using --depth=1 option first.
-    If not successful attempt to clone whole repo.
-
-    Common instance is used to run the command for appropriate logging.
-    Environment is updated by 'env' dictionary.
-
-    Url can be modified with hardcode rules unless can_change=False is set.
+    :param url: Source URL of the git repository.
+    :param destination: Full path to the destination directory.
+    :param shallow: For ``shallow=True`` first try to clone repository
+        using ``--depth=1`` option. If not successful clone repo with
+        the whole history.
+    :param can_change: URL can be modified with hardcoded rules. Use
+        ``can_change=False`` to disable rewrite rules.
+    :param env: Environment provided to the ``git clone`` process.
+    :param attempts: Number of tries to call the function.
+    :param interval: Amount of seconds to wait before a new try.
+    :param timeout: Overall maximum time in seconds to clone the repo.
+    :param logger: A Logger instance to be used for logging.
+    :returns: Command output, bundled in a :py:class:`CommandOutput` tuple.
     """
-    depth = ['--depth=1'] if shallow else []
 
+    def get_env(env: str, default_value: Optional[int]) -> Optional[int]:
+        """ Check environment variable, convert to integer """
+        value = os.getenv(env, None)
+        if value is None:
+            return default_value
+        try:
+            return int(value)
+        except ValueError:
+            raise GeneralError(f"Invalid '{env}' value, should be 'int', got '{value}'.")
+
+    def clone_the_repo(
+            url: str,
+            destination: Path,
+            shallow: bool = False,
+            env: Optional[EnvironmentType] = None,
+            timeout: Optional[int] = None) -> CommandOutput:
+        """ Clone the repo, handle history depth """
+
+        depth = ['--depth=1'] if shallow else []
+        return Command('git', 'clone', *depth, url, destination).run(
+            cwd=Path('/'), env=env, timeout=timeout, logger=logger)
+
+    timeout = timeout or get_env('TMT_GIT_CLONE_TIMEOUT', None)
+    attempts = attempts or cast(int, get_env('TMT_GIT_CLONE_ATTEMPTS', DEFAULT_GIT_CLONE_ATTEMPTS))
+    interval = interval or cast(int, get_env('TMT_GIT_CLONE_INTERVAL', DEFAULT_GIT_CLONE_INTERVAL))
+
+    # Update url only once
     if can_change:
         url = clonable_git_url(url)
-    try:
-        return common.run(
-            Command(
-                'git', 'clone',
-                *depth,
-                url, destination
-                ), env=env)
-    except RunError:
-        if not shallow:
-            # Do not retry if shallow was not used
-            raise
-        # Git server might not support shallow cloning, try again (do not modify url)
-        return git_clone(url, destination, common, env, shallow=False, can_change=False)
+
+    # Do an extra shallow clone first
+    if shallow:
+        try:
+            return clone_the_repo(
+                shallow=True,
+                url=url,
+                destination=destination,
+                env=env,
+                timeout=timeout)
+        except RunError:
+            logger.debug(f"Shallow clone of '{url}' failed, let's try with the full history.")
+
+    # Finish with whatever number attempts requested (deep)
+    return retry(
+        func=clone_the_repo,
+        attempts=attempts,
+        interval=interval,
+        label=f"git clone {url} {destination}",
+        url=url,
+        destination=destination,
+        shallow=False,
+        env=env,
+        timeout=timeout,
+        logger=logger)
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because

@@ -275,9 +275,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         tmt.utils.git_clone(
             url=url,
             destination=testdir,
-            common=self,
+            shallow=ref is None,
             env={"GIT_ASKPASS": "echo"},
-            shallow=ref is None)
+            logger=self._logger)
 
         # Resolve possible dynamic references
         try:

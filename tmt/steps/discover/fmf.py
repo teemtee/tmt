@@ -357,7 +357,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Shallow clone to speed up testing and
             # minimize data transfers if ref is not provided
             tmt.utils.git_clone(
-                url, self.testdir, self, env={"GIT_ASKPASS": "echo"}, shallow=ref is None)
+                url=url,
+                destination=self.testdir,
+                shallow=ref is None,
+                env={"GIT_ASKPASS": "echo"},
+                logger=self._logger)
             git_root = self.testdir
         # Copy git repository root to workdir
         else:

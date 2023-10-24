@@ -2327,7 +2327,10 @@ class Plan(
             if destination.exists():
                 self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
             else:
-                tmt.utils.git_clone(plan_id.url, destination, self)
+                tmt.utils.git_clone(
+                    url=plan_id.url,
+                    destination=destination,
+                    logger=self._logger)
             if plan_id.ref:
                 # Attempt to evaluate dynamic reference
                 try:
@@ -2355,7 +2358,12 @@ class Plan(
                 self.debug(f"Not enough data to evaluate dynamic ref '{plan_id.ref}', "
                            "going to clone the repository to read dynamic ref definition.")
                 with tempfile.TemporaryDirectory() as tmpdirname:
-                    git_clone(str(plan_id.url), Path(tmpdirname), self, None, shallow=True)
+                    git_clone(
+                        url=str(plan_id.url),
+                        destination=Path(tmpdirname),
+                        shallow=True,
+                        env=None,
+                        logger=self._logger)
                     self.run(Command(
                         'git', 'checkout', 'HEAD', str(plan_id.ref)[1:]),
                         cwd=Path(tmpdirname))

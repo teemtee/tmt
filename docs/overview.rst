@@ -419,6 +419,17 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
 __ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
 __ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
 
+TMT_GIT_CLONE_ATTEMPTS
+    The maximum number of retries to clone a git repository if it
+    fails. By default, 3 attempts are done.
+
+TMT_GIT_CLONE_INTERVAL
+    The interval (in seconds) to retry clonning a git repository
+    again, 10 seconds by default.
+
+TMT_GIT_CLONE_TIMEOUT
+    Overall maximum time in seconds to clone a git repository. By
+    default, the limit is not set.
 
 .. _step-variables:
 

@@ -217,9 +217,13 @@ class BeakerLib(Library):
                     with TemporaryDirectory() as tmp:
                         assert self.url is not None  # narrow type
                         try:
-                            tmt.utils.git_clone(self.url, Path(tmp), self.parent,
-                                                env={"GIT_ASKPASS": "echo"}, shallow=True)
-                        except tmt.utils.RunError:
+                            tmt.utils.git_clone(
+                                url=self.url,
+                                destination=Path(tmp),
+                                shallow=True,
+                                env={"GIT_ASKPASS": "echo"},
+                                logger=self._logger)
+                        except (tmt.utils.RunError, tmt.utils.RetryError):
                             self.parent.debug(f"Repository '{self.url}' not found.")
                             self._nonexistent_url.add(self.url)
                             raise LibraryError
@@ -257,8 +261,11 @@ class BeakerLib(Library):
                     # minimize data transfers if ref is not provided
                     if not clone_dir.exists():
                         tmt.utils.git_clone(
-                            self.url, clone_dir, self.parent,
-                            env={"GIT_ASKPASS": "echo"}, shallow=self.ref is None)
+                            url=self.url,
+                            destination=clone_dir,
+                            shallow=self.ref is None,
+                            env={"GIT_ASKPASS": "echo"},
+                            logger=self._logger)
 
                     # Detect the default branch from the origin
                     try:
@@ -339,7 +346,7 @@ class BeakerLib(Library):
                     self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
                     shutil.copytree(self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
-            except (tmt.utils.RunError, tmt.utils.GitUrlError) as error:
+            except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
                 assert self.url is not None
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
