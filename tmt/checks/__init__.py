@@ -16,7 +16,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     from tmt.result import CheckResult
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
+    from tmt.steps.execute import TestInvocation
 
 
 CheckPluginClass = type['CheckPlugin']
@@ -118,9 +118,7 @@ class Check(
             self,
             *,
             event: CheckEvent,
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         """
@@ -143,18 +141,14 @@ class Check(
         if event == CheckEvent.BEFORE_TEST:
             return self.plugin.before_test(
                 check=self,
-                plugin=plugin,
-                guest=guest,
-                test=test,
+                invocation=invocation,
                 environment=environment,
                 logger=logger)
 
         if event == CheckEvent.AFTER_TEST:
             return self.plugin.after_test(
                 check=self,
-                plugin=plugin,
-                guest=guest,
-                test=test,
+                invocation=invocation,
                 environment=environment,
                 logger=logger)
 
@@ -185,9 +179,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []
@@ -197,9 +189,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []

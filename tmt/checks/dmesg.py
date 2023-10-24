@@ -10,7 +10,7 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Path, render_run_exception_streams
 
 if TYPE_CHECKING:
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
+    from tmt.steps.execute import TestInvocation
 
 TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
@@ -43,27 +43,23 @@ class DmesgCheck(CheckPlugin):
     @classmethod
     def _save_dmesg(
             cls,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             event: CheckEvent,
             logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
         from tmt.steps.execute import ExecutePlugin
 
-        assert plugin.step.workdir is not None  # narrow type
+        assert invocation.phase.step.workdir is not None  # narrow type
 
         timestamp = ExecutePlugin.format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
-        path = plugin.data_path(
-            test,
-            guest,
+        path = invocation.data_path(
             filename=TEST_POST_DMESG_FILENAME.format(event=event.value),
             create=True,
             full=True)
 
         try:
-            dmesg_output = cls._fetch_dmesg(guest, logger)
+            dmesg_output = cls._fetch_dmesg(invocation.guest, logger)
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
@@ -73,23 +69,21 @@ class DmesgCheck(CheckPlugin):
             outcome = ResultOutcome.PASS
             output = dmesg_output.stdout or ''
 
-        plugin.write(
+        invocation.phase.write(
             path,
             f'# Acquired at {timestamp}\n{output}')
 
-        return outcome, path.relative_to(plugin.step.workdir)
+        return outcome, path.relative_to(invocation.phase.step.workdir)
 
     @classmethod
     def before_test(
             cls,
             *,
             check: 'Check',
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.BEFORE_TEST, logger)
+        outcome, path = cls._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]
 
@@ -98,11 +92,9 @@ class DmesgCheck(CheckPlugin):
             cls,
             *,
             check: 'Check',
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.AFTER_TEST, logger)
+        outcome, path = cls._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]

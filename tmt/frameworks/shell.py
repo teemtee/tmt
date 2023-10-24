@@ -9,9 +9,7 @@ from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome
 
 if TYPE_CHECKING:
-    from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
-    from tmt.steps.provision import Guest
+    from tmt.steps.execute import TestInvocation
 
 
 @provides_framework('shell')
@@ -19,41 +17,37 @@ class Shell(TestFramework):
     @classmethod
     def get_test_command(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> tmt.utils.ShellScript:
 
         # Use default options for shell tests
-        return tmt.utils.ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {test.test}")
+        return tmt.utils.ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {invocation.test.test}")
 
     @classmethod
     def extract_results(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a shell test """
-        assert test.return_code is not None
+        assert invocation.test.return_code is not None
         note = None
 
         try:
             # Process the exit code and prepare the log path
-            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[test.return_code]
+            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[invocation.test.return_code]
         except KeyError:
             result = ResultOutcome.ERROR
             # Add note about the exceeded duration
-            if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+            if invocation.test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
                 note = 'timeout'
-                parent.timeout_hint(test, guest)
+                invocation.phase.timeout_hint(invocation)
 
-            elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+            elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.test.return_code):
                 note = 'pidfile locking'
 
         return [tmt.Result.from_test(
-            test=test,
+            test=invocation.test,
             result=result,
-            log=[parent.data_path(test, guest, tmt.steps.execute.TEST_OUTPUT_FILENAME)],
+            log=[invocation.data_path(tmt.steps.execute.TEST_OUTPUT_FILENAME)],
             note=note,
-            guest=guest)]
+            guest=invocation.guest)]

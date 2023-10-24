@@ -134,6 +134,46 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
+@dataclasses.dataclass
+class TestInvocation:
+    """
+    A bundle describing one test invocation.
+
+    Describes a ``test`` invoked on a particular ``guest`` under the
+    supervision of an ``execute`` plugin ``phase``.
+    """
+
+    phase: 'ExecutePlugin[Any]'
+    test: 'tmt.base.Test'
+    guest: Guest
+
+    def data_path(
+            self,
+            filename: Optional[str] = None,
+            full: bool = False,
+            create: bool = False) -> Path:
+        """
+        Prepare full/relative test data directory/file path
+
+        Construct test data directory path for given test, create it
+        if requested and return the full or relative path to it (if
+        filename not provided) or to the given data file otherwise.
+        """
+        # Prepare directory path, create if requested
+        assert self.phase.step.workdir is not None  # narrow type
+        directory = self.phase.step.workdir \
+            / TEST_DATA \
+            / 'guest' \
+            / self.guest.safe_name \
+            / f'{self.test.safe_name.lstrip("/") or "default"}-{self.test.serial_number}'
+        if create and not directory.is_dir():
+            directory.joinpath(TEST_DATA).mkdir(parents=True)
+        if not filename:
+            return directory
+        path = directory / filename
+        return path if full else path.relative_to(self.phase.step.workdir)
+
+
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     """ Common parent of execute plugins """
 
@@ -209,35 +249,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
 
-    def data_path(
-            self,
-            test: "tmt.Test",
-            guest: Guest,
-            filename: Optional[str] = None,
-            full: bool = False,
-            create: bool = False) -> Path:
-        """
-        Prepare full/relative test data directory/file path
-
-        Construct test data directory path for given test, create it
-        if requested and return the full or relative path to it (if
-        filename not provided) or to the given data file otherwise.
-        """
-        # Prepare directory path, create if requested
-        assert self.step.workdir is not None  # narrow type
-        directory = self.step.workdir \
-            / TEST_DATA \
-            / 'guest' \
-            / guest.safe_name \
-            / f'{test.safe_name.lstrip("/") or "default"}-{test.serial_number}'
-        if create and not directory.is_dir():
-            directory.joinpath(TEST_DATA).mkdir(parents=True)
-        if not filename:
-            return directory
-        path = directory / filename
-        return path if full else path.relative_to(self.step.workdir)
-
-    def prepare_tests(self, guest: Guest) -> list["tmt.Test"]:
+    def prepare_tests(self, guest: Guest) -> list[TestInvocation]:
         """
         Prepare discovered tests for testing
 
@@ -245,13 +257,18 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         the aggregated metadata in a file under the test data directory
         and finally return a list of discovered tests.
         """
-        tests: list[tmt.Test] = self.discover.tests(phase_name=self.discover_phase, enabled=True)
-        for test in tests:
-            metadata_filename = self.data_path(
-                test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)
+        invocations: list[TestInvocation] = []
+
+        for test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
+            invocation = TestInvocation(phase=self, test=test, guest=guest)
+            invocations.append(invocation)
+
+            metadata_filename = invocation.data_path(
+                filename=TEST_METADATA_FILENAME, full=True, create=True)
             self.write(
                 metadata_filename, tmt.utils.dict_to_yaml(test._metadata))
-        return tests
+
+        return invocations
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """
@@ -268,14 +285,14 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                     options=["-p", "--chmod=755"],
                     superuser=guest.facts.is_superuser is not True)
 
-    def _tmt_report_results_filepath(self, test: "tmt.Test", guest: Guest) -> Path:
+    def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """ Create path to test's ``tmt-report-result`` file """
 
-        return self.data_path(test, guest, full=True) \
+        return invocation.data_path(full=True) \
             / TEST_DATA \
             / TMT_REPORT_RESULT_SCRIPT.created_file
 
-    def load_tmt_report_results(self, test: "tmt.Test", guest: Guest) -> list["tmt.Result"]:
+    def load_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
         """
         Load results from a file created by ``tmt-report-result`` script.
 
@@ -283,7 +300,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             or an empty list if the file does not exist.
         """
 
-        report_result_path = self._tmt_report_results_filepath(test, guest)
+        report_result_path = self._tmt_report_results_filepath(invocation)
 
         # Nothing to do if there's no result file
         if not report_result_path.exists():
@@ -313,18 +330,19 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                 note = f"invalid test result '{result}' in result file"
 
         return [tmt.Result.from_test(
-            test=test,
+            test=invocation.test,
             result=actual_result,
-            log=[self.data_path(test, guest, TEST_OUTPUT_FILENAME)],
+            log=[invocation.data_path(TEST_OUTPUT_FILENAME)],
             note=note,
-            guest=guest)]
+            guest=invocation.guest)]
 
-    def load_custom_results(self, test: "tmt.Test", guest: Guest) -> list["tmt.Result"]:
+    def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
         """
         Process custom results.yaml file created by the test itself.
         """
-        test_data_path = self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA
+        test, guest = invocation.test, invocation.guest
+
+        test_data_path = invocation.data_path(full=True) / TEST_DATA
 
         custom_results_path_yaml = test_data_path / 'results.yaml'
         custom_results_path_json = test_data_path / 'results.json'
@@ -370,11 +388,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
             # Fix log paths as user provides relative path to TMT_TEST_DATA
             # but Result has to point relative to the execute workdir
-            log_path_base = self.data_path(
-                test,
-                guest,
-                full=False,
-                filename=tmt.steps.execute.TEST_DATA)
+            log_path_base = invocation.data_path(full=False, filename=TEST_DATA)
             partial_result.log = [log_path_base / log for log in partial_result.log]
 
             # TODO: this might need more care: the test has been assigned a serial
@@ -408,30 +422,29 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
     def extract_results(
             self,
-            test: "tmt.Test",
-            guest: Guest,
+            invocation: TestInvocation,
             logger: tmt.log.Logger) -> list[Result]:
         """ Check the test result """
 
-        self.debug(f"Extract results of '{test.name}'.")
+        self.debug(f"Extract results of '{invocation.test.name}'.")
 
-        if test.result == 'custom':
-            return self.load_custom_results(test, guest)
+        if invocation.test.result == 'custom':
+            return self.load_custom_results(invocation)
 
-        if self._tmt_report_results_filepath(test, guest).exists():
-            return self.load_tmt_report_results(test, guest)
+        if self._tmt_report_results_filepath(invocation).exists():
+            return self.load_tmt_report_results(invocation)
 
-        return test.test_framework.extract_results(self, test, guest, logger)
+        return invocation.test.test_framework.extract_results(invocation, logger)
 
-    def check_abort_file(self, test: "tmt.Test", guest: Guest) -> bool:
+    def check_abort_file(self, invocation: TestInvocation) -> bool:
         """
         Check for an abort file created by tmt-abort
 
         Returns whether an abort file is present (i.e. abort occurred).
         """
-        return self.data_path(test, guest, full=True).joinpath(
-            tmt.steps.execute.TEST_DATA,
-            TMT_ABORT_SCRIPT.created_file).exists()
+        return (invocation.data_path(full=True)
+                / TEST_DATA
+                / TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
     def format_timestamp(timestamp: datetime.datetime) -> str:
@@ -451,12 +464,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
         return f'{hours:02}:{minutes:02}:{seconds:02}'
 
-    def timeout_hint(self, test: "tmt.Test", guest: Guest) -> None:
+    def timeout_hint(self, invocation: TestInvocation) -> None:
         """ Append a duration increase hint to the test output """
-        output = self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True)
+        output = invocation.data_path(TEST_OUTPUT_FILENAME, full=True)
         self.write(
             output,
-            f"\nMaximum test time '{test.duration}' exceeded.\n"
+            f"\nMaximum test time '{invocation.test.duration}' exceeded.\n"
             f"Adjust the test 'duration' attribute if necessary.\n"
             f"https://tmt.readthedocs.io/en/stable/spec/tests.html#duration\n",
             mode='a', level=3)
@@ -469,20 +482,17 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             self,
             *,
             event: CheckEvent,
-            guest: Guest,
-            test: 'tmt.base.Test',
+            invocation: TestInvocation,
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
 
         results: list[CheckResult] = []
 
-        for check in test.check:
+        for check in invocation.test.check:
             with Stopwatch() as timer:
                 check_results = check.go(
                     event=event,
-                    guest=guest,
-                    test=test,
-                    plugin=self,
+                    invocation=invocation,
                     environment=environment,
                     logger=logger)
 
@@ -500,14 +510,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def run_checks_before_test(
             self,
             *,
-            guest: Guest,
-            test: 'tmt.base.Test',
+            invocation: TestInvocation,
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
-            guest=guest,
-            test=test,
+            invocation=invocation,
             environment=environment,
             logger=logger
             )
@@ -515,14 +523,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def run_checks_after_test(
             self,
             *,
-            guest: Guest,
-            test: 'tmt.base.Test',
+            invocation: TestInvocation,
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
-            guest=guest,
-            test=test,
+            invocation=invocation,
             environment=environment,
             logger=logger
             )

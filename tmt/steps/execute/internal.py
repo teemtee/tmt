@@ -15,10 +15,9 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
-from tmt.base import Test
 from tmt.result import BaseResult, CheckResult, Result, ResultOutcome
 from tmt.steps import safe_filename
-from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT
+from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
 from tmt.steps.provision import Guest
 from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
 
@@ -194,18 +193,17 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     def _test_environment(
             self,
             *,
-            test: Test,
-            guest: Guest,
+            invocation: TestInvocation,
             extra_environment: Optional[EnvironmentType] = None,
             logger: tmt.log.Logger) -> EnvironmentType:
         """ Return test environment """
 
         extra_environment = extra_environment or {}
 
-        data_directory = self.data_path(test, guest, full=True, create=True)
+        data_directory = invocation.data_path(full=True, create=True)
 
         environment = extra_environment.copy()
-        environment.update(test.environment)
+        environment.update(invocation.test.environment)
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
 
@@ -213,20 +211,21 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             effective_pidfile_root() / TEST_PIDFILE_FILENAME)
         environment['TMT_TEST_PIDFILE_LOCK'] = str(
             effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
-        environment["TMT_TEST_NAME"] = test.name
+        environment["TMT_TEST_NAME"] = invocation.test.name
         environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
-        environment['TMT_TEST_SERIAL_NUMBER'] = str(test.serial_number)
+        environment['TMT_TEST_SERIAL_NUMBER'] = str(invocation.test.serial_number)
         environment["TMT_TEST_METADATA"] = str(
             data_directory / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = str(
             data_directory / tmt.steps.execute.TEST_DATA / TMT_REBOOT_SCRIPT.created_file)
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = str(test._reboot_count)
+            environment[reboot_variable] = str(invocation.test._reboot_count)
 
         # Add variables the framework wants to expose
-        environment.update(test.test_framework.get_environment_variables(
-            self, test, guest, logger))
+        environment.update(
+            invocation.test.test_framework.get_environment_variables(
+                invocation, logger))
 
         return environment
 
@@ -244,12 +243,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     def execute(
             self,
             *,
-            test: Test,
-            guest: Guest,
+            invocation: TestInvocation,
             extra_environment: Optional[EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         """ Run test on the guest """
-        logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
+
+        test, guest = invocation.test, invocation.guest
+
+        logger.debug(f"Execute '{invocation.test.name}' as a '{invocation.test.framework}' test.")
 
         test_check_results: list[CheckResult] = []
 
@@ -261,8 +262,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Create data directory, prepare test environment
         environment = self._test_environment(
-            test=test,
-            guest=guest,
+            invocation=invocation,
             extra_environment=extra_environment,
             logger=logger)
 
@@ -276,7 +276,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         logger.debug('test wrapper', test_wrapper_filepath)
 
         # Prepare the test command
-        test_command = test.test_framework.get_test_command(self, test, guest, logger)
+        test_command = test.test_framework.get_test_command(invocation, logger)
         self.debug('Test script', test_command, level=3)
 
         # Prepare the wrapper, push to guest
@@ -292,7 +292,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         topology.guest = tmt.steps.GuestTopology(guest)
 
         environment.update(topology.push(
-            dirpath=self.data_path(test, guest, full=True),
+            dirpath=invocation.data_path(full=True),
             guest=guest,
             logger=logger))
 
@@ -325,8 +325,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         test_check_results += self.run_checks_before_test(
-            guest=guest,
-            test=test,
+            invocation=invocation,
             environment=environment,
             logger=logger
             )
@@ -361,34 +360,33 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         test.end_time = self.format_timestamp(timer.end_time)
         test.real_duration = self.format_duration(timer.duration)
 
-        test.data_path = self.data_path(test, guest, "data")
+        test.data_path = invocation.data_path("data")
 
         self.write(
-            self.data_path(test, guest, TEST_OUTPUT_FILENAME, full=True),
+            invocation.data_path(TEST_OUTPUT_FILENAME, full=True),
             stdout or '', mode='a', level=3)
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         test_check_results += self.run_checks_after_test(
-            guest=guest,
-            test=test,
+            invocation=invocation,
             environment=environment,
             logger=logger
             )
 
         return test_check_results
 
-    def _will_reboot(self, test: Test, guest: Guest) -> bool:
+    def _will_reboot(self, invocation: 'TestInvocation') -> bool:
         """ True if reboot is requested """
-        return self._reboot_request_path(test, guest).exists()
+        return self._reboot_request_path(invocation).exists()
 
-    def _reboot_request_path(self, test: Test, guest: Guest) -> Path:
+    def _reboot_request_path(self, invocation: 'TestInvocation') -> Path:
         """ Return reboot_request """
-        return self.data_path(test, guest, full=True) \
+        return invocation.data_path(full=True) \
             / tmt.steps.execute.TEST_DATA \
             / TMT_REBOOT_SCRIPT.created_file
 
-    def _handle_reboot(self, test: Test, guest: Guest) -> bool:
+    def _handle_reboot(self, invocation: 'TestInvocation') -> bool:
         """
         Reboot the guest if the test requested it.
 
@@ -397,12 +395,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         REBOOTCOUNT variable, reset it to 0 if no reboot was requested
         (going forward to the next test). Return whether reboot was done.
         """
-        if self._will_reboot(test, guest):
-            test._reboot_count += 1
-            self.debug(f"Reboot during test '{test}' "
-                       f"with reboot count {test._reboot_count}.")
-            reboot_request_path = self._reboot_request_path(test, guest)
-            test_data = self.data_path(test, guest, full=True) / tmt.steps.execute.TEST_DATA
+        if self._will_reboot(invocation):
+            invocation.test._reboot_count += 1
+            self.debug(f"Reboot during test '{invocation.test}' "
+                       f"with reboot count {invocation.test._reboot_count}.")
+            reboot_request_path = self._reboot_request_path(invocation)
+            test_data = invocation.data_path(full=True) / tmt.steps.execute.TEST_DATA
             with open(reboot_request_path) as reboot_file:
                 reboot_data = json.loads(reboot_file.read())
             reboot_command = None
@@ -416,10 +414,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 timeout = None
             # Reset the file
             os.remove(reboot_request_path)
-            guest.push(test_data)
+            invocation.guest.push(test_data)
             rebooted = False
             try:
-                rebooted = guest.reboot(command=reboot_command, timeout=timeout)
+                rebooted = invocation.guest.reboot(command=reboot_command, timeout=timeout)
             except tmt.utils.RunError:
                 self.fail(
                     f"Failed to reboot guest using the "
@@ -429,7 +427,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 self.warn(
                     "Guest does not support soft reboot, "
                     "trying hard reboot.")
-                rebooted = guest.reboot(hard=True, timeout=timeout)
+                rebooted = invocation.guest.reboot(hard=True, timeout=timeout)
             if not rebooted:
                 raise tmt.utils.RebootTimeoutError("Reboot timed out.")
             return True
@@ -460,7 +458,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         """ Execute tests on provided guest """
 
         # Prepare tests and helper scripts, check options
-        tests = self.prepare_tests(guest)
+        test_invocations = self.prepare_tests(guest)
 
         # Prepare scripts, except localhost guest
         if not guest.localhost:
@@ -472,25 +470,26 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         index = 0
 
         with UpdatableMessage(self) as progress_bar:
-            while index < len(tests):
-                test = tests[index]
+            while index < len(test_invocations):
+                invocation = test_invocations[index]
 
-                progress = f"{index + 1}/{len(tests)}"
+                test = invocation.test
+
+                progress = f"{index + 1}/{len(test_invocations)}"
                 progress_bar.update(progress, test.name)
                 logger.verbose(
                     'test', test.summary or test.name, color='cyan', shift=1, level=2)
 
                 test_check_results: list[CheckResult] = self.execute(
-                    test=test,
-                    guest=guest,
+                    invocation=invocation,
                     extra_environment=extra_environment,
                     logger=logger)
 
                 guest.pull(
-                    source=self.data_path(test, guest, full=True),
-                    extend_options=test.test_framework.get_pull_options(self, test, guest, logger))
+                    source=invocation.data_path(full=True),
+                    extend_options=test.test_framework.get_pull_options(invocation, logger))
 
-                results = self.extract_results(test, guest, logger)  # Produce list of results
+                results = self.extract_results(invocation, logger)  # Produce list of results
 
                 for result in results:
                     result.check = test_check_results
@@ -500,18 +499,18 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle reboot, abort, exit-first
-                if self._will_reboot(test, guest):
+                if self._will_reboot(invocation):
                     # Output before the reboot
                     logger.verbose(
                         f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
-                        if self._handle_reboot(test, guest):
+                        if self._handle_reboot(invocation):
                             continue
                     except tmt.utils.RebootTimeoutError:
                         for result in results:
                             result.result = ResultOutcome.ERROR
                             result.note = 'reboot timeout'
-                abort = self.check_abort_file(test, guest)
+                abort = self.check_abort_file(invocation)
                 if abort:
                     for result in results:
                         # In case of aborted all results in list will be aborted
@@ -560,8 +559,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         result,
                         cwd=cwd,
                         env=self._test_environment(
-                            test=test,
-                            guest=guest,
+                            invocation=invocation,
                             extra_environment=extra_environment,
                             logger=logger),
                         )
