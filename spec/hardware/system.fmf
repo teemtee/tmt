@@ -1,12 +1,17 @@
 summary:
     Select machine with given system attributes
-description:
-    Use the ``vendor`` key to choose system by specific vendor,
-    ``model`` to provide system's model name, ``numa-nodes``
-    to select systems with a given number of NUMA nodes.
 example:
   - |
     system:
-        vendor: HPE
-        model: ProLiant DL385 Gen10
+        # System vendor by ID...
+        vendor: 0x03E8
+        # ... or by its name.
+        vendor-name: "~ HPE"
+
+        # System model by ID...
+        model: 79
+        # ... or by its name.
+        model-name: ProLiant DL385 Gen10
+
+        # Required number of NUMA nodes.
         numa-nodes: '>= 2'

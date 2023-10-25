@@ -115,6 +115,27 @@ description: |
 
     __ https://pint.readthedocs.io/
 
+    Names and IDs
+    -------------
+
+    When looking for specific devices, it is often possible to
+    request them either by their name or by some kind of ID. The
+    specification follows a simple naming scheme when a property of
+    a device can be expressed as a name as well as an ID:
+
+    * keys with ``-name`` suffix represent human-comprehensible
+      string names - model name, vendor name, microarchitecture code
+      name, brand names, and so on. For example, ``Intel(R) Xeon(R)
+      CPU E5-2670 v2 @ 2.50GHz`` would be a ``cpu.model-name``
+      requirement.
+    * IDs are left without a suffix. IDs tend to be integers, or
+      groups of integers. For example, ``62`` would be a
+      ``cpu.model`` requirement.
+
+    Requirements given by a name can often make use of regular
+    expression operators (``~`` and ``!~``) while IDs can be used
+    very reasonably with other comparison operators like ``>=``.
+
     Notes
     -----
 

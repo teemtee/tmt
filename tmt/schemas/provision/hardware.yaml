@@ -159,9 +159,19 @@ definitions:
 
     properties:
       vendor:
+        anyOf:
+          - type: string
+          - type: integer
+
+      vendor-name:
         type: string
 
       model:
+        anyOf:
+          - type: string
+          - type: integer
+
+      model-name:
         type: string
 
       numa-nodes:
