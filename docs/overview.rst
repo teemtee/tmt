@@ -408,9 +408,10 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
         TMT_GIT_CREDENTIALS_URL_hub='github.com/teemtee'
         TMT_GIT_CREDENTIALS_VALUE_hub='secrettoken'
 
+    .. versionadded:: 1.26
+
 __ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
 __ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
-.. versionadded:: 1.26
 
 
 Step Variables
@@ -429,6 +430,23 @@ TMT_PLAN_DATA
     artifacts related to the whole plan execution. It is pulled
     back from the guest and available for inspection after the
     plan is completed.
+
+TMT_PLAN_ENVIRONMENT_FILE
+    Path to the file containing environment variables that should
+    be sourced after prepare and execute steps. These variables will
+    be accessible for all subsequent steps and have lower priority
+    than variables specified by the ``environment`` key,
+    ``environment-file`` key, or the command line. Variables inside
+    the file have to be in the format of ``NAME=VALUE`` and each
+    variable should be on a separate line.
+
+    Example of the file content::
+
+        COUNT=1
+        VARIABLE=VALUE
+        ANOTHER_VARIABLE=ANOTHER_VALUE
+
+    .. versionadded:: 1.29
 
 TMT_VERSION
     The version of tmt.

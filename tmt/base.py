@@ -1564,6 +1564,8 @@ class Plan(
             key_address=node.name,
             logger=self._logger)
 
+        self._plan_environment: EnvironmentType = {}
+
         # Expand all environment and context variables in the node
         with tmt.utils.modify_environ(self.environment):
             self._expand_node_data(node.data, {
@@ -1669,11 +1671,14 @@ class Plan(
     def environment(self) -> EnvironmentType:
         """ Return combined environment from plan data and command line """
         if self.my_run:
-            combined = self._environment.copy()
+            combined = self._plan_environment.copy()
+            combined.update(self._environment)
             # Command line variables take precedence
             combined.update(self.my_run.environment)
             # Include path to the plan data directory
             combined["TMT_PLAN_DATA"] = str(self.data_directory)
+            # Include path to the plan environment file
+            combined["TMT_PLAN_ENVIRONMENT_FILE"] = str(self.plan_environment_file)
             # And tree path if possible
             if self.worktree:
                 combined["TMT_TREE"] = str(self.worktree)
@@ -1681,6 +1686,16 @@ class Plan(
             combined["TMT_VERSION"] = tmt.__version__
             return combined
         return self._environment
+
+    def _source_plan_environment_file(self) -> None:
+        """ Add variables from the plan environment file to the environment """
+        if (self.my_run and self.plan_environment_file.exists()
+                and self.plan_environment_file.stat().st_size > 0):
+            # Use __wrapped__ to force the reload of the file
+            self._plan_environment = tmt.utils.environment_file_to_dict.__wrapped__(
+                filename=self.plan_environment_file.name,
+                root=self.plan_environment_file.parent,
+                logger=self._logger)
 
     def _initialize_worktree(self) -> None:
         """
@@ -1721,6 +1736,17 @@ class Plan(
         self.debug(
             f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
+
+    @tmt.utils.cached_property
+    def plan_environment_file(self) -> Path:
+        assert self.data_directory is not None  # narrow type
+
+        plan_environment_file_path = self.data_directory / "variables.env"
+        plan_environment_file_path.touch(exist_ok=True)
+
+        self.debug(f"Create the environment file '{plan_environment_file_path}'.", level=2)
+
+        return plan_environment_file_path
 
     @property
     def _fmf_context(self) -> tmt.utils.FmfContext:
@@ -2187,6 +2213,9 @@ class Plan(
                         color='yellow', shift=1)
                     abort = True
                     return
+                # Source the plan environment file after prepare and execute step
+                if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
+                    self._source_plan_environment_file()
         # Make sure we run 'finish' step always if enabled
         finally:
             if not abort and self.finish.enabled:

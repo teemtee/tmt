@@ -1,0 +1,6 @@
+summary: Verify proper application of TMT_PLAN_ENVIRONMENT_FILE variables
+description:
+    Verify proper application of environment variables provided
+    by 'TMT_PLAN_ENVIRONMENT_FILE' and that they are available
+    during the execute and finish phase. Also, confirm that the
+    variables have a lower priority than the 'environment-file' key.

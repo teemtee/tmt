@@ -1,0 +1,47 @@
+/test:
+    test: echo "MYVAR1=\"${MYVAR1}\" MYVAR2=\"${MYVAR2}\""
+
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+    finish:
+        how: shell
+        script: echo "FINISH1=\"${MYVAR1}\" FINISH2=\"${MYVAR2}\""
+
+    /single:
+        prepare:
+            how: shell
+            script: echo "MYVAR1=MYVAR1_VALUE" >> $TMT_PLAN_ENVIRONMENT_FILE
+
+    /multiple:
+        prepare:
+            how: shell
+            script: ./setup_env.sh
+
+    /env-file-override:
+        prepare:
+            how: shell
+            script: echo "MYVAR1=MYVAR1_VALUE" >> $TMT_PLAN_ENVIRONMENT_FILE
+        environment-file:
+            - override.env
+
+    /env-override:
+        prepare:
+            how: shell
+            script: echo "MYVAR1=MYVAR1_VALUE" >> $TMT_PLAN_ENVIRONMENT_FILE
+        environment:
+            MYVAR1: MYVAR1_OVERRIDE
+
+    /execute-override:
+        discover:
+            how: shell
+            tests:
+            - name: override variable
+              test: echo "MYVAR1=MYVAR1_OVERRIDE" >> $TMT_PLAN_ENVIRONMENT_FILE
+        prepare:
+            how: shell
+            script: ./setup_env.sh
