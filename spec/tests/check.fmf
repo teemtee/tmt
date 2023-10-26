@@ -14,7 +14,19 @@ description: |
     panic detection, core dump collection or collection of system
     logs.
 
-    To control checks for a given test, use L1 ``check`` key.
+    The following checks are currently available:
+
+    dmesg
+        check the kernel ring buffer and store its contents
+
+        .. versionadded:: 1.28
+
+    avc
+        check for SELinux AVC denials, gather details about the
+        ``selinux-policy`` related packages installed on the
+        system
+
+        .. versionadded:: 1.28
 
 example:
   - |
@@ -26,7 +38,7 @@ example:
     # is acceptable as well as a single name.
     check:
       - avc
-      - kernel-panic
+      - dmesg
 
   - |
     # Enable multiple checks, one of them would be disabled temporarily.
@@ -35,3 +47,7 @@ example:
       - kernel-panic
       - name: test-inspector
         enable: false
+
+link:
+  - implemented-by: /tmt/checks
+  - verified-by: /tests/test/check/avc
