@@ -268,6 +268,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                     options=["-p", "--chmod=755"],
                     superuser=guest.facts.is_superuser is not True)
 
+    def _tmt_report_results_filepath(self, test: "tmt.Test", guest: Guest) -> Path:
+        """ Create path to test's ``tmt-report-result`` file """
+
+        return self.data_path(test, guest, full=True) \
+            / TEST_DATA \
+            / TMT_REPORT_RESULT_SCRIPT.created_file
+
     def load_tmt_report_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
         """
         Load results from a file created by ``tmt-report-result`` script.
@@ -275,9 +282,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         :returns: list of :py:class:`tmt.Result` instances loaded from the file,
             or an empty list if the file does not exist.
         """
-        report_result_path = self.data_path(test, guest, full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / TMT_REPORT_RESULT_SCRIPT.created_file
+
+        report_result_path = self._tmt_report_results_filepath(test, guest)
 
         # Nothing to do if there's no result file
         if not report_result_path.exists():
@@ -412,8 +418,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         if test.result == 'custom':
             return self.load_custom_results(test, guest)
 
-        return self.load_tmt_report_results(test, guest) \
-            + test.test_framework.extract_results(self, test, guest, logger)
+        if self._tmt_report_results_filepath(test, guest).exists():
+            return self.load_tmt_report_results(test, guest)
+
+        return test.test_framework.extract_results(self, test, guest, logger)
 
     def check_abort_file(self, test: "tmt.Test", guest: Guest) -> bool:
         """

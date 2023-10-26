@@ -17,6 +17,10 @@ description: |
     Note, that the only value currently processed by ``tmt`` is
     the test result, other options are silently ignored.
 
+    When ``tmt-report-result`` is called, the return value of the
+    test itself is ignored, and only result saved by
+    ``tmt-report-result`` is consumed by tmt.
+
     __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-report-result
 
 example: |
