@@ -41,7 +41,7 @@ rlJournalStart
             # and use it to issue a `tmt-reboot` from outside the direct process tree of the test.
             set -x
 
-            tmt_reboot_command="export TMT_TEST_PIDFILE=/var/tmp/tmt/tmt-test.pid; export TMT_TEST_PIDFILE_LOCK=/var/tmp/tmt/tmt-test.pid.lock; export TMT_DEBUG=1; tmt-reboot"
+            tmt_reboot_command="export TMT_TEST_PIDFILE=/var/tmp/tmt-test.pid; export TMT_TEST_PIDFILE_LOCK=/var/tmp/tmt-test.pid.lock; export TMT_DEBUG=1; tmt-reboot"
 
             if [ "$method" = "container" ]; then
                 podman_exec="$(sed -nr 's/\s*Run command: (podman exec .*) \/bin\/bash.*cd.*/\1/p' tmt.output)"

@@ -24,19 +24,22 @@ from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
+#: The default directory for storing test pid file.
+TEST_PIDFILE_ROOT = Path('/var/tmp')
+
 
 def effective_pidfile_root() -> Path:
     """
     Find out what the actual pidfile directory is.
 
     If ``TMT_TEST_PIDFILE_ROOT`` variable is set, it is used. Otherwise,
-    the effective workdir root is picked.
+    :py:const:`TEST_PIDFILE_ROOT` is picked.
     """
 
     if 'TMT_TEST_PIDFILE_ROOT' in os.environ:
         return Path(os.environ['TMT_TEST_PIDFILE_ROOT'])
 
-    return tmt.utils.effective_workdir_root()
+    return TEST_PIDFILE_ROOT
 
 
 TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'

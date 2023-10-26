@@ -486,9 +486,11 @@ TMT_TEST_PIDFILE, TMT_TEST_PIDFILE_LOCK
     making any changes to the pid file.
 
 TMT_TEST_PIDFILE_ROOT
-    By default, the test pidfile file is stored in the ``$TMT_WORKDIR_ROOT``
+    By default, the test pidfile file is stored in ``/var/tmp``
     directory. If specified, the directory in this variable would be
-    used instead.
+    used instead. The directory permissions should follow the pattern
+    of temporary directory permissions, e.g. ``chmod 1777``, to
+    allow access to users with all privilege levels.
 
 Plugin Variables
 ----------------

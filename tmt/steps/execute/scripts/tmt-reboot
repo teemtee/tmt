@@ -6,7 +6,7 @@
 
 [ -n "$TMT_DEBUG" ] && set -x
 
-TMT_TEST_PIDFILE_LOCK="${TMT_TEST_PIDFILE_LOCK:-/var/tmp/tmt/tmt-test.pid}"
+TMT_TEST_PIDFILE_LOCK="${TMT_TEST_PIDFILE_LOCK:-/var/tmp/tmt-test.pid}"
 
 PATH=/sbin:/usr/sbin:$PATH
 
