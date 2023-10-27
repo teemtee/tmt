@@ -1,0 +1,14 @@
+summary:
+    Choose system according to the available graphics processing unit (gpu)
+example:
+  - |
+    # GPU-related stuff grouped together.
+    gpu:
+        # GPU device name name.
+        device-name: G86 [Quadro NVS 290]
+        # GPU vendor name.
+        vendor-name: NVIDIA Corporation
+
+# NOTE: not yet supported
+# link:
+#   - implemented-by: /tmt/steps/provision/artemis.py

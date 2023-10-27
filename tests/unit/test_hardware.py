@@ -109,6 +109,8 @@ def test_parse_maximal_constraint() -> None:
         disk:
             - size: 40 GiB
             - size: 120 GiB
+        gpu:
+            device-name: G86 [Quadro NVS 290]
         hostname: "~ .*.foo.redhat.com"
         memory: 8 GiB
         network:

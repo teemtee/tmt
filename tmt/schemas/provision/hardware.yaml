@@ -154,6 +154,23 @@ definitions:
     items:
       "$ref": "#/definitions/disk"
 
+  # HW requirements: single `gpu` item
+  gpu:
+    type: object
+
+    properties:
+      device-name:
+        type: string
+
+      vendor-name:
+        type: string
+
+    additionalProperties: false
+
+    # enforce at least one property - we don't care which one, but we don't want
+    # empty `gpu`.
+    minProperties: 1
+
   hostname:
     type: string
 
@@ -272,6 +289,9 @@ definitions:
 
       disk:
         "$ref": "#/definitions/disks"
+
+      gpu:
+        "$ref": "#/definitions/gpu"
 
       hostname:
         "$ref": "#/definitions/hostname"
