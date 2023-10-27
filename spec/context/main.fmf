@@ -17,11 +17,10 @@ description: |
     context, just make sure the :ref:`/spec/context/dimension`
     name does not conflict with reserved names.
 
-    Some of the context dimensions can be detected (e.g. distro
-    from the provision step config). Each plan can provide its own
-    :ref:`/spec/plans/context` which will override detected
-    values. Finally, the context definition provided directly on
-    the command line overrides detected and defined dimensions.
+    Each plan can also provide its own :ref:`/spec/plans/context`.
+    The context definition provided directly on the command line
+    overrides defined dimensions. All context dimension values are
+    handled in case-insensitive way.
 
     __ https://fmf.readthedocs.io/en/latest/context.html
 
