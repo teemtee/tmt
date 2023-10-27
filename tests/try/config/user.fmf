@@ -1,0 +1,10 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    prepare:
+        how: shell
+        script: echo custom-prepare
+    execute:
+        how: tmt

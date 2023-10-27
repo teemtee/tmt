@@ -4,6 +4,7 @@
 import collections
 import dataclasses
 import enum
+import re
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
@@ -24,6 +25,7 @@ import tmt.options
 import tmt.plugins
 import tmt.steps
 import tmt.templates
+import tmt.trying
 import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Path, cached_property
@@ -138,7 +140,8 @@ class CliInvocation:
 
     Bundles together the Click context and options derived from it.
     A context alone might be good enough, but sometimes tmt needs to
-    modify saved options.
+    modify saved options. For custom command line options injected
+    manually 'sources' is used to keep the parameter source.
 
     Serves as a clear boundary between invocations of classes
     representing various tmt subcommands and groups.
@@ -150,6 +153,22 @@ class CliInvocation:
     @classmethod
     def from_context(cls, context: Context) -> 'CliInvocation':
         return CliInvocation(context=context, options=context.params)
+
+    @classmethod
+    def from_options(cls, options: dict[str, Any]) -> 'CliInvocation':
+        """ Inject custom options coming from the command line """
+        invocation = CliInvocation(context=None, options=options)
+
+        # ignore[reportGeneralTypeIssues]: pyright has troubles understanding it
+        # *is* possible to assign to a cached property. Might an issue of our
+        # simplified implementation.
+        # ignore[unused-ignore]: silencing mypy's complaint about silencing
+        # pyright's warning :)
+        invocation.option_sources = {  # type: ignore[reportGeneralTypeIssues,unused-ignore]
+            key: click.core.ParameterSource.COMMANDLINE
+            for key in options
+            }
+        return invocation
 
     @cached_property
     def option_sources(self) -> dict[str, click.core.ParameterSource]:
@@ -1541,6 +1560,79 @@ def init(
 
     tmt.Tree.store_cli_invocation(context)
     tmt.Tree.init(logger=context.obj.logger, path=Path(path), template=template, force=force)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  Try
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+@main.command(name="try")
+@click.pass_context
+@click.argument("image_and_how", nargs=-1, metavar="IMAGE[@HOW]")
+@option(
+    "-t", "--test", default=[], metavar="REGEXP", multiple=True,
+    help="""
+        Run tests matching given regular expression.
+        By default all tests under the current working directory are executed.
+        """)
+@option(
+    "-p", "--plan", default=[], metavar="REGEXP", multiple=True,
+    help="""
+        Use provided plan. By default user config is checked for plans
+        named as '/user/plan*', default plan is used otherwise.
+        """)
+@option(
+    "-l", "--login", is_flag=True, default=False,
+    help="Log into the guest only, do not run any tests.")
+@option(
+    "-a", "--ask", is_flag=True, default=False,
+    help="Just provision the guest and ask what to do next.")
+@verbosity_options
+@force_dry_options
+def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
+    """
+    Try tests or experiment with guests.
+
+    Provide an interactive session to run tests or play with guests.
+    Provisions a guest, runs tests from the current working directory
+    and provides menu with available options what to do next. If no
+    tests are detected logs into the guest to start experimenting.
+
+    In order to specify the guest just use the desired image name:
+
+        tmt try fedora
+
+    It's also possible to select the provision method for each guest:
+
+    \b
+        tmt run fedora@container
+        tmt run centos-stream-9@virtual
+    """
+
+    tmt.trying.Try.store_cli_invocation(context)
+
+    # Inject custom image and provision method to the Provision options
+    if image_and_how:
+
+        # TODO: For now just pick the first image-how pair, let's allow
+        # specifying multiple images and provision methods as well
+        image_and_how = image_and_how[0]
+
+        # We expect the 'image' or 'image@how' syntax
+        matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
+        if matched:
+            options = {"image": matched.group(1), "how": matched.group(2)}
+        else:
+            options = {"image": image_and_how}
+
+        tmt.steps.provision.Provision.store_cli_invocation(context=None, options=options)
+
+    # Finally, let's start trying!
+    trying = tmt.trying.Try(
+        tree=context.obj.tree,
+        logger=context.obj.logger)
+
+    trying.go()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

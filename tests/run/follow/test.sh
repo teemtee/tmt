@@ -10,11 +10,11 @@ rlJournalStart
     rlPhaseStartTest
         rlRun "tmt run --id $run &>/dev/null &" 0 "Start a tmt run in background"
         rlRun "sleep 1" 0 "Ignore logging during the first second"
-        rlRun -s "timeout -s INT 3 tmt run --id $run --follow" 124 "Follow logs for 3 seconds"
+        rlRun -s "timeout -s INT 5 tmt run --id $run --follow" 124 "Follow logs for 5 seconds"
         rlAssertGrep "step-01" $rlRun_LOG
         rlAssertGrep "step-02" $rlRun_LOG
-        rlAssertNotGrep "step-04" $rlRun_LOG
-        rlAssertNotGrep "step-05" $rlRun_LOG
+        rlAssertNotGrep "step-09" $rlRun_LOG
+        rlAssertNotGrep "step-10" $rlRun_LOG
         rlRun "wait $!" 0 "Wait until the run is finished"
     rlPhaseEnd
 

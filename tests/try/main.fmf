@@ -1,0 +1,2 @@
+summary: Check basic interactive session features
+require+: [expect]

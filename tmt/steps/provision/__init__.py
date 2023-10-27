@@ -1901,9 +1901,9 @@ class Provision(tmt.steps.Step):
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
                 self.verbose(guest.name, color='red', shift=2)
 
-    def go(self) -> None:
-        """ Provision all guests"""
-        super().go()
+    def go(self, force: bool = False) -> None:
+        """ Provision all guests """
+        super().go(force=force)
 
         # Nothing more to do if already done
         if self.status() == 'done':

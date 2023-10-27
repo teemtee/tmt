@@ -139,7 +139,7 @@ rlJournalStart
 
 
         rlRun "su -l -c 'tmt run --id $CONNECT_RUN plans --default provision -h virtual' $USER"
-        CONNECT_TO=$CONNECT_RUN/plans/default/provision/guests.yaml
+        CONNECT_TO=$CONNECT_RUN/default/plan/provision/guests.yaml
         rlAssertExists $CONNECT_TO
 
         # Create new plans/provision/connect.fmf

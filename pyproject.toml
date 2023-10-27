@@ -226,6 +226,7 @@ ignore = [
     "tmt/lint.py",
     "tmt/queue.py",
     "tmt/templates.py",
+    "tmt/trying.py",
     "tmt/utils.py"
 ]
 

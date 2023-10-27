@@ -695,9 +695,13 @@ class Execute(tmt.steps.Step):
 
         self.info('summary', ', '.join(message), 'green', shift=1)
 
-    def go(self) -> None:
+    def go(self, force: bool = False) -> None:
         """ Execute tests """
-        super().go()
+        super().go(force=force)
+
+        # Clean up possible old results
+        if force:
+            self._results.clear()
 
         # Nothing more to do if already done
         if self.status() == 'done':
@@ -717,6 +721,9 @@ class Execute(tmt.steps.Step):
 
         execute_phases = self.phases(classes=(ExecutePlugin,))
         assert len(execute_phases) == 1
+
+        # Clean up possible old results
+        execute_phases[0]._results.clear()
 
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):

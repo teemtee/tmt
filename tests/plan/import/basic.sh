@@ -68,7 +68,7 @@ rlJournalStart
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertGrep "/lint/tests" $rlRun_LOG
         rlAssertGrep "/lint/plans" $rlRun_LOG
-        rlAssertNotGrep "/plans/default" $rlRun_LOG
+        rlAssertNotGrep "/default/plan" $rlRun_LOG
         # logging import plan details in verbose mode
         rlAssertGrep "import url: https://github.com/teemtee/tmt" $rlRun_LOG
         rlAssertGrep "import ref: 1.16.0" $rlRun_LOG

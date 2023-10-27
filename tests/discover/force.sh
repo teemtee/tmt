@@ -10,7 +10,7 @@ rlJournalStart
     rlPhaseEnd
 
     plan="plans --default"
-    test_yaml="$workdir/run/plans/default/discover/tests.yaml"
+    test_yaml="$workdir/run/default/plan/discover/tests.yaml"
 
     rlPhaseStartTest
         # Fresh run with no required packages

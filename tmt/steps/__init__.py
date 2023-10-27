@@ -66,6 +66,7 @@ DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 # Supported steps and actions
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
 ACTIONS: list[str] = ['login', 'reboot']
+DEFAULT_LOGIN_COMMAND = 'bash'
 
 # Step phase order
 PHASE_START = 10
@@ -779,7 +780,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             pruned_raw_data: list[_RawStepData] = []
             incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
-            how = invocation.options['how']
+            # In the 'tmt try image' command user can specify their
+            # preferred image name without specifying the provision
+            # method, thus the 'how' key can be unset and we respect the
+            # provision method specified in the plan.
+            how = invocation.options.get('how')
 
             for j, raw_datum in enumerate(raw_data):
                 debug(f'raw step datum #{j}', str(raw_datum))
@@ -887,8 +892,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         for phase in self.phases(classes=Action):
             phase.go()
 
-    def go(self) -> None:
+    def go(self, force: bool = False) -> None:
         """ Execute the test step """
+        # Clean up the workdir and switch status if force is requested
+        if force:
+            self._workdir_cleanup()
+            self.status("todo")
+
         # Show step header and how
         self.info(self.name, color='blue')
         # Show workdir in verbose mode
@@ -1634,7 +1644,7 @@ class Login(Action):
             help='Log in if a test finished with given result(s).')
         @option(
             '-c', '--command', metavar='COMMAND',
-            multiple=True, default=['bash'],
+            multiple=True, default=[DEFAULT_LOGIN_COMMAND],
             help="Run given command(s). Default is 'bash'.")
         @option(
             '-t', '--test', is_flag=True,
@@ -1678,10 +1688,10 @@ class Login(Action):
         return [Login(logger=step._logger.descend(), step=step, order=phase)
                 for phase in cls.phases(step)]
 
-    def go(self) -> None:
+    def go(self, force: bool = False) -> None:
         """ Login to the guest(s) """
 
-        if self._enabled_by_results(self.parent.plan.execute.results()):
+        if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
     def _enabled_by_results(self, results: list['tmt.base.Result']) -> bool:
@@ -1708,7 +1718,9 @@ class Login(Action):
             cwd: Optional[Path] = None,
             env: Optional[tmt.utils.EnvironmentType] = None) -> None:
         """ Run the interactive command """
-        scripts = [tmt.utils.ShellScript(script) for script in self.opt('command')]
+        scripts = [
+            tmt.utils.ShellScript(script)
+            for script in self.opt('command', (DEFAULT_LOGIN_COMMAND,))]
         self.info('login', 'Starting interactive shell', color='yellow')
         for guest in self.parent.plan.provision.guests():
             # Attempt to push the workdir to the guest

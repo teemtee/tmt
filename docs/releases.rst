@@ -7,6 +7,14 @@
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The new :ref:`tmt try</stories/cli/try>` command provides an
+interactive session which allows to easily run tests and
+experiment with the provisioned guest. The functionality might
+still change. This is the very first proof of concept included in
+the release as a **tech preview** to gather early feedback and
+finalize the outlined design. Give it a :ref:`/stories/cli/try`
+and let us know what you think! :)
+
 The :ref:`/spec/core/contact` key has been moved from the
 :ref:`/spec/tests` specification to the :ref:`/spec/core`
 attributes so now it can be used with plans and stories as well.

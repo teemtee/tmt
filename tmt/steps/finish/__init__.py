@@ -111,9 +111,9 @@ class Finish(tmt.steps.Step):
         tasks = fmf.utils.listed(self.phases(), 'task')
         self.info('summary', f'{tasks} completed', 'green', shift=1)
 
-    def go(self) -> None:
+    def go(self, force: bool = False) -> None:
         """ Execute finishing tasks """
-        super().go()
+        super().go(force=force)
 
         # Nothing more to do if already done
         if self.status() == 'done':

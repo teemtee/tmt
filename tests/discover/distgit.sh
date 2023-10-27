@@ -134,8 +134,8 @@ done
         ) > $MOCK_SOURCES_FILENAME
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
@@ -196,8 +196,8 @@ done
         echo "simple-1.tgz" > $MOCK_SOURCES_FILENAME
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
@@ -226,8 +226,8 @@ done
         echo "simple-1.tgz" > $MOCK_SOURCES_FILENAME
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
@@ -255,8 +255,8 @@ done
         echo "simple-1.tgz renamed_simple.tgz" > $MOCK_SOURCES_FILENAME
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
@@ -284,8 +284,8 @@ done
         echo "simple-1.tgz simple.tgz" > $MOCK_SOURCES_FILENAME
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
@@ -369,8 +369,8 @@ done
         rlRun "tmt init"
 
         WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/default/discover/default-0/source
-        WORKDIR_TESTS=$WORKDIR/plans/default/discover/default-0/tests
+        WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
+        WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
         rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \

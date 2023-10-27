@@ -173,9 +173,9 @@ class Prepare(tmt.steps.Step):
                 host_mapping[guest.name] = guest.guest
         return host_mapping
 
-    def go(self) -> None:
+    def go(self, force: bool = False) -> None:
         """ Prepare the guests """
-        super().go()
+        super().go(force=force)
 
         # Nothing more to do if already done
         if self.status() == 'done':

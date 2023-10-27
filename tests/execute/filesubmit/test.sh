@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseEnd
 
     # would be set by TMT_TEST_DATA
-    tmt_test_data="plans/default/execute/data/guest/default-0/default-1/data"
+    tmt_test_data="default/plan/execute/data/guest/default-0/default-1/data"
 
     rlPhaseStartTest
         rlRun "tmt run -vfi $tmp -a provision -h container"

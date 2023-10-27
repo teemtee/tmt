@@ -357,6 +357,10 @@ TMT_PLUGINS
     Path to a directory with additional plugins. Multiple paths
     separated with the ``:`` character can be provided as well.
 
+TMT_CONFIG_DIR
+    Path to an alternative directory with config files. By default
+    ``~/.config/tmt`` is used.
+
 TMT_WORKDIR_ROOT
     Path to root directory containing run workdirs. Defaults to
     ``/var/tmp/tmt``.

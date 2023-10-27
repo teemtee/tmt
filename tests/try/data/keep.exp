@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+# Select a plan and keep the run
+
+spawn tmt try -p plan
+expect "What do we do next?"
+send -- "k\r"
+expect eof

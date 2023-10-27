@@ -95,9 +95,9 @@ class Report(tmt.steps.Step):
         summary = tmt.result.Result.summary(self.plan.execute.results())
         self.info('summary', summary, 'green', shift=1)
 
-    def go(self) -> None:
-        """ Report the guests """
-        super().go()
+    def go(self, force: bool = False) -> None:
+        """ Report the results """
+        super().go(force=force)
 
         # Nothing more to do if already done
         if self.status() == 'done':

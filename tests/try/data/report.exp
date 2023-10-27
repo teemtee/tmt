@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+# Run selected plan in verbose mode, show report and quit
+
+set timeout -1
+spawn tmt -v try -p plan
+expect "What do we do next?"
+send -- "r\r"
+expect "What do we do next?"
+send -- "q\r"
+expect eof

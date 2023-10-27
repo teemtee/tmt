@@ -54,7 +54,7 @@ rlJournalStart
     rlPhaseStartTest "Single '/' test"
         rlRun 'pushd serial-number-root-test'
         rlRun "tmt -vv run --scratch --id $workdir discover -h fmf"
-        rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\")\"' $workdir/plans/default/discover/tests.yaml"
+        rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\")\"' $workdir/default/plan/discover/tests.yaml"
         rlAssertGrep "/ 1" $rlRun_LOG
         rlRun 'popd'
     rlPhaseEnd

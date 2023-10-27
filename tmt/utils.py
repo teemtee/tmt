@@ -158,7 +158,7 @@ DEFAULT_PLUGIN_ORDER_REQUIRES = 70
 DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 # Config directory
-CONFIG_PATH = Path('~/.config/tmt')
+CONFIG_DIR = Path('~/.config/tmt')
 
 # Special process return codes
 
@@ -340,7 +340,9 @@ class Config:
 
     def __init__(self) -> None:
         """ Initialize config directory path """
-        self.path = CONFIG_PATH.expanduser()
+        raw_path = os.getenv('TMT_CONFIG_DIR', None)
+        self.path = (Path(raw_path) if raw_path else CONFIG_DIR).expanduser()
+
         if not self.path.exists():
             try:
                 self.path.mkdir(parents=True)
@@ -372,6 +374,14 @@ class Config:
         except OSError as error:
             raise GeneralError(
                 f"Unable to save last run '{self.path}'.\n{error}")
+
+    @cached_property
+    def fmf_tree(self) -> fmf.Tree:
+        """ Return the configuration tree """
+        try:
+            return fmf.Tree(self.path)
+        except fmf.utils.RootError as error:
+            raise MetadataError(f"Config tree not found in '{self.path}'.") from error
 
 
 # TODO: `StreamLogger` is a dedicated thread fillowing given stream, passing their content to
@@ -960,7 +970,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     cli_invocation: Optional['tmt.cli.CliInvocation'] = None
 
     @classmethod
-    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
+    def store_cli_invocation(
+            cls,
+            context: Optional['tmt.cli.Context'],
+            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
         """
         Record a CLI invocation and options it carries for later use.
 
@@ -971,6 +984,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
            :py:meth:`store_cli_invocation` has not been called.
 
         :param context: CLI context representing the invocation.
+        :param options: Optional dictionary with custom options.
+            If provided, context is ignored.
         :raises GeneralError: when there was a previously saved invocation
             already. Multiple invocations are not allowed.
         """
@@ -979,7 +994,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             raise GeneralError(
                 f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}")
 
-        cls.cli_invocation = tmt.cli.CliInvocation.from_context(context)
+        if options is not None:
+            cls.cli_invocation = tmt.cli.CliInvocation.from_options(options)
+        elif context is not None:
+            cls.cli_invocation = tmt.cli.CliInvocation.from_context(context)
+        else:
+            raise GeneralError(
+                "Either context or options have to be provided to store_cli_invocation().")
+
         return cls.cli_invocation
 
     @property
@@ -1131,11 +1153,21 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         return self._logger.debug_level
 
+    @debug_level.setter
+    def debug_level(self, level: int) -> None:
+        """ Update the debug level attached to this object """
+        self._logger.debug_level = level
+
     @property
     def verbosity_level(self) -> int:
         """ The current verbosity level applied to this object """
 
         return self._logger.verbosity_level
+
+    @verbosity_level.setter
+    def verbosity_level(self, level: int) -> None:
+        """ Update the verbosity level attached to this object """
+        self._logger.verbosity_level = level
 
     @property
     def quietness(self) -> bool:
@@ -1528,7 +1560,10 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
         super().__init__(**kwargs)
 
     @classmethod
-    def store_cli_invocation(cls, context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
+    def store_cli_invocation(
+            cls,
+            context: Optional['tmt.cli.Context'],
+            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
         """
         Save a CLI context and options it carries for later use.
 
@@ -1543,9 +1578,17 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
            The given context will overwrite any previously saved context.
 
         :param context: CLI context to save.
+        :param options: Optional dictionary with custom options.
+            If provided, context is ignored.
         """
 
-        invocation = tmt.cli.CliInvocation.from_context(context)
+        if options is not None:
+            invocation = tmt.cli.CliInvocation.from_options(options)
+        elif context is not None:
+            invocation = tmt.cli.CliInvocation.from_context(context)
+        else:
+            raise GeneralError(
+                "Either context or options have to be provided to store_cli_invocation().")
 
         cls.cli_invocations.append(invocation)
 

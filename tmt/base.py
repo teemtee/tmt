@@ -827,13 +827,14 @@ class Core(
     @classmethod
     def store_cli_invocation(
             cls,
-            context: 'tmt.cli.Context') -> 'tmt.cli.CliInvocation':
+            context: Optional['tmt.cli.Context'],
+            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
         """ Save provided command line context for future use """
-        invocation = super().store_cli_invocation(context)
+        invocation = super().store_cli_invocation(context, options)
 
         # Handle '.' as an alias for the current working directory
         names = cls._opt('names')
-        if names is not None and '.' in names:
+        if context is not None and names is not None and '.' in names:
             assert context.obj.tree.root is not None  # narrow type
             root = context.obj.tree.root
             current = Path.cwd()
@@ -1504,6 +1505,9 @@ class Plan(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
 
+    # Optional Login instance attached to the plan for easy login in tmt try
+    login: Optional[tmt.steps.Login] = None
+
     # When fetching remote plans we store links between the original
     # plan with the fmf id and the imported plan with the content.
     _imported_plan: Optional['Plan'] = field(default=None, internal=True)
@@ -2148,21 +2152,9 @@ class Plan(
         yield from _lint_step('execute')
         yield from _lint_step('finish')
 
-    def go(self) -> None:
-        """ Execute the plan """
-        # Show plan name and summary (one blank line to separate plans)
-        self.info('')
-        self.info(self.name, color='red')
-        if self.summary:
-            self.verbose('summary', self.summary, 'green')
+    def wake(self) -> None:
+        """ Wake up all steps """
 
-        # Additional debug info like plan environment
-        self.debug('info', color='cyan', shift=0, level=3)
-        # TODO: something better than str()?
-        self.debug('environment', format_value(self.environment), 'magenta', level=3)
-        self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
-
-        # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
         for step in self.steps(enabled_only=False):
             self.debug(str(step), color='blue', level=2)
@@ -2175,6 +2167,30 @@ class Plan(
                     raise error
 
                 step.warn(str(error))
+
+    def header(self) -> None:
+        """
+        Show plan name and summary
+
+        Include one blank line to separate plans
+        """
+        self.info('')
+        self.info(self.name, color='red')
+        if self.summary:
+            self.verbose('summary', self.summary, 'green')
+
+    def go(self) -> None:
+        """ Execute the plan """
+        self.header()
+
+        # Additional debug info like plan environment
+        self.debug('info', color='cyan', shift=0, level=3)
+        # TODO: something better than str()?
+        self.debug('environment', format_value(self.environment), 'magenta', level=3)
+        self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
+
+        # Wake up all steps
+        self.wake()
 
         # Set up login and reboot plugins for all steps
         self.debug("action", color="blue", level=2)
@@ -3094,6 +3110,7 @@ class Run(tmt.utils.Common):
                  id_: Optional[Path] = None,
                  tree: Optional[Tree] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
+                 parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
@@ -3111,9 +3128,9 @@ class Run(tmt.utils.Common):
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(cli_invocation=cli_invocation, logger=logger)
+        super().__init__(cli_invocation=cli_invocation, logger=logger, parent=parent)
         self._workdir_path: WorkdirArgumentType = id_ or True
-        self._tree = tree
+        self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
         self._environment_from_workdir: EnvironmentType = {}
         self._environment_from_options: Optional[EnvironmentType] = None
@@ -3355,6 +3372,13 @@ class Run(tmt.utils.Common):
 
         for _, key_formatted, value_formatted in self.runner.facts.format():
             log(key_formatted, value_formatted, shift=1)
+
+    def prepare_for_try(self, tree: Tree) -> None:
+        """ Prepare the run for the try command """
+        self.tree = tree
+        self._workdir_load(self._workdir_path)
+        self.config.last_run = self.workdir
+        self.info(str(self.workdir), color='magenta')
 
     def go(self) -> None:
         """ Go and do test steps for selected plans """

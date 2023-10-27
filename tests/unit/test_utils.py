@@ -218,7 +218,7 @@ def test_last_run_race(tmppath: Path, monkeypatch):
     """ Race in last run symlink should't be fatal """
     config_path = tmppath / 'config'
     config_path.mkdir()
-    monkeypatch.setattr(tmt.utils, 'CONFIG_PATH', config_path)
+    monkeypatch.setattr(tmt.utils, 'CONFIG_DIR', config_path)
     mock_logger = unittest.mock.MagicMock()
     monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
     config = tmt.utils.Config()

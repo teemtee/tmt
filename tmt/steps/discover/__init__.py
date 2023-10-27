@@ -276,9 +276,9 @@ class Discover(tmt.steps.Step):
         for test in self.tests(enabled=True):
             self.verbose(test.name, color='red', shift=2)
 
-    def go(self) -> None:
-        """ Execute all steps """
-        super().go()
+    def go(self, force: bool = False) -> None:
+        """ Discover all tests """
+        super().go(force=force)
 
         # Nothing more to do if already done
         if self.status() == 'done':

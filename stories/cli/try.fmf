@@ -1,0 +1,129 @@
+story:
+    As a tester or developer I want an easy and comfortable way to
+    run tests and experiment with various versions of the
+    operating system.
+
+link:
+  - implemented-by: /tmt/trying.py
+  - verified-by: /tests/try
+
+/test:
+    story:
+        As a test developer I want an easy way to run a single
+        test on a freshly provisioned guest.
+
+    description: |
+        One of the most common scenarios is to run a single test
+        in a given environment so that the test developer can
+
+        * verify the newly created test works as expected
+        * debug failures discovered during testing and fix them
+
+        .. versionadded:: 1.30
+
+    example:
+    - |
+        # Run test stored in the current working directory using
+        # the default provision method and image
+        cd tests/core/smoke
+        tmt try
+
+    - |
+        # By default we run in verbose level 3, choose a lower
+        # level if more concise output is enough for you
+        cd tests/core/smoke
+        tmt -v try
+        tmt -vv try
+
+    - |
+        # Run it against the specified distro image
+        cd tests/core/smoke
+        tmt try fedora-37
+
+    - |
+        # Run it using given provision method and image
+        cd tests/core/smoke
+        tmt try fedora:38@container
+
+    - |
+        # Use custom filter to select tests instead of the current
+        # working directory
+        cd tests/core/smoke
+        tmt try --test feature
+
+    - |
+        # Select plan from the repository instead of default
+        cd tests/core/smoke
+        tmt try --plan plan
+
+/guest:
+    story:
+        As a user I want to quickly experiment with a freshly
+        provisioned guest.
+
+    description: |
+        Sometimes it's handy to be able to quickly spawn a new
+        clean guest and start experimeting in the sand box. Run
+        the ``tmt try`` command in a directory without tests or
+        explicitly ask for interactive shell with ``--login``.
+
+        .. versionadded:: 1.30
+
+    example:
+      - |
+        # Provision default distro, log into it for experimenting
+        # (make sure there are no tests in the current directory)
+        tmt try
+
+      - |
+        # Provision desired distro, log into it for experimenting
+        # (make sure there are no tests in the current directory)
+        tmt try rhel-9
+
+      - |
+        # Explicitly ask for login only if there are tests around
+        tmt try --login
+        tmt try -l
+
+      - |
+        # Do nothing, just provision the guest and ask what to do
+        tmt try --ask
+        tmt try -a
+
+/config:
+    story:
+        As a tester I usually run tests using my preferred
+        provision method and I don't want to write it on the
+        command line again and again.
+
+    description: |
+        Define your custom user plan to be used by default when
+        using the ``tmt try`` command and store it under the
+        config directory ``~/.config/tmt``. All plans starting
+        with ``/user/plan`` will be used for experimenting.
+
+        Note that the config directory is a tmt :ref:`Tree<tree>`
+        so don't forget to initialize it. You can copy & paste the
+        following commands to get quickly started:
+
+        .. code-block:: shell
+
+            mkdir -p ~/.config/tmt
+            cd ~/.config/tmt
+            tmt init
+            tmt plan create --template full /user/plan
+
+        .. versionadded:: 1.30
+
+    example: |
+        # ~/.config/tmt/user/plan.fmf
+        discover:
+            how: fmf
+        provision:
+            how: container
+            image: "fedora:fresh"
+        prepare:
+            how: install
+            package: vim
+        execute:
+            how: tmt

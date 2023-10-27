@@ -27,7 +27,7 @@ rlJournalStart
         rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
         rlAssertExists "$(sed -n 's/ *slash_log: \(.\+\)/\1/p' $rlRun_LOG)"
 
-        rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name)\"' $run/plans/default/execute/results.yaml"
+        rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name)\"' $run/default/plan/execute/results.yaml"
         rlAssertGrep "/test/custom-results/test/passing 1 pass default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results/test/failing 1 fail default-0" $rlRun_LOG
         rlAssertGrep "/test/custom-results 1 pass default-0" $rlRun_LOG
@@ -51,7 +51,7 @@ rlJournalStart
     testName="/test/missing-custom-results"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test does not provide 'results.yaml' file"
-        rlAssertGrep "custom results file not found in '/tmp/.*/plans/default/execute/data/guest/default-0/test/missing-custom-results-1/data" $rlRun_LOG
+        rlAssertGrep "custom results file not found in '/tmp/.*/default/plan/execute/data/guest/default-0/test/missing-custom-results-1/data" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/empty-custom-results-file"

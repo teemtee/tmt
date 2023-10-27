@@ -37,7 +37,7 @@ story: 'As a user I want to execute tests easily'
             For example use ``execute -h beakerlib`` to execute
             tests using the beakerlib method.
         example: |
-            /plans/default:
+            /default/plan:
                 summary:
                     Default plan when fmf metadata found
                 discover:
@@ -45,7 +45,7 @@ story: 'As a user I want to execute tests easily'
                 execute:
                     how: shell
 
-            /plans/default:
+            /default/plan:
                 summary:
                     Default plan when no fmf metadata around
                 discover:

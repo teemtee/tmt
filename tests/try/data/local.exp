@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+# Try local host
+
+spawn tmt try fedora@local
+expect "What do we do next?"
+send -- "q\r"
+expect eof
