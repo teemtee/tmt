@@ -109,19 +109,21 @@ definitions:
     # name: true
     # type: true
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
   dist-git-source:
     type: boolean
 
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
-  # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
   dist-git-type:
     type: string
     enum:
       - centos
       - fedora
       - rhel
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  dist-git-download-only:
+    type: boolean
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#duration
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell

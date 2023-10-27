@@ -17,7 +17,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import Command, GeneralError, Path, field, flatten, key_to_option
+from tmt.utils import GeneralError, Path, field, flatten, key_to_option
 
 
 @dataclasses.dataclass
@@ -26,7 +26,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         default=False,
         option='--dist-git-source',
         is_flag=True,
-        help='Extract DistGit sources.'
+        help='Download DistGit sources and extract the tarballs (can be skipped).'
         )
 
     # TODO: use enum!
@@ -35,6 +35,13 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         option='--dist-git-type',
         choices=tmt.utils.get_distgit_handler_names,
         help='Use the provided DistGit handler instead of the auto detection.'
+        )
+
+    dist_git_download_only: bool = field(
+        default=False,
+        option="--dist-git-download-only",
+        is_flag=True,
+        help="Do not extract downloaded sources.",
         )
 
 
@@ -89,37 +96,25 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
         raise NotImplementedError
 
     def extract_distgit_source(
-            self, distgit_dir: Path, target_dir: Path, handler_name: Optional[str] = None) -> None:
+            self,
+            distgit_dir: Path,
+            target_dir: Path,
+            handler_name: Optional[str] = None,
+            download_only: bool = False) -> None:
         """
-        Extract source tarball into target_dir
+        Download sources to the target_dir and possibly extract the tarballs
 
-        distgit_dir is path to the DistGit repository.
-        Source tarball is discovered from the 'sources' file content.
+        distgit_dir is path to the DistGit repository
+        Set download_only if extraction should not happen
         """
-        if handler_name is None:
-            output = self.run(
-                Command("git", "config", "--get-regexp", '^remote\\..*.url'),
-                cwd=distgit_dir)
-            if output.stdout is None:
-                raise tmt.utils.GeneralError("Missing remote origin url.")
-
-            remotes = output.stdout.split('\n')
-            handler = tmt.utils.get_distgit_handler(remotes=remotes)
-        else:
-            handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
-        for url, source_name in handler.url_and_name(distgit_dir):
-            if not handler.re_supported_extensions.search(source_name):
-                continue
-            self.debug(f"Download sources from '{url}'.")
-            with tmt.utils.retry_session() as session:
-                response = session.get(url)
-            response.raise_for_status()
-            target_dir.mkdir(exist_ok=True, parents=True)
-            with open(target_dir / source_name, 'wb') as tarball:
-                tarball.write(response.content)
-            self.run(
-                Command("tar", "--auto-compress", "--extract", "-f", source_name),
-                cwd=target_dir)
+        tmt.utils.distgit_download(
+            distgit_dir=distgit_dir,
+            target_dir=target_dir,
+            handler_name=handler_name,
+            download_only=download_only,
+            caller=self,
+            logger=self._logger
+            )
 
     def log_import_plan_details(self) -> None:
         """

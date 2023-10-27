@@ -68,22 +68,11 @@ description: |
         keep-git-metadata
             By default the ``.git`` directory is removed to save
             disk space. Set to ``true`` to sync the git metadata
-            to guest as well.
+            to guest as well. Implicit if ``dist-git-source`` is
+            used.
 
-        There is a support for discovering tests from extracted
-        (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
-
-        dist-git-source
-            Set to ``true`` to enable extracting sources.
-        dist-git-type
-            The DistGit auto detection is based on git remotes.
-            Use this option to specify it directly. At least
-            ``Fedora`` and ``CentOS`` are supported as values,
-            help will print all possible values.
+        Use the :ref:`/spec/plans/discover/dist-git-source`
+        options to download rpm sources for dist-git repositories.
 
     example:
       - |
@@ -172,9 +161,9 @@ description: |
         options (all optional) are:
 
         modified-only
-            Set to True if you want to filter modified tests only.
-            The test is modified if its name starts with the name
-            of any directory modified since modified-ref.
+            Set to ``true`` if you want to filter modified tests
+            only.  The test is modified if its name starts with
+            the name of any directory modified since modified-ref.
         modified-url
             An additional remote repository to be used as the
             reference for comparison. Will be fetched as a
@@ -185,23 +174,38 @@ description: |
             specify ``reference/<branch>`` to compare to a branch
             from the repository specified in ``modified-url``.
 
-        There is a support for discovering tests from extracted
-        (rpm) sources. Needs to run on top of the supported
-        DistGit (Fedora, CentOS), ``url`` can be used to point to
-        such repository, ``path`` denotes path to the metadata
-        tree root within extracted sources. At this moment no
-        patches are applied, only tarball extraction happens.
+        Use the :ref:`/spec/plans/discover/dist-git-source`
+        options to download rpm sources for dist-git repositories.
+        In addition to the common dist-git-source features, the
+        ``fmf`` plugin also supports the following options:
 
-        dist-git-source
-            Set to ``true`` to enable extracting sources.
-        dist-git-type
-            The DistGit auto detection is based on git remotes.
-            Use this option to specify it directly. At least
-            ``Fedora`` and ``CentOS`` are supported as values,
-            help will print all possible values.
+        dist-git-init
+            Set to ``true`` to initialize fmf root inside
+            extracted sources at ``dist-git-extract`` location or
+            top directory. To be used when the sources contain fmf
+            files (for example tests) but do not have an
+            associated fmf root.
+
+        dist-git-remove-fmf-root
+            Set to ``true`` to remove any fmf root present in the
+            sources.  ``dist-git-init`` can be used to create it
+            later at desired location.
+
+        dist-git-merge
+            Set to ``true`` to combine fmf root from the sources
+            and fmf root from the plan.  It allows to have plans
+            and tests defined in the DistGit repo which use tests
+            and other resources from the downloaded sources. Any
+            plans in extracted sources will not be processed.
+
+        dist-git-extract
+            Path specifying what should be copied from the
+            sources.  Defaults to top fmf root or top directory
+            ``/``.
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
+
     example:
       - |
         # Discover all fmf tests in the current repository
@@ -235,6 +239,73 @@ description: |
             dist-git-source: true
     link:
       - implemented-by: /tmt/steps/discover/fmf.py
+
+/dist-git-source:
+    summary: Download rpm sources for dist-git repositories
+    description: |
+        Downloads the source files specified in the ``sources``
+        file of a DistGit (Fedora, CentOS) repository.  Plan using
+        the option has to be defined in a DistGit repository or
+        the ``url`` option needs to point to the root of such
+        repository.  At this moment, no patches are applied, only
+        sources are downloaded and tarballs extracted (can be
+        skipped).
+
+        All source files are available for further use in the
+        directory provided in the ``TMT_SOURCE_DIR`` variable.
+
+        dist-git-source
+            Download and (optionally) extract the sources.
+
+        dist-git-type
+            Use the provided DistGit handler instead of the auto
+            detection. Useful when running from forked
+            repositories.
+
+        dist-git-download-only
+            When ``true`` no tarballs are extracted. Saves space
+            if one wants to apply patches later on their own.
+
+        The :ref:`/spec/plans/discover/fmf` plugin supports
+        additional dist-git options, see its documentation for
+        details.
+
+        .. versionadded:: 1.29
+
+    example:
+      - |
+        # Download & extract sources from another repo, print
+        # single file as a test
+        discover:
+            how: shell
+            url: https://src.fedoraproject.org/rpms/tmt
+            dist-git-source: true
+            tests:
+              - name: /print/pyproject
+                test: cat $TMT_SOURCE_DIR/tmt-*/pyproject.toml
+      - |
+        # Just download sources, test is reponsible for rpmbuild
+        # and running tests
+        discover:
+            how: shell
+            dist-git-source: true
+            dist-git-download-only: true
+            tests:
+              - name: /unit
+                test: >
+                    rpmbuild -bp
+                        --define "_sourcedir $TMT_SOURCE_DIR"
+                        --define "_builddir $TMT_SOURCE_DIR/BUILD"
+                        $TMT_SOURCE_DIR/*.spec &&
+                    cd $TMT_SOURCE_DIR/BUILD/* &&
+                    make test
+                require:
+                  - rpm-build
+
+    link:
+      - implemented-by: /tmt/steps/discover/fmf.py
+      - implemented-by: /tmt/steps/discover/shell.py
+
 
 /where:
     summary: Execute tests on selected guests

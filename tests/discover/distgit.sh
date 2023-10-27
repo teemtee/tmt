@@ -44,6 +44,10 @@ rlJournalStart
             touch $tmp/outsider
             rlRun "tar czvf $tmp/simple-1.tgz --directory $tmp simple-1 outsider"
             rlRun "rm -rf $tmp/simple-1 outsider"
+            # Other files tests can ask for
+            for f in file.tgz.asc file.key something.gem; do
+                rlRun "touch $SERVER_DIR/$f"
+            done
         )
 
         # prepare unit-no-tmt (e.g. pytest files inside tarball)
@@ -58,7 +62,6 @@ rlJournalStart
 
         rlRun "popd"
     rlPhaseEnd
-
 
     ### discover -h fmf ###
 
@@ -162,25 +165,19 @@ done
 
 
 
-    rlPhaseStartTest "non-tar files in sources are ignored"
+    rlPhaseStartTest "all source files are downloaded"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'pushd $tmp'
 
         rlRun "git init" # should be git
         rlRun "tmt init" # should has fmf tree
 
-        # https://github.com/teemtee/tmt/issues/1055
-        # https://github.com/teemtee/tmt/issues/1949
-
         (
             echo simple-1.tgz
-            echo IGNORED file.tgz.asc
-            echo IGNORED file.key
-            echo IGNORED file.sign
-            echo IGNORED cockpit.css.gz
+            echo file.tgz.asc
+            echo file.key
+            echo something.gem
         ) > $MOCK_SOURCES_FILENAME
-        # only simple-1.tgz should be downloaded so all other would fail with
-        # File not found for url: http://localhost:9000/IGNORED
 
         rlRun -s 'tmt run --id /var/tmp/tmt/XXX --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
@@ -404,7 +401,7 @@ done
 
     ### discover -h shell ###
 
-    rlPhaseStartTest "shell with merge (tmt for plan only)"
+    rlPhaseStartTest "shell always merges the plan's git"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'pushd $tmp'
 
@@ -448,6 +445,46 @@ EOF
         rlRun "rm -rf $tmp"
     rlPhaseEnd
 
+rlPhaseStartTest "shell with download-only"
+        rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
+        rlRun 'pushd $tmp'
+
+        rlRun "git init"
+        echo unit-no-tmt.tgz > $MOCK_SOURCES_FILENAME
+
+        rlRun "tmt init"
+        cat <<EOF > plans.fmf
+discover:
+    how: shell
+    tests:
+    -   name: /tarball is there
+        test: ls \$TMT_SOURCE_DIR
+    dist-git-source: true
+    dist-git-type: TESTING
+    dist-git-download-only: true
+provision:
+    how: local
+execute:
+    how: tmt
+EOF
+
+        WORKDIR=/var/tmp/tmt/XXX
+        WORKDIR_SOURCE=$WORKDIR/plans/discover/default-0/source
+
+        rlRun -s "tmt run --keep --id $WORKDIR --scratch -vvv"
+
+        # Tarball was not extracted
+        rlAssertNotExists $WORKDIR_SOURCE/foo-123/all_in_one
+        # But downloaded
+        rlAssertExists $WORKDIR_SOURCE/unit-no-tmt.tgz
+        rlAssertExists $WORKDIR_SOURCE/$MOCK_SOURCES_FILENAME
+
+
+        rlRun "popd"
+        rlRun "rm $rlRun_LOG"
+        rlRun "rm -rf $tmp"
+        rlRun "rm -rf $WORKDIR"
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         echo $SERVER_PID

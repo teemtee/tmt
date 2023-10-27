@@ -419,7 +419,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             try:
                 # 'ref' is checked out in self.testdir
                 self.extract_distgit_source(
-                    self.testdir if ref else git_root, sourcedir, self.get('dist-git-type'))
+                    distgit_dir=self.testdir if ref else git_root,
+                    target_dir=sourcedir,
+                    handler_name=self.get('dist-git-type'),
+                    download_only=self.get('dist-git-download-only'))
             except Exception as error:
                 raise tmt.utils.DiscoverError(
                     "Failed to process 'dist-git-source'.") from error

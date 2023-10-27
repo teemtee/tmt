@@ -216,9 +216,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
           test: ./smoke.sh
           path: /tests/shell
 
-    For DistGit repo one can extract source tarball and use its code.
-    It is extracted to TMT_SOURCE_DIR however no patches are applied
-    (only source tarball is extracted).
+    For DistGit repo one can download sources and use their code.
+    They are available in TMT_SOURCE_DIR however no patches are applied.
+    By default tarballs are extracted which can be disabled.
 
     discover:
         how: shell
@@ -254,7 +254,11 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             click.echo(tmt.utils.format('tests', test_names))
 
     def fetch_remote_repository(
-            self, url: Optional[str], ref: Optional[str], testdir: Path) -> None:
+            self,
+            url: Optional[str],
+            ref: Optional[str],
+            testdir: Path,
+            keep_git_metadata: bool = False) -> None:
         """ Fetch remote git repo from given url to testdir """
         # Nothing to do if no url provided
         if not url:
@@ -287,7 +291,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
         # Remove .git so that it's not copied to the SUT
         # if 'keep-git-metadata' option is not specified
-        if not self.get('keep_git_metadata', False):
+        if not keep_git_metadata:
             shutil.rmtree(testdir / '.git')
 
     def go(self) -> None:
@@ -300,14 +304,16 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
         self.log_import_plan_details()
 
-        # Fetch remote repository
-        url = self.get('url', None)
-        ref = self.get('ref', None)
-        self.fetch_remote_repository(url, ref, testdir)
-
         # dist-git related
         sourcedir = self.workdir / 'source'
         dist_git_source = self.get('dist-git-source', False)
+
+        # Fetch remote repository
+        url = self.get('url', None)
+        ref = self.get('ref', None)
+        # Git metadata are necessary for dist_git_source
+        keep_git_metadata = True if dist_git_source else self.get('keep_git_metadata', False)
+        self.fetch_remote_repository(url, ref, testdir, keep_git_metadata)
 
         # Check and process each defined shell test
         for data in self.data.tests:
@@ -359,7 +365,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             try:
                 run_result = self.run(
                     Command("git", "rev-parse", "--show-toplevel"),
-                    cwd=self.step.plan.my_run.tree.root,
+                    cwd=testdir if url else self.step.plan.my_run.tree.root,
                     ignore_dry=True)
                 assert run_result.stdout is not None
                 git_root = Path(run_result.stdout.strip('\n'))
@@ -371,7 +377,14 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                     f"is not a git repository.")
             try:
                 self.extract_distgit_source(
-                    git_root, sourcedir, self.get('dist-git-type'))
+                    distgit_dir=git_root,
+                    target_dir=sourcedir,
+                    handler_name=self.get('dist-git-type'),
+                    download_only=self.get('dist-git-download-only'),
+                    )
+                # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+                # FIXME 'worktree' could be used as sourcedir when 'url' is not set
+                shutil.copytree(git_root, sourcedir, symlinks=True, dirs_exist_ok=True)
             except Exception as error:
                 raise tmt.utils.DiscoverError(
                     "Failed to process 'dist-git-source'.") from error

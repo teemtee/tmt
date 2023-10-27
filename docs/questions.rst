@@ -414,10 +414,10 @@ tmt example plan (L2 metadata):
 .. code-block:: yaml
 
     discover:
-        how: fmf
+        how: shell
         dist-git-source: true
 
-See the :ref:`/spec/plans/discover/fmf` plugin documentation for
+See the :ref:`/spec/plans/discover/dist-git-source` documentation for
 more details.
 
 
