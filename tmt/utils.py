@@ -1695,6 +1695,13 @@ class WaitingTimedOutError(GeneralError):
         self.check_success = check_success
 
 
+class RetryError(GeneralError):
+    """ Retries unsuccessful """
+
+    def __init__(self, label: str, causes: List[Exception]) -> None:
+        super().__init__(f"Retries of {label} unsuccessful.", causes)
+
+
 # Step exceptions
 
 
@@ -6183,3 +6190,35 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     @property
     def duration(self) -> datetime.timedelta:
         return self.end_time - self.start_time
+
+
+def retry(
+        func: Callable[..., T],
+        attempts: int,
+        interval: int,
+        label: str,
+        logger: tmt.log.Logger,
+        *args: Any,
+        **kwargs: Any
+        ) -> T:
+    """ Retry functionality to be used elsewhere in the code.
+
+    :param func: function to be called with any amount
+    of arguments of Any type, returning the value of type TypeVar
+    :param attempts: number of tries to call the function
+    :param interval: amount of seconds to wait before a new try
+    :param label: action to retry
+    """
+    exceptions: List[Exception] = []
+    for i in range(attempts):
+        try:
+            return func(*args, **kwargs)
+        except Exception as exc:
+            exceptions.append(exc)
+            logger.debug(
+                'retry',
+                f"{label} failed, {attempts - i} retries left, "
+                f"trying again in {interval:.2f} seconds.")
+            logger.fail(str(exc))
+            time.sleep(interval)
+    raise RetryError(label, causes=exceptions)

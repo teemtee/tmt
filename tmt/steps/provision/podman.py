@@ -9,7 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, Path, ShellScript, field
+from tmt.utils import Command, Path, ShellScript, field, retry
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -17,6 +17,8 @@ CONNECTION_TIMEOUT = 60
 # Defaults
 DEFAULT_IMAGE = "fedora"
 DEFAULT_USER = "root"
+DEFAULT_PULL_ATTEMPTS = 5
+DEFAULT_PULL_INTERVAL = 5
 
 
 @dataclasses.dataclass
@@ -44,6 +46,26 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         metavar='NAME',
         help='Name or id of an existing container to be used.')
 
+    pull_attempts: int = field(
+        default=DEFAULT_PULL_ATTEMPTS,
+        option='--pull-attempts',
+        metavar='COUNT',
+        help=f"""
+             How many times to try pulling the image,
+             {DEFAULT_PULL_ATTEMPTS} attempts by default.
+             """,
+        normalize=tmt.utils.normalize_int)
+
+    pull_interval: int = field(
+        default=DEFAULT_PULL_INTERVAL,
+        option='--pull-interval',
+        metavar='SECONDS',
+        help=f"""
+             How long to wait before a new pull attempt,
+             {DEFAULT_PULL_INTERVAL} seconds by default.
+             """,
+        normalize=tmt.utils.normalize_int)
+
 
 @dataclasses.dataclass
 class ProvisionPodmanData(PodmanGuestData, tmt.steps.provision.ProvisionStepData):
@@ -60,6 +82,9 @@ class GuestContainer(tmt.Guest):
     user: str
     force_pull: bool
     parent: tmt.steps.Step
+    pull_attempts: int
+    pull_interval: int
+    logger: tmt.log.Logger
 
     @property
     def is_ready(self) -> bool:
@@ -79,6 +104,15 @@ class GuestContainer(tmt.Guest):
         self.debug(
             f"Waking up container '{self.container}'.", level=2, shift=0)
 
+    def pull_image(self) -> None:
+        """ Pull image if not available or pull forced """
+        assert self.image is not None  # narrow type
+
+        self.podman(
+            Command('pull', '-q', self.image),
+            message=f"Pull image '{self.image}'."
+            )
+
     def start(self) -> None:
         """ Start provisioned guest """
         if self.is_dry_run:
@@ -95,11 +129,15 @@ class GuestContainer(tmt.Guest):
         except tmt.utils.RunError:
             needs_pull = True
 
-        # Pull image if not available or pull forced
+        # Retry pulling the image in case of network issues
+        # Temporary solution until configurable in podman itself
         if needs_pull or self.force_pull:
-            self.podman(
-                Command('pull', '-q', self.image),
-                message=f"Pull image '{self.image}'."
+            retry(
+                self.pull_image,
+                self.pull_attempts,
+                self.pull_interval,
+                f"Pulling '{self.image}' image",
+                self._logger
                 )
 
         # Mount the whole plan directory in the container
