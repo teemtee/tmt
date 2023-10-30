@@ -1,16 +1,36 @@
-summary:
-    Select system with given device
-description:
-    Use the ``device-name`` to provide the device name as a string,
-    ``device`` to select a system with a specified device PCI ID,
-    ``driver`` key to specify the kernel module name
-    ``vendor-name`` to provide the vendor name as a string,
-    ``vendor`` to select a system with the vendor's unique identifier
+summary: |
+    Select or provision a guest with a given device.
+
+description: |
+    This is a generalization of various device-like requirements like ``gpu``
+    or ``network``. It provides a generic way for requesting devices for
+    which tmt defines no special HW requirements. The specialized requirements
+    are recommended, as they express the desired guest properties in a more
+    explicit way.
+
+    .. code-block::
+
+       device:
+           # String, a network device name.
+           device-name: "A Generic Ethernet Card"
+
+           # Number or string, a network device ID.
+           device: 1234|"> 1234"
+
+           # String, a name of the device vendor.
+           vendor-name: "A Well-Known Device Manufacturer"
+
+           # Number or string, an ID of the device vendor.
+           vendor: 1234|"> 1234"
+
+           # String, name of the kernel driver module for the device.
+           driver: noveau
+
+    .. versionadded:: 1.29
+
 example:
   - |
+    # Request a guest with a Thunderbolt controller
     device:
-        device-name: C51 [GeForce 6150 LE]
-        device: 0241
-        driver: nouveau
-        vendor-name: NVIDIA
-        vendor: 10de
+        device-name: "~ Intel Corporation .* Thunderbolt 3"
+        driver: thundebolt

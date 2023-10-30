@@ -1,4 +1,4 @@
-story:
+story: |
     As a tester I want to specify detailed hardware requirements
     for the guest on which the tests will be executed.
 
@@ -58,10 +58,6 @@ description: |
     the string. Any leading or trailing white space from the
     search string is removed.
 
-    Please note, that the full extent of regular expressions might
-    not be supported across all provision implementations. The
-    ``.*`` notation, however, should be supported everywhere:
-
     .. code-block:: yaml
 
         # Search for processors using a cpu model name
@@ -70,6 +66,12 @@ description: |
 
         # Select guests with a non-matching hostname
         hostname: "!~ kvm-01.*"
+
+    .. note::
+
+       The full extent of regular expressions might not be supported
+       across all provision implementations. However, the "any
+       character" pattern, ``.*``, should be supported everywhere.
 
     Logic operators
     ---------------
@@ -136,6 +138,21 @@ description: |
     expression operators (``~`` and ``!~``) while IDs can be used
     very reasonably with other comparison operators like ``>=``.
 
+    Device and vendor IDs
+    ---------------------
+
+    Besides the names, provisioning infrastructures may support
+    searching for devices by device and/or vendor ID. The ID
+    namespace would be determined by the guest architecture, the
+    buses and other specifications the guest HW is built from.
+
+    For example, probably the most common namespace would be the
+    `PCI ID Repository <https://pci-ids.ucw.cz/>`_, collecting IDs
+    and names of PCI devices, easy to encounter in both bare-metal
+    and virtualized x86_64 guests. However, this ID database is not
+    the only one in existence, and guest architecture may allow
+    for additional device and vendor ID schemas.
+
     Notes
     -----
 
@@ -164,6 +181,9 @@ description: |
         plugin can support the ``cpu.family`` requirement, but it
         is hard-locked to the CPU of one's own machine.
 
+        When facing impossible requirements, plugins will emit a
+        warning reporting this situation to the user, but in general,
+        plugins will try to continue provisioning the guest.
 
 example:
   - |

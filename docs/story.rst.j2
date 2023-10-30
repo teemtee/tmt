@@ -55,6 +55,30 @@
 {% endmacro %}
 
 {#
+    Emit a link leading to tmt's plugin.
+
+    :param link: tmt.base.Link instance.
+#}
+{% macro emit_tmt_plugin_link(link) %}
+{% set matched = link.target | match('^/tmt/steps/([a-z_]+/[a-z_]+)\\.py$') %}
+{#
+    A couple of plugins where the file name does not match the "how" name
+    used commonly in fmf files/on command line.
+#}
+{% set plugin_name = matched.group(1) %}
+{% if plugin_name == "execute/internal" %}
+    {% set plugin_name = "execute/tmt" %}
+{% elif plugin_name == "provision/mrack" %}
+    {% set plugin_name = "provision/beaker" %}
+{% elif plugin_name == "provision/podman" %}
+    {% set plugin_name = "provision/container" %}
+{% elif plugin_name == "provision/testcloud" %}
+    {% set plugin_name = "provision/virtual" %}
+{% endif %}
+{{ _emit_remote_link(link, plugin_name, "https://github.com/teemtee/tmt/tree/main/" + link.target) }}
+{% endmacro %}
+
+{#
     Emit a link leading to an object in tmt's upstream repository - a test,
     story, source file.
 
@@ -165,7 +189,7 @@
 
 {# Links pointing to step plugins #}
 {% elif link.target | match('^/tmt/steps/([a-z_]+/[a-z_]+)\\.py$') %}
-{{ emit_tmt_repo_link(link, '/tmt/steps/([a-z_]+/[a-z_]+)\\.py') }}
+{{ emit_tmt_plugin_link(link) }}
 
 {# Links pointing to other tmt code #}
 {% elif link.target.startswith('/tmt') %}

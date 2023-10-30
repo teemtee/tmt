@@ -1,11 +1,24 @@
-summary:
-    Select the desired amount of memory
+summary: |
+    Select or provision a guest with the desired amount of memory.
+
+description: |
+    .. code-block::
+
+       # Number or string, the amount of memory requested.
+       # Bytes are assumed when no unit is specified.
+       memory: 1234|"2 GiB"
+
 example:
   - |
     # Require an exact amount of memory
     memory: 8 GB
+
   - |
     # Pick a guest with at least 8 GB
     memory: ">= 8 GB"
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/steps/provision/mrack.py
+  - implemented-by: /tmt/steps/provision/testcloud.py
+    note: "``=``, ``>=`` and ``<=`` operators only"

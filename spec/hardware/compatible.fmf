@@ -1,10 +1,19 @@
-summary:
-    Select guest based on given compatibility
-description:
-    Pick only guests compatible with given operating system
-    distribution. See the context :ref:`/spec/context/dimension`
-    definitions for the list of supported values of the ``distro``
-    key. Must be a list of strings.
+summary: |
+    Select or provision a guest compatible with given areas.
+
+description: |
+    .. code-block::
+
+       compatible:
+         # List of strings, any of distro names.
+         distro:
+           - distro1
+           - distro2
+             ...
+
+    See the context :ref:`/spec/context/dimension` definitions for
+    the list of supported values of the ``distro`` items.
+
 example:
   - |
     # Select a guest compatible with both rhel-8 and rhel-9

@@ -1,5 +1,32 @@
-summary:
-    Select guests with given network devices
+summary: |
+    Select or provision a guest with given network devices.
+
+description: |
+    .. code-block::
+
+       # A list of dictionaries, each describing one network device.
+       network:
+           # String, a network device type.
+         - type: "eth"|"bridge"|"ipip"|...
+
+           # String, a network device name.
+           device-name: "A Generic Ethernet Card"
+
+           # Number or string, a network device ID.
+           device: 1234|"> 1234"
+
+           # String, a name of the device vendor.
+           vendor-name: "A Well-Known Device Manufacturer"
+
+           # Number or string, an ID of the device vendor.
+           vendor: 1234|"> 1234"
+
+           # String, name of the kernel driver module for the device.
+           driver: a_generic_nic_driver
+
+    .. versionchanged:: 1.29
+       Added missing ``device`` and ``vendor`` into specification.
+
 example:
   - |
     # Select by vendor and device name
@@ -7,6 +34,7 @@ example:
       - type: eth
         vendor-name: ~ ^Broadcom
         device-name: ~ ^NetXtreme II BCM
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``network.type`` only"
+    note: "``network.type`` only, ``network.type: eth`` only"

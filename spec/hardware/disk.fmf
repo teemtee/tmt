@@ -1,8 +1,18 @@
-summary:
-    Choose the disk size
+summary: |
+    Select or provision a guest with a given disk storage.
+
+description: |
+    .. code-block::
+
+       # A list of dictionaries, each describing one disk storage.
+       disk:
+           # Number or string, the amount of storage requested.
+           # Bytes are assumed when no unit is specified.
+         - size: 1234|">= 512 GiB"
+
 example:
   - |
-    # Disk group used to allow possible future extensions
+    # Require a disk big enough for testing
     disk:
       - size: 500 GB
 
@@ -11,5 +21,9 @@ example:
     disk:
       - size: '>= 2 GB'
       - size: '>= 20 GB'
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/steps/provision/mrack.py
+  - implemented-by: /tmt/steps/provision/testcloud.py
+    note: "``=``, ``>=`` and ``<=`` operators only"

@@ -162,7 +162,20 @@ definitions:
       device-name:
         type: string
 
+      device:
+        anyOf:
+          - type: string
+          - type: integer
+
       vendor-name:
+        type: string
+
+      vendor:
+        anyOf:
+          - type: string
+          - type: integer
+
+      driver:
         type: string
 
     additionalProperties: false
@@ -187,10 +200,23 @@ definitions:
       device-name:
         type: string
 
-      type:
-        type: string
+      device:
+        anyOf:
+          - type: string
+          - type: integer
 
       vendor-name:
+        type: string
+
+      vendor:
+        anyOf:
+          - type: string
+          - type: integer
+
+      driver:
+        type: string
+
+      type:
         type: string
 
     additionalProperties: false

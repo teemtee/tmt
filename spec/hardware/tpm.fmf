@@ -1,11 +1,18 @@
-summary:
-    Require the `Trusted Platform Module` features
-description:
-    Use the ``version`` key to select the desired ``tpm`` version,
-    its value must be a ``string``.
+summary: |
+    Select or provision a guest with the `Trusted Platform Module`.
+
+description: |
+    .. code-block::
+
+       tpm:
+           # String, TPM version requested.
+           version: "x.y"
+
 example:
   - |
+    # Require a presence of TPM of a specific version.
     tpm:
         version: "2.0"
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py

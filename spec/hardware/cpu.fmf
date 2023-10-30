@@ -1,39 +1,81 @@
-summary:
-    Choose system according to the processor features
+summary: |
+    Select or provision a guest with given CPU properties.
+
+description: |
+    .. code-block::
+
+       cpu:
+           # Integer or string, number of CPU sockets in the system.
+          sockets: 1|">= 1"
+
+          # Integer or string, number of CPU cores in the system.
+          cores: 4|">= 4"
+
+          # Integer or string, number of CPU threads in the system.
+          threads: 8|">= 8"
+
+          # Integer or string, number of CPU cores per socket.
+          cores-per-socket: 4|">= 4"
+
+          # Integer or string, number of CPU threads per core.
+          threads-per-core: 2|">= 2"
+
+          # Integer or string, total number of logical CPUs.
+          processors: 8|">= 8"
+
+          # String, CPU family name.
+          family-name: Comet Lake
+
+          # Integer or string, CPU family.
+          family: 6|">= 6"
+
+          # String, CPU model name.
+          model-name: Intel(R) Core(TM) i7-10610U CPU @ 1.80GHz
+
+          # Integer or string, CPU model.
+          model: 142|">= 142"
+
+          # Integer or string, CPU stepping.
+          stepping: 10|">= 10"
+
+          # List of strings, CPU flags as reported
+          # Field applies an implicit "and" to listed flags, all items of the
+          # list must match.
+          # Items may contain a nested operator, "=" and "!=" are only two allowed.
+          flag:
+            - flag1
+            - flag2
+            - "= flag3"
+            - "!= flag4"
+              ...
+
+    See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
+    socket, core and thread distinction.
+
+    See e.g. https://en.wikichip.org/wiki/WikiChip for information on family,
+    model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
+    are also useful resources.
+
 example:
   - |
-    # Processor-related stuff grouped together
+    # Request a rather stronger guest.
     cpu:
-        # The total number of various CPU components in the system.
-        sockets: 1
-        cores: 4
-        threads: 8
+        processors: ">= 16"
 
-        # Ther number of various CPU components per their parent.
-        cores-per-socket: 4
-        threads-per-core: 2
+  - |
+    # Request a CPU of a specific model set.
+    cpu:
+        model-name: "~ Intel(R) Core(TM) i7-.+"
 
-        # The total number of logical CPUs.
-        processors: 8
-
-        # CPU family name.
-        family-name: Comet Lake
-        # CPU family number.
-        family: 6
-        # CPU model name. Usually reported as such by /proc/cpuinfo or lscpu.
-        model-name: Intel(R) Core(TM) i7-10610U CPU @ 1.80GHz
-        # CPU model number.
-        model: 142
-        # CPU stepping.
-        stepping: 10
-
-        # CPU flag(s) as reported with /proc/cpuinfo
-        # Field applies an implicit "and" to listed flags
-        # Supported operators: "=" and "!="
+  - |
+    # Request a CPU with AVX support
+    cpu:
         flag:
           - avx
           - avx2
-          - "!= smep"
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
     note: "``cpu.flag`` not supported yet"
+  - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``cpu.processors`` and ``cpu.model`` only"

@@ -1,13 +1,41 @@
-summary:
-    Choose system according to the available graphics processing unit (gpu)
+summary: |
+    Select or provision a guest with a given GPU properties.
+
+description: |
+    .. code-block::
+
+       gpu:
+           # String, a network device name.
+           device-name: "A Generic Graphics Card"
+
+           # Number or string, a network device ID.
+           device: 1234|"> 1234"
+
+           # String, a name of the device vendor.
+           vendor-name: "A Well-Known GPU Manufacturer"
+
+           # Number or string, an ID of the device vendor.
+           vendor: 1234|"> 1234"
+
+           # String, name of the kernel driver module for the device.
+           driver: a_generic_vga_driver
+
+    .. versionadded:: 1.29
+
 example:
   - |
-    # GPU-related stuff grouped together.
+    # Request a guest with particular GPU
     gpu:
-        # GPU device name name.
-        device-name: G86 [Quadro NVS 290]
-        # GPU vendor name.
-        vendor-name: NVIDIA Corporation
+        # By the device name...
+        device-name: C51 [GeForce 6150 LE]
+        # ... or by its ID.
+        device: 0241
+        driver: nouveau
+
+  - |
+    # Request a guest with any NVIDIA GPU
+    gpu:
+        vendor-name: NVIDIA
 
 # NOTE: not yet supported
 # link:
