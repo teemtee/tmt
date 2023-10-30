@@ -236,10 +236,10 @@ class Queue(list[TaskT]):
 
         self.append(task)
 
-        self._logger.info(
+        self._logger.verbose(
             f'queued {self.name} task #{len(self)}',
             f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
-            color='cyan')
+            color='cyan', level=3)
 
     def run(self) -> Iterator[TaskOutcome[TaskT]]:
         """
@@ -250,12 +250,12 @@ class Queue(list[TaskT]):
         """
 
         for i, task in enumerate(self):
-            self._logger.info('')
+            self._logger.verbose('', level=3)
 
-            self._logger.info(
+            self._logger.verbose(
                 f'{self.name} task #{i + 1}',
                 f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
-                color='cyan')
+                color='cyan', level=3)
 
             failed_outcomes: list[TaskOutcome[TaskT]] = []
 

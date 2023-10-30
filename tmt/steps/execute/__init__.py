@@ -776,9 +776,6 @@ class Execute(tmt.steps.Step):
                 causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
                 )
 
-        # To separate "execute" from the follow-up logging visually
-        self.info('')
-
         # Give a summary, update status and save
         self.summary()
         self.status('done')

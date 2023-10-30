@@ -251,7 +251,7 @@ class Prepare(tmt.steps.Step):
                 self._logger)
 
             # To separate "push" from "prepare" queue visually
-            self.info('')
+            self.verbose('', level=3)
 
         queue: PhaseQueue[PrepareStepData] = PhaseQueue(
             'prepare',
@@ -284,7 +284,7 @@ class Prepare(tmt.steps.Step):
                 causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
                 )
 
-        self.info('')
+        self.verbose('', level=3)
 
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
@@ -299,7 +299,7 @@ class Prepare(tmt.steps.Step):
                 self._logger)
 
             # To separate "prepare" from "pull" queue visually
-            self.info('')
+            self.verbose('', level=3)
 
         # Give a summary, update status and save
         self.summary()

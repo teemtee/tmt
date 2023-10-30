@@ -165,7 +165,7 @@ class Finish(tmt.steps.Step):
                 )
 
         # To separate "finish" from "pull" queue visually
-        self.info('')
+        self.verbose('', level=3)
 
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
@@ -180,7 +180,7 @@ class Finish(tmt.steps.Step):
                 self._logger)
 
             # To separate "finish" from "pull" queue visually
-            self.info('')
+            self.verbose('', level=3)
 
         # Stop and remove provisioned guests
         for guest in self.plan.provision.guests():
