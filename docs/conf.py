@@ -15,13 +15,8 @@ import importlib
 import os
 import sys
 from typing import List, Optional, Tuple
-from unittest.mock import Mock as MagicMock
 
-import tmt.base
-import tmt.lint
-import tmt.plugins
 import tmt.utils
-from tmt.utils import Path
 
 _POSSIBLE_THEMES: List[Tuple[Optional[str], str]] = [
     # Fall back to sphinx_rtd_theme if available
@@ -296,74 +291,3 @@ man_pages = [
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
-
-
-# Mock extra modules
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name: str) -> 'Mock':
-        return Mock()
-
-
-MOCK_MODULES = ['testcloud', 'testcloud.image', 'testcloud.instance']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
-# We will need a logger...
-logger = tmt.Logger.create()
-
-# Explore available *export* plugins - do not import other plugins, we don't need them.
-tmt.plugins.explore_export_package(logger)
-
-# Generate stories
-tree = tmt.Tree(logger=logger, path=Path.cwd())
-story_template_filepath = Path('story.rst.j2')
-
-areas = {
-    '/stories/docs': 'Documentation',
-    '/stories/cli': 'Command Line',
-    '/stories/install': 'Installation',
-    '/stories/features': 'Features',
-    '/spec/core': 'Core',
-    '/spec/tests': 'Tests',
-    '/spec/plans': 'Plans',
-    '/spec/stories': 'Stories',
-    '/spec/context': 'Context',
-    '/spec/hardware': 'Hardware',
-    }
-
-os.makedirs('stories', exist_ok=True)
-os.makedirs('spec', exist_ok=True)
-for area in areas:
-    with open(f"{area.lstrip('/')}.rst", 'w') as doc:
-        # Anchor and title
-        doc.write(f'.. _{area}:\n\n')
-        doc.write(f"{areas[area]}\n{'=' * len(areas[area])}\n")
-        # Included stories
-        for story in tree.stories(names=[area], whole=True):
-            if not story.enabled:
-                continue
-
-            rendered = story.export(
-                format='rst',
-                include_title=story.name != area,
-                template=story_template_filepath)
-
-            doc.write(rendered)
-            doc.write('\n\n')
-
-
-# Render list of lint checks
-def _sort_linters(linters: List[tmt.lint.Linter]) -> List[tmt.lint.Linter]:
-    return sorted(linters, key=lambda x: x.id)
-
-
-linters = {
-    'TEST_LINTERS': _sort_linters(tmt.base.Test.get_linter_registry()),
-    'PLAN_LINTERS': _sort_linters(tmt.base.Plan.get_linter_registry()),
-    'STORY_LINTERS': _sort_linters(tmt.base.Story.get_linter_registry()),
-    }
-
-
-with open('spec/lint.rst', 'w') as f:
-    f.write(tmt.utils.render_template_file(tmt.utils.Path('lint-checks.rst.j2'), **linters))
-    f.flush()

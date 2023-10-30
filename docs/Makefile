@@ -1,16 +1,13 @@
 # Makefile for Sphinx documentation
 #
 
+.DEFAULT_GOAL := help
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
-
-# User-friendly check for sphinx-build
-ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
-$(error The '$(SPHINXBUILD)' command was not found. Make sure you have Sphinx installed, then set the SPHINXBUILD environment variable to point to the full path of the '$(SPHINXBUILD)' executable. Alternatively you can add the directory with the executable to your PATH. If you don't have Sphinx installed, grab it from http://sphinx-doc.org/)
-endif
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -19,35 +16,66 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
-
-help:
-	@echo "Please use \`make <target>' where <target> is one of"
-	@echo "  html       to make standalone HTML files"
-	@echo "  latexpdf   to make LaTeX files and run them through pdflatex"
-	@echo "  text       to make text files"
-	@echo "  man        to make manual pages"
+.PHONY: help generate-stories clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
 
 clean:
-	rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR) stories spec
 
-html:
+##
+## Building documentation
+##
+html: generate  ## Make standalone HTML files
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-latexpdf:
+latexpdf: generate  ## Make LaTeX files and run them through pdflatex
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
-text:
+text: generate  ## Make text files
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
 	@echo
 	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
-man:
+man: generate  ## Make manual pages
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	@echo
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
+
+##
+## Generate documentation sources from inputs
+##
+REPODIR       = ..
+TMTDIR        = $(REPODIR)/tmt
+SCRIPTSDIR    = scripts
+
+generate: spec stories generate-lint-checks generate-stories  ## Refresh all generated documentation sources
+
+spec:
+	mkdir -p spec
+
+stories:
+	mkdir -p stories
+
+spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks lint-checks.rst.j2 $(TMTDIR)/base.py
+	$(SCRIPTSDIR)/generate-lint-checks lint-checks.rst.j2 $@
+
+generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
+
+generate-stories: stories  ## Generate documentation sources for stories
+	$(SCRIPTSDIR)/generate-stories story.rst.j2
+
+##
+## Help!
+##
+help:: ## Show this help text
+	@gawk -vG=$$(tput setaf 2) -vR=$$(tput sgr0) ' \
+	  match($$0, "^(([^#:]*[^ :]) *:)?([^#]*)##([^#].+|)$$",a) { \
+	    if (a[2] != "") { printf "    make %s%-22s%s %s\n", G, a[2], R, a[4]; next }\
+	    if (a[3] == "") { print a[4]; next }\
+	    printf "\n%-36s %s\n","",a[4]\
+	  }' $(MAKEFILE_LIST)
+	@echo "" # blank line at the end

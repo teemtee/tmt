@@ -4,8 +4,9 @@ build:
     os: ubuntu-22.04
     tools:
         python: "3"
-python:
-    install:
-      - method: pip
-        path: .
-        extra_requirements: [docs]
+    # Override RTD's default build commands, install hatch & delegate
+    # the rest to our Makefiles.
+    commands:
+      - cat docs/conf.py
+      - pip install hatch
+      - make BUILDDIR=$READTHEDOCS_OUTPUT docs
