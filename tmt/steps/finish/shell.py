@@ -10,6 +10,8 @@ import tmt.utils
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
+FINISH_WRAPPER_FILENAME = 'tmt-finish-wrapper.sh'
+
 
 @dataclasses.dataclass
 class FinishShellData(tmt.steps.finish.FinishStepData):
@@ -67,8 +69,27 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
         overview = fmf.utils.listed(scripts, 'script')
         self.info('overview', f'{overview} found', 'green')
 
+        workdir = self.step.plan.worktree
+        assert workdir is not None  # narrow type
+        finish_wrapper_filename = f'{FINISH_WRAPPER_FILENAME}-{self.safe_name}-{guest.safe_name}'
+        finish_wrapper_path = workdir / finish_wrapper_filename
+
+        logger.debug('finish wrapper', finish_wrapper_path, level=3)
+
         # Execute each script on the guest
         for script in scripts:
             self.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
-            guest.execute(script_with_options, cwd=self.step.plan.worktree)
+            self.write(finish_wrapper_path, str(script_with_options), 'w')
+            if not self.is_dry_run:
+                finish_wrapper_path.chmod(0o755)
+            guest.push(
+                source=finish_wrapper_path,
+                destination=finish_wrapper_path,
+                options=["-s", "-p", "--chmod=755"])
+            command: ShellScript
+            if guest.become and not guest.facts.is_superuser:
+                command = tmt.utils.ShellScript(f'sudo -E {finish_wrapper_path}')
+            else:
+                command = tmt.utils.ShellScript(f'{finish_wrapper_path}')
+            guest.execute(command, cwd=workdir)

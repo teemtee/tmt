@@ -1140,7 +1140,7 @@ use the ``connect`` method:
 
 .. code-block:: shell
 
-    tmt run --all provision --how=connect --guest=name-or-ip --user=login --password=secret
+    tmt run --all provision --how=connect --guest=name-or-ip --user=login --password=secret --become
     tmt run --all provision --how=connect --guest=name-or-ip --key=private-key-path
 
 The ``container`` method allows to execute tests in a container

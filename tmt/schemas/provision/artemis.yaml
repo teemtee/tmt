@@ -79,6 +79,9 @@ properties:
   user:
     type: string
 
+  become:
+    type: boolean
+
   watchdog-dispatch-delay:
     type: integer
     minimum: 1

@@ -1,0 +1,7 @@
+provision:
+    how: container
+    image: localhost/become-container-test:latest
+    user: user
+
+execute:
+    how: tmt

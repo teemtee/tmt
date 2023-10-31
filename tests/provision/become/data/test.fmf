@@ -1,0 +1,15 @@
+/root:
+    provision+:
+        become: true
+    discover:
+        tests:
+          - name: user-is-root
+            test: test "$(whoami)" == "root"
+
+/user:
+    provision+:
+        become: false
+    discover:
+        tests:
+          - name: user-is-user
+            test: test "$(whoami)" == "user"

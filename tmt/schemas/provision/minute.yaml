@@ -37,6 +37,9 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  become:
+    type: boolean
+
   name:
     type: string
 

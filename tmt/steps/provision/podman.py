@@ -33,7 +33,12 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         option=('-u', '--user'),
         metavar='USERNAME',
         help='Username to use for all container operations.')
-
+    become: bool = field(
+        default=False,
+        is_flag=True,
+        option=('-b', '--become'),
+        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
+        )
     force_pull: bool = field(
         default=False,
         option=('-p', '--pull', '--force-pull'),

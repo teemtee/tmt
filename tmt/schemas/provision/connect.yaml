@@ -28,6 +28,9 @@ properties:
   user:
     type: string
 
+  become:
+    type: boolean
+
   password:
     type: string
 

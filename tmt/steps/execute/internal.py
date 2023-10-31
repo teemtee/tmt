@@ -295,10 +295,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             guest=guest,
             logger=logger))
 
+        command: str
+        if guest.become and not guest.facts.is_superuser:
+            command = f'sudo -E ./{test_wrapper_filename}'
+        else:
+            command = f'./{test_wrapper_filename}'
         # Prepare the actual remote command
         remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
             INTERACTIVE=self.get('interactive'),
-            REMOTE_COMMAND=ShellScript(f'./{test_wrapper_filename}')
+            REMOTE_COMMAND=ShellScript(command)
             ).strip())
 
         def _test_output_logger(

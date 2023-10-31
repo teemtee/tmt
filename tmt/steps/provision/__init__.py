@@ -422,6 +422,8 @@ class GuestData(SerializableContainer):
     role: Optional[str] = None
     # hostname or ip address
     guest: Optional[str] = None
+    # whether to run shell scripts in tests, prepare, and finish with sudo
+    become: bool = False
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
@@ -532,6 +534,7 @@ class Guest(tmt.utils.Common):
 
         role ....... guest role in the multihost scenario
         guest ...... name, hostname or ip address
+        become ..... boolean, whether to run shell scripts in tests, prepare, and finish with sudo
 
     These are by default imported into instance attributes.
     """
@@ -541,6 +544,7 @@ class Guest(tmt.utils.Common):
 
     role: Optional[str]
     guest: Optional[str]
+    become: bool
 
     hardware: Optional[tmt.hardware.Hardware]
 
@@ -562,7 +566,6 @@ class Guest(tmt.utils.Common):
                  logger: tmt.log.Logger) -> None:
         """ Initialize guest data """
         super().__init__(logger=logger, parent=parent, name=name)
-
         self.load(data)
 
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
@@ -1090,6 +1093,12 @@ class GuestSshData(GuestData):
         option=('-u', '--user'),
         metavar='USERNAME',
         help='Username to use for all guest operations.')
+    become: bool = field(
+        default=False,
+        is_flag=True,
+        option=('-b', '--become'),
+        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
+        )
     key: List[str] = field(
         default_factory=list,
         option=('-k', '--key'),
@@ -1121,6 +1130,7 @@ class GuestSsh(Guest):
 
         role ....... guest role in the multihost scenario (inherited)
         guest ...... hostname or ip address (inherited)
+        become ..... run shell scripts in tests, prepare, and finish with sudo (inherited)
         port ....... port to connect to
         user ....... user name to log in
         key ........ path to the private key (str or list)

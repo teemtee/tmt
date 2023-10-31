@@ -34,5 +34,8 @@ properties:
   user:
     type: string
 
+  become:
+    type: boolean
+
 required:
   - how

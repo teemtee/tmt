@@ -11,6 +11,8 @@ import tmt.utils
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
+PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
+
 
 @dataclasses.dataclass
 class PrepareShellData(tmt.steps.prepare.PrepareStepData):
@@ -71,7 +73,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         overview = fmf.utils.listed(scripts, 'script')
         logger.info('overview', f'{overview} found', 'green')
 
-        if not self.is_dry_run and self.step.plan.worktree:
+        workdir = self.step.plan.worktree
+        assert workdir is not None  # narrow type
+
+        if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.guests())
             topology.guest = tmt.steps.GuestTopology(guest)
 
@@ -81,13 +86,33 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             environment.update(
                 topology.push(
-                    dirpath=self.step.plan.worktree,
+                    dirpath=workdir,
                     guest=guest,
                     logger=logger,
                     filename_base=filename_base))
+
+        prepare_wrapper_filename = f'{PREPARE_WRAPPER_FILENAME}-{self.safe_name}-{guest.safe_name}'
+        prepare_wrapper_path = workdir / prepare_wrapper_filename
+
+        logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
         # Execute each script on the guest (with default shell options)
         for script in scripts:
             logger.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
-            guest.execute(script_with_options, cwd=self.step.plan.worktree, env=environment)
+            self.write(prepare_wrapper_path, str(script_with_options), 'w')
+            if not self.is_dry_run:
+                prepare_wrapper_path.chmod(0o755)
+            guest.push(
+                source=prepare_wrapper_path,
+                destination=prepare_wrapper_path,
+                options=["-s", "-p", "--chmod=755"])
+            command: ShellScript
+            if guest.become and not guest.facts.is_superuser:
+                command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
+            else:
+                command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
+            guest.execute(
+                command=command,
+                cwd=workdir,
+                env=environment)

@@ -1,0 +1,36 @@
+discover:
+    tests:
+      - name: dummy-test
+        test: echo "pass"
+
+/root:
+    provision+:
+        become: true
+
+    /inline:
+        prepare:
+            script: test "$(whoami)" == "root"
+        finish:
+            script: test "$(whoami)" == "root"
+
+    /scripts:
+        prepare:
+            script: scripts/is_root_test.sh
+        finish:
+            script: scripts/is_root_test.sh
+
+/user:
+    provision+:
+        become: false
+
+    /inline:
+        prepare:
+            script: test "$(whoami)" == "user"
+        finish:
+            script: test "$(whoami)" == "user"
+
+    /scripts:
+        prepare:
+            script: scripts/is_user_test.sh
+        finish:
+            script: scripts/is_user_test.sh

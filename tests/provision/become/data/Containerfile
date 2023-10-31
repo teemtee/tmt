@@ -1,0 +1,5 @@
+FROM quay.io/fedora/fedora:latest
+
+RUN useradd user; usermod -aG wheel user; echo -e 'user\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
+
+USER user
