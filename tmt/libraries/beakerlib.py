@@ -300,6 +300,11 @@ class BeakerLib(Library):
 
                     # Copy fmf metadata
                     tmt.utils.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
+                    if self.path:
+                        tmt.utils.copytree(
+                            clone_dir / self.path.unrooted() / '.fmf',
+                            directory / self.path.unrooted() / '.fmf',
+                            dirs_exist_ok=True)
                 else:
                     # Either url or path must be defined
                     assert self.path is not None
@@ -333,7 +338,9 @@ class BeakerLib(Library):
                     f"Failed to fetch library '{self}' from '{self.url}'.")
                 raise
             # Initialize metadata tree, add self into the library index
-            self.tree = fmf.Tree(str(directory))
+            tree_path = str(directory / self.path.unrooted()) if (
+                self.url and self.path) else str(directory)
+            self.tree = fmf.Tree(tree_path)
             self._library_cache[str(self)] = self
 
         # Get the library node, check require and recommend

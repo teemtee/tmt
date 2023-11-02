@@ -1,0 +1,9 @@
+summary: Remote library in nested fmf tree
+description:
+    Make sure that fetching a beakerlib library from a nested fmf tree
+    works as expected. Fetches the example library from upstream,
+    references it from a test and verifies the
+    changed functionality by running the test in a container.
+require+: [tmt+provision-container]
+tier: 4
+duration: 15m

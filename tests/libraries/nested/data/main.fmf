@@ -1,0 +1,16 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    framework: beakerlib
+    require:
+      - url: https://github.com/teemtee/tests
+        path: /nested
+        name: /file
+        type: library
