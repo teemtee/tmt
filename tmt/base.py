@@ -1678,6 +1678,9 @@ class Plan(
         if self.my_run:
             combined = self._plan_environment.copy()
             combined.update(self._environment)
+            # Include environment of the importing plan
+            if self._original_plan is not None:
+                combined.update(self._original_plan.environment)
             # Command line variables take precedence
             combined.update(self.my_run.environment)
             # Include path to the plan data directory

@@ -17,12 +17,14 @@ rlJournalStart
     rlPhaseStartTest "Show importing plan (modify imported plan)"
         rlRun -s "tmt plan show ${importing}"
         rlAssertGrep 'test "foobar" == "foobar"' $rlRun_LOG
+        rlAssertGrep 'environment VARIABLE: foobar' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Run plan ${importing}"
-        rlRun -s "tmt run -vv plan --name ${importing}" 0 "Run plan ${importing}"
+        rlRun -s "tmt run -dddvv plan --name ${importing}" 0 "Run plan ${importing}"
         rlAssertGrep 'cmd: test "foobar" == "foobar"' $rlRun_LOG
         rlAssertGrep "summary: 1 test passed" $rlRun_LOG
+        rlAssertGrep "VARIABLE: foobar" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
