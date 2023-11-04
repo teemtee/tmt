@@ -116,6 +116,11 @@ example: |
         provision:
             how: beaker
             image: Fedora-37%
+      - |
+        # Set custom whiteboard description (added in 1.30)
+        provision:
+            how: beaker
+            whiteboard: Just a smoke test for now
 
     link:
       - implemented-by: /tmt/steps/provision/mrack.py

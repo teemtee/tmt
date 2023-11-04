@@ -330,7 +330,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             if hardware and hardware.constraint:
                 host.update({"beaker": self._translate_tmt_hw(hardware)})
             req: dict[str, Any] = super().create_host_requirement(host)
-            req.update({"whiteboard": host.get("tmt_name", req.get("whiteboard"))})
+            whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
+            req.update({"whiteboard": whiteboard})
             return req
 
 
@@ -355,6 +356,12 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         )
 
     # Guest request properties
+    whiteboard: Optional[str] = field(
+        default=None,
+        option=('-w', '--whiteboard'),
+        metavar='WHITEBOARD',
+        help='Text description of the beaker job which is displayed in the list of jobs.'
+        )
     arch: str = field(
         default=DEFAULT_ARCH,
         option='--arch',
@@ -505,6 +512,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     _data_class = BeakerGuestData
 
     # Guest request properties
+    whiteboard: Optional[str]
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
@@ -561,6 +569,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             'os': self.image,
             'group': 'linux',
             }
+
+        if self.whiteboard is not None:
+            data["whiteboard"] = self.whiteboard
 
         if self.arch is not None:
             data["arch"] = self.arch

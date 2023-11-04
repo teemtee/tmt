@@ -40,5 +40,8 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  whiteboard:
+    type: string
+
 required:
   - how
