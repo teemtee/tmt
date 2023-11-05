@@ -220,7 +220,19 @@ ignore = [
     "tmt/libraries/*.py",
     "tmt/plugins/*.py",
     "tmt/steps/**/*.py",
-    "tmt/*.py",
+    "tmt/__init__.py",
+    "tmt/base.py",
+    "tmt/cli.py",
+    "tmt/convert.py",
+    "tmt/hardware.py",
+    "tmt/identifier.py",
+    "tmt/lint.py",
+    "tmt/log.py",
+    "tmt/options.py",
+    "tmt/queue.py",
+    "tmt/result.py",
+    "tmt/templates.py",
+    "tmt/utils.py"
 ]
 
 pythonVersion = "3.9"
