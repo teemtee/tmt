@@ -1,11 +1,13 @@
 import dataclasses
 import enum
 import re
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import click
 import fmf
+import fmf.utils
 
+import tmt.identifier
 import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.utils import GeneralError, Path, SerializableContainer, field
@@ -67,6 +69,10 @@ RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
     }
 
 
+#: A type of collection IDs tracked for a single result.
+ResultIds = dict[str, Optional[str]]
+
+
 @dataclasses.dataclass
 class ResultGuestData(SerializableContainer):
     """ Describes what tmt knows about a guest the result was produced on """
@@ -95,7 +101,7 @@ class BaseResult(SerializableContainer):
         )
     note: Optional[str] = None
     log: list[Path] = field(
-        default_factory=list,
+        default_factory=cast(Callable[[], list[Path]], list),
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
 
@@ -147,7 +153,9 @@ class Result(BaseResult):
         serialize=lambda context: context.to_spec(),  # type: ignore[attr-defined]
         unserialize=lambda serialized: tmt.utils.FmfContext(serialized)
         )
-    ids: dict[str, Optional[str]] = field(default_factory=dict)
+    ids: ResultIds = field(
+        default_factory=cast(Callable[[], ResultIds], dict)
+        )
     guest: ResultGuestData = field(
         default_factory=ResultGuestData,
         serialize=lambda value: value.to_serialized(),  # type: ignore[attr-defined]
@@ -155,7 +163,7 @@ class Result(BaseResult):
         )
 
     check: list[CheckResult] = field(
-        default_factory=list,
+        default_factory=cast(Callable[[], list[CheckResult]], list),
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
             CheckResult.from_serialized(check) for check in serialized]
@@ -173,7 +181,7 @@ class Result(BaseResult):
             invocation: 'tmt.steps.execute.TestInvocation',
             result: ResultOutcome,
             note: Optional[str] = None,
-            ids: Optional[dict[str, Optional[str]]] = None,
+            ids: Optional[ResultIds] = None,
             log: Optional[list[Path]] = None) -> 'Result':
         """
         Create a result from a test invocation.
@@ -197,12 +205,14 @@ class Result(BaseResult):
         # to Polarion/Nitrate/other cases and report run results there
         # TODO: would an exception be better? Can test.id be None?
         ids = ids or {}
-        default_ids = {
+        default_ids: ResultIds = {
             tmt.identifier.ID_KEY: invocation.test.id
             }
 
         for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            default_ids[key] = invocation.test.node.get(key)
+            value: Any = invocation.test.node.get(key)
+
+            default_ids[key] = None if value is None else str(value)
 
         default_ids.update(ids)
         ids = default_ids
@@ -213,6 +223,7 @@ class Result(BaseResult):
             name=invocation.test.name,
             serial_number=invocation.test.serial_number,
             fmf_id=invocation.test.fmf_id,
+            context=invocation.phase.step.plan._fmf_context,
             result=result,
             note=note,
             start_time=invocation.start_time,
@@ -223,8 +234,6 @@ class Result(BaseResult):
             guest=guest_data,
             data_path=invocation.data_path('data'))
 
-        if invocation.phase.step.plan is not None:
-            _result.context = invocation.phase.step.plan._fmf_context
         return _result.interpret_result(ResultInterpret(
             invocation.test.result) if invocation.test.result else ResultInterpret.RESPECT)
 
@@ -243,7 +252,7 @@ class Result(BaseResult):
             return self
 
         # Extend existing note or set a new one
-        if self.note and isinstance(self.note, str):
+        if self.note:
             self.note += f', original result: {self.result.value}'
 
         elif self.note is None:

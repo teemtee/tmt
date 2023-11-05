@@ -230,7 +230,6 @@ ignore = [
     "tmt/log.py",
     "tmt/options.py",
     "tmt/queue.py",
-    "tmt/result.py",
     "tmt/templates.py",
     "tmt/utils.py"
 ]
