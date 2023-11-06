@@ -47,20 +47,21 @@ description: |
     __ https://fmf.readthedocs.io/en/latest/context.html#syntax
     __ https://docs.fedoraproject.org/en-US/ci/test-case-relevancy
 
-example: |
+example:
+  - |
     # Disable a test for older distros
     enabled: true
     adjust:
         enabled: false
         when: distro < fedora-33
         because: the feature was added in Fedora 33
-
+  - |
     # Adjust the required package name
     require: procps-ng
     adjust:
       - require: procps
         when: distro == centos-6
-
+  - |
     # Extend the environment variables, use multiple rules
     adjust:
       - environment+:
@@ -69,7 +70,7 @@ example: |
         continue: true
       - when: distro < centos-6
         enabled: false
-
+  - |
     # Install the fresh pytest from pip on older distros
     adjust:
         prepare+:
@@ -78,6 +79,20 @@ example: |
            order: 90
            script: 'python3 -m pip install -U pytest'
         when: distro < rhel-8
+  - |
+    # Enable a custom dnf repository based on the context value
+    adjust:
+      - when: repo is defined
+        prepare+:
+          - script: |
+                cat > /etc/yum.repos.d/custom-repo.repo <<EOF
+                [custom-repo]
+                baseurl=$@repo
+                gpgcheck=0
+                EOF
+
+    # The corresponding command line can look like this
+    tmt --context repo=https://custom.url/fedora-38-x86_64 run ...
 
 link:
   - implemented-by: /tmt/base.py
