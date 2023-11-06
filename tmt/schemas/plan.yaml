@@ -12,32 +12,6 @@ $schema: https://json-schema.org/draft-07/schema
 type: object
 additionalProperties: false
 
-definitions:
-  distro:
-    type: string
-    patterns:
-      - ^fedora(-[0-9]+)?$
-      - ^centos(-stream)?(-[0-9]+(.[0-9]+)?)?$
-      - ^rhel(-[0-9]+(.[0-9]+)?)?$
-
-  trigger:
-    type: string
-    enum:
-      - build
-      - commit
-      - compose
-      - update
-
-  variant:
-    type: string
-    enum:
-      - Client
-      - Desktop
-      - Server
-      - Workstation
-      - Silverblue
-      - CoreOS
-
 properties:
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#adjust
@@ -47,51 +21,7 @@ properties:
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#context
   # https://tmt.readthedocs.io/en/stable/spec/context.html#spec-context
   context:
-    type: object
-    additionalProperties:
-      $ref: "/schemas/common#/definitions/one_or_more_strings"
-
-    properties:
-      arch:
-        oneOf:
-          - $ref: "/schemas/common#/definitions/arch"
-
-          - type: array
-            items:
-              $ref: "/schemas/common#/definitions/arch"
-
-      component:
-        $ref: "/schemas/common#/definitions/one_or_more_strings"
-
-      collection:
-        $ref: "/schemas/common#/definitions/one_or_more_strings"
-
-      distro:
-        oneOf:
-          - $ref: "#/definitions/distro"
-
-          - type: array
-            items:
-              $ref: "#/definitions/distro"
-
-      module:
-        $ref: "/schemas/common#/definitions/one_or_more_strings"
-
-      trigger:
-        oneOf:
-          - $ref: "#/definitions/trigger"
-
-          - type: array
-            items:
-              $ref: "#/definitions/trigger"
-
-      variant:
-        oneOf:
-          - $ref: "#/definitions/variant"
-
-          - type: array
-            items:
-              $ref: "#/definitions/variant"
+    $ref: "/schemas/common#/definitions/context"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#description
   description:

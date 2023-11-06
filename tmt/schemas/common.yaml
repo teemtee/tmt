@@ -8,6 +8,42 @@ $id: /schemas/common
 $schema: https://json-schema.org/draft-07/schema
 
 definitions:
+  # context dimensions - the defined ones
+  arch:
+    type: string
+    enum:
+      - aarch64
+      - armhfp
+      - i386
+      - ppc64
+      - ppc64le
+      - s390x
+      - x86_64
+
+  distro:
+    type: string
+    patterns:
+      - ^fedora(-[0-9]+)?$
+      - ^centos(-stream)?(-[0-9]+(.[0-9]+)?)?$
+      - ^rhel(-[0-9]+(.[0-9]+)?)?$
+
+  trigger:
+    type: string
+    enum:
+      - build
+      - commit
+      - compose
+      - update
+
+  variant:
+    type: string
+    enum:
+      - Client
+      - Desktop
+      - Server
+      - Workstation
+      - Silverblue
+      - CoreOS
 
   # common definition of an ansible execution method
   ansible:
@@ -40,18 +76,6 @@ definitions:
 
     required:
       - how
-
-  # list of all recognized architectures
-  arch:
-    type: string
-    enum:
-      - aarch64
-      - armhfp
-      - i386
-      - ppc64
-      - ppc64le
-      - s390x
-      - x86_64
 
   # List of all available require types
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
@@ -141,6 +165,56 @@ definitions:
         - type: string
         - type: boolean
         - type: number
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#context
+  # https://tmt.readthedocs.io/en/stable/spec/context.html#spec-context
+  context:
+    type: object
+
+    additionalProperties:
+      $ref: "#/definitions/one_or_more_strings"
+
+    properties:
+      arch:
+        oneOf:
+          - $ref: "#/definitions/arch"
+
+          - type: array
+            items:
+              $ref: "#/definitions/arch"
+
+      component:
+        $ref: "#/definitions/one_or_more_strings"
+
+      collection:
+        $ref: "#/definitions/one_or_more_strings"
+
+      distro:
+        oneOf:
+          - $ref: "#/definitions/distro"
+
+          - type: array
+            items:
+              $ref: "#/definitions/distro"
+
+      module:
+        $ref: "#/definitions/one_or_more_strings"
+
+      trigger:
+        oneOf:
+          - $ref: "#/definitions/trigger"
+
+          - type: array
+            items:
+              $ref: "#/definitions/trigger"
+
+      variant:
+        oneOf:
+          - $ref: "#/definitions/variant"
+
+          - type: array
+            items:
+              $ref: "#/definitions/variant"
 
   # https://fmf.readthedocs.io/en/stable/concept.html#identifiers
   fmf_id:

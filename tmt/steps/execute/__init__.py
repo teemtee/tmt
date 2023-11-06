@@ -413,12 +413,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             # Enforce the correct guest info
             partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
 
-            # For the result representing the test itself, set the duration
-            # and timestamps to what tmt measured.
+            # For the result representing the test itself, set the important
+            # attributes to reflect the reality.
             if partial_result.name == test.name:
                 partial_result.start_time = invocation.start_time
                 partial_result.end_time = invocation.end_time
                 partial_result.duration = invocation.real_duration
+                partial_result.context = self.step.plan._fmf_context
 
             custom_results.append(partial_result)
 

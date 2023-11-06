@@ -63,6 +63,17 @@ description: |
        # String, path to /data directory storing possible test artifacts
        data-path: path/to/test/data
 
+       # Mapping, stores the actual fmf context defined for this test.
+       # It's a combination of the context provided via command line
+       # and plan's `context` key.
+       context:
+         some-dimension:
+           - its-value
+         another-dimension:
+           - first-value
+           - second-value
+             ...
+
       # Represents results of all test checks executed as driven by test's `check`
       # key. Fields have the same meaning as fields of the "parent" test result, but
       # relate to each check alone.
@@ -157,10 +168,17 @@ description: |
     tell how long it took to produce various custom results, it is still
     able to report the duration of the whole test.
 
+    The same applies to ``context``, tmt will set this key for the
+    original test result in the custom result set to the value known
+    to tmt.
+
     See also the complete `JSON schema`__.
 
     For custom results files in JSON format, the same rules and schema
     apply.
+
+    .. versionchanged:: 1.30
+       fmf context is now saved within results, in the ``context`` key.
 
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 

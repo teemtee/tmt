@@ -139,6 +139,14 @@ class Result(BaseResult):
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
         unserialize=_unserialize_fmf_id
         )
+    context: tmt.utils.FmfContext = field(
+        default_factory=tmt.utils.FmfContext,
+        # ignore[attr-defined]: for reasons unknown, mypy believes the `context`
+        # is an `object` instance. But, when `cast()` is added, mypy complains the
+        # `cast()` is pointless...
+        serialize=lambda context: context.to_spec(),  # type: ignore[attr-defined]
+        unserialize=lambda serialized: tmt.utils.FmfContext(serialized)
+        )
     ids: dict[str, Optional[str]] = field(default_factory=dict)
     guest: ResultGuestData = field(
         default_factory=ResultGuestData,
@@ -215,6 +223,8 @@ class Result(BaseResult):
             guest=guest_data,
             data_path=invocation.data_path('data'))
 
+        if invocation.phase.step.plan is not None:
+            _result.context = invocation.phase.step.plan._fmf_context
         return _result.interpret_result(ResultInterpret(
             invocation.test.result) if invocation.test.result else ResultInterpret.RESPECT)
 

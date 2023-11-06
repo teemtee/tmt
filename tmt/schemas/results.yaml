@@ -39,6 +39,9 @@ items:
     result:
       $ref: "/schemas/common#/definitions/result_outcome"
 
+    context:
+      $ref: "/schemas/common#/definitions/context"
+
     note:
       $ref: "/schemas/common#/definitions/result_note"
 

@@ -89,6 +89,11 @@ EOF
         rlAssertGrep "00:00:00 errr /test/abort (on default-0) (aborted) [1/1" $rlRun_LOG -F
     rlPhaseEnd
 
+    rlPhaseStartTest "Verify fmf context lands in results"
+        rlRun -s "tmt -c foo=bar run --id ${run} --scratch -a provision --how local test -n '/pass'"
+        rlAssertEquals "Context is stored in result" "$(yq -r ".[] | .context | to_entries[] | \"\\(.key)=\\(.value[])\"" $run/plans/default/execute/results.yaml)" "foo=bar"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r ${run}" 0 "Remove run directory"
