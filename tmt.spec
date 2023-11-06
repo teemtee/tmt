@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.28.2
+Version:        1.29.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -147,6 +147,52 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
 
 %changelog
+* Mon Nov 06 2023 Lukáš Zachar <lzachar@redhat.com> - 1.29.0
+- Add page `Releases` to highlight important changes
+- Update and polish hardware requirement docs
+- Refactor generating of stories and lint check docs
+- Add support for pruning test directories
+- Download all sources for `dist-git-source`
+- Source plan environment variables after `prepare` and `execute` steps
+- Framework is not consulted on results provided by tmt-report-result
+- Run scripts with `sudo` when `become` is on
+- Add `retry` for pulling images in the `podman` plugin
+- Add hardware schema for GPU
+- Change the default test pidfile directory to `/var/tmp`
+- Add `device` key into the `hardware` specification
+- Update code and test coverage for the `check` key
+- Document case-insensitive context dimension values
+- Fix use of the `-name` suffix in system HW requirement
+- Correct parsing when called as `rhts`
+- Reconcile HW requirements with virtual's own options
+- Move the `README` content into `docs/overview`
+- Make `BasePlugin` generic over step data class
+- Use `UpdatableMessage` for execute/internal progress bar
+- Drop an empty line from the pull request template
+- Add `runner` property to run with test runner facts
+- Export sources of an `fmf` node
+- Bump pre-commit linters to newer versions
+- Append the checklist template to new pull requests
+- Extend tmt-reboot to allow reboot from outside of the test process
+- Allow optional doc themes
+- Use consistent style for multiword test names
+- Show `check` results in the `html` report
+- Update `where` implementation, docs & test coverage (#2411)
+- Document difference between key, field and option
+- Rename multiword keys to use dashes in export and serialization
+- Allow Path instance to be used when constructing commands
+- Switch `Logger.print()` to output to stdout
+- Replace Generator type annotation with Iterator (#2405)
+- Refactor data container helpers
+- When merging fmf and CLI, use shared base step data
+- Fix installing package from the command line
+- Add support for checks to have their data packages
+- Switch `tmt.identifier` from using `fmf.log`
+- Hide test/plan/story internal fields from export
+- Fix full test suite after recent packaging changes
+- Update the list of code owners
+- Include the `fmf` root in the tarball as well
+
 * Wed Oct 11 2023 Petr Šplíchal <psplicha@redhat.com> - 1.28.2
 - Build man page during the `release` action
 
