@@ -35,3 +35,4 @@ Table of Contents
     Contribute <contribute>
     Classes <classes>
     Plugins <plugins>
+    Releases <releases>

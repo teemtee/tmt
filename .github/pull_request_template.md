@@ -7,3 +7,4 @@ Pull Request Checklist
 * [ ] adjust plugin docstring
 * [ ] modify the json schema
 * [ ] mention the version
+* [ ] include a release note
