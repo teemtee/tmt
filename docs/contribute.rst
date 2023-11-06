@@ -277,15 +277,16 @@ irrelevant for your change.
     * [ ] implement the feature
     * [ ] write the documentation
     * [ ] extend the test coverage
-
     * [ ] update the specification
     * [ ] adjust plugin docstring
     * [ ] modify the json schema
     * [ ] mention the version
+    * [ ] include a release note
 
-The version should be mentioned in the specification when a new
-essential feature is added so that users can easily check whether
-given functionality is already available in their package:
+The version should be mentioned in the specification and a release
+note should be included when a new essential feature is added or
+an important change is introduced so that users can easily check
+whether given functionality is already available in their package:
 
 .. code-block:: rst
 
