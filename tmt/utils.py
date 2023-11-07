@@ -5562,6 +5562,24 @@ def normalize_string_list(
     return [value] if isinstance(value, str) else value
 
 
+def normalize_path(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> Optional[Path]:
+    """ Normalize content of the test `path` key """
+
+    if value is None:
+        return None
+
+    if isinstance(value, Path):
+        return value
+
+    if isinstance(value, str):
+        return Path(value)
+
+    raise tmt.utils.NormalizationError(key_address, value, 'a string')
+
+
 def normalize_path_list(
         key_address: str,
         value: Union[None, str, List[str]],

@@ -1,3 +1,5 @@
+import pytest
+
 import tmt
 import tmt.log
 from tmt.utils import Path
@@ -23,3 +25,8 @@ def test_virtual():
     for virtual in tree.tests(names=['/virtual']):
         assert 'Virtual test' in virtual.summary
         assert virtual.path.resolve() == Path('/virtual')
+
+
+def test_weird():
+    with pytest.raises(tmt.utils.NormalizationError):
+        assert tree.tests(names=['/weird'])[0] is not None

@@ -1047,8 +1047,7 @@ class Test(
         exporter=lambda value: str(value) if isinstance(value, ShellScript) else None)
     path: Optional[Path] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger:
-            None if raw_value is None else Path(raw_value),
+        normalize=tmt.utils.normalize_path,
         exporter=lambda value: str(value) if isinstance(value, Path) else None)
     framework: str = "shell"
     manual: bool = False

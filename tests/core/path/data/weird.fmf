@@ -1,0 +1,3 @@
+summary: Invalid path should raise an error
+test: 'true'
+path: 0
