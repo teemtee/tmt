@@ -19,6 +19,8 @@ from typing import List, Optional, Tuple
 import tmt.utils
 
 _POSSIBLE_THEMES: List[Tuple[Optional[str], str]] = [
+    # Use renku as the default theme
+    ('renku_sphinx_theme', 'renku'),
     # Fall back to sphinx_rtd_theme if available
     ('sphinx_rtd_theme', 'sphinx_rtd_theme'),
     # The default theme
@@ -182,14 +184,6 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = HTML_THEME
-
-# 1.3.1 sphinx READTHEDOCS build compat
-# SEE:
-# https://github.com/shabda/pysaml2/commit/d55bfeebe
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if on_rtd:  # only import and set the theme if we're building docs locally
-    html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

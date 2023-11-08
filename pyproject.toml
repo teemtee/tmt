@@ -74,7 +74,7 @@ all = [
     ]
 # Needed for readthedocs and man page build. Not being packaged in rpm.
 docs = [
-    "sphinx_rtd_theme>=1.2.2", # The theme pulls a specific sphinx version
+    "renku-sphinx-theme==0.3.0",
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
     "fmf>=1.3.0",
@@ -155,7 +155,6 @@ python = ["3.9", "3.11"]
 
 [tool.hatch.envs.docs]
 dependencies = ["tmt[docs]"]
-detached = true
 
 [tool.hatch.envs.docs.scripts]
 html = "make -C {root}/docs html"
