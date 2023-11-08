@@ -585,7 +585,7 @@ Issues:
 https://github.com/teemtee/tmt/issues
 
 Releases:
-https://github.com/teemtee/tmt/releases
+https://tmt.readthedocs.io/en/stable/releases.html
 
 Copr:
 https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
@@ -599,7 +599,10 @@ https://tmt.readthedocs.io/en/stable/spec.html
 Flexible Metadata Format:
 http://fmf.readthedocs.io/
 
-Packit & Testing Farm:
+Testing Farm:
+https://docs.testing-farm.io/
+
+Packit:
 https://packit.dev/testing-farm/
 
 
