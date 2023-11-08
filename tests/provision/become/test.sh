@@ -10,7 +10,7 @@ rlJournalStart
             # Try several times to build the container
             # https://github.com/teemtee/tmt/issues/2063
             for attempt in {1..5}; do
-                if rlRun "podman build -t become-container-test:latest ."; then
+                if podman build -t become-container-test:latest . ; then
                     break
                 else
                     echo "Attempt $attempt unsuccessful."
