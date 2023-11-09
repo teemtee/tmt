@@ -1,10 +1,9 @@
 import dataclasses
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
-import fmf.utils
-
+import tmt.utils
 from tmt.log import Logger
 
 if TYPE_CHECKING:
@@ -13,23 +12,32 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 
-TaskT = TypeVar('TaskT', bound='_Task')
+TaskResultT = TypeVar('TaskResultT')
 
 
 @dataclasses.dataclass
-class TaskOutcome(Generic[TaskT]):
+class Task(Generic[TaskResultT]):
     """
-    Outcome of a queued task executed on a guest.
+    A base class for queueable actions.
 
-    Bundles together interesting objects related to how the task has been
-    executed, where and what was the result.
+    The class provides not just the tracking, but the implementation of the said
+    action as well. Child classes must implement their action functionality in
+    :py:meth:`go`.
+
+    .. note::
+
+        This class and its subclasses must provide their own ``__init__``
+        methods, and cannot rely on :py:mod:`dataclasses` generating one. This
+        is caused by subclasses often adding fields without default values,
+        and ``dataclasses`` module does not allow non-default fields to be
+        specified after those with default values. Therefore initialize fields
+        to their defaults "manually".
     """
-
-    #: A :py:class:`_Task` instace the outcome relates to.
-    task: TaskT
 
     #: A logger to use for logging events related to the outcome.
     logger: Logger
+
+    result: Optional[TaskResultT]
 
     #: Guest on which the phase was executed. May be unset, some tasks
     #: may handle multiguest actions on their own.
@@ -39,17 +47,18 @@ class TaskOutcome(Generic[TaskT]):
     #: is saved in this field.
     exc: Optional[Exception]
 
+    #: If set, the task raised :py:class:`SystemExit` exception, and wants to
+    #: terminate the run completely.
+    requested_exit: Optional[SystemExit]
 
-@dataclasses.dataclass
-class _Task:
-    """ A base class for tasks to be executed on one or more guests """
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(self, logger: Logger, **kwargs: Any) -> None:
+        self.logger = logger
 
-    #: A list of guests to execute the task on.
-    guests: list['Guest']
-
-    #: A logger to use for logging events related to the task. It serves as
-    #: a root logger for new loggers queue may spawn for each guest.
-    logger: Logger
+        self.result = kwargs.get('result', None)
+        self.guest = kwargs.get('guest', None)
+        self.exc = kwargs.get('exc', None)
+        self.requested_exit = kwargs.get('requested_exit', None)
 
     @property
     def name(self) -> str:
@@ -62,98 +71,161 @@ class _Task:
 
         raise NotImplementedError
 
-    @property
-    def guest_ids(self) -> list[str]:
-        return [guest.multihost_name for guest in self.guests]
+    def go(self) -> Iterator['Self']:
+        """
+        Perform the task.
 
-    def go(self) -> Iterator[TaskOutcome['Self']]:
-        """ Perform the task """
+        Called by :py:class:`Queue` machinery to accomplish the task.
+
+        :yields: instances of the same class, describing invocations of the
+            task and their outcome. The task might be executed multiple times,
+            depending on how exactly it was queued, and method would yield
+            corresponding results.
+        """
 
         raise NotImplementedError
+
+
+TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
+
+
+def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
+    """
+    Create loggers for a set of labels.
+
+    Guests are assumed to be a group a phase would be executed on, and
+    therefore their labels need to be set, to provide context, plus their
+    labels need to be properly aligned for more readable output.
+    """
+
+    loggers: dict[str, Logger] = {}
+
+    # First, spawn all loggers, and set their labels if needed.
+    # Don't bother with labels if there's just a single guest.
+    for label in labels:
+        new_logger = logger.clone()
+
+        if len(labels) > 1:
+            new_logger.labels.append(label)
+
+        loggers[label] = new_logger
+
+    # Second, find the longest label, and instruct all loggers to pad their
+    # labels to match this length. This should create well-indented messages.
+    max_label_span = max(new_logger.labels_span for new_logger in loggers.values())
+
+    for new_logger in loggers.values():
+        new_logger.labels_padding = max_label_span
+
+    return loggers
 
 
 @dataclasses.dataclass
-class GuestlessTask(_Task):
+class GuestlessTask(Task[TaskResultT]):
     """
-    A task that does not run on a particular guest.
+    A task not assigned to a particular set of guests.
 
-    .. note::
-
-       This may sound unexpected, but there are tasks that need to be part
-       of the queue, but need no specific guest to run on. Usualy, they handle
-       the multihost environment on their own. See :py:class:`tmt.steps.Login`
-       and :py:class:`tmt.steps.Reboot`.
+    An extension of the :py:class:`Task` class, provides a quite generic wrapper
+    for the actual task which takes care of catching exceptions and proper
+    reporting.
     """
 
-    def run(self, logger: Logger) -> None:
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(self, logger: Logger, **kwargs: Any) -> None:
+        super().__init__(logger, **kwargs)
+
+    def run(self, logger: Logger) -> TaskResultT:
+        """
+        Perform the task.
+
+        Called once from :py:meth:`go`. Subclasses of :py:class:`GuestlessTask`
+        should implement their logic in this method rather than in
+        :py:meth:`go` which is already provided. If your task requires different
+        handling in :py:class:`go`, it might be better derived directly from
+        :py:class:`Task`.
+        """
+
         raise NotImplementedError
 
-    def go(self) -> Iterator[TaskOutcome['Self']]:
+    def go(self) -> Iterator['Self']:
+        """
+        Perform the task.
+
+        Called by :py:class:`Queue` machinery to accomplish the task. It expects
+        the child class would implement :py:meth:`run`, with ``go`` taking care
+        of task/queue interaction.
+
+        :yields: since the task is not expected to run on multiple guests,
+            only a single instance of the class is yielded to describe the task
+            and its outcome.
+        """
+
         try:
-            self.run(self.logger)
+            self.result = self.run(self.logger)
 
         except Exception as exc:
-            # logger.info('finished', color='cyan')
+            self.result = None
+            self.exc = exc
 
-            yield TaskOutcome(
-                task=self,
-                logger=self.logger,
-                guest=None,
-                exc=exc)
+            yield self
 
         else:
-            # logger.info('finished', color='cyan')
+            self.exc = None
 
-            yield TaskOutcome(
-                task=self,
-                logger=self.logger,
-                guest=None,
-                exc=None)
+            yield self
 
 
 @dataclasses.dataclass
-class Task(_Task):
-    """ A task that should run on multiple guests at the same time """
+class MultiGuestTask(Task[TaskResultT]):
+    """
+    A task assigned to a particular set of guests.
+
+    An extension of the :py:class:`Task` class, provides a quite generic wrapper
+    for the actual task which takes care of catching exceptions and proper
+    reporting.
+    """
+
+    guests: list['Guest']
+
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(self, logger: Logger, guests: list['Guest'], **kwargs: Any) -> None:
+        super().__init__(logger, **kwargs)
+
+        self.guests = guests
+
+    @tmt.utils.cached_property
+    def guest_ids(self) -> list[str]:
+        return sorted([guest.multihost_name for guest in self.guests])
 
     def run_on_guest(self, guest: 'Guest', logger: Logger) -> None:
+        """
+        Perform the task.
+
+        Called from :py:meth:`go` once for every guest to run on. Subclasses of
+        :py:class:`GuestlessTask` should implement their logic in this method
+        rather than in :py:meth:`go` which is already provided. If your task
+        requires different handling in :py:class:`go`, it might be better
+        derived directly from :py:class:`Task`.
+        """
+
         raise NotImplementedError
 
-    def prepare_loggers(
-            self,
-            logger: Logger) -> dict[str, Logger]:
+    def go(self) -> Iterator['Self']:
         """
-        Create loggers for a set of guests.
+        Perform the task.
 
-        Guests are assumed to be a group a phase would be executed on, and
-        therefore their labels need to be set, to provide context, plus their
-        labels need to be properly aligned for more readable output.
+        Called by :py:class:`Queue` machinery to accomplish the task. It expects
+        the child class would implement :py:meth:`run`, with ``go`` taking care
+        of task/queue interaction.
+
+        :yields: instances of the same class, describing invocations of the
+            task and their outcome. For each guest, one instance would be
+            yielded.
         """
 
-        loggers: dict[str, Logger] = {}
-
-        # First, spawn all loggers, and set their labels if needed. Don't bother
-        # with labels if there's just a single guest.
-        for guest in self.guests:
-            new_logger = logger.clone()
-
-            if len(self.guests) > 1:
-                new_logger.labels.append(guest.multihost_name)
-
-            loggers[guest.name] = new_logger
-
-        # Second, find the longest labels, and instruct all loggers to pad their
-        # labels to match this length. This should create well-indented messages.
-        max_label_span = max(new_logger.labels_span for new_logger in loggers.values())
-
-        for new_logger in loggers.values():
-            new_logger.labels_padding = max_label_span
-
-        return loggers
-
-    def go(self) -> Iterator[TaskOutcome['Self']]:
         multiple_guests = len(self.guests) > 1
 
-        new_loggers = self.prepare_loggers(self.logger)
+        new_loggers = prepare_loggers(self.logger, [guest.multihost_name for guest in self.guests])
         old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
@@ -171,8 +243,8 @@ class Task(_Task):
                 # well, then the phase would pass the given logger to guest
                 # methods when it calls them, propagating the single logger we
                 # prepared...
-                old_loggers[guest.name] = guest._logger
-                new_logger = new_loggers[guest.name]
+                old_loggers[guest.multihost_name] = guest._logger
+                new_logger = new_loggers[guest.multihost_name]
 
                 guest.inject_logger(new_logger)
 
@@ -191,8 +263,8 @@ class Task(_Task):
             for future in as_completed(futures):
                 guest = futures[future]
 
-                old_logger = old_loggers[guest.name]
-                new_logger = new_loggers[guest.name]
+                old_logger = old_loggers[guest.multihost_name]
+                new_logger = new_loggers[guest.multihost_name]
 
                 if multiple_guests:
                     new_logger.info('finished', color='cyan')
@@ -202,28 +274,27 @@ class Task(_Task):
                 # returned - which is `None` in our case, therefore we can
                 # ignore the return value.
                 try:
-                    future.result()
+                    result = future.result()
+
+                except SystemExit as exc:
+                    task = dataclasses.replace(self, result=None, exc=None, requested_exit=exc)
 
                 except Exception as exc:
-                    yield TaskOutcome(
-                        task=self,
-                        logger=new_logger,
-                        guest=guest,
-                        exc=exc)
+                    task = dataclasses.replace(self, result=None, exc=exc, requested_exit=None)
 
                 else:
-                    yield TaskOutcome(
-                        task=self,
-                        logger=new_logger,
-                        guest=guest,
-                        exc=None)
+                    task = dataclasses.replace(self, result=result, exc=None, requested_exit=None)
+
+                task.guest = guest
+
+                yield task
 
                 # Don't forget to restore the original logger.
                 guest.inject_logger(old_logger)
 
 
 class Queue(list[TaskT]):
-    """ Queue class for running phases on guests """
+    """ Queue class for running tasks """
 
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
@@ -238,15 +309,15 @@ class Queue(list[TaskT]):
 
         self._logger.info(
             f'queued {self.name} task #{len(self)}',
-            f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
+            task.name,
             color='cyan')
 
-    def run(self) -> Iterator[TaskOutcome[TaskT]]:
+    def run(self) -> Iterator[TaskT]:
         """
-        Start crunching the queued phases.
+        Start crunching the queued tasks.
 
-        Queued tasks are executed in the order, for each task/guest
-        combination a :py:class:`TaskOutcome` instance is yielded.
+        Tasks are executed in the order, for each task/guest
+        combination a :py:class:`Task` instance is yielded.
         """
 
         for i, task in enumerate(self):
@@ -254,17 +325,17 @@ class Queue(list[TaskT]):
 
             self._logger.info(
                 f'{self.name} task #{i + 1}',
-                f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
+                task.name,
                 color='cyan')
 
-            failed_outcomes: list[TaskOutcome[TaskT]] = []
+            failed_tasks: list[TaskT] = []
 
             for outcome in task.go():
                 if outcome.exc:
-                    failed_outcomes.append(outcome)
+                    failed_tasks.append(outcome)
 
                 yield outcome
 
             # TODO: make this optional
-            if failed_outcomes:
+            if failed_tasks:
                 return

@@ -160,6 +160,8 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     _data_class = ProvisionConnectData
     _guest_class = GuestConnect
 
+    _thread_safe = True
+
     # Guest instance
     _guest = None
 

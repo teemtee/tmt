@@ -1,6 +1,6 @@
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -11,11 +11,11 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import (
     Action,
+    ActionTask,
     Method,
     PhaseQueue,
+    PluginTask,
     PullTask,
-    QueuedPhase,
-    TaskOutcome,
     sync_with_guests,
     )
 from tmt.steps.provision import Guest
@@ -141,27 +141,31 @@ class Finish(tmt.steps.Step):
             self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, FinishPlugin)):
-            queue.enqueue(
-                phase=phase,  # type: ignore[arg-type]
-                guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
-                )
+            if isinstance(phase, Action):
+                queue.enqueue_action(phase=phase)
 
-        failed_phases: list[TaskOutcome[QueuedPhase[FinishStepData]]] = []
+            else:
+                queue.enqueue_plugin(
+                    phase=phase,  # type: ignore[arg-type]
+                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
+                    )
 
-        for phase_outcome in queue.run():
-            if not isinstance(phase_outcome.task.phase, FinishPlugin):
+        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData]]] = []
+
+        for outcome in queue.run():
+            if not isinstance(outcome.phase, FinishPlugin):
                 continue
 
-            if phase_outcome.exc:
-                phase_outcome.logger.fail(str(phase_outcome.exc))
+            if outcome.exc:
+                outcome.logger.fail(str(outcome.exc))
 
-                failed_phases.append(phase_outcome)
+                failed_tasks.append(outcome)
                 continue
 
-        if failed_phases:
+        if failed_tasks:
             raise tmt.utils.GeneralError(
                 'finish step failed',
-                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
                 )
 
         # To separate "finish" from "pull" queue visually
@@ -174,9 +178,10 @@ class Finish(tmt.steps.Step):
                 self,
                 'pull',
                 PullTask(
-                    guests=guest_copies,
                     logger=self._logger,
-                    source=self.plan.data_directory),
+                    guests=guest_copies,
+                    source=self.plan.data_directory
+                    ),
                 self._logger)
 
             # To separate "finish" from "pull" queue visually

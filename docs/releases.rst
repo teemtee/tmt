@@ -4,6 +4,24 @@
     Releases
 ======================
 
+tmt-1.31
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/spec/plans/provision` step is now able to perform
+**provisioning of multiple guests in parallel**. This can
+considerably shorten the time needed for guest provisioning in
+multihost plans. However, whether the parallel provisioning would
+take place depends on what provision plugins were involved,
+because not all plugins are compatible with this feature yet. As
+of now, only :ref:`/spec/plans/provision/artemis`,
+:ref:`/spec/plans/provision/connect`,
+:ref:`/spec/plans/provision/container`,
+:ref:`/spec/plans/provision/local`, and
+:ref:`/spec/plans/provision/virtual` are supported. All other
+plugins would gracefully fall back to the pre-1.31 behavior,
+provisioning in sequence.
+
+
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

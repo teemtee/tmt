@@ -27,7 +27,7 @@ rlJournalStart
             rlAssertGrep "interactive" "output"
 
             if [ "$step" = "provision" ]; then
-                rlRun "grep '^    $step$' -A6 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A12 output | grep -i interactive"
             elif [ "$step" = "prepare" ]; then
                 rlRun "grep '^    $step$' -A8 output | grep -i interactive"
             elif [ "$step" = "execute" ]; then

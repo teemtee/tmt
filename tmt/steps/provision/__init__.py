@@ -11,6 +11,7 @@ import string
 import subprocess
 import tempfile
 from collections.abc import Iterator
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
@@ -25,17 +26,20 @@ from typing import (
 
 import click
 import fmf
+import fmf.utils
 from click import echo
 
 import tmt
 import tmt.hardware
 import tmt.log
 import tmt.plugins
+import tmt.queue
 import tmt.steps
 import tmt.utils
+from tmt.log import Logger
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.steps import Action
+from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
     Path,
@@ -1703,6 +1707,11 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
     _data_class = ProvisionStepData  # type: ignore[assignment]
     _guest_class = Guest
 
+    #: If set, the plugin can be asked to provision in multiple threads at the
+    #: same time. Plugins that do not support parallel provisioning should keep
+    #: this set to ``False``.
+    _thread_safe: bool = False
+
     # Default implementation for provision is a virtual machine
     how = 'virtual'
 
@@ -1819,6 +1828,118 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
+@dataclasses.dataclass
+class ProvisionTask(tmt.queue.GuestlessTask[None]):
+    """ A task to run provisioning of multiple guests """
+
+    #: Phases describing guests to provision. In the ``provision`` step,
+    #: each phase describes one guest.
+    phases: list[ProvisionPlugin[ProvisionStepData]]
+
+    #: When ``ProvisionTask`` instance is received from the queue, ``phase``
+    #: points to the phase that has been provisioned by the task.
+    phase: Optional[ProvisionPlugin[ProvisionStepData]] = None
+
+    @property
+    def name(self) -> str:
+        return cast(str, fmf.utils.listed([phase.name for phase in self.phases]))
+
+    def go(self) -> Iterator['ProvisionTask']:
+        multiple_guests = len(self.phases) > 1
+
+        new_loggers = tmt.queue.prepare_loggers(
+            self.logger,
+            [phase.name for phase in self.phases])
+        old_loggers: dict[str, Logger] = {}
+
+        with ThreadPoolExecutor(max_workers=len(self.phases)) as executor:
+            futures: dict[Future[None], ProvisionPlugin[ProvisionStepData]] = {}
+
+            for phase in self.phases:
+                old_loggers[phase.name] = phase._logger
+                new_logger = new_loggers[phase.name]
+
+                phase.inject_logger(new_logger)
+
+                if multiple_guests:
+                    new_logger.info('started', color='cyan')
+
+                # Submit each phase as a distinct job for executor pool...
+                futures[
+                    executor.submit(phase.go)
+                    ] = phase
+
+            # ... and then sit and wait as they get delivered to us as they
+            # finish.
+            for future in as_completed(futures):
+                phase = futures[future]
+
+                old_logger = old_loggers[phase.name]
+                new_logger = new_loggers[phase.name]
+
+                if multiple_guests:
+                    new_logger.info('finished', color='cyan')
+
+                # `Future.result()` will either 1. reraise an exception the
+                # callable raised, if any, or 2. return whatever the callable
+                # returned - which is `None` in our case, therefore we can
+                # ignore the return value.
+                try:
+                    future.result()
+
+                except SystemExit as exc:
+                    yield ProvisionTask(
+                        logger=new_logger,
+                        result=None,
+                        guest=None,
+                        exc=None,
+                        requested_exit=exc,
+                        phases=[]
+                        )
+
+                except Exception as exc:
+                    yield ProvisionTask(
+                        logger=new_logger,
+                        result=None,
+                        guest=None,
+                        exc=exc,
+                        requested_exit=None,
+                        phases=[]
+                        )
+
+                else:
+                    yield ProvisionTask(
+                        logger=new_logger,
+                        result=None,
+                        guest=phase.guest(),
+                        exc=None,
+                        requested_exit=None,
+                        phases=[],
+                        phase=phase
+                        )
+
+                # Don't forget to restore the original logger.
+                phase.inject_logger(old_logger)
+
+
+class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
+    """ Queue class for running provisioning tasks """
+
+    def enqueue(
+            self,
+            *,
+            phases: list[ProvisionPlugin[ProvisionStepData]],
+            logger: Logger) -> None:
+        self.enqueue_task(ProvisionTask(
+            logger=logger,
+            result=None,
+            guest=None,
+            exc=None,
+            requested_exit=None,
+            phases=phases
+            ))
+
+
 class Provision(tmt.steps.Step):
     """ Provision an environment for testing or use localhost. """
 
@@ -1841,7 +1962,10 @@ class Provision(tmt.steps.Step):
         # List of provisioned guests and loaded guest data
         self._guests: list[Guest] = []
         self._guest_data: dict[str, GuestData] = {}
-        self.is_multihost = False
+
+    @property
+    def is_multihost(self) -> bool:
+        return len(self.data) > 1
 
     def load(self) -> None:
         """ Load guest data from the workdir """
@@ -1918,45 +2042,165 @@ class Provision(tmt.steps.Step):
 
         # Provision guests
         self._guests = []
-        save = True
-        self.is_multihost = sum(isinstance(phase, ProvisionPlugin) for phase in self.phases()) > 1
-        try:
-            for phase in self.phases(classes=(Action, ProvisionPlugin)):
-                try:
-                    if isinstance(phase, Action):
-                        phase.go()
 
-                    elif isinstance(phase, ProvisionPlugin):
-                        phase.go()
+        def _run_provision_phases(
+                phases: list[ProvisionPlugin[ProvisionStepData]]
+                ) -> tuple[list[ProvisionTask], list[ProvisionTask]]:
+            """
+            Run the given set of ``provision`` phases.
 
-                        guest = phase.guest()
-                        if guest:
-                            guest.show()
+            :param phases: list of ``provision`` step phases. By "running" them,
+                they would provision their respective guests.
+            :returns: two lists, a list of all :py:class:`ProvisionTask`
+                instances queued, and a subset of the first list collecting only
+                those tasks that failed.
+            """
 
-                    if self.is_multihost:
-                        self.info('')
-                except (tmt.utils.RunError, tmt.utils.ProvisionError) as error:
-                    self.fail(str(error))
-                    raise
-                finally:
-                    if isinstance(phase, ProvisionPlugin):
-                        guest = phase.guest()
-                        if guest and (guest.is_ready or self.is_dry_run):
-                            self._guests.append(guest)
+            queue: ProvisionQueue = ProvisionQueue(
+                'provision.provision',
+                self._logger.descend(logger_name=f'{self}.queue'))
 
-            # Give a summary, update status and save
-            self.summary()
-            self.status('done')
-        except (SystemExit, tmt.utils.SpecificationError) as error:
-            # A plugin will only raise SystemExit if the exit is really desired
-            # and no other actions should be done. An example of this is
-            # listing available images. In such case, the workdir is deleted
-            # as it's redundant and save() would throw an error.
-            save = False
-            raise error
-        finally:
-            if save:
-                self.save()
+            queue.enqueue(phases=phases, logger=queue._logger)
+
+            all_tasks: list[ProvisionTask] = []
+            failed_tasks: list[ProvisionTask] = []
+
+            for outcome in queue.run():
+                all_tasks.append(outcome)
+
+                if outcome.exc:
+                    outcome.logger.fail(str(outcome.exc))
+
+                    failed_tasks.append(outcome)
+
+                    continue
+
+                guest = outcome.guest
+
+                if guest:
+                    guest.show()
+
+                    if guest.is_ready or self.is_dry_run:
+                        self._guests.append(guest)
+
+            return all_tasks, failed_tasks
+
+        def _run_action_phases(phases: list[Action]) -> tuple[list[ActionTask], list[ActionTask]]:
+            """
+            Run the given set of actions.
+
+            :param phases: list of actions, e.g. ``login`` or ``reboot``, given
+                in the ``provision`` step.
+            :returns: two lists, a list of all :py:class:`ActionTask` instances
+                queued, and a subset of the first list collecting only those
+                tasks that failed.
+            """
+
+            queue: PhaseQueue[ProvisionStepData] = PhaseQueue(
+                'provision.action',
+                self._logger.descend(logger_name=f'{self}.queue'))
+
+            for action in phases:
+                queue.enqueue_action(phase=action)
+
+            all_tasks: list[ActionTask] = []
+            failed_tasks: list[ActionTask] = []
+
+            for outcome in queue.run():
+                assert isinstance(outcome, ActionTask)
+
+                all_tasks.append(outcome)
+
+                if outcome.exc:
+                    outcome.logger.fail(str(outcome.exc))
+
+                    failed_tasks.append(outcome)
+
+            return all_tasks, failed_tasks
+
+        # Provisioning phases may be intermixed with actions. To perform all
+        # phases and actions in a consistent manner, we will process them in
+        # the order or their `order` key. We will group provisioning phases
+        # not interrupted by action into batches, and run the sequence of
+        # provisioning phases in parallel.
+        all_phases = self.phases(classes=(Action, ProvisionPlugin))
+        all_phases.sort(key=lambda x: x.order)
+
+        all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
+        failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
+
+        while all_phases:
+            # Start looking for sequences of phases of the same kind. Collect
+            # as many as possible, until hitting a different one
+            phase = all_phases.pop(0)
+
+            if isinstance(phase, Action):
+                action_phases: list[Action] = [phase]
+
+                while all_phases and isinstance(all_phases[0], Action):
+                    action_phases.append(cast(Action, all_phases.pop(0)))
+
+                all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
+
+                all_outcomes += all_action_outcomes
+                failed_outcomes += failed_action_outcomes
+
+            else:
+                plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [
+                    phase]  # type: ignore[list-item]
+
+                # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
+                if phase._thread_safe:  # type: ignore[attr-defined]
+                    while all_phases:
+                        if not isinstance(all_phases[0], ProvisionPlugin):
+                            break
+
+                        if not all_phases[0]._thread_safe:
+                            break
+
+                        plugin_phases.append(
+                            cast(
+                                ProvisionPlugin[ProvisionStepData],
+                                all_phases.pop(0)))
+
+                all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
+                    plugin_phases)
+
+                all_outcomes += all_plugin_outcomes
+                failed_outcomes += failed_plugin_outcomes
+
+        # A plugin will only raise SystemExit if the exit is really desired
+        # and no other actions should be done. An example of this is
+        # listing available images. In such case, the workdir is deleted
+        # as it's redundant and save() would throw an error.
+        #
+        # TODO: in theory, there may be many, many plugins raising `SystemExit`
+        # but we can re-raise just a single one. It would be better to not use
+        # an exception to signal this, but rather set/return a special object,
+        # leaving the materialization into `SystemExit` to the step and/or tmt.
+        # Or not do any one-shot actions under the disguise of provisioning...
+        exiting_tasks = [
+            outcome for outcome in all_outcomes if outcome.requested_exit is not None
+            ]
+
+        if exiting_tasks:
+            assert exiting_tasks[0].requested_exit is not None
+
+            raise exiting_tasks[0].requested_exit
+
+        if failed_outcomes:
+            raise tmt.utils.GeneralError(
+                'provision step failed',
+                causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None]
+                )
+
+        # To separate "provision" from the follow-up logging visually
+        self.info('')
+
+        # Give a summary, update status and save
+        self.summary()
+        self.status('done')
+        self.save()
 
     def guests(self) -> list[Guest]:
         """ Return the list of all provisioned guests """

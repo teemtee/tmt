@@ -680,6 +680,8 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     _data_class = ProvisionBeakerData
     _guest_class = GuestBeaker
 
+    # _thread_safe = True
+
     # Guest instance
     _guest = None
 

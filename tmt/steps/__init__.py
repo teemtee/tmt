@@ -23,15 +23,16 @@ from typing import (
     )
 
 import click
+import fmf.utils
 from click import echo
 from click.core import ParameterSource
 
 import tmt.export
 import tmt.log
 import tmt.options
+import tmt.queue
 import tmt.utils
 from tmt.options import option, show_step_method_hints
-from tmt.queue import GuestlessTask, Queue, Task, TaskOutcome
 from tmt.utils import (
     DEFAULT_NAME,
     EnvironmentType,
@@ -49,7 +50,6 @@ from tmt.utils import (
     )
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
 
     import tmt.base
     import tmt.cli
@@ -1953,14 +1953,45 @@ class Topology(SerializableContainer):
 
 
 @dataclasses.dataclass
-class QueuedPhase(GuestlessTask, Task, Generic[StepDataT]):
-    """ A phase to run on one or more guests """
+class ActionTask(tmt.queue.GuestlessTask[None]):
+    """ A task to run an action """
 
-    phase: Union[Action, Plugin[StepDataT]]
+    phase: Action
 
-    # A cached environment, it will be initialized by `prepare_environment()`
-    # on the first call.
-    _environment: Optional[EnvironmentType] = None
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(
+            self,
+            logger: tmt.log.Logger,
+            phase: Action,
+            **kwargs: Any) -> None:
+        super().__init__(logger, **kwargs)
+
+        self.phase = phase
+
+    @property
+    def name(self) -> str:
+        return self.phase.name
+
+    def run(self, logger: tmt.log.Logger) -> None:
+        self.phase.go()
+
+
+@dataclasses.dataclass
+class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
+    """ A task to run a phase on a given set of guests """
+
+    phase: Plugin[StepDataT]
+
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(
+            self,
+            logger: tmt.log.Logger,
+            guests: list['Guest'],
+            phase: Plugin[StepDataT],
+            **kwargs: Any) -> None:
+        super().__init__(logger, guests, **kwargs)
+
+        self.phase = phase
 
     @property
     def phase_name(self) -> str:
@@ -1976,78 +2007,81 @@ class QueuedPhase(GuestlessTask, Task, Generic[StepDataT]):
 
     @property
     def name(self) -> str:
-        return self.phase_name
-
-    def run(self, logger: tmt.log.Logger) -> None:
-        assert isinstance(self.phase, Action)  # narrow type
-
-        self.phase.go()
+        return f'{self.phase_name} ' \
+               f'on {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        assert isinstance(self.phase, Plugin)  # narrow type
-
-        self.phase.go(
-            guest=guest,
-            logger=logger)
-
-    def go(self) -> Iterator[TaskOutcome['Self']]:
-        # Based on the phase, pick the proper parent class' go()
-        if isinstance(self.phase, Action):
-            yield from GuestlessTask.go(self)
-
-        else:
-            yield from Task.go(self)
+        self.phase.go(guest=guest, logger=logger)
 
 
-class PhaseQueue(Queue[QueuedPhase[StepDataT]]):
+class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT]]]):
     """ Queue class for running phases on guests """
 
-    def enqueue(
+    def enqueue_action(
             self,
             *,
-            phase: Union[Action, Plugin[StepDataT]],
+            phase: Action) -> None:
+        self.enqueue_task(ActionTask(
+            logger=phase._logger,
+            phase=phase
+            ))
+
+    def enqueue_plugin(
+            self,
+            *,
+            phase: Plugin[StepDataT],
             guests: list['Guest']) -> None:
-        """
-        Add a phase to queue.
-
-        Phase will be executed on given guests, starting at the same time.
-
-        :param phase: phase to run.
-        :param guests: one or more guests to run the phase on.
-        """
-
         if not guests:
             raise tmt.utils.MetadataError(
                 f'No guests queued for phase "{phase}". A typo in "where" key?')
 
-        self.enqueue_task(QueuedPhase(
-            phase=phase,
+        self.enqueue_task(PluginTask(
+            logger=phase._logger,
             guests=guests,
-            logger=phase._logger
+            phase=phase
             ))
 
 
 @dataclasses.dataclass
-class PushTask(Task):
+class PushTask(tmt.queue.MultiGuestTask[None]):
     """ Task performing a workdir push to a guest """
+
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(
+            self,
+            logger: tmt.log.Logger,
+            guests: list['Guest'],
+            **kwargs: Any) -> None:
+        super().__init__(logger, guests, **kwargs)
 
     @property
     def name(self) -> str:
-        return 'push'
+        return f'push to {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         guest.push()
 
 
 @dataclasses.dataclass
-class PullTask(Task):
+class PullTask(tmt.queue.MultiGuestTask[None]):
     """ Task performing a workdir pull from a guest """
 
-    source: Optional[Path] = None
+    source: Optional[Path]
+
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(
+            self,
+            logger: tmt.log.Logger,
+            guests: list['Guest'],
+            source: Optional[Path] = None,
+            **kwargs: Any) -> None:
+        super().__init__(logger, guests, **kwargs)
+
+        self.source = source
 
     @property
     def name(self) -> str:
-        return 'pull'
+        return f'pull from {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         guest.pull(source=self.source)
@@ -2075,13 +2109,13 @@ def sync_with_guests(
     :param logger: logger to use for logging.
     """
 
-    queue: Queue[GuestSyncTaskT] = Queue(
+    queue: tmt.queue.Queue[GuestSyncTaskT] = tmt.queue.Queue(
         action,
         logger.descend(logger_name=action))
 
     queue.enqueue_task(task)
 
-    failed_actions: list[TaskOutcome[GuestSyncTaskT]] = []
+    failed_actions: list[GuestSyncTaskT] = []
 
     for outcome in queue.run():
         if outcome.exc:

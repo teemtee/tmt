@@ -154,6 +154,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     _data_class = ProvisionLocalData
     _guest_class = GuestLocal
 
+    _thread_safe = True
+
     # Guest instance
     _guest = None
 

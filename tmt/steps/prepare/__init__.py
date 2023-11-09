@@ -1,7 +1,14 @@
 import collections
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    )
 
 import click
 import fmf
@@ -14,13 +21,13 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.queue import TaskOutcome
 from tmt.steps import (
     Action,
+    ActionTask,
     PhaseQueue,
+    PluginTask,
     PullTask,
     PushTask,
-    QueuedPhase,
     sync_with_guests,
     )
 from tmt.steps.provision import Guest
@@ -245,7 +252,7 @@ class Prepare(tmt.steps.Step):
             sync_with_guests(
                 self,
                 'push',
-                PushTask(guests=guest_copies, logger=self._logger),
+                PushTask(logger=self._logger, guests=guest_copies),
                 self._logger)
 
             # To separate "push" from "prepare" queue visually
@@ -256,30 +263,34 @@ class Prepare(tmt.steps.Step):
             self._logger.descend(logger_name=f'{self}.queue'))
 
         for phase in self.phases(classes=(Action, PreparePlugin)):
-            queue.enqueue(
-                phase=phase,  # type: ignore[arg-type]
-                guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
-                )
+            if isinstance(phase, Action):
+                queue.enqueue_action(phase=phase)
 
-        failed_phases: list[TaskOutcome[QueuedPhase[PrepareStepData]]] = []
+            else:
+                queue.enqueue_plugin(
+                    phase=phase,  # type: ignore[arg-type]
+                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
+                    )
 
-        for phase_outcome in queue.run():
-            if not isinstance(phase_outcome.task.phase, PreparePlugin):
+        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData]]] = []
+
+        for outcome in queue.run():
+            if not isinstance(outcome.phase, PreparePlugin):
                 continue
 
-            if phase_outcome.exc:
-                phase_outcome.logger.fail(str(phase_outcome.exc))
+            if outcome.exc:
+                outcome.logger.fail(str(outcome.exc))
 
-                failed_phases.append(phase_outcome)
+                failed_tasks.append(outcome)
                 continue
 
             self.preparations_applied += 1
 
-        if failed_phases:
+        if failed_tasks:
             # TODO: needs a better message...
             raise tmt.utils.GeneralError(
                 'prepare step failed',
-                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
                 )
 
         self.info('')
@@ -291,8 +302,8 @@ class Prepare(tmt.steps.Step):
                 self,
                 'pull',
                 PullTask(
-                    guests=guest_copies,
                     logger=self._logger,
+                    guests=guest_copies,
                     source=self.plan.data_directory),
                 self._logger)
 

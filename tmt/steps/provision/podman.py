@@ -425,6 +425,8 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     _data_class = ProvisionPodmanData
     _guest_class = GuestContainer
 
+    _thread_safe = True
+
     # Guest instance
     _guest = None
 

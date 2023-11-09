@@ -690,6 +690,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     _data_class = ProvisionArtemisData
     _guest_class = GuestArtemis
 
+    _thread_safe = True
+
     # Guest instance
     _guest = None
 

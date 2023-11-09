@@ -14,10 +14,10 @@ function check_current_topology () {
 }
 
 function check_shared_topology () {
-    rlAssertEquals "Guest names"        "client-1 client-2 server" "$(yq -r '."guest-names" | join(" ")' $1)"
-    rlAssertEquals "Role names"         "client server"            "$(yq -r '."role-names" | join(" ")' $1)"
-    rlAssertEquals "Client role guests" "client-1 client-2"        "$(yq -r '.roles.client | join(" ")' $1)"
-    rlAssertEquals "Server role guests" "server"                   "$(yq -r '.roles.server | join(" ")' $1)"
+    rlAssertEquals "Guest names"        "client-1 client-2 server" "$(yq -r '."guest-names" | sort | join(" ")' $1)"
+    rlAssertEquals "Role names"         "client server"            "$(yq -r '."role-names" | sort | join(" ")' $1)"
+    rlAssertEquals "Client role guests" "client-1 client-2"        "$(yq -r '.roles.client | sort | join(" ")' $1)"
+    rlAssertEquals "Server role guests" "server"                   "$(yq -r '.roles.server | sort | join(" ")' $1)"
 
     rlAssertEquals "Guest client-1 name"     "client-1"          "$(yq -r '.guests["client-1"].name' $1)"
     rlAssertEquals "Guest client-1 role"     "client"            "$(yq -r '.guests["client-1"].role' $1)"

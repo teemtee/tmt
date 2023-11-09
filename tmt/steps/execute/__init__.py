@@ -5,7 +5,7 @@ import json
 import os
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -18,9 +18,8 @@ import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.queue import TaskOutcome
 from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
-from tmt.steps import Action, PhaseQueue, QueuedPhase, Step
+from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import Path, ShellScript, Stopwatch, field
@@ -734,13 +733,7 @@ class Execute(tmt.steps.Step):
 
         for phase in self.phases(classes=(Action, ExecutePlugin)):
             if isinstance(phase, Action):
-                queue.enqueue(
-                    phase=phase,
-                    guests=[
-                        guest
-                        for guest in self.plan.provision.guests()
-                        if phase.enabled_on_guest(guest)
-                        ])
+                queue.enqueue_action(phase=phase)
 
             else:
                 # A single execute plugin is expected to process (potentialy)
@@ -754,7 +747,7 @@ class Execute(tmt.steps.Step):
                     phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
                     phase_copy.discover_phase = discover.name
 
-                    queue.enqueue(
+                    queue.enqueue_plugin(
                         phase=phase_copy,
                         guests=[
                             guest
@@ -762,13 +755,13 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_phases: list[TaskOutcome[QueuedPhase[ExecuteStepData]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData]]] = []
 
-        for phase_outcome in queue.run():
-            if phase_outcome.exc:
-                phase_outcome.logger.fail(str(phase_outcome.exc))
+        for outcome in queue.run():
+            if outcome.exc:
+                outcome.logger.fail(str(outcome.exc))
 
-                failed_phases.append(phase_outcome)
+                failed_tasks.append(outcome)
                 continue
 
         # Execute plugins do not return results. Instead, plugin collects results
@@ -783,11 +776,11 @@ class Execute(tmt.steps.Step):
         # access all collected `_results`.
         self._results += execute_phases[0].results()
 
-        if failed_phases:
+        if failed_tasks:
             # TODO: needs a better message...
             raise tmt.utils.GeneralError(
                 'execute step failed',
-                causes=[outcome.exc for outcome in failed_phases if outcome.exc is not None]
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
                 )
 
         # To separate "execute" from the follow-up logging visually
