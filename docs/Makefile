@@ -60,13 +60,13 @@ spec:
 stories:
 	mkdir -p stories
 
-spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks lint-checks.rst.j2 $(TMTDIR)/base.py
-	$(SCRIPTSDIR)/generate-lint-checks lint-checks.rst.j2 $@
+spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py lint-checks.rst.j2 $(TMTDIR)/base.py
+	$(SCRIPTSDIR)/generate-lint-checks.py lint-checks.rst.j2 $@
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
 generate-stories: stories  ## Generate documentation sources for stories
-	$(SCRIPTSDIR)/generate-stories story.rst.j2
+	$(SCRIPTSDIR)/generate-stories.py story.rst.j2
 
 ##
 ## Help!

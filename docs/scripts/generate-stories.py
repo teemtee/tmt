@@ -8,7 +8,7 @@ import tmt.plugins
 from tmt.utils import Path
 
 HELP = textwrap.dedent("""
-Usage: generate-stories <TEMPLATE-PATH>
+Usage: generate-stories.py <TEMPLATE-PATH>
 
 Generate pages for stories from their fmf specifications.
 """).strip()
