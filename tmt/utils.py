@@ -25,7 +25,9 @@ import traceback
 import unicodedata
 import urllib.parse
 from collections import Counter, OrderedDict
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from re import Pattern
 from threading import Thread
 from types import ModuleType
 from typing import (
@@ -34,12 +36,8 @@ from typing import (
     Any,
     Callable,
     Generic,
-    Iterable,
-    Iterator,
     Literal,
     Optional,
-    Pattern,
-    Sequence,
     TypeVar,
     Union,
     cast,

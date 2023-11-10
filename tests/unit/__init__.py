@@ -1,7 +1,8 @@
 import logging
 import operator
 import re
-from typing import Any, Callable, Iterable
+from collections.abc import Iterable
+from typing import Any, Callable
 
 import _pytest.logging
 import pytest

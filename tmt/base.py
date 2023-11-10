@@ -11,16 +11,14 @@ import shutil
 import sys
 import tempfile
 import time
+from collections.abc import Iterable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
-    Iterable,
-    Iterator,
     Literal,
     Optional,
-    Sequence,
     TypedDict,
     TypeVar,
     Union,

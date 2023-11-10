@@ -33,12 +33,11 @@ import itertools
 import operator
 import re
 import sys
+from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Iterable,
-    Iterator,
     NamedTuple,
     Optional,
     TypeVar,

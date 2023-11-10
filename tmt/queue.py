@@ -1,6 +1,7 @@
 import dataclasses
+from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Generic, Iterator, Optional, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 import fmf.utils
 

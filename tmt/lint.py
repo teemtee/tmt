@@ -67,14 +67,13 @@ import dataclasses
 import enum
 import re
 import textwrap
+from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
     Generic,
-    Iterable,
-    Iterator,
     Optional,
     TypeVar,
     )

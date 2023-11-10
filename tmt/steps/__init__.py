@@ -8,13 +8,12 @@ import itertools
 import re
 import shutil
 import textwrap
+from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Generic,
-    Iterable,
-    Iterator,
     Optional,
     TypedDict,
     TypeVar,

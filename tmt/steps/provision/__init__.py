@@ -10,11 +10,11 @@ import shlex
 import string
 import subprocess
 import tempfile
+from collections.abc import Iterator
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterator,
     Optional,
     TypeVar,
     Union,

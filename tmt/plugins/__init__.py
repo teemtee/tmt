@@ -4,8 +4,9 @@ import importlib
 import os
 import pkgutil
 import sys
+from collections.abc import Iterator
 from importlib.metadata import entry_points
-from typing import Any, Generic, Iterator, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 import tmt
 import tmt.utils
