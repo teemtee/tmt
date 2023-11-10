@@ -16,6 +16,14 @@ rlJournalStart
         rlAssertGrep "normalized fields" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Timestamps on terminal"
+        rlRun -s "tmt             -dd plan show /plans/features/core > /dev/null"
+        rlRun "grep -E '^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2} ' $rlRun_LOG" 1
+
+        rlRun -s "tmt --show-time -dd plan show /plans/features/core > /dev/null"
+        rlRun "grep -E '^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2} ' $rlRun_LOG" 0
+    rlPhaseEnd
+
     # TODO: enable the test once --quiet starts silencing all kinds of logging
     # See https://github.com/teemtee/tmt/issues/2106
     # rlPhaseStartTest "Verify --quiet suppresses all logging"

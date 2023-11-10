@@ -185,6 +185,10 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
          """)
 @verbosity_options
 @option(
+    '--show-time',
+    is_flag=True,
+    help='If set, logging messages on the terminal would contain timestamps.')
+@option(
     '--version', is_flag=True,
     help='Show tmt version and commit hash.')
 @option(
@@ -201,6 +205,7 @@ def main(
         context: list[str],
         no_color: bool,
         force_color: bool,
+        show_time: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
     # Show current tmt version and exit
@@ -214,7 +219,7 @@ def main(
         apply_colors_output=apply_colors_output,
         apply_colors_logging=apply_colors_logging,
         **kwargs)
-    logger.add_console_handler()
+    logger.add_console_handler(show_timestamps=show_time)
 
     # Propagate color setting to Click as well.
     click_contex.color = apply_colors_output

@@ -338,8 +338,10 @@ class LogfileFormatter(_Formatter):
 
 
 class ConsoleFormatter(_Formatter):
-    def __init__(self, apply_colors: bool = True) -> None:
-        super().__init__('%(message)s', apply_colors=apply_colors)
+    def __init__(self, apply_colors: bool = True, show_timestamps: bool = False) -> None:
+        super().__init__(
+            '%(asctime)s %(message)s' if show_timestamps else '%(message)s',
+            apply_colors=apply_colors)
 
 
 class VerbosityLevelFilter(logging.Filter):
@@ -574,12 +576,19 @@ class Logger:
 
         self._logger.addHandler(handler)
 
-    def add_console_handler(self) -> None:
-        """ Attach console handler to this logger """
+    def add_console_handler(self, show_timestamps: bool = False) -> None:
+        """
+        Attach console handler to this logger.
+
+        :param show_timestamps: when set, emitted messages would include
+            the time.
+        """
 
         handler = ConsoleHandler(stream=sys.stderr)
 
-        handler.setFormatter(ConsoleFormatter(apply_colors=self.apply_colors_logging))
+        handler.setFormatter(ConsoleFormatter(
+            apply_colors=self.apply_colors_logging,
+            show_timestamps=show_timestamps))
 
         handler.addFilter(VerbosityLevelFilter())
         handler.addFilter(DebugLevelFilter())
