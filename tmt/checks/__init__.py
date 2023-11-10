@@ -15,6 +15,7 @@ from tmt.utils import (
     )
 
 if TYPE_CHECKING:
+    import tmt.base
     from tmt.result import CheckResult
     from tmt.steps.execute import TestInvocation
 
@@ -59,7 +60,7 @@ def find_plugin(name: str) -> 'CheckPluginClass':
 
 
 # A "raw" test check as stored in fmf node data.
-class _RawCheck(TypedDict, total=False):
+class _RawCheck(TypedDict):
     name: str
     enabled: bool
 
@@ -201,7 +202,9 @@ def normalize_test_check(
 
     if isinstance(raw_test_check, str):
         try:
-            return CheckPlugin.delegate(raw_data={'name': raw_test_check}, logger=logger)
+            return CheckPlugin.delegate(
+                raw_data={'name': raw_test_check, 'enabled': True},
+                logger=logger)
 
         except Exception as exc:
             raise tmt.utils.SpecificationError(
@@ -223,7 +226,7 @@ def normalize_test_check(
         'a string or a dictionary')
 
 
-def normalize_checks(
+def normalize_test_checks(
         key_address: str,
         raw_checks: Any,
         logger: tmt.log.Logger) -> list[Check]:
@@ -239,9 +242,13 @@ def normalize_checks(
         return [normalize_test_check(key_address, raw_checks, logger)]
 
     if isinstance(raw_checks, list):
+        # ignore[redundant-cast]: mypy infers the type to be `list[Any]` while
+        # pyright, not making assumptions about the type of items, settles for
+        # `list[Unknown]`. The `cast()` helps pyright, but mypy complains.
         return [
             normalize_test_check(f'{key_address}[{i}]', raw_test_check, logger)
-            for i, raw_test_check in enumerate(raw_checks)
+            for i, raw_test_check in enumerate(
+                cast(list[Any], raw_checks))  # type: ignore[redundant-cast]
             ]
 
     raise tmt.utils.NormalizationError(

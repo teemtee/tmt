@@ -51,11 +51,12 @@ class Beakerlib(TestFramework):
                 log.append(invocation.data_path(filename))
 
         # Check beakerlib log for the result
+        beakerlib_results_filepath = invocation.data_path('TestResults', full=True)
+
         try:
-            beakerlib_results_file = invocation.data_path('TestResults', full=True)
-            results = invocation.phase.read(beakerlib_results_file, level=3)
+            results = invocation.phase.read(beakerlib_results_filepath, level=3)
         except tmt.utils.FileError:
-            logger.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
+            logger.debug(f"Unable to read '{beakerlib_results_filepath}'.", level=3)
             note = 'beakerlib: TestResults FileError'
 
             return [tmt.Result.from_test_invocation(
@@ -78,7 +79,7 @@ class Beakerlib(TestFramework):
                 missing_piece = 'TESTRESULT_STATE='
                 hint = ', possibly outdated beakerlib (requires 1.23+)'
             logger.debug(
-                f"No '{missing_piece}' found in '{beakerlib_results_file}'{hint}.",
+                f"No '{missing_piece}' found in '{beakerlib_results_filepath}'{hint}.",
                 level=3)
             note = 'beakerlib: Result/State missing'
             return [tmt.Result.from_test_invocation(

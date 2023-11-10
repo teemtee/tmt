@@ -1065,7 +1065,7 @@ class Test(
 
     check: list[Check] = field(
         default_factory=list,
-        normalize=tmt.checks.normalize_checks,
+        normalize=tmt.checks.normalize_test_checks,
         serialize=lambda checks: [check.to_spec() for check in checks],
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
         exporter=lambda value: [check.to_minimal_spec() for check in value])
