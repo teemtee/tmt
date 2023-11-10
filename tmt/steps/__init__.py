@@ -202,10 +202,9 @@ PhaseT = TypeVar('PhaseT', bound=Phase)
 # A type alias for plugin classes
 PluginClass = type['BasePlugin']
 
-_RawStepData = TypedDict('_RawStepData', {
-    'how': str,
-    'name': str
-    }, total=False)
+class _RawStepData(TypedDict, total=False):
+    how: str
+    name: str
 
 
 RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
