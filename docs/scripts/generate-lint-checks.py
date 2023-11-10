@@ -9,7 +9,7 @@ from tmt.lint import Linter
 from tmt.utils import Path, render_template_file
 
 HELP = textwrap.dedent("""
-Usage: generate-lint-checks <TEMPLATE-PATH> <OUTPUT-PATH>
+Usage: generate-lint-checks.py <TEMPLATE-PATH> <OUTPUT-PATH>
 
 Generate docs for all known lint checks.
 """).strip()
