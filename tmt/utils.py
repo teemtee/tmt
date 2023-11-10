@@ -26,7 +26,6 @@ import unicodedata
 import urllib.parse
 from collections import Counter, OrderedDict
 from contextlib import suppress
-from functools import lru_cache
 from threading import Thread
 from types import ModuleType
 from typing import (
@@ -2065,7 +2064,7 @@ def environment_to_dict(
     return result
 
 
-@lru_cache(maxsize=None)
+@functools.cache
 def environment_file_to_dict(
         *,
         filename: str,
@@ -3616,7 +3615,7 @@ def create_file(
 
 
 # Avoid multiple subprocess calls for the same url
-@lru_cache(maxsize=None)
+@functools.cache
 def check_git_url(url: str) -> str:
     """ Check that a remote git url is accessible """
     try:
@@ -3783,7 +3782,7 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
     return url
 
 
-@lru_cache(maxsize=None)
+@functools.cache
 def fmf_id(
         *,
         name: str,
@@ -5059,7 +5058,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
         raise FileError(f"Failed to load schema file {schema_filepath}\n{exc}")
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def load_schema(schema_filepath: Path) -> Schema:
     """
     Load a JSON schema from a given filepath.
@@ -5078,7 +5077,7 @@ def load_schema(schema_filepath: Path) -> Schema:
     return schema
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def load_schema_store() -> SchemaStore:
     """
     Load all available JSON schemas, and put them into a "store".
@@ -6119,7 +6118,7 @@ def render_template_file(
         raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
 
 
-@lru_cache(maxsize=None)
+@functools.cache
 def is_selinux_supported() -> bool:
     """
     Returns ``true`` if SELinux filesystem is supported by the kernel, ``false`` otherwise.

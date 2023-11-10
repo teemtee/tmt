@@ -3,7 +3,7 @@ import os
 import re
 import types
 from contextlib import suppress
-from functools import lru_cache
+from functools import cache
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -335,7 +335,7 @@ def prepare_extra_summary(test: 'tmt.Test', append_summary: bool) -> str:
 
 
 # avoid multiple searching for general plans (it is expensive)
-@lru_cache(maxsize=None)
+@cache
 def find_general_plan(component: str) -> NitrateTestPlan:
     """ Return single General Test Plan or raise an error """
     assert nitrate
