@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.30
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the purpose of tmt exit code, ``info`` test results are no
+longer considered as failures, and therefore the exit code of tmt
+changes. ``info`` results are now treated as ``pass`` results, and
+would be counted towards the succesfull exit code, ``0``, instead
+of the exit code ``2`` in older releases.
+
 
 tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

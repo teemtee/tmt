@@ -40,6 +40,7 @@ import tmt.identifier
 import tmt.lint
 import tmt.log
 import tmt.plugins
+import tmt.result
 import tmt.steps
 import tmt.steps.discover
 import tmt.steps.execute
@@ -51,7 +52,7 @@ import tmt.templates
 import tmt.utils
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.result import Result, ResultOutcome
+from tmt.result import Result
 from tmt.utils import (
     Command,
     EnvironmentType,
@@ -3310,16 +3311,7 @@ class Run(tmt.utils.Common):
         if tmt.steps.execute.Execute._opt("dry"):
             raise SystemExit(0)
         # Return appropriate exit code based on the total stats
-        stats = Result.total(results)
-        if sum(stats.values()) == 0:
-            raise SystemExit(3)
-        if stats[ResultOutcome.ERROR]:
-            raise SystemExit(2)
-        if stats[ResultOutcome.FAIL] + stats[ResultOutcome.WARN]:
-            raise SystemExit(1)
-        if stats[ResultOutcome.PASS]:
-            raise SystemExit(0)
-        raise SystemExit(2)
+        raise SystemExit(tmt.result.results_to_exit_code(results))
 
     def follow(self) -> None:
         """ Periodically check for new lines in the log. """

@@ -40,7 +40,7 @@ rlJournalStart
         run   "fail"   "/test/xfail-pass"     "pass"     1
         run   "errr"   "/test/xfail-error"    "error"    2
         run   "pass"   "/test/always-pass"    "fail"     0
-        run   "info"   "/test/always-info"    "pass"     2
+        run   "info"   "/test/always-info"    "pass"     0
         run   "warn"   "/test/always-warn"    "pass"     1
         run   "fail"   "/test/always-fail"    "pass"     1
         run   "errr"   "/test/always-error"   "pass"     2

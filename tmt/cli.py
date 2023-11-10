@@ -3,6 +3,7 @@
 
 import collections
 import dataclasses
+import enum
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, Optional, Union
@@ -33,6 +34,26 @@ if TYPE_CHECKING:
 
 # Explore available plugins (need to detect all supported methods first)
 tmt.plugins.explore(tmt.log.Logger.get_bootstrap_logger())
+
+
+class TmtExitCode(enum.IntEnum):
+    # Quoting the specification:
+
+    #: At least one test passed, there was no fail, warn or error.
+    SUCCESS = 0
+
+    #: There was a fail or warn identified, but no error.
+    FAIL = 1
+
+    #: Errors occured during test execution.
+    ERROR = 2
+
+    #: No test results found.
+    NO_RESULTS_FOUND = 3
+
+    #: Tests were executed, and all reported the ``skip`` result.
+    ALL_TESTS_SKIPPED = 4
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Click Context Object Container

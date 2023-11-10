@@ -8,7 +8,7 @@ import fmf
 
 import tmt.utils
 from tmt.checks import CheckEvent
-from tmt.utils import Path, SerializableContainer, field
+from tmt.utils import GeneralError, Path, SerializableContainer, field
 
 if TYPE_CHECKING:
     import tmt.base
@@ -364,3 +364,36 @@ class Result(BaseResult):
             filtered += m + '\n'
 
         return filtered or log
+
+
+def results_to_exit_code(results: list[Result]) -> int:
+    """ Map results to a tmt exit code """
+
+    from tmt.cli import TmtExitCode
+
+    stats = Result.total(results)
+
+    # Quoting the specification:
+
+    # "No test results found."
+    if sum(stats.values()) == 0:
+        return TmtExitCode.NO_RESULTS_FOUND
+
+    # "Errors occured during test execution."
+    if stats[ResultOutcome.ERROR]:
+        return TmtExitCode.ERROR
+
+    # "There was a fail or warn identified, but no error."
+    if stats[ResultOutcome.FAIL] + stats[ResultOutcome.WARN]:
+        return TmtExitCode.FAIL
+
+    # "Tests were executed, and all reported the ``skip`` result."
+    if sum(stats.values()) == stats[ResultOutcome.SKIP]:
+        return TmtExitCode.ALL_TESTS_SKIPPED
+
+    # "At least one test passed, there was no fail, warn or error."
+    if sum(stats.values()) \
+            == stats[ResultOutcome.PASS] + stats[ResultOutcome.INFO] + stats[ResultOutcome.SKIP]:
+        return TmtExitCode.SUCCESS
+
+    raise GeneralError("Unhandled combination of test result.")

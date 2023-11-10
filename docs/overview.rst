@@ -331,6 +331,8 @@ and only check for the exit code.
     Errors occured during test execution.
 3
     No test results found.
+4
+    Tests were executed, and all reported the ``skip`` result.
 
 
 Variables
