@@ -125,9 +125,7 @@ class Check(
         Run the check.
 
         :param event: when the check is running - before the test, after the test, etc.
-        :param guest: on this guest the ``test`` will run/was executed.
-        :param test: test to which the check belongs to.
-        :param plugin: an ``execute`` step plugin managing the test execution.
+        :param invocation: test invocation to which the check belongs to.
         :param environment: optional environment to set for the check.
         :param logger: logger to use for logging.
         :returns: list of results produced by checks.

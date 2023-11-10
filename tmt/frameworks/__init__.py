@@ -50,9 +50,7 @@ class TestFramework:
         """
         Provide additional environment variables for the test.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: environment variables to expose for the test. Variables
             would be added on top of any variables the plugin, test or plan
@@ -69,9 +67,7 @@ class TestFramework:
         """
         Provide a test command.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: a command to use to run the test.
         """
@@ -88,9 +84,7 @@ class TestFramework:
         """
         Provide additional options for pulling test data directory.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: additional options for the ``rsync`` tmt would use to pull
             the test data directory from the guest.
@@ -106,9 +100,7 @@ class TestFramework:
         """
         Extract test results.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: list of results produced by the given test.
         """
