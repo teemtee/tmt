@@ -4654,8 +4654,7 @@ class StructuredField:
                 del (dictionary[item])
             except KeyError:
                 raise StructuredFieldError(
-                    "Unable to remove '{!r}' from section '{!r}'".format(
-                        ascii(item), ascii(section)))
+                    f"Unable to remove '{ascii(item)!r}' from section '{ascii(section)!r}'")
             self._sections[section] = self._write_section(dictionary)
 
 

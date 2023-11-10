@@ -202,6 +202,7 @@ PhaseT = TypeVar('PhaseT', bound=Phase)
 # A type alias for plugin classes
 PluginClass = type['BasePlugin']
 
+
 class _RawStepData(TypedDict, total=False):
     how: str
     name: str

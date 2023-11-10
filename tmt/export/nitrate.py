@@ -642,8 +642,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Update nitrate test case
     if not dry_mode:
         nitrate_case.update()
-        echo(style("Test case '{}' successfully exported to nitrate.".format(
-            nitrate_case.identifier), fg='magenta'))
+        echo(style(f"Test case '{nitrate_case.identifier}' successfully exported to nitrate.",
+                   fg='magenta'))
 
     # Optionally link Bugzilla to Nitrate case
     if link_bugzilla and verifies_bug_ids and not dry_mode:
