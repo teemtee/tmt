@@ -444,7 +444,7 @@ class DependencyFmfId(
     # and fixing that would result in a big patch. To allow use of dependencies
     # in sets, provide __hash__ & fix the rest later.
     def __hash__(self) -> int:
-        return hash((getattr(self, key) for key in self.VALID_KEYS))
+        return hash(getattr(self, key) for key in self.VALID_KEYS)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
