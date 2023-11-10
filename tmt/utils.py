@@ -34,17 +34,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Generic,
     Iterable,
     Iterator,
-    List,
     Literal,
     Optional,
     Pattern,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -242,7 +238,7 @@ class cached_property(Generic[T]):  # noqa: N801
         return value
 
 
-class FmfContext(Dict[str, List[str]]):
+class FmfContext(dict[str, list[str]]):
     """
     Represents an fmf context.
 
@@ -250,11 +246,11 @@ class FmfContext(Dict[str, List[str]]):
     and https://fmf.readthedocs.io/en/latest/context.html.
     """
 
-    def __init__(self, data: Optional[Dict[str, List[str]]] = None) -> None:
+    def __init__(self, data: Optional[dict[str, list[str]]] = None) -> None:
         super().__init__(data or {})
 
     @classmethod
-    def _normalize_command_line(cls, spec: List[str], logger: tmt.log.Logger) -> 'FmfContext':
+    def _normalize_command_line(cls, spec: list[str], logger: tmt.log.Logger) -> 'FmfContext':
         """
         Normalize command line fmf context specification.
 
@@ -271,7 +267,7 @@ class FmfContext(Dict[str, List[str]]):
     @classmethod
     def _normalize_fmf(
             cls,
-            spec: Dict[str, Union[str, List[str]]],
+            spec: dict[str, Union[str, list[str]]],
             logger: tmt.log.Logger) -> 'FmfContext':
         """
         Normalize fmf context specification from fmf node.
@@ -317,14 +313,14 @@ class FmfContext(Dict[str, List[str]]):
 
         raise NormalizationError(key_address, spec, 'a list of strings or a dictionary')
 
-    def to_spec(self) -> Dict[str, Any]:
+    def to_spec(self) -> dict[str, Any]:
         """ Convert to a form suitable for saving in a specification file """
 
         return dict(self)
 
 
 # A "environment" type, representing name/value environment variables.
-EnvironmentType = Dict[str, str]
+EnvironmentType = dict[str, str]
 
 # Workdir argument type, can be True, a string, a path or None
 WorkdirArgumentType = Union[Literal[True], Path, None]
@@ -336,7 +332,7 @@ WorkdirType = Optional[Path]
 PLAN_SKIP_WORKTREE_INIT = 'plan_skip_worktree_init'
 
 # List of schemas that need to be ignored in a plan
-PLAN_SCHEMA_IGNORED_IDS: List[str] = [
+PLAN_SCHEMA_IGNORED_IDS: list[str] = [
     '/schemas/provision/hardware',
     '/schemas/provision/kickstart'
     ]
@@ -410,7 +406,7 @@ class StreamLogger(Thread):
         super().__init__(daemon=True)
 
         self.stream = stream
-        self.output: List[str] = []
+        self.output: list[str] = []
         self.log_header = log_header
         self.logger = logger
         self.click_context = click_context
@@ -470,7 +466,7 @@ _CommandElement = str
 #: A single element of raw command line in its ``list`` form.
 RawCommandElement = Union[str, Path]
 #: A raw command line form, a list of elements.
-RawCommand = List[RawCommandElement]
+RawCommand = list[RawCommandElement]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -505,7 +501,7 @@ class ShellScript:
         return ShellScript(f'{self} || {other}')
 
     @classmethod
-    def from_scripts(cls, scripts: List['ShellScript']) -> 'ShellScript':
+    def from_scripts(cls, scripts: list['ShellScript']) -> 'ShellScript':
         """
         Create a single script from many shorter ones.
 
@@ -542,7 +538,7 @@ class Command:
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand, List[str]]) -> 'Command':
+    def __add__(self, other: Union['Command', RawCommand, list[str]]) -> 'Command':
         if isinstance(other, Command):
             return Command(*self._command, *other._command)
 
@@ -568,7 +564,7 @@ class Command:
 
         return ShellScript(' '.join(shlex.quote(s) for s in self._command))
 
-    def to_popen(self) -> List[str]:
+    def to_popen(self) -> list[str]:
         """ Convert a command to form accepted by :py:mod:`subprocess.Popen` """
 
         return list(self._command)
@@ -1032,7 +1028,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return invocation.context.obj
 
     @property
-    def _cli_options(self) -> Dict[str, Any]:
+    def _cli_options(self) -> dict[str, Any]:
         """
         CLI options attached to the CLI invocation.
 
@@ -1503,11 +1499,11 @@ class _MultiInvokableCommonMeta(_CommonMeta):
     def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
         super().__init__(*args, **kwargs)
 
-        cls.cli_invocations: List['tmt.cli.CliInvocation'] = []
+        cls.cli_invocations: list['tmt.cli.CliInvocation'] = []
 
 
 class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
-    cli_invocations: List['tmt.cli.CliInvocation']
+    cli_invocations: list['tmt.cli.CliInvocation']
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -1550,7 +1546,7 @@ class GeneralError(Exception):
     def __init__(
             self,
             message: str,
-            causes: Optional[List[Exception]] = None,
+            causes: Optional[list[Exception]] = None,
             *args: Any,
             **kwargs: Any) -> None:
         """
@@ -1615,7 +1611,7 @@ class SpecificationError(MetadataError):
     def __init__(
             self,
             message: str,
-            validation_errors: Optional[List[Tuple[jsonschema.ValidationError, str]]] = None,
+            validation_errors: Optional[list[tuple[jsonschema.ValidationError, str]]] = None,
             *args: Any,
             **kwargs: Any) -> None:
         super().__init__(message, *args, **kwargs)
@@ -1698,7 +1694,7 @@ class WaitingTimedOutError(GeneralError):
 class RetryError(GeneralError):
     """ Retries unsuccessful """
 
-    def __init__(self, label: str, causes: List[Exception]) -> None:
+    def __init__(self, label: str, causes: list[Exception]) -> None:
         super().__init__(f"Retries of {label} unsuccessful.", causes)
 
 
@@ -1806,14 +1802,14 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield ''
         yield from _indent(render_exception(cause))
 
-    def _render_causes(causes: List[BaseException]) -> Iterator[str]:
+    def _render_causes(causes: list[BaseException]) -> Iterator[str]:
         yield ''
         yield f'The exception was caused by {len(causes)} earlier exceptions'
 
         for number, cause in enumerate(causes, start=1):
             yield from _render_cause(number, cause)
 
-    causes: List[BaseException] = []
+    causes: list[BaseException] = []
 
     if isinstance(exception, GeneralError) and exception.causes:
         causes += exception.causes
@@ -1837,7 +1833,7 @@ def show_exception(exception: BaseException) -> None:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def uniq(values: List[T]) -> List[T]:
+def uniq(values: list[T]) -> list[T]:
     """ Return a list of all unique items from ``values`` """
     return list(set(values))
 
@@ -1851,7 +1847,7 @@ def duplicates(values: Iterable[Optional[T]]) -> Iterator[T]:
         yield value
 
 
-def flatten(lists: Iterable[List[T]], unique: bool = False) -> List[T]:
+def flatten(lists: Iterable[list[T]], unique: bool = False) -> list[T]:
     """
     "Flatten" a list of lists into a single-level list.
 
@@ -1861,7 +1857,7 @@ def flatten(lists: Iterable[List[T]], unique: bool = False) -> List[T]:
     :returns: list of items from all given lists.
     """
 
-    flattened: List[T] = sum(lists, [])
+    flattened: list[T] = sum(lists, [])
 
     return uniq(flattened) if unique else flattened
 
@@ -1879,9 +1875,9 @@ def ascii(text: Any) -> bytes:
 
 
 def listify(
-        data: Union[Tuple[Any, ...], List[Any], str, Dict[Any, Any]],
+        data: Union[tuple[Any, ...], list[Any], str, dict[Any, Any]],
         split: bool = False,
-        keys: Optional[List[str]] = None) -> Union[List[Any], Dict[Any, Any]]:
+        keys: Optional[list[str]] = None) -> Union[list[Any], dict[Any, Any]]:
     """
     Ensure that variable is a list, convert if necessary
     For dictionaries check all items or only those with provided keys.
@@ -1926,7 +1922,7 @@ def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     return fmf.Tree(fmf_tree_path).find(node_path).data
 
 
-def filter_paths(directory: Path, searching: List[str], files_only: bool = False) -> List[Path]:
+def filter_paths(directory: Path, searching: list[str], files_only: bool = False) -> list[Path]:
     """
     Filter files for specific paths we are searching for inside a directory
 
@@ -1935,7 +1931,7 @@ def filter_paths(directory: Path, searching: List[str], files_only: bool = False
     all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
     alldirs = [str(dir) for dir in all_paths if dir.is_dir()]
     allfiles = [str(file) for file in all_paths if not file.is_dir()]
-    found_paths: List[str] = []
+    found_paths: list[str] = []
 
     for search_string in searching:
         if search_string == '/':
@@ -2003,7 +1999,7 @@ def _add_file_vars(
         result[name] = str(value)
 
 
-def shell_to_dict(variables: Union[str, List[str]]) -> EnvironmentType:
+def shell_to_dict(variables: Union[str, list[str]]) -> EnvironmentType:
     """
     Convert shell-like variables into a dictionary
 
@@ -2028,7 +2024,7 @@ def shell_to_dict(variables: Union[str, List[str]]) -> EnvironmentType:
 
 def environment_to_dict(
         *,
-        variables: Union[str, List[str]],
+        variables: Union[str, list[str]],
         logger: tmt.log.Logger) -> EnvironmentType:
     """
     Convert environment variables into a dictionary
@@ -2318,7 +2314,7 @@ def modify_environ(
 
 
 def dict_to_yaml(
-        data: Union[Dict[str, Any], List[Any], 'tmt.base._RawFmfId'],
+        data: Union[dict[str, Any], list[Any], 'tmt.base._RawFmfId'],
         width: Optional[int] = None,
         sort: bool = False,
         start: bool = False) -> str:
@@ -2368,7 +2364,7 @@ YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 
 def yaml_to_dict(data: Any,
-                 yaml_type: Optional[YamlTypType] = None) -> Dict[Any, Any]:
+                 yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
     """ Convert yaml into dictionary """
     yaml = YAML(typ=yaml_type)
     loaded_data = yaml.load(data)
@@ -2382,7 +2378,7 @@ def yaml_to_dict(data: Any,
 
 
 def yaml_to_list(data: Any,
-                 yaml_type: Optional[YamlTypType] = 'safe') -> List[Any]:
+                 yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
     """ Convert yaml into list """
     yaml = YAML(typ=yaml_type)
     try:
@@ -2399,7 +2395,7 @@ def yaml_to_list(data: Any,
     return loaded_data
 
 
-def json_to_list(data: Any) -> List[Any]:
+def json_to_list(data: Any) -> list[Any]:
     """ Convert json into list """
 
     try:
@@ -2415,7 +2411,7 @@ def json_to_list(data: Any) -> List[Any]:
 
 
 #: A type representing compatible sources of keys and values.
-KeySource = Union[Dict[str, Any], fmf.Tree]
+KeySource = Union[dict[str, Any], fmf.Tree]
 
 #: Type of field's normalization callback.
 NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
@@ -2436,7 +2432,7 @@ UnserializeCallback = Callable[[Any], T]
 #: reduces to data classes and data class instances. Our :py:class:`DataContainer`
 #: are perfectly compatible data classes, but some helper methods may be used
 #: on raw data classes, not just on ``DataContainer`` instances.
-ContainerClass: 'TypeAlias' = Type['DataclassInstance']
+ContainerClass: 'TypeAlias' = type['DataclassInstance']
 ContainerInstance: 'TypeAlias' = 'DataclassInstance'
 Container = Union[ContainerClass, ContainerInstance]
 
@@ -2465,7 +2461,7 @@ class FieldMetadata(Generic[T]):
 
     #: CLI option parameters, for lazy option creation.
     option_args: Optional['FieldCLIOption'] = None
-    option_kwargs: Optional[Dict[str, Any]] = None
+    option_kwargs: Optional[dict[str, Any]] = None
     option_choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None
 
     #: A :py:func:`click.option` decorator defining a corresponding CLI option.
@@ -2521,7 +2517,7 @@ def container_values(container: ContainerInstance) -> Iterator[Any]:
         yield container.__dict__[field.name]
 
 
-def container_items(container: ContainerInstance) -> Iterator[Tuple[str, Any]]:
+def container_items(container: ContainerInstance) -> Iterator[tuple[str, Any]]:
     """ Iterate over key/value pairs in a container """
 
     for field in container_fields(container):
@@ -2531,22 +2527,22 @@ def container_items(container: ContainerInstance) -> Iterator[Tuple[str, Any]]:
 @overload
 def container_field(
         container: ContainerClass,
-        key: str) -> Tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]']:
+        key: str) -> tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]']:
     pass
 
 
 @overload
 def container_field(
         container: ContainerInstance,
-        key: str) -> Tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
+        key: str) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
     pass
 
 
 def container_field(
         container: Container,
         key: str) -> Union[
-            Tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]'],
-            Tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']]:
+            tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]'],
+            tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']]:
     """
     Return a dataclass/data container field info by the field's name.
 
@@ -2584,7 +2580,7 @@ def container_field(
 class DataContainer:
     """ A base class for objects that have keys and values """
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a mapping.
 
@@ -2593,7 +2589,7 @@ class DataContainer:
 
         return dict(self.items())
 
-    def to_minimal_dict(self) -> Dict[str, Any]:
+    def to_minimal_dict(self) -> dict[str, Any]:
         """
         Convert to a mapping with unset keys omitted.
 
@@ -2618,7 +2614,7 @@ class DataContainer:
 
         yield from container_values(self)
 
-    def items(self) -> Iterator[Tuple[str, Any]]:
+    def items(self) -> Iterator[tuple[str, Any]]:
         """ Iterate over key/value pairs """
 
         yield from container_items(self)
@@ -2701,7 +2697,7 @@ SpecOutT = TypeVar('SpecOutT')
 
 class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
     @classmethod
-    def from_spec(cls: Type[SpecBasedContainerT], spec: SpecInT) -> SpecBasedContainerT:
+    def from_spec(cls: type[SpecBasedContainerT], spec: SpecInT) -> SpecBasedContainerT:
         """
         Convert from a specification file or from a CLI option
 
@@ -2761,7 +2757,7 @@ class SerializableContainer(DataContainer):
             setattr(obj, name, value)
 
     @classmethod
-    def extract_from(cls: Type[SerializableContainerDerivedType],
+    def extract_from(cls: type[SerializableContainerDerivedType],
                      obj: Any) -> SerializableContainerDerivedType:
         """ Extract keys from given object, and save them in a container """
 
@@ -2780,7 +2776,7 @@ class SerializableContainer(DataContainer):
     # them later.
     #
 
-    def to_serialized(self) -> Dict[str, Any]:
+    def to_serialized(self) -> dict[str, Any]:
         """
         Convert to a form suitable for saving in a file.
 
@@ -2789,7 +2785,7 @@ class SerializableContainer(DataContainer):
         See :py:meth:`from_serialized` for its counterpart.
         """
 
-        def _produce_serialized() -> Iterator[Tuple[str, Any]]:
+        def _produce_serialized() -> Iterator[tuple[str, Any]]:
             for key in container_keys(self):
                 _, option, value, _, metadata = container_field(self, key)
 
@@ -2811,8 +2807,8 @@ class SerializableContainer(DataContainer):
 
     @classmethod
     def from_serialized(
-            cls: Type[SerializableContainerDerivedType],
-            serialized: Dict[str, Any]) -> SerializableContainerDerivedType:
+            cls: type[SerializableContainerDerivedType],
+            serialized: dict[str, Any]) -> SerializableContainerDerivedType:
         """
         Convert from a serialized form loaded from a file.
 
@@ -2826,7 +2822,7 @@ class SerializableContainer(DataContainer):
         # already know what class to restore: this one.
         serialized.pop('__class__', None)
 
-        def _produce_unserialized() -> Iterator[Tuple[str, Any]]:
+        def _produce_unserialized() -> Iterator[tuple[str, Any]]:
             for option, value in serialized.items():
                 key = option_to_key(option)
 
@@ -2853,7 +2849,7 @@ class SerializableContainer(DataContainer):
     # silence mypy about the missing actual type.
     @staticmethod
     def unserialize(
-            serialized: Dict[str, Any],
+            serialized: dict[str, Any],
             logger: tmt.log.Logger
             ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
         """
@@ -2921,7 +2917,7 @@ def markdown_to_html(filename: Path) -> str:
 
 
 def shell_variables(
-        data: Union[List[str], Tuple[str, ...], Dict[str, Any]]) -> List[str]:
+        data: Union[list[str], tuple[str, ...], dict[str, Any]]) -> list[str]:
     """
     Prepare variables to be consumed by shell
 
@@ -3076,7 +3072,7 @@ def _format_bool(
 
 
 def _format_list(
-        value: List[Any],
+        value: list[Any],
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
@@ -3192,7 +3188,7 @@ def _format_str(
 
 
 def _format_dict(
-        value: Dict[Any, Any],
+        value: dict[Any, Any],
         window_size: Optional[int],
         key_color: Optional[str],
         list_format: ListFormat,
@@ -3232,7 +3228,7 @@ def _format_dict(
             # formatted as a list with one item.
             raise AssertionError
 
-        def _emit_list_entries(lines: List[str]) -> Iterator[str]:
+        def _emit_list_entries(lines: list[str]) -> Iterator[str]:
             for i, line in enumerate(lines):
                 if i == 0:
                     yield f'{_FORMAT_VALUE_LIST_ENTRY_INDENT}{line}'
@@ -3240,7 +3236,7 @@ def _format_dict(
                 else:
                     yield f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}'
 
-        def _emit_dict_entry(lines: List[str]) -> Iterator[str]:
+        def _emit_dict_entry(lines: list[str]) -> Iterator[str]:
             yield from (f'{_FORMAT_VALUE_DICT_ENTRY_INDENT}{line}' for line in lines)
 
         # UX: special handling of containers with just a single item, i.e. the
@@ -3331,7 +3327,7 @@ ValueFormatter = Callable[
 
 #: Available formatters, as ``type``/``formatter`` pairs. If a value is instance
 #: of ``type``, the ``formatter`` is called to render it.
-_VALUE_FORMATTERS: List[Tuple[Any, ValueFormatter]] = [
+_VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
     (bool, _format_bool),
     (str, _format_str),
     (list, _format_list),
@@ -3344,7 +3340,7 @@ def _format_value(
         window_size: Optional[int] = None,
         key_color: Optional[str] = None,
         list_format: ListFormat = ListFormat.LISTED,
-        wrap: FormatWrap = 'auto') -> List[str]:
+        wrap: FormatWrap = 'auto') -> list[str]:
     """
     Render a nicely-formatted string representation of a value.
 
@@ -3429,7 +3425,7 @@ def format_value(
         # rendered across multiple lines, we need to add `-` prefix & indentation
         # to signal where items start and end visualy.
         if len(value) > 1 and any('\n' in formatted_item for formatted_item in formatted_value):
-            prefixed: List[str] = []
+            prefixed: list[str] = []
 
             for item in formatted_value:
                 for i, line in enumerate(item.splitlines()):
@@ -3446,7 +3442,7 @@ def format_value(
 
 def format(
         key: str,
-        value: Union[None, bool, str, List[Any], Dict[Any, Any]] = None,
+        value: Union[None, bool, str, list[Any], dict[Any, Any]] = None,
         indent: int = 24,
         window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
@@ -3562,7 +3558,7 @@ def create_directory(
     # Streamline the logging a bit: wrap the creating with a function returning
     # a message & optional exception. Later we will send the message to debug
     # log, and maybe also to console.
-    def _create_directory() -> Tuple[str, Optional[Exception]]:
+    def _create_directory() -> tuple[str, Optional[Exception]]:
         if path.is_dir():
             return (f"{name.capitalize()} '{path}' already exists.", None)
 
@@ -3634,7 +3630,7 @@ def check_git_url(url: str) -> str:
         raise GitUrlError(f"Unable to contact remote git via '{url}'.")
 
 
-PUBLIC_GIT_URL_PATTERNS: List[Tuple[str, str]] = [
+PUBLIC_GIT_URL_PATTERNS: list[tuple[str, str]] = [
     # Gitlab on private namepace is synced to pkgs.devel.redhat.com
     # old: https://gitlab.com/redhat/rhel/tests/bash
     # old: git@gitlab.com:redhat/rhel/tests/bash
@@ -3684,7 +3680,7 @@ def public_git_url(url: str) -> str:
     return rewrite_git_url(url, PUBLIC_GIT_URL_PATTERNS)
 
 
-def rewrite_git_url(url: str, patterns: List[Tuple[str, str]]) -> str:
+def rewrite_git_url(url: str, patterns: list[tuple[str, str]]) -> str:
     """
     Rewrite git url based on supplied patterns
 
@@ -3738,7 +3734,7 @@ def inject_auth_git_url(url: str) -> str:
     return url
 
 
-CLONABLE_GIT_URL_PATTERNS: List[Tuple[str, str]] = [
+CLONABLE_GIT_URL_PATTERNS: list[tuple[str, str]] = [
     # git:// protocol is not possible for r/o access
     # old: git://pkgs.devel.redhat.com/tests/bash
     # new: https://pkgs.devel.redhat.com/git/tests/bash
@@ -3909,8 +3905,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     def create(
             retries: int = DEFAULT_RETRY_SESSION_RETRIES,
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
-            allowed_methods: Optional[Tuple[str, ...]] = None,
-            status_forcelist: Optional[Tuple[int, ...]] = None,
+            allowed_methods: Optional[tuple[str, ...]] = None,
+            status_forcelist: Optional[tuple[int, ...]] = None,
             timeout: Optional[int] = None
             ) -> requests.Session:
 
@@ -3950,8 +3946,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             self,
             retries: int = DEFAULT_RETRY_SESSION_RETRIES,
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
-            allowed_methods: Optional[Tuple[str, ...]] = None,
-            status_forcelist: Optional[Tuple[int, ...]] = None,
+            allowed_methods: Optional[tuple[str, ...]] = None,
+            status_forcelist: Optional[tuple[int, ...]] = None,
             timeout: Optional[int] = None
             ) -> None:
         self.retries = retries
@@ -4079,7 +4075,7 @@ def parse_yaml(content: str) -> EnvironmentType:
     return {key: str(value) for key, value in yaml_as_dict.items()}
 
 
-def validate_git_status(test: 'tmt.base.Test') -> Tuple[bool, str]:
+def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     """
     Validate that test has current metadata on fmf_id
 
@@ -4193,7 +4189,7 @@ def generate_runs(
         yield abs_child_path
 
 
-def load_run(run: 'tmt.base.Run') -> Tuple[bool, Optional[Exception]]:
+def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
     """ Load a run and its steps from the workdir """
     try:
         run.load_from_workdir()
@@ -4209,7 +4205,7 @@ def load_run(run: 'tmt.base.Run') -> Tuple[bool, Optional[Exception]]:
 #  StructuredField
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SFSectionValueType = Union[str, List[str]]
+SFSectionValueType = Union[str, list[str]]
 
 
 class StructuredField:
@@ -4374,8 +4370,8 @@ class StructuredField:
         self._footer: str = ""
         # Sections are internally stored in their serialized form, i.e. as
         # strings.
-        self._sections: Dict[str, str] = {}
-        self._order: List[str] = []
+        self._sections: dict[str, str] = {}
+        self._order: list[str] = []
         self._multi = multi
         if text is not None:
             self.load(text)
@@ -4492,9 +4488,9 @@ class StructuredField:
             result.append(self._footer)
         return "\n".join(result)
 
-    def _read_section(self, content: str) -> Dict[str, SFSectionValueType]:
+    def _read_section(self, content: str) -> dict[str, SFSectionValueType]:
         """ Parse config section and return ordered dictionary """
-        dictionary: Dict[str, SFSectionValueType] = OrderedDict()
+        dictionary: dict[str, SFSectionValueType] = OrderedDict()
         for line in content.split("\n"):
             # Remove comments and skip empty lines
             line = re.sub("#.*", "", line)
@@ -4518,7 +4514,7 @@ class StructuredField:
                 dictionary[key] = value
         return dictionary
 
-    def _write_section(self, dictionary: Dict[str, SFSectionValueType]) -> str:
+    def _write_section(self, dictionary: dict[str, SFSectionValueType]) -> str:
         """ Convert dictionary into a config section format """
         section = ""
         for key in dictionary:
@@ -4533,7 +4529,7 @@ class StructuredField:
     #  StructuredField Methods
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def iterate(self) -> Iterator[Tuple[str, str]]:
+    def iterate(self) -> Iterator[tuple[str, str]]:
         """ Return (section, content) tuples for all sections """
         for section in self:
             yield section, self._sections[section]
@@ -4588,7 +4584,7 @@ class StructuredField:
             self._footer = content
         return self._footer
 
-    def sections(self) -> List[str]:
+    def sections(self) -> list[str]:
         """ Get the list of available sections """
         return self._order
 
@@ -4676,7 +4672,7 @@ class DistGitHandler:
     lookaside_server: str
     remote_substring: Pattern[str]
 
-    def url_and_name(self, cwd: Optional[Path] = None) -> List[Tuple[str, str]]:
+    def url_and_name(self, cwd: Optional[Path] = None) -> list[tuple[str, str]]:
         """
         Return list of urls and basenames of the used source
 
@@ -4711,7 +4707,7 @@ class DistGitHandler:
                 "No sources found in '{self.sources_file_name}' file.")
         return ret_values
 
-    def its_me(self, remotes: List[str]) -> bool:
+    def its_me(self, remotes: list[str]) -> bool:
         """ True if self can work with remotes """
         return any(self.remote_substring.search(item) for item in remotes)
 
@@ -4742,7 +4738,7 @@ class RedHatGitlab(DistGitHandler):
 
 
 def get_distgit_handler(
-        remotes: Optional[List[str]] = None,
+        remotes: Optional[list[str]] = None,
         usage_name: Optional[str] = None) -> DistGitHandler:
     """
     Return the right DistGitHandler
@@ -4760,7 +4756,7 @@ def get_distgit_handler(
     raise GeneralError(f"No known remote in '{remotes}'.")
 
 
-def get_distgit_handler_names() -> List[str]:
+def get_distgit_handler_names() -> list[str]:
     """ All known distgit handlers """
     return [i.usage_name for i in DistGitHandler.__subclasses__()]
 
@@ -4962,7 +4958,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         self._update_message_area(value, color=color)
 
 
-def find_fmf_root(path: Path) -> List[Path]:
+def find_fmf_root(path: Path) -> list[Path]:
     """
     Search trough path and return all fmf roots that exist there
 
@@ -4994,8 +4990,8 @@ def find_fmf_root(path: Path) -> List[Path]:
 # tmt code is not actually "reading" it. Loaded schema is passed down to
 # jsonschema library, and while `Any` would be perfectly valid, let's use an
 # alias to make schema easier to track in our code.
-Schema = Dict[str, Any]
-SchemaStore = Dict[str, Schema]
+Schema = dict[str, Any]
+SchemaStore = dict[str, Schema]
 
 
 def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
@@ -5030,7 +5026,7 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
         step_plugin_schema_ids = [schema_id for schema_id in store if schema_id.startswith(
             step_schema_prefix) and schema_id not in PLAN_SCHEMA_IGNORED_IDS]
 
-        refs: List[Schema] = [
+        refs: list[Schema] = [
             {'$ref': schema_id} for schema_id in step_plugin_schema_ids
             ]
 
@@ -5161,7 +5157,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     # Avoid possible circular imports
     import tmt.steps
 
-    def _process_step(step_name: str, step: Dict[Any, Any]) -> None:
+    def _process_step(step_name: str, step: dict[Any, Any]) -> None:
         """
         Process a single step configuration.
         """
@@ -5228,7 +5224,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
 def validate_fmf_node(
         node: fmf.Tree,
         schema_name: str,
-        logger: tmt.log.Logger) -> List[Tuple[jsonschema.ValidationError, str]]:
+        logger: tmt.log.Logger) -> list[tuple[jsonschema.ValidationError, str]]:
     """ Validate a given fmf node """
 
     node = _prenormalize_fmf_node(node, schema_name, logger)
@@ -5243,7 +5239,7 @@ def validate_fmf_node(
     # users to point finger on each and every issue. But don't throw the original
     # errors away!
 
-    errors: List[Tuple[jsonschema.ValidationError, str]] = []
+    errors: list[tuple[jsonschema.ValidationError, str]] = []
 
     for error in result.errors:
         path = f'{node.name}:{".".join(error.path)}'
@@ -5534,8 +5530,8 @@ def normalize_storage_size(
 
 def normalize_string_list(
         key_address: str,
-        value: Union[None, str, List[str]],
-        logger: tmt.log.Logger) -> List[str]:
+        value: Union[None, str, list[str]],
+        logger: tmt.log.Logger) -> list[str]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5582,8 +5578,8 @@ def normalize_path(
 
 def normalize_path_list(
         key_address: str,
-        value: Union[None, str, List[str]],
-        logger: tmt.log.Logger) -> List[Path]:
+        value: Union[None, str, list[str]],
+        logger: tmt.log.Logger) -> list[Path]:
     """
     Normalize a path-or-list-of-paths input value.
 
@@ -5618,8 +5614,8 @@ def normalize_path_list(
 
 def normalize_shell_script_list(
         key_address: str,
-        value: Union[None, str, List[str]],
-        logger: tmt.log.Logger) -> List[ShellScript]:
+        value: Union[None, str, list[str]],
+        logger: tmt.log.Logger) -> list[ShellScript]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5687,10 +5683,10 @@ class NormalizeKeysMixin(_CommonBase):
     """
 
     # If specified, keys would be iterated over in the order as listed here.
-    _KEYS_SHOW_ORDER: List[str] = []
+    _KEYS_SHOW_ORDER: list[str] = []
 
     @classmethod
-    def _iter_key_annotations(cls) -> Iterator[Tuple[str, Any]]:
+    def _iter_key_annotations(cls) -> Iterator[tuple[str, Any]]:
         """
         Iterate over keys' type annotations.
 
@@ -5702,7 +5698,7 @@ class NormalizeKeysMixin(_CommonBase):
             pairs of key name and its annotations.
         """
 
-        def _iter_class_annotations(klass: type) -> Iterator[Tuple[str, Any]]:
+        def _iter_class_annotations(klass: type) -> Iterator[tuple[str, Any]]:
             # Skip, needs fixes to become compatible
             if klass is Common:
                 return
@@ -5735,7 +5731,7 @@ class NormalizeKeysMixin(_CommonBase):
         for keyname, _ in cls._iter_key_annotations():
             yield keyname
 
-    def items(self) -> Iterator[Tuple[str, Any]]:
+    def items(self) -> Iterator[tuple[str, Any]]:
         """
         Iterate over keys and their values.
 
@@ -5754,14 +5750,14 @@ class NormalizeKeysMixin(_CommonBase):
     # TODO: exists for backward compatibility for the transition period. Once full
     # type annotations land, there should be no need for extra _keys attribute.
     @classmethod
-    def _keys(cls) -> List[str]:
+    def _keys(cls) -> list[str]:
         """ Return a list of names of object's keys. """
 
         return list(cls.keys())
 
     def _load_keys(
             self,
-            key_source: Dict[str, Any],
+            key_source: dict[str, Any],
             key_source_name: str,
             logger: tmt.log.Logger) -> None:
         """ Extract values for class-level attributes, and verify they match declared types. """
@@ -6074,7 +6070,7 @@ def default_template_environment() -> jinja2.Environment:
 
     def regex_search(
             string: str,
-            pattern: str) -> Union[Optional[str], Tuple[str, ...]]:
+            pattern: str) -> Union[Optional[str], tuple[str, ...]]:
         match = re.search(pattern, string)
 
         if match is None:
@@ -6227,7 +6223,7 @@ def retry(
     :param interval: amount of seconds to wait before a new try
     :param label: action to retry
     """
-    exceptions: List[Exception] = []
+    exceptions: list[Exception] = []
     for i in range(attempts):
         try:
             return func(*args, **kwargs)

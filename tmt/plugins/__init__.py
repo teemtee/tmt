@@ -5,7 +5,7 @@ import os
 import pkgutil
 import sys
 from importlib.metadata import entry_points
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar
+from typing import Any, Generic, Iterator, Optional, TypeVar
 
 import tmt
 import tmt.utils
@@ -56,7 +56,7 @@ def discover(path: Path) -> Iterator[str]:
 # tmt.steps import tmt.export, and tmt.export import tmt.steps.STEPS. Until that
 # is resolved, to use `Exportable` in tmt.steps, we need a delayed import. Hence
 # the function.
-def _discover_packages() -> List[Tuple[str, Path]]:
+def _discover_packages() -> list[tuple[str, Path]]:
     from tmt.steps import STEPS
 
     return [
@@ -236,7 +236,7 @@ class PluginRegistry(Generic[RegisterableT]):
     annotations and more visible semantics.
     """
 
-    _plugins: Dict[str, RegisterableT]
+    _plugins: dict[str, RegisterableT]
 
     def __init__(self) -> None:
         self._plugins = {}

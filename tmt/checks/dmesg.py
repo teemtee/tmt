@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.steps.execute
@@ -47,7 +47,7 @@ class DmesgCheck(CheckPlugin):
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             event: CheckEvent,
-            logger: tmt.log.Logger) -> Tuple[ResultOutcome, Path]:
+            logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
         from tmt.steps.execute import ExecutePlugin
 
@@ -88,7 +88,7 @@ class DmesgCheck(CheckPlugin):
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.BEFORE_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]
@@ -102,7 +102,7 @@ class DmesgCheck(CheckPlugin):
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         outcome, path = cls._save_dmesg(plugin, guest, test, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]

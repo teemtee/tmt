@@ -5,7 +5,7 @@ import logging
 import os
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, cast
+from typing import Any, Optional, TypedDict, cast
 
 import tmt
 import tmt.hardware
@@ -43,7 +43,7 @@ GuestInspectType = TypedDict(
     )
 
 
-SUPPORTED_HARDWARE_CONSTRAINTS: List[str] = [
+SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.processors',
     'cpu.model',
     'disk.size',
@@ -63,7 +63,7 @@ OPERATOR_SIGN_TO_OPERATOR = {
     }
 
 
-def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> Tuple[str, str, bool]:
+def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[str, str, bool]:
     """
     Convert constraint operator to Beaker "op".
 
@@ -109,7 +109,7 @@ class MrackBaseHWElement:
     # types.
     name: str
 
-    def to_mrack(self) -> Dict[str, Any]:
+    def to_mrack(self) -> dict[str, Any]:
         """ Convert the element to Mrack-compatible dictionary tree """
         raise NotImplementedError
 
@@ -122,9 +122,9 @@ class MrackHWElement(MrackBaseHWElement):
     This type of element is not allowed to have any child elements.
     """
 
-    attributes: Dict[str, str] = dataclasses.field(default_factory=dict)
+    attributes: dict[str, str] = dataclasses.field(default_factory=dict)
 
-    def to_mrack(self) -> Dict[str, Any]:
+    def to_mrack(self) -> dict[str, Any]:
         return {
             self.name: self.attributes
             }
@@ -151,9 +151,9 @@ class MrackHWGroup(MrackBaseHWElement):
     This type of element is not allowed to have any attributes.
     """
 
-    children: List[MrackBaseHWElement] = dataclasses.field(default_factory=list)
+    children: list[MrackBaseHWElement] = dataclasses.field(default_factory=list)
 
-    def to_mrack(self) -> Dict[str, Any]:
+    def to_mrack(self) -> dict[str, Any]:
         # Another unexpected behavior of mrack dictionary tree: if there is just
         # a single child, it is "packed" into its parent as a key/dict item.
         if len(self.children) == 1 and self.name not in ('and', 'or'):
@@ -310,7 +310,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
     # as mypy does not have type information for the BeakerTransformer class
     class TmtBeakerTransformer(BeakerTransformer):  # type: ignore[misc]
-        def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> Dict[str, Any]:
+        def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> dict[str, Any]:
             """ Return hw requirements from given hw dictionary """
 
             assert hw.constraint
@@ -327,12 +327,12 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
                 'hostRequires': transformed.to_mrack()
                 }
 
-        def create_host_requirement(self, host: Dict[str, Any]) -> Dict[str, Any]:
+        def create_host_requirement(self, host: dict[str, Any]) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
             hardware = cast(Optional[tmt.hardware.Hardware], host.get('hardware'))
             if hardware and hardware.constraint:
                 host.update({"beaker": self._translate_tmt_hw(hardware)})
-            req: Dict[str, Any] = super().create_host_requirement(host)
+            req: dict[str, Any] = super().create_host_requirement(host)
             req.update({"whiteboard": host.get("tmt_name", req.get("whiteboard"))})
             return req
 
@@ -417,7 +417,7 @@ GUEST_STATE_COLORS = {
 
 class BeakerAPI:
     # req is a requirement passed to Beaker mrack provisioner
-    mrack_requirement: Dict[str, Any] = {}
+    mrack_requirement: dict[str, Any] = {}
     dsp_name: str = "Beaker"
 
     # wrapping around the __init__ with async wrapper does mangle the method
@@ -474,7 +474,7 @@ class BeakerAPI:
     @async_run
     async def create(
             self,
-            data: Dict[str, Any],
+            data: dict[str, Any],
             ) -> Any:
         """
         Create - or request creation of - a resource using mrack up.
@@ -557,7 +557,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     def _create(self, tmt_name: str) -> None:
         """ Create beaker job xml request and submit it to Beaker hub """
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             'tmt_name': tmt_name,
             'hardware': self.hardware,
             'name': f'{self.image}-{self.arch}',

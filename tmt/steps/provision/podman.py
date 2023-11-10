@@ -1,7 +1,7 @@
 import dataclasses
 import os
 from shlex import quote
-from typing import Any, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -298,7 +298,7 @@ class GuestContainer(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None,
+            options: Optional[list[str]] = None,
             superuser: bool = False) -> None:
         """ Make sure that the workdir has a correct selinux context """
         if not self.is_ready:
@@ -320,8 +320,8 @@ class GuestContainer(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None,
-            extend_options: Optional[List[str]] = None) -> None:
+            options: Optional[list[str]] = None,
+            extend_options: Optional[list[str]] = None) -> None:
         """ Nothing to be done to pull workdir """
         if not self.is_ready:
             return

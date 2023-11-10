@@ -2,7 +2,6 @@
 
 import sys
 import textwrap
-from typing import List
 
 from tmt.base import Plan, Story, Test
 from tmt.lint import Linter
@@ -15,7 +14,7 @@ Generate docs for all known lint checks.
 """).strip()
 
 
-def _sort_linters(linters: List[Linter]) -> List[Linter]:
+def _sort_linters(linters: list[Linter]) -> list[Linter]:
     """ Sort a list of linters by their ID """
     return sorted(linters, key=lambda x: x.id)
 

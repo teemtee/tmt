@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Tuple
 
 import _pytest.monkeypatch
 import pytest
@@ -139,7 +138,7 @@ class DecideColorizationTestcase:
 
     # Name of the testcase and expected outcome of decide_colorization()
     name: str
-    expected: Tuple[bool, bool]
+    expected: tuple[bool, bool]
 
     # Testcase environment setup to perform before calling decide_colorization()
     set_no_color_option: bool = False

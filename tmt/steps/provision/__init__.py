@@ -14,13 +14,8 @@ from shlex import quote
 from typing import (
     TYPE_CHECKING,
     Any,
-    DefaultDict,
-    Dict,
     Iterator,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -121,8 +116,8 @@ class GuestFacts(SerializableContainer):
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
 
-    os_release_content: Dict[str, str] = field(default_factory=dict)
-    lsb_release_content: Dict[str, str] = field(default_factory=dict)
+    os_release_content: dict[str, str] = field(default_factory=dict)
+    lsb_release_content: dict[str, str] = field(default_factory=dict)
 
     # TODO nothing but a fancy helper, to check for some special errors that
     # may appear this soon in provisioning. But, would it make sense to put
@@ -153,7 +148,7 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _fetch_keyval_file(self, guest: 'Guest', filepath: Path) -> Dict[str, str]:
+    def _fetch_keyval_file(self, guest: 'Guest', filepath: Path) -> dict[str, str]:
         """
         Load key/value pairs from a file on the given guest.
 
@@ -176,14 +171,14 @@ class GuestFacts(SerializableContainer):
             empty mapping if it was impossible to load the content.
         """
 
-        content: Dict[str, str] = {}
+        content: dict[str, str] = {}
 
         output = self._execute(guest, Command('cat', filepath))
 
         if not output or not output.stdout:
             return content
 
-        def _iter_pairs() -> Iterator[Tuple[str, str]]:
+        def _iter_pairs() -> Iterator[tuple[str, str]]:
             assert output  # narrow type in a closure
             assert output.stdout  # narrow type in a closure
 
@@ -214,7 +209,7 @@ class GuestFacts(SerializableContainer):
     def _probe(
             self,
             guest: 'Guest',
-            probes: List[Tuple[Command, T]]) -> Optional[T]:
+            probes: list[tuple[Command, T]]) -> Optional[T]:
         """
         Find a first successfull command.
 
@@ -234,7 +229,7 @@ class GuestFacts(SerializableContainer):
     def _query(
             self,
             guest: 'Guest',
-            probes: List[Tuple[Command, str]]) -> Optional[str]:
+            probes: list[tuple[Command, str]]) -> Optional[str]:
         """
         Find a first successfull command, and extract info from its output.
 
@@ -340,7 +335,7 @@ class GuestFacts(SerializableContainer):
 
         self.in_sync = True
 
-    def format(self) -> Iterator[Tuple[str, str, str]]:
+    def format(self) -> Iterator[tuple[str, str, str]]:
         """
         Format facts for pretty printing.
 
@@ -358,8 +353,8 @@ class GuestFacts(SerializableContainer):
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
 
 
-GUEST_FACTS_INFO_FIELDS: List[str] = ['arch', 'distro']
-GUEST_FACTS_VERBOSE_FIELDS: List[str] = [
+GUEST_FACTS_INFO_FIELDS: list[str] = ['arch', 'distro']
+GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
     # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
     # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
     key for key in GuestFacts.keys()  # noqa: SIM118
@@ -383,7 +378,7 @@ def normalize_hardware(
 
     # From command line
     if isinstance(raw_hardware, (list, tuple)):
-        merged: DefaultDict[str, Any] = collections.defaultdict(dict)
+        merged: collections.defaultdict[str, Any] = collections.defaultdict(dict)
 
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
@@ -416,7 +411,7 @@ class GuestData(SerializableContainer):
     # fields are not created by `field()` - not sure why, but we can fix that
     # later.
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
-    _OPTIONLESS_FIELDS: Tuple[str, ...] = ('guest', 'facts')
+    _OPTIONLESS_FIELDS: tuple[str, ...] = ('guest', 'facts')
 
     # guest role in the multihost scenario
     role: Optional[str] = None
@@ -445,7 +440,7 @@ class GuestData(SerializableContainer):
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
     @classmethod
-    def options(cls) -> Iterator[Tuple[str, str]]:
+    def options(cls) -> Iterator[tuple[str, str]]:
         """
         Iterate over option names.
 
@@ -462,7 +457,7 @@ class GuestData(SerializableContainer):
 
     @classmethod
     def from_plugin(
-            cls: Type[GuestDataT],
+            cls: type[GuestDataT],
             container: 'ProvisionPlugin[ProvisionStepDataT]') -> GuestDataT:
         """ Create guest data from plugin and its current configuration """
 
@@ -476,7 +471,7 @@ class GuestData(SerializableContainer):
     def show(
             self,
             *,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             verbose: int = 0,
             logger: tmt.log.Logger) -> None:
         """
@@ -540,7 +535,7 @@ class Guest(tmt.utils.Common):
     """
 
     # Used by save() to construct the correct container for keys.
-    _data_class: Type[GuestData] = GuestData
+    _data_class: type[GuestData] = GuestData
 
     role: Optional[str]
     guest: Optional[str]
@@ -555,7 +550,7 @@ class Guest(tmt.utils.Common):
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
     @property
-    def _keys(self) -> List[str]:
+    def _keys(self) -> list[str]:
         return list(self._data_class.keys())
 
     def __init__(self,
@@ -600,7 +595,7 @@ class Guest(tmt.utils.Common):
         raise NotImplementedError
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """
         return []
 
@@ -682,7 +677,7 @@ class Guest(tmt.utils.Common):
         return facts
 
     @facts.setter
-    def facts(self, facts: Union[GuestFacts, Dict[str, Any]]) -> None:
+    def facts(self, facts: Union[GuestFacts, dict[str, Any]]) -> None:
         if isinstance(facts, GuestFacts):
             self.__dict__['facts'] = facts
 
@@ -706,14 +701,14 @@ class Guest(tmt.utils.Common):
             elif key in GUEST_FACTS_VERBOSE_FIELDS:
                 self.verbose(key_formatted, value_formatted, color='green')
 
-    def _ansible_verbosity(self) -> List[str]:
+    def _ansible_verbosity(self) -> list[str]:
         """ Prepare verbose level based on the --debug option count """
         if self.debug_level < 3:
             return []
         return ['-' + (self.debug_level - 2) * 'v']
 
     @staticmethod
-    def _ansible_extra_args(extra_args: Optional[str]) -> List[str]:
+    def _ansible_extra_args(extra_args: Optional[str]) -> list[str]:
         """ Prepare extra arguments for ansible-playbook"""
         if extra_args is None:
             return []
@@ -760,7 +755,7 @@ class Guest(tmt.utils.Common):
         return environment
 
     @staticmethod
-    def _export_environment(environment: tmt.utils.EnvironmentType) -> List[ShellScript]:
+    def _export_environment(environment: tmt.utils.EnvironmentType) -> list[ShellScript]:
         """ Prepare shell export of environment variables """
         if not environment:
             return []
@@ -926,7 +921,7 @@ class Guest(tmt.utils.Common):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None,
+             options: Optional[list[str]] = None,
              superuser: bool = False) -> None:
         """
         Push files to the guest
@@ -937,8 +932,8 @@ class Guest(tmt.utils.Common):
     def pull(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None,
-             extend_options: Optional[List[str]] = None) -> None:
+             options: Optional[list[str]] = None,
+             extend_options: Optional[list[str]] = None) -> None:
         """
         Pull files from the guest
         """
@@ -1067,7 +1062,7 @@ class Guest(tmt.utils.Common):
         return CheckRsyncOutcome.INSTALLED
 
     @classmethod
-    def requires(cls) -> List['tmt.base.Dependency']:
+    def requires(cls) -> list['tmt.base.Dependency']:
         """ All requirements of the guest implementation """
         return []
 
@@ -1099,7 +1094,7 @@ class GuestSshData(GuestData):
         option=('-b', '--become'),
         help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
         )
-    key: List[str] = field(
+    key: list[str] = field(
         default_factory=list,
         option=('-k', '--key'),
         metavar='PATH',
@@ -1110,7 +1105,7 @@ class GuestSshData(GuestData):
         option=('-p', '--password'),
         metavar='PASSWORD',
         help='Password for login into the guest system.')
-    ssh_option: List[str] = field(
+    ssh_option: list[str] = field(
         default_factory=list,
         option='--ssh-option',
         metavar="OPTION",
@@ -1139,13 +1134,13 @@ class GuestSsh(Guest):
     These are by default imported into instance attributes.
     """
 
-    _data_class: Type[GuestData] = GuestSshData
+    _data_class: type[GuestData] = GuestSshData
 
     port: Optional[int]
     user: Optional[str]
-    key: List[Path]
+    key: list[Path]
     password: Optional[str]
-    ssh_option: List[str]
+    ssh_option: list[str]
 
     # Master ssh connection process and socket path
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
@@ -1348,7 +1343,7 @@ class GuestSsh(Guest):
     def push(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None,
+             options: Optional[list[str]] = None,
              superuser: bool = False) -> None:
         """
         Push files to the guest
@@ -1417,8 +1412,8 @@ class GuestSsh(Guest):
     def pull(self,
              source: Optional[Path] = None,
              destination: Optional[Path] = None,
-             options: Optional[List[str]] = None,
-             extend_options: Optional[List[str]] = None) -> None:
+             options: Optional[list[str]] = None,
+             extend_options: Optional[list[str]] = None) -> None:
         """
         Pull files from the guest
 
@@ -1681,7 +1676,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all provision plugins) """
 
         # Prepare general usage message for the step
@@ -1742,7 +1737,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         """
         raise NotImplementedError
 
-    def requires(self) -> List['tmt.base.Dependency']:
+    def requires(self) -> list['tmt.base.Dependency']:
         """
         All requirements of the guest implementation.
 
@@ -1758,7 +1753,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         return self._guest_class.requires()
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Return list of options. """
         return super().options(how) + cls._guest_class.options(how)
 
@@ -1767,7 +1762,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         """ Remove the images of one particular plugin """
         return True
 
-    def show(self, keys: Optional[List[str]] = None) -> None:
+    def show(self, keys: Optional[list[str]] = None) -> None:
         keys = keys or list(set(self.data.keys()))
 
         show_hardware = 'hardware' in keys
@@ -1804,8 +1799,8 @@ class Provision(tmt.steps.Step):
         super().__init__(plan=plan, data=data, logger=logger)
 
         # List of provisioned guests and loaded guest data
-        self._guests: List[Guest] = []
-        self._guest_data: Dict[str, GuestData] = {}
+        self._guests: list[Guest] = []
+        self._guest_data: dict[str, GuestData] = {}
         self.is_multihost = False
 
     def load(self) -> None:
@@ -1923,6 +1918,6 @@ class Provision(tmt.steps.Step):
             if save:
                 self.save()
 
-    def guests(self) -> List[Guest]:
+    def guests(self) -> list[Guest]:
         """ Return the list of all provisioned guests """
         return self._guests

@@ -1,7 +1,7 @@
 import dataclasses
 import enum
 import re
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import click
 import fmf
@@ -55,7 +55,7 @@ class ResultInterpret(enum.Enum):
         return value.name in list(ResultOutcome.__members__.keys())
 
 
-RESULT_OUTCOME_COLORS: Dict[ResultOutcome, str] = {
+RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
     ResultOutcome.PASS: 'green',
     ResultOutcome.FAIL: 'red',
     ResultOutcome.INFO: 'blue',
@@ -93,7 +93,7 @@ class BaseResult(SerializableContainer):
         unserialize=ResultOutcome.from_spec
         )
     note: Optional[str] = None
-    log: List[Path] = field(
+    log: list[Path] = field(
         default_factory=list,
         serialize=lambda logs: [str(log) for log in logs],
         unserialize=lambda value: [Path(log) for log in value])
@@ -107,7 +107,7 @@ class BaseResult(SerializableContainer):
 
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
-        components: List[str] = [
+        components: list[str] = [
             click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
             self.name
             ]
@@ -138,14 +138,14 @@ class Result(BaseResult):
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
         unserialize=_unserialize_fmf_id
         )
-    ids: Dict[str, Optional[str]] = field(default_factory=dict)
+    ids: dict[str, Optional[str]] = field(default_factory=dict)
     guest: ResultGuestData = field(
         default_factory=ResultGuestData,
         serialize=lambda value: value.to_serialized(),  # type: ignore[attr-defined]
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
-    check: List[CheckResult] = field(
+    check: list[CheckResult] = field(
         default_factory=list,
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
@@ -164,8 +164,8 @@ class Result(BaseResult):
             test: 'tmt.base.Test',
             result: ResultOutcome,
             note: Optional[str] = None,
-            ids: Optional[Dict[str, Optional[str]]] = None,
-            log: Optional[List[Path]] = None,
+            ids: Optional[dict[str, Optional[str]]] = None,
+            log: Optional[list[Path]] = None,
             guest: Optional['tmt.steps.provision.Guest'] = None) -> 'Result':
         """
         Create a result from a test instance.
@@ -264,7 +264,7 @@ class Result(BaseResult):
         return self
 
     @staticmethod
-    def total(results: List['Result']) -> Dict[ResultOutcome, int]:
+    def total(results: list['Result']) -> dict[ResultOutcome, int]:
         """ Return dictionary with total stats for given results """
         stats = {result: 0 for result in RESULT_OUTCOME_COLORS}
 
@@ -273,7 +273,7 @@ class Result(BaseResult):
         return stats
 
     @staticmethod
-    def summary(results: List['Result']) -> str:
+    def summary(results: list['Result']) -> str:
         """ Prepare a nice human summary of provided results """
         stats = Result.total(results)
         comments = []
@@ -305,7 +305,7 @@ class Result(BaseResult):
 
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
-        components: List[str] = [
+        components: list[str] = [
             click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
             self.name
             ]

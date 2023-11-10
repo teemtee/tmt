@@ -6,7 +6,7 @@ import collections
 import dataclasses
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import click
 import fmf
@@ -58,10 +58,10 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
-    steps: Set[str] = dataclasses.field(default_factory=set)
+    steps: set[str] = dataclasses.field(default_factory=set)
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
-    clean_partials: DefaultDict[str, List[tmt.base.CleanCallback]] = dataclasses.field(
+    clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = dataclasses.field(
         default_factory=lambda: collections.defaultdict(list))
     run: Optional[tmt.Run] = None
 
@@ -100,14 +100,14 @@ class CliInvocation:
     """
 
     context: Optional[Context]
-    options: Dict[str, Any]
+    options: dict[str, Any]
 
     @classmethod
     def from_context(cls, context: Context) -> 'CliInvocation':
         return CliInvocation(context=context, options=context.params)
 
     @cached_property
-    def option_sources(self) -> Dict[str, click.core.ParameterSource]:
+    def option_sources(self) -> dict[str, click.core.ParameterSource]:
         if not self.context:
             return {}
 
@@ -123,7 +123,7 @@ class CustomGroup(click.Group):
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
-    def list_commands(self, context: Context) -> List[str]:  # type: ignore[override]
+    def list_commands(self, context: Context) -> list[str]:  # type: ignore[override]
         """ Prevent alphabetical sorting """
         return list(self.commands.keys())
 
@@ -199,7 +199,7 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 def main(
         click_contex: Context,
         root: str,
-        context: List[str],
+        context: list[str],
         no_color: bool,
         force_color: bool,
         **kwargs: Any) -> None:
@@ -395,12 +395,12 @@ def finito(
 
 def _lint_class(
         context: Context,
-        klass: Union[Type[tmt.base.Test], Type[tmt.base.Plan], Type[tmt.base.Story]],
+        klass: Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]],
         failed_only: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
-        outcomes: List[tmt.lint.LinterOutcome],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
     """ Lint a single class of objects """
 
@@ -447,13 +447,13 @@ def _lint_class(
 
 def do_lint(
         context: Context,
-        klasses: List[Union[Type[tmt.base.Test], Type[tmt.base.Plan], Type[tmt.base.Story]]],
+        klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
         list_checks: bool,
         failed_only: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
-        outcomes: List[tmt.lint.LinterOutcome],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
     """ Core of all ``lint`` commands """
 
@@ -552,10 +552,10 @@ def tests_lint(
         context: Context,
         list_checks: bool,
         failed_only: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
-        outcome_only: Tuple[str, ...],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcome_only: tuple[str, ...],
         **kwargs: Any) -> None:
     """
     Check tests against the L1 metadata specification.
@@ -673,14 +673,14 @@ def tests_create(
 @force_dry_options
 def tests_import(
         context: Context,
-        paths: List[str],
+        paths: list[str],
         makefile: bool,
         restraint: bool,
         general: bool,
-        types: List[str],
+        types: list[str],
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: List[str],
+        polarion_case_id: list[str],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
@@ -970,10 +970,10 @@ def plans_lint(
         context: Context,
         list_checks: bool,
         failed_only: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
-        outcome_only: Tuple[str, ...],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcome_only: tuple[str, ...],
         **kwargs: Any) -> None:
     """
     Check plans against the L2 metadata specification.
@@ -1384,10 +1384,10 @@ def stories_lint(
         context: Context,
         list_checks: bool,
         failed_only: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
-        outcome_only: Tuple[str, ...],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcome_only: tuple[str, ...],
         **kwargs: Any) -> None:
     """
     Check stories against the L3 metadata specification.
@@ -1747,11 +1747,11 @@ def clean_images(context: Context, **kwargs: Any) -> None:
 def lint(
         context: Context,
         list_checks: bool,
-        enable_checks: List[str],
-        disable_checks: List[str],
-        enforce_checks: List[str],
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
         failed_only: bool,
-        outcome_only: Tuple[str, ...],
+        outcome_only: tuple[str, ...],
         **kwargs: Any) -> None:
     """
     Check all the present metadata against the specification.

@@ -7,11 +7,8 @@ from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Iterator,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
     )
@@ -48,9 +45,9 @@ NitrateTestCase = Any
 
 DEFAULT_PRODUCT: Any = None
 
-SectionsReturnType = Tuple[str, str, str, str]
-HeadingsType = List[List[Union[int, str]]]
-SectionsHeadingsType = Dict[str, HeadingsType]
+SectionsReturnType = tuple[str, str, str, str]
+HeadingsType = list[list[Union[int, str]]]
+SectionsHeadingsType = dict[str, HeadingsType]
 
 # TODO: why this exists?
 log = fmf.utils.Logging('tmt').logger
@@ -152,7 +149,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
                 sections_headings[key] = result
                 break
 
-    def concatenate_headings_content(headings: Tuple[str, ...]) -> HeadingsType:
+    def concatenate_headings_content(headings: tuple[str, ...]) -> HeadingsType:
         content = []
         for v in headings:
             content += sections_headings[v]
@@ -343,7 +340,7 @@ def find_general_plan(component: str) -> NitrateTestPlan:
     """ Return single General Test Plan or raise an error """
     assert nitrate
     # At first find by linked components
-    found: List[NitrateTestPlan] = nitrate.TestPlan.search(
+    found: list[NitrateTestPlan] = nitrate.TestPlan.search(
         type__name="General",
         is_active=True,
         component__name=f"{component}")
@@ -657,8 +654,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 class NitrateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(cls,
-                               tests: List[tmt.base.Test],
-                               keys: Optional[List[str]] = None,
+                               tests: list[tmt.base.Test],
+                               keys: Optional[list[str]] = None,
                                **kwargs: Any) -> str:
         for test in tests:
             export_to_nitrate(test)

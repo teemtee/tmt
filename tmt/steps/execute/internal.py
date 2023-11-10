@@ -3,7 +3,7 @@ import json
 import os
 import textwrap
 from contextlib import suppress
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 import click
 import jinja2
@@ -142,7 +142,7 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
 
 @dataclasses.dataclass
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
-    script: List[ShellScript] = field(
+    script: list[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
         metavar='SCRIPT',
@@ -164,8 +164,8 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
-    def to_spec(self) -> Dict[str, Any]:  # type: ignore[override]
-        data = cast(Dict[str, Any], super().to_spec())
+    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        data = cast(dict[str, Any], super().to_spec())
         data['script'] = [str(script) for script in self.script]
 
         return data
@@ -246,11 +246,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             test: Test,
             guest: Guest,
             extra_environment: Optional[EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         """ Run test on the guest """
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
-        test_check_results: List[CheckResult] = []
+        test_check_results: list[CheckResult] = []
 
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
@@ -479,7 +479,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 logger.verbose(
                     'test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-                test_check_results: List[CheckResult] = self.execute(
+                test_check_results: list[CheckResult] = self.execute(
                     test=test,
                     guest=guest,
                     extra_environment=extra_environment,
@@ -569,10 +569,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self.debug("Pull the plan data directory.", level=2)
         guest.pull(source=self.step.plan.data_directory)
 
-    def results(self) -> List[Result]:
+    def results(self) -> list[Result]:
         """ Return test results """
         return self._results
 
-    def requires(self) -> List[tmt.base.Dependency]:
+    def requires(self) -> list[tmt.base.Dependency]:
         """ All requirements of the plugin on the guest """
         return []

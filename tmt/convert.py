@@ -6,7 +6,7 @@ import re
 import shlex
 import subprocess
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID, uuid4
 
 import fmf.utils
@@ -21,7 +21,7 @@ from tmt.utils import ConvertError, GeneralError, Path, format_value
 log = fmf.utils.Logging('tmt').logger
 
 # It is not possible to use TypedDict here, because all keys are unknown
-NitrateDataType = Dict[str, Any]
+NitrateDataType = dict[str, Any]
 
 if TYPE_CHECKING:
     from nitrate import TestCase
@@ -117,7 +117,7 @@ def read_manual(
     os.chdir(old_cwd)
 
 
-def read_manual_data(testcase: 'TestCase') -> Dict[str, str]:
+def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
     """ Read test data from manual fields """
     md_content = {}
     md_content['setup'] = html_to_markdown(testcase.setup)
@@ -142,7 +142,7 @@ def html_to_markdown(html: str) -> str:
     return markdown
 
 
-def write_markdown(path: Path, content: Dict[str, str]) -> None:
+def write_markdown(path: Path, content: dict[str, str]) -> None:
     """ Write gathered metadata in the markdown format """
     to_print = ""
     if content['setup']:
@@ -190,9 +190,9 @@ def read_datafile(
         path: Path,
         filename: str,
         datafile: str,
-        types: List[str],
+        types: list[str],
         testinfo: Optional[str] = None
-        ) -> Tuple[str, NitrateDataType]:
+        ) -> tuple[str, NitrateDataType]:
     """
     Read data values from supplied Makefile or metadata file.
     Returns task name and a dictionary of the collected values.
@@ -372,7 +372,7 @@ def read_datafile(
     return beaker_task, data
 
 
-ReadOutputType = Tuple[NitrateDataType, List[NitrateDataType]]
+ReadOutputType = tuple[NitrateDataType, list[NitrateDataType]]
 
 
 def read(
@@ -381,11 +381,11 @@ def read(
         restraint: bool,
         nitrate: bool,
         polarion: bool,
-        polarion_case_id: List[str],
+        polarion_case_id: list[str],
         link_polarion: bool,
         purpose: bool,
         disabled: bool,
-        types: List[str],
+        types: list[str],
         general: bool
         ) -> ReadOutputType:
     """
@@ -511,7 +511,7 @@ def read(
             read_datafile(path, filename, datafile, types, testinfo)
 
         # Warn if makefile has extra lines in run target
-        def target_content_run() -> List[str]:
+        def target_content_run() -> list[str]:
             """ Extract lines from the run content """
             newline_stub = '_XXX_NEWLINE_0x734'
             datafile_test = datafile
@@ -529,7 +529,7 @@ def read(
             return [line.strip('\t') for line in target.splitlines()]
 
         # Warn if makefile has extra lines in build target
-        def target_content_build() -> List[str]:
+        def target_content_build() -> list[str]:
             """ Extract lines from the build content """
             regexp = r'^build:.*\n((?:\t[^\n]*\n?)*)'
             search_result = re.search(regexp, datafile, re.M)
@@ -616,7 +616,7 @@ def read(
 
 def filter_common_data(
         common_data: NitrateDataType,
-        individual_data: List[NitrateDataType]) -> None:
+        individual_data: list[NitrateDataType]) -> None:
     """ Filter common data out from individual data """
     common_candidates = copy.copy(individual_data[0])
     histogram = {}
@@ -763,10 +763,10 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
 
 def read_polarion(
         common_data: NitrateDataType,
-        individual_data: List[NitrateDataType],
-        polarion_case_id: List[str],
+        individual_data: list[NitrateDataType],
+        polarion_case_id: list[str],
         link_polarion: bool,
-        filenames: List[str]) -> None:
+        filenames: list[str]) -> None:
     """ Read data from Polarion """
     if not polarion_case_id:
         read_polarion_case(common_data, None, link_polarion)
@@ -802,7 +802,7 @@ def read_polarion(
 
 
 def read_polarion_case(
-        data: Union[NitrateDataType, List[NitrateDataType]],
+        data: Union[NitrateDataType, list[NitrateDataType]],
         polarion_case_id: Optional[str],
         link_polarion: bool) -> None:
     """ Read data of specific case from Polarion """
@@ -920,7 +920,7 @@ def read_polarion_case(
     current_data['filename'] = f'{file_name}.fmf'
 
 
-RelevancyType = Union[str, List[str]]
+RelevancyType = Union[str, list[str]]
 
 
 def extract_relevancy(
@@ -1129,7 +1129,7 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
 
 
 def relevancy_to_adjust(
-        relevancy: RelevancyType) -> List[NitrateDataType]:
+        relevancy: RelevancyType) -> list[NitrateDataType]:
     """
     Convert the old test case relevancy into adjust rules
 

@@ -1,7 +1,7 @@
 import dataclasses
 import re
 import shutil
-from typing import List, Literal, Optional, Tuple, cast
+from typing import Literal, Optional, cast
 
 import fmf
 import fmf.utils
@@ -32,14 +32,14 @@ class InstallBase(tmt.utils.Common):
 
     skip_missing: bool = False
 
-    packages: List[str]
-    directories: List[Path]
-    exclude: List[str]
+    packages: list[str]
+    directories: list[Path]
+    exclude: list[str]
 
-    local_packages: List[Path]
-    remote_packages: List[str]
-    debuginfo_packages: List[str]
-    repository_packages: List[str]
+    local_packages: list[Path]
+    remote_packages: list[str]
+    debuginfo_packages: list[str]
+    repository_packages: list[str]
 
     rpms_directory: Path
 
@@ -55,7 +55,7 @@ class InstallBase(tmt.utils.Common):
 
         # Get package related data from the plugin
         self.packages = parent.get("package", [])
-        self.directories = cast(List[Path], parent.get("directory", []))
+        self.directories = cast(list[Path], parent.get("directory", []))
         self.exclude = parent.get("exclude", [])
 
         if not self.packages and not self.directories:
@@ -102,7 +102,7 @@ class InstallBase(tmt.utils.Common):
                     self.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(filepath)
 
-    def prepare_command(self) -> Tuple[Command, Command]:
+    def prepare_command(self) -> tuple[Command, Command]:
         """ Prepare installation command and subcommand options """
         raise NotImplementedError
 
@@ -145,7 +145,7 @@ class InstallBase(tmt.utils.Common):
 
         return self.guest.execute(self.operation_script(subcommand, args))
 
-    def list_packages(self, packages: List[str], title: str) -> Command:
+    def list_packages(self, packages: list[str], title: str) -> Command:
         """ Show package info and return package names """
 
         # Show a brief summary by default
@@ -264,7 +264,7 @@ class InstallDnf(InstallBase):
     copr_plugin = "dnf-plugins-core"
     skip_missing_option = "--skip-broken"
 
-    def prepare_command(self) -> Tuple[Command, Command]:
+    def prepare_command(self) -> tuple[Command, Command]:
         """ Prepare installation command """
 
         options = Command('-y')
@@ -398,7 +398,7 @@ class InstallRpmOstree(InstallBase):
                 else:
                     self.required_packages.append(package)
 
-    def prepare_command(self) -> Tuple[Command, Command]:
+    def prepare_command(self) -> tuple[Command, Command]:
         """ Prepare installation command for rpm-ostree"""
 
         command = Command()
@@ -464,7 +464,7 @@ class InstallRpmOstree(InstallBase):
 
 @dataclasses.dataclass
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
-    package: List[tmt.base.DependencySimple] = field(
+    package: list[tmt.base.DependencySimple] = field(
         default_factory=list,
         option=('-p', '--package'),
         metavar='PACKAGE',
@@ -482,7 +482,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
             ]
         )
 
-    directory: List[Path] = field(
+    directory: list[Path] = field(
         default_factory=list,
         option=('-D', '--directory'),
         metavar='PATH',
@@ -491,7 +491,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         normalize=tmt.utils.normalize_path_list
         )
 
-    copr: List[str] = field(
+    copr: list[str] = field(
         default_factory=list,
         option=('-c', '--copr'),
         metavar='REPO',
@@ -500,7 +500,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         normalize=tmt.utils.normalize_string_list
         )
 
-    exclude: List[str] = field(
+    exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='PACKAGE',

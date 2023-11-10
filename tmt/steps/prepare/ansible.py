@@ -1,6 +1,6 @@
 import dataclasses
 import tempfile
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import requests
 
@@ -15,13 +15,13 @@ from tmt.utils import Path, PrepareError, field, retry_session
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
-    playbook: Union[str, List[str]]
-    playbooks: List[str]
+    playbook: Union[str, list[str]]
+    playbooks: list[str]
 
 
 @dataclasses.dataclass
 class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
-    playbook: List[str] = field(
+    playbook: list[str] = field(
         default_factory=list,
         option=('-p', '--playbook'),
         multiple=True,

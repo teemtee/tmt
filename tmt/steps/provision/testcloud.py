@@ -7,7 +7,7 @@ import platform
 import re
 import time
 import types
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import click
 import pint
@@ -285,7 +285,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     def show(
             self,
             *,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             verbose: int = 0,
             logger: tmt.log.Logger) -> None:
 

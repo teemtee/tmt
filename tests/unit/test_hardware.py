@@ -1,5 +1,5 @@
 import textwrap
-from typing import Any, Tuple
+from typing import Any
 
 import pytest
 
@@ -36,7 +36,7 @@ _constraint_value_pattern_inputs = [
         for input, expected in _constraint_value_pattern_inputs
         ]
     )
-def test_constraint_value_pattern(value: str, expected: Tuple[Any, Any]) -> None:
+def test_constraint_value_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_VALUE_PATTERN.match(value)
 
     assert match is not None
@@ -58,7 +58,7 @@ _constraint_name_pattern_input = [
         for input, expected in _constraint_name_pattern_input
         ]
     )
-def test_constraint_name_pattern(value: str, expected: Tuple[Any, Any]) -> None:
+def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_NAME_PATTERN.match(value)
 
     assert match is not None
@@ -80,7 +80,7 @@ _constraint_components_pattern_input = [
         for input, expected in _constraint_components_pattern_input
         ]
     )
-def test_constraint_components_pattern(value: str, expected: Tuple[Any, Any]) -> None:
+def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_COMPONENTS_PATTERN.match(value)
 
     assert match is not None

@@ -1,6 +1,5 @@
 import xml.dom
 import xml.dom.minidom
-from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -42,7 +41,7 @@ def report_fix(tmppath: Path, root_logger):
 # .toprettyxml() methods. But that has been observed as not fully deterministic
 # with Python 3.6, changing order or attributes from time to time. Therefore
 # taking the longer, more verbose approach.
-def _compare_xml_node(tree_path: List[str], expected: xml.dom.Node, actual: xml.dom.Node) -> None:
+def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.dom.Node) -> None:
     """ Assert two XML nodes have the same content """
 
     # All of this would be doable in a much, much simpler, condensed manner,
@@ -85,7 +84,7 @@ def _compare_xml_node(tree_path: List[str], expected: xml.dom.Node, actual: xml.
     # XML, they are not important - in this case, they are spawned by indentation of
     # elements in the expected XML string, and they do not affect the semantics of those
     # nodes.
-    def _valid_children(node: xml.dom.Node) -> List[xml.dom.Node]:
+    def _valid_children(node: xml.dom.Node) -> list[xml.dom.Node]:
         return [
             child for child in node.childNodes
             if child.nodeType != xml.dom.Node.TEXT_NODE or child.data.strip()

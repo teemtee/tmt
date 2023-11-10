@@ -37,13 +37,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Iterable,
     Iterator,
-    List,
     NamedTuple,
     Optional,
-    Type,
     TypeVar,
     Union,
     )
@@ -246,7 +243,7 @@ def not_match(text: str, pattern: str) -> bool:
     return re.match(pattern, text) is None
 
 
-def not_contains(haystack: List[str], needle: str) -> bool:
+def not_contains(haystack: list[str], needle: str) -> bool:
     """
     Find out whether an item is in the given list.
 
@@ -279,7 +276,7 @@ OPERATOR_SIGN_TO_OPERATOR = {
     }
 
 
-OPERATOR_TO_HANDLER: Dict[Operator, OperatorHandlerType] = {
+OPERATOR_TO_HANDLER: dict[Operator, OperatorHandlerType] = {
     Operator.EQ: operator.eq,
     Operator.NEQ: operator.ne,
     Operator.GT: operator.gt,
@@ -353,8 +350,8 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
     def variants(
             self,
-            members: Optional[List['Constraint']] = None
-            ) -> Iterator[List['Constraint']]:
+            members: Optional[list['Constraint']] = None
+            ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -369,7 +366,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
         raise NotImplementedError
 
-    def variant(self) -> List['Constraint']:
+    def variant(self) -> list['Constraint']:
         """
         Pick one of the available variants of this contraints.
 
@@ -397,7 +394,7 @@ class CompoundConstraint(BaseConstraint):
     def __init__(
             self,
             reducer: ReducerType = any,
-            constraints: Optional[List[BaseConstraint]] = None
+            constraints: Optional[list[BaseConstraint]] = None
             ) -> None:
         """
         Construct a compound constraint, constraint imposed to more than one dimension.
@@ -441,8 +438,8 @@ class CompoundConstraint(BaseConstraint):
 
     def variants(
             self,
-            members: Optional[List['Constraint']] = None
-            ) -> Iterator[List['Constraint']]:
+            members: Optional[list['Constraint']] = None
+            ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -494,7 +491,7 @@ class Constraint(BaseConstraint):
 
     @classmethod
     def from_specification(
-            cls: Type[T],
+            cls: type[T],
             name: str,
             raw_value: str,
             as_quantity: bool = True,
@@ -586,7 +583,7 @@ class Constraint(BaseConstraint):
     def printable_name(self) -> str:
         components = self.expand_name()
 
-        names: List[str] = []
+        names: list[str] = []
 
         if components.peer_index:
             names.append(f'{components.name.replace("_", "-")}[{components.peer_index}]')
@@ -622,8 +619,8 @@ class Constraint(BaseConstraint):
 
     def variants(
             self,
-            members: Optional[List['Constraint']] = None
-            ) -> Iterator[List['Constraint']]:
+            members: Optional[list['Constraint']] = None
+            ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -645,7 +642,7 @@ class And(CompoundConstraint):
     Represents constraints that are grouped in ``and`` fashion.
     """
 
-    def __init__(self, constraints: Optional[List[BaseConstraint]] = None) -> None:
+    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
         Hold constraints that are grouped in ``and`` fashion.
 
@@ -656,8 +653,8 @@ class And(CompoundConstraint):
 
     def variants(
             self,
-            members: Optional[List[Constraint]] = None
-            ) -> Iterator[List[Constraint]]:
+            members: Optional[list[Constraint]] = None
+            ) -> Iterator[list[Constraint]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -701,7 +698,7 @@ class Or(CompoundConstraint):
     Represents constraints that are grouped in ``or`` fashion.
     """
 
-    def __init__(self, constraints: Optional[List[BaseConstraint]] = None) -> None:
+    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
         Hold constraints that are grouped in ``or`` fashion.
 
@@ -712,8 +709,8 @@ class Or(CompoundConstraint):
 
     def variants(
             self,
-            members: Optional[List[Constraint]] = None
-            ) -> Iterator[List[Constraint]]:
+            members: Optional[list[Constraint]] = None
+            ) -> Iterator[list[Constraint]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -1175,7 +1172,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
     spec: Spec
 
     @classmethod
-    def from_spec(cls: Type['Hardware'], spec: Spec) -> 'Hardware':
+    def from_spec(cls: type['Hardware'], spec: Spec) -> 'Hardware':
         if not spec:
             return Hardware(constraint=None, spec=spec)
 
@@ -1209,7 +1206,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
     def report_support(
             self,
             *,
-            names: Optional[List[str]] = None,
+            names: Optional[list[str]] = None,
             check: Optional[Callable[[Constraint], bool]] = None,
             logger: tmt.log.Logger) -> None:
         """

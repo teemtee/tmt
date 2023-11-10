@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 import fmf
 
@@ -16,7 +16,7 @@ PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
 @dataclasses.dataclass
 class PrepareShellData(tmt.steps.prepare.PrepareStepData):
-    script: List[ShellScript] = field(
+    script: list[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
         multiple=True,
@@ -29,8 +29,8 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
-    def to_spec(self) -> Dict[str, Any]:  # type: ignore[override]
-        data = cast(Dict[str, Any], super().to_spec())
+    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        data = cast(dict[str, Any], super().to_spec())
         data['script'] = [str(script) for script in self.script]
 
         return data
@@ -69,7 +69,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         environment = environment or {}
 
         # Give a short summary
-        scripts: List[tmt.utils.ShellScript] = self.get('script')
+        scripts: list[tmt.utils.ShellScript] = self.get('script')
         overview = fmf.utils.listed(scripts, 'script')
         logger.info('overview', f'{overview} found', 'green')
 

@@ -1,6 +1,6 @@
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -46,7 +46,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all finish plugins) """
 
         # Prepare general usage message for the step
@@ -123,7 +123,7 @@ class Finish(tmt.steps.Step):
             return
 
         # Prepare guests
-        guest_copies: List[Guest] = []
+        guest_copies: list[Guest] = []
 
         for guest in self.plan.provision.guests():
             # Create a guest copy and change its parent so that the
@@ -146,7 +146,7 @@ class Finish(tmt.steps.Step):
                 guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                 )
 
-        failed_phases: List[TaskOutcome[QueuedPhase[FinishStepData]]] = []
+        failed_phases: list[TaskOutcome[QueuedPhase[FinishStepData]]] = []
 
         for phase_outcome in queue.run():
             if not isinstance(phase_outcome.task.phase, FinishPlugin):

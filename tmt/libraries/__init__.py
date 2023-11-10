@@ -1,6 +1,6 @@
 """ Handle libraries """
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import fmf
 
@@ -12,7 +12,7 @@ from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimp
 from tmt.utils import Path
 
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
-ImportedIdentifiersType = Optional[List[Dependency]]
+ImportedIdentifiersType = Optional[list[Dependency]]
 
 # A Library type, can be Beakerlib or File
 # undefined references are ignored due to cyclic dependencies of these files,
@@ -20,8 +20,8 @@ ImportedIdentifiersType = Optional[List[Dependency]]
 LibraryType = Union['BeakerLib', 'File']  # type: ignore[name-defined] # noqa: F821
 
 # A type for Beakerlib dependencies
-LibraryDependenciesType = Tuple[
-    List[Dependency], List[Dependency], List['LibraryType']
+LibraryDependenciesType = tuple[
+    list[Dependency], list[Dependency], list['LibraryType']
     ]
 
 
@@ -105,8 +105,8 @@ def library_factory(
 
 def dependencies(
         *,
-        original_require: List[Dependency],
-        original_recommend: Optional[List[Dependency]] = None,
+        original_require: list[Dependency],
+        original_recommend: Optional[list[Dependency]] = None,
         parent: Optional[tmt.utils.Common] = None,
         imported_lib_ids: ImportedIdentifiersType = None,
         logger: tmt.log.Logger,
@@ -128,7 +128,7 @@ def dependencies(
     processed_require = set()
     processed_recommend = set()
     imported_lib_ids = imported_lib_ids or []
-    gathered_libraries: List[LibraryType] = []
+    gathered_libraries: list[LibraryType] = []
     original_require = original_require or []
     original_recommend = original_recommend or []
 

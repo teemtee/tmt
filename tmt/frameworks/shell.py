@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import tmt.base
 import tmt.log
@@ -33,7 +33,7 @@ class Shell(TestFramework):
             parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
-            logger: tmt.log.Logger) -> List[tmt.result.Result]:
+            logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a shell test """
         assert test.return_code is not None
         note = None

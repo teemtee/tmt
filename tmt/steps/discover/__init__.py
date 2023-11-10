@@ -1,5 +1,5 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Iterator, Optional, TypeVar, cast
 
 import click
 from fmf.utils import listed
@@ -62,7 +62,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all discover plugins) """
 
         # Prepare general usage message for the step
@@ -86,7 +86,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> List['tmt.Test']:
+            enabled: Optional[bool] = None) -> list['tmt.Test']:
         """
         Return discovered tests
 
@@ -127,7 +127,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             # FIXME: cast() - https://github.com/python/mypy/issues/7981
             # Note the missing Optional for values - to_minimal_dict() would
             # not include unset keys, therefore all values should be valid.
-            for key, value in cast(Dict[str, str], remote_plan_id.to_minimal_spec()).items():
+            for key, value in cast(dict[str, str], remote_plan_id.to_minimal_spec()).items():
                 self.verbose(f'import {key}', value, 'green')
 
 
@@ -147,7 +147,7 @@ class Discover(tmt.steps.Step):
         super().__init__(plan=plan, data=data, logger=logger)
 
         # Collection of discovered tests
-        self._tests: Dict[str, List[tmt.Test]] = {}
+        self._tests: dict[str, list[tmt.Test]] = {}
 
     def load(self) -> None:
         """ Load step data from the workdir """
@@ -177,7 +177,7 @@ class Discover(tmt.steps.Step):
         super().save()
 
         # Create tests.yaml with the full test data
-        raw_test_data: List['tmt.export._RawExportedInstance'] = []
+        raw_test_data: list['tmt.export._RawExportedInstance'] = []
 
         for phase_name, phase_tests in self._tests.items():
             for test in phase_tests:
@@ -317,7 +317,7 @@ class Discover(tmt.steps.Step):
         # TODO: This part should go into the 'fmf.py' module
         if self.opt('fmf_id'):
             if self.tests(enabled=True):
-                export_fmf_ids: List[str] = []
+                export_fmf_ids: list[str] = []
 
                 for test in self.tests(enabled=True):
                     fmf_id = test.fmf_id
@@ -344,7 +344,7 @@ class Discover(tmt.steps.Step):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> List['tmt.Test']:
+            enabled: Optional[bool] = None) -> list['tmt.Test']:
         def _iter_all_tests() -> Iterator['tmt.Test']:
             for phase_tests in self._tests.values():
                 yield from phase_tests
@@ -361,7 +361,7 @@ class Discover(tmt.steps.Step):
 
         return [test for test in iterator() if test.enabled is enabled]
 
-    def requires(self) -> List['tmt.base.Dependency']:
+    def requires(self) -> list['tmt.base.Dependency']:
         """
         Collect all test requirements of all discovered tests in this step.
 
@@ -373,6 +373,6 @@ class Discover(tmt.steps.Step):
         """
         return flatten((test.require for test in self.tests(enabled=True)), unique=True)
 
-    def recommends(self) -> List['tmt.base.Dependency']:
+    def recommends(self) -> list['tmt.base.Dependency']:
         """ Return all packages recommended by tests """
         return flatten((test.recommend for test in self.tests(enabled=True)), unique=True)

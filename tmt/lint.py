@@ -76,9 +76,7 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
-    List,
     Optional,
-    Tuple,
     TypeVar,
     )
 
@@ -132,9 +130,9 @@ _OUTCOME_TO_COLOR = {
 
 
 #: Info on how a linter decided: linter itself, its outcome & the message.
-LinterRuling = Tuple['Linter', LinterOutcome, LinterOutcome, str]
+LinterRuling = tuple['Linter', LinterOutcome, LinterOutcome, str]
 #: A return value type of a single linter.
-LinterReturn = Iterator[Tuple[LinterOutcome, str]]
+LinterReturn = Iterator[tuple[LinterOutcome, str]]
 #: A linter itself, a callable method.
 LinterCallback = Callable[['Lintable'], LinterReturn]
 
@@ -173,7 +171,7 @@ class Linter:
         self.id = components['id'].strip()
         self.help = components['short'].strip()
 
-    def format(self) -> List[str]:
+    def format(self) -> list[str]:
         """
         Format the linter for printing or logging.
 
@@ -192,7 +190,7 @@ class Lintable(Generic[LintableT]):
     # Declare linter registry as a class variable, but do not initialize it. If initialized
     # here, the mapping would be shared by all classes, which is not a desirable attribute.
     # Instead, mapping will be created by `get_linter_registry()`.
-    _linter_registry: ClassVar[List[Linter]]
+    _linter_registry: ClassVar[list[Linter]]
 
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -200,7 +198,7 @@ class Lintable(Generic[LintableT]):
 
     # Cannot use @property as this must remain classmethod
     @classmethod
-    def get_linter_registry(cls) -> List[Linter]:
+    def get_linter_registry(cls) -> list[Linter]:
         """ Return - or initialize - linter registry """
 
         if not hasattr(cls, '_linter_registry'):
@@ -226,9 +224,9 @@ class Lintable(Generic[LintableT]):
     @classmethod
     def resolve_enabled_linters(
             cls,
-            enable_checks: Optional[List[str]] = None,
-            disable_checks: Optional[List[str]] = None
-            ) -> List[Linter]:
+            enable_checks: Optional[list[str]] = None,
+            disable_checks: Optional[list[str]] = None
+            ) -> list[Linter]:
         """
         Produce a list of enabled linters from all registered ones.
 
@@ -248,7 +246,7 @@ class Lintable(Generic[LintableT]):
             enabled and not disabled.
         """
 
-        linters: List[Linter] = []
+        linters: list[Linter] = []
 
         if not enable_checks:
             linters = cls.get_linter_registry()
@@ -273,10 +271,10 @@ class Lintable(Generic[LintableT]):
 
     def lint(
             self,
-            enable_checks: Optional[List[str]] = None,
-            disable_checks: Optional[List[str]] = None,
-            enforce_checks: Optional[List[str]] = None,
-            linters: Optional[List[Linter]] = None) -> Tuple[bool, List[LinterRuling]]:
+            enable_checks: Optional[list[str]] = None,
+            disable_checks: Optional[list[str]] = None,
+            enforce_checks: Optional[list[str]] = None,
+            linters: Optional[list[Linter]] = None) -> tuple[bool, list[LinterRuling]]:
         """
         Check the instance against a battery of linters and report results.
 
@@ -302,7 +300,7 @@ class Lintable(Generic[LintableT]):
             disable_checks=disable_checks)
 
         valid = True
-        rulings: List[LinterRuling] = []
+        rulings: list[LinterRuling] = []
 
         for linter in sorted(linters, key=lambda x: x.id):
             for outcome, message in linter.callback(self):
@@ -334,7 +332,7 @@ class Lintable(Generic[LintableT]):
             logging or help texts.
         """
 
-        hints: List[str] = []
+        hints: list[str] = []
 
         for linter in sorted(cls.get_linter_registry(), key=lambda x: x.id):
             hints += linter.format()
@@ -344,7 +342,7 @@ class Lintable(Generic[LintableT]):
 
 def filter_allowed_checks(
         rulings: Iterable[LinterRuling],
-        outcomes: Optional[List[LinterOutcome]] = None) -> Iterator[LinterRuling]:
+        outcomes: Optional[list[LinterOutcome]] = None) -> Iterator[LinterRuling]:
     """
     Filter only rulings whose outcomes are allowed.
 

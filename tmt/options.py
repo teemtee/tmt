@@ -4,7 +4,7 @@ import contextlib
 import dataclasses
 import re
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
 
 import click
 
@@ -44,7 +44,7 @@ class Deprecated:
         return f'{message}.'
 
 
-MethodDictType = Dict[str, click.core.Command]
+MethodDictType = dict[str, click.core.Command]
 
 # Originating in click.decorators, an opaque type describing "decorator" functions
 # produced by click.option() calls: not options, but decorators, functions that attach
@@ -124,7 +124,7 @@ def option(
 
 
 # Verbose, debug and quiet output
-VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
+VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-v', '--verbose', count=True, default=0,
         help='Show more details. Use multiple times to raise verbosity.'),
@@ -142,13 +142,13 @@ VERBOSITY_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 # Force and dry actions
-DRY_OPTIONS: List[ClickOptionDecoratorType] = [
+DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-n', '--dry', is_flag=True,
         help='Run in dry mode. No changes, please.'),
     ]
 
-FORCE_DRY_OPTIONS: List[ClickOptionDecoratorType] = [
+FORCE_DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-f', '--force', is_flag=True,
         help='Overwrite existing files and step data.'),
@@ -156,11 +156,11 @@ FORCE_DRY_OPTIONS: List[ClickOptionDecoratorType] = [
 
 
 # Fix action
-FIX_OPTIONS: List[ClickOptionDecoratorType] = [
+FIX_OPTIONS: list[ClickOptionDecoratorType] = [
     option('-F', '--fix', is_flag=True, help='Attempt to fix all discovered issues.')
     ]
 
-WORKDIR_ROOT_OPTIONS: List[ClickOptionDecoratorType] = [
+WORKDIR_ROOT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--workdir-root', metavar='PATH', envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
@@ -171,7 +171,7 @@ WORKDIR_ROOT_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 
-FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
+FILTER_OPTIONS: list[ClickOptionDecoratorType] = [
     click.argument(
         'names', nargs=-1, metavar='[REGEXP|.]'),
     option(
@@ -198,7 +198,7 @@ FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 
-FILTER_OPTIONS_LONG: List[ClickOptionDecoratorType] = [
+FILTER_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
     click.argument(
         'names', nargs=-1, metavar='[REGEXP|.]'),
     option(
@@ -225,7 +225,7 @@ FILTER_OPTIONS_LONG: List[ClickOptionDecoratorType] = [
     ]
 
 
-STORY_FLAGS_FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
+STORY_FLAGS_FILTER_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--implemented', is_flag=True,
         help='Implemented stories only.'),
@@ -252,20 +252,20 @@ STORY_FLAGS_FILTER_OPTIONS: List[ClickOptionDecoratorType] = [
         help='Uncovered stories only.'),
     ]
 
-FMF_SOURCE_OPTIONS: List[ClickOptionDecoratorType] = [
+FMF_SOURCE_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--source', is_flag=True, help="Select by fmf source file names instead of object names."
         )
     ]
 
-REMOTE_PLAN_OPTIONS: List[ClickOptionDecoratorType] = [
+REMOTE_PLAN_OPTIONS: list[ClickOptionDecoratorType] = [
     option('-s', '--shallow', is_flag=True, help='Do not clone remote plan.')
     ]
 
 
 _lint_outcomes = [member.value for member in tmt.lint.LinterOutcome.__members__.values()]
 
-LINT_OPTIONS: List[ClickOptionDecoratorType] = [
+LINT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--list-checks',
         is_flag=True,
@@ -303,7 +303,7 @@ LINT_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 
-ENVIRONMENT_OPTIONS: List[ClickOptionDecoratorType] = [
+ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-e', '--environment',
         metavar='KEY=VALUE|@FILE',
@@ -323,7 +323,7 @@ ENVIRONMENT_OPTIONS: List[ClickOptionDecoratorType] = [
     ]
 
 
-def create_options_decorator(options: List[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
+def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
     def common_decorator(fn: FC) -> FC:
         for option in reversed(options):
             fn = option(fn)
@@ -378,7 +378,7 @@ def show_step_method_hints(
                     "available report options.", color='blue')
 
 
-def create_method_class(methods: MethodDictType) -> Type[click.Command]:
+def create_method_class(methods: MethodDictType) -> type[click.Command]:
     """
     Create special class to handle different options for each method
 
@@ -387,14 +387,14 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
     Methods should be already sorted according to their priority.
     """
 
-    def is_likely_subcommand(arg: str, subcommands: List[str]) -> bool:
+    def is_likely_subcommand(arg: str, subcommands: list[str]) -> bool:
         """ Return true if arg is the beginning characters of a subcommand """
         return any(subcommand.startswith(arg) for subcommand in subcommands)
 
     class MethodCommand(click.Command):
         _method: Optional[click.Command] = None
 
-        def _check_method(self, context: 'tmt.cli.Context', args: List[str]) -> None:
+        def _check_method(self, context: 'tmt.cli.Context', args: list[str]) -> None:
             """ Manually parse the --how option """
             how = None
             subcommands = (
@@ -406,7 +406,7 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
                         return option
                 return None
 
-            def _find_how(args: List[str]) -> Optional[str]:
+            def _find_how(args: list[str]) -> Optional[str]:
                 while args:
                     arg = args.pop(0)
 
@@ -501,8 +501,8 @@ def create_method_class(methods: MethodDictType) -> Type[click.Command]:
         def parse_args(  # type: ignore[override]
                 self,
                 context: 'tmt.cli.Context',
-                args: List[str]
-                ) -> List[str]:
+                args: list[str]
+                ) -> list[str]:
             self._check_method(context, args)
             if self._method is not None:
                 return self._method.parse_args(context, args)

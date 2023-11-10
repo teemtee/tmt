@@ -14,11 +14,11 @@
 import importlib
 import os
 import sys
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import tmt.utils
 
-_POSSIBLE_THEMES: List[Tuple[Optional[str], str]] = [
+_POSSIBLE_THEMES: list[tuple[Optional[str], str]] = [
     # Use renku as the default theme
     ('renku_sphinx_theme', 'renku'),
     # Fall back to sphinx_rtd_theme if available

@@ -1,6 +1,6 @@
 import re
 from tempfile import TemporaryDirectory
-from typing import Dict, Optional, Set, Union, cast
+from typing import Optional, Union, cast
 
 import fmf
 
@@ -29,8 +29,8 @@ STRIP_SUFFIX_FORGES = [
 
 
 class CommonWithLibraryCache(tmt.utils.Common):
-    _library_cache: Dict[str, 'BeakerLib']
-    _nonexistent_url: Set[str]
+    _library_cache: dict[str, 'BeakerLib']
+    _nonexistent_url: set[str]
 
 
 class BeakerLib(Library):
@@ -161,7 +161,7 @@ class BeakerLib(Library):
         return f"{self.repo}{self.name[self.name.rindex('/'):]}"
 
     @property
-    def _library_cache(self) -> Dict[str, 'BeakerLib']:
+    def _library_cache(self) -> dict[str, 'BeakerLib']:
         # Initialize library cache (indexed by the repository and library name)
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         if not hasattr(self.parent, '_library_cache'):
@@ -170,7 +170,7 @@ class BeakerLib(Library):
         return cast(CommonWithLibraryCache, self.parent)._library_cache
 
     @property
-    def _nonexistent_url(self) -> Set[str]:
+    def _nonexistent_url(self) -> set[str]:
         # Set of url we tried to clone but didn't succeed
         if not hasattr(self.parent, '_nonexistent_url'):
             cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()

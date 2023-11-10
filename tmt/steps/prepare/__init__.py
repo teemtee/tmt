@@ -1,7 +1,7 @@
 import collections
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -41,10 +41,10 @@ PrepareStepDataT = TypeVar('PrepareStepDataT', bound=PrepareStepData)
 
 
 class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
-    package: List[str]
+    package: list[str]
     missing: str
-    roles: DefaultDict[str, List[str]]
-    hosts: Dict[str, str]
+    roles: collections.defaultdict[str, list[str]]
+    hosts: dict[str, str]
     order: int
     summary: str
 
@@ -63,7 +63,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all prepare plugins) """
 
         # Prepare general usage message for the step
@@ -98,7 +98,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
 
         # Show requested role if defined
         # FIXME: cast() - typeless "dispatcher" method
-        where = cast(List[str], self.get('where'))
+        where = cast(list[str], self.get('where'))
         if where:
             logger.info('where', fmf.utils.listed(where), 'green')
 
@@ -155,7 +155,7 @@ class Prepare(tmt.steps.Step):
             self.preparations_applied, 'preparation')
         self.info('summary', f'{preparations} applied', 'green', shift=1)
 
-    def _prepare_roles(self) -> DefaultDict[str, List[str]]:
+    def _prepare_roles(self) -> collections.defaultdict[str, list[str]]:
         """ Create a mapping of roles to guest names """
         role_mapping = collections.defaultdict(list)
         for guest in self.plan.provision.guests():
@@ -163,7 +163,7 @@ class Prepare(tmt.steps.Step):
                 role_mapping[guest.role].append(guest.name)
         return role_mapping
 
-    def _prepare_hosts(self) -> Dict[str, str]:
+    def _prepare_hosts(self) -> dict[str, str]:
         """ Create a mapping of guest names to IP addresses """
         host_mapping = {}
         for guest in self.plan.provision.guests():
@@ -230,7 +230,7 @@ class Prepare(tmt.steps.Step):
             self._phases.append(PreparePlugin.delegate(self, raw_data=data))
 
         # Prepare guests (including workdir sync)
-        guest_copies: List[Guest] = []
+        guest_copies: list[Guest] = []
 
         for guest in self.plan.provision.guests():
             # Create a guest copy and change its parent so that the
@@ -263,7 +263,7 @@ class Prepare(tmt.steps.Step):
                 guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                 )
 
-        failed_phases: List[TaskOutcome[QueuedPhase[PrepareStepData]]] = []
+        failed_phases: list[TaskOutcome[QueuedPhase[PrepareStepData]]] = []
 
         for phase_outcome in queue.run():
             if not isinstance(phase_outcome.task.phase, PreparePlugin):

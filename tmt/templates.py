@@ -1,6 +1,5 @@
 """ Default Templates """
 
-from typing import Dict
 
 INIT_TEMPLATES = ['mini', 'base', 'full']
 
@@ -8,8 +7,8 @@ INIT_TEMPLATES = ['mini', 'base', 'full']
 #  Test Templates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST: Dict[str, str] = {}
-TEST_METADATA: Dict[str, str] = {}
+TEST: dict[str, str] = {}
+TEST_METADATA: dict[str, str] = {}
 
 TEST_METADATA['shell'] = """
 summary: Concise summary describing what the test does
@@ -68,7 +67,7 @@ DEFAULT_PLAN = f"""
         how: tmt
 """.lstrip()
 
-PLAN: Dict[str, str] = {}
+PLAN: dict[str, str] = {}
 
 PLAN['mini'] = """
 summary:
@@ -104,7 +103,7 @@ execute:
 #  Story Templates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-STORY: Dict[str, str] = {}
+STORY: dict[str, str] = {}
 
 STORY['mini'] = """
 story: As a user I want to do this and that.

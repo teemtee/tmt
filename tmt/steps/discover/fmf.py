@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 import subprocess
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 import fmf
 
@@ -53,14 +53,14 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help='Path to the metadata tree root.')
 
     # Selecting tests
-    test: List[str] = field(
+    test: list[str] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
         help='Select tests by name.',
         normalize=tmt.utils.normalize_string_list)
-    link: List[str] = field(
+    link: list[str] = field(
         default_factory=list,
         option='--link',
         metavar="RELATION:TARGET",
@@ -69,14 +69,14 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
              Filter by linked objects (regular expressions are supported for both relation and
              target).
              """)
-    filter: List[str] = field(
+    filter: list[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
         metavar='FILTERS',
         multiple=True,
         help='Include only tests matching the filter.',
         normalize=tmt.utils.normalize_string_list)
-    exclude: List[str] = field(
+    exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='REGEXP',
@@ -513,7 +513,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
-        raw_link_needles = cast(List[str], tmt.Test._opt('links', []) or self.get('link', []))
+        raw_link_needles = cast(list[str], tmt.Test._opt('links', []) or self.get('link', []))
         link_needles = [tmt.base.LinkNeedle.from_spec(
             raw_needle) for raw_needle in raw_link_needles]
 
@@ -637,7 +637,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> List['tmt.Test']:
+            enabled: Optional[bool] = None) -> list['tmt.Test']:
         """ Return all discovered tests """
 
         if phase_name is not None and phase_name != self.name:

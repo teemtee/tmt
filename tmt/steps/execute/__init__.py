@@ -2,7 +2,7 @@ import copy
 import dataclasses
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -48,8 +48,8 @@ SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 class Script:
     """ Represents a script provided by the internal executor """
     path: Path
-    aliases: List[Path]
-    related_variables: List[str]
+    aliases: list[Path]
+    related_variables: list[str]
 
 
 @dataclass
@@ -147,7 +147,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     # Internal executor is the default implementation
     how = 'tmt'
 
-    scripts: Tuple['Script', ...] = ()
+    scripts: tuple['Script', ...] = ()
 
     _login_after_test: Optional[tmt.steps.Login] = None
 
@@ -162,7 +162,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             workdir: tmt.utils.WorkdirArgumentType = None,
             logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
-        self._results: List[tmt.Result] = []
+        self._results: list[tmt.Result] = []
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 
@@ -170,7 +170,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all execute plugins) """
 
         # Prepare general usage message for the step
@@ -237,7 +237,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         path = directory / filename
         return path if full else path.relative_to(self.step.workdir)
 
-    def prepare_tests(self, guest: Guest) -> List["tmt.Test"]:
+    def prepare_tests(self, guest: Guest) -> list["tmt.Test"]:
         """
         Prepare discovered tests for testing
 
@@ -245,7 +245,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         the aggregated metadata in a file under the test data directory
         and finally return a list of discovered tests.
         """
-        tests: List[tmt.Test] = self.discover.tests(phase_name=self.discover_phase, enabled=True)
+        tests: list[tmt.Test] = self.discover.tests(phase_name=self.discover_phase, enabled=True)
         for test in tests:
             metadata_filename = self.data_path(
                 test, guest, filename=TEST_METADATA_FILENAME, full=True, create=True)
@@ -275,7 +275,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             / TEST_DATA \
             / TMT_REPORT_RESULT_SCRIPT.created_file
 
-    def load_tmt_report_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
+    def load_tmt_report_results(self, test: "tmt.Test", guest: Guest) -> list["tmt.Result"]:
         """
         Load results from a file created by ``tmt-report-result`` script.
 
@@ -319,7 +319,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             note=note,
             guest=guest)]
 
-    def load_custom_results(self, test: "tmt.Test", guest: Guest) -> List["tmt.Result"]:
+    def load_custom_results(self, test: "tmt.Test", guest: Guest) -> list["tmt.Result"]:
         """
         Process custom results.yaml file created by the test itself.
         """
@@ -410,7 +410,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             self,
             test: "tmt.Test",
             guest: Guest,
-            logger: tmt.log.Logger) -> List[Result]:
+            logger: tmt.log.Logger) -> list[Result]:
         """ Check the test result """
 
         self.debug(f"Extract results of '{test.name}'.")
@@ -461,7 +461,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             f"https://tmt.readthedocs.io/en/stable/spec/tests.html#duration\n",
             mode='a', level=3)
 
-    def results(self) -> List["tmt.Result"]:
+    def results(self) -> list["tmt.Result"]:
         """ Return test results """
         raise NotImplementedError
 
@@ -472,9 +472,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
 
-        results: List[CheckResult] = []
+        results: list[CheckResult] = []
 
         for check in test.check:
             with Stopwatch() as timer:
@@ -503,7 +503,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
             guest=guest,
@@ -518,7 +518,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             guest: Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             guest=guest,
@@ -549,7 +549,7 @@ class Execute(tmt.steps.Step):
         """ Initialize execute step data """
         super().__init__(plan=plan, data=data, logger=logger)
         # List of Result() objects representing test results
-        self._results: List[tmt.Result] = []
+        self._results: list[tmt.Result] = []
 
     def load(self) -> None:
         """ Load test results """
@@ -659,7 +659,7 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_phases: List[TaskOutcome[QueuedPhase[ExecuteStepData]]] = []
+        failed_phases: list[TaskOutcome[QueuedPhase[ExecuteStepData]]] = []
 
         for phase_outcome in queue.run():
             if phase_outcome.exc:
@@ -695,7 +695,7 @@ class Execute(tmt.steps.Step):
         self.status('done')
         self.save()
 
-    def results(self) -> List["tmt.result.Result"]:
+    def results(self) -> list["tmt.result.Result"]:
         """
         Results from executed tests
 

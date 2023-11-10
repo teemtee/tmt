@@ -1,6 +1,6 @@
 import dataclasses
 import datetime
-from typing import Any, Dict, List, Optional, TypedDict, cast
+from typing import Any, Optional, TypedDict, cast
 
 import requests
 
@@ -79,7 +79,7 @@ DEFAULT_RETRY_BACKOFF_FACTOR = 1
 def _normalize_user_data(
         key_address: str,
         raw_value: Any,
-        logger: tmt.log.Logger) -> Dict[str, str]:
+        logger: tmt.log.Logger) -> dict[str, str]:
     if isinstance(raw_value, dict):
         return {
             str(key).strip(): str(value).strip() for key, value in raw_value.items()
@@ -107,7 +107,7 @@ def _normalize_user_data(
 def _normalize_log_type(
         key_address: str,
         raw_value: Any,
-        logger: tmt.log.Logger) -> List[str]:
+        logger: tmt.log.Logger) -> list[str]:
     if isinstance(raw_value, str):
         return [raw_value]
 
@@ -162,14 +162,14 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         option='--keyname',
         metavar='NAME',
         help='SSH key name.')
-    user_data: Dict[str, str] = field(
+    user_data: dict[str, str] = field(
         default_factory=dict,
         option='--user-data',
         metavar='KEY=VALUE',
         help='Optional data to attach to guest.',
         multiple=True,
         normalize=_normalize_user_data)
-    kickstart: Dict[str, str] = field(
+    kickstart: dict[str, str] = field(
         default_factory=dict,
         option='--kickstart',
         metavar='KEY=VALUE',
@@ -177,7 +177,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         multiple=True,
         normalize=_normalize_user_data)
 
-    log_type: List[str] = field(
+    log_type: list[str] = field(
         default_factory=list,
         option='--log-type',
         choices=SUPPORTED_LOG_TYPES,
@@ -309,7 +309,7 @@ class ArtemisAPI:
             self,
             path: str,
             method: str = 'get',
-            request_kwargs: Optional[Dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None
             ) -> requests.Response:
         """
         Base helper for Artemis API queries.
@@ -344,8 +344,8 @@ class ArtemisAPI:
     def create(
             self,
             path: str,
-            data: Dict[str, Any],
-            request_kwargs: Optional[Dict[str, Any]] = None
+            data: dict[str, Any],
+            request_kwargs: Optional[dict[str, Any]] = None
             ) -> requests.Response:
         """
         Create - or request creation of - a resource.
@@ -364,8 +364,8 @@ class ArtemisAPI:
     def inspect(
             self,
             path: str,
-            params: Optional[Dict[str, Any]] = None,
-            request_kwargs: Optional[Dict[str, Any]] = None
+            params: Optional[dict[str, Any]] = None,
+            request_kwargs: Optional[dict[str, Any]] = None
             ) -> requests.Response:
         """
         Inspect a resource.
@@ -386,7 +386,7 @@ class ArtemisAPI:
     def delete(
             self,
             path: str,
-            request_kwargs: Optional[Dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None
             ) -> requests.Response:
         """
         Delete - or request removal of - a resource.
@@ -418,9 +418,9 @@ class GuestArtemis(tmt.GuestSsh):
     pool: Optional[str]
     priority_group: str
     keyname: str
-    user_data: Dict[str, str]
-    kickstart: Dict[str, str]
-    log_type: List[str]
+    user_data: dict[str, str]
+    kickstart: dict[str, str]
+    log_type: list[str]
     skip_prepare_verify_ssh: bool
     post_install_script: Optional[str]
 
@@ -449,7 +449,7 @@ class GuestArtemis(tmt.GuestSsh):
         return self.guest is not None
 
     def _create(self) -> None:
-        environment: Dict[str, Any] = {
+        environment: dict[str, Any] = {
             'hw': {
                 'arch': self.arch
                 },
@@ -464,7 +464,7 @@ class GuestArtemis(tmt.GuestSsh):
         elif self.kickstart:
             raise ProvisionError(f"API version '{self.api_version}' does not support kickstart.")
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             'environment': environment,
             'keyname': self.keyname,
             'priority_group': self.priority_group,

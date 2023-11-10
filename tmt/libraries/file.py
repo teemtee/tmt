@@ -1,5 +1,5 @@
 import shutil
-from typing import List, Optional
+from typing import Optional
 
 import fmf
 
@@ -42,7 +42,7 @@ class File(Library):
         self.format = 'file'
         self.repo = Path(target_location.name)
         self.name = "/files"
-        self.pattern: List[str] = identifier.pattern if hasattr(identifier, 'pattern') else []
+        self.pattern: list[str] = identifier.pattern if hasattr(identifier, 'pattern') else []
         self.source_location: Path = source_location
         self.target_location: Path = target_location
 
@@ -51,7 +51,7 @@ class File(Library):
         patterns = fmf.utils.listed(self.pattern, quote="'")
         self.parent.debug(
             f"Searching for patterns {patterns} in directory '{self.source_location}.")
-        files: List[Path] = tmt.utils.filter_paths(self.source_location, self.pattern)
+        files: list[Path] = tmt.utils.filter_paths(self.source_location, self.pattern)
         if not files:
             self.parent.debug('No files found.')
             raise tmt.utils.MetadataError(

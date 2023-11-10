@@ -1,7 +1,7 @@
 import logging
 import operator
 import re
-from typing import Any, Callable, Iterable, List, Tuple
+from typing import Any, Callable, Iterable
 
 import _pytest.logging
 import pytest
@@ -80,7 +80,7 @@ def _assert_log(
     # field name, a callable accepting two parameters, and the given (expected) value. With these,
     # we can reduce the matching into functions calls without worrying what functions we work with.
 
-    operators: List[Tuple[Callable[[Any], Any], str, Callable[[Any, Any], bool], Any]] = []
+    operators: list[tuple[Callable[[Any], Any], str, Callable[[Any, Any], bool], Any]] = []
 
     for field_name, expected_value in tests.items():
         if field_name.startswith('details_'):

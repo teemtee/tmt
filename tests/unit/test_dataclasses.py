@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -59,7 +59,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
 def test_field_custom_serialize():
     @dataclasses.dataclass
     class DummyContainer(SerializableContainer):
-        foo: List[str] = field(
+        foo: list[str] = field(
             default_factory=list,
             serialize=lambda foo: ['serialized-into'],
             unserialize=lambda serialized_foo: ['unserialized-from']

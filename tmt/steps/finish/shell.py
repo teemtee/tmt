@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 import fmf
 
@@ -15,7 +15,7 @@ FINISH_WRAPPER_FILENAME = 'tmt-finish-wrapper.sh'
 
 @dataclasses.dataclass
 class FinishShellData(tmt.steps.finish.FinishStepData):
-    script: List[ShellScript] = field(
+    script: list[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
         multiple=True,
@@ -29,8 +29,8 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
-    def to_spec(self) -> Dict[str, Any]:  # type: ignore[override]
-        data = cast(Dict[str, Any], super().to_spec())
+    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        data = cast(dict[str, Any], super().to_spec())
         data['script'] = [str(script) for script in self.script]
 
         return data
@@ -65,7 +65,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
-        scripts: List[tmt.utils.ShellScript] = self.get('script')
+        scripts: list[tmt.utils.ShellScript] = self.get('script')
         overview = fmf.utils.listed(scripts, 'script')
         self.info('overview', f'{overview} found', 'green')
 

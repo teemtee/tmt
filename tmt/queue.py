@@ -1,6 +1,6 @@
 import dataclasses
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Dict, Generic, Iterator, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterator, Optional, TypeVar
 
 import fmf.utils
 
@@ -44,7 +44,7 @@ class _Task:
     """ A base class for tasks to be executed on one or more guests """
 
     #: A list of guests to execute the task on.
-    guests: List['Guest']
+    guests: list['Guest']
 
     #: A logger to use for logging events related to the task. It serves as
     #: a root logger for new loggers queue may spawn for each guest.
@@ -62,7 +62,7 @@ class _Task:
         raise NotImplementedError
 
     @property
-    def guest_ids(self) -> List[str]:
+    def guest_ids(self) -> list[str]:
         return [guest.multihost_name for guest in self.guests]
 
     def go(self) -> Iterator[TaskOutcome['Self']]:
@@ -119,7 +119,7 @@ class Task(_Task):
 
     def prepare_loggers(
             self,
-            logger: Logger) -> Dict[str, Logger]:
+            logger: Logger) -> dict[str, Logger]:
         """
         Create loggers for a set of guests.
 
@@ -128,7 +128,7 @@ class Task(_Task):
         labels need to be properly aligned for more readable output.
         """
 
-        loggers: Dict[str, Logger] = {}
+        loggers: dict[str, Logger] = {}
 
         # First, spawn all loggers, and set their labels if needed. Don't bother
         # with labels if there's just a single guest.
@@ -153,10 +153,10 @@ class Task(_Task):
         multiple_guests = len(self.guests) > 1
 
         new_loggers = self.prepare_loggers(self.logger)
-        old_loggers: Dict[str, Logger] = {}
+        old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: Dict[Future[None], Guest] = {}
+            futures: dict[Future[None], Guest] = {}
 
             for guest in self.guests:
                 # Swap guest's logger for the one we prepared, with labels
@@ -221,7 +221,7 @@ class Task(_Task):
                 guest.inject_logger(old_logger)
 
 
-class Queue(List[TaskT]):
+class Queue(list[TaskT]):
     """ Queue class for running phases on guests """
 
     def __init__(self, name: str, logger: Logger) -> None:
@@ -256,7 +256,7 @@ class Queue(List[TaskT]):
                 f'{task.name} on {fmf.utils.listed(task.guest_ids)}',
                 color='cyan')
 
-            failed_outcomes: List[TaskOutcome[TaskT]] = []
+            failed_outcomes: list[TaskOutcome[TaskT]] = []
 
             for outcome in task.go():
                 if outcome.exc:

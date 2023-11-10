@@ -16,15 +16,11 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
     Iterable,
     Iterator,
-    List,
     Literal,
     Optional,
     Sequence,
-    Tuple,
-    Type,
     TypedDict,
     TypeVar,
     Union,
@@ -142,10 +138,10 @@ class FmfId(
         tmt.export.Exportable['FmfId']):
 
     # The list of valid fmf id keys
-    VALID_KEYS: ClassVar[List[str]] = ['url', 'ref', 'path', 'name']
+    VALID_KEYS: ClassVar[list[str]] = ['url', 'ref', 'path', 'name']
 
     #: Keys that are present, might be set, but shall not be exported.
-    NONEXPORTABLE_KEYS: ClassVar[List[str]] = ['fmf_root', 'git_root', 'default_branch']
+    NONEXPORTABLE_KEYS: ClassVar[list[str]] = ['fmf_root', 'git_root', 'default_branch']
 
     # Save context of the ID for later - there are places where it matters,
     # e.g. to not display `ref` under some conditions.
@@ -223,7 +219,7 @@ class FmfId(
 
         return fmf_id
 
-    def validate(self) -> Tuple[bool, str]:
+    def validate(self) -> tuple[bool, str]:
         """
         Validate fmf id and return a human readable error
 
@@ -245,7 +241,7 @@ class FmfId(
             fmf.base.Tree.node(node_data)
         except fmf.utils.GeneralError as error:
             # Map fmf errors to more user friendly alternatives
-            error_map: List[Tuple[str, str]] = [
+            error_map: list[tuple[str, str]] = [
                 ('git clone', f"repo '{self.url}' cannot be cloned"),
                 ('git checkout', f"git ref '{self.ref}' is invalid"),
                 ('directory path', f"path '{self.path}' is invalid"),
@@ -264,7 +260,7 @@ class FmfId(
     def _export(
             self,
             *,
-            keys: Optional[List[str]] = None
+            keys: Optional[list[str]] = None
             ) -> tmt.export._RawExportedInstance:
 
         spec = self.to_minimal_spec()
@@ -306,7 +302,7 @@ _RawLinkRelationName = Literal[
 _RawLinkTarget = Union[str, _RawFmfId]
 
 # Basic "relation-aware" link - essentialy a mapping with one key/value pair.
-_RawLinkRelation = Dict[_RawLinkRelationName, _RawLinkTarget]
+_RawLinkRelation = dict[_RawLinkRelationName, _RawLinkTarget]
 
 # A single link can be represented as a string or FMF ID (meaning only target is specified),
 # or a "relation-aware" link aka mapping defined above.
@@ -320,7 +316,7 @@ _RawLink = Union[
 # link forms may be used together.
 _RawLinks = Union[
     _RawLink,
-    List[_RawLink]
+    list[_RawLink]
     ]
 
 
@@ -382,7 +378,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
 
 def normalize_test_environment(
         key_address: str,
-        value: Optional[Dict[str, Any]],
+        value: Optional[dict[str, Any]],
         logger: tmt.log.Logger) -> EnvironmentType:
     """ Normalize value of tests' ``environment`` key """
 
@@ -436,7 +432,7 @@ class DependencyFmfId(
     several extra keys.
     """
 
-    VALID_KEYS: ClassVar[List[str]] = [*FmfId.VALID_KEYS, 'destination', 'nick', 'type']
+    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'destination', 'nick', 'type']
 
     destination: Optional[Path] = None
     nick: Optional[str] = None
@@ -508,7 +504,7 @@ class DependencyFmfId(
 
 class _RawDependencyFile(TypedDict):
     type: Optional[str]
-    pattern: Optional[List[str]]
+    pattern: Optional[list[str]]
 
 
 @dataclasses.dataclass
@@ -516,10 +512,10 @@ class DependencyFile(
         SpecBasedContainer[_RawDependencyFile, _RawDependencyFile],
         SerializableContainer,
         tmt.export.Exportable['DependencyFile']):
-    VALID_KEYS: ClassVar[List[str]] = ['type', 'pattern']
+    VALID_KEYS: ClassVar[list[str]] = ['type', 'pattern']
 
     type: str = 'file'
-    pattern: List[str] = field(
+    pattern: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
 
@@ -565,7 +561,7 @@ class DependencyFile(
         return dependency
 
     @staticmethod
-    def validate() -> Tuple[bool, str]:
+    def validate() -> tuple[bool, str]:
         """
         Validate file dependency and return a human readable error
 
@@ -579,7 +575,7 @@ class DependencyFile(
 
 
 _RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
-_RawDependency = Union[_RawDependencyItem, List[_RawDependencyItem]]
+_RawDependency = Union[_RawDependencyItem, list[_RawDependencyItem]]
 
 Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
 
@@ -600,7 +596,7 @@ def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependen
 def normalize_require(
         key_address: str,
         raw_require: Optional[_RawDependency],
-        logger: tmt.log.Logger) -> List[Dependency]:
+        logger: tmt.log.Logger) -> list[Dependency]:
     """
     Normalize content of ``require`` key.
 
@@ -626,9 +622,9 @@ def normalize_require(
 
 
 def assert_simple_dependencies(
-        dependencies: List[Dependency],
+        dependencies: list[Dependency],
         error_message: str,
-        logger: tmt.log.Logger) -> List[DependencySimple]:
+        logger: tmt.log.Logger) -> list[DependencySimple]:
     """
     Make sure the list of dependencies consists of simple ones.
 
@@ -645,7 +641,7 @@ def assert_simple_dependencies(
         ))
 
     if not non_simple_dependencies:
-        return cast(List[DependencySimple], dependencies)
+        return cast(list[DependencySimple], dependencies)
 
     for dependency in non_simple_dependencies:
         logger.fail(f'Invalid requirement: {dependency}')
@@ -686,14 +682,14 @@ class Core(
         normalize=_normalize_link,
         exporter=lambda value: value.to_spec() if value is not None else [])
     id: Optional[str] = None
-    tag: List[str] = field(
+    tag: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
     tier: Optional[str] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger:
             None if raw_value is None else str(raw_value))
-    adjust: Optional[List[_RawAdjustRule]] = field(
+    adjust: Optional[list[_RawAdjustRule]] = field(
         default_factory=list,
         normalize=lambda key_address, raw_value, logger: [] if raw_value is None
         else ([raw_value] if not isinstance(raw_value, list) else raw_value))
@@ -743,7 +739,7 @@ class Core(
         return self.name
 
     @classmethod
-    def from_tree(cls: Type[T], tree: 'tmt.Tree') -> List[T]:
+    def from_tree(cls: type[T], tree: 'tmt.Tree') -> list[T]:
         """
         Gather list of instances of this class in a given tree.
 
@@ -754,7 +750,7 @@ class Core(
         :param tree: tree to search for objects.
         """
 
-        return cast(List[T], getattr(tree, f'{cls.__name__.lower()}s')())
+        return cast(list[T], getattr(tree, f'{cls.__name__.lower()}s')())
 
     def _update_metadata(self) -> None:
         """ Update the _metadata attribute """
@@ -773,7 +769,7 @@ class Core(
 
     def _fmf_id(self) -> None:
         """ Show fmf identifier """
-        echo(tmt.utils.format('fmf-id', cast(Dict[str, Any],
+        echo(tmt.utils.format('fmf-id', cast(dict[str, Any],
              self.fmf_id.to_minimal_spec()), key_color='magenta'))
 
     # TODO: cached_property candidates
@@ -806,7 +802,7 @@ class Core(
             logger=self._logger)
 
     @cached_property
-    def fmf_sources(self) -> List[Path]:
+    def fmf_sources(self) -> list[Path]:
         return [Path(source) for source in self.node.sources]
 
     def web_link(self) -> Optional[str]:
@@ -864,13 +860,13 @@ class Core(
     def _export(
             self,
             *,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         if keys is None:
             keys = self._keys()
 
         # Always include node name, add requested keys, ignore adjust
-        data: Dict[str, Any] = {'name': self.name}
+        data: dict[str, Any] = {'name': self.name}
         for key in keys:
             # TODO: provide more mature solution for https://github.com/teemtee/tmt/issues/1688
             # Until that, do not export fields that start with an underscore, to avoid leaking
@@ -903,7 +899,7 @@ class Core(
 
         return data
 
-    def _lint_keys(self, additional_keys: List[str]) -> List[str]:
+    def _lint_keys(self, additional_keys: list[str]) -> list[str]:
         """ Return list of invalid keys used, empty when all good """
         known_keys = additional_keys + self._keys()
         return [key for key in self.node.get() if key not in known_keys]
@@ -1029,11 +1025,11 @@ class Test(
     """ Test object (L1 Metadata) """
 
     # Basic test information
-    contact: List[str] = field(
+    contact: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
-    component: List[str] = field(
+    component: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
@@ -1051,11 +1047,11 @@ class Test(
         exporter=lambda value: str(value) if isinstance(value, Path) else None)
     framework: str = "shell"
     manual: bool = False
-    require: List[Dependency] = field(
+    require: list[Dependency] = field(
         default_factory=list,
         normalize=normalize_require,
         exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
-    recommend: List[Dependency] = field(
+    recommend: list[Dependency] = field(
         default_factory=list,
         normalize=normalize_require,
         exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
@@ -1066,9 +1062,9 @@ class Test(
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
 
-    where: List[str] = field(default_factory=list)
+    where: list[str] = field(default_factory=list)
 
-    check: List[Check] = field(
+    check: list[Check] = field(
         default_factory=list,
         normalize=tmt.checks.normalize_checks,
         serialize=lambda checks: [check.to_spec() for check in checks],
@@ -1124,7 +1120,7 @@ class Test(
     def from_dict(
             cls,
             *,
-            mapping: Dict[str, Any],
+            mapping: dict[str, Any],
             name: str,
             skip_validation: bool = False,
             raise_on_validation_error: bool = False,
@@ -1243,7 +1239,7 @@ class Test(
         except KeyError:
             raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
         # Append link with appropriate relation
-        links = Links(data=list(cast(List[_RawLink], Test._opt('link', []))))
+        links = Links(data=list(cast(list[_RawLink], Test._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
             content += dict_to_yaml({
                 'link': links.to_spec()
@@ -1299,13 +1295,13 @@ class Test(
             if key in ('require', 'recommend') and value:
                 echo(tmt.utils.format(
                     key,
-                    [dependency.to_minimal_spec() for dependency in cast(List[Dependency], value)]
+                    [dependency.to_minimal_spec() for dependency in cast(list[Dependency], value)]
                     ))
                 continue
             if key == 'check' and value:
                 echo(tmt.utils.format(
                     key,
-                    [check.to_spec() for check in cast(List[Check], value)]
+                    [check.to_spec() for check in cast(list[Check], value)]
                     ))
                 continue
             if value not in [None, [], {}]:
@@ -1517,7 +1513,7 @@ class Plan(
         # ignore[attr-defined]: for some reason, mypy cannot infer `value` is an `FmfContext`
         # instance.
         exporter=lambda value: value.to_spec())  # type: ignore[attr-defined]
-    gate: List[str] = field(
+    gate: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
 
@@ -1624,7 +1620,7 @@ class Plan(
 
         self._update_metadata()
 
-    def _expand_node_data(self, data: T, fmf_context: Dict[str, str]) -> T:
+    def _expand_node_data(self, data: T, fmf_context: dict[str, str]) -> T:
         """ Recursively expand variables in node data """
         if isinstance(data, str):
             # Expand environment and context variables. This is a bit
@@ -1873,8 +1869,8 @@ class Plan(
 
     def _iter_steps(self,
                     enabled_only: bool = True,
-                    skip: Optional[List[str]] = None
-                    ) -> Iterator[Tuple[str, tmt.steps.Step]]:
+                    skip: Optional[list[str]] = None
+                    ) -> Iterator[tuple[str, tmt.steps.Step]]:
         """
         Iterate over steps.
 
@@ -1893,7 +1889,7 @@ class Plan(
 
     def steps(self,
               enabled_only: bool = True,
-              skip: Optional[List[str]] = None) -> Iterator[tmt.steps.Step]:
+              skip: Optional[list[str]] = None) -> Iterator[tmt.steps.Step]:
         """
         Iterate over steps.
 
@@ -1906,7 +1902,7 @@ class Plan(
 
     def step_names(self,
                    enabled_only: bool = True,
-                   skip: Optional[List[str]] = None) -> Iterator[str]:
+                   skip: Optional[list[str]] = None) -> Iterator[str]:
         """
         Iterate over step names.
 
@@ -1995,7 +1991,7 @@ class Plan(
 
         yield LinterOutcome.PASS, 'execute step defined with "how"'
 
-    def _step_phase_nodes(self, step: str) -> List[Dict[str, Any]]:
+    def _step_phase_nodes(self, step: str) -> list[dict[str, Any]]:
         """ List raw fmf nodes for the given step """
 
         _phases = self.node.get(step)
@@ -2006,7 +2002,7 @@ class Plan(
         if isinstance(_phases, dict):
             return [_phases]
 
-        return cast(List[Dict[str, Any]], _phases)
+        return cast(list[dict[str, Any]], _phases)
 
     def _lint_step_methods(
             self,
@@ -2053,7 +2049,7 @@ class Plan(
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
         """ P005: remote fmf ids must be valid """
 
-        fmf_ids: List[Tuple[FmfId, Dict[str, Any]]] = []
+        fmf_ids: list[tuple[FmfId, dict[str, Any]]] = []
 
         for phase in self._step_phase_nodes('discover'):
             if phase.get('how') != 'fmf':
@@ -2102,8 +2098,8 @@ class Plan(
     def lint_phases_have_guests(self) -> LinterReturn:
         """ P007: step phases require existing guests and roles """
 
-        guest_names: List[str] = []
-        guest_roles: List[str] = []
+        guest_names: list[str] = []
+        guest_roles: list[str] = []
 
         for i, phase in enumerate(self._step_phase_nodes('provision')):
             guest_name = cast(Optional[str], phase.get('name'))
@@ -2242,7 +2238,7 @@ class Plan(
     def _export(
             self,
             *,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         data = super()._export(keys=keys, include_internal=include_internal)
 
@@ -2403,7 +2399,7 @@ class Story(
         tmt.lint.Lintable['Story']):
     """ User story object """
 
-    example: List[str] = field(
+    example: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)
     # TODO: `story` is mandatory, but it's defined after attributes with default
@@ -2452,26 +2448,26 @@ class Story(
 
     # Override the parent implementation - it would try to call `Tree.storys()`...
     @classmethod
-    def from_tree(cls, tree: 'tmt.Tree') -> List['Story']:
+    def from_tree(cls, tree: 'tmt.Tree') -> list['Story']:
         return tree.stories()
 
     @property
-    def documented(self) -> List['Link']:
+    def documented(self) -> list['Link']:
         """ Return links to relevant documentation """
         return self.link.get('documented-by') if self.link else []
 
     @property
-    def verified(self) -> List['Link']:
+    def verified(self) -> list['Link']:
         """ Return links to relevant test coverage """
         return self.link.get('verified-by') if self.link else []
 
     @property
-    def implemented(self) -> List['Link']:
+    def implemented(self) -> list['Link']:
         """ Return links to relevant source code """
         return self.link.get('implemented-by') if self.link else []
 
     @property
-    def status(self) -> List[str]:
+    def status(self) -> list[str]:
         """ Aggregate story status from implemented-, verified- and documented-by links """
         status = []
 
@@ -2582,7 +2578,7 @@ class Story(
         if self.verbosity_level:
             self._show_additional_keys()
 
-    def coverage(self, code: bool, test: bool, docs: bool) -> Tuple[bool, bool, bool]:
+    def coverage(self, code: bool, test: bool, docs: bool) -> tuple[bool, bool, bool]:
         """ Show story coverage """
         if code:
             code = bool(self.implemented)
@@ -2684,10 +2680,10 @@ class Tree(tmt.utils.Common):
     def _filters_conditions(
             self,
             nodes: Sequence[CoreT],
-            filters: List[str],
-            conditions: List[str],
-            links: List['LinkNeedle'],
-            excludes: List[str]) -> List[CoreT]:
+            filters: list[str],
+            conditions: list[str],
+            links: list['LinkNeedle'],
+            excludes: list[str]) -> list[CoreT]:
         """ Apply filters and conditions, return pruned nodes """
         result = []
         for node in nodes:
@@ -2732,7 +2728,7 @@ class Tree(tmt.utils.Common):
             result.append(node)
         return result
 
-    def sanitize_cli_names(self, names: List[str]) -> List[str]:
+    def sanitize_cli_names(self, names: list[str]) -> list[str]:
         """ Sanitize CLI names in case name includes control character """
         for name in names:
             if not name.isprintable():
@@ -2773,14 +2769,14 @@ class Tree(tmt.utils.Common):
     def tests(
             self,
             logger: Optional[tmt.log.Logger] = None,
-            keys: Optional[List[str]] = None,
-            names: Optional[List[str]] = None,
-            filters: Optional[List[str]] = None,
-            conditions: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
+            names: Optional[list[str]] = None,
+            filters: Optional[list[str]] = None,
+            conditions: Optional[list[str]] = None,
             unique: bool = True,
-            links: Optional[List['LinkNeedle']] = None,
-            excludes: Optional[List[str]] = None
-            ) -> List[Test]:
+            links: Optional[list['LinkNeedle']] = None,
+            excludes: Optional[list[str]] = None
+            ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
@@ -2791,16 +2787,16 @@ class Tree(tmt.utils.Common):
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
-            for value in cast(List[str], Test._opt('links', []))
+            for value in cast(list[str], Test._opt('links', []))
             ]
         excludes = (excludes or []) + list(Test._opt('exclude', []))
         # Used in: tmt run test --name NAME, tmt test ls NAME...
-        cmd_line_names: List[str] = list(Test._opt('names', []))
+        cmd_line_names: list[str] = list(Test._opt('names', []))
 
         # Sanitize test names to make sure no name includes control character
         cmd_line_names = self.sanitize_cli_names(cmd_line_names)
 
-        def name_filter(nodes: Iterable[fmf.Tree]) -> List[fmf.Tree]:
+        def name_filter(nodes: Iterable[fmf.Tree]) -> list[fmf.Tree]:
             """ Filter nodes based on names provided on the command line """
             if not cmd_line_names:
                 return list(nodes)
@@ -2854,14 +2850,14 @@ class Tree(tmt.utils.Common):
     def plans(
             self,
             logger: Optional[tmt.log.Logger] = None,
-            keys: Optional[List[str]] = None,
-            names: Optional[List[str]] = None,
-            filters: Optional[List[str]] = None,
-            conditions: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
+            names: Optional[list[str]] = None,
+            filters: Optional[list[str]] = None,
+            conditions: Optional[list[str]] = None,
             run: Optional['Run'] = None,
-            links: Optional[List['LinkNeedle']] = None,
-            excludes: Optional[List[str]] = None
-            ) -> List[Plan]:
+            links: Optional[list['LinkNeedle']] = None,
+            excludes: Optional[list[str]] = None
+            ) -> list[Plan]:
         """ Search available plans """
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
@@ -2873,7 +2869,7 @@ class Tree(tmt.utils.Common):
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
-            for value in cast(List[str], Plan._opt('links', []))
+            for value in cast(list[str], Plan._opt('links', []))
             ]
         excludes = (excludes or []) + list(Plan._opt('exclude', []))
 
@@ -2925,14 +2921,14 @@ class Tree(tmt.utils.Common):
     def stories(
             self,
             logger: Optional[tmt.log.Logger] = None,
-            keys: Optional[List[str]] = None,
-            names: Optional[List[str]] = None,
-            filters: Optional[List[str]] = None,
-            conditions: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
+            names: Optional[list[str]] = None,
+            filters: Optional[list[str]] = None,
+            conditions: Optional[list[str]] = None,
             whole: bool = False,
-            links: Optional[List['LinkNeedle']] = None,
-            excludes: Optional[List[str]] = None
-            ) -> List[Story]:
+            links: Optional[list['LinkNeedle']] = None,
+            excludes: Optional[list[str]] = None
+            ) -> list[Story]:
         """ Search available stories """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
@@ -2943,7 +2939,7 @@ class Tree(tmt.utils.Common):
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
-            for value in cast(List[str], Story._opt('links', []))
+            for value in cast(list[str], Story._opt('links', []))
             ]
         excludes = (excludes or []) + list(Story._opt('exclude', []))
 
@@ -3089,10 +3085,10 @@ class Tree(tmt.utils.Common):
 @dataclasses.dataclass
 class RunData(SerializableContainer):
     root: Optional[str]
-    plans: Optional[List[str]]
+    plans: Optional[list[str]]
     # TODO: this needs resolution - _context_object.steps is List[Step],
     # but stores as a List[str] in run.yaml...
-    steps: List[str]
+    steps: list[str]
     environment: EnvironmentType
     remove: bool
 
@@ -3127,7 +3123,7 @@ class Run(tmt.utils.Common):
         super().__init__(cli_invocation=cli_invocation, logger=logger)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree = tree
-        self._plans: Optional[List[Plan]] = None
+        self._plans: Optional[list[Plan]] = None
         self._environment_from_workdir: EnvironmentType = {}
         self._environment_from_options: Optional[EnvironmentType] = None
         self.remove = self.opt('remove')
@@ -3293,7 +3289,7 @@ class Run(tmt.utils.Common):
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
 
     @property
-    def plans(self) -> List[Plan]:
+    def plans(self) -> list[Plan]:
         """ Test plans for execution """
         if self._plans is None:
             assert self.tree is not None  # narrow type
@@ -3410,7 +3406,7 @@ class Run(tmt.utils.Common):
                     tmt.steps.prepare.Prepare,
                     tmt.steps.execute.Execute,
                     tmt.steps.finish.Finish):
-                klass = cast(Type[tmt.steps.Step], _klass)
+                klass = cast(type[tmt.steps.Step], _klass)
 
                 cli_invocation = klass.cli_invocation
 
@@ -3459,7 +3455,7 @@ class Run(tmt.utils.Common):
         self.save()
 
         # Iterate over plans
-        crashed_plans: List[Tuple[Plan, Exception]] = []
+        crashed_plans: list[tuple[Plan, Exception]] = []
 
         for plan in self.plans:
             try:
@@ -3953,7 +3949,7 @@ class Link(SpecBasedContainer[Any, _RawLinkRelation]):
         return spec
 
 
-class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
+class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
     """
     Collection of links in tests, plans and stories.
 
@@ -3963,7 +3959,7 @@ class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
     """
 
     # The list of all supported link relations
-    _relations: List[_RawLinkRelationName] = [
+    _relations: list[_RawLinkRelationName] = [
         'verifies', 'verified-by',
         'implements', 'implemented-by',
         'documents', 'documented-by',
@@ -3973,7 +3969,7 @@ class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
         'relates', 'test-script',
         ]
 
-    _links: List[Link]
+    _links: list[Link]
 
     def __init__(self, *, data: Optional[_RawLinks] = None):
         """ Create a collection from raw link data """
@@ -3995,7 +3991,7 @@ class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
         # Ensure that each link is in the canonical form
         self._links = [Link.from_spec(spec) for spec in specs]
 
-    def to_spec(self) -> List[_RawLinkRelation]:
+    def to_spec(self) -> list[_RawLinkRelation]:
         """
         Convert to a form suitable for saving in a specification file
 
@@ -4015,7 +4011,7 @@ class Links(SpecBasedContainer[Any, List[_RawLinkRelation]]):
             for link in self._links
             ]
 
-    def get(self, relation: Optional[_RawLinkRelationName] = None) -> List[Link]:
+    def get(self, relation: Optional[_RawLinkRelationName] = None) -> list[Link]:
         """ Get links with given relation, all by default """
         return [
             link for link in self._links

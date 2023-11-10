@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import tmt.base
 import tmt.export
@@ -17,7 +17,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
             *,
             template_filepath: Optional[Path] = None,
             default_template_filename: str,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             **variables: Any
             ) -> str:
         return tmt.utils.render_template_file(
@@ -28,8 +28,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
 
     @classmethod
     def export_fmfid_collection(cls,
-                                fmf_ids: List[tmt.base.FmfId],
-                                keys: Optional[List[str]] = None,
+                                fmf_ids: list[tmt.base.FmfId],
+                                keys: Optional[list[str]] = None,
                                 template: Optional[Path] = None,
                                 **kwargs: Any) -> str:
         return '\n\n'.join([
@@ -43,8 +43,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
 
     @classmethod
     def export_test_collection(cls,
-                               tests: List[tmt.base.Test],
-                               keys: Optional[List[str]] = None,
+                               tests: list[tmt.base.Test],
+                               keys: Optional[list[str]] = None,
                                template: Optional[Path] = None,
                                **kwargs: Any) -> str:
         return '\n\n'.join([
@@ -58,8 +58,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
 
     @classmethod
     def export_plan_collection(cls,
-                               plans: List[tmt.base.Plan],
-                               keys: Optional[List[str]] = None,
+                               plans: list[tmt.base.Plan],
+                               keys: Optional[list[str]] = None,
                                template: Optional[Path] = None,
                                **kwargs: Any) -> str:
         return '\n\n'.join([
@@ -73,8 +73,8 @@ class TemplateExporter(tmt.export.ExportPlugin):
 
     @classmethod
     def export_story_collection(cls,
-                                stories: List[tmt.base.Story],
-                                keys: Optional[List[str]] = None,
+                                stories: list[tmt.base.Story],
+                                keys: Optional[list[str]] = None,
                                 template: Optional[Path] = None,
                                 include_title: bool = True,
                                 **kwargs: Any) -> str:

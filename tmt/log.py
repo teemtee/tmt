@@ -35,12 +35,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Set,
-    Tuple,
     Union,
     cast,
     )
@@ -68,7 +64,7 @@ class Topic(enum.Enum):
     ADJUST_DECISIONS = 'adjust-decisions'
 
 
-DEFAULT_TOPICS: Set[Topic] = set()
+DEFAULT_TOPICS: set[Topic] = set()
 
 
 LABEL_FORMAT = '[{label}]'
@@ -122,7 +118,7 @@ def _debug_level_from_global_envvar() -> int:
         raise tmt.utils.GeneralError(f"Invalid debug level '{raw_value}', use an integer.")
 
 
-def decide_colorization(no_color: bool, force_color: bool) -> Tuple[bool, bool]:
+def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
     """
     Decide whether the output and logging should be colorized.
 
@@ -181,7 +177,7 @@ def decide_colorization(no_color: bool, force_color: bool) -> Tuple[bool, bool]:
     return apply_colors_output, apply_colors_logging
 
 
-def render_labels(labels: List[str]) -> str:
+def render_labels(labels: list[str]) -> str:
     if not labels:
         return ''
 
@@ -198,7 +194,7 @@ def indent(
         value: Optional[LoggableValue] = None,
         color: Optional[str] = None,
         level: int = 0,
-        labels: Optional[List[str]] = None,
+        labels: Optional[list[str]] = None,
         labels_padding: int = 0) -> str:
     """
     Indent a key/value message.
@@ -262,7 +258,7 @@ class LogRecordDetails:
     color: Optional[str] = None
     shift: int = 0
 
-    logger_labels: List[str] = dataclasses.field(default_factory=list)
+    logger_labels: list[str] = dataclasses.field(default_factory=list)
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
@@ -274,7 +270,7 @@ class LogRecordDetails:
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
-    logger_topics: Set[Topic] = dataclasses.field(default_factory=set)
+    logger_topics: set[Topic] = dataclasses.field(default_factory=set)
     message_topic: Optional[Topic] = None
 
 
@@ -440,12 +436,12 @@ class Logger:
             self,
             actual_logger: logging.Logger,
             base_shift: int = 0,
-            labels: Optional[List[str]] = None,
+            labels: Optional[list[str]] = None,
             labels_padding: int = 0,
             verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
             debug_level: int = DEFAULT_DEBUG_LEVEL,
             quiet: bool = False,
-            topics: Optional[Set[Topic]] = None,
+            topics: Optional[set[Topic]] = None,
             apply_colors_output: bool = True,
             apply_colors_logging: bool = True
             ) -> None:
@@ -603,7 +599,7 @@ class Logger:
         to reflect options given to a tmt subcommand.
         """
 
-        actual_kwargs: Dict[str, Any] = {}
+        actual_kwargs: dict[str, Any] = {}
 
         if cli_invocation is not None:
             actual_kwargs = cli_invocation.options

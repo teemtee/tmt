@@ -7,7 +7,7 @@ import time
 import unittest
 import unittest.mock
 from datetime import timedelta
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 import fmf
 import pytest
@@ -69,7 +69,7 @@ def local_git_repo(tmppath: Path) -> Path:
 
 
 @pytest.fixture()
-def origin_and_local_git_repo(local_git_repo: Path) -> Tuple[Path, Path]:
+def origin_and_local_git_repo(local_git_repo: Path) -> tuple[Path, Path]:
     top_dir = local_git_repo.parent
     fork_dir = top_dir / 'fork'
     run(ShellScript(f'git clone {local_git_repo} {fork_dir}').to_shell_command(),
@@ -82,7 +82,7 @@ def origin_and_local_git_repo(local_git_repo: Path) -> Tuple[Path, Path]:
 
 
 @pytest.fixture()
-def nested_file(tmppath: Path) -> Tuple[Path, Path, Path]:
+def nested_file(tmppath: Path) -> tuple[Path, Path, Path]:
     top_dir = tmppath / 'top_dir'
     top_dir.mkdir()
     sub_dir = top_dir / 'sub_dir'
@@ -747,7 +747,7 @@ class TestValidateGitStatus:
                              [False, True], ids=["without path", "with path"])
     def test_all_good(
             cls,
-            origin_and_local_git_repo: Tuple[Path, Path],
+            origin_and_local_git_repo: tuple[Path, Path],
             use_path: bool,
             root_logger):
         # No need to modify origin, ignoring it
@@ -823,7 +823,7 @@ class TestValidateGitStatus:
                              [False, True], ids=["without path", "with path"])
     def test_local_changes(
             cls,
-            origin_and_local_git_repo: Tuple[Path, Path],
+            origin_and_local_git_repo: tuple[Path, Path],
             use_path,
             root_logger):
         origin, mine = origin_and_local_git_repo
@@ -854,7 +854,7 @@ class TestValidateGitStatus:
             False, "Uncommitted changes in " + ('fmf_root/' if use_path else '') + "main.fmf")
 
     @classmethod
-    def test_not_pushed(cls, origin_and_local_git_repo: Tuple[Path, Path], root_logger):
+    def test_not_pushed(cls, origin_and_local_git_repo: tuple[Path, Path], root_logger):
         # No need for original repo (it is required just to have remote in
         # local clone)
         mine = origin_and_local_git_repo[1]
@@ -879,7 +879,7 @@ class TestGitAdd:
     @classmethod
     def test_not_in_repository(
             cls,
-            nested_file: Tuple[Path, Path, Path],
+            nested_file: tuple[Path, Path, Path],
             root_logger):
         top_dir, sub_dir, file = nested_file
 
@@ -889,7 +889,7 @@ class TestGitAdd:
     @classmethod
     def test_in_repository(
             cls,
-            nested_file: Tuple[Path, Path, Path],
+            nested_file: tuple[Path, Path, Path],
             root_logger):
         top_dir, sub_dir, file = nested_file
         run(ShellScript('git init').to_shell_command(), cwd=top_dir)
@@ -1082,7 +1082,7 @@ def test_common_base_inheritance(root_logger):
         'duplicates'
         )
     )
-def test_uniq(values: List[Any], expected: List[Any]) -> None:
+def test_uniq(values: list[Any], expected: list[Any]) -> None:
     assert tmt.utils.uniq(values) == expected
 
 
@@ -1099,7 +1099,7 @@ def test_uniq(values: List[Any], expected: List[Any]) -> None:
         'duplicates'
         )
     )
-def test_duplicates(values: List[Any], expected: List[Any]) -> None:
+def test_duplicates(values: list[Any], expected: list[Any]) -> None:
     assert list(tmt.utils.duplicates(values)) == expected
 
 
@@ -1118,7 +1118,7 @@ def test_duplicates(values: List[Any], expected: List[Any]) -> None:
         'unique-enabled'
         )
     )
-def test_flatten(lists: List[List[Any]], unique: bool, expected: List[Any]) -> None:
+def test_flatten(lists: list[list[Any]], unique: bool, expected: list[Any]) -> None:
     assert tmt.utils.flatten(lists, unique=unique) == expected
 
 

@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import tmt.log
 import tmt.steps.execute
@@ -25,7 +25,7 @@ class AvcDenials(CheckPlugin):
             guest: tmt.steps.provision.Guest,
             test: 'Test',
             event: CheckEvent,
-            logger: tmt.log.Logger) -> Tuple[ResultOutcome, Path]:
+            logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
         if test.start_time is None:
             raise tmt.utils.GeneralError(
@@ -60,7 +60,7 @@ class AvcDenials(CheckPlugin):
                 topic=topic)
 
         # Collect all report components
-        report: List[str] = [
+        report: list[str] = [
             f'# Acquired at {report_timestamp}'
             ]
 
@@ -70,8 +70,8 @@ class AvcDenials(CheckPlugin):
         def _run_script(
                 script: ShellScript,
                 needs_sudo: bool = False) -> Union[
-                    Tuple[CommandOutput, Optional[tmt.utils.RunError]],
-                    Tuple[Optional[CommandOutput], tmt.utils.RunError]
+                    tuple[CommandOutput, Optional[tmt.utils.RunError]],
+                    tuple[Optional[CommandOutput], tmt.utils.RunError]
                 ]:
             if needs_sudo and guest.facts.is_superuser is False:
                 script = ShellScript(f'sudo {script.to_shell_command()}')
@@ -84,14 +84,14 @@ class AvcDenials(CheckPlugin):
             except tmt.utils.RunError as exc:
                 return None, exc
 
-        def _report_success(label: str, output: tmt.utils.CommandOutput) -> List[str]:
+        def _report_success(label: str, output: tmt.utils.CommandOutput) -> list[str]:
             return [
                 f'# {label}',
                 output.stdout or '',
                 ''
                 ]
 
-        def _report_failure(label: str, exc: tmt.utils.RunError) -> List[str]:
+        def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
             return [
                 f'# {label}',
                 "\n".join(render_run_exception_streams(exc.stdout, exc.stderr, verbose=1)),
@@ -177,7 +177,7 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
             guest: tmt.steps.provision.Guest,
             test: 'Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List[CheckResult]:
+            logger: tmt.log.Logger) -> list[CheckResult]:
         outcome, path = cls._save_report(plugin, guest, test, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='avc', result=outcome, log=[path])]

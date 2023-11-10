@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import tmt
 import tmt.base
@@ -115,7 +115,7 @@ class GuestLocal(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None,
+            options: Optional[list[str]] = None,
             superuser: bool = False) -> None:
         """ Nothing to be done to push workdir """
 
@@ -123,8 +123,8 @@ class GuestLocal(tmt.Guest):
             self,
             source: Optional[Path] = None,
             destination: Optional[Path] = None,
-            options: Optional[List[str]] = None,
-            extend_options: Optional[List[str]] = None) -> None:
+            options: Optional[list[str]] = None,
+            extend_options: Optional[list[str]] = None) -> None:
         """ Nothing to be done to pull workdir """
 
 

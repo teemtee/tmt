@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import tmt.base
 import tmt.log
@@ -37,7 +37,7 @@ class Beakerlib(TestFramework):
             parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
-            logger: tmt.log.Logger) -> List[str]:
+            logger: tmt.log.Logger) -> list[str]:
         return [
             '--exclude',
             str(parent.data_path(test, guest, "backup*", full=True))
@@ -49,11 +49,11 @@ class Beakerlib(TestFramework):
             parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
-            logger: tmt.log.Logger) -> List[tmt.result.Result]:
+            logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
         note: Optional[str] = None
-        log: List[Path] = []
+        log: list[Path] = []
         for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']:
             if parent.data_path(test, guest, filename, full=True).is_file():
                 log.append(parent.data_path(test, guest, filename))

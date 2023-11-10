@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import fmf.utils
 
@@ -46,21 +46,21 @@ class ExecuteUpgradeData(ExecuteInternalData):
         metavar='REVISION',
         help='Branch, tag or commit specifying the git revision.',
         normalize=normalize_ref)
-    test: List[str] = field(
+    test: list[str] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
         help='Select tests by name.',
         normalize=tmt.utils.normalize_string_list)
-    filter: List[str] = field(
+    filter: list[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
         metavar='FILTERS',
         multiple=True,
         help='Include only tests matching the filter.',
         normalize=tmt.utils.normalize_string_list)
-    exclude: List[str] = field(
+    exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='REGEXP',

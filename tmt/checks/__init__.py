@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
 
 import tmt.log
 import tmt.steps.provision
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
 
 
-CheckPluginClass = Type['CheckPlugin']
+CheckPluginClass = type['CheckPlugin']
 
 _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry()
 
@@ -104,7 +104,7 @@ class Check(
             raw_data: _RawCheck,
             logger: tmt.log.Logger) -> 'Check':
         data = cls(name=raw_data['name'])
-        data._load_keys(cast(Dict[str, Any], raw_data), cls.__name__, logger)
+        data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
 
         return data
 
@@ -122,7 +122,7 @@ class Check(
             test: 'tmt.base.Test',
             plugin: 'ExecutePlugin[ExecuteStepDataT]',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List['CheckResult']:
+            logger: tmt.log.Logger) -> list['CheckResult']:
         """
         Run the check.
 
@@ -164,7 +164,7 @@ class Check(
 class CheckPlugin(tmt.utils._CommonBase):
     """ Base class for plugins providing extra checks before, during and after tests """
 
-    _check_class: Type[Check] = Check
+    _check_class: type[Check] = Check
 
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -189,7 +189,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List['CheckResult']:
+            logger: tmt.log.Logger) -> list['CheckResult']:
         return []
 
     @classmethod
@@ -201,7 +201,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             guest: tmt.steps.provision.Guest,
             test: 'tmt.base.Test',
             environment: Optional[tmt.utils.EnvironmentType] = None,
-            logger: tmt.log.Logger) -> List['CheckResult']:
+            logger: tmt.log.Logger) -> list['CheckResult']:
         return []
 
 
@@ -238,7 +238,7 @@ def normalize_test_check(
 def normalize_checks(
         key_address: str,
         raw_checks: Any,
-        logger: tmt.log.Logger) -> List[Check]:
+        logger: tmt.log.Logger) -> list[Check]:
     """ Normalize (prepare/finish/test) checks """
 
     if raw_checks is None:

@@ -12,15 +12,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    DefaultDict,
-    Dict,
     Generic,
     Iterable,
     Iterator,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypedDict,
     TypeVar,
     Union,
@@ -70,8 +65,8 @@ DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
 
 # Supported steps and actions
-STEPS: List[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
-ACTIONS: List[str] = ['login', 'reboot']
+STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
+ACTIONS: list[str] = ['login', 'reboot']
 
 # Step phase order
 PHASE_START = 10
@@ -125,7 +120,7 @@ class DefaultNameGenerator:
     the generator.
     """
 
-    def __init__(self, known_names: List[str]) -> None:
+    def __init__(self, known_names: list[str]) -> None:
         """
         Generator of names for that do not have any.
 
@@ -205,7 +200,7 @@ class Phase(tmt.utils.Common):
 PhaseT = TypeVar('PhaseT', bound=Phase)
 
 # A type alias for plugin classes
-PluginClass = Type['BasePlugin']
+PluginClass = type['BasePlugin']
 
 _RawStepData = TypedDict('_RawStepData', {
     'how': str,
@@ -213,7 +208,7 @@ _RawStepData = TypedDict('_RawStepData', {
     }, total=False)
 
 
-RawStepDataArgument = Union[_RawStepData, List[_RawStepData]]
+RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
 
 
 StepDataT = TypeVar('StepDataT', bound='StepData')
@@ -270,7 +265,7 @@ class StepData(
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
-            cls: Type[StepDataT],
+            cls: type[StepDataT],
             raw_data: _RawStepData,
             logger: tmt.log.Logger) -> StepDataT:
         """ Convert from a specification file or from a CLI option """
@@ -278,7 +273,7 @@ class StepData(
         cls.pre_normalization(raw_data, logger)
 
         data = cls(name=raw_data['name'], how=raw_data['how'])
-        data._load_keys(cast(Dict[str, Any], raw_data), cls.__name__, logger)
+        data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
 
         data.post_normalization(raw_data, logger)
 
@@ -298,7 +293,7 @@ class WhereableStepData:
     2. https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-where
     """
 
-    where: List[str] = field(
+    where: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
@@ -322,17 +317,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     # command-line - code instantiating steps must be able to invalidate
     # and replace raw step data entries before they get normalized and become
     # the single source of information for plugins involved.
-    _data: List[StepData]
+    _data: list[StepData]
 
     #: Stores the original raw step data. Initialized by :py:meth:`__init__`
     #: or :py:meth:`wake`, and serves as a source for normalization performed
     #: by :py:meth:`_normalize_data`.
-    _raw_data: List[_RawStepData]
+    _raw_data: list[_RawStepData]
 
     # The step has pruning capability to remove all irrelevant files. All
     # important file and directory names located in workdir should be specified
     # in the list below to avoid deletion during pruning.
-    _preserved_workdir_members: List[str] = ['step.yaml']
+    _preserved_workdir_members: list[str] = ['step.yaml']
 
     def __init__(
             self,
@@ -350,7 +345,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Initialize data
         self.plan: 'Plan' = plan
         self._status: Optional[str] = None
-        self._phases: List[Phase] = []
+        self._phases: list[Phase] = []
 
         # Normalize raw data to be a list of step configuration data, one item per
         # distinct step configuration. Make sure all items have `name`` and `how` keys.
@@ -378,13 +373,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         self._set_default_values(self._raw_data)
 
-    def _check_duplicate_names(self, raw_data: List[_RawStepData]) -> None:
+    def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """ Check for duplicate names in phases """
 
         for name in tmt.utils.duplicates(raw_datum.get('name', None) for raw_datum in raw_data):
             raise tmt.utils.GeneralError(f"Duplicate phase name '{name}' in step '{self.name}'.")
 
-    def _set_default_values(self, raw_data: List[_RawStepData]) -> List[_RawStepData]:
+    def _set_default_values(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
         """ Set default values for ``name`` and ``how`` fields if not specified """
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
@@ -403,8 +398,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     def _normalize_data(
             self,
-            raw_data: List[_RawStepData],
-            logger: tmt.log.Logger) -> List[StepData]:
+            raw_data: list[_RawStepData],
+            logger: tmt.log.Logger) -> list[StepData]:
         """
         Normalize step data entries.
 
@@ -416,7 +411,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         self._check_duplicate_names(raw_data)
 
-        data: List[StepData] = []
+        data: list[StepData] = []
 
         for raw_datum in raw_data:
             plugin = self._plugin_base_class.delegate(self, raw_data=raw_datum)
@@ -428,7 +423,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def _export(
             self,
             *,
-            keys: Optional[List[str]] = None,
+            keys: Optional[list[str]] = None,
             include_internal: bool = False) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
@@ -446,14 +441,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return self.__class__.__name__.lower()
 
     @property
-    def data(self) -> List[StepData]:
+    def data(self) -> list[StepData]:
         if not hasattr(self, '_data'):
             self._data = self._normalize_data(self._raw_data, self._logger)
 
         return self._data
 
     @data.setter
-    def data(self, data: List[StepData]) -> None:
+    def data(self, data: list[StepData]) -> None:
         self._data = data
 
     @property
@@ -527,7 +522,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def load(self) -> None:
         """ Load status and step data from the workdir """
         try:
-            raw_step_data: Dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
+            raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
             self.debug('Successfully loaded step data.', level=2)
 
             self.data = [
@@ -544,7 +539,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     def save(self) -> None:
         """ Save status and step data to the workdir """
-        content: Dict[str, Any] = {
+        content: dict[str, Any] = {
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data]
             }
@@ -596,7 +591,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         debug('Update phases by CLI invocations')
 
-        def _to_raw_step_datum(options: Dict[str, Any]) -> _RawStepData:
+        def _to_raw_step_datum(options: dict[str, Any]) -> _RawStepData:
             """
             Convert CLI options to fmf-like raw step data dictionary.
 
@@ -604,7 +599,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             keys representing CLI options.
             """
 
-            def _iter_options() -> Iterator[Tuple[str, Any]]:
+            def _iter_options() -> Iterator[tuple[str, Any]]:
                 for name, value in options.items():
                     if name in ('update', 'update_missing', 'insert'):
                         continue
@@ -621,13 +616,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # modified by `--insert`, and entries may be modified as well. Note that we do not process
         # step data here, this list is not the input we iterate over - we process CLI invocations,
         # and based on their content we modify this list and its content.
-        raw_data: List[_RawStepData] = self._raw_data[:]
+        raw_data: list[_RawStepData] = self._raw_data[:]
 
         # Some invocations cannot be easily evaluated when we first spot them. To remain backward
         # compatible, `--update` without `--name` should result in all phases being converted into
         # what the `--update` brings in. In this list, we will collect "postponed" CLI invocations,
         # and we will get back to them once we're done with those we can apply immediately.
-        postponed_invocations: List['tmt.cli.CliInvocation'] = []
+        postponed_invocations: list['tmt.cli.CliInvocation'] = []
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
@@ -780,7 +775,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         for i, invocation in enumerate(postponed_invocations):
             debug(f'postponed invocation #{i}', str(invocation.options))
 
-            pruned_raw_data: List[_RawStepData] = []
+            pruned_raw_data: list[_RawStepData] = []
             incoming_raw_datum = _to_raw_step_datum(invocation.options)
 
             how = invocation.options['how']
@@ -852,19 +847,19 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             self._phases.append(reboot_plugin)
 
     @overload
-    def phases(self, classes: None = None) -> List[Phase]:
+    def phases(self, classes: None = None) -> list[Phase]:
         pass
 
     @overload
-    def phases(self, classes: Type[PhaseT]) -> List[PhaseT]:
+    def phases(self, classes: type[PhaseT]) -> list[PhaseT]:
         pass
 
     @overload
-    def phases(self, classes: Tuple[Type[PhaseT], ...]) -> List[PhaseT]:
+    def phases(self, classes: tuple[type[PhaseT], ...]) -> list[PhaseT]:
         pass
 
-    def phases(self, classes: Optional[Union[Type[PhaseT],
-               Tuple[Type[PhaseT], ...]]] = None) -> List[PhaseT]:
+    def phases(self, classes: Optional[Union[type[PhaseT],
+               tuple[type[PhaseT], ...]]] = None) -> list[PhaseT]:
         """
         Iterate over phases by their order
 
@@ -874,7 +869,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         """
 
         if classes is None:
-            _classes: Tuple[Union[Type[Phase], Type[PhaseT]], ...] = (Phase,)
+            _classes: tuple[Union[type[Phase], type[PhaseT]], ...] = (Phase,)
 
         elif not isinstance(classes, tuple):
             _classes = (classes,)
@@ -908,7 +903,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         logger = logger.descend()
 
         # Collect all workdir members that shall not be removed
-        preserved_members: List[str] = self._preserved_workdir_members[:]
+        preserved_members: list[str] = self._preserved_workdir_members[:]
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
@@ -932,7 +927,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             except OSError as error:
                 logger.warn(f"Unable to remove '{member}': {error}")
 
-    def requires(self) -> List['tmt.base.Dependency']:
+    def requires(self) -> list['tmt.base.Dependency']:
         """
         Collect all requirements of all enabled plugins in this step.
 
@@ -974,7 +969,7 @@ class Method:
         self.order = order
 
         # Parse summary and description from provided doc string
-        lines: List[str] = [re.sub('^    ', '', line)
+        lines: list[str] = [re.sub('^    ', '', line)
                             for line in self.doc.split('\n')]
         self.summary: str = lines[0].strip()
         self.description: str = '\n'.join(lines[1:]).lstrip()
@@ -1039,7 +1034,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
 
     # Deprecated, use @provides_method(...) instead. left for backward
     # compatibility with out-of-tree plugins.
-    _methods: List[Method] = []
+    _methods: list[Method] = []
 
     # Default implementation for all steps is shell
     # except for provision (virtual) and report (display)
@@ -1054,14 +1049,14 @@ class BasePlugin(Phase, Generic[StepDataT]):
     # subclasses.
     _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
-    _data_class: Type[StepDataT]
+    _data_class: type[StepDataT]
     data: StepDataT
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
     @property
-    def _keys(self) -> List[str]:
+    def _keys(self) -> list[str]:
         return list(self._data_class.keys())
 
     def __init__(
@@ -1102,12 +1097,12 @@ class BasePlugin(Phase, Generic[StepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[Type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None) -> click.Command:
         """ Create base click command (common for all step plugins) """
         raise NotImplementedError
 
     @classmethod
-    def options(cls, how: Optional[str] = None) -> List[tmt.options.ClickOptionDecoratorType]:
+    def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options for given method """
         # Include common options supported across all plugins
         return [
@@ -1123,7 +1118,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
     def command(cls) -> click.Command:
         """ Prepare click command for all supported methods """
         # Create one command for each supported method
-        commands: Dict[str, click.Command] = {}
+        commands: dict[str, click.Command] = {}
         method_overview: str = f'Supported methods ({cls.how} by default):\n\n\b'
         for method in cls.methods():
             assert method.class_ is not None
@@ -1180,7 +1175,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         return command
 
     @classmethod
-    def methods(cls) -> List[Method]:
+    def methods(cls) -> list[Method]:
         """ Return all supported methods ordered by priority """
         return sorted(cls._supported_methods.iter_plugins(), key=lambda method: method.order)
 
@@ -1302,7 +1297,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
 
         return self.default(option, default)
 
-    def show(self, keys: Optional[List[str]] = None) -> None:
+    def show(self, keys: Optional[list[str]] = None) -> None:
         """ Show plugin details for given or all available keys """
         # Avoid circular imports
         import tmt.base
@@ -1372,7 +1367,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         """ Check if the plugin is enabled on the specific guest """
 
         # FIXME: cast() - typeless "dispatcher" method
-        where = cast(List[str], self.get('where'))
+        where = cast(list[str], self.get('where'))
 
         if not where:
             return True
@@ -1435,7 +1430,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         # Include order in verbose mode
         logger.verbose('order', self.order, 'magenta', level=3)
 
-    def requires(self) -> List['tmt.base.Dependency']:
+    def requires(self) -> list['tmt.base.Dependency']:
         """ All requirements of the plugin on the guest """
         return []
 
@@ -1483,10 +1478,10 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
     """ A special action performed during a normal step. """
 
     # Dictionary containing list of requested phases for each enabled step
-    _phases: Optional[Dict[str, List[int]]] = None
+    _phases: Optional[dict[str, list[int]]] = None
 
     @classmethod
-    def phases(cls, step: Step) -> List[int]:
+    def phases(cls, step: Step) -> list[int]:
         """ Return list of phases enabled for given step """
         # Build the phase list unless done before
         if cls._phases is None:
@@ -1498,10 +1493,10 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
             return []
 
     @classmethod
-    def _parse_phases(cls, step: Step) -> Dict[str, List[int]]:
+    def _parse_phases(cls, step: Step) -> dict[str, list[int]]:
         """ Parse options and store phase order """
         phases = {}
-        options: List[str] = cls._opt('step', default=[])
+        options: list[str] = cls._opt('step', default=[])
 
         # Use the end of the last enabled step if no --step given
         if not options:
@@ -1513,7 +1508,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                     f"Plan for {step.name} is not set.")
             assert step.plan.my_run is not None  # narrow type
             if step.plan.my_run.opt('last'):
-                steps: List[Step] = [
+                steps: list[Step] = [
                     s for s in step.plan.steps() if s.status() == 'done']
                 login_during = steps[-1] if steps else None
             # Default to the last enabled step if no completed step found
@@ -1539,7 +1534,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
             except ValueError:
                 # Convert 'start' and 'end' aliases
                 try:
-                    phase = cast(Dict[str, int],
+                    phase = cast(dict[str, int],
                                  {'start': PHASE_START, 'end': PHASE_END})[phase]
                 except KeyError:
                     raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
@@ -1586,7 +1581,7 @@ class Reboot(Action):
         return reboot
 
     @classmethod
-    def plugins(cls, step: Step) -> List['Reboot']:
+    def plugins(cls, step: Step) -> list['Reboot']:
         """ Return list of reboot instances for given step """
         if not Reboot._enabled:
             return []
@@ -1675,7 +1670,7 @@ class Login(Action):
         return login
 
     @classmethod
-    def plugins(cls, step: Step) -> List['Login']:
+    def plugins(cls, step: Step) -> list['Login']:
         """ Return list of login instances for given step """
         if not Login._enabled:
             return []
@@ -1688,11 +1683,11 @@ class Login(Action):
         if self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
-    def _enabled_by_results(self, results: List['tmt.base.Result']) -> bool:
+    def _enabled_by_results(self, results: list['tmt.base.Result']) -> bool:
         """ Verify possible test result condition """
         # Avoid circular imports
         from tmt.result import ResultOutcome
-        expected_results: Optional[List[ResultOutcome]] = [ResultOutcome.from_spec(
+        expected_results: Optional[list[ResultOutcome]] = [ResultOutcome.from_spec(
             raw_expected_result) for raw_expected_result in self.opt('when', [])]
 
         # Return True by default -> no expected results
@@ -1758,17 +1753,17 @@ class Topology(SerializableContainer):
 
     guest: Optional[GuestTopology]
 
-    guest_names: List[str]
-    guests: Dict[str, GuestTopology]
+    guest_names: list[str]
+    guests: dict[str, GuestTopology]
 
-    role_names: List[str]
-    roles: Dict[str, List[str]]
+    role_names: list[str]
+    roles: dict[str, list[str]]
 
-    def __init__(self, guests: List['Guest']) -> None:
-        roles: DefaultDict[str, List['Guest']] = collections.defaultdict(list)
+    def __init__(self, guests: list['Guest']) -> None:
+        roles: collections.defaultdict[str, list['Guest']] = collections.defaultdict(list)
 
         self.guest = None
-        self.guest_names: List[str] = []
+        self.guest_names: list[str] = []
         self.guests = {}
 
         for guest in guests:
@@ -1785,7 +1780,7 @@ class Topology(SerializableContainer):
             for role, role_guests in roles.items()
             }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a mapping.
 
@@ -1842,10 +1837,10 @@ class Topology(SerializableContainer):
         filename = filename or f'{TEST_TOPOLOGY_FILENAME_BASE}.sh'
         filepath = dirpath / filename
 
-        lines: List[str] = []
+        lines: list[str] = []
 
         def _emit_guest(guest: GuestTopology, variable: str,
-                        key: Optional[str] = None) -> List[str]:
+                        key: Optional[str] = None) -> list[str]:
             return [
                 f'{variable}[{key or ""}name]="{guest.name}"',
                 f'{variable}[{key or ""}role]="{guest.role or ""}"',
@@ -1888,7 +1883,7 @@ class Topology(SerializableContainer):
             self,
             *,
             dirpath: Path,
-            filename_base: Optional[str] = None) -> List[Path]:
+            filename_base: Optional[str] = None) -> list[Path]:
         """
         Save the topology in files.
 
@@ -1992,7 +1987,7 @@ class PhaseQueue(Queue[QueuedPhase[StepDataT]]):
             self,
             *,
             phase: Union[Action, Plugin[StepDataT]],
-            guests: List['Guest']) -> None:
+            guests: list['Guest']) -> None:
         """
         Add a phase to queue.
 
@@ -2067,7 +2062,7 @@ def sync_with_guests(
 
     queue.enqueue_task(task)
 
-    failed_actions: List[TaskOutcome[GuestSyncTaskT]] = []
+    failed_actions: list[TaskOutcome[GuestSyncTaskT]] = []
 
     for outcome in queue.run():
         if outcome.exc:

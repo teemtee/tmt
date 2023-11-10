@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, List, Type
+from typing import TYPE_CHECKING, Callable
 
 import tmt.log
 import tmt.plugins
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 
-TestFrameworkClass = Type['TestFramework']
+TestFrameworkClass = type['TestFramework']
 
 
 _FRAMEWORK_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[TestFrameworkClass] = \
@@ -92,7 +92,7 @@ class TestFramework:
             parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
-            logger: tmt.log.Logger) -> List[str]:
+            logger: tmt.log.Logger) -> list[str]:
         """
         Provide additional options for pulling test data directory.
 
@@ -112,7 +112,7 @@ class TestFramework:
             parent: 'ExecutePlugin[ExecuteStepDataT]',
             test: 'Test',
             guest: 'Guest',
-            logger: tmt.log.Logger) -> List[tmt.result.Result]:
+            logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """
         Extract test results.
 

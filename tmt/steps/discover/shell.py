@@ -1,7 +1,7 @@
 import copy
 import dataclasses
 import shutil
-from typing import Any, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -19,7 +19,7 @@ T = TypeVar('T', bound='TestDescription')
 
 @dataclasses.dataclass
 class TestDescription(
-        SpecBasedContainer[Dict[str, Any], Dict[str, Any]],
+        SpecBasedContainer[dict[str, Any], dict[str, Any]],
         tmt.utils.NormalizeKeysMixin,
         SerializableContainer):
     """
@@ -69,7 +69,7 @@ class TestDescription(
         unserialize=lambda serialized_link: tmt.base.Links(data=serialized_link)
         )
     id: Optional[str] = None
-    tag: List[str] = field(
+    tag: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
@@ -78,7 +78,7 @@ class TestDescription(
         normalize=lambda key_address, raw_value, logger:
             None if raw_value is None else str(raw_value)
         )
-    adjust: Optional[List[tmt.base._RawAdjustRule]] = field(
+    adjust: Optional[list[tmt.base._RawAdjustRule]] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: [] if raw_value is None else (
             [raw_value] if not isinstance(raw_value, list) else raw_value
@@ -86,11 +86,11 @@ class TestDescription(
         )
 
     # Basic test information
-    contact: List[str] = field(
+    contact: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
-    component: List[str] = field(
+    component: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
         )
@@ -99,7 +99,7 @@ class TestDescription(
     path: Optional[str] = None
     framework: Optional[str] = None
     manual: bool = False
-    require: List[tmt.base.Dependency] = field(
+    require: list[tmt.base.Dependency] = field(
         default_factory=list,
         normalize=tmt.base.normalize_require,
         serialize=lambda requires: [require.to_spec() for require in requires],
@@ -107,7 +107,7 @@ class TestDescription(
             tmt.base.dependency_factory(require) for require in serialized_requires
             ]
         )
-    recommend: List[tmt.base.Dependency] = field(
+    recommend: list[tmt.base.Dependency] = field(
         default_factory=list,
         normalize=tmt.base.normalize_require,
         serialize=lambda recommends: [recommend.to_spec() for recommend in recommends],
@@ -128,8 +128,8 @@ class TestDescription(
     # type than the one declared in superclass.
     @classmethod
     def from_spec(  # type: ignore[override]
-            cls: Type[T],
-            raw_data: Dict[str, Any],
+            cls: type[T],
+            raw_data: dict[str, Any],
             logger: tmt.log.Logger) -> T:
         """ Convert from a specification file or from a CLI option """
 
@@ -138,7 +138,7 @@ class TestDescription(
 
         return data
 
-    def to_spec(self) -> Dict[str, Any]:
+    def to_spec(self) -> dict[str, Any]:
         """ Convert to a form suitable for saving in a specification file """
 
         data = super().to_spec()
@@ -152,11 +152,11 @@ class TestDescription(
 
 @dataclasses.dataclass
 class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
-    tests: List[TestDescription] = field(
+    tests: list[TestDescription] = field(
         default_factory=list,
         normalize=lambda key_address, raw_value, logger: [
             TestDescription.from_spec(raw_datum, logger)
-            for raw_datum in cast(List[Dict[str, Any]], raw_value)
+            for raw_datum in cast(list[dict[str, Any]], raw_value)
             ],
         serialize=lambda tests: [
             test.to_serialized()
@@ -245,13 +245,13 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
     _data_class = DiscoverShellData
 
-    _tests: List[tmt.base.Test] = []
+    _tests: list[tmt.base.Test] = []
 
-    def show(self, keys: Optional[List[str]] = None) -> None:
+    def show(self, keys: Optional[list[str]] = None) -> None:
         """ Show config details """
         super().show([])
         # FIXME: cast() - typeless "dispatcher" method
-        tests = cast(List[TestDescription], self.get('tests'))
+        tests = cast(list[TestDescription], self.get('tests'))
         if tests:
             test_names = [test.name for test in tests]
             click.echo(tmt.utils.format('tests', test_names))
@@ -346,7 +346,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             # it's not a supported test key, and it's given to the node itself anyway.
             # Note the exception for `duration` key - it's expected in the output
             # even if it still has its default value.
-            test_fmf_keys: Dict[str, Any] = {
+            test_fmf_keys: dict[str, Any] = {
                 key: value
                 for key, value in data.to_spec().items()
                 if key != 'name' and (key == 'duration' or value != data.default(key))
@@ -406,7 +406,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> List['tmt.Test']:
+            enabled: Optional[bool] = None) -> list['tmt.Test']:
 
         if phase_name is not None and phase_name != self.name:
             return []
