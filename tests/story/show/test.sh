@@ -29,6 +29,7 @@ rlJournalStart
         rlAssertGrep "title Concise title" $rlRun_LOG
         rlAssertGrep "story As a user I want this and that" $rlRun_LOG
         rlAssertGrep "description Some description" $rlRun_LOG
+        rlAssertGrep "contact Some Body <somebody@somewhere.org>" $rlRun_LOG
         rlAssertGrep "priority must have" $rlRun_LOG
         rlAssertGrep "example Inspiring example" $rlRun_LOG
         rlAssertGrep "id e3a9a8ed-4585-4e86-80e8-1d99eb5345a9" $rlRun_LOG

@@ -671,6 +671,10 @@ class Core(
     # Core attributes (supported across all levels)
     summary: Optional[str] = None
     description: Optional[str] = None
+    contact: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
     enabled: bool = True
     order: int = field(
         default=DEFAULT_ORDER,
@@ -697,6 +701,7 @@ class Core(
         # Basic stuff
         'summary',
         'description',
+        'contact',
         'enabled',
         'order',
         'id',
@@ -1024,10 +1029,6 @@ class Test(
     """ Test object (L1 Metadata) """
 
     # Basic test information
-    contact: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list
-        )
     component: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
@@ -1902,11 +1903,14 @@ class Plan(
     def show(self) -> None:
         """ Show plan details """
 
-        # Summary and description first
+        # Summary, description and contact first
         self.ls(summary=True)
         if self.description:
             echo(tmt.utils.format(
                 'description', self.description, key_color='green'))
+        if self.contact:
+            echo(tmt.utils.format(
+                'contact', self.contact, key_color='green'))
 
         # Individual step details
         for step in self.steps(enabled_only=False):
@@ -2405,6 +2409,7 @@ class Story(
         'id',
         'priority',
         'description',
+        'contact',
         'example',
         'enabled',
         'order',

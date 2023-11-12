@@ -7,6 +7,10 @@
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The :ref:`/spec/core/contact` key has been moved from the
+:ref:`/spec/tests` specification to the :ref:`/spec/core`
+attributes so now it can be used with plans and stories as well.
+
 The :ref:`/spec/plans/provision/container` provision plugin
 enables a network accessible to all containers in the plan. So for
 faster :ref:`multihost-testing` it's now possible to use

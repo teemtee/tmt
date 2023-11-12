@@ -18,6 +18,10 @@ properties:
   adjust:
     $ref: "/schemas/core#/definitions/adjust"
 
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#contact
+  contact:
+    $ref: "/schemas/core#/definitions/contact"
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#description
   description:
     $ref: "/schemas/core#/definitions/description"

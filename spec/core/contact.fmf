@@ -1,0 +1,34 @@
+summary: Maintainer contact
+
+story:
+    As a developer reviewing a plan, a story or a complex test
+    which failed I would like to contact the person who
+    maintains the code and understands it well.
+
+description: |
+    When there are several people collaborating on plans, tests or
+    stories it's useful to have a way to find who is responsible
+    for what. Must be a ``string`` or a ``list of strings`` (email
+    address format with name and surname).
+
+    .. versionchanged:: 1.30
+
+        Previously the ``contact`` field was available for tests
+        only, now it can be used for plans and stories as well.
+
+example:
+  - |
+    # Single contact
+    contact: Name Surname <email@address.org>
+
+  - |
+    # Multiple contacts
+    contact:
+      - First Person <first@address.org>
+      - Second Person <second@address.org>
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/plan/show
+  - verified-by: /tests/story/show
+  - verified-by: /tests/test/show

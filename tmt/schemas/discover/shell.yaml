@@ -60,9 +60,9 @@ properties:
         component:
           $ref: "/schemas/test#/properties/component"
 
-        # https://tmt.readthedocs.io/en/stable/spec/tests.html#contact
+        # https://tmt.readthedocs.io/en/stable/spec/core.html#contact
         contact:
-          $ref: "/schemas/test#/properties/contact"
+          $ref: "/schemas/core#/definitions/contact"
 
         # https://tmt.readthedocs.io/en/stable/spec/core.html#description
         description:
