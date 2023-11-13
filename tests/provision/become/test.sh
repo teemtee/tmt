@@ -7,7 +7,10 @@ rlJournalStart
     if [[ "$PROVISION_METHODS" =~ container ]]; then
         rlPhaseStartSetup
             rlRun "pushd data"
-            rlRun "podman build -t become-container-test:latest ."
+            # Try several times to build the container
+            # https://github.com/teemtee/tmt/issues/2063
+            build="podman build -t become-container-test:latest ."
+            rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the image"
         rlPhaseEnd
 
         rlPhaseStartTest "Container, test with become=true"
