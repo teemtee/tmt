@@ -1,6 +1,7 @@
 import dataclasses
 import enum
 import re
+from pathlib import Path
 from typing import Optional, cast
 
 import tmt
@@ -79,6 +80,17 @@ class Feature(tmt.utils.Common):
             return None
         return os_release.get('PRETTY_NAME', None)
 
+    def get_guest_distro_iid(self) -> Optional[str]:
+        """ Get guest distro ID and VERSION_ID by parsing the guest facts """
+        os_release = self.guest.facts.os_release_content
+        if os_release is None:
+            return None
+        release_id = os_release.get('ID', '')
+        version_id = os_release.get('VERSION_ID', '')
+        if '.' in version_id:
+            version_id, *_ = version_id.split('.')
+        return f"{release_id}{version_id}"
+
 
 class ToggleableFeature(Feature):
     def enable(self) -> None:
@@ -92,7 +104,17 @@ class EPEL(ToggleableFeature):
     KEY = 'epel'
 
     def enable(self) -> None:
-        pass
+        distro_name = cast(str, self.guest_distro_name)
+        playbook_dir = Path(__file__).parent / 'feature' / self.KEY
+        playbook_iid = cast(str, self.get_guest_distro_iid())
+        playbook_path = playbook_dir / f"enable-{playbook_iid}.yaml"
+        if not playbook_path.exists():
+            self.warn(f"Unsupport to enable '{self.KEY.upper()}' on '{distro_name}'.")
+            return
+        self.info(f"Enable '{self.KEY.upper()}' on '{distro_name}' ...")
+        print(playbook_path)
+        # https://tmt.readthedocs.io/en/stable/classes.html#tmt.Guest.ansible
+        # self.guest.ansible()
 
     def disable(self) -> None:
         pass

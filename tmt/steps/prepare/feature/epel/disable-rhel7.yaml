@@ -1,0 +1,9 @@
+- hosts: guest-rhel7
+  user: root
+  tasks:
+    - name: Install package 'yum-utils'
+      ansible.builtin.yum:
+        name: yum-utils
+        state: present
+    - name: Disable repos related to 'epel'
+      shell: yum-config-manager --disable epel epel-debuginfo epel-source
