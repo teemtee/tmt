@@ -9,16 +9,8 @@ rlJournalStart
             rlRun "pushd data"
             # Try several times to build the container
             # https://github.com/teemtee/tmt/issues/2063
-            for attempt in {1..5}; do
-                if podman build -t become-container-test:latest . ; then
-                    rlPass "Container image built successfully."
-                    break
-                else
-                    rlLog "Attempt $attempt unsuccessful."
-                    [[ $attempt == 5 ]] && rlDie "Unable to prepare the image"
-                    sleep 5
-                fi
-            done
+            build="podman build -t become-container-test:latest ."
+            rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the image"
         rlPhaseEnd
 
         rlPhaseStartTest "Container, test with become=true"
