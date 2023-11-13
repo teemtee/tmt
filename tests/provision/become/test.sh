@@ -11,9 +11,10 @@ rlJournalStart
             # https://github.com/teemtee/tmt/issues/2063
             for attempt in {1..5}; do
                 if podman build -t become-container-test:latest . ; then
+                    rlPass "Container image built successfully."
                     break
                 else
-                    echo "Attempt $attempt unsuccessful."
+                    rlLog "Attempt $attempt unsuccessful."
                     [[ $attempt == 5 ]] && rlDie "Unable to prepare the image"
                     sleep 5
                 fi
