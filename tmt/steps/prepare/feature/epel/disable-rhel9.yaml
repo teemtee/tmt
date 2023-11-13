@@ -1,0 +1,7 @@
+- hosts: guest-rhel9
+  user: root
+  tasks:
+    - name: Disable 'epel' repos
+      shell: dnf config-manager --disable epel epel-debuginfo epel-source
+    - name: Disable 'epel-next' repos
+      shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source

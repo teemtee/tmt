@@ -1,0 +1,38 @@
+#
+# os_release = {
+#   'ANSI_COLOR': '0;31',
+#   'BUG_REPORT_URL': 'https://bugzilla.redhat.com/',
+#   'CPE_NAME': 'cpe:/o:redhat:enterprise_linux:9::baseos',
+#   'DOCUMENTATION_URL': 'https://access.redhat.com/documentation/red_hat_enterprise_linux/9/',
+#   'HOME_URL': 'https://www.redhat.com/',
+#   'ID': 'rhel',
+#   'ID_LIKE': 'fedora',
+#   'LOGO': 'fedora-logo-icon',
+#   'NAME': 'Red Hat Enterprise Linux',
+#   'PLATFORM_ID': 'platform:el9',
+#   'PRETTY_NAME': 'Red Hat Enterprise Linux 9.0 (Plow)',
+#   'REDHAT_BUGZILLA_PRODUCT': 'Red Hat Enterprise Linux 9',
+#   'REDHAT_BUGZILLA_PRODUCT_VERSION': '9.0',
+#   'REDHAT_SUPPORT_PRODUCT': 'Red Hat Enterprise Linux',
+#   'REDHAT_SUPPORT_PRODUCT_VERSION': '9.0',
+#   'VERSION': '9.0 (Plow)',
+#   'VERSION_ID': '9.0'}
+# }
+#
+- hosts: guest-rhel9
+  user: root
+  tasks:
+    - name: Install package 'epel-release'
+      ansible.builtin.yum:
+        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+        disable_gpg_check: true
+        state: present
+    - name: Install package 'epel-next-release'
+      ansible.builtin.yum:
+        name: https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm
+        disable_gpg_check: true
+        state: present
+    - name: Enable 'epel' repos
+      shell: dnf config-manager --enable epel epel-debuginfo epel-source
+    - name: Enable 'epel-next' repos
+      shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
