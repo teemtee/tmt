@@ -1,9 +1,0 @@
-- hosts: guest-rhel8
-  user: root
-  tasks:
-    - name: Install 'dnf config-manager'
-      shell: dnf -y install 'dnf-command(config-manager)'
-    - name: Disable 'epel' repos
-      shell: dnf config-manager --disable epel epel-debuginfo epel-source
-    - name: Disable 'epel-next' repos
-      shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source

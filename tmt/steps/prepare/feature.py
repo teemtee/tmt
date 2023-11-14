@@ -15,16 +15,6 @@ from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
 
-class Distro(enum.Enum):
-    FEDORA = enum.auto()
-    CENTOS_7 = enum.auto()
-    CENTOS_STREAM_8 = enum.auto()
-    CENTOS_STREAM_9 = enum.auto()
-    RHEL_7 = enum.auto()
-    RHEL_8 = enum.auto()
-    RHEL_9 = enum.auto()
-
-
 class Feature(tmt.utils.Common):
     """ Base class for feature implementations """
 
@@ -40,38 +30,6 @@ class Feature(tmt.utils.Common):
         super().__init__(logger=logger, parent=parent, relative_indent=0)
         self.guest = guest
         self.logger = logger
-        self.guest_sudo = '' if self.guest.facts.is_superuser else 'sudo'
-        self.guest_distro = self.get_guest_distro()
-        self.guest_distro_name = self.get_guest_distro_name()
-
-    def get_guest_distro(self) -> Optional[Distro]:
-        """ Get guest distro by parsing the guest facts """
-        os_release = self.guest.facts.os_release_content
-        if os_release is None:
-            return None
-
-        if os_release.get('NAME', '') == 'Fedora Linux':
-            return Distro.FEDORA
-
-        if os_release.get('NAME', '').startswith('Red Hat Enterprise Linux'):
-            if os_release.get('VERSION_ID', '').startswith('9.'):
-                return Distro.RHEL_9
-            if os_release.get('VERSION_ID', '').startswith('8.'):
-                return Distro.RHEL_8
-            if os_release.get('VERSION_ID', '').startswith('7.'):
-                return Distro.RHEL_7
-
-        if os_release.get('NAME', '').startswith('CentOS Linux') and os_release.get(
-                'VERSION_ID', '').startswith('7.'):
-            return Distro.CENTOS_7
-
-        if os_release.get('NAME', '').startswith('CentOS Stream'):
-            if re.match(r'^8$|^8\.', os_release.get('VERSION_ID', '')):
-                return Distro.CENTOS_STREAM_8
-            if re.match(r'^9$|^9\.', os_release.get('VERSION_ID', '')):
-                return Distro.CENTOS_STREAM_9
-
-        return None
 
     def get_guest_distro_name(self) -> Optional[str]:
         """ Get guest distro name by parsing the guest facts """
@@ -80,16 +38,12 @@ class Feature(tmt.utils.Common):
             return None
         return os_release.get('PRETTY_NAME', None)
 
-    def get_guest_distro_iid(self) -> Optional[str]:
-        """ Get guest distro ID and VERSION_ID by parsing the guest facts """
+    def get_guest_distro_id(self) -> Optional[str]:
+        """ Get guest distro ID by parsing the guest facts """
         os_release = self.guest.facts.os_release_content
         if os_release is None:
             return None
-        release_id = os_release.get('ID', '')
-        version_id = os_release.get('VERSION_ID', '')
-        if '.' in version_id:
-            version_id, *_ = version_id.split('.')
-        return f"{release_id}{version_id}"
+        return os_release.get('ID', '')
 
 
 class ToggleableFeature(Feature):
@@ -104,14 +58,14 @@ class EPEL(ToggleableFeature):
     KEY = 'epel'
 
     def enable(self) -> None:
-        distro_name = cast(str, self.guest_distro_name)
-        playbook_dir = Path(__file__).parent / 'feature' / self.KEY
-        playbook_iid = cast(str, self.get_guest_distro_iid())
-        playbook_path = playbook_dir / f"enable-{playbook_iid}.yaml"
+        distro_name = cast(str, self.get_guest_distro_name())
+        playbook_id = cast(str, self.get_guest_distro_id())
+        playbook_dir = Path(__file__).parent / 'feature'
+        playbook_path = playbook_dir / f"epel-enable-{playbook_id}.yaml"
         if not playbook_path.exists():
-            self.warn(f"Unsupport to enable '{self.KEY.upper()}' on '{distro_name}'.")
+            self.warn(f"Enable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
             return
-        self.info(f"Enable '{self.KEY.upper()}' on '{distro_name}' ...")
+        self.info(f"Enable {self.KEY.upper()} on '{distro_name}' ...")
         print(playbook_path)
         # https://tmt.readthedocs.io/en/stable/classes.html#tmt.Guest.ansible
         # self.guest.ansible()
@@ -133,56 +87,11 @@ class CRB(ToggleableFeature):
 class FIPS(ToggleableFeature):
     KEY = 'fips'
 
-    def _reboot_guest(self) -> None:
-        self.info('reboot', 'Rebooting guest', color='yellow')
-        self.guest.reboot()
-        self.info('reboot', 'Reboot finished', color='yellow')
-
     def enable(self) -> None:
-        """
-        There are two steps to enable FIPS mode:
-        1. To switch the system to FIPS mode:
-           $ sudo fips-mode-setup --enable
-        2. Restart the system to allow the kernel to switch to FIPS mode:
-           $ sudo reboot
-        After the restart, user can check the current state of FIPS mode via:
-           $ sudo fips-mode-setup --check
-        """
-
-        distro = self.guest_distro
-        sudo = self.guest_sudo
-
-        key_name = self.KEY.upper()
-        distro_name = cast(str, self.guest_distro_name)
-
-        if distro in (Distro.FEDORA,
-                      Distro.RHEL_8,
-                      Distro.RHEL_9,
-                      Distro.CENTOS_STREAM_8,
-                      Distro.CENTOS_STREAM_9):
-            self.info(f"Enable {key_name} on '{distro_name}'")
-            self.guest.execute(ShellScript(f'{sudo} fips-mode-setup --enable'), silent=True)
-            self._reboot_guest()
-        else:
-            self.warn(f"Enable {key_name}: '{distro_name}' of the guest is unsupported.")
+        pass
 
     def disable(self) -> None:
-        distro = self.guest_distro
-        sudo = self.guest_sudo
-
-        key_name = self.KEY.upper()
-        distro_name = cast(str, self.guest_distro_name)
-
-        if distro in (Distro.FEDORA,
-                      Distro.RHEL_8,
-                      Distro.RHEL_9,
-                      Distro.CENTOS_STREAM_8,
-                      Distro.CENTOS_STREAM_9):
-            self.info(f"Disable {key_name} on '{distro_name}'")
-            self.guest.execute(ShellScript(f'{sudo} fips-mode-setup --disable'), silent=True)
-            self._reboot_guest()
-        else:
-            self.warn(f"Disable {key_name}: '{distro_name}' of the guest is unsupported.")
+        pass
 
 
 _FEATURES = {
