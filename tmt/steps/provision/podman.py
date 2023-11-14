@@ -19,6 +19,8 @@ DEFAULT_IMAGE = "fedora"
 DEFAULT_USER = "root"
 DEFAULT_PULL_ATTEMPTS = 5
 DEFAULT_PULL_INTERVAL = 5
+# podman default stop time is 10s
+DEFAULT_STOP_TIME = 1
 
 
 @dataclasses.dataclass
@@ -72,6 +74,16 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
              """,
         normalize=tmt.utils.normalize_int)
 
+    stop_time: int = field(
+        default=DEFAULT_STOP_TIME,
+        option='--stop-time',
+        metavar='SECONDS',
+        help=f"""
+             How long to wait before forcibly stopping the container,
+             {DEFAULT_STOP_TIME} seconds by default.
+             """,
+        normalize=tmt.utils.normalize_int)
+
 
 @dataclasses.dataclass
 class ProvisionPodmanData(PodmanGuestData, tmt.steps.provision.ProvisionStepData):
@@ -90,6 +102,7 @@ class GuestContainer(tmt.Guest):
     parent: tmt.steps.Step
     pull_attempts: int
     pull_interval: int
+    stop_time: int
     logger: tmt.log.Logger
 
     @property
@@ -361,7 +374,8 @@ class GuestContainer(tmt.Guest):
     def stop(self) -> None:
         """ Stop provisioned guest """
         if self.container:
-            self.podman(Command('container', 'stop', self.container))
+            self.podman(Command('container', 'stop', '--time',
+                        str(self.stop_time), self.container))
             self.info('container', 'stopped', 'green')
 
     def remove(self) -> None:
