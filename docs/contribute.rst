@@ -395,13 +395,3 @@ __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/psss/tmt/builds/
 __ https://pypi.org/project/tmt/
 __ https://packit.dev/docs/cli/propose-downstream/
-
-
-Code Documentation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-    :maxdepth: 1
-
-    Overview of important and interesting classes <classes>
-    Documentation generated from sources <autodocs/tmt>

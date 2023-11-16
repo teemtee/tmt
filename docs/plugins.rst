@@ -1,8 +1,8 @@
 .. _plugins:
 
-===============
-    Plugins
-===============
+===========================
+    Plugin Introduction
+===========================
 
 Let's have a look at plugins. Each of the six steps defined by
 :ref:`/spec/plans` supports multiple methods. These methods are

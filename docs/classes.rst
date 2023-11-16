@@ -1,8 +1,8 @@
 .. _classes:
 
-===============
-    Classes
-===============
+======================
+    Class Overview
+======================
 
 
 Class Structure
@@ -456,12 +456,3 @@ would do, but it makes it explicit and involves correct type conversion:
     >>> command = script.to_shell_command()
     >>> str(command)
     "/bin/bash -c '\ncd $HOME\nls -al\n'"
-
-
-Essential Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: tmt
-    :noindex:
-    :members:
-    :undoc-members:
