@@ -1073,19 +1073,6 @@ class Test(
         default=0,
         internal=True)
 
-    data_path: Optional[Path] = field(
-        default=None,
-        internal=True,
-        serialize=lambda path: None if path is None else str(path),
-        unserialize=lambda value: None if value is None else Path(value)
-        )
-
-    return_code: Optional[int] = field(default=None, internal=True)
-    start_time: Optional[str] = field(default=None, internal=True)
-    end_time: Optional[str] = field(default=None, internal=True)
-    real_duration: Optional[str] = field(default=None, internal=True)
-    _reboot_count: int = field(default=0, internal=True)
-
     _KEYS_SHOW_ORDER = [
         # Basic test information
         'summary',

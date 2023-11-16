@@ -147,6 +147,13 @@ class TestInvocation:
     test: 'tmt.base.Test'
     guest: Guest
 
+    return_code: Optional[int] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    real_duration: Optional[str] = None
+
+    _reboot_count: int = 0
+
     def data_path(
             self,
             filename: Optional[str] = None,
@@ -329,12 +336,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             else:
                 note = f"invalid test result '{result}' in result file"
 
-        return [tmt.Result.from_test(
-            test=invocation.test,
+        return [tmt.Result.from_test_invocation(
+            invocation=invocation,
             result=actual_result,
             log=[invocation.data_path(TEST_OUTPUT_FILENAME)],
-            note=note,
-            guest=invocation.guest)]
+            note=note)]
 
     def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
         """
@@ -356,18 +362,16 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                 results = tmt.utils.json_to_list(results_file)
 
         else:
-            return [tmt.Result.from_test(
-                test=test,
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
                 note=f"custom results file not found in '{test_data_path}'",
-                result=ResultOutcome.ERROR,
-                guest=guest)]
+                result=ResultOutcome.ERROR)]
 
         if not results:
-            return [tmt.Result.from_test(
-                test=test,
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
                 note="custom results are empty",
-                result=ResultOutcome.ERROR,
-                guest=guest)]
+                result=ResultOutcome.ERROR)]
 
         custom_results = []
         for partial_result_data in results:
@@ -412,9 +416,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             # For the result representing the test itself, set the duration
             # and timestamps to what tmt measured.
             if partial_result.name == test.name:
-                partial_result.start_time = test.start_time
-                partial_result.end_time = test.end_time
-                partial_result.duration = test.real_duration
+                partial_result.start_time = invocation.start_time
+                partial_result.end_time = invocation.end_time
+                partial_result.duration = invocation.real_duration
 
             custom_results.append(partial_result)
 

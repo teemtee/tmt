@@ -58,12 +58,11 @@ class Beakerlib(TestFramework):
             logger.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
             note = 'beakerlib: TestResults FileError'
 
-            return [tmt.Result.from_test(
-                test=invocation.test,
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
                 result=ResultOutcome.ERROR,
                 note=note,
-                log=log,
-                guest=invocation.guest)]
+                log=log)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
         # States are: started, incomplete and complete
@@ -82,23 +81,22 @@ class Beakerlib(TestFramework):
                 f"No '{missing_piece}' found in '{beakerlib_results_file}'{hint}.",
                 level=3)
             note = 'beakerlib: Result/State missing'
-            return [tmt.Result.from_test(
-                test=invocation.test,
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
                 result=ResultOutcome.ERROR,
                 note=note,
-                log=log,
-                guest=invocation.guest)]
+                log=log)]
 
         result = search_result.group(1)
         state = search_state.group(1)
 
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
-        if invocation.test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+        if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
             note = 'timeout'
             invocation.phase.timeout_hint(invocation)
 
-        elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.test.return_code):
+        elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
             note = 'pidfile locking'
 
         # Test results should be in complete state
@@ -107,9 +105,8 @@ class Beakerlib(TestFramework):
         # Finally we have a valid result
         else:
             actual_result = ResultOutcome.from_spec(result.lower())
-        return [tmt.Result.from_test(
-            test=invocation.test,
+        return [tmt.Result.from_test_invocation(
+            invocation=invocation,
             result=actual_result,
             note=note,
-            log=log,
-            guest=invocation.guest)]
+            log=log)]

@@ -12,6 +12,7 @@ from tmt.utils import Path, SerializableContainer, field
 
 if TYPE_CHECKING:
     import tmt.base
+    import tmt.steps.execute
     import tmt.steps.provision
 
 # Extra keys used for identification in Result class
@@ -158,68 +159,64 @@ class Result(BaseResult):
         )
 
     @classmethod
-    def from_test(
+    def from_test_invocation(
             cls,
             *,
-            test: 'tmt.base.Test',
+            invocation: 'tmt.steps.execute.TestInvocation',
             result: ResultOutcome,
             note: Optional[str] = None,
             ids: Optional[dict[str, Optional[str]]] = None,
-            log: Optional[list[Path]] = None,
-            guest: Optional['tmt.steps.provision.Guest'] = None) -> 'Result':
+            log: Optional[list[Path]] = None) -> 'Result':
         """
-        Create a result from a test instance.
+        Create a result from a test invocation.
 
-        A simple helper for extracting interesting data from a given test. While
-        it's perfectly possible to go directly through ``Result(...)``, when
-        holding a :py:class:`tmt.base.Test` instance, this method would
-        initialize the ``Result`` instance with the following:
+        A helper for extracting interesting data from a given test invocation.
+        While it's perfectly possible to go directly through ``Result(...)``,
+        most of the time a result stems from a particular test invocation
+        captured by a :py:class:`TestInvocation` instance.
 
-        * test name
-        * test identifier (``id`` key) and ``extra-*`` IDs
-
-        Result would be interpreted according to test's ``result`` key
-        (see https://tmt.readthedocs.io/en/stable/spec/tests.html#result).
+        :param invocation: a test invocation capturing the test run and results.
+        :param result: actual test outcome. It will be interpreted according to
+            :py:attr:`Test.result` key (see
+            https://tmt.readthedocs.io/en/stable/spec/tests.html#result).
+        :param note: optional result notes.
+        :param ids: additional test IDs. They will be added to IDs extracted
+            from the test.
+        :param log: optional list of test logs.
         """
-
-        from tmt.base import Test
-
-        if not isinstance(test, Test):
-            raise tmt.utils.SpecificationError(f"Invalid test '{test}'.")
 
         # Saving identifiable information for each test case so we can match them
         # to Polarion/Nitrate/other cases and report run results there
         # TODO: would an exception be better? Can test.id be None?
         ids = ids or {}
         default_ids = {
-            tmt.identifier.ID_KEY: test.id
+            tmt.identifier.ID_KEY: invocation.test.id
             }
 
         for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            default_ids[key] = test.node.get(key)
+            default_ids[key] = invocation.test.node.get(key)
 
         default_ids.update(ids)
         ids = default_ids
 
-        guest_data = ResultGuestData(name=guest.name, role=guest.role) if guest is not None \
-            else ResultGuestData()
+        guest_data = ResultGuestData(name=invocation.guest.name, role=invocation.guest.role)
 
         _result = Result(
-            name=test.name,
-            serial_number=test.serial_number,
-            fmf_id=test.fmf_id,
+            name=invocation.test.name,
+            serial_number=invocation.test.serial_number,
+            fmf_id=invocation.test.fmf_id,
             result=result,
             note=note,
-            start_time=test.start_time,
-            end_time=test.end_time,
-            duration=test.real_duration,
+            start_time=invocation.start_time,
+            end_time=invocation.end_time,
+            duration=invocation.real_duration,
             ids=ids,
             log=log or [],
             guest=guest_data,
-            data_path=test.data_path)
+            data_path=invocation.data_path('data'))
 
-        return _result.interpret_result(
-            ResultInterpret(test.result) if test.result else ResultInterpret.RESPECT)
+        return _result.interpret_result(ResultInterpret(
+            invocation.test.result) if invocation.test.result else ResultInterpret.RESPECT)
 
     def interpret_result(self, interpret: ResultInterpret) -> 'Result':
         """

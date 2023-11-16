@@ -220,7 +220,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             data_directory / tmt.steps.execute.TEST_DATA / TMT_REBOOT_SCRIPT.created_file)
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = str(invocation.test._reboot_count)
+            environment[reboot_variable] = str(invocation._reboot_count)
 
         # Add variables the framework wants to expose
         environment.update(
@@ -332,7 +332,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Execute the test, save the output and return code
         with Stopwatch() as timer:
-            test.start_time = self.format_timestamp(timer.start_time)
+            invocation.start_time = self.format_timestamp(timer.start_time)
 
             try:
                 output = guest.execute(
@@ -345,22 +345,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     timeout=tmt.utils.duration_to_seconds(test.duration),
                     test_session=True,
                     friendly_command=str(test.test))
-                test.return_code = 0
+                invocation.return_code = 0
                 stdout = output.stdout
             except tmt.utils.RunError as error:
                 stdout = error.stdout
 
-                test.return_code = error.returncode
-                if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+                invocation.return_code = error.returncode
+                if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
                     logger.debug(f"Test duration '{test.duration}' exceeded.")
 
-                elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+                elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
                     logger.warn('Test failed to manage its pidfile.')
 
-        test.end_time = self.format_timestamp(timer.end_time)
-        test.real_duration = self.format_duration(timer.duration)
-
-        test.data_path = invocation.data_path("data")
+        invocation.end_time = self.format_timestamp(timer.end_time)
+        invocation.real_duration = self.format_duration(timer.duration)
 
         self.write(
             invocation.data_path(TEST_OUTPUT_FILENAME, full=True),
@@ -396,9 +394,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         (going forward to the next test). Return whether reboot was done.
         """
         if self._will_reboot(invocation):
-            invocation.test._reboot_count += 1
+            invocation._reboot_count += 1
             self.debug(f"Reboot during test '{invocation.test}' "
-                       f"with reboot count {invocation.test._reboot_count}.")
+                       f"with reboot count {invocation._reboot_count}.")
             reboot_request_path = self._reboot_request_path(invocation)
             test_data = invocation.data_path(full=True) / tmt.steps.execute.TEST_DATA
             with open(reboot_request_path) as reboot_file:
@@ -494,8 +492,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 for result in results:
                     result.check = test_check_results
 
-                assert test.real_duration is not None  # narrow type
-                duration = click.style(test.real_duration, fg='cyan')
+                assert invocation.real_duration is not None  # narrow type
+                duration = click.style(invocation.real_duration, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle reboot, abort, exit-first

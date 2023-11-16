@@ -24,7 +24,7 @@ class AvcDenials(CheckPlugin):
             event: CheckEvent,
             logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
-        if invocation.test.start_time is None:
+        if invocation.start_time is None:
             raise tmt.utils.GeneralError(
                 "Test does not have start time recorded, cannot run AVC check.")
 
@@ -120,7 +120,7 @@ class AvcDenials(CheckPlugin):
             report += _report_failure('rpm -q selinux-policy', exc)
 
         # Finally, run `ausearch`, to list AVC denials from the time the test started.
-        start_timestamp = datetime.datetime.fromisoformat(invocation.test.start_time).timestamp()
+        start_timestamp = datetime.datetime.fromisoformat(invocation.start_time).timestamp()
 
         script = ShellScript(f"""
 set -x
