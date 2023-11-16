@@ -250,7 +250,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         test, guest = invocation.test, invocation.guest
 
-        logger.debug(f"Execute '{invocation.test.name}' as a '{invocation.test.framework}' test.")
+        logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
         test_check_results: list[CheckResult] = []
 

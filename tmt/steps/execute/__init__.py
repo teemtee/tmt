@@ -153,7 +153,7 @@ class TestInvocation:
             full: bool = False,
             create: bool = False) -> Path:
         """
-        Prepare full/relative test data directory/file path
+        Prepare full/relative test data directory/file path.
 
         Construct test data directory path for given test, create it
         if requested and return the full or relative path to it (if
