@@ -135,7 +135,7 @@ class GuestContainer(tmt.Guest):
                 message=f"Creating network '{self.network}'."
                 )
         except tmt.utils.RunError as err:
-            if 'network already exists' in err.message:
+            if err.stderr and 'network already exists' in err.stderr:
                 # error string:
                 # https://github.com/containers/common/blob/main/libnetwork/types/define.go#L19
                 pass
@@ -375,7 +375,7 @@ class GuestContainer(tmt.Guest):
                 self.podman(Command('network', 'rm', self.network))
                 self.info('container', 'network removed', 'green')
             except tmt.utils.RunError as err:
-                if 'network is being used' in err.message:
+                if err.stderr and 'network is being used' in err.stderr:
                     # error string:
                     # https://github.com/containers/podman/blob/main/libpod/define/errors.go#L180
                     pass
