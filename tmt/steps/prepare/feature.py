@@ -1,7 +1,4 @@
 import dataclasses
-import enum
-import re
-from pathlib import Path
 from typing import Optional, cast
 
 import tmt
@@ -12,7 +9,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript, field
+from tmt.utils import Path, field
 
 
 class Feature(tmt.utils.Common):
@@ -57,6 +54,16 @@ class ToggleableFeature(Feature):
 class EPEL(ToggleableFeature):
     KEY = 'epel'
 
+    def get_root_path(self) -> Path:
+        assert self.parent is not None  # narrow type
+        assert self.parent.parent is not None  # narrow type
+        assert self.parent.parent.parent is not None  # narrow type
+        parent3 = cast(tmt.base.Plan, self.parent.parent.parent)
+        assert parent3.my_run is not None  # narrow type
+        assert parent3.my_run.tree is not None  # narrow type
+        assert parent3.my_run.tree.root is not None  # narrow type
+        return parent3.my_run.tree.root
+
     def enable(self) -> None:
         distro_name = cast(str, self.get_guest_distro_name())
         playbook_id = cast(str, self.get_guest_distro_id())
@@ -66,9 +73,9 @@ class EPEL(ToggleableFeature):
             self.warn(f"Enable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
             return
         self.info(f"Enable {self.KEY.upper()} on '{distro_name}' ...")
-        print(playbook_path)
-        # https://tmt.readthedocs.io/en/stable/classes.html#tmt.Guest.ansible
-        # self.guest.ansible()
+        self.logger.info('playbook-path', playbook_path, 'green')
+        playbook_path = Path(playbook_path).relative_to(self.get_root_path())
+        self.guest.ansible(playbook_path)
 
     def disable(self) -> None:
         pass

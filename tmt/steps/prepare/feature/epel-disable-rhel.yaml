@@ -1,4 +1,4 @@
-- hosts: guest
+- hosts: all
   user: root
   tasks:
     - when: ansible_distribution_major_version == "7"

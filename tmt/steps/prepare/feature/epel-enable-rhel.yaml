@@ -1,4 +1,4 @@
-- hosts: guest
+- hosts: all
   user: root
   tasks:
     - name: Install package 'epel-release'
