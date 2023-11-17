@@ -13,8 +13,13 @@
 
 import importlib
 import os
+import subprocess
 import sys
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 import tmt.utils
 
@@ -298,3 +303,15 @@ man_pages = [
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
+
+
+def generate_tmt_docs(app: Sphinx) -> None:
+    """
+    Run `make generate` to populate the auto-generated documentations
+    """
+    conf_dir = Path(app.confdir)
+    subprocess.run(["make", "generate"], cwd=conf_dir)
+
+
+def setup(app: Sphinx) -> None:
+    app.connect("builder-inited", generate_tmt_docs)
