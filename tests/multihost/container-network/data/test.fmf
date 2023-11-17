@@ -10,8 +10,5 @@
         cat "$TMT_TOPOLOGY_BASH"
         . "$TMT_TOPOLOGY_BASH"
 
-        for count in {1..33}; do
-            echo "curl message from http-server, attempt $count."
-            curl --silent http://${TMT_GUESTS[httpd-server.hostname]}/ | grep -q 'podman rulez'
-            sleep .$[$RANDOM % 10]
-        done
+        echo "curl message from http-server..."
+        curl http://${TMT_GUESTS[httpd-server.hostname]}/ | grep -q 'podman rulez'

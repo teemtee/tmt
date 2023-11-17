@@ -1,7 +1,7 @@
 summary: Basic multihost test container networking
 description:
-    Demonstrate and verify that container networking features.
+    Demonstrate and verify that container networking features work as expected.
     This runs a simple webserver from one container and uses curl
     to read that served content from another container.
 framework: shell
-test: cd data && tmt run -vvv
+test: cd data && tmt run -vvv --remove

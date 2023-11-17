@@ -370,7 +370,7 @@ class GuestContainer(tmt.Guest):
             self.info('container', 'removed', 'green')
 
         if self.network:
-            # will remove the network if there are no more containers attached to it
+            # Will remove the network if there are no more containers attached to it.
             try:
                 self.podman(Command('network', 'rm', self.network))
                 self.info('container', 'network removed', 'green')
