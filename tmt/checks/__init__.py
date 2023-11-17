@@ -16,7 +16,7 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     from tmt.result import CheckResult
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
+    from tmt.steps.execute import TestInvocation
 
 
 CheckPluginClass = type['CheckPlugin']
@@ -118,18 +118,14 @@ class Check(
             self,
             *,
             event: CheckEvent,
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         """
         Run the check.
 
         :param event: when the check is running - before the test, after the test, etc.
-        :param guest: on this guest the ``test`` will run/was executed.
-        :param test: test to which the check belongs to.
-        :param plugin: an ``execute`` step plugin managing the test execution.
+        :param invocation: test invocation to which the check belongs to.
         :param environment: optional environment to set for the check.
         :param logger: logger to use for logging.
         :returns: list of results produced by checks.
@@ -143,18 +139,14 @@ class Check(
         if event == CheckEvent.BEFORE_TEST:
             return self.plugin.before_test(
                 check=self,
-                plugin=plugin,
-                guest=guest,
-                test=test,
+                invocation=invocation,
                 environment=environment,
                 logger=logger)
 
         if event == CheckEvent.AFTER_TEST:
             return self.plugin.after_test(
                 check=self,
-                plugin=plugin,
-                guest=guest,
-                test=test,
+                invocation=invocation,
                 environment=environment,
                 logger=logger)
 
@@ -185,9 +177,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []
@@ -197,9 +187,7 @@ class CheckPlugin(tmt.utils._CommonBase):
             cls,
             *,
             check: Check,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'tmt.base.Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []

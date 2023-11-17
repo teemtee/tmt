@@ -6,9 +6,7 @@ import tmt.result
 import tmt.utils
 
 if TYPE_CHECKING:
-    from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
-    from tmt.steps.provision import Guest
+    from tmt.steps.execute import TestInvocation
 
 
 TestFrameworkClass = type['TestFramework']
@@ -47,16 +45,12 @@ class TestFramework:
     @classmethod
     def get_environment_variables(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
         """
         Provide additional environment variables for the test.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: environment variables to expose for the test. Variables
             would be added on top of any variables the plugin, test or plan
@@ -68,37 +62,29 @@ class TestFramework:
     @classmethod
     def get_test_command(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> tmt.utils.ShellScript:
         """
         Provide a test command.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: a command to use to run the test.
         """
 
-        assert test.test is not None  # narrow type
+        assert invocation.test.test is not None  # narrow type
 
-        return test.test
+        return invocation.test.test
 
     @classmethod
     def get_pull_options(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> list[str]:
         """
         Provide additional options for pulling test data directory.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: additional options for the ``rsync`` tmt would use to pull
             the test data directory from the guest.
@@ -109,16 +95,12 @@ class TestFramework:
     @classmethod
     def extract_results(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """
         Extract test results.
 
-        :param parent: ``execute`` plugin managing the test.
-        :param test: a test that would be executed.
-        :param guest: a guest on which the test would run.
+        :param invocation: test invocation to which the check belongs to.
         :param logger: to use for logging.
         :returns: list of results produced by the given test.
         """

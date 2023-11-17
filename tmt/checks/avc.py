@@ -10,8 +10,7 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import CommandOutput, Path, ShellScript, render_run_exception_streams
 
 if TYPE_CHECKING:
-    from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
+    from tmt.steps.execute import TestInvocation
 
 TEST_POST_AVC_FILENAME = 'tmt-avc-{event}.txt'
 
@@ -21,13 +20,11 @@ class AvcDenials(CheckPlugin):
     @classmethod
     def _save_report(
             cls,
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'Test',
+            invocation: 'TestInvocation',
             event: CheckEvent,
             logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
-        if test.start_time is None:
+        if invocation.test.start_time is None:
             raise tmt.utils.GeneralError(
                 "Test does not have start time recorded, cannot run AVC check.")
 
@@ -35,11 +32,9 @@ class AvcDenials(CheckPlugin):
         report_timestamp = ExecutePlugin.format_timestamp(
             datetime.datetime.now(datetime.timezone.utc))
 
-        assert plugin.step.workdir is not None  # narrow type
+        assert invocation.phase.step.workdir is not None  # narrow type
 
-        path = plugin.data_path(
-            test,
-            guest,
+        path = invocation.data_path(
             filename=TEST_POST_AVC_FILENAME.format(event=event.value),
             create=True,
             full=True)
@@ -73,11 +68,11 @@ class AvcDenials(CheckPlugin):
                     tuple[CommandOutput, Optional[tmt.utils.RunError]],
                     tuple[Optional[CommandOutput], tmt.utils.RunError]
                 ]:
-            if needs_sudo and guest.facts.is_superuser is False:
+            if needs_sudo and invocation.guest.facts.is_superuser is False:
                 script = ShellScript(f'sudo {script.to_shell_command()}')
 
             try:
-                output = guest.execute(script, log=_output_logger, silent=True)
+                output = invocation.guest.execute(script, log=_output_logger, silent=True)
 
                 return output, None
 
@@ -125,7 +120,7 @@ class AvcDenials(CheckPlugin):
             report += _report_failure('rpm -q selinux-policy', exc)
 
         # Finally, run `ausearch`, to list AVC denials from the time the test started.
-        start_timestamp = datetime.datetime.fromisoformat(test.start_time).timestamp()
+        start_timestamp = datetime.datetime.fromisoformat(invocation.test.start_time).timestamp()
 
         script = ShellScript(f"""
 set -x
@@ -164,20 +159,18 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
         else:
             outcome = ResultOutcome.ERROR
 
-        plugin.write(path, '\n'.join(report))
+        invocation.phase.write(path, '\n'.join(report))
 
-        return outcome, path.relative_to(plugin.step.workdir)
+        return outcome, path.relative_to(invocation.phase.step.workdir)
 
     @classmethod
     def after_test(
             cls,
             *,
             check: 'Check',
-            plugin: 'ExecutePlugin[ExecuteStepDataT]',
-            guest: tmt.steps.provision.Guest,
-            test: 'Test',
+            invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        outcome, path = cls._save_report(plugin, guest, test, CheckEvent.AFTER_TEST, logger)
+        outcome, path = cls._save_report(invocation, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='avc', result=outcome, log=[path])]

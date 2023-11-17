@@ -11,9 +11,7 @@ from tmt.result import ResultOutcome
 from tmt.utils import Path
 
 if TYPE_CHECKING:
-    from tmt.base import Test
-    from tmt.steps.execute import ExecutePlugin, ExecuteStepDataT
-    from tmt.steps.provision import Guest
+    from tmt.steps.execute import TestInvocation
 
 
 @provides_framework('beakerlib')
@@ -21,57 +19,51 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_environment_variables(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
 
         return {
-            'BEAKERLIB_DIR': str(parent.data_path(test, guest, full=True)),
+            'BEAKERLIB_DIR': str(invocation.data_path(full=True)),
             'BEAKERLIB_COMMAND_SUBMIT_LOG': f'bash {tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.path}'
             }
 
     @classmethod
     def get_pull_options(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> list[str]:
         return [
             '--exclude',
-            str(parent.data_path(test, guest, "backup*", full=True))
+            str(invocation.data_path("backup*", full=True))
             ]
 
     @classmethod
     def extract_results(
             cls,
-            parent: 'ExecutePlugin[ExecuteStepDataT]',
-            test: 'Test',
-            guest: 'Guest',
+            invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
         note: Optional[str] = None
         log: list[Path] = []
         for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if parent.data_path(test, guest, filename, full=True).is_file():
-                log.append(parent.data_path(test, guest, filename))
+            if invocation.data_path(filename, full=True).is_file():
+                log.append(invocation.data_path(filename))
 
         # Check beakerlib log for the result
         try:
-            beakerlib_results_file = parent.data_path(test, guest, 'TestResults', full=True)
-            results = parent.read(beakerlib_results_file, level=3)
+            beakerlib_results_file = invocation.data_path('TestResults', full=True)
+            results = invocation.phase.read(beakerlib_results_file, level=3)
         except tmt.utils.FileError:
             logger.debug(f"Unable to read '{beakerlib_results_file}'.", level=3)
             note = 'beakerlib: TestResults FileError'
 
             return [tmt.Result.from_test(
-                test=test,
+                test=invocation.test,
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                guest=guest)]
+                guest=invocation.guest)]
 
         search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
         # States are: started, incomplete and complete
@@ -91,22 +83,22 @@ class Beakerlib(TestFramework):
                 level=3)
             note = 'beakerlib: Result/State missing'
             return [tmt.Result.from_test(
-                test=test,
+                test=invocation.test,
                 result=ResultOutcome.ERROR,
                 note=note,
                 log=log,
-                guest=guest)]
+                guest=invocation.guest)]
 
         result = search_result.group(1)
         state = search_state.group(1)
 
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
-        if test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+        if invocation.test.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
             note = 'timeout'
-            parent.timeout_hint(test, guest)
+            invocation.phase.timeout_hint(invocation)
 
-        elif tmt.utils.ProcessExitCodes.is_pidfile(test.return_code):
+        elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.test.return_code):
             note = 'pidfile locking'
 
         # Test results should be in complete state
@@ -116,8 +108,8 @@ class Beakerlib(TestFramework):
         else:
             actual_result = ResultOutcome.from_spec(result.lower())
         return [tmt.Result.from_test(
-            test=test,
+            test=invocation.test,
             result=actual_result,
             note=note,
             log=log,
-            guest=guest)]
+            guest=invocation.guest)]
