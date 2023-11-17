@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import dataclasses
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import click
 from fmf.utils import listed
@@ -8,9 +10,13 @@ from fmf.utils import listed
 import tmt
 
 if TYPE_CHECKING:
+    from typing import Any, TypeVar
+
     import tmt.cli
     import tmt.options
     import tmt.steps
+
+    DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound="DiscoverStepData")
 
 import tmt.base
 import tmt.steps
@@ -31,7 +37,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         )
 
     # TODO: use enum!
-    dist_git_type: Optional[str] = field(
+    dist_git_type: str | None = field(
         default=None,
         option='--dist-git-type',
         choices=tmt.utils.get_distgit_handler_names,
@@ -46,10 +52,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         )
 
 
-DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
-
-
-class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
+class DiscoverPlugin(tmt.steps.GuestlessPlugin["DiscoverStepDataT"]):
     """ Common parent of discover plugins """
 
     # ignore[assignment]: as a base class, DiscoverStepData is not included in
@@ -63,7 +66,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: type[click.Command] | None = None) -> click.Command:
         """ Create base click command (common for all discover plugins) """
 
         # Prepare general usage message for the step
@@ -77,7 +80,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             '-h', '--how', metavar='METHOD',
             help='Use specified method to discover tests.')
         @tmt.steps.PHASE_OPTIONS
-        def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:
+        def discover(context: tmt.cli.Context, **kwargs: Any) -> None:
             context.obj.steps.add('discover')
             Discover.store_cli_invocation(context)
 
@@ -86,8 +89,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
     def tests(
             self,
             *,
-            phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+            phase_name: str | None = None,
+            enabled: bool | None = None) -> list[tmt.Test]:
         """
         Return discovered tests
 
@@ -100,7 +103,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             self,
             distgit_dir: Path,
             target_dir: Path,
-            handler_name: Optional[str] = None,
+            handler_name: str | None = None,
             download_only: bool = False) -> None:
         """
         Download sources to the target_dir and possibly extract the tarballs
@@ -141,7 +144,7 @@ class Discover(tmt.steps.Step):
     def __init__(
             self,
             *,
-            plan: 'tmt.base.Plan',
+            plan: tmt.base.Plan,
             data: tmt.steps.RawStepDataArgument,
             logger: tmt.log.Logger) -> None:
         """ Store supported attributes, check for sanity """
@@ -178,7 +181,7 @@ class Discover(tmt.steps.Step):
         super().save()
 
         # Create tests.yaml with the full test data
-        raw_test_data: list['tmt.export._RawExportedInstance'] = []
+        raw_test_data: list[tmt.export._RawExportedInstance] = []
 
         for phase_name, phase_tests in self._tests.items():
             for test in phase_tests:
@@ -344,13 +347,13 @@ class Discover(tmt.steps.Step):
     def tests(
             self,
             *,
-            phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
-        def _iter_all_tests() -> Iterator['tmt.Test']:
+            phase_name: str | None = None,
+            enabled: bool | None = None) -> list[tmt.Test]:
+        def _iter_all_tests() -> Iterator[tmt.Test]:
             for phase_tests in self._tests.values():
                 yield from phase_tests
 
-        def _iter_phase_tests() -> Iterator['tmt.Test']:
+        def _iter_phase_tests() -> Iterator[tmt.Test]:
             assert phase_name is not None
 
             yield from self._tests[phase_name]
@@ -362,7 +365,7 @@ class Discover(tmt.steps.Step):
 
         return [test for test in iterator() if test.enabled is enabled]
 
-    def requires(self) -> list['tmt.base.Dependency']:
+    def requires(self) -> list[tmt.base.Dependency]:
         """
         Collect all test requirements of all discovered tests in this step.
 
@@ -374,6 +377,6 @@ class Discover(tmt.steps.Step):
         """
         return flatten((test.require for test in self.tests(enabled=True)), unique=True)
 
-    def recommends(self) -> list['tmt.base.Dependency']:
+    def recommends(self) -> list[tmt.base.Dependency]:
         """ Return all packages recommended by tests """
         return flatten((test.recommend for test in self.tests(enabled=True)), unique=True)

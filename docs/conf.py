@@ -11,14 +11,15 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import annotations
+
 import importlib
 import os
 import sys
-from typing import Optional
 
 import tmt.utils
 
-_POSSIBLE_THEMES: list[tuple[Optional[str], str]] = [
+_POSSIBLE_THEMES: list[tuple[str | None, str]] = [
     # Use renku as the default theme
     ('renku_sphinx_theme', 'renku'),
     # Fall back to sphinx_rtd_theme if available
@@ -59,7 +60,7 @@ def _load_theme(
 
 
 if 'TMT_DOCS_THEME' in os.environ:
-    theme_package_name: Optional[str]
+    theme_package_name: str | None
     theme_name: str
 
     theme_specs = os.environ['TMT_DOCS_THEME']
