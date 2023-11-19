@@ -397,6 +397,15 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
 
         def _check_method(self, context: 'tmt.cli.Context', args: list[str]) -> None:
             """ Manually parse the --how option """
+            # Avoiding circular imports
+            import tmt.steps
+
+            # TODO: this one is weird: `tmt.utils` is already imported on module
+            # level, yet pyright believes `"utils" is not a known member of module
+            # "tmt"`. Maybe there's some circular import, but I've been unable to
+            # find it.
+            import tmt.utils
+
             how = None
             subcommands = (
                 tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans'])

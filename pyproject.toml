@@ -225,7 +225,6 @@ ignore = [
     "tmt/hardware.py",
     "tmt/identifier.py",
     "tmt/lint.py",
-    "tmt/options.py",
     "tmt/queue.py",
     "tmt/templates.py",
     "tmt/utils.py"
