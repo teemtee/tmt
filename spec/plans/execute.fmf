@@ -65,7 +65,9 @@ description: |
         The upgrade path must correspond to a plan name in the remote
         repository whose discover selects tests (upgrade tasks).
         The environment variables defined in the upgrade path are passed
-        to the upgrade tasks.
+        to the upgrade tasks. If the ``url`` is not provided,
+        upgrade path and upgrade tasks are taken from the current
+        repository.
     example:
       - |
         # Main testing plan

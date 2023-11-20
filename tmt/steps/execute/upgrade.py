@@ -171,9 +171,6 @@ class ExecuteUpgrade(ExecuteInternal):
 
         self.url = self.get('url')
         self.upgrade_path = self.get('upgrade-path')
-        if not self.url:
-            raise tmt.utils.ExecuteError(
-                "URL to repository with upgrade tasks must be specified.")
         for key in self._keys:
             value = self.get(key)
             if value:

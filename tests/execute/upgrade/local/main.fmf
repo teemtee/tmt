@@ -1,0 +1,26 @@
+/test:
+    test: |
+        if [[ $IN_PLACE_UPGRADE == "new" ]]; then
+            grep yes $TMT_PLAN_DATA/upgraded
+        else
+            echo no upgrade yet
+        fi
+/plan:
+    discover:
+        how: fmf
+        test: /test
+    provision:
+        how: local
+    execute:
+        how: upgrade
+        upgrade-path: /path
+
+/path:
+    discover:
+        how: fmf
+        test: /task
+    execute:
+        how: tmt
+
+/task:
+    test: echo yes > $TMT_PLAN_DATA/upgraded
