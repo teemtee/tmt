@@ -132,13 +132,13 @@ class GuestContainer(tmt.Guest):
         try:
             self.podman(
                 Command('network', 'create', self.network),
-                message=f"Creating network '{self.network}'."
+                message=f"Create network '{self.network}'."
                 )
         except tmt.utils.RunError as err:
             if err.stderr and 'network already exists' in err.stderr:
                 # error string:
                 # https://github.com/containers/common/blob/main/libnetwork/types/define.go#L19
-                pass
+                self.debug(f"Network '{self.network}' already exists.", level=3)
             else:
                 raise err
 
@@ -372,13 +372,15 @@ class GuestContainer(tmt.Guest):
         if self.network:
             # Will remove the network if there are no more containers attached to it.
             try:
-                self.podman(Command('network', 'rm', self.network))
+                self.podman(
+                    Command('network', 'rm', self.network),
+                    message=f"Remove network '{self.network}'.")
                 self.info('container', 'network removed', 'green')
             except tmt.utils.RunError as err:
                 if err.stderr and 'network is being used' in err.stderr:
                     # error string:
                     # https://github.com/containers/podman/blob/main/libpod/define/errors.go#L180
-                    pass
+                    self.debug(f"Network '{self.network}' is being used, not removing.", level=3)
                 else:
                     raise err
 
