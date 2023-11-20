@@ -695,6 +695,34 @@ locations without any change to the resulting `fmf` tree:
 This gives you a nice flexibility to extend the metadata when and
 where needed as your project organically grows.
 
+.. _anchors-aliases:
+
+Anchors and Aliases
+------------------------------------------------------------------
+
+When you need to specify the same variable multiple times in a
+single file, the ``yaml`` feature called `Anchors and Aliases`__
+can come handy. You can define an anchor before an item to save
+it for future usage with an `alias`__.
+
+.. code-block:: yaml
+
+    # Example of an anchor:
+    discover:
+        how: fmf
+        test: &stable
+          - first
+          - second
+
+    # Which you can then use later in the same file as an alias:
+    discover:
+        how: fmf
+        exclude: *stable
+
+__ https://yaml.org/spec/1.2.2/#3222-anchors-and-aliases
+__ https://yaml.org/spec/1.2.2/#alias-nodes
+
+
 .. _multihost-testing:
 
 Multihost Testing
