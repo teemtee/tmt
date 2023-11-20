@@ -1,0 +1,23 @@
+discover:
+  - name: server-setup
+    how: fmf
+    where: server
+    test: /test/server/setup
+
+  - name: client
+    how: fmf
+    where: client
+    test: /test/client
+
+provision:
+  - name: httpd-server
+    role: server
+    how: container
+    image: registry.access.redhat.com/ubi9-init:latest
+
+  - name: curl-client
+    role: client
+    how: container
+
+execute:
+    how: tmt

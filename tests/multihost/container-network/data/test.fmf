@@ -1,0 +1,14 @@
+/server/setup:
+    require: httpd
+    test: |
+        systemctl start httpd
+        echo 'podman rulez' > /var/www/html/index.html
+
+/client:
+    test: |
+        echo "Guest topology stored in '$TMT_TOPOLOGY_BASH':"
+        cat "$TMT_TOPOLOGY_BASH"
+        . "$TMT_TOPOLOGY_BASH"
+
+        echo "curl message from http-server..."
+        curl http://${TMT_GUESTS[httpd-server.hostname]}/ | grep -q 'podman rulez'
