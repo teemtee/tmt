@@ -15,6 +15,7 @@ from tmt.utils import (
     ProvisionError,
     UpdatableMessage,
     cached_property,
+    dict_to_yaml,
     field,
     retry_session,
     )
@@ -268,6 +269,48 @@ class ProvisionArtemisData(ArtemisGuestData, tmt.steps.provision.ProvisionStepDa
     pass
 
 
+class ArtemisProvisionError(ProvisionError):
+    """
+    Artemis provisioning error.
+
+    For some provisioning errors, we can provide more context.
+    """
+
+    def __init__(
+            self,
+            message: str,
+            response: Optional[requests.Response] = None,
+            request_data: Optional[dict[str, Any]] = None,
+            *args: Any,
+            **kwargs: Any) -> None:
+        if response is not None:
+            message_components = [
+                message,
+                '',
+                'Artemis API responded with unexpected code:',
+                '',
+                f'Request: {response.request.url}',
+                ]
+
+            if request_data is not None:
+                message_components += [
+                    '',
+                    dict_to_yaml(request_data)
+                    ]
+
+            message_components += [
+                f'Response: {response.status_code} {response.reason}',
+                '',
+                dict_to_yaml(dict(response.headers)),
+                '',
+                dict_to_yaml(response.json())
+                ]
+
+            message = '\n'.join(message_components)
+
+        super().__init__(message, *args, **kwargs)
+
+
 GUEST_STATE_COLOR_DEFAULT = 'green'
 
 GUEST_STATE_COLORS = {
@@ -462,7 +505,8 @@ class GuestArtemis(tmt.GuestSsh):
             environment['kickstart'] = self.kickstart
 
         elif self.kickstart:
-            raise ProvisionError(f"API version '{self.api_version}' does not support kickstart.")
+            raise ArtemisProvisionError(
+                f"API version '{self.api_version}' does not support kickstart.")
 
         data: dict[str, Any] = {
             'environment': environment,
@@ -482,7 +526,7 @@ class GuestArtemis(tmt.GuestSsh):
                 data['skip_prepare_verify_ssh'] = self.skip_prepare_verify_ssh
 
         elif self.skip_prepare_verify_ssh:
-            raise ProvisionError(
+            raise ArtemisProvisionError(
                 f"API version '{self.api_version}' does not support skip_prepare_verify_ssh.")
 
         if self.api_version >= "0.0.56":
@@ -492,7 +536,7 @@ class GuestArtemis(tmt.GuestSsh):
                 data['watchdog_period_delay'] = self.watchdog_period_delay
 
         elif any([self.watchdog_dispatch_delay, self.watchdog_period_delay]):
-            raise ProvisionError(
+            raise ArtemisProvisionError(
                 f"API version '{self.api_version}' does not support watchdog specification.")
 
         # TODO: snapshots
@@ -510,9 +554,7 @@ class GuestArtemis(tmt.GuestSsh):
             self.info('guest', 'has been requested', 'green')
 
         else:
-            raise ProvisionError(
-                f"Failed to create, "
-                f"unhandled API response '{response.status_code}'.")
+            raise ArtemisProvisionError('Failed to create', response=response, request_data=data)
 
         self.guestname = response.json()['guestname']
         self.info('guestname', self.guestname, 'green')
@@ -523,9 +565,7 @@ class GuestArtemis(tmt.GuestSsh):
                 response = self.api.inspect(f'/guests/{self.guestname}')
 
                 if response.status_code != 200:
-                    raise ProvisionError(
-                        f"Failed to create, "
-                        f"unhandled API response '{response.status_code}'.")
+                    raise ArtemisProvisionError('Failed to create', response=response)
 
                 current = cast(GuestInspectType, response.json())
                 state = current['state']
@@ -535,8 +575,7 @@ class GuestArtemis(tmt.GuestSsh):
                 progress_message.update(state, color=state_color)
 
                 if state == 'error':
-                    raise ProvisionError(
-                        'Failed to create, provisioning failed.')
+                    raise ArtemisProvisionError('Failed to create, provisioning failed.')
 
                 if state == 'ready':
                     return current
@@ -553,7 +592,7 @@ class GuestArtemis(tmt.GuestSsh):
                 # remove the guest.
                 self.remove()
 
-                raise ProvisionError(
+                raise ArtemisProvisionError(
                     f'Failed to provision in the given amount '
                     f'of time (--provision-timeout={self.provision_timeout}).')
 
@@ -661,7 +700,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         api_version = self.get('api-version')
 
         if api_version not in SUPPORTED_API_VERSIONS:
-            raise ProvisionError(f"API version '{api_version}' not supported.")
+            raise ArtemisProvisionError(f"API version '{api_version}' not supported.")
 
         try:
             user_data = {
@@ -673,7 +712,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
                 }
 
         except ValueError:
-            raise ProvisionError('Cannot parse user-data.')
+            raise ArtemisProvisionError('Cannot parse user-data.')
 
         data = ArtemisGuestData.from_plugin(self)
         data.user_data = user_data
