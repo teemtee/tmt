@@ -50,6 +50,7 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         option=('-c', '--container'),
         metavar='NAME',
         help='Name or id of an existing container to be used.')
+    network: Optional[str] = field(default=None)
 
     pull_attempts: int = field(
         default=DEFAULT_PULL_ATTEMPTS,
