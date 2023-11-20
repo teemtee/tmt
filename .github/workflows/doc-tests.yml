@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        builder: [ html ]
+        builder: [ html, linkcheck ]
         include:
           # Run default html builder with warnings as error
           - builder: html
