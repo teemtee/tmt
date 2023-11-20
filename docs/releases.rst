@@ -7,6 +7,11 @@
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The :ref:`/spec/plans/provision/container` provision plugin
+enables a network accessible to all containers in the plan. So for
+faster :ref:`multihost-testing` it's now possible to use
+containers as well.
+
 For the purpose of tmt exit code, ``info`` test results are no
 longer considered as failures, and therefore the exit code of tmt
 changes. ``info`` results are now treated as ``pass`` results, and

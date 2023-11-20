@@ -695,6 +695,7 @@ locations without any change to the resulting `fmf` tree:
 This gives you a nice flexibility to extend the metadata when and
 where needed as your project organically grows.
 
+.. _multihost-testing:
 
 Multihost Testing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
