@@ -7,6 +7,7 @@ beaker:
     # max_retry: 2  #  if retry is set
 
     distros:
+        c8s: CentOS-Stream-8%
         c9s: CentOS-Stream-9%
         rhel-6.10: RHEL-6.10%
         rhel-7.6: RHEL-7.6%
@@ -29,6 +30,10 @@ beaker:
         rhel-8.7-nightly: RHEL-8.7%
         rhel-8.8: RHEL-8.8%
         rhel-8.8-nightly: RHEL-8.8%
+        rhel-8.9: RHEL-8.9%
+        rhel-8.9-nightly: RHEL-8.9%
+        rhel-8.10: RHEL-8.10%
+        rhel-8.10-nightly: RHEL-8.10%
         rhel-9.0: RHEL-9.0%
         rhel-9.0-nightly: RHEL-9.0%
         rhel-9.1: RHEL-9.1%
@@ -37,6 +42,10 @@ beaker:
         rhel-9.2-nightly: RHEL-9.2%
         rhel-9-beta: RHEL-9.0%
         rhel-9-beta-nightly: RHEL-9.0%
+        rhel-9.3: RHEL-9.3%
+        rhel-9.3-nightly: RHEL-9.3%
+        rhel-9.4: RHEL-9.4%
+        rhel-9.4-nightly: RHEL-9.4%
         fedora-30: Fedora-30%
         fedora-31: Fedora-31%
         fedora-32: Fedora-32%
@@ -45,8 +54,10 @@ beaker:
         fedora-35: Fedora-35%
         fedora-36: Fedora-36%
         fedora-37: Fedora-37%
-        fedora-latest: Fedora-37%
-        fedora: Fedora-37%
+        fedora-38: Fedora-38%
+        fedora-39: Fedora-39%
+        fedora-latest: Fedora-39%
+        fedora: Fedora-39%
         fedora-rawhide: Fedora-Rawhide-%
 
     distro_variants:
@@ -64,6 +75,8 @@ beaker:
         Fedora-35%: Server
         Fedora-36%: Server
         Fedora-37%: Server
+        Fedora-38%: Server
+        Fedora-39%: Server
 
     distro_tags:
         RHEL-9.0%:
@@ -73,6 +86,10 @@ beaker:
         RHEL-9.1%:
             - CTS_NIGHTLY
         RHEL-9.2%:
+            - CTS_NIGHTLY
+        RHEL-9.3%:
+            - CTS_NIGHTLY
+        RHEL-9.4%:
             - CTS_NIGHTLY
 
     reserve_duration: 86400
