@@ -16,7 +16,9 @@ TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
 
 @provides_check('dmesg')
-class DmesgCheck(CheckPlugin):
+class DmesgCheck(CheckPlugin[Check]):
+    _check_class = Check
+
     @classmethod
     def _fetch_dmesg(
             cls,
