@@ -143,8 +143,8 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+provision-virtual -f %{_pyproject_ghost_distinfo}
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
-%files -n tmt+all -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
 * Mon Nov 06 2023 Lukáš Zachar <lzachar@redhat.com> - 1.29.0
