@@ -453,7 +453,7 @@ do it for you. Add to your repository's ``.pre-commit-config.yaml``:
 
     repos:
     - repo: https://github.com/teemtee/tmt.git
-      rev: 1.26.0
+      rev: 1.29.0
       hooks:
       - id: tmt-lint
 
