@@ -369,7 +369,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         help='Architecture to provision.')
     image: Optional[str] = field(
         default=DEFAULT_IMAGE,
-        option='--image',
+        option=('-i', '--image'),
         metavar='COMPOSE',
         help='Image (distro or "compose" in Beaker terminology) to provision.')
 

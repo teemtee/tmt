@@ -145,7 +145,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         help='Architecture to provision.')
     image: Optional[str] = field(
         default=None,
-        option='--image',
+        option=('-i', '--image'),
         metavar='COMPOSE',
         help='Image (or "compose" in Artemis terminology) to provision.')
     pool: Optional[str] = field(
