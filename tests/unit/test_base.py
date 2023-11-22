@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import tempfile
 
@@ -164,3 +165,11 @@ def test_link():
     assert not links.has_link()
     assert not links.has_link(needle=LinkNeedle())
     assert not links.has_link(needle=LinkNeedle(relation=r'.*', target=r'.*'))
+
+
+def test_pickleable_tree() -> None:
+    """ https://github.com/teemtee/tmt/issues/2503 """
+
+    tree = tmt.Tree.grow()
+
+    pickle.dumps(tree)
