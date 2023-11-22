@@ -1,6 +1,9 @@
 import copy
 import dataclasses
 import datetime
+import json
+import os
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -20,7 +23,7 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, PhaseQueue, QueuedPhase, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, Stopwatch, field
+from tmt.utils import Path, ShellScript, Stopwatch, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -143,6 +146,8 @@ class TestInvocation:
     supervision of an ``execute`` plugin ``phase``.
     """
 
+    logger: tmt.log.Logger
+
     phase: 'ExecutePlugin[Any]'
     test: 'tmt.base.Test'
     guest: Guest
@@ -179,6 +184,79 @@ class TestInvocation:
             return directory
         path = directory / filename
         return path if full else path.relative_to(self.phase.step.workdir)
+
+    @tmt.utils.cached_property
+    def reboot_request_path(self) -> Path:
+        """ A path to the reboot request file """
+        return self.data_path(full=True) \
+            / TEST_DATA \
+            / TMT_REBOOT_SCRIPT.created_file
+
+    @property
+    def reboot_requested(self) -> bool:
+        """ Whether a guest reboot has been requested by the test """
+        return self.reboot_request_path.exists()
+
+    def handle_reboot(self) -> bool:
+        """
+        Reboot the guest if the test requested it.
+
+        Check for presence of a file signalling reboot request and orchestrate
+        the reboot if it was requested. Also increment the ``REBOOTCOUNT``
+        variable, reset it to zero if no reboot was requested (going forward to
+        the next test).
+
+        :return: ``True`` when the reboot has taken place, ``False`` otherwise.
+        """
+
+        if not self.reboot_requested:
+            return False
+
+        self._reboot_count += 1
+
+        self.logger.debug(
+            f"Reboot during test '{self.test}' with reboot count {self._reboot_count}.")
+
+        test_data = self.data_path(full=True) / TEST_DATA
+
+        with open(self.reboot_request_path) as reboot_file:
+            reboot_data = json.loads(reboot_file.read())
+
+        reboot_command = None
+        if reboot_data.get('command'):
+            with suppress(TypeError):
+                reboot_command = ShellScript(reboot_data.get('command'))
+
+        try:
+            timeout = int(reboot_data.get('timeout'))
+        except ValueError:
+            timeout = None
+
+        # Reset the file
+        os.remove(self.reboot_request_path)
+        self.guest.push(test_data)
+
+        rebooted = False
+
+        try:
+            rebooted = self.guest.reboot(command=reboot_command, timeout=timeout)
+
+        except tmt.utils.RunError:
+            self.logger.fail(
+                f"Failed to reboot guest using the custom command '{reboot_command}'.")
+
+            raise
+
+        except tmt.utils.ProvisionError:
+            self.logger.warn(
+                "Guest does not support soft reboot, trying hard reboot.")
+
+            rebooted = self.guest.reboot(hard=True, timeout=timeout)
+
+        if not rebooted:
+            raise tmt.utils.RebootTimeoutError("Reboot timed out.")
+
+        return True
 
 
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
@@ -256,7 +334,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
 
-    def prepare_tests(self, guest: Guest) -> list[TestInvocation]:
+    def prepare_tests(self, guest: Guest, logger: tmt.log.Logger) -> list[TestInvocation]:
         """
         Prepare discovered tests for testing
 
@@ -267,7 +345,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         invocations: list[TestInvocation] = []
 
         for test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
-            invocation = TestInvocation(phase=self, test=test, guest=guest)
+            invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 
             metadata_filename = invocation.data_path(

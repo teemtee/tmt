@@ -1,8 +1,6 @@
 import dataclasses
-import json
 import os
 import textwrap
-from contextlib import suppress
 from typing import Any, Optional, cast
 
 import click
@@ -374,63 +372,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         return test_check_results
 
-    def _will_reboot(self, invocation: 'TestInvocation') -> bool:
-        """ True if reboot is requested """
-        return self._reboot_request_path(invocation).exists()
-
-    def _reboot_request_path(self, invocation: 'TestInvocation') -> Path:
-        """ Return reboot_request """
-        return invocation.data_path(full=True) \
-            / tmt.steps.execute.TEST_DATA \
-            / TMT_REBOOT_SCRIPT.created_file
-
-    def _handle_reboot(self, invocation: 'TestInvocation') -> bool:
-        """
-        Reboot the guest if the test requested it.
-
-        Check for presence of a file signalling reboot request
-        and orchestrate the reboot if it was requested. Also increment
-        REBOOTCOUNT variable, reset it to 0 if no reboot was requested
-        (going forward to the next test). Return whether reboot was done.
-        """
-        if self._will_reboot(invocation):
-            invocation._reboot_count += 1
-            self.debug(f"Reboot during test '{invocation.test}' "
-                       f"with reboot count {invocation._reboot_count}.")
-            reboot_request_path = self._reboot_request_path(invocation)
-            test_data = invocation.data_path(full=True) / tmt.steps.execute.TEST_DATA
-            with open(reboot_request_path) as reboot_file:
-                reboot_data = json.loads(reboot_file.read())
-            reboot_command = None
-            if reboot_data.get('command'):
-                with suppress(TypeError):
-                    reboot_command = ShellScript(reboot_data.get('command'))
-
-            try:
-                timeout = int(reboot_data.get('timeout'))
-            except ValueError:
-                timeout = None
-            # Reset the file
-            os.remove(reboot_request_path)
-            invocation.guest.push(test_data)
-            rebooted = False
-            try:
-                rebooted = invocation.guest.reboot(command=reboot_command, timeout=timeout)
-            except tmt.utils.RunError:
-                self.fail(
-                    f"Failed to reboot guest using the "
-                    f"custom command '{reboot_command}'.")
-                raise
-            except tmt.utils.ProvisionError:
-                self.warn(
-                    "Guest does not support soft reboot, "
-                    "trying hard reboot.")
-                rebooted = invocation.guest.reboot(hard=True, timeout=timeout)
-            if not rebooted:
-                raise tmt.utils.RebootTimeoutError("Reboot timed out.")
-            return True
-        return False
-
     def go(
             self,
             *,
@@ -456,7 +397,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         """ Execute tests on provided guest """
 
         # Prepare tests and helper scripts, check options
-        test_invocations = self.prepare_tests(guest)
+        test_invocations = self.prepare_tests(guest, logger)
 
         # Prepare scripts, except localhost guest
         if not guest.localhost:
@@ -497,12 +438,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle reboot, abort, exit-first
-                if self._will_reboot(invocation):
+                if invocation.reboot_requested:
                     # Output before the reboot
                     logger.verbose(
                         f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
-                        if self._handle_reboot(invocation):
+                        if invocation.handle_reboot():
                             continue
                     except tmt.utils.RebootTimeoutError:
                         for result in results:
