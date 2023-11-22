@@ -53,6 +53,16 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """
         )
 
+    description: Optional[str] = field(
+        default=None,
+        option='--description',
+        metavar='DESCRIPTION',
+        help="""
+             Use specific test run description,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_DESCRIPTION.
+             """
+        )
+
     template: Optional[str] = field(
         default=None,
         option='--template',
@@ -198,8 +208,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
         other_testrun_fields = [
-            'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build', 'sample_image',
-            'logs', 'compose_id']
+            'description', 'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build',
+            'sample_image', 'logs', 'compose_id']
 
         junit_suite = make_junit_xml(self)
         xml_tree = ElementTree.fromstring(junit_suite.to_xml_string([junit_suite]))
