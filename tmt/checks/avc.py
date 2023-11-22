@@ -16,7 +16,9 @@ TEST_POST_AVC_FILENAME = 'tmt-avc-{event}.txt'
 
 
 @provides_check('avc')
-class AvcDenials(CheckPlugin):
+class AvcDenials(CheckPlugin[Check]):
+    _check_class = Check
+
     @classmethod
     def _save_report(
             cls,

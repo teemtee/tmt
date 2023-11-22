@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
 import tmt.steps.provision
@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
 
 
-CheckPluginClass = type['CheckPlugin']
+#: A type variable representing a :py:class:`Check` instances.
+CheckT = TypeVar('CheckT', bound='Check')
+
+CheckPluginClass = type['CheckPlugin[Any]']
 
 _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry()
 
@@ -154,10 +157,10 @@ class Check(
         raise tmt.utils.GeneralError(f"Unsupported test check event '{event}'.")
 
 
-class CheckPlugin(tmt.utils._CommonBase):
+class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
     """ Base class for plugins providing extra checks before, during and after tests """
 
-    _check_class: type[Check] = Check
+    _check_class: type[CheckT]
 
     # Keep this method around, to correctly support Python's method resolution order.
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -171,13 +174,14 @@ class CheckPlugin(tmt.utils._CommonBase):
             logger: tmt.log.Logger) -> Check:
         """ Create a check data instance for the plugin """
 
-        return find_plugin(raw_data['name'])._check_class.from_spec(raw_data, logger)
+        return cast(CheckPlugin[CheckT], find_plugin(raw_data['name'])) \
+            ._check_class.from_spec(raw_data, logger)
 
     @classmethod
     def before_test(
             cls,
             *,
-            check: Check,
+            check: CheckT,
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
@@ -187,7 +191,7 @@ class CheckPlugin(tmt.utils._CommonBase):
     def after_test(
             cls,
             *,
-            check: Check,
+            check: CheckT,
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
