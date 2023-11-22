@@ -88,19 +88,17 @@ LoggableValue = Union[
 # of such outcomes, for example, and the string is handed over to logging method.
 # When colors are *not* to be applied, it's too late because colors have been
 # applied already. Something to fix...
+def _dont_decolorize(s: str) -> str:
+    return s
+
+
 def create_decolorizer(apply_colors: bool) -> Callable[[str], str]:
     if apply_colors:
-        def dont_decolorize(s: str) -> str:
-            return s
+        return _dont_decolorize
 
-        return dont_decolorize
+    import tmt.utils
 
-    def do_decolorize(s: str) -> str:
-        import tmt.utils
-
-        return tmt.utils.remove_color(s)
-
-    return do_decolorize
+    return tmt.utils.remove_color
 
 
 def _debug_level_from_global_envvar() -> int:
