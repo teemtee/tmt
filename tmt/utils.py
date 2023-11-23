@@ -1857,6 +1857,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
 
+    @property
+    def is_rerun(self) -> bool:
+        """ Whether the current run is a rerun and so allowed to overwrite files and data """
+
+        return self._get_cli_flag('is_rerun', 'rerun', False)
+
     def _level(self) -> int:
         """ Hierarchy level """
         if self.parent is None:

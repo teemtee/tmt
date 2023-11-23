@@ -17,6 +17,7 @@ import tmt.steps
 import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
+from tmt.result import Result
 from tmt.steps import Action
 from tmt.utils import GeneralError, Path, field, key_to_option
 
@@ -155,6 +156,37 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
     def post_dist_git(self, created_content: list[Path]) -> None:
         """ Discover tests after dist-git applied patches """
         pass
+
+    def filter_for_rerun(self) -> None:
+        """ Filter out passed tests from previous run data """
+        assert isinstance(self.step.parent, tmt.base.Plan)  # narrow type
+        old_results: Path = self.step.parent.last_run_execute / 'results.yaml'
+        results = [
+            Result.from_serialized(data) for data in
+            tmt.utils.yaml_to_list(self.read(old_results))]
+        results_failed: list[str] = []
+        results_passed: list[Result] = []
+        for result in results:
+            if (
+                    result.result is not tmt.result.ResultOutcome.PASS and
+                    result.result is not tmt.result.ResultOutcome.INFO):
+                results_failed.append(result.name)
+            else:
+                results_passed.append(result)
+
+        # Overwrite previous run results to only include passed cases
+        self.debug(
+            f"Overwriting {old_results} to only include passed results: "
+            f"{', '.join([result.name for result in results_passed])}")
+        self.write(
+            old_results,
+            tmt.utils.dict_to_yaml([result.to_serialized() for result in results_passed]))
+
+        tests_to_execute: list[tmt.base.Test] = []
+        for test in self._tests:
+            if test.name in results_failed:
+                tests_to_execute.append(test)
+        self._tests: list[tmt.base.Test] = tests_to_execute
 
 
 class Discover(tmt.steps.Step):

@@ -384,6 +384,9 @@ def main(
     '--scratch', is_flag=True,
     help='Remove the run workdir before executing to start from scratch.')
 @option(
+    '--rerun', is_flag=True,
+    help='Rerun failed tests and update existing results.')
+@option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
 @option(
