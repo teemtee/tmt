@@ -66,20 +66,31 @@ description:
     story:
         As a tester I want to review tests in Polarion
         and have all results linked to existing test cases there.
-    description:
+    description: |
         Create a xUnit file ``xunit.xml`` with test results
         and Polarion properties so the xUnit can then be
         exported into Polarion.
-    example: |
-        # Enable polarion report from the command line
-        tmt run --all report --how polarion --project-id TMT
-        tmt run --all report --how polarion --project-id TMT --no-upload --file test.xml
 
+        .. note::
+
+            Your Polarion project might need a custom value format
+            for the ``arch``, ``planned-in`` and other fields. The
+            format of these fields might differ across Polarion
+            projects, for example, ``x8664`` can be used instead
+            of ``x86_64`` for the architecture.
+
+    example:
+      - |
+        # Enable polarion report from the command line
+        tmt run --all report --how polarion --project-id tmt
+        tmt run --all report --how polarion --project-id tmt --no-upload --file test.xml
+
+      - |
         # Use polarion as the default report for given plan
         report:
             how: polarion
             file: test.xml
-            project-id: TMT
+            project-id: tmt
             title: tests_that_pass
             planned-in: RHEL-9.1.0
             pool-team: sst_tmt
