@@ -204,6 +204,16 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
          dimensions or the @FILE notation to load data from provided yaml file. Can be specified
          multiple times.
          """)
+@option(
+    '--feeling-safe',
+    is_flag=True,
+    help="""
+         WARNING: with this option, tmt would be allowed to make
+         potentially dangerous actions. For example, some metadata
+         keys may cause scripts being executed on the runner.
+         Do not use this option unless you trust metadata consumed
+         by tmt, or unless you know what you are doing.
+         """)
 @verbosity_options
 @option(
     '--show-time',

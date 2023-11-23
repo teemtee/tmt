@@ -983,6 +983,24 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return cls.cli_invocation
 
     @property
+    def _purely_inherited_cli_invocation(self) -> Optional['tmt.cli.CliInvocation']:
+        """
+        CLI invocation attached to a parent of this instance.
+
+        :returns: a class-level CLI invocation, the first one attached to
+            parent class or its parent classes.
+        """
+
+        for klass in self.__class__.__mro__:
+            if not issubclass(klass, Common):
+                continue
+
+            if klass.cli_invocation:
+                return klass.cli_invocation
+
+        return None
+
+    @property
     def _inherited_cli_invocation(self) -> Optional['tmt.cli.CliInvocation']:
         """
         CLI invocation attached to this instance or its parents.
@@ -995,14 +1013,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         if self.cli_invocation is not None:
             return self.cli_invocation
 
-        for klass in self.__class__.__mro__:
-            if not issubclass(klass, Common):
-                continue
-
-            if klass.cli_invocation:
-                return klass.cli_invocation
-
-        return None
+        return self._purely_inherited_cli_invocation
 
     @property
     def _cli_context_object(self) -> Optional['tmt.cli.ContextObject']:
@@ -1154,8 +1165,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         invocation = self._inherited_cli_invocation
 
-        if invocation:
-            return cast(bool, invocation.options.get(option, default))
+        if invocation and option in invocation.options:
+            return cast(bool, invocation.options[option])
+
+        invocation = self._purely_inherited_cli_invocation
+
+        if invocation and option in invocation.options:
+            return cast(bool, invocation.options[option])
 
         return default
 
@@ -1170,6 +1186,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """ Whether the current run is allowed to overwrite files and data """
 
         return self._get_cli_flag('is_forced_run', 'force', False)
+
+    @property
+    def is_feeling_safe(self) -> bool:
+        """ Whether the current run is allowed to run unsafe actions """
+
+        return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
 
     def _level(self) -> int:
         """ Hierarchy level """

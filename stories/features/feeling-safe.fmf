@@ -1,0 +1,38 @@
+title: Unsafe scripts executed on tmt runner
+
+story: |
+    As testers or tmt developers, we would like to run user-defined
+    scripts on the tmt runner.
+
+description: |
+    There have been several cases where custom scripts could extend
+    tmt functionality or provide an unknown information. Unfortunately,
+    such scripts would often need to run on the tmt runner. For example:
+
+    * an external script might be called to provide a list of
+      discovered tests,
+    * a custom scripts might be used to trigger a guest reboot.
+
+    These scripts would be specified as any other input, i.e. via
+    metadata keys or command line options. Being outside of control
+    of tmt developers, scripts may contain possibly dangerous code,
+    or have unexpected side effects. Yet, in some situations, system
+    or person managing a tmt run might have full control over these
+    scripts, and therefore they would be able to make sure they are
+    correct and safe. It would be beneficial to allow informed use
+    of these scripts.
+
+    ``tmt`` command gains a new option, ``--feeling-safe``. When
+    specified, tmt will allow and obey possibly unsafe metadata keys
+    and command line options. When not specified, keys and options
+    deemed unsafe would lead to an error.
+
+    .. versionadded:: 1.30
+
+# TODO: add examples once we actually get some :)
+# example:
+
+link:
+  - implemented-by: /tmt/cli.py
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/core/feeling-safe

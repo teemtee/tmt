@@ -1,0 +1,4 @@
+summary: Check whether the safe/unsafe mode can be controlled
+
+link:
+  - verifies: /stories/features/feeling-safe

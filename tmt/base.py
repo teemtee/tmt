@@ -3373,6 +3373,9 @@ class Run(tmt.utils.Common):
         self.debug(f"tmt version: {tmt.__version__}")
         self.debug('tmt command line', Command(*sys.argv))
 
+        if self.is_feeling_safe:
+            self.warn('User is feeling safe.')
+
         self.show_runner(self._logger)
 
         # Attempt to load run data
