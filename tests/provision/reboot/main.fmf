@@ -2,5 +2,5 @@ summary: Check that the reboot command works
 adjust:
   - when: how == full
     environment:
-        PROVISION_METHODS: container virtual
+        PROVISION_METHODS: container connect virtual
     tag+: [additional_coverage]

@@ -15,6 +15,7 @@ from shlex import quote
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Optional,
     TypeVar,
     Union,
@@ -64,6 +65,12 @@ DEFAULT_RSYNC_OPTIONS = [
 
 DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
 DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
+
+#: A default command to trigger a guest reboot when executed remotely.
+DEFAULT_REBOOT_COMMAND = Command('reboot')
+
+#: A pattern to extract ``btime`` from ``/proc/stat`` file.
+STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
@@ -1502,39 +1509,31 @@ class GuestSsh(Guest):
             except OSError as error:
                 self.debug(f"Failed to remove the socket: {error}", level=3)
 
-    def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+    def perform_reboot(self,
+                       command: Callable[[], tmt.utils.CommandOutput],
+                       timeout: Optional[int] = None,
+                       tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+                       tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
         """
-        Reboot the guest, return True if reconnect was successful
+        Perform the actual reboot and wait for the guest to recover.
 
-        Parameter 'hard' set to True means that guest should be
-        rebooted by way which is not clean in sense that data can be
-        lost. When set to False reboot should be done gracefully.
-
-        Use the 'command' parameter to specify a custom reboot command
-        instead of the default 'reboot'.
+        :param command: a callable running the actual command triggering
+            the reboot.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
-
-        if hard:
-            raise tmt.utils.ProvisionError(
-                "Method does not support hard reboot.")
-
-        command = command or Command("reboot")
-        self.debug(f"Reboot using the command '{command}'.")
-
-        re_boot_time = re.compile(r'btime\s+(\d+)')
 
         def get_boot_time() -> int:
             """ Reads btime from /proc/stat """
             stdout = self.execute(Command("cat", "/proc/stat")).stdout
             assert stdout
 
-            match = re_boot_time.search(stdout)
+            match = STAT_BTIME_PATTERN.search(stdout)
 
             if match is None:
                 raise tmt.utils.ProvisionError('Failed to retrieve boot time from guest')
@@ -1544,7 +1543,8 @@ class GuestSsh(Guest):
         current_boot_time = get_boot_time()
 
         try:
-            self.execute(command)
+            command()
+
         except tmt.utils.RunError as error:
             # Connection can be closed by the remote host even before the
             # reboot command is completed. Let's ignore such errors.
@@ -1587,6 +1587,42 @@ class GuestSsh(Guest):
 
         self.debug("Connection to guest succeeded after reboot.")
         return True
+
+    def reboot(
+            self,
+            hard: bool = False,
+            command: Optional[Union[Command, ShellScript]] = None,
+            timeout: Optional[int] = None,
+            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        """
+        Reboot the guest, and wait for the guest to recover.
+
+        :param hard: if set, force the reboot. This may result in a loss of
+            data. The default of ``False`` will attempt a graceful reboot.
+        :param command: a command to run on the guest to trigger the reboot.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if hard:
+            raise tmt.utils.ProvisionError(
+                f"Guest '{self.multihost_name}' does not support hard reboot.")
+
+        actual_command = command or DEFAULT_REBOOT_COMMAND
+
+        self.debug(f"Reboot using the command '{actual_command}'.")
+
+        return self.perform_reboot(
+            lambda: self.execute(actual_command),
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase)
 
     def remove(self) -> None:
         """

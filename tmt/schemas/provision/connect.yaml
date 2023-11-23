@@ -45,5 +45,11 @@ properties:
     minimum: 0
     maximum: 65535
 
+  soft-reboot:
+    type: string
+
+  hard-reboot:
+    type: string
+
 required:
   - how

@@ -1,11 +1,11 @@
 import dataclasses
-from typing import Optional
+from typing import Optional, Union
 
 import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import field, key_to_option
+from tmt.utils import Command, ShellScript, field, key_to_option
 
 DEFAULT_USER = "root"
 
@@ -31,10 +31,101 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         help='Username to use for all guest operations.'
         )
 
+    soft_reboot: Optional[ShellScript] = field(
+        default=None,
+        option='--soft-reboot',
+        metavar='COMMAND',
+        help="""
+             If specified, the command, executed on the runner, would be used
+             for soft reboot of the guest.
+             """,
+        normalize=tmt.utils.normalize_shell_script,
+        serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
+        unserialize=lambda serialized: None if serialized is None else ShellScript(serialized)
+        )
+    hard_reboot: Optional[ShellScript] = field(
+        default=None,
+        option='--hard-reboot',
+        help="""
+             If specified, the command, executed on the runner, would be used
+             for hard reboot of the guest.
+             """,
+        metavar='COMMAND',
+        normalize=tmt.utils.normalize_shell_script,
+        serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
+        unserialize=lambda serialized: None if serialized is None else ShellScript(serialized)
+        )
+
 
 @dataclasses.dataclass
 class ProvisionConnectData(ConnectGuestData, tmt.steps.provision.ProvisionStepData):
     pass
+
+
+class GuestConnect(tmt.steps.provision.GuestSsh):
+    _data_class = ConnectGuestData
+
+    soft_reboot: Optional[ShellScript]
+    hard_reboot: Optional[ShellScript]
+
+    def reboot(
+            self,
+            hard: bool = False,
+            command: Optional[Union[Command, ShellScript]] = None,
+            timeout: Optional[int] = None,
+            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        """
+        Reboot the guest, and wait for the guest to recover.
+
+        :param hard: if set, force the reboot. This may result in a loss of
+            data. The default of ``False`` will attempt a graceful reboot.
+        :param command: a command to run on the guest to trigger the reboot.
+            If not set, plugin would try to use
+            :py:attr:`ConnectGuestData.soft_reboot` or
+            :py:attr:`ConnectGuestData.hard_reboot` (``--soft-reboot`` and
+            ``--hard-reboot``, respectively), if specified. Unlike ``command``,
+            these would be executed on the runner, **not** on the guest.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if not command:
+            if hard and self.hard_reboot is not None:
+                self.debug(f"Reboot using the hard reboot command '{self.hard_reboot}'.")
+
+                # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
+                # being `None`, missing the explicit check above.
+                return self.perform_reboot(
+                    lambda: self._run_guest_command(
+                        self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
+                    timeout=timeout,
+                    tick=tick,
+                    tick_increase=tick_increase)
+
+            if not hard and self.soft_reboot is not None:
+                self.debug(f"Reboot using the soft reboot command '{self.soft_reboot}'.")
+
+                # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
+                # being `None`, missing the explicit check above.
+                return self.perform_reboot(
+                    lambda: self._run_guest_command(
+                        self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                    timeout=timeout,
+                    tick=tick,
+                    tick_increase=tick_increase)
+
+        return super().reboot(
+            hard=hard,
+            command=command,
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase)
 
 
 @tmt.steps.provides_method('connect')
@@ -67,7 +158,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     """
 
     _data_class = ProvisionConnectData
-    _guest_class = tmt.steps.provision.GuestSsh
+    _guest_class = GuestConnect
 
     # Guest instance
     _guest = None
@@ -80,6 +171,11 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         if not self.get('guest'):
             raise tmt.utils.SpecificationError(
                 'Provide a host name or an ip address to connect.')
+
+        if (self.data.soft_reboot or self.data.hard_reboot) and not self.is_feeling_safe:
+            raise tmt.utils.GeneralError(
+                "Custom soft and hard reboot commands are allowed "
+                "only with the '--feeling-safe' option.")
 
         data = ConnectGuestData(**{
             key: self.get(key_to_option(key))
@@ -102,7 +198,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             self.warn("The 'connect' provision plugin does not support hardware requirements.")
 
         # And finally create the guest
-        self._guest = tmt.GuestSsh(
+        self._guest = GuestConnect(
             logger=self._logger,
             data=data,
             name=self.name,
