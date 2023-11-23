@@ -1,0 +1,7 @@
+/fmf:
+    /good:
+        summary: Passing test
+        test: 'true'
+    /bad:
+        summary: Failing test
+        test: 'false'
