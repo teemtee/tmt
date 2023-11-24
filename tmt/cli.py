@@ -117,6 +117,8 @@ class Context(click.Context):
     # object, and every time we touch it, it should absolutely be not-None.
     obj: ContextObject
 
+    max_content_width: Optional[int]
+
 
 def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]':
     """
@@ -283,6 +285,10 @@ def main(
         show_time: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
+
+    # Let Click know about the output width - this affects mostly --help output.
+    click_contex.max_content_width = tmt.utils.OUTPUT_WIDTH
+
     # Show current tmt version and exit
     if kwargs.get('version'):
         print(f"tmt version: {tmt.__version__}")
