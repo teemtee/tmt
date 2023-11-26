@@ -336,16 +336,26 @@ new test based on a template:
     Test metadata '/home/psss/git/tmt/tests/smoke/main.fmf' created.
     Test script '/home/psss/git/tmt/tests/smoke/test.sh' created.
 
-As for now there are two templates available, ``shell`` for simple
-scripts written in shell and ``beakerlib`` with a basic skeleton
-demonstrating essential functions of this shell-level testing
-framework. If you want to be faster, specify the desired template
-directly on the command line using ``-t`` or ``--template``:
+As for now there are two test `templates`__ available, ``shell``
+for simple scripts written in shell and ``beakerlib`` with a basic
+skeleton demonstrating essential functions of this shell-level
+testing framework. If you want to be faster, specify the desired
+template directly on the command line using ``--template`` or
+``-t``:
+
+__ https://github.com/teemtee/tmt/tree/main/tmt/templates
 
 .. code-block:: shell
 
     $ tmt test create --template shell /tests/smoke
-    $ tmt test create --t beakerlib /tests/smoke
+    $ tmt test create -t beakerlib /tests/smoke
+
+To create multiple tests at once, you can specify multiple names
+at the same time:
+
+.. code-block:: shell
+
+    $ tmt tests create -t shell /tests/core /tests/base /tests/full
 
 If you'd like to link relevant issues when creating a test, specify
 the links via ``[RELATION:]TARGET`` on the command line using
@@ -362,7 +372,7 @@ create a new plan with templates:
 .. code-block:: shell
 
     tmt plan create --template mini /plans/smoke
-    tmt plan create --t full /plans/features
+    tmt plan create -t full /plans/features
 
 When creating many plans, for example when migrating the whole
 test coverage from a different tooling, it might be handy to
@@ -387,6 +397,78 @@ possibility to choose the right template:
 Sometimes you forget something, or just things may go wrong and
 you need another try. In such case add ``-f`` or ``--force`` to
 quickly overwrite existing files with the right content.
+
+
+.. _custom_templates:
+
+Custom Templates
+------------------------------------------------------------------
+
+If you create new tests often, you might want to create a custom
+template in order to get quickly started with a new test skeleton
+taylored exactly to your needs. The same applies for plans and
+stories.
+
+Templates can be defined inside the config directory
+``TMT_CONFIG_DIR`` under the ``templates`` subdirectory. If the
+config directory is not explicitly set, the default config
+directory ``~/.config/tmt/templates`` is used. Use the following
+directory structure when creating custom templates:
+
+* ``~/.config/tmt/templates/story`` for story metadata
+* ``~/.config/tmt/templates/plan`` for plan metadata
+* ``~/.config/tmt/templates/test`` for test metadata
+* ``~/.config/tmt/templates/script`` for test scripts
+
+We use Jinja for templates, so your template files must have the
+``.j2`` file extension. You can also apply default Jinja filters
+to your templates.
+
+To use your custom templates, use the ``--template`` option with
+your template name. For example, if you have created a
+``feature.j2`` story template:
+
+.. code-block:: shell
+
+    tmt stories create --template feature /stories/download
+    tmt stories create -t feature /stories/upload
+
+In the very same way you can create your custom templates for new
+plans and tests. Tests are a bit special as they also need a
+script template in addition to the test metadata. By default, both
+test metadata and test script use the same template name, so for a
+``web`` template the command line would look like this:
+
+.. code-block:: shell
+
+    tmt tests create --template web /tests/server
+    tmt tests create -t web /tests/client
+
+If you want to use a different template for the test script, use
+the ``--script`` option. For example, it might be useful to have
+a separate ``multihost.j2`` template for complex scenarios where
+multiple guests are involved:
+
+.. code-block:: shell
+
+    tmt tests create --template web --script multihost /tests/download
+    tmt tests create -t web -s multihost /tests/upload
+
+Sometimes it might be useful to maintain common templates on a
+single place and share them across the team. To use a remote
+template just provide the URL to the ``--template`` option. If you
+want to use a custom remote template for tests, you need to use
+both ``--template`` and ``--script`` options. For example:
+
+.. code-block:: shell
+
+    tmt tests create \
+        --template https://team.repo/web.j2 \
+        --script https://team.repo/multihost.j2 \
+        /tests/download
+
+.. versionadded:: 1.30
+
 
 .. _lint:
 

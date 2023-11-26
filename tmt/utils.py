@@ -343,12 +343,11 @@ class Config:
         raw_path = os.getenv('TMT_CONFIG_DIR', None)
         self.path = (Path(raw_path) if raw_path else CONFIG_DIR).expanduser()
 
-        if not self.path.exists():
-            try:
-                self.path.mkdir(parents=True)
-            except OSError as error:
-                raise GeneralError(
-                    f"Failed to create config '{self.path}'.\n{error}")
+        try:
+            self.path.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise GeneralError(
+                f"Failed to create config '{self.path}'.\n{error}")
 
     @property
     def _last_run_symlink(self) -> Path:
@@ -6178,30 +6177,60 @@ def default_template_environment() -> jinja2.Environment:
     return environment
 
 
+def render_template(
+        template: str,
+        template_filepath: Optional[Path] = None,
+        environment: Optional[jinja2.Environment] = None,
+        **variables: Any
+        ) -> str:
+    """
+    Render a template.
+
+    :param template: template to render.
+    :param template_filepath: path to the template file, if any.
+    :param environment: Jinja2 environment to use.
+    :param variables: variables to pass to the template.
+    """
+
+    environment = environment or default_template_environment()
+
+    try:
+        return environment.from_string(template).render(**variables).strip()
+
+    except jinja2.exceptions.TemplateSyntaxError as exc:
+        if template_filepath:
+            raise GeneralError(
+                f"Could not parse template '{template_filepath}' at line {exc.lineno}.") from exc
+        raise GeneralError(
+            f"Could not parse template at line {exc.lineno}.") from exc
+
+    except jinja2.exceptions.TemplateError as exc:
+        if template_filepath:
+            raise GeneralError(
+                f"Could not render template '{template_filepath}'.") from exc
+        raise GeneralError("Could not render template.") from exc
+
+
 def render_template_file(
         template_filepath: Path,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:
-    """ Render a template read from a file """
+    """
+    Render a template from a file.
 
-    environment = environment or default_template_environment()
+    :param template_filepath: path to the template file.
+    :param environment: Jinja2 environment to use.
+    :param variables: variables to pass to the template.
+    """
 
     try:
-        template = environment.from_string(template_filepath.read_text())
-
-        return template.render(**variables).strip()
+        return render_template(
+            template_filepath.read_text(), template_filepath, environment, **variables)
 
     except FileNotFoundError as exc:
         raise GeneralError(
             f"Could not open template '{template_filepath}'.") from exc
-
-    except jinja2.exceptions.TemplateSyntaxError as exc:
-        raise GeneralError(
-            f"Could not parse template '{template_filepath}' at line {exc.lineno}.") from exc
-
-    except jinja2.exceptions.TemplateError as exc:
-        raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
 
 
 @functools.cache
@@ -6321,3 +6350,28 @@ def retry(
             logger.fail(str(exc))
             time.sleep(interval)
     raise RetryError(label, causes=exceptions)
+
+
+def get_url_content(url: str) -> str:
+    """
+    Get content of a given URL as a string.
+    """
+    try:
+        with retry_session() as session:
+            response = session.get(url)
+
+            if response.ok:
+                return response.text
+
+    except Exception as error:
+        raise GeneralError(f"Could not open url '{url}'.") from error
+
+    raise GeneralError(f"Could not open url '{url}'.")
+
+
+def is_url(url: str) -> bool:
+    """
+    Check if the given string is a valid URL.
+    """
+    parsed = urllib.parse.urlparse(url)
+    return bool(parsed.scheme and parsed.netloc)

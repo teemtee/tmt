@@ -657,16 +657,23 @@ def tests_lint(
     raise SystemExit(exit_code)
 
 
-_test_templates = fmf.utils.listed(tmt.templates.TEST, join='or')
+_script_templates = fmf.utils.listed(
+    tmt.templates.MANAGER.templates['script'], join='or')
+
+_metadata_templates = fmf.utils.listed(
+    tmt.templates.MANAGER.templates['test'], join='or')
 
 
 @tests.command(name='create')
 @pass_context
-@click.argument('name')
+@click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
     '-t', '--template', metavar='TEMPLATE',
-    help=f'Test template ({_test_templates}).',
-    prompt=f'Template ({_test_templates})')
+    help=f'Test metadata template ({_metadata_templates}).',
+    prompt=f'Test template ({_metadata_templates})')
+@option(
+    '-s', '--script', metavar='TEMPLATE',
+    help=f'Test script template ({_script_templates}).')
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
     help='Link to the relevant issues.')
@@ -674,8 +681,9 @@ _test_templates = fmf.utils.listed(tmt.templates.TEST, join='or')
 @force_dry_options
 def tests_create(
         context: Context,
-        name: str,
+        names: list[str],
         template: str,
+        script: Optional[str],
         force: bool,
         **kwargs: Any) -> None:
     """
@@ -687,9 +695,10 @@ def tests_create(
     assert context.obj.tree.root is not None  # narrow type
     tmt.Test.store_cli_invocation(context)
     tmt.Test.create(
-        name=name,
+        names=names,
         template=template,
         path=context.obj.tree.root,
+        script=script,
         force=force,
         logger=context.obj.logger)
 
@@ -1079,12 +1088,12 @@ def plans_lint(
     raise SystemExit(exit_code)
 
 
-_plan_templates = fmf.utils.listed(tmt.templates.PLAN, join='or')
+_plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join='or')
 
 
 @plans.command(name='create')
 @pass_context
-@click.argument('name')
+@click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
     '-t', '--template', metavar='TEMPLATE',
     help=f'Plan template ({_plan_templates}).',
@@ -1111,7 +1120,7 @@ _plan_templates = fmf.utils.listed(tmt.templates.PLAN, join='or')
 @force_dry_options
 def plans_create(
         context: Context,
-        name: str,
+        names: list[str],
         template: str,
         force: bool,
         **kwargs: Any) -> None:
@@ -1119,7 +1128,7 @@ def plans_create(
     assert context.obj.tree.root is not None  # narrow type
     tmt.Plan.store_cli_invocation(context)
     tmt.Plan.create(
-        name=name,
+        names=names,
         template=template,
         path=context.obj.tree.root,
         force=force,
@@ -1282,12 +1291,12 @@ def stories_show(
             echo()
 
 
-_story_templates = fmf.utils.listed(tmt.templates.STORY, join='or')
+_story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], join='or')
 
 
 @stories.command(name='create')
 @pass_context
-@click.argument('name')
+@click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
     '-t', '--template', metavar='TEMPLATE',
     prompt=f'Template ({_story_templates})',
@@ -1296,7 +1305,7 @@ _story_templates = fmf.utils.listed(tmt.templates.STORY, join='or')
 @force_dry_options
 def stories_create(
         context: Context,
-        name: str,
+        names: list[str],
         template: str,
         force: bool,
         **kwargs: Any) -> None:
@@ -1304,7 +1313,7 @@ def stories_create(
     assert context.obj.tree.root is not None  # narrow type
     tmt.Story.store_cli_invocation(context)
     tmt.Story.create(
-        name=name,
+        names=names,
         template=template,
         path=context.obj.tree.root,
         force=force,

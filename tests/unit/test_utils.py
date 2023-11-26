@@ -1511,3 +1511,40 @@ def test_format_value(value: Any, window_size: Optional[int], expected: str) -> 
     print('^^^^^')
 
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    ('url', 'expected'),
+    [
+        ('http://example.com', True),
+        ('http://example.com/', True),
+        ('http://example.com/foo', True),
+        ('https://example.com/foo.txt', True),
+        ('https://example.com/foo/bar', True),
+        ('https://example.com/foo/bar.html?query=1&param=2', True),
+        ('protocol://example.com/', True),
+        ('', False),
+        ('.', False),
+        ('/example', False),
+        ('example', False),
+        ('example.com', False),
+        ('example.com/foo', False),
+        ],
+    ids=(
+        'domain-basic',
+        'domain-with-slash',
+        'domain-with-path',
+        'domain-with-file',
+        'domain-with-longer-path',
+        'domain-with-query',
+        'domain-different-protocol',
+        'empty-string',
+        'dot',
+        'absolute-path',
+        'string',
+        'no-protocol',
+        'no-protocol-with-path',
+        )
+    )
+def test_is_url(url: str, expected: bool) -> None:
+    assert tmt.utils.is_url(url) == expected

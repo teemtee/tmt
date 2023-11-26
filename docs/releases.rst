@@ -15,6 +15,12 @@ the release as a **tech preview** to gather early feedback and
 finalize the outlined design. Give it a :ref:`/stories/cli/try`
 and let us know what you think! :)
 
+Now it's possible to use :ref:`custom_templates` when creating new
+tests, plans and stories. In this way you can substantially speed
+up the initial phase of the test creation by easily applying test
+metadata and test script skeletons taylored to your individual
+needs.
+
 The :ref:`/spec/core/contact` key has been moved from the
 :ref:`/spec/tests` specification to the :ref:`/spec/core`
 attributes so now it can be used with plans and stories as well.
