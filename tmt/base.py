@@ -1185,9 +1185,6 @@ class Test(
             raise tmt.utils.SpecificationError(
                 f"The 'test' attribute in '{self.name}' must be defined.")
 
-        if self.framework == 'beakerlib':
-            self.require.append(DependencySimple('beakerlib'))
-
         self._update_metadata()
 
     @staticmethod

@@ -11,11 +11,22 @@ from tmt.result import ResultOutcome
 from tmt.utils import Path
 
 if TYPE_CHECKING:
+    from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
 
 
 @provides_framework('beakerlib')
 class Beakerlib(TestFramework):
+    @classmethod
+    def get_requirements(
+            cls,
+            test: 'Test',
+            logger: tmt.log.Logger) -> list['DependencySimple']:
+        # Avoiding circular imports: `Test.test_framework` requires `tmt.frameworks`.
+        from tmt.base import DependencySimple
+
+        return [DependencySimple('beakerlib')]
+
     @classmethod
     def get_environment_variables(
             cls,

@@ -1,4 +1,5 @@
 import dataclasses
+import itertools
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -372,7 +373,20 @@ class Discover(tmt.steps.Step):
 
         :returns: a list of requirements, with duplicaties removed.
         """
-        return flatten((test.require for test in self.tests(enabled=True)), unique=True)
+
+        tests = self.tests(enabled=True)
+
+        return flatten(
+            itertools.chain(
+                (test.require for test in tests),
+                # cast: mypy believes we cannot merge `list[Depencency]` and
+                # `list[DependencySimple]`. I think we can, let's see what pyright
+                # will tell us once enabled.
+                (cast(list['tmt.base.Dependency'],
+                      test.test_framework.get_requirements(test, self._logger))
+                 for test in tests)
+                ),
+            unique=True)
 
     def recommends(self) -> list['tmt.base.Dependency']:
         """ Return all packages recommended by tests """

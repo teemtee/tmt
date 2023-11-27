@@ -274,6 +274,10 @@ class Prepare(tmt.steps.Step):
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger)
 
+                collected_requires[guest].dependencies += test.test_framework.get_requirements(
+                    test,
+                    self._logger)
+
         # Now we have guests and all their requirements. There can be
         # duplicities, multiple tests requesting the same package, but also
         # some guests may share the set of packages to be installed on them.

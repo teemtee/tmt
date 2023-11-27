@@ -6,6 +6,7 @@ import tmt.result
 import tmt.utils
 
 if TYPE_CHECKING:
+    from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
 
 
@@ -41,6 +42,21 @@ class TestFramework:
     All methods provide viable default behavior with the exception of
     :py:meth:`extract_results` which must be implemented by the plugin.
     """
+
+    @classmethod
+    def get_requirements(
+            cls,
+            test: 'Test',
+            logger: tmt.log.Logger) -> list['DependencySimple']:
+        """
+        Provide additional test requirements needed by its framework.
+
+        :param test: test for which we are asked to provide requirements.
+        :param logger: to use for logging.
+        :returns: a list of additional requirements needed by the framework.
+        """
+
+        return []
 
     @classmethod
     def get_environment_variables(

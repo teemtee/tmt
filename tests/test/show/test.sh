@@ -42,7 +42,6 @@ rlJournalStart
         rlAssertGrep "framework beakerlib" $rlRun_LOG
         rlAssertGrep "manual false" $rlRun_LOG
         rlAssertGrep "require.*required-package" $rlRun_LOG
-        rlAssertGrep "require.*beakerlib" $rlRun_LOG
         rlAssertGrep "recommend recommended-package" $rlRun_LOG
         rlAssertGrep "environment KEY: VAL" $rlRun_LOG
         rlAssertGrep "duration 3m" $rlRun_LOG
