@@ -171,6 +171,14 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """
         )
 
+    fips: bool = field(
+        default=False,
+        option=('--fips / --no-fips'),
+        is_flag=True,
+        show_default=True,
+        help='FIPS mode enabled or disabled for this run.'
+        )
+
 
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
@@ -209,7 +217,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
         other_testrun_fields = [
             'description', 'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build',
-            'sample_image', 'logs', 'compose_id']
+            'sample_image', 'logs', 'compose_id', 'fips']
 
         junit_suite = make_junit_xml(self)
         xml_tree = ElementTree.fromstring(junit_suite.to_xml_string([junit_suite]))
@@ -233,7 +241,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         testsuites_properties = ElementTree.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
             ElementTree.SubElement(testsuites_properties, 'property', attrib={
-                'name': name, 'value': value})
+                'name': name, 'value': str(value)})
 
         testsuite = xml_tree.find('testsuite')
         project_span_ids = xml_tree.find(

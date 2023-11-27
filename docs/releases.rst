@@ -22,6 +22,10 @@ changes. ``info`` results are now treated as ``pass`` results, and
 would be counted towards the succesfull exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
+The :ref:`/spec/plans/report/polarion` report now supports the
+``fips`` field to store information about whether the FIPS mode
+was enabled or disabled on the guest during the test execution.
+
 
 tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
