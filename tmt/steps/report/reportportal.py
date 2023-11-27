@@ -1,7 +1,8 @@
 import dataclasses
 import os
 import re
-from typing import List, Optional
+from time import time
+from typing import Optional
 
 import requests
 
@@ -32,7 +33,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="LAUNCH_NAME",
         default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH'),
         help="The launch name (name of plan per launch is used by default).")
-    launch_description: Optional[str] = field(
+    launch_description: str = field(
         option="--launch-description",
         metavar="LAUNCH_DESCRIPTION",
         default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH_DESCRIPTION'),
@@ -50,13 +51,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="Mapping suite per plan, creating one launch and continous uploading suites into it. "
              "Recommended to use with '--launch' and '--launch-description' options."
              "Can be used with '--upload-to-launch' option to avoid creating a new launch.")
-    upload_to_launch: Optional[str] = field(
+    upload_to_launch: str = field(
         option="--upload-to-launch",
         metavar="LAUNCH_ID",
         default=None,
         help="Pass the launch ID for an additional test/suite upload to an existing launch. "
              "ID can be found in the launch URL.")
-    upload_to_suite: Optional[str] = field(
+    upload_to_suite: str = field(
         option="--upload-to-suite",
         metavar="LAUNCH_SUITE",
         default=None,
@@ -66,8 +67,8 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         option="--launch-rerun",
         default=False,
         is_flag=True,
-        help="Rerun the launch and create Retry version per each test. Note that mapping is "
-             "based on unique suite/test names and works with '--suite-per-plan' option only.")
+        help="Rerun the launch based on unique test paths and ids to create Retry item"
+             "with a new version per each test. Supported in 'suite-per-plan' structure only.")
     defect_type: Optional[str] = field(
         option="--defect-type",
         metavar="DEFECT_NAME",
@@ -85,7 +86,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     launch_url: str = ""
     launch_uuid: str = ""
     suite_uuid: str = ""
-    test_uuids: List[str] = ""
+    test_uuids: list[str] = ""
 
 
 @tmt.steps.provides_method("reportportal")
@@ -161,7 +162,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         fill it with all parts needed and report the logs.
         """
 
-        # TODO:
+        # TODO: ? why it did not closed :
+        #           tmt run discover provision -h connect -g 10.0.185.29 -u root
+        #               -p fo0m4nchU  prepare report -h reportportal --suite-per-plan
+        #               --defect-type idle -vvv finish tests -n .
+        #       * test uploading to idle tests
         #       * resolve the problem with mypy
         #       * replace rp_uuid with an universal structure for tmt plugin data
         #       * check the problem with --upload-to-suite functonality
@@ -169,6 +174,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
         #       * check the defect_type, idle functionality
         #       * upload documentation (help and spec)
         #       * add the tests for new features
+        #       * add uploading files
+        #       * edit schemas
+
+        #       * check optionality in arguments
+        #       * restrict combinations + set warning
+        #                   - forbid rerun && launch-per-plan
+        #                   - forbid upload-to-suite && launch-per-plan
+        #       * try read a launch_uuid at first plan (self.step.plan.report.launch_uuid)
 
         super().go()
 
@@ -191,7 +204,13 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
             "accept": "*/*",
             "Content-Type": "application/json"}
 
-        launch_time = self.step.plan.execute.results()[0].start_time
+        launch_time = str(int(time() * 1000))
+
+        # to support idle tests
+        executed = False
+        if len(self.step.plan.execute.results()) > 0:
+            launch_time = self.step.plan.execute.results()[0].start_time
+            executed = True
 
         # Create launch, suites (if "--suite_per_plan") and tests;
         # or report to existing launch/suite if its id is given
@@ -210,7 +229,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 "The options '--launch-per-plan' and "
                 "'--suite-per-plan' are mutually exclusive. Choose one of them only.")
 
-        create_launch = not (launch_uuid or launch_id) and not suite_uuid
+        create_launch = not (launch_uuid or launch_id or suite_uuid or suite_id)
         create_suite = suite_per_plan and not (suite_uuid or suite_id)
 
         launch_url = ""
@@ -257,8 +276,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 dt_locator = dt_tmp[0] if dt_tmp else None
                 if not dt_locator:
                     raise tmt.utils.ReportError(
-                        f"Defect type {defect_type} may not be defined in the project {project}")
-                self.verbose(f"defect_type{defect_type}", dt_locator)
+                        f"Defect type '{defect_type}' is not be defined in the project {project}")
+                self.verbose("defect_typ", defect_type, "yellow")
 
             if create_launch:
 
@@ -279,19 +298,23 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
 
             else:
                 # Get the launch_uuid or info to log
+
+                if suite_id:
+                    response = session.get(
+                        url=f"{url}/item/{suite_id}",
+                        headers=headers)
+                    self.handle_response(response)
+                    suite_uuid = yaml_to_dict(response.text).get("uuid")
+                    self.info("suite_id", suite_id, color="red")
+                    launch_id = yaml_to_dict(response.text).get("launchId")
+                    self.info("launch_id", launch_id, color="red")
+
                 if launch_id:
                     response = session.get(
                         url=f"{url}/launch/{launch_id}",
                         headers=headers)
                     self.handle_response(response)
                     launch_uuid = yaml_to_dict(response.text).get("uuid")
-
-                elif suite_id:
-                    response = session.get(
-                        url=f"{url}/item/{suite_id}",
-                        headers=headers)
-                    self.handle_response(response)
-                    suite_uuid = yaml_to_dict(response.text).get("uuid")
 
                 elif launch_uuid:
                     response = session.get(
@@ -328,10 +351,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
 
             # For each test
-            for result in self.step.plan.execute.results():
-                test = next((test for test in self.step.plan.discover.tests()
-                             if test.serial_number == result.serial_number), None)
+            for test in self.step.plan.discover.tests():
+                test_time = str(int(time() * 1000))
+                if executed:
+                    result = next((result for result in self.step.plan.execute.results()
+                                   if test.serial_number == result.serial_number), None)
+                    test_time = result.start_time
+
                 # TODO: for happz, connect Test to Result if possible
+                #       (but now it is probably too hackish to be fixed)
 
                 item_attributes = attributes.copy()
                 if test.contact:
@@ -342,12 +370,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                     if not re.search(envar_pattern, key)]
 
                 # Create a test item
-                self.info("test", result.name, color="cyan")
+                self.info("test", test.name, color="cyan")
                 response = session.post(
                     url=f"{url}/item{f'/{suite_uuid}' if suite_uuid else ''}",
                     headers=headers,
                     json={
-                        "name": result.name,
+                        "name": test.name,
                         "description": test.summary,
                         "attributes": item_attributes,
                         "parameters": env_vars,
@@ -355,49 +383,54 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                         "launchUuid": launch_uuid,
                         "type": "step",
                         "testCaseId": test.id or None,
-                        "startTime": result.start_time})
+                        "startTime": test_time})
                 self.handle_response(response)
                 item_uuid = yaml_to_dict(response.text).get("id")
                 assert item_uuid is not None
                 self.verbose("uuid", item_uuid, "yellow", shift=1)
 
-                # For each log
-                for index, log_path in enumerate(result.log):
-                    try:
-                        log = self.step.plan.execute.read(log_path)
-                    except tmt.utils.FileError:
-                        continue
+                # to supoort idle tests
+                status = "SKIPPED"
+                if executed:
+                    # For each log
+                    for index, log_path in enumerate(result.log):
+                        try:
+                            log = self.step.plan.execute.read(log_path)
+                        except tmt.utils.FileError:
+                            continue
 
-                    level = "INFO" if log_path == result.log[0] else "TRACE"
-                    status = self.TMT_TO_RP_RESULT_STATUS[result.result]
+                        level = "INFO" if log_path == result.log[0] else "TRACE"
+                        status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
-                    # Upload log
-                    response = session.post(
-                        url=f"{url}/log/entry",
-                        headers=headers,
-                        json={
-                            "message": log,
-                            "itemUuid": item_uuid,
-                            "launchUuid": launch_uuid,
-                            "level": level,
-                            "time": result.end_time})
-                    self.handle_response(response)
-
-                    # Write out failures
-                    if index == 0 and status == "FAILED":
-                        message = result.failures(log)
+                        # Upload log
                         response = session.post(
                             url=f"{url}/log/entry",
                             headers=headers,
                             json={
-                                "message": message,
+                                "message": log,
                                 "itemUuid": item_uuid,
                                 "launchUuid": launch_uuid,
-                                "level": "ERROR",
+                                "level": level,
                                 "time": result.end_time})
                         self.handle_response(response)
 
+                        # Write out failures
+                        if index == 0 and status == "FAILED":
+                            message = result.failures(log)
+                            response = session.post(
+                                url=f"{url}/log/entry",
+                                headers=headers,
+                                json={
+                                    "message": message,
+                                    "itemUuid": item_uuid,
+                                    "launchUuid": launch_uuid,
+                                    "level": "ERROR",
+                                    "time": result.end_time})
+                            self.handle_response(response)
+
                     # TODO: Add tmt files as attachments
+
+                    test_time = result.end_time
 
                 # Finish the test item
                 response = session.put(
@@ -405,11 +438,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                     headers=headers,
                     json={
                         "launchUuid": launch_uuid,
-                        "endTime": result.end_time,
+                        "endTime": test_time,
                         "status": status,
                         "issue": {"issueType": dt_locator or "ti001"}})
                 self.handle_response(response)
-                launch_time = result.end_time
+                launch_time = test_time
 
             if create_suite:
                 # Finish the test suite
@@ -422,11 +455,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin):
                 self.handle_response(response)
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
-            is_additional_upload = self.get("upload_to_launch") is None \
-                or self.get("upload_to_suite") is None
+            additional_upload = self.get("upload_to_launch") is not None \
+                or self.get("upload_to_suite") is not None
 
-            if (create_launch and not suite_per_plan) or \
-                    (suite_per_plan and is_the_last_plan and not is_additional_upload):
+            if ((launch_per_plan or (suite_per_plan and is_the_last_plan))
+                    and not additional_upload):
                 # Finish the launch
                 response = session.put(
                     url=f"{url}/launch/{launch_uuid}/finish",
