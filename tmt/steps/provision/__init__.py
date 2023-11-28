@@ -1177,6 +1177,8 @@ class GuestSsh(Guest):
             # received from the server for a long time (#868).
             '-oServerAliveInterval=60',
             '-oServerAliveCountMax=5',
+            # Avoid noisy ssh client messages spoiling test output (#2429).
+            '-o LogLevel=QUIET'
             ]
         if self.key or self.password:
             # Skip ssh-agent (it adds additional identities)
