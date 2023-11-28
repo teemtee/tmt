@@ -6,12 +6,12 @@ import dataclasses
 import enum
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 import click
 import fmf
+import fmf.utils
 from click import echo, style
-from fmf.utils import listed
 
 import tmt
 import tmt.base
@@ -29,8 +29,18 @@ from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Path, cached_property
 
 if TYPE_CHECKING:
+    from typing_extensions import Concatenate, ParamSpec
+
     import tmt.steps.discover
     import tmt.steps.execute
+    import tmt.steps.finish
+    import tmt.steps.prepare
+    import tmt.steps.provision
+    import tmt.steps.report
+
+    P = ParamSpec('P')
+    R = TypeVar('R')
+
 
 # Explore available plugins (need to detect all supported methods first)
 tmt.plugins.explore(tmt.log.Logger.get_bootstrap_logger())
@@ -106,6 +116,21 @@ class Context(click.Context):
     obj: ContextObject
 
 
+def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]':
+    """
+    Custom :py:func:`click.pass_context`-like decorator.
+
+    Complementing the :py:class:`Context`, the goal of this decorator to
+    announce the correct type of the ``context`` parameter. The original
+    decorator annotates the parameter as ``click.Context``, but that is not
+    what our command callables accept. So, on this boundary between tmt code
+    and ``click`` API, we trick type checkers by isolating the necessary
+    ``type: ignore[arg-type]``.
+    """
+
+    return click.pass_context(fn)  # type: ignore[arg-type]
+
+
 @dataclasses.dataclass
 class CliInvocation:
     """
@@ -168,7 +193,7 @@ class CustomGroup(click.Group):
             return None
         if len(matches) == 1:
             return click.Group.get_command(self, context, matches[0])
-        context.fail(f"Did you mean {listed(sorted(matches), join='or')}?")
+        context.fail(f"Did you mean {fmf.utils.listed(sorted(matches), join='or')}?")
         return None
 
 
@@ -193,7 +218,7 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 #  Main
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 @click.group(invoke_without_command=True, cls=CustomGroup)
-@click.pass_context
+@pass_context
 @option(
     '-r', '--root', metavar='PATH', show_default=True, default='.',
     help="Path to the metadata tree root, '.' used by default.")
@@ -283,7 +308,7 @@ def main(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
-@click.pass_context
+@pass_context
 @option(
     '-i', '--id', 'id_', help='Run id (name or directory path).', metavar="ID")
 @option(
@@ -357,7 +382,7 @@ run.add_command(tmt.steps.Reboot.command())
 
 
 @run.command(name='plans')
-@click.pass_context
+@pass_context
 @option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match plan name or '.' for current directory.")
@@ -387,7 +412,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
 
 
 @run.command(name='tests')
-@click.pass_context
+@pass_context
 @option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match test name or '.' for current directory.")
@@ -417,7 +442,7 @@ def run_tests(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @run.result_callback()  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 def finito(
         click_context: Context,
         commands: Any,
@@ -522,7 +547,7 @@ def do_lint(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @verbosity_options
 def tests(context: Context, **kwargs: Any) -> None:
     """
@@ -540,7 +565,7 @@ def tests(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @tests.command(name='ls')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @verbosity_options
 def tests_ls(context: Context, **kwargs: Any) -> None:
@@ -558,7 +583,7 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @tests.command(name='show')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @verbosity_options
 def tests_show(context: Context, **kwargs: Any) -> None:
@@ -577,7 +602,7 @@ def tests_show(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @tests.command(name='lint')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @fmf_source_options
 @lint_options
@@ -613,11 +638,11 @@ def tests_lint(
     raise SystemExit(exit_code)
 
 
-_test_templates = listed(tmt.templates.TEST, join='or')
+_test_templates = fmf.utils.listed(tmt.templates.TEST, join='or')
 
 
 @tests.command(name='create')
-@click.pass_context
+@pass_context
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
@@ -651,7 +676,7 @@ def tests_create(
 
 
 @tests.command(name='import')
-@click.pass_context
+@pass_context
 @click.argument('paths', nargs=-1, metavar='[PATH]...')
 @option(
     '--nitrate / --no-nitrate', default=True, show_default=True, is_flag=True,
@@ -762,7 +787,11 @@ def tests_import(
             purpose, disabled, types, general)
         # Add path to common metadata if there are virtual test cases
         if individual:
-            root = Path(fmf.Tree(str(path)).root)
+            # TODO: fmf is not annotated yet, fmf.Tree.root is seen by pyright as possibly
+            # `Unknown` type, therefore we need to help a bit.
+            node = fmf.Tree(str(path))
+            assert isinstance(node.root, str)  # narrow type
+            root = Path(node.root)
             common['path'] = str(Path('/') / path.relative_to(root))
         # Store common metadata
         file_name = common.get('filename', 'main.fmf')
@@ -788,7 +817,7 @@ _test_export_default = 'yaml'
 
 
 @tests.command(name='export')
-@click.pass_context
+@pass_context
 @filter_options_long
 @option(
     '-h', '--how', default=_test_export_default, show_default=True,
@@ -911,7 +940,7 @@ def tests_export(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @tests.command(name="id")  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @verbosity_options
 @force_dry_options
@@ -935,7 +964,7 @@ def tests_id(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @verbosity_options
 @remote_plan_options
 def plans(context: Context, **kwargs: Any) -> None:
@@ -955,7 +984,7 @@ def plans(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @plans.command(name='ls')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @verbosity_options
 @remote_plan_options
@@ -974,7 +1003,7 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @plans.command(name='show')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @environment_options
 @verbosity_options
@@ -995,7 +1024,7 @@ def plans_show(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @plans.command(name='lint')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @fmf_source_options
 @lint_options
@@ -1031,11 +1060,11 @@ def plans_lint(
     raise SystemExit(exit_code)
 
 
-_plan_templates = listed(tmt.templates.PLAN, join='or')
+_plan_templates = fmf.utils.listed(tmt.templates.PLAN, join='or')
 
 
 @plans.command(name='create')
-@click.pass_context
+@pass_context
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
@@ -1083,7 +1112,7 @@ _plan_export_default = 'yaml'
 
 
 @plans.command(name='export')
-@click.pass_context
+@pass_context
 @filter_options_long
 @option(
     '-h', '--how', default=_plan_export_default, show_default=True,
@@ -1132,7 +1161,7 @@ def plans_export(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @plans.command(name="id")  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @verbosity_options
 @force_dry_options
@@ -1156,7 +1185,7 @@ def plans_id(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @verbosity_options
 def stories(context: Context, **kwargs: Any) -> None:
     """
@@ -1174,7 +1203,7 @@ def stories(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @stories.command(name='ls')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
@@ -1205,7 +1234,7 @@ def stories_ls(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @stories.command(name='show')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
@@ -1234,11 +1263,11 @@ def stories_show(
             echo()
 
 
-_story_templates = listed(tmt.templates.STORY, join='or')
+_story_templates = fmf.utils.listed(tmt.templates.STORY, join='or')
 
 
 @stories.command(name='create')
-@click.pass_context
+@pass_context
 @click.argument('name')
 @option(
     '-t', '--template', metavar='TEMPLATE',
@@ -1272,7 +1301,7 @@ def stories_create(
     '--test', is_flag=True, help='Show test coverage.')
 @option(
     '--code', is_flag=True, help='Show code coverage.')
-@click.pass_context
+@pass_context
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
@@ -1338,7 +1367,7 @@ def stories_coverage(
         headfoot(f'{round(100 * test_coverage / total)}%')
     if docs:
         headfoot(f'{round(100 * docs_coverage / total)}%')
-    headfoot(f"from {listed(total, 'story')}")
+    headfoot(f"from {fmf.utils.listed(total, 'story')}")
     echo()
 
 
@@ -1347,7 +1376,7 @@ _story_export_default = 'yaml'
 
 
 @stories.command(name='export')
-@click.pass_context
+@pass_context
 @filter_options_long
 @story_flags_filter_options
 @option(
@@ -1409,7 +1438,7 @@ def stories_export(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @stories.command(name='lint')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @fmf_source_options
 @lint_options
@@ -1448,7 +1477,7 @@ def stories_lint(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @stories.command(name="id")  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options_long
 @story_flags_filter_options
 @verbosity_options
@@ -1483,7 +1512,7 @@ def stories_id(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @main.command()
-@click.pass_context
+@pass_context
 @click.argument('path', default='.')
 @option(
     '-t', '--template', default='empty',
@@ -1519,7 +1548,7 @@ def init(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @main.command()
-@click.pass_context
+@pass_context
 @workdir_root_options
 @option(
     '-i', '--id', metavar="ID",
@@ -1575,7 +1604,7 @@ def status(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @verbosity_options
 @dry_options
 def clean(context: Context, **kwargs: Any) -> None:
@@ -1632,7 +1661,7 @@ def clean(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @clean.result_callback()  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 def perform_clean(
         click_context: Context,
         commands: Any,
@@ -1654,7 +1683,7 @@ def perform_clean(
 
 
 @clean.command(name='runs')
-@click.pass_context
+@pass_context
 @workdir_root_options
 @option(
     '-l', '--last', is_flag=True, help='Clean the workdir of the last run.')
@@ -1662,7 +1691,7 @@ def perform_clean(
     '-i', '--id', 'id_', metavar="ID",
     help='Run id (name or directory path) to clean workdir of.')
 @option(
-    '-k', '--keep', type=int,
+    '-k', '--keep', type=int, default=None,
     help='The number of latest workdirs to keep, clean the rest.')
 @verbosity_options
 @dry_options
@@ -1670,8 +1699,8 @@ def clean_runs(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: str,
-        keep: int,
+        id_: Optional[str],
+        keep: Optional[int],
         **kwargs: Any) -> None:
     """
     Clean workdirs of past runs.
@@ -1699,12 +1728,12 @@ def clean_runs(
 
 
 @clean.command(name='guests')
-@click.pass_context
+@pass_context
 @workdir_root_options
 @option(
     '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
 @option(
-    '-i', '--id', 'id_', metavar="ID",
+    '-i', '--id', 'id_', metavar="ID", default=None,
     help='Run id (name or directory path) to stop the guest of.')
 @option(
     '-h', '--how', metavar='METHOD',
@@ -1715,7 +1744,7 @@ def clean_guests(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: int,
+        id_: Optional[int],
         **kwargs: Any) -> None:
     """
     Stop running guests of runs.
@@ -1742,7 +1771,7 @@ def clean_guests(
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @clean.command(name='images')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @verbosity_options
 @dry_options
 def clean_images(context: Context, **kwargs: Any) -> None:
@@ -1773,7 +1802,7 @@ def clean_images(context: Context, **kwargs: Any) -> None:
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.command(name='lint')  # type: ignore[arg-type]
-@click.pass_context
+@pass_context
 @filter_options
 @fmf_source_options
 @lint_options
@@ -1868,7 +1897,7 @@ def setup_completion(shell: str, install: bool) -> None:
 
 
 @completion.command(name='bash')
-@click.pass_context
+@pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
     help="""
@@ -1883,7 +1912,7 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
 
 
 @completion.command(name='zsh')
-@click.pass_context
+@pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
     help="""
@@ -1898,7 +1927,7 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 
 
 @completion.command(name='fish')
-@click.pass_context
+@pass_context
 @option(
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
