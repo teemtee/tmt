@@ -112,7 +112,7 @@ Under The Hood
 Now let's have a brief look under the hood. For storing all config
 data we're using the `Flexible Metadata Format`__. In short, it is
 a ``yaml`` format extended with a couple of nice features like
-`inheritance`__ or virtual `hierarchy`__ which help to maintain
+:ref:`inheritance` or :ref:`elasticity` which help to maintain
 even large data efficiently without unnecessary duplication.
 
 .. _tree:
@@ -133,8 +133,6 @@ commits, it is essential for building the fmf tree structure which
 is created from all ``*.fmf`` files discovered under the fmf root.
 
 __ https://fmf.readthedocs.io
-__ https://fmf.readthedocs.io/en/stable/features.html#inheritance
-__ https://fmf.readthedocs.io/en/stable/features.html#hierarchy
 __ https://fmf.readthedocs.io/en/stable/concept.html#trees
 
 
@@ -243,10 +241,8 @@ Similar to plans, it is possible to choose an arbitrary name for
 the test. Just make sure the ``test`` key is defined. However, to
 organize the metadata efficiently it is recommended to keep tests
 and plans under separate folders, e.g. ``tests`` and ``plans``.
-This will also allow you to use `inheritance`__ to prevent
+This will also allow you to use :ref:`inheritance` to prevent
 unnecessary data duplication.
-
-__ https://fmf.readthedocs.io/en/latest/features.html#inheritance
 
 
 Stories
