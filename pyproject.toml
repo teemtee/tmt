@@ -220,7 +220,6 @@ ignore = [
     "tmt/steps/**/*.py",
     "tmt/__init__.py",
     "tmt/base.py",
-    "tmt/cli.py",
     "tmt/convert.py",
     "tmt/hardware.py",
     "tmt/identifier.py",
