@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import subprocess
 import textwrap
 from typing import Any, Optional, cast
 
@@ -17,7 +18,7 @@ from tmt.result import BaseResult, CheckResult, Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
 from tmt.steps.provision import Guest
-from tmt.utils import EnvironmentType, Path, ShellScript, Stopwatch, field
+from tmt.utils import Command, EnvironmentType, Path, ShellScript, Stopwatch, field
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
@@ -344,6 +345,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 level=level,
                 topic=topic)
 
+        def _save_process(
+                command: Command,
+                process: subprocess.Popen[bytes],
+                logger: tmt.log.Logger) -> None:
+            invocation.process = process
+
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         test_check_results += self.run_checks_before_test(
@@ -366,6 +373,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     tty=test.tty,
                     log=_test_output_logger,
                     timeout=tmt.utils.duration_to_seconds(test.duration),
+                    on_process_start=_save_process,
                     test_session=True,
                     friendly_command=str(test.test))
                 invocation.return_code = 0
@@ -380,6 +388,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
                     logger.warn('Test failed to manage its pidfile.')
 
+        invocation.process = None
         invocation.end_time = self.format_timestamp(timer.end_time)
         invocation.real_duration = self.format_duration(timer.duration)
 

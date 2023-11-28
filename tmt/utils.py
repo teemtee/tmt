@@ -474,6 +474,13 @@ RawCommandElement = Union[str, Path]
 #: A raw command line form, a list of elements.
 RawCommand = list[RawCommandElement]
 
+#: Type of a callable to be called by :py:meth:`Command.run` after starting the
+#: child process.
+OnProcessStartCallback = Callable[
+    ['Command', subprocess.Popen[bytes], tmt.log.Logger],
+    None
+    ]
+
 
 @dataclasses.dataclass(frozen=True)
 class CommandOutput:
@@ -585,6 +592,7 @@ class Command:
             join: bool = False,
             interactive: bool = False,
             timeout: Optional[int] = None,
+            on_process_start: Optional[OnProcessStartCallback] = None,
             # Logging
             message: Optional[str] = None,
             friendly_command: Optional[str] = None,
@@ -608,6 +616,8 @@ class Command:
             interaction with user.
         :param timeout: if set, command would be interrupted, if still running,
             after this many seconds.
+        :param on_process_start: if set, this callable would be called after the
+            command process started.
         :param message: if set, it would be logged for more friendly logging.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -692,6 +702,9 @@ class Command:
 
         except FileNotFoundError as exc:
             raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
+
+        if on_process_start:
+            on_process_start(self, process, logger)
 
         # Create and start stream loggers
         stdout_logger = StreamLogger(
@@ -1337,7 +1350,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             interactive: bool = False,
             join: bool = False,
             log: Optional[tmt.log.LoggingFunction] = None,
-            timeout: Optional[int] = None) -> CommandOutput:
+            timeout: Optional[int] = None,
+            on_process_start: Optional[OnProcessStartCallback] = None) -> CommandOutput:
         """
         Run command, give message, handle errors
 
@@ -1366,6 +1380,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             shell=shell,
             env=env,
             interactive=interactive,
+            on_process_start=on_process_start,
             join=join,
             log=log,
             timeout=timeout,

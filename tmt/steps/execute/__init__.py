@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import json
 import os
+import subprocess
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
@@ -150,6 +151,11 @@ class TestInvocation:
     phase: 'ExecutePlugin[Any]'
     test: 'tmt.base.Test'
     guest: Guest
+
+    #: Process running the test. What binary it is depends on the guest
+    #: implementation and the test, it may be, for example, a shell process,
+    #: SSH process, or a ``podman`` process.
+    process: Optional[subprocess.Popen[bytes]] = None
 
     return_code: Optional[int] = None
     start_time: Optional[str] = None

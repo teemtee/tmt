@@ -42,6 +42,7 @@ from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
+    OnProcessStartCallback,
     Path,
     SerializableContainer,
     ShellScript,
@@ -899,6 +900,7 @@ class Guest(tmt.utils.Common):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         pass
 
@@ -913,6 +915,7 @@ class Guest(tmt.utils.Common):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         pass
 
@@ -926,6 +929,7 @@ class Guest(tmt.utils.Common):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """
         Execute a command on the guest.
@@ -1298,6 +1302,7 @@ class GuestSsh(Guest):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """
         Execute a command on the guest.
@@ -1359,6 +1364,7 @@ class GuestSsh(Guest):
             silent=silent,
             cwd=cwd,
             interactive=interactive,
+            on_process_start=on_process_start,
             **kwargs)
 
     def push(self,

@@ -7,7 +7,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, Path, ShellScript
+from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
 
 
 @dataclasses.dataclass
@@ -76,6 +76,7 @@ class GuestLocal(tmt.Guest):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute command on localhost """
         # Prepare the environment (plan/cli variables override)
@@ -98,6 +99,7 @@ class GuestLocal(tmt.Guest):
             silent=silent,
             cwd=cwd,
             interactive=interactive,
+            on_process_start=on_process_start,
             **kwargs)
 
     def stop(self) -> None:

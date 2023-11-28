@@ -9,7 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, Path, ShellScript, field, retry
+from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -298,6 +298,7 @@ class GuestContainer(tmt.Guest):
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
+                on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute given commands in podman via shell """
         if not self.container and not self.is_dry_run:
@@ -342,6 +343,7 @@ class GuestContainer(tmt.Guest):
             friendly_command=friendly_command or str(command),
             silent=silent,
             interactive=interactive,
+            on_process_start=on_process_start,
             **kwargs)
 
     def push(
