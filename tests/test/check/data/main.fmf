@@ -5,7 +5,7 @@
 
 /avc:
   check:
-    - avc
+    - how: avc
 
   /harmless:
     test: /bin/true
