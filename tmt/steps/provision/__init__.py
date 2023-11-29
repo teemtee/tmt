@@ -1188,10 +1188,6 @@ class GuestSsh(Guest):
                 options.extend(['-i', key])
         if self.password:
             options.extend(['-oPasswordAuthentication=yes'])
-        if self.debug_level == 0:
-            # Avoid noisy ssh client messages spoiling test output (#2429).
-            # Enabled only when debug mode is not set.
-            options.extend(['-oLogLevel=QUIET'])
 
         # Use the shared master connection
         options.append(f'-S{self._ssh_socket()}')
@@ -1296,6 +1292,14 @@ class GuestSsh(Guest):
         :param cwd: execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param test_session: if set, indicates test execution.
+        :param silent: if set, logging of steps taken by this function would be
+            reduced.
+        :param log: a logging function to use for logging of command output. By
+            default, ``self._logger.debug`` is used.
+        :param interactive: if set, the command would be executed in an interactive
+            manner, i.e. with stdout and stdout connected to terminal for live
+            interaction with user.
         """
 
         # Abort if guest is unavailable
@@ -1316,6 +1320,11 @@ class GuestSsh(Guest):
         # and a single `-t` wouldn't have the necessary effect.
         if test_session:
             ssh_command += Command('-tt')
+
+            # Avoid noisy ssh client messages spoiling test output (#2429).
+            # Enabled only when debug mode is not set.
+            if self.debug_level == 0:
+                ssh_command += Command('-oLogLevel=QUIET')
 
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
