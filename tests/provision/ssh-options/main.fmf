@@ -1,4 +1,4 @@
-summary: Check that custom SSH options are used
+summary: Check SSH options are correctly set and possible to customize
 enabled: false
 adjust:
   - when: how == full

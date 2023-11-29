@@ -1177,8 +1177,6 @@ class GuestSsh(Guest):
             # received from the server for a long time (#868).
             '-oServerAliveInterval=60',
             '-oServerAliveCountMax=5',
-            # Avoid noisy ssh client messages spoiling test output (#2429).
-            '-o LogLevel=QUIET'
             ]
         if self.key or self.password:
             # Skip ssh-agent (it adds additional identities)
@@ -1190,6 +1188,10 @@ class GuestSsh(Guest):
                 options.extend(['-i', key])
         if self.password:
             options.extend(['-oPasswordAuthentication=yes'])
+        if self.debug_level == 0:
+            # Avoid noisy ssh client messages spoiling test output (#2429).
+            # Enabled only when debug mode is not set.
+            options.extend(['-oLogLevel=QUIET'])
 
         # Use the shared master connection
         options.append(f'-S{self._ssh_socket()}')
