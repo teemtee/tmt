@@ -26,6 +26,10 @@ The :ref:`/spec/plans/report/polarion` report now supports the
 ``fips`` field to store information about whether the FIPS mode
 was enabled or disabled on the guest during the test execution.
 
+The verbose ssh client messages like ``Shared connection to X closed``
+do not spoil the test output anymore. The verbose messages are still
+kept when debug mode set.
+
 
 tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
