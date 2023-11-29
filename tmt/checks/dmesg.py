@@ -17,6 +17,20 @@ TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
 
 @provides_check('dmesg')
 class DmesgCheck(CheckPlugin[Check]):
+    """
+    Save the content of kernel ring buffer (aka "console") into a file.
+
+    The check saves one file before the test, and then again
+    when test finishes.
+
+    .. code-block:: yaml
+
+        check:
+          - name: dmesg
+
+    .. versionadded:: 1.28
+    """
+
     _check_class = Check
 
     @classmethod

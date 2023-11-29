@@ -2478,6 +2478,15 @@ class FieldMetadata(Generic[T]):
 
     internal: bool = False
 
+    #: Help text documenting the field.
+    help: Optional[str] = None
+    #: If field accepts a value, this string would represent it in documentation.
+    metavar: Optional[str] = None
+    #: Field default value.
+    default: Optional[Any] = None
+    #: Field default value factory.
+    default_factory: Optional[Callable[[], Any]] = None
+
     #: CLI option parameters, for lazy option creation.
     option_args: Optional['FieldCLIOption'] = None
     option_kwargs: Optional[dict[str, Any]] = None
@@ -6047,7 +6056,12 @@ def field(
     if default is dataclasses.MISSING and default_factory is dataclasses.MISSING:
         raise GeneralError("Container field must define one of 'default' or 'default_factory'.")
 
-    metadata: FieldMetadata[T] = FieldMetadata(internal=internal)
+    metadata: FieldMetadata[T] = FieldMetadata(
+        internal=internal,
+        help=textwrap.dedent(help).strip() if help else None,
+        metavar=metavar,
+        default=default,
+        default_factory=default_factory)
 
     if option:
         assert is_flag is False or isinstance(default, bool)
@@ -6105,6 +6119,7 @@ def default_template_environment() -> jinja2.Environment:
         return match.groups()
 
     environment.filters['basename'] = lambda x: Path(x).name
+    environment.filters['dedent'] = textwrap.dedent
     environment.filters['findall'] = lambda s, pattern: re.findall(pattern, s)
     environment.filters['listed'] = fmf.utils.listed
     environment.filters['strip'] = lambda x: x.strip()

@@ -17,6 +17,22 @@ TEST_POST_AVC_FILENAME = 'tmt-avc-{event}.txt'
 
 @provides_check('avc')
 class AvcDenials(CheckPlugin[Check]):
+    """
+    Check for SELinux AVC denials raised during the test.
+
+    The check collects SELinux AVC denials from the audit log,
+    gathers details about them, and together with versions of
+    the ``selinux-policy`` and related packages stores them in
+    a file after the test.
+
+    .. code-block:: yaml
+
+        check:
+          - name: avc
+
+    .. versionadded:: 1.28
+    """
+
     _check_class = Check
 
     @classmethod

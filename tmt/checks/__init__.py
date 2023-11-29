@@ -95,7 +95,9 @@ class Check(
     """
 
     how: str
-    enabled: bool = field(default=True)
+    enabled: bool = field(
+        default=True,
+        help='Whether the check is enabled or not.')
 
     @cached_property
     def plugin(self) -> 'CheckPluginClass':

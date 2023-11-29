@@ -27,7 +27,9 @@ Level 1: Tests
     Metadata closely related to individual :ref:`/spec/tests` such
     as the :ref:`/spec/tests/test` script, directory
     :ref:`/spec/tests/path` or maximum :ref:`/spec/tests/duration`
-    which are stored directly with the test code.
+    which are stored directly with the test code. See
+    :ref:`/spec/test-checks` for the list of available test
+    :ref:`checks</spec/tests/check>`.
 
 Level 2: Plans
     :ref:`/spec/plans` are used to group relevant tests and enable
@@ -54,4 +56,5 @@ Level 3: Stories
     spec/stories
     spec/context
     spec/hardware
+    spec/test-checks
     spec/lint

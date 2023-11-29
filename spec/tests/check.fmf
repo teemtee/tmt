@@ -14,19 +14,7 @@ description: |
     panic detection, core dump collection or collection of system
     logs.
 
-    The following checks are currently available:
-
-    dmesg
-        check the kernel ring buffer and store its contents
-
-        .. versionadded:: 1.28
-
-    avc
-        check for SELinux AVC denials, gather details about the
-        ``selinux-policy`` related packages installed on the
-        system
-
-        .. versionadded:: 1.28
+    See :ref:`/spec/test-checks` for the list of available checks.
 
 example:
   - |
