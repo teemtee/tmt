@@ -12,8 +12,8 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         rlRun "results=$run/plan/execute/results.yaml"
-        rlRun "dump_before=$run/plan/execute/data/guest/default-0/dmesg-1/tmt-dmesg-before-test.txt"
-        rlRun "dump_after=$run/plan/execute/data/guest/default-0/dmesg-1/tmt-dmesg-after-test.txt"
+        rlRun "dump_before=$run/plan/execute/data/guest/default-0/dmesg-1/checks/dmesg-before-test.txt"
+        rlRun "dump_after=$run/plan/execute/data/guest/default-0/dmesg-1/checks/dmesg-after-test.txt"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"

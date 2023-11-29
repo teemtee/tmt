@@ -12,7 +12,7 @@ from tmt.utils import CommandOutput, Path, ShellScript, render_run_exception_str
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
 
-TEST_POST_AVC_FILENAME = 'tmt-avc-{event}.txt'
+TEST_POST_AVC_FILENAME = 'avc-{event}.txt'
 
 
 @provides_check('avc')
@@ -51,11 +51,7 @@ class AvcDenials(CheckPlugin[Check]):
             datetime.datetime.now(datetime.timezone.utc))
 
         assert invocation.phase.step.workdir is not None  # narrow type
-
-        path = invocation.data_path(
-            filename=TEST_POST_AVC_FILENAME.format(event=event.value),
-            create=True,
-            full=True)
+        path = invocation.check_files_path / TEST_POST_AVC_FILENAME.format(event=event.value)
 
         def _output_logger(
                 key: str,

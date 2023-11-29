@@ -12,7 +12,7 @@ from tmt.utils import Path, render_run_exception_streams
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
 
-TEST_POST_DMESG_FILENAME = 'tmt-dmesg-{event}.txt'
+TEST_POST_DMESG_FILENAME = 'dmesg-{event}.txt'
 
 
 @provides_check('dmesg')
@@ -69,10 +69,7 @@ class DmesgCheck(CheckPlugin[Check]):
 
         timestamp = ExecutePlugin.format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
-        path = invocation.data_path(
-            filename=TEST_POST_DMESG_FILENAME.format(event=event.value),
-            create=True,
-            full=True)
+        path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
         try:
             dmesg_output = cls._fetch_dmesg(invocation.guest, logger)

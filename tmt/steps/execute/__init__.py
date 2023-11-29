@@ -186,6 +186,13 @@ class TestInvocation:
         return path if full else path.relative_to(self.phase.step.workdir)
 
     @tmt.utils.cached_property
+    def check_files_path(self) -> Path:
+        """ Construct a directory path for check files needed by tmt """
+        path = self.data_path(create=True, full=True) / "checks"
+        path.mkdir(exist_ok=True)
+        return path
+
+    @tmt.utils.cached_property
     def reboot_request_path(self) -> Path:
         """ A path to the reboot request file """
         return self.data_path(full=True) \
