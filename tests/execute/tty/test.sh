@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseEnd
 
     for method in ${PROVISION_METHODS:-local}; do
-        rlPhaseStartTest "With $method provision method"
+        rlPhaseStartTest "With $method provision method (tty:false)"
             rlRun -s "tmt run -avvvvddd provision -h $method"
 
             rlAssertGrep "out: prepare: stdin: False" $rlRun_LOG
@@ -34,6 +34,37 @@ rlJournalStart
             rlAssertGrep "out: finish: stdout: 0" $rlRun_LOG
             rlAssertGrep "out: finish: stderr: 0" $rlRun_LOG
         rlPhaseEnd
+
+       # NOTE: Our local provisioner cannot execute commands with a pty allocated
+       if [ "$method" != "local" ]; then
+               rlPhaseStartTest "With $method provision method (tty:true)"
+                   rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt -c tty=true run -avvvvddd provision -h $method"
+
+                   rlAssertGrep "out: prepare: stdin: False" $rlRun_LOG
+                   rlAssertGrep "out: prepare: stdout: False" $rlRun_LOG
+                   rlAssertGrep "out: prepare: stderr: False" $rlRun_LOG
+
+                   rlAssertGrep "out: execute: stdin: True" $rlRun_LOG
+                   rlAssertGrep "out: execute: stdout: True" $rlRun_LOG
+                   rlAssertGrep "out: execute: stderr: True" $rlRun_LOG
+
+                   rlAssertGrep "out: finish: stdin: False" $rlRun_LOG
+                   rlAssertGrep "out: finish: stdout: False" $rlRun_LOG
+                   rlAssertGrep "out: finish: stderr: False" $rlRun_LOG
+
+                   rlAssertGrep "out: prepare: stdin: 0" $rlRun_LOG
+                   rlAssertGrep "out: prepare: stdout: 0" $rlRun_LOG
+                   rlAssertGrep "out: prepare: stderr: 0" $rlRun_LOG
+
+                   rlAssertGrep "out: execute: stdin: 1" $rlRun_LOG
+                   rlAssertGrep "out: execute: stdout: 1" $rlRun_LOG
+                   rlAssertGrep "out: execute: stderr: 1" $rlRun_LOG
+
+                   rlAssertGrep "out: finish: stdin: 0" $rlRun_LOG
+                   rlAssertGrep "out: finish: stdout: 0" $rlRun_LOG
+                   rlAssertGrep "out: finish: stderr: 0" $rlRun_LOG
+               rlPhaseEnd
+       fi
 
         rlPhaseStartTest "With $method provision method, interactive tests"
             rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt run -avvvvddd provision -h $method execute -h tmt --interactive"

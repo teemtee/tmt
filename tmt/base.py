@@ -1048,6 +1048,8 @@ class Test(
         exporter=lambda value: str(value) if isinstance(value, Path) else None)
     framework: str = "shell"
     manual: bool = False
+    tty: bool = False
+
     require: list[Dependency] = field(
         default_factory=list,
         normalize=normalize_require,
@@ -1089,6 +1091,7 @@ class Test(
         'path',
         'framework',
         'manual',
+        'tty',
         'require',
         'recommend',
         'environment',

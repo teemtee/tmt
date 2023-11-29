@@ -1,5 +1,9 @@
 /shell:
-  test: ./shell.sh
+    test: ./shell.sh
 
 /python:
-  test: ./python.py
+    test: ./python.py
+
+adjust:
+  - when: tty == true
+    tty: true

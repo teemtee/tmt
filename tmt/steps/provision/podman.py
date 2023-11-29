@@ -294,6 +294,7 @@ class GuestContainer(tmt.Guest):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -322,6 +323,10 @@ class GuestContainer(tmt.Guest):
         # Run in interactive mode if requested
         if interactive:
             podman_command += ['-it']
+
+        # Run with a `tty` if requested
+        elif tty:
+            podman_command += ['-t']
 
         podman_command += [
             self.container or 'dry',

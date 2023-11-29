@@ -885,6 +885,7 @@ class Guest(tmt.utils.Common):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -898,6 +899,7 @@ class Guest(tmt.utils.Common):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -910,6 +912,7 @@ class Guest(tmt.utils.Common):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -1281,6 +1284,7 @@ class GuestSsh(Guest):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -1310,7 +1314,7 @@ class GuestSsh(Guest):
         #
         # Note that polite request, `-t`, is not enough since `ssh` itself has no pseudo-terminal,
         # and a single `-t` wouldn't have the necessary effect.
-        if test_session:
+        if test_session or tty:
             ssh_command += Command('-tt')
 
         # Accumulate all necessary commands - they will form a "shell" script, a single

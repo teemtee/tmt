@@ -16,3 +16,7 @@
     /beakerlib:
         framework: beakerlib
         test: ./long.sh
+
+adjust:
+  - when: tty == true
+    tty: true

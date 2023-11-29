@@ -1,0 +1,30 @@
+summary: Test terminal environment
+
+story:
+    As a tester I want my test to have terminal environment
+    available, because it needs it for successful execution.
+
+description: |
+    Attribute marks whether during execution of the test a
+    terminal environment should be available. Terminal environment
+    is provided by creating a pseudo-terminal and keeping it
+    available for the executed test.
+
+    .. warning::
+
+        For the ``local`` provisioner no tty is allocated, and
+        this attribute is therefore ignored. Please open a new
+        issue to the project if you would like to get this fixed.
+
+    It's value must be a ``boolean``. The default value is
+    ``false``.
+
+    .. versionadded:: 1.30
+
+example: |
+  test: script.sh
+  tty: true
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/execute/tty

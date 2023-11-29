@@ -71,6 +71,25 @@ TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
 # this is probably not a problem in real-life scenarios: tests that
 # are to be interrupted by out-of-session reboot are expecting this
 # action, and they do not finish on their own.
+#
+# The ssh client always allocates a tty, so test timeout handling
+# works (#1387). Because the allocated tty is generally not suitable
+# for test execution, the wrapper uses `|& cat` to emulate execution
+# without a tty. In certain cases, where test execution with available
+# tty is required (#2381), the tty can be kept on request with
+# the `tty: true` test attribute.
+#
+# The wrapper script handles 3 execution modes for REMOTE_COMMAND:
+#
+# * In `tmt` interactive mode, stdin and stdout are unhandled, it is expected
+#   user interacts with the executed command.
+#
+# * In non-interactive mode without a tty, stdin is fed with /dev/null (EOF)
+#   and `|& cat` is used to simulate no tty available for script output.
+#
+# * In non-interactive mode with a tty, stdin is available to the tests
+#   and simulation of tty not available for output is not run.
+#
 TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
 {% macro enter() %}
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
@@ -91,6 +110,12 @@ mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
     {{ REMOTE_COMMAND }};
     _exit_code="$!";
     {{ exit() }};
+{% elif TTY %}
+    set -o pipefail;
+    {{ enter() }};
+    {{ REMOTE_COMMAND }} 2>&1;
+    _exit_code="$?";
+    {{ exit () }};
 {% else %}
     set -o pipefail;
     {{ enter() }};
@@ -302,6 +327,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # Prepare the actual remote command
         remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
             INTERACTIVE=self.get('interactive'),
+            TTY=test.tty,
             REMOTE_COMMAND=ShellScript(command)
             ).strip())
 
@@ -339,6 +365,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     env=environment,
                     join=True,
                     interactive=self.get('interactive'),
+                    tty=test.tty,
                     log=_test_output_logger,
                     timeout=tmt.utils.duration_to_seconds(test.duration),
                     test_session=True,

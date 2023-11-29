@@ -72,6 +72,7 @@ class GuestLocal(tmt.Guest):
                 env: Optional[tmt.utils.EnvironmentType] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
+                tty: bool = False,
                 silent: bool = False,
                 log: Optional[tmt.log.LoggingFunction] = None,
                 interactive: bool = False,
@@ -82,6 +83,9 @@ class GuestLocal(tmt.Guest):
         environment.update(env or {})
         if self.parent:
             environment.update(self.parent.plan.environment)
+
+        if tty:
+            self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
 

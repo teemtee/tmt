@@ -33,7 +33,7 @@ containers as well.
 For the purpose of tmt exit code, ``info`` test results are no
 longer considered as failures, and therefore the exit code of tmt
 changes. ``info`` results are now treated as ``pass`` results, and
-would be counted towards the succesfull exit code, ``0``, instead
+would be counted towards the succesful exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
 The :ref:`/spec/plans/report/polarion` report now supports the
@@ -43,6 +43,11 @@ was enabled or disabled on the guest during the test execution.
 The ``name`` field of the :ref:`/spec/tests/check` specification
 has been renamed to ``how``, to be more aligned with how plugins
 are selected for step phases and export formats.
+
+A new :ref:`/spec/tests/tty` boolean attribute was added to the
+:ref:`/spec/tests` specification. Tests can now control if they
+want to keep tty enabled. The default value of the attribute is
+``false``, in sync with the previous default behaviour.
 
 
 tmt-1.29

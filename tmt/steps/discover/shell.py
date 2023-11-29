@@ -99,6 +99,7 @@ class TestDescription(
     path: Optional[str] = None
     framework: Optional[str] = None
     manual: bool = False
+    tty: bool = False
     require: list[tmt.base.Dependency] = field(
         default_factory=list,
         normalize=tmt.base.normalize_require,

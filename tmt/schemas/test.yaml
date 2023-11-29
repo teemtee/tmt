@@ -74,6 +74,10 @@ properties:
   manual:
     type: boolean
 
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#tty
+  tty:
+    type: boolean
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#order
   order:
     $ref: "/schemas/core#/definitions/order"
