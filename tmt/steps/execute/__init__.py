@@ -688,8 +688,8 @@ class Execute(tmt.steps.Step):
         executor.wake()
         self._phases.append(executor)
 
-        # Nothing more to do if already done
-        if self.status() == 'done':
+        # Nothing more to do if already done and not asked to run again
+        if self.status() == 'done' and not self.should_run_again:
             self.debug(
                 'Execute wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
@@ -716,7 +716,7 @@ class Execute(tmt.steps.Step):
         super().go(force=force)
 
         # Clean up possible old results
-        if force:
+        if force or self.should_run_again:
             self._results.clear()
 
         # Nothing more to do if already done

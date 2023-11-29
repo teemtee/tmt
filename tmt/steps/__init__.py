@@ -583,8 +583,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
-        # Cleanup possible old workdir if called with --force
-        if self.is_forced_run:
+        # Cleanup possible old workdir if called with --force, but not
+        # if running the step --again which should reuse saved step data
+        if self.is_forced_run and not self.should_run_again:
             self._workdir_cleanup()
 
         # Load stored data
@@ -609,8 +610,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             self._workdir_cleanup()
             self.status('todo')
 
-        # Nothing more to do when the step is already done
-        if self.status() == 'done':
+        # Nothing more to do when the step is already done and not asked
+        # to run again
+        if self.status() == 'done' and not self.should_run_again:
             self.debug('Step is done, not touching its data.')
             return
 
@@ -1157,7 +1159,11 @@ class BasePlugin(Phase, Generic[StepDataT]):
                 for key in container_keys(cls._data_class)
                 )
             if metadata.option is not None
-            ] + tmt.options.VERBOSITY_OPTIONS + tmt.options.FORCE_DRY_OPTIONS
+            ] + (
+                tmt.options.VERBOSITY_OPTIONS +
+                tmt.options.FORCE_DRY_OPTIONS +
+                tmt.options.AGAIN_OPTION
+                )
 
     @classmethod
     def command(cls) -> click.Command:

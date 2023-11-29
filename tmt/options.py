@@ -142,7 +142,7 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
-# Force and dry actions
+# Force, dry and run again actions
 DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-n', '--dry', is_flag=True,
@@ -155,6 +155,11 @@ FORCE_DRY_OPTIONS: list[ClickOptionDecoratorType] = [
         help='Overwrite existing files and step data.'),
     *DRY_OPTIONS]
 
+AGAIN_OPTION: list[ClickOptionDecoratorType] = [
+    option(
+        '--again', is_flag=True,
+        help='Run again, even if already done before.'),
+    ]
 
 # Fix action
 FIX_OPTIONS: list[ClickOptionDecoratorType] = [

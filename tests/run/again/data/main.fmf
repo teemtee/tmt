@@ -1,0 +1,11 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+        name: worker
+    execute:
+        how: tmt
+
+/test:
+    test: /bin/true

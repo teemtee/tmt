@@ -32,6 +32,10 @@ conflicting requirements. Since 1.31, handling of
 :ref:`/spec/tests/require` and :ref:`/spec/tests/recommend`
 affects only guests the test would be scheduled on.
 
+New option ``--again`` can be used to execute an already completed
+step once again without completely removing the step workdir which
+is done when ``--force`` is used.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

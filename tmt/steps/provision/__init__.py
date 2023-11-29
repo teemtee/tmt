@@ -2029,8 +2029,8 @@ class Provision(tmt.steps.Step):
             if guest:
                 self._guests.append(guest)
 
-        # Nothing more to do if already done
-        if self.status() == 'done':
+        # Nothing more to do if already done and not asked to run again
+        if self.status() == 'done' and not self.should_run_again:
             self.debug(
                 'Provision wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)

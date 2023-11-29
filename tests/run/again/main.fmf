@@ -1,0 +1,5 @@
+summary: Verify that running step with `--again` works
+description:
+    When running a step again, the previous key values stored in
+    the `step.yaml` should be used as defaults. Any option coming
+    from the command line should override them.

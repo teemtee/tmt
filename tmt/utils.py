@@ -1232,6 +1232,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._get_cli_flag('is_forced_run', 'force', False)
 
     @property
+    def should_run_again(self) -> bool:
+        """ Whether selected step or the whole run should be run again """
+
+        return self._get_cli_flag('should_run_again', 'again', False)
+
+    @property
     def is_feeling_safe(self) -> bool:
         """ Whether the current run is allowed to run unsafe actions """
 

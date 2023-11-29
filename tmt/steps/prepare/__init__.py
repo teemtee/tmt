@@ -147,8 +147,8 @@ class Prepare(tmt.steps.Step):
             if not plugin.data.is_bare:
                 self._phases.append(plugin)
 
-        # Nothing more to do if already done
-        if self.status() == 'done':
+        # Nothing more to do if already done and not asked to run again
+        if self.status() == 'done' and not self.should_run_again:
             self.debug(
                 'Prepare wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)

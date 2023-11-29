@@ -224,6 +224,7 @@ class CustomGroup(click.Group):
 verbosity_options = create_options_decorator(tmt.options.VERBOSITY_OPTIONS)
 dry_options = create_options_decorator(tmt.options.DRY_OPTIONS)
 force_dry_options = create_options_decorator(tmt.options.FORCE_DRY_OPTIONS)
+again_option = create_options_decorator(tmt.options.AGAIN_OPTION)
 fix_options = create_options_decorator(tmt.options.FIX_OPTIONS)
 workdir_root_options = create_options_decorator(tmt.options.WORKDIR_ROOT_OPTIONS)
 filter_options = create_options_decorator(tmt.options.FILTER_OPTIONS)
@@ -380,6 +381,7 @@ def main(
 @environment_options
 @verbosity_options
 @force_dry_options
+@again_option
 def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
     """ Run test steps. """
     # Initialize
