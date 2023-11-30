@@ -268,6 +268,44 @@ class Discover(tmt.steps.Step):
 
         self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 
+    def _filter_for_rerun(self) -> None:
+        """ Filter out passed tests from previous run data """
+        assert isinstance(self.parent, tmt.base.Plan)  # narrow type
+        old_results: Path = self.parent.last_run_execute / 'results.yaml'
+        results = [
+            Result.from_serialized(data) for data in
+            tmt.utils.yaml_to_list(self.read(old_results))]
+        results_failed: list[Result] = []
+        results_passed: list[Result] = []
+        for result in results:
+            if (
+                    result.result is not tmt.result.ResultOutcome.PASS and
+                    result.result is not tmt.result.ResultOutcome.INFO):
+                results_failed.append(result)
+            else:
+                results_passed.append(result)
+
+        # Save positive results to specific results.yaml
+        old_results_positive: Path = (
+            self.parent.last_run_execute / 'positive_results.yaml')
+        self.debug(
+            f"Save positive results from last run to {old_results_positive}, these are: "
+            f"{', '.join([result.name for result in results_passed])}")
+        self.write(
+            old_results_positive,
+            tmt.utils.dict_to_yaml([result.to_serialized() for result in results_passed]))
+
+        # Filter out failed tests based on test name and serial number
+        filtered_tests: dict[str, list[tmt.base.Test]] = {}
+        for phase in self._tests:
+            current_phase_filtered: list[tmt.base.Test] = []
+            for test in self._tests[phase]:
+                for result in results_failed:
+                    if test.name == result.name and test.serial_number == result.serial_number:
+                        current_phase_filtered.append(test)
+            filtered_tests[phase] = current_phase_filtered
+        self._tests = filtered_tests
+
     def _discover_from_execute(self) -> None:
         """ Check the execute step for possible shell script tests """
 
@@ -389,6 +427,10 @@ class Discover(tmt.steps.Step):
 
         for test in self.tests():
             test.serial_number = self.plan.draw_test_serial_number(test)
+
+        # Filter selected tests if this is a rerun
+        if self.is_rerun:
+            self._filter_for_rerun()
 
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module

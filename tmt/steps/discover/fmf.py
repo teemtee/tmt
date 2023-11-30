@@ -571,10 +571,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             links=link_needles,
             excludes=excludes)
 
-        # Filter selected tests if this is a rerun
-        if self.is_rerun:
-            self.filter_for_rerun()
-
         if prune:
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'

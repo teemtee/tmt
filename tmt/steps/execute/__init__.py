@@ -816,7 +816,8 @@ class Execute(tmt.steps.Step):
         assert isinstance(self.parent, tmt.base.Plan)  # narrow type
         old_results: list[Result] = [
             Result.from_serialized(data) for data in
-            tmt.utils.yaml_to_list(self.read(self.parent.last_run_execute / 'results.yaml'))]
+            tmt.utils.yaml_to_list(
+                self.read(self.parent.last_run_execute / 'positive_results.yaml'))]
 
         for result in old_results:
             # Add old results into new ones and copy log directories
@@ -827,9 +828,6 @@ class Execute(tmt.steps.Step):
                 self.parent.last_run_execute / result.data_path.parent,
                 self.workdir / result.data_path.parent,
                 dirs_exist_ok=True)
-
-        # Cleanup saved last run data
-        shutil.rmtree(self.parent.last_run_execute, ignore_errors=True)
 
     def save(self) -> None:
         """ Save test results to the workdir """
