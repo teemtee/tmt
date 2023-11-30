@@ -42,12 +42,14 @@ example:
 
   - |
     # Enable multiple checks, one of them would be disabled temporarily.
+    # Using `how` key to pick the check.
     check:
       - avc
       - kernel-panic
-      - name: test-inspector
+      - how: test-inspector
         enable: false
 
 link:
   - implemented-by: /tmt/checks
   - verified-by: /tests/test/check/avc
+  - verified-by: /tests/test/check/dmesg

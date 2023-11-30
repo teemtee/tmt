@@ -99,8 +99,8 @@ description: |
           # String, how long did the check run.
           duration: hh:mm:ss
 
-          # String, name of the check. Corresponds to the name used in test
-          # metadata.
+          # String, name of the check. Corresponds to the name of the check
+          # specified in test metadata.
           name: dummy
 
           # String, the place in test workflow when the check was executed.

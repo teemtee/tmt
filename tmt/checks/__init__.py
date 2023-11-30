@@ -64,7 +64,7 @@ def find_plugin(name: str) -> 'CheckPluginClass':
 
 # A "raw" test check as stored in fmf node data.
 class _RawCheck(TypedDict):
-    name: str
+    how: str
     enabled: bool
 
 
@@ -94,12 +94,12 @@ class Check(
     check implementation/plugin.
     """
 
-    name: str
+    how: str
     enabled: bool = field(default=True)
 
     @cached_property
     def plugin(self) -> 'CheckPluginClass':
-        return find_plugin(self.name)
+        return find_plugin(self.how)
 
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
@@ -107,7 +107,7 @@ class Check(
             cls,
             raw_data: _RawCheck,
             logger: tmt.log.Logger) -> 'Check':
-        data = cls(name=raw_data['name'])
+        data = cls(how=raw_data['how'])
         data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
 
         return data
@@ -174,7 +174,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             logger: tmt.log.Logger) -> Check:
         """ Create a check data instance for the plugin """
 
-        return cast(CheckPlugin[CheckT], find_plugin(raw_data['name'])) \
+        return cast(CheckPlugin[CheckT], find_plugin(raw_data['how'])) \
             ._check_class.from_spec(raw_data, logger)
 
     @classmethod
@@ -207,7 +207,7 @@ def normalize_test_check(
     if isinstance(raw_test_check, str):
         try:
             return CheckPlugin.delegate(
-                raw_data={'name': raw_test_check, 'enabled': True},
+                raw_data={'how': raw_test_check, 'enabled': True},
                 logger=logger)
 
         except Exception as exc:

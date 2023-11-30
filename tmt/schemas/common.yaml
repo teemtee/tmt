@@ -486,7 +486,7 @@ definitions:
   check:
     type: object
     properties:
-      name:
+      how:
         type: string
 
       enabled:

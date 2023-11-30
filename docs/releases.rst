@@ -26,6 +26,10 @@ The :ref:`/spec/plans/report/polarion` report now supports the
 ``fips`` field to store information about whether the FIPS mode
 was enabled or disabled on the guest during the test execution.
 
+The ``name`` field of the :ref:`/spec/tests/check` specification
+has been renamed to ``how``, to be more aligned with how plugins
+are selected for step phases and export formats.
+
 
 tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
