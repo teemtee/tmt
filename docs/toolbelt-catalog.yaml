@@ -1,0 +1,50 @@
+# Catalog entry for Backstage [backstage.io]
+
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+    name: tmt
+    title: tmt
+    description:
+        The `Test Management Tool` provides a user-friendly way to
+        work with tests. You can comfortably create new tests,
+        safely and easily run tests across different environments,
+        review test results, debug test code and enable tests in
+        the CI using a consistent and concise config.
+    annotations:
+        github.com/project-slug: teemtee/tmt
+        feedback/type: JIRA
+        feedback/host: https://issues.redhat.com
+        jira/project-key: TT
+        feedback/email-to: tmt@redhat.com
+    links:
+      - title: docs
+        url: https://tmt.readthedocs.io
+        icon: docs
+      - title: code
+        url: https://github.com/teemtee/tmt/
+        icon: github
+      - title: pypi
+        url: https://pypi.org/project/tmt
+      - title: copr
+        url: https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
+      - title: "#tmt"
+        url: https://app.slack.com/client/E030G10V24F/C04LRPNDZ4Y
+        icon: chat
+    tags:
+        - testing
+        - test-execution
+        - test-framework
+        - test-management
+        - test-reporting
+        - test-selection
+        - provisioning
+        - python
+    namespace: quality-community
+spec:
+    type: tool
+    owner: group:redhat/tmt
+    lifecycle: production
+    system: testing-farm
+    dependsOn:
+      - component:fmf
