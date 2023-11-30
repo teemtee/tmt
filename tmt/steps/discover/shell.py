@@ -401,10 +401,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             tree=tests).tests(
             conditions=["manual is False"])
 
-        # Filter selected tests if this is a rerun
-        if self.is_rerun:
-            self.filter_for_rerun()
-
         # Propagate `where` key
         for test in self._tests:
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
