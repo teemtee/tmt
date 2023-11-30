@@ -205,7 +205,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         if not title:
             title = os.getenv(
                 'TMT_PLUGIN_REPORT_POLARION_TITLE',
-                self.step.plan.name.rsplit('/', 1)[1] +
+                self.step.plan.name.rsplit('/', 1)[1] + '_' +
                 # Polarion server running with UTC timezone
                 datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"))
         title = title.replace('-', '_')
