@@ -51,6 +51,7 @@ man: generate  ## Make manual pages
 REPODIR       = ..
 TMTDIR        = $(REPODIR)/tmt
 SCRIPTSDIR    = scripts
+TEMPLATESDIR  = templates
 
 generate: spec stories generate-lint-checks generate-test-checks generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
@@ -60,16 +61,16 @@ spec:
 stories:
 	mkdir -p stories
 
-spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py lint-checks.rst.j2 $(TMTDIR)/base.py
-	$(SCRIPTSDIR)/generate-lint-checks.py lint-checks.rst.j2 $@
+spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $(TMTDIR)/base.py
+	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
 
-spec/test-checks.rst: $(SCRIPTSDIR)/generate-test-checks.py test-checks.rst.j2 $(TMTDIR)/checks/*.py
-	$(SCRIPTSDIR)/generate-test-checks.py test-checks.rst.j2 $@
+spec/test-checks.rst: $(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $(TMTDIR)/checks/*.py
+	$(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $@
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
-generate-stories: stories  ## Generate documentation sources for stories
-	$(SCRIPTSDIR)/generate-stories.py story.rst.j2
+generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
+	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
 generate-test-checks: spec spec/test-checks.rst  ## Generate documentation sources for test checks
 
