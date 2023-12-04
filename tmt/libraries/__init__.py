@@ -1,8 +1,9 @@
 """ Handle libraries """
 
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import fmf
+import fmf.utils
 
 import tmt
 import tmt.base
@@ -11,13 +12,15 @@ import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple
 from tmt.utils import Path
 
+if TYPE_CHECKING:
+    from tmt.libraries.beakerlib import BeakerLib
+    from tmt.libraries.file import File
+
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
 ImportedIdentifiersType = Optional[list[Dependency]]
 
 # A Library type, can be Beakerlib or File
-# undefined references are ignored due to cyclic dependencies of these files,
-# only imported in runtime where needed
-LibraryType = Union['BeakerLib', 'File']  # type: ignore[name-defined] # noqa: F821
+LibraryType = Union['BeakerLib', 'File']
 
 # A type for Beakerlib dependencies
 LibraryDependenciesType = tuple[
@@ -74,15 +77,25 @@ def library_factory(
         source_location: Optional[Path] = None,
         target_location: Optional[Path] = None) -> LibraryType:
     """ Factory function to get correct library instance """
+    from .beakerlib import BeakerLib
+    from .file import File
+
     if isinstance(identifier, (DependencySimple, DependencyFmfId)):
-        from .beakerlib import BeakerLib
         library: LibraryType = BeakerLib(identifier=identifier, parent=parent, logger=logger)
 
     # File import
-    elif isinstance(identifier, DependencyFile):
+    #
+    # ignore[reportUnnecessaryIsInstance]: pyright is correct, the test is not
+    # needed given the fact `Dependency` is a union of three types, and two were
+    # ruled out above. But we would like to check possible violations in runtime,
+    # therefore an `else` with an exception.
+    # ignore[unused-ignore]: silencing mypy's complaint about silencing
+    # pyright's warning :)
+    elif isinstance(
+            identifier,
+            DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
         assert source_location is not None
         assert target_location is not None  # narrow type
-        from .file import File
         library = File(
             identifier=identifier, parent=parent, logger=logger,
             source_location=source_location, target_location=target_location)
@@ -95,7 +108,7 @@ def library_factory(
     try:
         library.fetch()
     except fmf.utils.RootError as exc:
-        if hasattr(library, 'url'):
+        if isinstance(library, BeakerLib):
             raise tmt.utils.SpecificationError(
                 f"Repository '{library.url}' does not contain fmf metadata.") from exc
         raise exc
@@ -125,8 +138,8 @@ def dependencies(
     and not trying to fetch those again.
     """
     # Initialize lists, use set for require & recommend
-    processed_require = set()
-    processed_recommend = set()
+    processed_require: set[Dependency] = set()
+    processed_recommend: set[Dependency] = set()
     imported_lib_ids = imported_lib_ids or []
     gathered_libraries: list[LibraryType] = []
     original_require = original_require or []
@@ -153,6 +166,11 @@ def dependencies(
                 # Recursively check for possible dependent libraries
                 assert parent is not None  # narrow type
                 assert parent.workdir is not None  # narrow type
+                # TODO: make this one go away once fmf is properly annotated.
+                # pyright detects the type might be `Unknown` because of how
+                # fmf handles some corner cases, therefore `is not None` is
+                # not strong enough.
+                assert isinstance(library.tree.root, str)  # narrow type
                 requires, recommends, libraries = dependencies(
                     original_require=library.require,
                     original_recommend=library.recommend,
