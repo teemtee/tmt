@@ -229,7 +229,7 @@ class Result(BaseResult):
             ids=ids,
             log=log or [],
             guest=guest_data,
-            data_path=invocation.data_path('data'))
+            data_path=invocation.relative_test_data_path)
 
         return _result.interpret_result(ResultInterpret(
             invocation.test.result) if invocation.test.result else ResultInterpret.RESPECT)

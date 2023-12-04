@@ -23,7 +23,7 @@ class Beakerlib(TestFramework):
             logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
 
         return {
-            'BEAKERLIB_DIR': str(invocation.data_path(full=True)),
+            'BEAKERLIB_DIR': str(invocation.path),
             'BEAKERLIB_COMMAND_SUBMIT_LOG': f'bash {tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.path}'
             }
 
@@ -34,7 +34,7 @@ class Beakerlib(TestFramework):
             logger: tmt.log.Logger) -> list[str]:
         return [
             '--exclude',
-            str(invocation.data_path("backup*", full=True))
+            str(invocation.path / "backup*")
             ]
 
     @classmethod
@@ -47,11 +47,11 @@ class Beakerlib(TestFramework):
         note: Optional[str] = None
         log: list[Path] = []
         for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if invocation.data_path(filename, full=True).is_file():
-                log.append(invocation.data_path(filename))
+            if (invocation.path / filename).is_file():
+                log.append(invocation.relative_path / filename)
 
         # Check beakerlib log for the result
-        beakerlib_results_filepath = invocation.data_path('TestResults', full=True)
+        beakerlib_results_filepath = invocation.path / 'TestResults'
 
         try:
             results = invocation.phase.read(beakerlib_results_filepath, level=3)

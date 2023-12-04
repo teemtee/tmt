@@ -223,8 +223,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         extra_environment = extra_environment or {}
 
-        data_directory = invocation.data_path(full=True, create=True)
-
         environment = extra_environment.copy()
         environment.update(invocation.test.environment)
         assert self.parent is not None
@@ -235,12 +233,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment['TMT_TEST_PIDFILE_LOCK'] = str(
             effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
         environment["TMT_TEST_NAME"] = invocation.test.name
-        environment["TMT_TEST_DATA"] = str(data_directory / tmt.steps.execute.TEST_DATA)
+        environment["TMT_TEST_DATA"] = str(invocation.test_data_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = str(invocation.test.serial_number)
         environment["TMT_TEST_METADATA"] = str(
-            data_directory / tmt.steps.execute.TEST_METADATA_FILENAME)
+            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = str(
-            data_directory / tmt.steps.execute.TEST_DATA / TMT_REBOOT_SCRIPT.created_file)
+            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file)
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = str(invocation._reboot_count)
@@ -315,7 +313,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         topology.guest = tmt.steps.GuestTopology(guest)
 
         environment.update(topology.push(
-            dirpath=invocation.data_path(full=True),
+            dirpath=invocation.path,
             guest=guest,
             logger=logger))
 
@@ -386,7 +384,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         invocation.real_duration = self.format_duration(timer.duration)
 
         self.write(
-            invocation.data_path(TEST_OUTPUT_FILENAME, full=True),
+            invocation.path / TEST_OUTPUT_FILENAME,
             stdout or '', mode='a', level=3)
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
@@ -452,7 +450,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     logger=logger)
 
                 guest.pull(
-                    source=invocation.data_path(full=True),
+                    source=invocation.path,
                     extend_options=test.test_framework.get_pull_options(invocation, logger))
 
                 results = self.extract_results(invocation, logger)  # Produce list of results

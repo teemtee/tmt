@@ -48,5 +48,5 @@ class Shell(TestFramework):
         return [tmt.Result.from_test_invocation(
             invocation=invocation,
             result=result,
-            log=[invocation.data_path(tmt.steps.execute.TEST_OUTPUT_FILENAME)],
+            log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
             note=note)]

@@ -22,7 +22,7 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript, Stopwatch, field
+from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -158,45 +158,58 @@ class TestInvocation:
 
     _reboot_count: int = 0
 
-    def data_path(
-            self,
-            filename: Optional[str] = None,
-            full: bool = False,
-            create: bool = False) -> Path:
-        """
-        Prepare full/relative test data directory/file path.
+    @cached_property
+    def path(self) -> Path:
+        """ Absolute path to invocation directory """
 
-        Construct test data directory path for given test, create it
-        if requested and return the full or relative path to it (if
-        filename not provided) or to the given data file otherwise.
-        """
-        # Prepare directory path, create if requested
         assert self.phase.step.workdir is not None  # narrow type
-        directory = self.phase.step.workdir \
+
+        path = self.phase.step.workdir \
             / TEST_DATA \
             / 'guest' \
             / self.guest.safe_name \
             / f'{self.test.safe_name.lstrip("/") or "default"}-{self.test.serial_number}'
-        if create and not directory.is_dir():
-            directory.joinpath(TEST_DATA).mkdir(parents=True)
-        if not filename:
-            return directory
-        path = directory / filename
-        return path if full else path.relative_to(self.phase.step.workdir)
+
+        path.mkdir(parents=True, exist_ok=True)
+
+        # Pre-create also the test data path - cannot use `self.test_data_path`,
+        # that would be an endless recursion.
+        (path / TEST_DATA).mkdir(parents=True, exist_ok=True)
+
+        return path
+
+    @cached_property
+    def relative_path(self) -> Path:
+        """ Invocation directory path relative to step workdir """
+
+        assert self.phase.step.workdir is not None  # narrow type
+
+        return self.path.relative_to(self.phase.step.workdir)
+
+    @cached_property
+    def test_data_path(self) -> Path:
+        """ Absolute path to test data directory """
+
+        return self.path / TEST_DATA
+
+    @cached_property
+    def relative_test_data_path(self) -> Path:
+        """ Test data path relative to step workdir """
+
+        return self.relative_path / TEST_DATA
 
     @tmt.utils.cached_property
     def check_files_path(self) -> Path:
         """ Construct a directory path for check files needed by tmt """
-        path = self.data_path(create=True, full=True) / "checks"
+
+        path = self.path / "checks"
         path.mkdir(exist_ok=True)
         return path
 
     @tmt.utils.cached_property
     def reboot_request_path(self) -> Path:
         """ A path to the reboot request file """
-        return self.data_path(full=True) \
-            / TEST_DATA \
-            / TMT_REBOOT_SCRIPT.created_file
+        return self.test_data_path / TMT_REBOOT_SCRIPT.created_file
 
     @property
     def reboot_requested(self) -> bool:
@@ -223,8 +236,6 @@ class TestInvocation:
         self.logger.debug(
             f"Reboot during test '{self.test}' with reboot count {self._reboot_count}.")
 
-        test_data = self.data_path(full=True) / TEST_DATA
-
         with open(self.reboot_request_path) as reboot_file:
             reboot_data = json.loads(reboot_file.read())
 
@@ -240,7 +251,7 @@ class TestInvocation:
 
         # Reset the file
         os.remove(self.reboot_request_path)
-        self.guest.push(test_data)
+        self.guest.push(self.test_data_path)
 
         rebooted = False
 
@@ -354,10 +365,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 
-            metadata_filename = invocation.data_path(
-                filename=TEST_METADATA_FILENAME, full=True, create=True)
             self.write(
-                metadata_filename, tmt.utils.dict_to_yaml(test._metadata))
+                invocation.path / TEST_METADATA_FILENAME,
+                tmt.utils.dict_to_yaml(test._metadata))
 
         return invocations
 
@@ -379,9 +389,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """ Create path to test's ``tmt-report-result`` file """
 
-        return invocation.data_path(full=True) \
-            / TEST_DATA \
-            / TMT_REPORT_RESULT_SCRIPT.created_file
+        return invocation.test_data_path / TMT_REPORT_RESULT_SCRIPT.created_file
 
     def load_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
         """
@@ -423,7 +431,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         return [tmt.Result.from_test_invocation(
             invocation=invocation,
             result=actual_result,
-            log=[invocation.data_path(TEST_OUTPUT_FILENAME)],
+            log=[invocation.relative_path / TEST_OUTPUT_FILENAME],
             note=note)]
 
     def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
@@ -432,10 +440,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         """
         test, guest = invocation.test, invocation.guest
 
-        test_data_path = invocation.data_path(full=True) / TEST_DATA
-
-        custom_results_path_yaml = test_data_path / 'results.yaml'
-        custom_results_path_json = test_data_path / 'results.json'
+        custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
+        custom_results_path_json = invocation.test_data_path / 'results.json'
 
         if custom_results_path_yaml.exists():
             with open(custom_results_path_yaml) as results_file:
@@ -448,7 +454,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         else:
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
-                note=f"custom results file not found in '{test_data_path}'",
+                note=f"custom results file not found in '{invocation.test_data_path}'",
                 result=ResultOutcome.ERROR)]
 
         if not results:
@@ -476,8 +482,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
             # Fix log paths as user provides relative path to TMT_TEST_DATA
             # but Result has to point relative to the execute workdir
-            log_path_base = invocation.data_path(full=False, filename=TEST_DATA)
-            partial_result.log = [log_path_base / log for log in partial_result.log]
+            partial_result.log = [
+                invocation.relative_test_data_path / log for log in partial_result.log]
 
             # TODO: this might need more care: the test has been assigned a serial
             # number, which is now part of its data directory path. Now, the test
@@ -531,9 +537,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
         Returns whether an abort file is present (i.e. abort occurred).
         """
-        return (invocation.data_path(full=True)
-                / TEST_DATA
-                / TMT_ABORT_SCRIPT.created_file).exists()
+        return (invocation.test_data_path / TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
     def format_timestamp(timestamp: datetime.datetime) -> str:
@@ -555,7 +559,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
     def timeout_hint(self, invocation: TestInvocation) -> None:
         """ Append a duration increase hint to the test output """
-        output = invocation.data_path(TEST_OUTPUT_FILENAME, full=True)
+        output = invocation.path / TEST_OUTPUT_FILENAME
         self.write(
             output,
             f"\nMaximum test time '{invocation.test.duration}' exceeded.\n"
