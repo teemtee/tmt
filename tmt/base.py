@@ -1959,7 +1959,7 @@ class Plan(
         # The rest
         echo(tmt.utils.format('enabled', self.enabled, key_color='cyan'))
         if self.order != DEFAULT_ORDER:
-            echo(tmt.utils.format('order', str(self.order), key_color='cyan'))
+            echo(tmt.utils.format('order', self.order, key_color='cyan'))
         if self.id:
             echo(tmt.utils.format('id', self.id, key_color='cyan'))
         if self.tag:

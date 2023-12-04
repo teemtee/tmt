@@ -3512,7 +3512,7 @@ def format_value(
 
 def format(
         key: str,
-        value: Union[None, bool, str, list[Any], dict[Any, Any]] = None,
+        value: Union[None, int, float, bool, str, list[Any], dict[Any, Any]] = None,
         indent: int = 24,
         window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
