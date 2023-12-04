@@ -80,6 +80,14 @@ Run all or selected steps for each plan::
     tmt run discover
     tmt run prepare execute
 
+See any failures from a previous run::
+
+    tmt run --last report -vvv
+
+Show test output while running::
+
+    tmt run -vvv
+
 List tests, show details, check against the specification::
 
     tmt tests ls
