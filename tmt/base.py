@@ -492,7 +492,9 @@ class DependencyFmfId(
         fmf_id = DependencyFmfId()
 
         for key in ('url', 'ref', 'name', 'nick'):
-            setattr(fmf_id, key, cast(Optional[str], raw.get(key, None)))
+            raw_value = raw.get(key, None)
+
+            setattr(fmf_id, key, None if raw_value is None else str(raw_value))
 
         for key in ('path', 'destination'):
             raw_path = cast(Optional[str], raw.get(key, None))

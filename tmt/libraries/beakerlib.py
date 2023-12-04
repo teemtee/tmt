@@ -1,18 +1,23 @@
 import re
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import fmf
 
 import tmt
 import tmt.base
+import tmt.log
+import tmt.utils
 from tmt.base import DependencyFmfId, DependencySimple
 from tmt.convert import write
 from tmt.steps.discover import Discover
 from tmt.utils import Command, Path
 
 from . import Library, LibraryError
+
+if TYPE_CHECKING:
+    from tmt.base import _RawDependency
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -92,7 +97,16 @@ class BeakerLib(Library):
             self.dest: Path = Path(DEFAULT_DESTINATION)
 
         # The fmf identifier
-        elif isinstance(identifier, DependencyFmfId):
+        #
+        # ignore[reportUnnecessaryIsInstance]: pyright is correct, the test is not
+        # needed given the fact `identifier` is a union of two types, and one was
+        # ruled out above. But we would like to check possible violations in runtime,
+        # therefore an `else` with an exception.
+        # ignore[unused-ignore]: silencing mypy's complaint about silencing
+        # pyright's warning :)
+        elif isinstance(
+                identifier,
+                DependencyFmfId):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
             self.identifier = identifier
             self.parent.debug(
                 f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
@@ -116,11 +130,7 @@ class BeakerLib(Library):
 
             # Use provided repository nick name or parse it from the url/path
             repo = identifier.nick
-            if repo:
-                if not isinstance(repo, str):
-                    raise tmt.utils.SpecificationError(
-                        f"Invalid library nick '{repo}', should be a string.")
-            else:
+            if not repo:
                 if self.url:
                     repo_search = re.search(r'/([^/]+?)(/|\.git)?$', self.url)
                     if not repo_search:
@@ -138,6 +148,11 @@ class BeakerLib(Library):
                         raise tmt.utils.GeneralError(
                             f"Unable to parse repository name from '{self.path}'.")
             self.repo = Path(repo)
+
+        # Something weird
+        else:
+            raise LibraryError
+
         # Set default source directory, used for files required by a library
         self.source_directory: Path = self.path or self.fmf_node_path
 
@@ -345,7 +360,7 @@ class BeakerLib(Library):
             self._library_cache[str(self)] = self
 
         # Get the library node, check require and recommend
-        library_node = self.tree.find(self.name)
+        library_node = cast(Optional[fmf.Tree], self.tree.find(self.name))
         if not library_node:
             # Fallback to install during the prepare step if in rpm format
             if self.format == 'rpm':
@@ -356,6 +371,10 @@ class BeakerLib(Library):
             raise tmt.utils.GeneralError(
                 f"Library '{self.name}' not found in '{self.repo}'.")
         self.require = tmt.base.normalize_require(
-            f'{self.name}:require', library_node.get('require', []), self.parent._logger)
+            f'{self.name}:require',
+            cast(Optional['_RawDependency'], library_node.get('require', [])),
+            self.parent._logger)
         self.recommend = tmt.base.normalize_require(
-            f'{self.name}:recommend', library_node.get('recommend', []), self.parent._logger)
+            f'{self.name}:recommend',
+            cast(Optional['_RawDependency'], library_node.get('recommend', [])),
+            self.parent._logger)
