@@ -219,7 +219,7 @@ def read_datafile(
         regex_recommend = r'softDependencies=[ \t]*(.*)$'
         rec_separator = ';'
 
-    # Join those lines having '\\\n' for futher matching test script
+    # Join those lines having '\\\n' for further matching test script
     newline_stub = '_XXX_NEWLINE_0x734'
     datafile_test = datafile
     if '\\\n' in datafile:
@@ -386,7 +386,8 @@ def read(
         purpose: bool,
         disabled: bool,
         types: list[str],
-        general: bool
+        general: bool,
+        dry_run: bool
         ) -> ReadOutputType:
     """
     Read old metadata from various sources
@@ -590,14 +591,15 @@ def read(
     # Nitrate (extract contact, environment and relevancy)
     if nitrate and beaker_task:
         common_data, individual_data = read_nitrate(
-            beaker_task, data, disabled, general)
+            beaker_task, data, disabled, general, dry_run)
     else:
         common_data = data
         individual_data = []
 
     # Polarion (extract summary, assignee, id, component, tags, links)
     if polarion:
-        read_polarion(common_data, individual_data, polarion_case_id, link_polarion, filenames)
+        read_polarion(
+            common_data, individual_data, polarion_case_id, link_polarion, filenames, dry_run)
 
     # Remove keys which are inherited from parent
     parent_path = path.parent
@@ -655,7 +657,8 @@ def read_nitrate(
         beaker_task: str,
         common_data: NitrateDataType,
         disabled: bool,
-        general: bool
+        general: bool,
+        dry_run: bool
         ) -> ReadOutputType:
     """ Read old metadata from nitrate test cases """
 
@@ -709,7 +712,10 @@ def read_nitrate(
     # or try to remove if there isn't.
     md_path = Path.cwd() / 'test.md'
     if md_content:
-        write_markdown(md_path, md_content)
+        if dry_run:
+            echo(style(f"Test case would be stored into '{md_path}'.", fg='magenta'))
+        else:
+            write_markdown(md_path, md_content)
     else:
         try:
             md_path.unlink()
@@ -766,21 +772,22 @@ def read_polarion(
         individual_data: list[NitrateDataType],
         polarion_case_id: list[str],
         link_polarion: bool,
-        filenames: list[str]) -> None:
+        filenames: list[str],
+        dry_run: bool) -> None:
     """ Read data from Polarion """
     if not polarion_case_id:
-        read_polarion_case(common_data, None, link_polarion)
+        read_polarion_case(common_data, None, link_polarion, dry_run)
     elif len(polarion_case_id) == 1:
-        read_polarion_case(common_data, polarion_case_id[0], link_polarion)
+        read_polarion_case(common_data, polarion_case_id[0], link_polarion, dry_run)
     else:
         if not individual_data:
             for case in polarion_case_id:
                 current_data: NitrateDataType = {}
-                read_polarion_case(current_data, case, link_polarion)
+                read_polarion_case(current_data, case, link_polarion, dry_run)
                 individual_data.append(current_data)
         else:
             for case in polarion_case_id:
-                read_polarion_case(individual_data, case, link_polarion)
+                read_polarion_case(individual_data, case, link_polarion, dry_run)
         filter_common_data(common_data, individual_data)
 
     # Check test script existence and add it if not already imported by other means
@@ -800,11 +807,16 @@ def read_polarion(
             'You are trying to match one Polarion case to multiple Nitrate cases, '
             'please run export and sync these test cases', fg='red'))
 
+    # Remove filename for a single test case to keep default name
+    elif not individual_data and ':' not in polarion_case_id[0]:
+        common_data.pop('filename', None)
+
 
 def read_polarion_case(
         data: Union[NitrateDataType, list[NitrateDataType]],
         polarion_case_id: Optional[str],
-        link_polarion: bool) -> None:
+        link_polarion: bool,
+        dry_run: bool) -> None:
     """ Read data of specific case from Polarion """
     import tmt.export.polarion
     file_name: Optional[str] = None
@@ -871,8 +883,9 @@ def read_polarion_case(
         uuid = str(polarion_case.test_case_id)
     except (ValueError, TypeError):
         uuid = str(uuid4())
-        polarion_case.test_case_id = uuid
-        polarion_case.update()
+        if not dry_run:
+            polarion_case.test_case_id = uuid
+            polarion_case.update()
     current_data[tmt.identifier.ID_KEY] = uuid
     echo(style('ID: ', fg='green') + uuid)
 

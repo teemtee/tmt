@@ -781,6 +781,7 @@ def tests_import(
         plan: int,
         case: int,
         with_script: bool,
+        dry: bool,
         **kwargs: Any) -> None:
     """
     Import old test metadata into the new fmf format.
@@ -817,7 +818,7 @@ def tests_import(
         # Gather old metadata and store them as fmf
         common, individual = tmt.convert.read(
             path, makefile, restraint, nitrate, polarion, polarion_case_id, link_polarion,
-            purpose, disabled, types, general)
+            purpose, disabled, types, general, dry)
         # Add path to common metadata if there are virtual test cases
         if individual:
             # TODO: fmf is not annotated yet, fmf.Tree.root is seen by pyright as possibly
@@ -829,7 +830,10 @@ def tests_import(
         # Store common metadata
         file_name = common.get('filename', 'main.fmf')
         common_path = path / file_name
-        tmt.convert.write(common_path, common)
+        if not dry:
+            tmt.convert.write(common_path, common)
+        else:
+            echo(style(f"Metadata would be stored into '{common_path}'.", fg='magenta'))
         # Store individual data (as virtual tests)
         for testcase in individual:
             if nitrate and testcase.get('extra-nitrate'):
@@ -840,9 +844,13 @@ def tests_import(
                     raise tmt.utils.ConvertError(
                         'Filename was not found, please set one with --polarion-case-id.')
                 testcase_path = path / file_name
-            tmt.convert.write(testcase_path, testcase)
+            if not dry:
+                tmt.convert.write(testcase_path, testcase)
+            else:
+                echo(style(f"Metadata would be stored into '{testcase_path}'.", fg='magenta'))
         # Adjust runtest.sh content and permission if needed
-        tmt.convert.adjust_runtest(path / 'runtest.sh')
+        if not dry:
+            tmt.convert.adjust_runtest(path / 'runtest.sh')
 
 
 _test_export_formats = list(tmt.Test.get_export_plugin_registry().iter_plugin_ids())

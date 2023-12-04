@@ -145,7 +145,7 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
 # Force, dry and run again actions
 DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '-n', '--dry', is_flag=True,
+        '-n', '--dry', is_flag=True, default=False,
         help='Run in dry mode. No changes, please.'),
     ]
 
