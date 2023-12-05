@@ -19,7 +19,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 .PHONY: help generate-stories generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
 
 clean:
-	rm -rf $(BUILDDIR) stories spec autodocs/*.rst
+	rm -rf $(BUILDDIR) stories spec code/autodocs/*.rst
 
 ##
 ## Building documentation
@@ -74,7 +74,7 @@ generate-stories: stories  ## Generate documentation sources for stories
 generate-test-checks: spec spec/test-checks.rst  ## Generate documentation sources for test checks
 
 generate-autodocs:  ## Generate autodocs from source docstrings
-	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/autodocs tmt
+	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt
 
 ##
 ## Help!
