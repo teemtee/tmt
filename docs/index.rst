@@ -33,5 +33,5 @@ Table of Contents
     Stories <stories>
     Questions <questions>
     Contribute <contribute>
-    Code <code>
+    Code <code/index>
     Releases <releases>

@@ -1,7 +1,7 @@
 # tmt-specific
 
 /tmp/
-docs/autodocs/*.rst
+docs/code/autodocs/*.rst
 docs/_build
 docs/spec
 docs/stories
