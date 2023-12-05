@@ -1,6 +1,6 @@
 :tocdepth: 0
 
-.. _/spec/test-checks:
+.. _/plugins/test-checks:
 
 Tests Checks
 ============
@@ -19,7 +19,7 @@ tmt.
 {% for PLUGIN_ID in REGISTRY.iter_plugin_ids() %}
     {% set PLUGIN = REGISTRY.get_plugin(PLUGIN_ID) %}
 
-.. _spec/test-checks/{{ PLUGIN_ID | strip }}:
+.. _plugins/test-checks/{{ PLUGIN_ID | strip }}:
 
 {{ PLUGIN_ID }}
 {{ '^' * (PLUGIN_ID | length)}}
@@ -37,7 +37,7 @@ tmt.
         {% if metadata.metavar %}
 {{ option }}: ``{{ metadata.metavar }}``
         {% elif metadata.default is boolean %}
-{{ option }}: ``true | false``
+{{ option }}: ``true|false``
         {% else %}
 {{ option }}: ...
         {% endif %}

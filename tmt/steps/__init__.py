@@ -251,10 +251,14 @@ class StepData(
     # TODO: we can easily add lists of keys for various verbosity levels...
     _KEYS_SHOW_ORDER = ['name', 'how']
 
-    name: str
-    how: str
-    order: int = tmt.utils.DEFAULT_PLUGIN_ORDER
-    summary: Optional[str] = None
+    name: str = field(help='The name of the step phase.')
+    how: str = field()
+    order: int = field(
+        default=tmt.utils.DEFAULT_PLUGIN_ORDER,
+        help='Order in which the phase should be handled.')
+    summary: Optional[str] = field(
+        default=None,
+        help='Concise summary describing purpose of the phase.')
 
     def to_spec(self) -> _RawStepData:
         """ Convert to a form suitable for saving in a specification file """

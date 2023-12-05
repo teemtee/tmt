@@ -2,6 +2,13 @@
 
 /tmp/
 docs/code/autodocs/*.rst
+docs/plugins/discover.rst
+docs/plugins/execute.rst
+docs/plugins/finish.rst
+docs/plugins/prepare.rst
+docs/plugins/provision.rst
+docs/plugins/report.rst
+docs/plugins/test-checks.rst
 docs/_build
 docs/spec
 docs/stories

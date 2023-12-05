@@ -97,6 +97,7 @@ class Check(
     how: str
     enabled: bool = field(
         default=True,
+        is_flag=True,
         help='Whether the check is enabled or not.')
 
     @cached_property
