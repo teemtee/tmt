@@ -493,4 +493,4 @@ definitions:
         type: boolean
 
     required:
-      - name
+      - how
