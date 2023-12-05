@@ -1200,9 +1200,10 @@ class Test(
     @staticmethod
     def create(
             *,
-            name: str,
+            names: list[str],
             template: str,
             path: Path,
+            script: Optional[str] = None,
             force: bool = False,
             dry: Optional[bool] = None,
             logger: tmt.log.Logger) -> None:
@@ -1210,42 +1211,55 @@ class Test(
         if dry is None:
             dry = Test._opt('dry')
 
-        # Create directory
-        if name == '.':
-            directory_path = Path.cwd()
-        else:
-            directory_path = path / name.lstrip('/')
-            tmt.utils.create_directory(
-                path=directory_path,
-                name='test directory',
-                dry=dry,
-                logger=logger)
+        def _get_template_content(template: str, template_type: str) -> str:
+            if tmt.utils.is_url(template):
+                return tmt.templates.MANAGER.render_from_url(template)
+            templates = tmt.templates.MANAGER.templates[template_type]
+            try:
+                return tmt.templates.MANAGER.render_file(templates[template])
+            except KeyError:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
-        # Create metadata
-        try:
-            content = tmt.templates.TEST_METADATA[template]
-        except KeyError:
-            raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
+        metadata_content = _get_template_content(template, 'test')
+        if script:
+            script_content = _get_template_content(script, 'script')
+        else:
+            if tmt.utils.is_url(template):
+                raise tmt.utils.GeneralError(
+                    "You need to specify 'script' when using URL for 'template'.")
+            # If script template is not set, use the same template name for the script
+            script_content = _get_template_content(template, 'script')
+
         # Append link with appropriate relation
         links = Links(data=list(cast(list[_RawLink], Test._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
-            content += dict_to_yaml({
+            metadata_content += dict_to_yaml({
                 'link': links.to_spec()
                 })
-        metadata_path = directory_path / 'main.fmf'
-        tmt.utils.create_file(
-            path=metadata_path, content=content,
-            name='test metadata', dry=dry, force=force)
 
-        # Create script
-        script_path = directory_path / 'test.sh'
-        try:
-            content = tmt.templates.TEST[template]
-        except KeyError:
-            raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
-        tmt.utils.create_file(
-            path=script_path, content=content,
-            name='test script', dry=dry, force=force, mode=0o755)
+        for name in names:
+            # Create directory
+            if name == '.':
+                directory_path = Path.cwd()
+            else:
+                directory_path = path / name.lstrip('/')
+                tmt.utils.create_directory(
+                    path=directory_path,
+                    name='test directory',
+                    dry=dry,
+                    logger=logger)
+
+            # Create metadata
+            metadata_path = directory_path / 'main.fmf'
+            tmt.utils.create_file(
+                path=metadata_path, content=metadata_content,
+                name='test metadata', dry=dry, force=force)
+
+            # Create script
+            script_path = directory_path / 'test.sh'
+            tmt.utils.create_file(
+                path=script_path, content=script_content,
+                name='test script', dry=dry, force=force, mode=0o755)
 
     @property
     def manual_test_path(self) -> Path:
@@ -1826,7 +1840,7 @@ class Plan(
     @staticmethod
     def create(
             *,
-            name: str,
+            names: list[str],
             template: str,
             path: Path,
             force: bool = False,
@@ -1837,29 +1851,35 @@ class Plan(
         if dry is None:
             dry = Plan._opt('dry')
 
-        (directory, plan) = os.path.split(name)
-        directory_path = path / directory.lstrip('/')
-        has_fmf_ext = os.path.splitext(plan)[1] == '.fmf'
-        plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
-
-        # Create directory & plan
-        tmt.utils.create_directory(
-            path=directory_path,
-            name='plan directory',
-            dry=dry,
-            logger=logger)
-        try:
-            content = tmt.templates.PLAN[template]
-        except KeyError:
-            raise tmt.utils.GeneralError(
-                f"Invalid template '{template}'.")
+        # Get plan template
+        if tmt.utils.is_url(template):
+            plan_content = tmt.templates.MANAGER.render_from_url(template)
+        else:
+            plan_templates = tmt.templates.MANAGER.templates['plan']
+            try:
+                plan_content = tmt.templates.MANAGER.render_file(plan_templates[template])
+            except KeyError:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
         # Override template with data provided on command line
-        content = Plan.edit_template(content)
+        plan_content = Plan.edit_template(plan_content)
 
-        tmt.utils.create_file(
-            path=plan_path, content=content,
-            name='plan', dry=dry, force=force)
+        for name in names:
+            (directory, plan) = os.path.split(name)
+            directory_path = path / directory.lstrip('/')
+            has_fmf_ext = os.path.splitext(plan)[1] == '.fmf'
+            plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
+
+            # Create directory & plan
+            tmt.utils.create_directory(
+                path=directory_path,
+                name='plan directory',
+                dry=dry,
+                logger=logger)
+
+            tmt.utils.create_file(
+                path=plan_path, content=plan_content,
+                name='plan', dry=dry, force=force)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2519,7 +2539,7 @@ class Story(
     @staticmethod
     def create(
             *,
-            name: str,
+            names: list[str],
             template: str,
             path: Path,
             force: bool = False,
@@ -2529,27 +2549,33 @@ class Story(
         if dry is None:
             dry = Story._opt('dry')
 
-        # Prepare paths
-        (directory, story) = os.path.split(name)
-        directory_path = path / directory.lstrip('/')
-        has_fmf_ext = os.path.splitext(story)[1] == '.fmf'
-        story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
+        # Get story template
+        if tmt.utils.is_url(template):
+            story_content = tmt.templates.MANAGER.render_from_url(template)
+        else:
+            story_templates = tmt.templates.MANAGER.templates['story']
+            try:
+                story_content = tmt.templates.MANAGER.render_file(story_templates[template])
+            except KeyError:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
-        # Create directory & story
-        tmt.utils.create_directory(
-            path=directory_path,
-            name='story directory',
-            dry=dry,
-            logger=logger)
-        try:
-            content = tmt.templates.STORY[template]
-        except KeyError:
-            raise tmt.utils.GeneralError(
-                f"Invalid template '{template}'.")
+        for name in names:
+            # Prepare paths
+            (directory, story) = os.path.split(name)
+            directory_path = path / directory.lstrip('/')
+            has_fmf_ext = os.path.splitext(story)[1] == '.fmf'
+            story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
 
-        tmt.utils.create_file(
-            path=story_path, content=content,
-            name='story', dry=dry, force=force)
+            # Create directory & story
+            tmt.utils.create_directory(
+                path=directory_path,
+                name='story directory',
+                dry=dry,
+                logger=logger)
+
+            tmt.utils.create_file(
+                path=story_path, content=story_content,
+                name='story', dry=dry, force=force)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -3047,7 +3073,7 @@ class Tree(tmt.utils.Common):
 
         if template == 'mini':
             tmt.Plan.create(
-                name='/plans/example',
+                names=['/plans/example'],
                 template='mini',
                 path=path,
                 force=force,
@@ -3055,14 +3081,14 @@ class Tree(tmt.utils.Common):
                 logger=logger)
         elif template == 'base':
             tmt.Test.create(
-                name='/tests/example',
+                names=['/tests/example'],
                 template='beakerlib',
                 path=path,
                 force=force,
                 dry=dry,
                 logger=logger)
             tmt.Plan.create(
-                name='/plans/example',
+                names=['/plans/example'],
                 template='base',
                 path=path,
                 force=force,
@@ -3070,21 +3096,21 @@ class Tree(tmt.utils.Common):
                 logger=logger)
         elif template == 'full':
             tmt.Test.create(
-                name='/tests/example',
+                names=['/tests/example'],
                 template='shell',
                 path=path,
                 force=force,
                 dry=dry,
                 logger=logger)
             tmt.Plan.create(
-                name='/plans/example',
+                names=['/plans/example'],
                 template='full',
                 path=path,
                 force=force,
                 dry=dry,
                 logger=logger)
             tmt.Story.create(
-                name='/stories/example',
+                names=['/stories/example'],
                 template='full',
                 path=path,
                 force=force,
@@ -3152,7 +3178,7 @@ class Run(tmt.utils.Common):
 
     def _use_default_plan(self) -> None:
         """ Prepare metadata tree with only the default plan """
-        default_plan = tmt.utils.yaml_to_dict(tmt.templates.DEFAULT_PLAN)
+        default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
         # The default discover method for this case is 'shell'
         default_plan[tmt.templates.DEFAULT_PLAN_NAME]['discover']['how'] = 'shell'
         self.tree = tmt.Tree(logger=self._logger, tree=fmf.Tree(default_plan))
@@ -3160,7 +3186,7 @@ class Run(tmt.utils.Common):
 
     def _save_tree(self, tree: Optional[Tree]) -> None:
         """ Save metadata tree, handle the default plan """
-        default_plan = tmt.utils.yaml_to_dict(tmt.templates.DEFAULT_PLAN)
+        default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
         try:
             self.tree = tree if tree else tmt.Tree(logger=self._logger, path=Path('.'))
             self.debug(f"Using tree '{self.tree.root}'.")

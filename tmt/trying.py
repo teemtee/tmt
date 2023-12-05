@@ -12,9 +12,9 @@ import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
+import tmt.templates
 import tmt.utils
 from tmt import Plan
-from tmt.templates import DEFAULT_PLAN, DEFAULT_PLAN_NAME
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
@@ -104,8 +104,8 @@ class Try(tmt.utils.Common):
             self.debug("User config tree not found.")
 
         # Use the default plan template otherwise
-        plan_name = re.escape(DEFAULT_PLAN_NAME)
-        plan_dict = tmt.utils.yaml_to_dict(DEFAULT_PLAN)
+        plan_name = re.escape(tmt.templates.DEFAULT_PLAN_NAME)
+        plan_dict = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
         self.tree.tree.update(plan_dict)
         self.debug("Use the default plan template.")
         return self.tree.plans(names=[f"^{plan_name}"], run=run)

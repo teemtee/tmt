@@ -28,6 +28,7 @@ jobs:
           exclude-path: |
             tests/**
             examples/**/test.sh
+            tmt/templates/**
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - if: ${{ always() }}
