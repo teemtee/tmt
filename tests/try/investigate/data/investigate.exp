@@ -1,0 +1,16 @@
+#!/usr/bin/expect -f
+# Try the interactive plan, do investigative commands and quit
+
+spawn tmt try -p /plan
+
+expect "do something bad"
+send -- "ls\r"
+send -- "exit\r"
+
+expect "do something good"
+send -- "ls\r"
+send -- "exit\r"
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof

@@ -109,7 +109,7 @@ mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 {% if INTERACTIVE %}
     {{ enter() }};
     {{ REMOTE_COMMAND }};
-    _exit_code="$!";
+    _exit_code="$?";
     {{ exit() }};
 {% elif TTY %}
     set -o pipefail;

@@ -1,0 +1,4 @@
+summary: Verify that interactive investigation works
+description:
+    Ensure that a bash command placed in the middle of the test
+    script can be used for interactive investigation.

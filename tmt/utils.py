@@ -684,7 +684,12 @@ class Command:
                     cwd=cwd,
                     shell=shell,
                     env=actual_env,
-                    start_new_session=True,
+                    # Disabling for now: When used together with the
+                    # local provision this results into errors such as:
+                    # 'cannot set terminal process group: Inappropriate
+                    # ioctl for device' and 'no job control in this
+                    # shell'. Let's investigate later why this happens.
+                    # start_new_session=True,
                     stdin=None,
                     stdout=None,
                     stderr=None,

@@ -42,6 +42,10 @@ class Try(tmt.utils.Common):
         if self.verbosity_level == 0:
             self.verbosity_level: int = 3
 
+        # Use the interactive mode during test execution
+        tmt.steps.execute.Execute.store_cli_invocation(
+            context=None, options={"interactive": True})
+
     def check_tree(self) -> None:
         """ Make sure there is a sane metadata tree """
 

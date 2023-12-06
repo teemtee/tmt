@@ -1,0 +1,12 @@
+/bad:
+    test: |
+        echo do something bad
+        bash  # Investigate something
+        echo everything bad done
+        exit 1
+/good:
+    test: |
+        echo do something good
+        bash  # Investigate something
+        echo everything good done
+        exit 0
