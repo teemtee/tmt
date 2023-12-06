@@ -219,6 +219,10 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     description = summary
     if test.description:
         description += ' - ' + test.description
+    if test.environment:
+        description += '<br/>Environment variables:'
+        for key, value in test.environment.items():
+            description += f'<br/>{key}={value}'
     if not dry_mode:
         polarion_case.description = description
     echo(style('description: ', fg='green') + description)

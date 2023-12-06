@@ -862,7 +862,20 @@ def read_polarion_case(
 
     # Update description
     if polarion_case.description:
-        current_data['description'] = str(polarion_case.description)
+        description = str(polarion_case.description).replace('<br/>', '\n')
+        if 'Environment variables' in description:
+            description, envvars = description.split('Environment variables:', maxsplit=1)
+            if not current_data.get('environment'):
+                current_data['environment'] = {}
+            for envvar in envvars.splitlines():
+                envvar = envvar.strip()
+                if not envvar:
+                    continue  # skip empty lines
+                key, value = envvar.split('=', maxsplit=1)
+                current_data['environment'][key] = value
+            echo(style('environment variables:', fg='green'))
+            echo(format_value(current_data['environment']))
+        current_data['description'] = description
         echo(style('description: ', fg='green') + current_data['description'])
 
     # Update status
