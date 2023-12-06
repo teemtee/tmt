@@ -7,12 +7,15 @@ description: |
        # String, any of well-known short architecture names.
        arch: "aarch64"|"i386"|"ppc64"|"ppc64le"|"s390x"|"x86_64"|...
 
+    .. warning::
+
+        This field is not supported under ``hardware``. It is planned
+        to be supported in the future. Use the ``arch`` field of specific
+        provision plugins to select the architecture. If this field
+        is used in Testing Farm's hardware requirements the request
+        will abort.
+
 example:
   - |
     # Require a good old x86_64 box
     arch: x86_64
-
-link:
-  - implemented-by: /tmt/steps/provision/artemis.py
-  - implemented-by: /tmt/steps/provision/mrack.py
-  - implemented-by: /tmt/steps/provision/testcloud.py

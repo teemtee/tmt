@@ -11,8 +11,9 @@ $schema: http://json-schema.org/draft-07/schema
 
 definitions:
   # HW requirements: `arch`
-  arch:
-    type: string
+  # NOTE: not yet supported in hardware
+  # arch:
+  #   type: string
 
   # HW requirements: `boot` block
   boot:
@@ -298,8 +299,8 @@ definitions:
     type: object
 
     properties:
-      arch:
-        "$ref": "#/definitions/arch"
+      # arch:
+      #   "$ref": "#/definitions/arch"
 
       boot:
         "$ref": "#/definitions/boot"

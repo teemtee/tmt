@@ -119,7 +119,7 @@ def test_plans_schema(tree, plan):
         """
             ---
 
-            arch: x86_64
+            #arch: x86_64
             boot:
                 method: bios
             compatible:
@@ -160,7 +160,7 @@ def test_plans_schema(tree, plan):
             ---
 
             and:
-              - arch: x86_64
+              #- arch: x86_64
               - cpu:
                   model-name: foo
               - memory: 8 GiB
