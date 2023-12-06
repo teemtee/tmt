@@ -249,13 +249,15 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         for result in self.step.plan.execute.results():
             if not result.ids or not any(result.ids.values()):
-                raise tmt.utils.ReportError(
-                    f"Test Case {result.name} is not exported to Polarion, "
-                    "please run 'tmt tests export --how polarion' on it")
+                self.warn(
+                    f"Test Case '{result.name}' is not exported to Polarion, "
+                    "please run 'tmt tests export --how polarion' on it.")
+                continue
             work_item_id, test_project_id = find_polarion_case_ids(result.ids)
 
             if test_project_id is None:
-                raise tmt.utils.ReportError("Test case missing or not found in Polarion")
+                self.warn(f"Test case '{result.name}' missing or not found in Polarion.")
+                continue
 
             assert work_item_id is not None
             assert project_span_ids is not None
