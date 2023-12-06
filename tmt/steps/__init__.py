@@ -1080,7 +1080,7 @@ class Method:
             ) -> None:
         """ Store method data """
 
-        doc = (doc or class_.__doc__ or '').strip()
+        doc = textwrap.dedent(doc or class_.__doc__ or '').strip()
 
         if not doc:
             if class_:
@@ -1090,14 +1090,14 @@ class Method:
 
         self.name = name
         self.class_ = class_
-        self.doc = CODE_BLOCK_REGEXP.sub("", doc)
+        self.doc = tmt.utils.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
         self.order = order
 
         # Parse summary and description from provided doc string
-        lines: list[str] = [re.sub('^    ', '', line)
-                            for line in self.doc.split('\n')]
+        lines = self.doc.splitlines()
+
         self.summary: str = lines[0].strip()
-        self.description: str = '\n'.join(lines[1:]).lstrip()
+        self.description: str = '\n'.join(lines[1:])  # .lstrip()
 
     def describe(self) -> str:
         """ Format name and summary for a nice method overview """

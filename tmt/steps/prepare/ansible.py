@@ -25,8 +25,11 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         default_factory=list,
         option=('-p', '--playbook'),
         multiple=True,
-        metavar='PLAYBOOK',
-        help='Path or URL of an ansible playbook to run.',
+        metavar='PATH|URL',
+        help="""
+             Path or URL of an ansible playbook to run. The playbook path must
+             be relative to the metadata tree root.
+             """,
         normalize=tmt.utils.normalize_string_list
         )
 
@@ -34,7 +37,7 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         default=None,
         option='--extra-args',
         metavar='EXTRA-ARGS',
-        help='Optional arguments for ansible-playbook.'
+        help='Optional arguments for ``ansible-playbook``.'
         )
 
     # ignore[override]: method violates a liskov substitution principle,
@@ -59,9 +62,9 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('ansible')
 class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     """
-    Prepare guest using ansible
+    Prepare guest using Ansible.
 
-    Single playbook config:
+    Run a single playbook on the guest:
 
     .. code-block:: yaml
 
@@ -69,7 +72,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             how: ansible
             playbook: ansible/packages.yml
 
-    Multiple playbooks config:
+    Run multiple playbook in one phase, with extra arguments for
+    ``ansible-playbook``:
 
     .. code-block:: yaml
 
@@ -93,10 +97,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
               - https://foo.bar/two.yml
               - playbook/three.yml
 
+    The playbook path must be relative to the metadata tree root.
+
     The playbook path should be relative to the metadata tree root.
-    Use 'order' attribute to select in which order preparation should
-    happen if there are multiple configs. Default order is '50'.
-    Default order of required packages installation is '70'.
     """
 
     _data_class = PrepareAnsibleData

@@ -78,29 +78,31 @@ class ExecuteUpgrade(ExecuteInternal):
     executor), then performs a set of upgrade tasks from a remote
     repository, and finally, re-runs the tests on the upgraded guest.
 
-    The IN_PLACE_UPGRADE environment variable is set during the test
+    The ``IN_PLACE_UPGRADE`` environment variable is set during the test
     execution to differentiate between the stages of the test. It is set
-    to "old" during the first execution and "new" during the second
+    to ``old`` during the first execution and ``new`` during the second
     execution. Test names are prefixed with this value to make the names
     unique.
 
     The upgrade tasks performing the actual system upgrade are taken
     from a remote repository either based on an upgrade path
-    (e.g. fedora35to36) or filters. The upgrade path must correspond to
+    (e.g. ``fedora35to36``) or filters. The upgrade path must correspond to
     a plan name in the remote repository whose discover step selects
     tests (upgrade tasks) performing the upgrade. Currently, selection
     of upgrade tasks in the remote repository can be done using both fmf
     and shell discover method. The supported keys in discover are:
 
-      - ref
-      - filter
-      - exclude
-      - tests
-      - test
+    * ``ref``
+    * ``filter``
+    * ``exclude``
+    * ``tests``
+    * ``test``
 
     The environment variables defined in the remote upgrade path plan are
     passed to the upgrade tasks when they are executed. An example of an
     upgrade path plan (in the remote repository):
+
+    .. code-block:: yaml
 
         discover: # Selects appropriate upgrade tasks (L1 tests)
             how: fmf
@@ -124,12 +126,16 @@ class ExecuteUpgrade(ExecuteInternal):
 
     Minimal execute config example with an upgrade path:
 
+    .. code-block:: yaml
+
         execute:
             how: upgrade
             url: https://github.com/teemtee/upgrade
             upgrade-path: /paths/fedora35to36
 
     Execute config example without an upgrade path:
+
+    .. code-block:: yaml
 
         execute:
             how: upgrade

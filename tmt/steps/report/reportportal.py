@@ -47,17 +47,21 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results to a ReportPortal instance via API.
 
-    Requires a TOKEN for authentication, a URL of the ReportPortal
-    instance and the PROJECT name. In addition to command line options
-    it's possible to use environment variables to set the url and token:
+    Requires a ``token```` for authentication, a URL of the ReportPortal
+    instance and the ``project`` name. In addition to command line options
+    it's possible to use environment variables to set the URL and token:
+
+    .. code-block:: bash
 
         export TMT_REPORT_REPORTPORTAL_URL=...
         export TMT_REPORT_REPORTPORTAL_TOKEN=...
 
-    The optional LAUNCH name doesn't have to be provided if it is the
-    same as the plan name (by default). Assuming the URL and TOKEN
-    variables are provided by the environment, the plan config can look
+    The optional ``launch`` name doesn't have to be provided if it is the
+    same as the plan name (by default). Assuming the URL and token
+    are provided by the environment variables, the plan config can look
     like this:
+
+    .. code-block:: yaml
 
         report:
             how: reportportal

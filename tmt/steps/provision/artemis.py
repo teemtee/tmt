@@ -643,20 +643,26 @@ class GuestArtemis(tmt.GuestSsh):
 @tmt.steps.provides_method('artemis')
 class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]):
     """
-    Provision guest using Artemis backend
+    Provision guest using Artemis backend.
 
     Minimal configuration could look like this:
+
+    .. code-block:: yaml
 
         provision:
             how: artemis
             image: Fedora
             api-url: https://your-artemis.com/
 
-    Note that the actual value of "image" depends on what images - or
-    "composes" as Artemis calls them - supports and can deliver.
+    .. note::
 
-    Note that "api-url" can be also given via TMT_PLUGIN_PROVISION_ARTEMIS_API_URL
-    environment variable.
+        The actual value of ``image`` depends on what images - or "composes" as
+        Artemis calls them - supports and can deliver.
+
+    .. note::
+
+        The ``api-url`` can be also given via ``TMT_PLUGIN_PROVISION_ARTEMIS_API_URL``
+        environment variable.
 
     Full configuration example:
 

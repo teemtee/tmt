@@ -62,6 +62,7 @@ class Topic(enum.Enum):
     CLI_INVOCATIONS = 'cli-invocations'
     COMMAND_EVENTS = 'command-events'
     ADJUST_DECISIONS = 'adjust-decisions'
+    HELP_RENDERING = 'help-rendering'
 
 
 DEFAULT_TOPICS: set[Topic] = set()

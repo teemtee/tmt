@@ -7,6 +7,7 @@ import enum
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 import click
@@ -216,6 +217,23 @@ class CustomGroup(click.Group):
             return click.Group.get_command(self, context, matches[0])
         context.fail(f"Did you mean {fmf.utils.listed(sorted(matches), join='or')}?")
         return None
+
+
+class MyHelpFormatter(click.HelpFormatter):
+    def write_dl(
+            self,
+            rows: Sequence[tuple[str, str]],
+            col_max: int = 30,
+            col_spacing: int = 2) -> None:
+        rows = [
+            (option, tmt.utils.render_rst(help, tmt.log.Logger.get_bootstrap_logger()))
+            for option, help in rows
+            ]
+
+        super().write_dl(rows, col_max=col_max, col_spacing=col_spacing)
+
+
+click.Context.formatter_class = MyHelpFormatter
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

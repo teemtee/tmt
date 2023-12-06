@@ -98,9 +98,9 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method('junit')
 class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     """
-    Write test results in JUnit format
+    Write test results in JUnit format.
 
-    When FILE is not specified output is written to the 'junit.xml'
+    When ``file`` is not specified output is written to the ``junit.xml``
     located in the current workdir.
     """
 

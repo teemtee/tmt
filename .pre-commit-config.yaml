@@ -46,6 +46,7 @@ repos:
           - "types-urllib3"
           - "types-jinja2"
           - "types-babel"
+          - "types-docutils"
 
         pass_filenames: false
         args: [--config-file=pyproject.toml]
@@ -82,6 +83,7 @@ repos:
           - "types-urllib3"
           - "types-jinja2"
           - "types-babel"
+          - "types-docutils"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: "0.27.3"

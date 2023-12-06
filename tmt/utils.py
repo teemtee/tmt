@@ -45,6 +45,10 @@ from typing import (
     )
 
 import click
+import docutils.frontend
+import docutils.nodes
+import docutils.parsers.rst
+import docutils.utils
 import fmf
 import fmf.utils
 import jinja2
@@ -62,7 +66,7 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 import tmt.log
-from tmt.log import LoggableValue
+from tmt.log import LoggableValue, Logger
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -6568,3 +6572,199 @@ def is_url(url: str) -> bool:
     """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
+
+
+class ReSTVisitor(docutils.nodes.NodeVisitor):
+    def __init__(self, document: docutils.nodes.document, logger: Logger) -> None:
+        super().__init__(document)
+
+        self.logger = logger
+        self.debug = functools.partial(logger.debug, level=4, topic=tmt.log.Topic.HELP_RENDERING)
+        self.log_visit = functools.partial(
+            logger.debug, 'visit', level=4, topic=tmt.log.Topic.HELP_RENDERING)
+        self.log_departure = functools.partial(
+            logger.debug, 'depart', level=4, topic=tmt.log.Topic.HELP_RENDERING)
+
+        self._rendered_paragraphs: list[str] = []
+        self._rendered_paragraph: list[str] = []
+
+        self.in_literal_block: bool = False
+        self.in_note: bool = False
+        self.in_warning: bool = False
+
+        self._indent: int = 0
+        self._text_prefix: Optional[str] = None
+
+    @property
+    def rendered(self) -> str:
+        return '\n'.join(self._rendered_paragraphs)
+
+    def flush(self) -> None:
+        self._rendered_paragraphs.append(''.join(self._rendered_paragraph))
+        self._rendered_paragraph = []
+
+    def nl(self) -> None:
+        if self._rendered_paragraphs[-1] != '':
+            self._rendered_paragraphs.append('')
+
+    def _noop_visit(self, node: docutils.nodes.Node) -> None:
+        self.log_visit(str(node))
+
+    def _noop_departure(self, node: docutils.nodes.Node) -> None:
+        self.log_departure(str(node))
+
+    visit_document = _noop_visit
+
+    def depart_document(self, node: docutils.nodes.document) -> None:
+        self.log_departure(str(node))
+
+        self.flush()
+
+    def visit_paragraph(self, node: docutils.nodes.paragraph) -> None:
+        self.log_visit(str(node))
+
+        if isinstance(node.parent, docutils.nodes.list_item):
+            if self._text_prefix:
+                self._rendered_paragraph.append(self._text_prefix)
+                self._text_prefix = None
+
+            else:
+                self._rendered_paragraph.append(' ' * self._indent)
+
+        if self.in_note:
+            self._rendered_paragraph.append(click.style('NOTE: ', fg='yellow', bold=True))
+            return
+
+        if self.in_warning:
+            self._rendered_paragraph.append(click.style('WARNING: ', fg='red', bold=True))
+            return
+
+    def depart_paragraph(self, node: docutils.nodes.paragraph) -> None:
+        self.log_departure(str(node))
+
+        self.flush()
+
+    def visit_Text(self, node: docutils.nodes.Text) -> None:  # noqa: N802
+        self.log_visit(str(node))
+
+        if isinstance(node.parent, docutils.nodes.literal):
+            return
+
+        if self.in_literal_block:
+            return
+
+        if self.in_note:
+            self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
+
+            return
+
+        if self.in_warning:
+            self._rendered_paragraph.append(click.style(node.astext(), fg='red'))
+
+            return
+
+        self._rendered_paragraph.append(node.astext())
+
+    depart_Text = _noop_departure  # noqa: N815
+
+    def visit_literal(self, node: docutils.nodes.literal) -> None:
+        self.log_visit(str(node))
+
+        self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
+
+    depart_literal = _noop_departure
+
+    def visit_literal_block(self, node: docutils.nodes.literal_block) -> None:
+        self.log_visit(str(node))
+
+        self.flush()
+
+        self._rendered_paragraphs += [
+            f'    {click.style(line, fg="cyan")}' for line in node.astext().splitlines()
+            ]
+
+        self.in_literal_block = True
+
+    def depart_literal_block(self, node: docutils.nodes.literal_block) -> None:
+        self.log_departure(str(node))
+
+        self.in_literal_block = False
+
+        self.nl()
+
+    def visit_bullet_list(self, node: docutils.nodes.bullet_list) -> None:
+        self.log_visit(str(node))
+
+        self.nl()
+
+    def depart_bullet_list(self, node: docutils.nodes.bullet_list) -> None:
+        self.log_departure(str(node))
+
+        self.nl()
+
+    def visit_list_item(self, node: docutils.nodes.list_item) -> None:
+        self.log_visit(str(node))
+
+        self._text_prefix = '* '
+        self._indent += 2
+
+    def depart_list_item(self, node: docutils.nodes.list_item) -> None:
+        self.log_departure(str(node))
+
+        self._indent -= 2
+
+    visit_inline = _noop_visit
+    depart_inline = _noop_departure
+
+    visit_reference = _noop_visit
+    depart_reference = _noop_departure
+
+    def visit_note(self, node: docutils.nodes.note) -> None:
+        self.log_visit(str(node))
+
+        self.nl()
+        self.in_note = True
+
+    def depart_note(self, node: docutils.nodes.note) -> None:
+        self.log_departure(str(node))
+
+        self.in_note = False
+        self.nl()
+
+    def visit_warning(self, node: docutils.nodes.warning) -> None:
+        self.log_visit(str(node))
+
+        self.nl()
+        self.in_warning = True
+
+    def depart_warning(self, node: docutils.nodes.warning) -> None:
+        self.log_departure(str(node))
+
+        self.in_warning = False
+        self.nl()
+
+    def unknown_visit(self, node: docutils.nodes.Node) -> None:
+        raise GeneralError(f"Unhandled ReST node '{node}'.")
+
+    def unknown_departure(self, node: docutils.nodes.Node) -> None:
+        raise GeneralError(f"Unhandled ReST node '{node}'.")
+
+
+def parse_rst(text: str) -> docutils.nodes.document:
+    parser = docutils.parsers.rst.Parser()
+    components = (docutils.parsers.rst.Parser,)
+    settings = docutils.frontend.OptionParser(components=components).get_default_values()
+    document = docutils.utils.new_document('<rst-doc>', settings=settings)
+
+    parser.parse(text, document)
+
+    return document
+
+
+def render_rst(text: str, logger: Logger) -> str:
+    document = parse_rst(text)
+    visitor = ReSTVisitor(document, logger)
+
+    document.walkabout(visitor)
+
+    return visitor.rendered

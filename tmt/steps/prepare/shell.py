@@ -40,20 +40,18 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('shell')
 class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     """
-    Prepare guest using shell (bash) scripts
+    Prepare guest using shell (Bash) scripts.
 
-    Example config:
+    Run various commands and scripts on the guest:
 
-    prepare:
-        how: shell
-        script:
-        - sudo dnf install -y 'dnf-command(copr)'
-        - sudo dnf copr enable -y psss/tmt
-        - sudo dnf install -y tmt
+    .. code-block:: yaml
 
-    Use 'order' attribute to select in which order preparation should
-    happen if there are multiple configs. Default order is '50'.
-    Default order of required packages installation is '70'.
+        prepare:
+            how: shell
+            script:
+              - sudo dnf install -y 'dnf-command(copr)'
+              - sudo dnf copr enable -y psss/tmt
+              - sudo dnf install -y tmt
     """
 
     _data_class = PrepareShellData
