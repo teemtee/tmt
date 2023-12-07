@@ -39,6 +39,7 @@ from tmt.utils import (
     EnvironmentType,
     GeneralError,
     Path,
+    RunError,
     SerializableContainer,
     SpecBasedContainer,
     cached_property,
@@ -1874,8 +1875,13 @@ class Login(Action):
                 cwd = None
             # Execute all requested commands
             for script in scripts:
-                self.debug(f"Run '{script}' in interactive mode.")
-                guest.execute(script, interactive=True, cwd=cwd, env=env)
+                try:
+                    guest.execute(script, interactive=True, cwd=cwd, env=env)
+
+                except RunError as exc:
+                    # Interactive mode can return non-zero if the last command failed,
+                    # ignore errors here.
+                    self.warn(f'Command exited with non-zero exit code {exc.returncode}.')
         self.info('login', 'Interactive shell finished', color='yellow')
 
     def after_test(

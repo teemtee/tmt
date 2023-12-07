@@ -644,6 +644,7 @@ def test_run_interactive_joined(tmppath, root_logger):
         log=None,
         logger=root_logger)
     assert output.stdout is None
+    assert output.stderr is None
 
 
 def test_run_not_joined_stdout(root_logger):

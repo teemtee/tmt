@@ -677,32 +677,35 @@ class Command:
         # Set special executable only when shell was requested
         executable = DEFAULT_SHELL if shell else None
 
-        # Run the command in an interactive mode if requested
         if interactive:
-            # Interactive mode can return non-zero if the last command failed, ignore errors here.
-            with suppress(subprocess.CalledProcessError):
-                subprocess.run(
+            def _spawn_process() -> subprocess.Popen[bytes]:
+                return subprocess.Popen(
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
                     env=actual_env,
-                    check=True,
+                    start_new_session=True,
+                    stdin=None,
+                    stdout=None,
+                    stderr=None,
                     executable=executable)
 
-            return CommandOutput(None, None)
+        else:
+            def _spawn_process() -> subprocess.Popen[bytes]:
+                return subprocess.Popen(
+                    self.to_popen(),
+                    cwd=cwd,
+                    shell=shell,
+                    env=actual_env,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT if join else subprocess.PIPE,
+                    executable=executable)
 
         # Spawn the child process
         try:
-            process = subprocess.Popen(
-                self.to_popen(),
-                cwd=cwd,
-                shell=shell,
-                env=actual_env,
-                start_new_session=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT if join else subprocess.PIPE,
-                executable=executable)
+            process = _spawn_process()
 
         except FileNotFoundError as exc:
             raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
@@ -710,25 +713,26 @@ class Command:
         if on_process_start:
             on_process_start(self, process, logger)
 
-        # Create and start stream loggers
-        stdout_logger = StreamLogger(
-            'out',
-            stream=process.stdout,
-            logger=output_logger,
-            click_context=click.get_current_context(silent=True))
-
-        if join:
-            stderr_logger: StreamLogger = UnusedStreamLogger('err')
-
-        else:
-            stderr_logger = StreamLogger(
-                'err',
-                stream=process.stderr,
+        if not interactive:
+            # Create and start stream loggers
+            stdout_logger = StreamLogger(
+                'out',
+                stream=process.stdout,
                 logger=output_logger,
                 click_context=click.get_current_context(silent=True))
 
-        stdout_logger.start()
-        stderr_logger.start()
+            if join:
+                stderr_logger: StreamLogger = UnusedStreamLogger('err')
+
+            else:
+                stderr_logger = StreamLogger(
+                    'err',
+                    stream=process.stderr,
+                    logger=output_logger,
+                    click_context=click.get_current_context(silent=True))
+
+            stdout_logger.start()
+            stderr_logger.start()
 
         # A bit of logging helpers for debugging duration behavior
         start_timestamp = time.monotonic()
@@ -757,13 +761,22 @@ class Command:
 
             process.returncode = ProcessExitCodes.TIMEOUT
 
-        log_event('waiting for stream readers')
+        stdout: Optional[str]
+        stderr: Optional[str]
 
-        stdout_logger.join()
-        log_event('stdout reader done')
+        if interactive:
+            stdout, stderr = None, None
 
-        stderr_logger.join()
-        log_event('stderr reader done')
+        else:
+            log_event('waiting for stream readers')
+
+            stdout_logger.join()
+            log_event('stdout reader done')
+
+            stderr_logger.join()
+            log_event('stderr reader done')
+
+            stdout, stderr = stdout_logger.get_output(), stderr_logger.get_output()
 
         # Handle the exit code, return output
         if process.returncode != 0:
@@ -773,11 +786,11 @@ class Command:
                 f"Command '{friendly_command or str(self)}' returned {process.returncode}.",
                 self,
                 process.returncode,
-                stdout=stdout_logger.get_output(),
-                stderr=stderr_logger.get_output(),
+                stdout=stdout,
+                stderr=stderr,
                 caller=caller)
 
-        return CommandOutput(stdout_logger.get_output(), stderr_logger.get_output())
+        return CommandOutput(stdout, stderr)
 
 
 _SANITIZE_NAME_PATTERN: Pattern[str] = re.compile(r'[^\w/-]+')
