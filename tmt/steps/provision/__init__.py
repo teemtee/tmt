@@ -394,7 +394,13 @@ def normalize_hardware(
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
 
-            if components.child_name:
+            if components.name == 'cpu' and components.child_name == 'flag':
+                if 'flag' not in merged['cpu']:
+                    merged['cpu']['flag'] = []
+
+                merged['cpu']['flag'].append(f'{components.operator} {components.value}')
+
+            elif components.child_name:
                 merged[components.name][components.child_name] = \
                     f'{components.operator} {components.value}'
 

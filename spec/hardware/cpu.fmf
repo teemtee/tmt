@@ -56,6 +56,15 @@ description: |
     model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
     are also useful resources.
 
+    .. versionchanged:: 1.31
+       ``beaker`` plugin supports ``cpu.flag``
+
+    .. versionchanged:: 1.30
+       ``artemis`` plugin supports ``cpu.flag`` with Artemis 0.0.67
+
+    .. versionchanged:: 1.27
+       ``beaker`` plugin supports ``cpu.model`` and ``cpu.processors``
+
 example:
   - |
     # Request a rather stronger guest.
@@ -76,6 +85,5 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``cpu.flag`` not supported yet"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.processors`` and ``cpu.model`` only"
+    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model`` only"

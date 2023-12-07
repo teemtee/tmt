@@ -106,6 +106,10 @@ def test_parse_maximal_constraint() -> None:
             model-name: "!~ Haswell"
             family: "< 6"
             family-name: Skylake
+            flag:
+              - avx
+              - "= avx2"
+              - "!= smep"
         disk:
             - size: 40 GiB
             - size: 120 GiB
@@ -125,5 +129,9 @@ def test_parse_maximal_constraint() -> None:
     """
 
     hw = parse_hw(hw_spec)
+
+    assert hw.constraint is not None
+
+    print(tmt.utils.dict_to_yaml(hw.constraint.to_spec()))
 
     assert hw.to_spec() == tmt.utils.yaml_to_dict(hw_spec)

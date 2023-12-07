@@ -41,6 +41,7 @@ class GuestInspectType(TypedDict):
 
 
 SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
+    'cpu.flag',
     'cpu.processors',
     'cpu.model',
     'disk.size',
@@ -246,6 +247,17 @@ def constraint_to_beaker_filter(
             actual_value)
 
     if name == "cpu":
+        if child_name == 'flag':
+            beaker_operator = OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ] \
+                if constraint.operator is tmt.hardware.Operator.CONTAINS \
+                else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
+            actual_value = str(constraint.value)
+
+            return MrackHWGroup(
+                'cpu',
+                children=[MrackHWBinOp('flag', beaker_operator, actual_value)]
+                )
+
         beaker_operator, actual_value, _ = operator_to_beaker_op(
             constraint.operator,
             str(constraint.value))

@@ -973,6 +973,22 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
         if constraint_name in spec
         ]
 
+    if 'flag' in spec:
+        flag_group = And()
+
+        for flag_spec in spec['flag']:
+            constraint = TextConstraint.from_specification('cpu.flag', flag_spec)
+
+            if constraint.operator == Operator.EQ:
+                constraint.change_operator(Operator.CONTAINS)
+
+            elif constraint.operator == Operator.NEQ:
+                constraint.change_operator(Operator.NOTCONTAINS)
+
+            flag_group.constraints += [constraint]
+
+        group.constraints += [flag_group]
+
     return group
 
 
