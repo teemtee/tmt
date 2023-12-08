@@ -39,6 +39,9 @@ dependencies = [              # F39 / PyPI
     "requests>=2.25.1",       # 2.28.2 / 2.31.0
     "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
     "urllib3>=1.26.5, <3.0",  # 1.26.16 / 2.0.4
+    # Help installation by reducing the set of inspected botocore release.
+    # There is *a lot* of them, and hatch might fetch many of them.
+    "botocore>=1.25.10",      # 1.25.10 is the current one available for RHEL9
     ]
 
 [project.optional-dependencies]
@@ -119,6 +122,8 @@ dependencies = [
     "mypy",
     "pytest",
     "python-coveralls",
+    "pytest-container",
+    "pytest-xdist",
     "requre",
     "yq==3.1.1",
     "pre-commit",
@@ -141,16 +146,16 @@ lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
 type = ["mypy {args:tmt}"]
 check = ["lint", "type"]
 
-unit = "pytest -vvv -ra --showlocals tests/unit"
-smoke = "pytest -vvv -ra --showlocals tests/unit/test_cli.py"
+unit = "pytest -vvv -ra --showlocals -n 0 tests/unit"
+smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
 cov = [
-    "coverage run --source=tmt -m pytest -vvv -ra --showlocals tests",
+    "coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests",
     "coverage report",
     "coverage annotate",
     ]
 requre = [
     "cd {root}/tests/integration",
-    "pytest -vvv -ra --showlocals",
+    "pytest -vvv -ra --showlocals -n 0",
     "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
     ]
 
@@ -314,4 +319,7 @@ extend-immutable-calls = ["tmt.utils.field"]
 known-first-party = ["tmt"]
 
 [tool.pytest.ini_options]
-markers = ["web: tests which need to access the web"]
+markers = [
+    "containers: tests which need to spawn containers",
+    "web: tests which need to access the web"
+    ]

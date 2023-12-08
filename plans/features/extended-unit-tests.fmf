@@ -1,0 +1,29 @@
+summary: Unit tests working with containers
+description: |
+    A subset of unit tests that spawns containers.
+
+discover:
+    how: fmf
+    test: '/tests/unit/.*?/extended'
+
+# Disable systemd-resolved to prevent dns failures
+# See: https://github.com/teemtee/tmt/issues/2063
+adjust+:
+  - when: initiator == packit and distro == fedora
+    prepare+:
+      - name: disable systemd resolved
+        how: shell
+        script: |
+            systemctl unmask systemd-resolved
+            systemctl disable systemd-resolved
+            systemctl mask systemd-resolved
+            rm -f /etc/resolv.conf
+            systemctl restart NetworkManager
+            sleep 5
+            cat /etc/resolv.conf
+
+  - when: trigger == commit
+    provision:
+        hardware:
+          cpu:
+            processors: ">= 8"

@@ -68,6 +68,7 @@ def _discover_packages() -> list[tuple[str, Path]]:
         ('tmt.export', Path('export')),
         ('tmt.frameworks', Path('frameworks')),
         ('tmt.checks', Path('checks')),
+        ('tmt.package_managers', Path('package_managers')),
         ]
 
 
@@ -298,3 +299,6 @@ class PluginRegistry(Generic[RegisterableT]):
 
     def iter_plugins(self) -> Iterator[RegisterableT]:
         yield from self._plugins.values()
+
+    def items(self) -> Iterator[tuple[str, RegisterableT]]:
+        yield from self._plugins.items()

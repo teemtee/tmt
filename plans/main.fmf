@@ -17,7 +17,8 @@ prepare+:
       # have to run as root to do that, and who's running tmt test suite
       # as root?
       #
-      - pip3 install --user yq || pip3 install yq
+      - pip3 install --user hatch yq || pip3 install hatch yq
+      - hatch --help
       - yq --help
 
 # Use the internal executor
