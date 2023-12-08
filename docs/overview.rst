@@ -630,7 +630,8 @@ Lukáš Kotek, Daniel Diblík, Laura Barcziova, Marián Konček,
 Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
 Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
 Zhaojuan Guo, Natália Bubáková, Michal Josef Špaček, Jiří Popelka,
-Matej Focko, Yulia Kopkova, Tomáš Bajer and Carlos Rodriguez-Fernandez.
+Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez
+and James Molet.
 
 
 Copyright

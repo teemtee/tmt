@@ -49,6 +49,10 @@ A new :ref:`/spec/tests/tty` boolean attribute was added to the
 want to keep tty enabled. The default value of the attribute is
 ``false``, in sync with the previous default behaviour.
 
+See the `full changelog`__ for more details.
+
+__ https://github.com/teemtee/tmt/releases/tag/1.30.0
+
 
 tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

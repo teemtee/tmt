@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.29.0
+Version:        1.30.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -147,6 +147,74 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Fri Dec 08 2023 Petr Šplíchal <psplicha@redhat.com> - 1.30.0
+- Make `arch` field unsupported in the spec
+- Introduce `tty` test attribute to control terminal environment
+- Ensure the imported plan's `enabled` key is respected
+- Add support for user defined templates (#2519)
+- Update the common schema for the `check` key
+- Create a `checks` directory to store avc/dmesg checks
+- Correctly update environment from importing plan
+- Implement `tmt try` for interactive sessions
+- Use a shorter time for `podman stop` (#2480)
+- Add the `redis` server as a multihost sync example
+- Improve documentation of test checks
+- Adjust the format of Polarion test run title
+- Run all available tests only upon a user request
+- Rename `name` to `how` in test check specification (#2527)
+- Link `inheritance` and `elasticity` from the guide
+- Add the `fips` field for the `polarion` report
+- Cover `tmt.cli` with `pyright` (#2520)
+- Custom soft/hard reboot commands for the connect provision plugin
+- Add `--feeling-safe` for allowing possibly dangerous actions
+- Update docs for the `polarion` report plugin
+- Move test-requested reboot handling into test invocation class
+- Add `-i` to select an image in beaker and artemis
+- Document how to use `yaml` anchors and aliases
+- Simplify log decolorizers to support pickleable trees
+- Add description field to polarion report plugin
+- Make check plugin class generic over check class (#2502)
+- Increase verbosity of Artemis provisioning errors
+- Add more distros to the `mrack` config
+- Move the `contact` key to the `Core` class
+- Bump tmt in lint pre-commit check to 1.29.0
+- Add Python 3.12 to the test matrix
+- Move `mrack` configs into `tmt+provision-beaker`
+- Allow running upgrade from the current repository
+- Fix remote nested library fetch and add test
+- Cover tmt.options with pyright
+- Cover tmt.checks, tmt.frameworks and tmt.log with pyright
+- Cover tmt.result with pyright checks
+- Store fmf `context` in results for each test
+- Add networks to the podman provision plugin (#2419)
+- Add a dedicated exit code when all tests reported `skip` result
+- Move invocation-related fields out of `Test` class
+- Remove expected fail from `/tests/pip/install/full`
+- Convert test execution internals to use "invocation" bundle (#2469)
+- Introduce a separate page `Code` for code docs
+- Add code documentation generated from docstrings
+- Fix possible unbound variable after import-under-try
+- Add `pyright` as a `pre-commit` check
+- Add a helper for nonconflicting, multihost-safe filenames
+- Add the `whiteboard` option for `beaker` provision
+- Support timestamped logging even on the terminal
+- Enable pyupgrade `UP` ruff rule
+- Fix `UP035` deprecated-import violations
+- Fix `UP034` extraneous-parentheses violation
+- Fix `UP033` lru-cache-with-maxsize-none violations
+- Fix `UP032` f-string violations
+- Fix `UP013` convert-typed-dict-functional-to-class
+- Fix `UP009` utf8-encoding-declaration violations
+- Fix `UP006` non-pep585-annotation violations
+- Try several times to build the `become` container (#2467)
+- Add .py file extension to docs scripts (#2476)
+- Add a link to the Testing Farm documentation
+- Use `renku` as the default theme for building docs
+- Properly normalize the test `path` key
+- Add an `adjust` example for enabling custom repo
+- Drop special normalization methods
+- Disable `dist-git-init` in the `distgit` test (#2463)
+
 * Mon Nov 06 2023 Lukáš Zachar <lzachar@redhat.com> - 1.29.0
 - Add page `Releases` to highlight important changes
 - Update and polish hardware requirement docs

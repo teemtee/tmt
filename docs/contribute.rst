@@ -369,7 +369,8 @@ Follow the steps below to create a new major or minor release:
 
 * Run the full test coverage using ``tmt -c how=full run``
 * Use ``git log --oneline --no-decorate x.y-1..`` to generate the changelog
-* Update ``README`` with new contributors since the last release
+* Update ``overview.rst`` with new contributors since the last release
+* Review the release notes in ``releases.rst``, update as needed
 * Add a ``Release tmt-x.y.0`` commit with the specfile update
 * Create a pull request with the commit, ensure tests pass, merge it
 
