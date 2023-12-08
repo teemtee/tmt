@@ -32,6 +32,12 @@ rlJournalStart
         rlAssertGrep "total: 4 tests passed" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test argument force-rerun-test reruns passed test"
+        rlRun -s "tmt run --all --rerun --force-rerun-test good --id $run plans --name fmf" 0 "Force rerun passed test"
+        rlAssertGrep "1 test selected" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -rf $run $data" 0 "Remove run and data directories"

@@ -1,4 +1,5 @@
 import dataclasses
+import re
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -200,9 +201,16 @@ class Discover(tmt.steps.Step):
         results = [
             Result.from_serialized(data) for data in
             tmt.utils.yaml_to_list(self.read(old_results))]
+        force_rerun_tests: list[str] = self.opt('force_rerun_test', [])
+
         results_failed: list[Result] = []
         results_passed: list[Result] = []
         for result in results:
+            if (
+                    force_rerun_tests and
+                    any(re.search(test, result.name) for test in force_rerun_tests)):
+                results_failed.append(result)
+                continue
             if (
                     result.result is not tmt.result.ResultOutcome.PASS and
                     result.result is not tmt.result.ResultOutcome.INFO):

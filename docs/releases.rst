@@ -36,6 +36,9 @@ New option ``--again`` can be used to execute an already completed
 step once again without completely removing the step workdir which
 is done when ``--force`` is used.
 
+With this release you can do some :ref:`rerun_tests`. To allow
+you to execute only failed tests and not the whole plan.
+You can also specify tests to re-execute always.
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

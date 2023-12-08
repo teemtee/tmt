@@ -880,6 +880,8 @@ test result.
 
 __ https://github.com/teemtee/tmt/tree/main/tests/multihost/complete/data
 
+.. _rerun_tests:
+
 Rerunning failed tests of previously executed runs
 ------------------------------------------------------------------
 
@@ -899,6 +901,12 @@ to keep all the data for full report.
 
     $ tmt run --last --rerun
     # Failed tests are rerun
+
+Additionally you can add argument `--force-rerun-test` multiple times
+to select out test cases that should be executed regardless of their
+previous result.
+
+.. versionadded:: 1.31
 
 
 Synchronization Libraries

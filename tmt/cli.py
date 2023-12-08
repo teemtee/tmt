@@ -355,6 +355,12 @@ def main(
     '--rerun', is_flag=True,
     help='Rerun failed tests and update existing results.')
 @option(
+    '--force-rerun-test', multiple=True, metavar='[REGEXP|.]',
+    help="""
+         Regular expression to match test names that are supposed to be rerun
+         regardless of their previous result. Can be provided multiple times.
+         """)
+@option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
 @option(
