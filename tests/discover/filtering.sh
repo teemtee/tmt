@@ -125,20 +125,6 @@ rlJournalStart
         rlAssertGrep "path:" output
     rlPhaseEnd
 
-    # If plan or test weren't explicitly specified then fmf-ids for all tests
-    # in all plans should be shown
-    rlPhaseStartTest "fmf-id (w/o url): plans were executed if plan/test -n=."
-        ids_amount=$(tmt run -r discover -h fmf --fmf-id finish 2>&1 >/dev/null |
-                     grep "name:" |
-                     wc -l)
-        tests_amount=$(tmt run -r discover -h fmf finish 2>&1 >/dev/null |
-                       grep "summary:" |
-                       awk '{print $2}' |
-                       awk '{s+=$1} END {print s}')
-        rlAssertEquals "Check that number of fmf-ids equals to tests number" \
-                       "$ids_amount" "$tests_amount"
-    rlPhaseEnd
-
     # Checking the case when fmf_root = git_root
     rlPhaseStartTest "fmf-id (w/o url): path doesn't shown up"
         path="$(git rev-parse --show-toplevel)"

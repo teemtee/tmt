@@ -9,7 +9,7 @@ require+:
   - coreutils
 
 enabled: false
-adjust:
-    enabled: true
+adjust+:
+  - enabled: true
     when: how == full or trigger == commit
     because: it needs to be executed with root permissions

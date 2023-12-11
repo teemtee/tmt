@@ -6,11 +6,7 @@ description:
 test: ./test.sh
 framework: beakerlib
 tag-: [container, virtual]
+tag+: [provision-virtual]
 
 environment:
     PROVISION_METHODS: local container
-adjust:
-  - when: how == full
-    environment:
-        PROVISION_METHODS: container virtual local
-    tag+: [additional_coverage]

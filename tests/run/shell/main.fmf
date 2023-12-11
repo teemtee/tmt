@@ -8,7 +8,7 @@ tag+:
 - as_root
 - provision-virtual-only
 enabled: false
-adjust:
+adjust+:
   - enabled: true
     when: how == full
     tag+: [additional_coverage]

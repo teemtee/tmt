@@ -1,9 +1,47 @@
 summary: Virtual machine via testcloud
+
+description: |
+    Verify functionality of the virtual provision plugin. Run
+    tests which exercise various features of the testcloud plugin
+    even if not directly related to the provision implementation.
+
+    The plan takes care of fetching the image to speed up the
+    execution. Each test should set the `provision-virtual` tag to
+    get picked by the plan, consume the `PROVISION_METHODS`
+    variable and use `provision --how virtual` on their own.
+
 discover:
     how: fmf
-    filter: 'tag:virtual & tier:1 | tag:provision-virtual-only'
-provision:
-    how: virtual
-#    image: fedora
-#    memory: 2048
-#    disk: 10
+    filter: 'tag:provision-virtual'
+
+prepare+:
+  - name: required-packages
+    how: install
+    package: guestfs-tools
+
+  - name: start-libvirtd
+    script: |
+        sudo systemctl start libvirtd
+        sudo systemctl status libvirtd
+
+  - name: prepare-image
+    summary: Fetch the image, refresh dnf cache, install beakerlib
+    script: |
+        tmt run --remove plan --default provision --how virtual finish
+        for image in /var/tmp/tmt/testcloud/images/*qcow2; do
+            virt-customize --add $image --run-command 'dnf --refresh install -y beakerlib'
+        done
+
+environment:
+    PROVISION_METHODS: virtual
+
+adjust+:
+  - enabled: true
+    when: how == provision
+
+  - provision:
+        hardware:
+            virtualization:
+                is-supported: true
+            memory: ">= 4 GB"
+    when: trigger == commit

@@ -1,4 +1,5 @@
 summary: Check that the reboot command works
+tag+: [provision-virtual]
 
 environment:
     PROVISION_METHODS: container
@@ -6,7 +7,7 @@ environment:
 adjust:
   - when: how == full
     environment:
-        PROVISION_METHODS: container connect virtual
+        PROVISION_METHODS: container connect
     tag+: [additional_coverage]
 
   - when: how == beaker

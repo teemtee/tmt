@@ -122,6 +122,11 @@ class Finish(tmt.steps.Step):
             self.actions()
             return
 
+        # Nothing to do if no guests were provisioned
+        if not self.plan.provision.guests():
+            self.warn("Nothing to finish, no guests provisioned.", shift=1)
+            return
+
         # Prepare guests
         guest_copies: list[Guest] = []
 

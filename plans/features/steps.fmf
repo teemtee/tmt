@@ -4,7 +4,7 @@ description:
     individual steps.
 discover:
     how: fmf
-    filter: "tier: 3"
+    filter: "tier: 3 & tag:-provision-only"
 
 /discover:
     discover+:
