@@ -29,23 +29,29 @@ rlJournalStart
             if [ "$method" = "container" ]; then
                 assert_check_result "dmesg as a before-test should fail with containers" "error" "before-test"
 
-                rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_before"
+                if rlIsFedora ">=40"; then
+                    rlAssertGrep "dmesg: read kernel buffer failed: Operation not permitted" "$dump_before"
+                else
+                    rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_before"
+                fi
             else
                 assert_check_result "dmesg as a before-test should pass" "pass" "before-test"
-
-                rlLogInfo "$(cat $dump_before)"
             fi
+            rlLogInfo "$(cat $dump_before)"
 
             rlAssertExists "$dump_after"
             if [ "$method" = "container" ]; then
                 assert_check_result "dmesg as a before-test should fail with containers" "error" "after-test"
 
-                rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_after"
+                if rlIsFedora ">=40"; then
+                    rlAssertGrep "dmesg: read kernel buffer failed: Operation not permitted" "$dump_after"
+                else
+                    rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_after"
+                fi
             else
                 assert_check_result "dmesg as a before-test should pass" "pass" "after-test"
-
-                rlLogInfo "$(cat $dump_after)"
             fi
+            rlLogInfo "$(cat $dump_after)"
         rlPhaseEnd
     done
 
