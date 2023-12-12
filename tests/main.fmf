@@ -4,3 +4,7 @@ contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 tag: [container, virtual]
 require: [tmt]
+
+adjust:
+  - check: [avc]
+    when: initiator == packit
