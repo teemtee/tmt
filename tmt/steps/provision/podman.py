@@ -30,17 +30,12 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         option=('-i', '--image'),
         metavar='IMAGE',
         help='Select image to use. Short name or complete url.')
-    user: Optional[str] = field(
+    # Override parent class with our defaults
+    user: str = field(
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all container operations.')
-    become: bool = field(
-        default=False,
-        is_flag=True,
-        option=('-b', '--become'),
-        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
-        )
+        help='Username to use for all guest operations.')
     force_pull: bool = field(
         default=False,
         option=('-p', '--pull', '--force-pull'),

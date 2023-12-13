@@ -228,7 +228,7 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
 @dataclasses.dataclass
 class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
-    user: Optional[str] = field(
+    user: str = field(
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',

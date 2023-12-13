@@ -431,12 +431,25 @@ class GuestData(SerializableContainer):
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
     _OPTIONLESS_FIELDS: tuple[str, ...] = ('guest', 'facts')
 
-    # guest role in the multihost scenario
-    role: Optional[str] = None
     # hostname or ip address
     guest: Optional[str] = None
-    # whether to run shell scripts in tests, prepare, and finish with sudo
-    become: bool = False
+
+    role: Optional[str] = field(
+        default=None,
+        option='--role',
+        metavar='ROLE',
+        help="""
+             Marks related guests so that common actions can be applied to all
+             such guests at once.
+             """
+        )
+
+    become: bool = field(
+        default=False,
+        is_flag=True,
+        option=('-b', '--become'),
+        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
+        )
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
@@ -1112,12 +1125,6 @@ class GuestSshData(GuestData):
         option=('-u', '--user'),
         metavar='USERNAME',
         help='Username to use for all guest operations.')
-    become: bool = field(
-        default=False,
-        is_flag=True,
-        option=('-b', '--become'),
-        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
-        )
     key: list[str] = field(
         default_factory=list,
         option=('-k', '--key'),

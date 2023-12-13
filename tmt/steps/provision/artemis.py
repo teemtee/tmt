@@ -123,8 +123,11 @@ def _normalize_log_type(
 
 @dataclasses.dataclass
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
-    # Override parent class with our defaults
-    user: str = DEFAULT_USER
+    user: str = field(
+        default=DEFAULT_USER,
+        option=('-u', '--user'),
+        metavar='USERNAME',
+        help='Username to use for all guest operations.')
 
     # API
     api_url: str = field(

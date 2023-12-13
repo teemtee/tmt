@@ -18,18 +18,19 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         if key != 'guest'
         )
 
+    # Override parent class with our defaults
     guest: Optional[str] = field(
         default=None,
         option=('-g', '--guest'),
         metavar='GUEST',
         help='Select remote host to connect to (hostname or ip).'
         )
-    user: Optional[str] = field(
+
+    user: str = field(
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.'
-        )
+        help='Username to use for all guest operations.')
 
     soft_reboot: Optional[ShellScript] = field(
         default=None,

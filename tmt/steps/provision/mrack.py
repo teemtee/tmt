@@ -368,13 +368,11 @@ def async_run(func: Any) -> Any:
 @dataclasses.dataclass
 class BeakerGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
-    # Override parent class with our defaults
-    user: Optional[str] = field(
+    user: str = field(
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.'
-        )
+        help='Username to use for all guest operations.')
 
     # Guest request properties
     whiteboard: Optional[str] = field(
