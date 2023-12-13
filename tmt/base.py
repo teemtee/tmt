@@ -1284,6 +1284,14 @@ class Test(
 
         return framework
 
+    def enabled_on_guest(self, guest: tmt.steps.provision.Guest) -> bool:
+        """ Check if the test is enabled on the specific guest """
+
+        if not self.where:
+            return True
+
+        return any(destination in (guest.name, guest.role) for destination in self.where)
+
     def show(self) -> None:
         """ Show test details """
         self.ls()

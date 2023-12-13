@@ -1,0 +1,42 @@
+/plan:
+    discover:
+      - how: shell
+        where: guest-1
+
+        tests:
+          - name: "Dumy test 1"
+            test: bash -c "rpm -q python3-pip && rpm -q python3-click && ! rpm -q python3-pluggy"
+            require:
+              - python3-pip
+              - python3-click
+
+      - how: shell
+        where: guest-2
+
+        tests:
+          - name: "Dumy test 2"
+            test: bash -c "rpm -q python3-pip && rpm -q python3-pluggy && ! rpm -q python3-click"
+            require:
+              - python3-pip
+              - python3-pluggy
+
+      - how: shell
+        where: guest-3
+
+        tests:
+          - name: "Dumy test 3"
+            test: bash -c "rpm -q python3-pip && ! rpm -q python3-click && ! rpm -q python3-pluggy"
+            require:
+              - python3-pip
+
+    provision:
+      - name: guest-1
+      - name: guest-2
+      - name: guest-3
+
+    prepare:
+      - how: shell
+        script: dnf remove -y python3-click python3-pluggy python3-pip || /bin/true
+
+    execute:
+        how: tmt

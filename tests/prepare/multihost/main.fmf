@@ -1,0 +1,16 @@
+summary: Check that requirement installation is guest-aware in multihost scenario
+
+environment:
+    PROVISION_METHODS: container
+
+adjust:
+  - when: trigger == commit
+    environment:
+        PROVISION_METHODS: container
+    because: the pipeline does not support nested virtualization
+
+  - when: how == full
+    environment:
+        PROVISION_METHODS: container virtual
+    because: local/virtual provision needs root/full virtualization
+    tag+: [additional_coverage]

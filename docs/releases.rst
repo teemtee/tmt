@@ -21,6 +21,17 @@ of now, only :ref:`/spec/plans/provision/artemis`,
 plugins would gracefully fall back to the pre-1.31 behavior,
 provisioning in sequence.
 
+The :ref:`/spec/plans/prepare` step now installs test requirements
+only on guests on which the said tests would run. Tests can be
+directed to subset of guests with a
+:ref:`/spec/plans/discover/where` key, but, until 1.31, tmt would
+install all requirements of a given test on all guests, even on
+those on which the said test would never run.  This approach
+consumed resources needlessly and might be a issue for tests with
+conflicting requirements. Since 1.31, handling of
+:ref:`/spec/tests/require` and :ref:`/spec/tests/recommend`
+affects only guests the test would be scheduled on.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
