@@ -22,7 +22,7 @@ rlJournalStart
     rlPhaseStartTest "Existing directory and files"
         rlRun -s "tmt test create test_shell --template shell" \
             2 "test already exists"
-        rlAssertGrep "File '$tmp/test_shell/main.fmf' already exists." \
+        rlAssertGrep "Test metadata '$tmp/test_shell/main.fmf' already exists." \
             "${rlRun_LOG}"
         rlAssertGrep "Test directory '$tmp/test_shell' already exists." \
             "${rlRun_LOG}"

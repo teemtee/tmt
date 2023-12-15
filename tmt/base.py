@@ -1255,16 +1255,23 @@ class Test(
                     logger=logger)
 
             # Create metadata
-            metadata_path = directory_path / 'main.fmf'
             tmt.utils.create_file(
-                path=metadata_path, content=metadata_content,
-                name='test metadata', dry=dry, force=force)
+                path=directory_path / 'main.fmf',
+                name='test metadata',
+                content=metadata_content,
+                dry=dry,
+                force=force,
+                logger=logger)
 
             # Create script
-            script_path = directory_path / 'test.sh'
             tmt.utils.create_file(
-                path=script_path, content=script_content,
-                name='test script', dry=dry, force=force, mode=0o755)
+                path=directory_path / 'test.sh',
+                name='test script',
+                content=script_content,
+                mode=0o755,
+                dry=dry,
+                force=force,
+                logger=logger)
 
     @property
     def manual_test_path(self) -> Path:
@@ -1889,8 +1896,12 @@ class Plan(
                 logger=logger)
 
             tmt.utils.create_file(
-                path=plan_path, content=plan_content,
-                name='plan', dry=dry, force=force)
+                path=plan_path,
+                name='plan',
+                content=plan_content,
+                dry=dry,
+                force=force,
+                logger=logger)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2597,8 +2608,12 @@ class Story(
                 logger=logger)
 
             tmt.utils.create_file(
-                path=story_path, content=story_content,
-                name='story', dry=dry, force=force)
+                path=story_path,
+                name='story',
+                content=story_content,
+                dry=dry,
+                force=force,
+                logger=logger)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:

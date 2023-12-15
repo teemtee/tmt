@@ -3605,7 +3605,7 @@ def create_directory(
     :param name: a "label" of the path, used for logging.
     :param dry: if set, directory would not be created. Still, the
         existence check will happen.
-    :param quiet: if set, an outcome of the operation would be logged
+    :param quiet: if set, an outcome of the operation would not be logged
         to console.
     :param logger: logger to use for logging.
     :raises FileError: when function tried to create the directory,
@@ -3644,32 +3644,80 @@ def create_directory(
 
 
 def create_file(
+        *,
         path: Path,
         content: str,
         name: str,
         dry: bool = False,
         force: bool = False,
         mode: int = 0o664,
-        quiet: bool = False) -> None:
-    """ Create a new file, handle errors """
-    say = log.debug if quiet else echo
-    action = 'would be created' if dry else 'created'
-    if path.exists():
-        if force:
-            action = 'would be overwritten' if dry else 'overwritten'
-        else:
-            raise FileError(f"File '{path}' already exists.")
+        quiet: bool = False,
+        logger: tmt.log.Logger) -> None:
+    """
+    Create a new file.
 
-    if dry:
-        say(f"{name.capitalize()} '{path}' {action}.")
+    Before creating the file, function checks whether it exists
+    already - the existing file is **not** removed and re-created,
+    unless ``force`` is set.
+
+    The outcome of the operation will be logged in a debug log, but
+    may also be sent to console with ``quiet=False``.
+
+    :param path: a path to be created.
+    :param content: content to save into the file
+    :param name: a "label" of the path, used for logging.
+    :param dry: if set, the file would not be created or overwritten. Still,
+        the existence check will happen.
+    :param force: if set, the file would be overwritten if it already exists.
+    :param mode: permissions to set for the file.
+    :param quiet: if set, an outcome of the operation would not be logged
+        to console.
+    :param logger: logger to use for logging.
+    :raises FileError: when function tried to create the file,
+        but failed.
+    """
+
+    # Streamline the logging a bit: wrap the creating with a function returning
+    # a message & optional exception. Later we will send the message to debug
+    # log, and maybe also to console.
+    def _create_file() -> tuple[str, Optional[Exception]]:
+        # When overwriting an existing path, we need to provide different message.
+        # Let's save the action taken for logging.
+        action: str = 'created'
+
+        if path.exists():
+            if not force:
+                message = f"{name.capitalize()} '{path}' already exists."
+
+                # Return a custom exception - it was not raised by any FS-related code,
+                # but we need to signal the operation failed to our caller.
+                return message, FileExistsError(message)
+
+            action = 'overwritten'
+
+        if dry:
+            return f"{name.capitalize()} '{path}' would be {action}.", None
+
+        try:
+            path.write_text(content)
+            path.chmod(mode)
+
+        except OSError as error:
+            return f"Failed to create {name} '{path}'.", error
+
+        return f"{name.capitalize()} '{path}' {action}.", None
+
+    message, exc = _create_file()
+
+    if exc:
+        raise FileError(message) from exc
+
+    logger.debug(message)
+
+    if quiet:
         return
 
-    try:
-        path.write_text(content)
-        say(f"{name.capitalize()} '{path}' {action}.")
-        path.chmod(mode)
-    except OSError as error:
-        raise FileError(f"Failed to create {name} '{path}' ({error})")
+    echo(message)
 
 
 # Avoid multiple subprocess calls for the same url
