@@ -1,4 +1,5 @@
 import re
+import shutil
 from tempfile import TemporaryDirectory
 from typing import Optional, Union, cast
 
@@ -293,15 +294,15 @@ class BeakerLib(Library):
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
                         raise LibraryError
                     self.parent.debug(f"Library {self} is copied into {directory}")
-                    tmt.utils.copytree(library_path, local_library_path, dirs_exist_ok=True)
+                    shutil.copytree(library_path, local_library_path, dirs_exist_ok=True)
 
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
 
                     # Copy fmf metadata
-                    tmt.utils.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
+                    shutil.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
                     if self.path:
-                        tmt.utils.copytree(
+                        shutil.copytree(
                             clone_dir / self.path.unrooted() / '.fmf',
                             directory / self.path.unrooted() / '.fmf',
                             dirs_exist_ok=True)
@@ -317,12 +318,12 @@ class BeakerLib(Library):
                     self.parent.debug(
                         f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3)
                     # Copy only the required library
-                    tmt.utils.copytree(
+                    shutil.copytree(
                         library_path, local_library_path, symlinks=True, dirs_exist_ok=True)
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
-                    tmt.utils.copytree(self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
+                    shutil.copytree(self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
             except (tmt.utils.RunError, tmt.utils.GitUrlError) as error:
                 assert self.url is not None
                 # Fallback to install during the prepare step if in rpm format

@@ -494,7 +494,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
             # Now copy dist_git_extract into tests
             if not self.is_dry_run:
-                tmt.utils.copytree(
+                shutil.copytree(
                     dist_git_extract,
                     self.testdir,
                     symlinks=True,
@@ -584,8 +584,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
             for path in tmt.utils.filter_paths(self.testdir, ['.fmf']):
-                tmt.utils.copytree(
-                    path, clonedir / path.relative_to(self.testdir), dirs_exist_ok=True)
+                shutil.copytree(
+                    path,
+                    clonedir / path.relative_to(self.testdir),
+                    dirs_exist_ok=True)
 
             # Save upgrade plan
             upgrade_path = self.get('upgrade_path')
@@ -604,10 +606,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 # Save only current test data
                 assert test.path is not None  # narrow type
                 relative_test_path = test.path.unrooted()
-                tmt.utils.copytree(
+                shutil.copytree(
                     self.testdir / relative_test_path,
                     clonedir / relative_test_path,
                     dirs_exist_ok=True)
+
                 # Copy all parent main.fmf files
                 parent_dir = relative_test_path
                 while parent_dir.resolve() != Path.cwd().resolve():

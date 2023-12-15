@@ -1935,20 +1935,6 @@ def ascii(text: Any) -> bytes:
     return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
 
 
-def copytree(
-        src: Path,
-        dst: Path,
-        symlinks: bool = False,
-        dirs_exist_ok: bool = False,
-        ) -> Path:
-    """ Similar to shutil.copytree but with dirs_exist_ok for Python < 3.8 """
-    # FIXME fix all usages, we don't need this function any more
-    return cast(
-        Path,
-        shutil.copytree(src=src, dst=dst, symlinks=symlinks,
-                        dirs_exist_ok=dirs_exist_ok))
-
-
 def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     """
     Get full metadata for a node in any fmf tree

@@ -74,7 +74,7 @@ class File(Library):
             target_path = Path(self.target_location) / local_path
             if path.is_dir():
                 try:
-                    tmt.utils.copytree(path, target_path, dirs_exist_ok=True)
+                    shutil.copytree(path, target_path, dirs_exist_ok=True)
                 except shutil.Error as exc:  # ignore individual files exist error
                     self.parent.debug(str(exc))
             else:
