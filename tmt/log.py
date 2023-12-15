@@ -24,6 +24,8 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+from __future__ import annotations
+
 import dataclasses
 import enum
 import itertools
@@ -31,21 +33,20 @@ import logging
 import logging.handlers
 import os
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Optional,
-    Protocol,
-    Union,
-    cast,
-    )
+from typing import TYPE_CHECKING, Optional, cast
 
 import click
 
 if TYPE_CHECKING:
+    from typing import Any, Callable, Protocol, TypeAlias
+
     import tmt.cli
     import tmt.utils
+
+    LoggableValue: TypeAlias = (str | int | bool | float |
+                                'tmt.utils.Path' | 'tmt.utils.Command' | 'tmt.utils.ShellScript')
+else:
+    Protocol = object
 
 # Log in workdir
 LOG_FILENAME = 'log.txt'
@@ -66,18 +67,7 @@ class Topic(enum.Enum):
 
 DEFAULT_TOPICS: set[Topic] = set()
 
-
 LABEL_FORMAT = '[{label}]'
-
-
-LoggableValue = Union[
-    str,
-    int,
-    bool,
-    float,
-    'tmt.utils.Path',
-    'tmt.utils.Command',
-    'tmt.utils.ShellScript']
 
 
 # TODO: this is an ugly hack, removing colors after they have been added...
@@ -189,10 +179,10 @@ def render_labels(labels: list[str]) -> str:
 
 def indent(
         key: str,
-        value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        value: LoggableValue | None = None,
+        color: str | None = None,
         level: int = 0,
-        labels: Optional[list[str]] = None,
+        labels: list[str] | None = None,
         labels_padding: int = 0) -> str:
     """
     Indent a key/value message.
@@ -251,29 +241,29 @@ class LogRecordDetails:
     """ tmt's log message components attached to log records """
 
     key: str
-    value: Optional[LoggableValue] = None
+    value: LoggableValue | None = None
 
-    color: Optional[str] = None
+    color: str | None = None
     shift: int = 0
 
     logger_labels: list[str] = dataclasses.field(default_factory=list)
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
-    message_verbosity_level: Optional[int] = None
+    message_verbosity_level: int | None = None
 
     logger_debug_level: int = 0
-    message_debug_level: Optional[int] = None
+    message_debug_level: int | None = None
 
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
     logger_topics: set[Topic] = dataclasses.field(default_factory=set)
-    message_topic: Optional[Topic] = None
+    message_topic: Topic | None = None
 
 
 class LogfileHandler(logging.FileHandler):
-    def __init__(self, filepath: 'tmt.utils.Path') -> None:
+    def __init__(self, filepath: tmt.utils.Path) -> None:
         super().__init__(filepath, mode='a')
 
 
@@ -347,7 +337,7 @@ class VerbosityLevelFilter(logging.Filter):
         if record.levelno != logging.INFO:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return True
@@ -363,7 +353,7 @@ class DebugLevelFilter(logging.Filter):
         if record.levelno != logging.DEBUG:
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return True
@@ -379,7 +369,7 @@ class QuietnessFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return False
@@ -398,7 +388,7 @@ class TopicFilter(logging.Filter):
         if record.levelno not in (logging.DEBUG, logging.INFO):
             return True
 
-        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        details: LogRecordDetails | None = getattr(record, 'details', None)
 
         if details is None:
             return False
@@ -416,11 +406,11 @@ class LoggingFunction(Protocol):
     def __call__(
             self,
             key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
+            value: str | None = None,
+            color: str | None = None,
             shift: int = 0,
             level: int = 1,
-            topic: Optional[Topic] = None) -> None:
+            topic: Topic | None = None) -> None:
         pass
 
 
@@ -436,12 +426,12 @@ class Logger:
             self,
             actual_logger: logging.Logger,
             base_shift: int = 0,
-            labels: Optional[list[str]] = None,
+            labels: list[str] | None = None,
             labels_padding: int = 0,
             verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
             debug_level: int = DEFAULT_DEBUG_LEVEL,
             quiet: bool = False,
-            topics: Optional[set[Topic]] = None,
+            topics: set[Topic] | None = None,
             apply_colors_output: bool = True,
             apply_colors_logging: bool = True
             ) -> None:
@@ -508,7 +498,7 @@ class Logger:
 
         return logger
 
-    def clone(self) -> 'Logger':
+    def clone(self) -> Logger:
         """
         Create a copy of this logger instance.
 
@@ -531,9 +521,9 @@ class Logger:
 
     def descend(
             self,
-            logger_name: Optional[str] = None,
+            logger_name: str | None = None,
             extra_shift: int = 1
-            ) -> 'Logger':
+            ) -> Logger:
         """
         Create a copy of this logger instance, but with a new raw logger.
 
@@ -563,7 +553,7 @@ class Logger:
             apply_colors_logging=self.apply_colors_logging
             )
 
-    def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
+    def add_logfile_handler(self, filepath: tmt.utils.Path) -> None:
         """ Attach a log file handler to this logger """
 
         handler = LogfileHandler(filepath)
@@ -597,8 +587,8 @@ class Logger:
 
     def apply_verbosity_options(
             self,
-            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-            **kwargs: Any) -> 'Logger':
+            cli_invocation: tmt.cli.CliInvocation | None = None,
+            **kwargs: Any) -> Logger:
         """
         Update logger's settings to match given CLI options.
 
@@ -657,10 +647,10 @@ class Logger:
     @classmethod
     def create(
             cls,
-            actual_logger: Optional[logging.Logger] = None,
+            actual_logger: logging.Logger | None = None,
             apply_colors_output: bool = True,
             apply_colors_logging: bool = True,
-            **verbosity_options: Any) -> 'Logger':
+            **verbosity_options: Any) -> Logger:
         """
         Create a (root) tmt logger.
 
@@ -722,7 +712,7 @@ class Logger:
     def print(
             self,
             text: str,
-            color: Optional[str] = None,
+            color: str | None = None,
             shift: int = 0,
             ) -> None:
 
@@ -741,8 +731,8 @@ class Logger:
     def info(
             self,
             key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
+            value: LoggableValue | None = None,
+            color: str | None = None,
             shift: int = 0
             ) -> None:
         self._log(
@@ -757,11 +747,11 @@ class Logger:
     def verbose(
             self,
             key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
+            value: LoggableValue | None = None,
+            color: str | None = None,
             shift: int = 0,
             level: int = 1,
-            topic: Optional[Topic] = None
+            topic: Topic | None = None
             ) -> None:
         self._log(
             logging.INFO,
@@ -777,11 +767,11 @@ class Logger:
     def debug(
             self,
             key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
+            value: LoggableValue | None = None,
+            color: str | None = None,
             shift: int = 0,
             level: int = 1,
-            topic: Optional[Topic] = None
+            topic: Topic | None = None
             ) -> None:
         self._log(
             logging.DEBUG,
@@ -822,10 +812,10 @@ class Logger:
                 shift=shift)
             )
 
-    _bootstrap_logger: Optional['Logger'] = None
+    _bootstrap_logger: Logger | None = None
 
     @classmethod
-    def get_bootstrap_logger(cls) -> 'Logger':
+    def get_bootstrap_logger(cls) -> Logger:
         """
         Create a logger designed for tmt startup time.
 
