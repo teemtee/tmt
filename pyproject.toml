@@ -103,6 +103,8 @@ include = [
     "/.fmf",
     ]
 
+artifacts = ["tmt.1"]
+
 [tool.hatch.envs.default]
 platforms = ["linux"]
 

@@ -32,10 +32,12 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+tmt.1
 
 # Testing
 .mypy_cache
 .pytest_cache
+*.tgz
 
 # Virtual environment
 .env
