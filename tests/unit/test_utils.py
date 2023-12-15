@@ -33,7 +33,6 @@ from tmt.utils import (
     filter_paths,
     git_add,
     inject_auth_git_url,
-    listify,
     public_git_url,
     validate_git_status,
     wait,
@@ -193,16 +192,6 @@ def test_inject_auth_git_url(monkeypatch) -> None:
 
     with pytest.raises(tmt.utils.GitUrlError):
         inject_auth_git_url('https://example.com/broken/something')
-
-
-def test_listify():
-    """ Check listify functionality """
-    assert listify(['abc']) == ['abc']
-    assert listify('abc') == ['abc']
-    assert listify('a b c') == ['a b c']
-    assert listify('a b c', split=True) == ['a', 'b', 'c']
-    assert listify({'a': 1, 'b': 2}) == {'a': [1], 'b': [2]}
-    assert listify({'a': 1, 'b': 2}, keys=['a']) == {'a': [1], 'b': 2}
 
 
 def test_config():

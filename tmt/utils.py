@@ -1935,30 +1935,6 @@ def ascii(text: Any) -> bytes:
     return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
 
 
-def listify(
-        data: Union[tuple[Any, ...], list[Any], str, dict[Any, Any]],
-        split: bool = False,
-        keys: Optional[list[str]] = None) -> Union[list[Any], dict[Any, Any]]:
-    """
-    Ensure that variable is a list, convert if necessary
-    For dictionaries check all items or only those with provided keys.
-    Also split strings on white-space/comma if split=True.
-    """
-    separator = re.compile(r'[\s,]+')
-    if isinstance(data, tuple):
-        data = list(data)
-    if isinstance(data, list):
-        return fmf.utils.split(data, separator) if split else data
-    if isinstance(data, str):
-        return fmf.utils.split(data, separator) if split else [data]
-    if isinstance(data, dict):
-        for key in keys or data:
-            if key in data:
-                data[key] = listify(data[key], split=split)
-        return data
-    return [data]
-
-
 def copytree(
         src: Path,
         dst: Path,
