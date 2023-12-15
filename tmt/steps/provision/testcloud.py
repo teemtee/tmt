@@ -848,7 +848,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         """ Provision the testcloud instance """
         super().go()
 
-        if self.get('list-local-images'):
+        if self.data.list_local_images:
             self._print_local_images()
             # Clean up the run workdir and exit
             if self.step.plan.my_run:

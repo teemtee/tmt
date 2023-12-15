@@ -697,17 +697,15 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         """ Provision the guest """
         super().go()
 
-        api_version = self.get('api-version')
-
-        if api_version not in SUPPORTED_API_VERSIONS:
-            raise ArtemisProvisionError(f"API version '{api_version}' not supported.")
+        if self.data.api_version not in SUPPORTED_API_VERSIONS:
+            raise ArtemisProvisionError(f"API version '{self.data.api_version}' not supported.")
 
         try:
             user_data = {
                 key.strip(): value.strip()
                 for key, value in (
                     pair.split('=', 1)
-                    for pair in self.get('user-data')
+                    for pair in self.data.user_data
                     )
                 }
 

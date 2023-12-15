@@ -431,7 +431,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     def default(self, option: str, default: Any = None) -> Any:
         """ Return default data for given option """
         if option == 'pull':
-            return self.get('force-pull', default=default)
+            return self.data.force_pull
 
         return super().default(option, default=default)
 

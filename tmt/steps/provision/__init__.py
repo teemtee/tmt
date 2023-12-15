@@ -1813,7 +1813,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         super().show(keys=keys)
 
         if show_hardware:
-            hardware: Optional[tmt.hardware.Hardware] = self.get('hardware')
+            hardware: Optional[tmt.hardware.Hardware] = self.data.hardware
 
             if hardware:
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))

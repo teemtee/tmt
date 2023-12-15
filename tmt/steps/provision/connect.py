@@ -5,7 +5,7 @@ import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, ShellScript, field, key_to_option
+from tmt.utils import Command, ShellScript, field
 
 DEFAULT_USER = "root"
 
@@ -168,7 +168,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         super().go()
 
         # Check guest and auth info
-        if not self.get('guest'):
+        if not self.data.guest:
             raise tmt.utils.SpecificationError(
                 'Provide a host name or an ip address to connect.')
 
@@ -176,13 +176,6 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             raise tmt.utils.GeneralError(
                 "Custom soft and hard reboot commands are allowed "
                 "only with the '--feeling-safe' option.")
-
-        data = ConnectGuestData(**{
-            key: self.get(key_to_option(key))
-            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-            # "Type[ConnectGuestData]" has no attribute "__iter__" (not iterable)
-            for key in ConnectGuestData.keys()  # noqa: SIM118
-            })
 
         data = ConnectGuestData.from_plugin(self)
 
