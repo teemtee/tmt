@@ -1784,6 +1784,10 @@ class RetryError(GeneralError):
         super().__init__(f"Retries of '{label}' unsuccessful.", causes)
 
 
+class BackwardIncompatibleDataError(GeneralError):
+    """ A backward incompatible data cannot be processed """
+
+
 # Step exceptions
 
 
@@ -4306,11 +4310,14 @@ def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
     """ Load a run and its steps from the workdir """
     try:
         run.load_from_workdir()
+
+        for plan in run.plans:
+            for step in plan.steps(enabled_only=False):
+                step.load()
+
     except GeneralError as error:
         return False, error
-    for plan in run.plans:
-        for step in plan.steps(enabled_only=False):
-            step.load()
+
     return True, None
 
 

@@ -160,6 +160,22 @@ class Discover(tmt.steps.Step):
             self._tests = {}
 
             for raw_test_datum in raw_test_data:
+                # The name of `discover` phases providing the test was added in 1.24.
+                # Unfortunatelly, the field is required for correct work of `execute`,
+                # now when it is parallel in nature. Without it, it's not possible
+                # to pick the right `discover` phase which then provides the list
+                # of tests to execute. Therefore raising an error instead of guessing
+                # what the phase could be.
+                if key_to_option('discover_phase') not in raw_test_datum:
+                    # TODO: there should be a method for creating workdir-aware paths...
+                    path = self.workdir / Path('tests.yaml') if self.workdir \
+                        else Path('tests.yaml')
+
+                    raise tmt.utils.BackwardIncompatibleDataError(
+                        f"Could not load '{path}' whose format is not compatible "
+                        "with tmt 1.24 and newer."
+                        )
+
                 phase_name = raw_test_datum.pop(key_to_option('discover_phase'))
 
                 if phase_name not in self._tests:
