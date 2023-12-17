@@ -70,8 +70,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         environment = environment or {}
 
         # Give a short summary
-        scripts: list[tmt.utils.ShellScript] = self.get('script')
-        overview = fmf.utils.listed(scripts, 'script')
+        overview = fmf.utils.listed(self.data.script, 'script')
         logger.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
@@ -95,7 +94,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
         # Execute each script on the guest (with default shell options)
-        for script in scripts:
+        for script in self.data.script:
             logger.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             self.write(prepare_wrapper_path, str(script_with_options), 'w')

@@ -68,8 +68,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
-        scripts: list[tmt.utils.ShellScript] = self.get('script')
-        overview = fmf.utils.listed(scripts, 'script')
+        overview = fmf.utils.listed(self.data.script, 'script')
         self.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
@@ -81,7 +80,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
         logger.debug('finish wrapper', finish_wrapper_path, level=3)
 
         # Execute each script on the guest
-        for script in scripts:
+        for script in self.data.script:
             self.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             self.write(finish_wrapper_path, str(script_with_options), 'w')

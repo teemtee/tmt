@@ -97,10 +97,8 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
             logger.info('guest', guest.name, 'green')
 
         # Show requested role if defined
-        # FIXME: cast() - typeless "dispatcher" method
-        where = cast(list[str], self.get('where'))
-        if where:
-            logger.info('where', fmf.utils.listed(where), 'green')
+        if self.data.where:
+            logger.info('where', fmf.utils.listed(self.data.where), 'green')
 
 
 class Prepare(tmt.steps.Step):

@@ -111,7 +111,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
-        for playbook in self.get('playbook'):
+        for playbook in self.data.playbook:
             logger.info('playbook', playbook, 'green')
 
             lowercased_playbook = playbook.lower()
@@ -148,4 +148,4 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 logger.info('playbook-path', playbook_path, 'green')
 
-            guest.ansible(playbook_path, self.get('extra-args'))
+            guest.ansible(playbook_path, extra_args=self.data.extra_args)
