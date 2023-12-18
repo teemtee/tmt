@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from uuid import uuid4
 
 import fmf
@@ -51,8 +51,14 @@ def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Option
     # Generate a new one
     gen_uuid = str(uuid4())
     if not dry:
-        with node as data:
-            data[ID_KEY] = gen_uuid
+        # ignore[reportUnknownVariableType]: yep, fmf lacks annotations, and
+        # pyright can't infer the type. Adding `cast()` seems to be the easiest
+        # workaround, but pyright would still report the type of `data` unknown.
+        #
+        # ignore[unused-ignore]: mypy does not recognize this issue, and therefore
+        # the waiver seems pointless to it...
+        with node as data:  # type: ignore[reportUnknownVariableType,unused-ignore]
+            cast(dict[str, Any], data)[ID_KEY] = gen_uuid
             logger.debug(f"Generating UUID '{gen_uuid}' for '{node.name}'.")
     return gen_uuid
 

@@ -222,7 +222,6 @@ ignore = [
     "tmt/base.py",
     "tmt/convert.py",
     "tmt/hardware.py",
-    "tmt/identifier.py",
     "tmt/lint.py",
     "tmt/queue.py",
     "tmt/templates.py",
