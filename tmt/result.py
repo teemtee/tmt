@@ -147,10 +147,7 @@ class Result(BaseResult):
         )
     context: tmt.utils.FmfContext = field(
         default_factory=tmt.utils.FmfContext,
-        # ignore[attr-defined]: for reasons unknown, mypy believes the `context`
-        # is an `object` instance. But, when `cast()` is added, mypy complains the
-        # `cast()` is pointless...
-        serialize=lambda context: context.to_spec(),  # type: ignore[attr-defined]
+        serialize=lambda context: context.to_spec(),
         unserialize=lambda serialized: tmt.utils.FmfContext(serialized)
         )
     ids: ResultIds = field(
@@ -158,7 +155,7 @@ class Result(BaseResult):
         )
     guest: ResultGuestData = field(
         default_factory=ResultGuestData,
-        serialize=lambda value: value.to_serialized(),  # type: ignore[attr-defined]
+        serialize=lambda value: value.to_serialized(),
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
@@ -351,7 +348,7 @@ class Result(BaseResult):
         if re.search(':: \\[   FAIL   \\] ::', log):  # dumb check for a beakerlib log
             copy_line = False
             copy_phase_name = False
-            failure_log = []
+            failure_log: list[str] = []
             # we will be processing log lines in a reversed order
             iterator = iter(reversed(log.split("\n")))
             for line in iterator:

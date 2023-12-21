@@ -132,7 +132,10 @@ LinterRuling = tuple['Linter', LinterOutcome, LinterOutcome, str]
 #: A return value type of a single linter.
 LinterReturn = Iterator[tuple[LinterOutcome, str]]
 #: A linter itself, a callable method.
-LinterCallback = Callable[['Lintable'], LinterReturn]
+# TODO: ignore[type-arg]: `Lintable` is a generic type, and mypy starts
+# reporting it since 1.7.1 or so. Adding the parameter here would require
+# a bigger patch than a mere bump of mypy version. Leaving for later.
+LinterCallback = Callable[['Lintable'], LinterReturn]  # type: ignore[type-arg]
 
 _LINTER_DESCRIPTION_PATTERN = re.compile(r"""
     ^                      # must match the whole string
