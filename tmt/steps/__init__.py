@@ -202,7 +202,10 @@ class Phase(tmt.utils.Common):
 PhaseT = TypeVar('PhaseT', bound=Phase)
 
 # A type alias for plugin classes
-PluginClass = type['BasePlugin']
+# TODO: ignore[type-arg]: `BasePlugin` is a generic type over step data, and
+# mypy starts reporting it since 1.7.1 or so. Adding the parameter here would
+# require a bigger patch than a mere bump of mypy version. Leaving for later.
+PluginClass = type['BasePlugin']  # type: ignore[type-arg]
 
 
 class _RawStepData(TypedDict, total=False):

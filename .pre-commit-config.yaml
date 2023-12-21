@@ -15,7 +15,7 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.6.1"
+    rev: "v1.8.0"
     hooks:
       - id: mypy
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
@@ -51,7 +51,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.334
+    rev: v1.1.344
     hooks:
       - id: pyright
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
@@ -84,20 +84,20 @@ repos:
           - "types-babel"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.27.0"
+    rev: "0.27.3"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.32.0
+    rev: v1.33.0
     hooks:
       - id: yamllint
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.1
+    rev: v0.1.11
     hooks:
       - id: ruff
         args:
@@ -105,7 +105,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.29.0
+    rev: 1.30.0
     hooks:
     - id: tmt-lint
       additional_dependencies:

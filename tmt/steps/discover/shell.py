@@ -61,11 +61,7 @@ class TestDescription(
         # methods, because specification of links is already good enough. We
         # can use existing `to_spec()` method, and undo it with a simple
         # `Links(...)` call.
-        #
-        # ignore[attr-defined]: mypy reports `to_spec` to be an unknown attribute,
-        # but reveal_type() reports `link` to be a known type, not Any, and it's
-        # not clear why would mypy misread the situation.
-        serialize=lambda link: link.to_spec() if link else None,  # type: ignore[attr-defined]
+        serialize=lambda link: link.to_spec() if link else None,
         unserialize=lambda serialized_link: tmt.base.Links(data=serialized_link)
         )
     id: Optional[str] = None

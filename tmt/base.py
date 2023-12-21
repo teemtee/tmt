@@ -1515,9 +1515,7 @@ class Plan(
     context: FmfContext = field(
         default_factory=FmfContext,
         normalize=tmt.utils.FmfContext.from_spec,
-        # ignore[attr-defined]: for some reason, mypy cannot infer `value` is an `FmfContext`
-        # instance.
-        exporter=lambda value: value.to_spec())  # type: ignore[attr-defined]
+        exporter=lambda value: value.to_spec())
     gate: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list)

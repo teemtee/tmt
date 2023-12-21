@@ -429,7 +429,7 @@ class GuestData(SerializableContainer):
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
-        serialize=lambda facts: facts.to_serialized(),  # type: ignore[attr-defined]
+        serialize=lambda facts: facts.to_serialized(),
         unserialize=lambda serialized: GuestFacts.from_serialized(serialized)
         )
 
