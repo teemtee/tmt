@@ -1,7 +1,11 @@
 /dmesg:
-  test: /bin/true
+    check: dmesg
 
-  check: dmesg
+    /harmless:
+        test: /bin/true
+
+    /segfault:
+        test: echo Some segfault happened > /dev/kmsg
 
 /avc:
   check:

@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
@@ -13,6 +14,13 @@ if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
 
 TEST_POST_DMESG_FILENAME = 'dmesg-{event}.txt'
+FAILURE_PATTERNS = [
+    re.compile(pattern)
+    for pattern in [
+        r'Call Trace:',
+        r'\ssegfault\s',
+        ]
+    ]
 
 
 @provides_check('dmesg')
@@ -54,7 +62,7 @@ class DmesgCheck(CheckPlugin[Check]):
                 level=level,
                 topic=topic)
 
-        return guest.execute(tmt.utils.ShellScript('dmesg'), log=_test_output_logger)
+        return guest.execute(tmt.utils.ShellScript('dmesg -c'), log=_test_output_logger)
 
     @classmethod
     def _save_dmesg(
@@ -81,6 +89,8 @@ class DmesgCheck(CheckPlugin[Check]):
         else:
             outcome = ResultOutcome.PASS
             output = dmesg_output.stdout or ''
+            if any(pattern.search(output) for pattern in FAILURE_PATTERNS):
+                outcome = ResultOutcome.FAIL
 
         invocation.phase.write(
             path,
