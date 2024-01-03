@@ -5,7 +5,7 @@ import logging
 import os
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Optional, TypedDict, cast
+from typing import Any, Optional, TypedDict, Union, cast
 
 import tmt
 import tmt.hardware
@@ -14,16 +14,18 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import ProvisionError, UpdatableMessage, field
+from tmt.utils import Command, ProvisionError, ShellScript, UpdatableMessage, field
 
-mrack = Any
-providers = Any
-ProvisioningError = Any
-NotAuthenticatedError = Any
-BEAKER = Any
-BeakerProvider = Any
-BeakerTransformer = Any
-TmtBeakerTransformer = Any
+mrack: Any
+providers: Any
+ProvisioningError: Any
+NotAuthenticatedError: Any
+BEAKER: Any
+BeakerProvider: Any
+BeakerTransformer: Any
+TmtBeakerTransformer: Any
+
+_MRACK_IMPORTED: bool = False
 
 DEFAULT_USER = 'root'
 DEFAULT_ARCH = 'x86_64'
@@ -283,6 +285,11 @@ def constraint_to_beaker_filter(
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
     """ Import mrack module only when needed """
+    global _MRACK_IMPORTED
+
+    if _MRACK_IMPORTED:
+        return
+
     global mrack
     global providers
     global ProvisioningError
@@ -345,6 +352,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
             req.update({"whiteboard": whiteboard})
             return req
+
+    _MRACK_IMPORTED = True
 
 
 def async_run(func: Any) -> Any:
@@ -487,6 +496,9 @@ class BeakerAPI:
         self._mrack_provider = self._mrack_transformer._provider
         self._mrack_provider.poll_sleep = DEFAULT_PROVISION_TICK
 
+        if guest.job_id:
+            self._bkr_job_id = guest.job_id
+
     @async_run
     async def create(
             self,
@@ -541,6 +553,10 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     def api(self) -> BeakerAPI:
         """ Create BeakerAPI leveraging mrack """
         if self._api is None:
+            assert self.parent is not None
+
+            import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+
             self._api = BeakerAPI(self)
 
         return self._api
@@ -675,6 +691,48 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         self.api.delete()
 
+    def reboot(
+            self,
+            hard: bool = False,
+            command: Optional[Union[Command, ShellScript]] = None,
+            timeout: Optional[int] = None,
+            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        """
+        Reboot the guest, and wait for the guest to recover.
+
+        :param hard: if set, force the reboot. This may result in a loss of
+            data. The default of ``False`` will attempt a graceful reboot.
+        :param command: a command to run on the guest to trigger the reboot.
+            If not set, plugin would try to use ``bkr system-power`` for hard
+            reboot. Unlike ``command``, this would be executed on the runner,
+            **not** on the guest.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if not command and hard:
+            self.debug("Reboot using the reboot command 'bkr system-power --action reboot'.")
+
+            return self.perform_reboot(
+                lambda: self._run_guest_command(ShellScript(
+                    f'bkr system-power --action reboot {self.guest}').to_shell_command()),
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase)
+
+        return super().reboot(
+            hard=hard,
+            command=command,
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase)
+
 
 @tmt.steps.provides_method('beaker')
 class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
@@ -713,8 +771,6 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
     def go(self) -> None:
         """ Provision the guest """
-        import_and_load_mrack_deps(self.workdir, self.name, self._logger)
-
         super().go()
 
         data = BeakerGuestData.from_plugin(self)

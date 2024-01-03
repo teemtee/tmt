@@ -27,6 +27,22 @@ rlJournalStart
         rlPhaseEnd
     fi
 
+    if [[ "$PROVISION_METHODS" =~ beaker ]]; then
+        rlPhaseStartTest "Beaker"
+            rlRun "tmt run --scratch -i $run provision -h beaker"
+
+            rlRun -s "tmt run -l reboot"
+            rlAssertGrep "Reboot finished" $rlRun_LOG
+            rlRun "rm $rlRun_LOG"
+
+            rlRun -s "tmt run -l reboot --hard"
+            rlAssertGrep "Reboot finished" $rlRun_LOG
+            rlRun "rm $rlRun_LOG"
+
+            rlRun "tmt run -l finish"
+        rlPhaseEnd
+    fi
+
     if [[ "$PROVISION_METHODS" =~ virtual ]]; then
         rlPhaseStartTest "Virtual"
             rlRun "tmt run --scratch -i $run provision -h virtual"

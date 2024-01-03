@@ -4,3 +4,8 @@ adjust:
     environment:
         PROVISION_METHODS: container connect virtual
     tag+: [additional_coverage]
+
+  - when: how == beaker
+    environment:
+        PROVISION_METHODS: beaker
+    tag+: [additional_coverage]
