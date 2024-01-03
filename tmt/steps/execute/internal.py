@@ -349,7 +349,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 command: Command,
                 process: subprocess.Popen[bytes],
                 logger: tmt.log.Logger) -> None:
-            invocation.process = process
+            with invocation.process_lock:
+                invocation.process = process
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
@@ -388,7 +389,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
                     logger.warn('Test failed to manage its pidfile.')
 
-        invocation.process = None
+        with invocation.process_lock:
+            invocation.process = None
+
         invocation.end_time = self.format_timestamp(timer.end_time)
         invocation.real_duration = self.format_duration(timer.duration)
 
