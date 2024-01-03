@@ -519,7 +519,7 @@ class Logger:
         return Logger(
             self._logger,
             base_shift=self._base_shift,
-            labels=self.labels,
+            labels=self.labels[:],
             labels_padding=self.labels_padding,
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
@@ -553,7 +553,7 @@ class Logger:
         return Logger(
             actual_logger,
             base_shift=self._base_shift + extra_shift,
-            labels=self.labels,
+            labels=self.labels[:],
             labels_padding=self.labels_padding,
             verbosity_level=self.verbosity_level,
             debug_level=self.debug_level,
