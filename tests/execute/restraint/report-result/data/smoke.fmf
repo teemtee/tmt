@@ -17,7 +17,7 @@ description:
     test: rstrnt-report-result report WARN
 
 /rhts-good:
-    test: rhts-report-result rhts PASS /tmp/rhts-test 1
+    test: rhts-report-result rhts PASS /tmp/rhts-test
 
 /rhts-bad:
     test: rhts-report-result rhts FAIL /tmp/rhts-test 1

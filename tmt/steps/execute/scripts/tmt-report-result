@@ -62,7 +62,10 @@ if [[ "$0" == *"rhts-report-result"* ]]; then
     TESTNAME=$1
     TESTRESULT=$2
     outputFile=$3
-    METRIC=$4
+    METRIC=
+    if [ $# -gt 3 ];then
+        METRIC=$4
+    fi
     check_report_file
 fi
 
