@@ -33,10 +33,11 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest 'Verify mocked RHTS rhts-report-result file generated correctly.'
-        rlRun "rhts-report-result rhts-report SKIP /tmp/example_output.txt 1" 0 "Generating RHTS report of skipped test."
+        rlRun "rhts-report-result rhts-report SKIP /tmp/example_output.txt" 0 "Generating RHTS report of skipped test without optional metric."
         rlRun "ls $RESULT_FILE" 0 "Result report successfully generated."
         rlRun -s "cat $RESULT_FILE"
         rlAssertGrep 'TESTRESULT=SKIP' $rlRun_LOG
+	rlAssertGrep 'METRIC=$' $rlRun_LOG -E
         rlRun "rhts-report-result rhts-report PASS /tmp/example_output.txt 66" 0 "Generating RHTS report of passed test."
         rlRun -s "cat $RESULT_FILE"
         rlAssertGrep 'OUTPUTFILE=/tmp/example_output.txt' $rlRun_LOG
