@@ -4941,7 +4941,9 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         if self.clear_on_exit:
             self.clear()
 
-        sys.stdout.write('\n')
+        if self.enabled:
+            sys.stdout.write('\n')
+
         sys.stdout.flush()
 
     def clear(self) -> None:
