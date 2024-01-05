@@ -2619,6 +2619,21 @@ class FieldMetadata(Generic[T]):
         return None
 
     @property
+    def has_default(self) -> bool:
+        return self.default_factory not in (None, dataclasses.MISSING) \
+            or self.default is not dataclasses.MISSING
+
+    @property
+    def materialized_default(self) -> Optional[T]:
+        if self.default_factory not in (None, dataclasses.MISSING):
+            return self.default_factory()
+
+        if self.default is not dataclasses.MISSING:
+            return self.default
+
+        return None
+
+    @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
         if self._option is None and self.cli_option:
             from tmt.options import option
