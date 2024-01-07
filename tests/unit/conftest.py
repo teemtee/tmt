@@ -13,7 +13,7 @@ from tmt.utils import Path
 
 @pytest.fixture(name='root_logger')
 def fixture_root_logger(caplog: _pytest.logging.LogCaptureFixture) -> Logger:
-    return Logger.create(verbose=0, debug=0, quiet=False)
+    return Logger.create(verbose=0, debug=0, quiet=False, apply_colors_logging=False)
 
 
 # Temporary directories and paths

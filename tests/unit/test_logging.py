@@ -3,9 +3,9 @@ from typing import Optional
 
 import _pytest.capture
 import _pytest.logging
-import click
 import pytest
 
+import tmt.utils
 from tmt.log import (
     DebugLevelFilter,
     Logger,
@@ -30,7 +30,8 @@ def _exercise_logger(
         reset: bool = True) -> None:
     labels = labels or []
 
-    prefix = render_labels(labels) + indent_by + ' ' if labels else indent_by
+    prefix = tmt.utils.remove_color(render_labels(labels)) + indent_by + ' ' \
+        if labels else indent_by
 
     if reset:
         caplog.clear()
@@ -50,7 +51,7 @@ def _exercise_logger(
         details_key='this is printed',
         details_logger_labels=labels,
         levelno=logging.INFO)
-    assert captured.out == f'{prefix}this is printed\n'
+    assert tmt.utils.remove_color(captured.out) == f'{prefix}this is printed\n'
     assert_log(
         caplog,
         message=f'{prefix}this is a debug message',
@@ -71,14 +72,14 @@ def _exercise_logger(
         levelno=logging.INFO)
     assert_log(
         caplog,
-        message=f'{prefix}{click.style("warn", fg="yellow")}: this is a warning',
+        message=f'{prefix}warn: this is a warning',
         details_key='warn',
         details_value='this is a warning',
         details_logger_labels=labels,
         levelno=logging.WARN)
     assert_log(
         caplog,
-        message=f'{prefix}{click.style("fail", fg="red")}: this is a failure',
+        message=f'{prefix}fail: this is a failure',
         details_key='fail',
         details_value='this is a failure',
         details_logger_labels=labels,

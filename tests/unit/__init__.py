@@ -7,6 +7,8 @@ from typing import Any, Callable
 import _pytest.logging
 import pytest
 
+import tmt.utils
+
 
 class PatternMatching:
     def __init__(self, pattern: str, method: str) -> None:
@@ -87,6 +89,9 @@ def _assert_log(
         if field_name.startswith('details_'):
             field_name = field_name.replace('details_', '')
             def field_getter(record, name): return getattr(record.details, name, None)
+
+        elif field_name == 'message':
+            def field_getter(record, name): return tmt.utils.remove_color(getattr(record, name))
 
         else:
             def field_getter(record, name): return getattr(record, name)

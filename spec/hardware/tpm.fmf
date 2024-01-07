@@ -8,6 +8,9 @@ description: |
            # String, TPM version requested.
            version: "x.y"
 
+    .. versionchanged:: 1.32
+       ``virtual`` plugin supports ``tpm.version``
+
 example:
   - |
     # Require a presence of TPM of a specific version.
@@ -16,3 +19,5 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/steps/provision/testcloud.py
+    note: "``version: 2.0`` only"

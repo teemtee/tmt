@@ -12,6 +12,14 @@ extended with the new keys ``driver`` and ``model-name``. Users
 can provision Beaker guests with a given disk model using the
 :ref:`/spec/plans/provision/beaker` plugin.
 
+The :ref:`/spec/plans/provision/virtual` provision plugin gains support
+for :ref:`TPM hardware requirement</spec/hardware/tpm>`. It is limited
+to TPM 2.0 for now, the future release of `testcloud`__, the
+library behing ``virtual`` plugin, will extend the support to more
+versions.
+
+__ https://pagure.io/testcloud/
+
 
 tmt-1.31
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

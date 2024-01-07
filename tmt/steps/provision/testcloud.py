@@ -14,6 +14,7 @@ import requests
 
 import tmt
 import tmt.hardware
+import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
@@ -84,6 +85,11 @@ def import_testcloud() -> None:
     except ImportError as error:
         raise ProvisionError(
             "Install 'tmt+provision-virtual' to provision using this method.") from error
+
+    # Version-aware TPM configuration is added in
+    # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
+    global TPM_CONFIG_ALLOWS_VERSIONS
+    TPM_CONFIG_ALLOWS_VERSIONS = hasattr(TPMConfiguration(), 'version')
 
 
 # Testcloud cache to our tmt's workdir root
@@ -184,6 +190,25 @@ DEFAULT_IMAGE = 'fedora'
 DEFAULT_CONNECTION = 'session'
 DEFAULT_ARCH = platform.machine()
 
+# Version-aware TPM configuration is added in
+# https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
+#: If set, ``testcloud`` TPM configuration accepts TPM version as a parameter.
+TPM_CONFIG_ALLOWS_VERSIONS: bool = False
+
+#: List of operators supported for ``tpm.version`` HW requirement.
+TPM_VERSION_ALLOWED_OPERATORS: tuple[tmt.hardware.Operator, ...] = (
+    tmt.hardware.Operator.EQ,
+    tmt.hardware.Operator.GTE,
+    tmt.hardware.Operator.LTE)
+
+#: TPM versions supported by the plugin. The key is :py:const:`TPM_CONFIG_ALLOWS_VERSIONS`.
+TPM_VERSION_SUPPORTED_VERSIONS = {
+    True: ['2.0', '2', '1.2'],
+    # This is the default version used by testcloud before version became
+    # an input parameter of TPM configuration.
+    False: ['2.0', '2']
+    }
+
 
 def normalize_memory_size(
         key_address: str,
@@ -242,6 +267,31 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
         return tmt.hardware.UNITS(f'{value} GB')
 
     raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+
+
+def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> bool:
+    components = constraint.expand_name()
+
+    if components.name == 'memory' \
+        and constraint.operator in (tmt.hardware.Operator.EQ,
+                                    tmt.hardware.Operator.GTE,
+                                    tmt.hardware.Operator.LTE):
+        return True
+
+    if components.name == 'disk' \
+        and components.child_name == 'size' \
+        and constraint.operator in (tmt.hardware.Operator.EQ,
+                                    tmt.hardware.Operator.GTE,
+                                    tmt.hardware.Operator.LTE):
+        return True
+
+    if components.name == 'tpm' \
+            and components.child_name == 'version' \
+            and constraint.value in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS] \
+            and constraint.operator in TPM_VERSION_ALLOWED_OPERATORS:
+        return True
+
+    return False
 
 
 @dataclasses.dataclass
@@ -322,6 +372,63 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 @dataclasses.dataclass
 class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionStepData):
     pass
+
+
+def _apply_hw_tpm(
+        hardware: Optional[tmt.hardware.Hardware],
+        domain: 'DomainConfiguration',
+        logger: tmt.log.Logger) -> None:
+    """ Apply ``tpm`` constraint to given VM domain """
+
+    domain.tpm_configuration = None
+
+    if not hardware or not hardware.constraint:
+        logger.debug(
+            'tpm.version',
+            "not included because of no constraints",
+            level=4)
+
+        return
+
+    variant = hardware.constraint.variant()
+
+    tpm_constraints = [
+        constraint
+        for constraint in variant
+        if isinstance(constraint, tmt.hardware.TextConstraint)
+        and constraint.expand_name().name == 'tpm'
+        and constraint.expand_name().child_name == 'version']
+
+    if not tpm_constraints:
+        logger.debug(
+            'tpm.version',
+            "not included because of no 'tpm.version' constraints",
+            level=4)
+
+        return
+
+    for constraint in tpm_constraints:
+        if constraint.operator not in TPM_VERSION_ALLOWED_OPERATORS:
+            logger.warn(
+                f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+            return
+
+        if constraint.value not in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]:
+            logger.warn(
+                f"Cannot apply hardware requirement '{constraint}',"
+                " TPM version not supported.")
+            return
+
+        logger.debug(
+            'tpm.version',
+            f"set to '{constraint.value}' because of '{constraint}'",
+            level=4)
+
+        if TPM_CONFIG_ALLOWS_VERSIONS:
+            domain.tpm_configuration = TPMConfiguration(version=constraint.value)
+
+        else:
+            domain.tpm_configuration = TPMConfiguration()
 
 
 class GuestTestcloud(tmt.GuestSsh):
@@ -720,6 +827,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         self._apply_hw_memory(self._domain)
         storage_image = self._apply_hw_disk_size(self._domain)
+        _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
         self.debug('final domain memory', str(self._domain.memory_size))
         self.debug('final domain disk size', str(storage_image.size))
@@ -932,23 +1040,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
-            def _report_support(constraint: tmt.hardware.Constraint[Any]) -> bool:
-                if constraint.expand_name().name == 'memory' \
-                    and constraint.operator in (tmt.hardware.Operator.EQ,
-                                                tmt.hardware.Operator.GTE,
-                                                tmt.hardware.Operator.LTE):
-                    return True
-
-                if constraint.expand_name().name == 'disk' \
-                    and constraint.expand_name().child_name == 'size' \
-                    and constraint.operator in (tmt.hardware.Operator.EQ,
-                                                tmt.hardware.Operator.GTE,
-                                                tmt.hardware.Operator.LTE):
-                    return True
-
-                return False
-
-            data.hardware.report_support(check=_report_support, logger=self._logger)
+            data.hardware.report_support(check=_report_hw_requirement_support, logger=self._logger)
 
             for line in data.hardware.format_variants():
                 self._logger.debug('hardware', line, level=4)

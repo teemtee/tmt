@@ -1146,6 +1146,10 @@ def _parse_networks(spec: Spec) -> BaseConstraint:
     return group
 
 
+TPM_VERSION_ALLOWED_OPERATORS: list[Operator] = [
+    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE]
+
+
 @ungroupify
 def _parse_tpm(spec: Spec) -> BaseConstraint:
     """
@@ -1162,9 +1166,7 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
             TextConstraint.from_specification(
                 'tpm.version',
                 spec['version'],
-                allowed_operators=[
-                    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT,
-                    Operator.GTE])
+                allowed_operators=TPM_VERSION_ALLOWED_OPERATORS)
             ]
 
     return group
