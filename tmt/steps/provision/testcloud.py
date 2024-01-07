@@ -481,7 +481,8 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.memory is None:
             return
 
-        memory_constraint = tmt.hardware.Constraint.from_specification('memory', str(self.memory))
+        memory_constraint = tmt.hardware.SizeConstraint.from_specification(
+            'memory', str(self.memory))
 
         self.hardware.and_(memory_constraint)
 
@@ -494,7 +495,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.disk is None:
             return
 
-        disk_size_constraint = tmt.hardware.Constraint.from_specification(
+        disk_size_constraint = tmt.hardware.SizeConstraint.from_specification(
             'disk[0].size',
             str(self.disk))
 
@@ -518,7 +519,8 @@ class GuestTestcloud(tmt.GuestSsh):
         memory_constraints = [
             constraint
             for constraint in variant
-            if constraint.expand_name().name == 'memory']
+            if isinstance(constraint, tmt.hardware.SizeConstraint)
+            and constraint.expand_name().name == 'memory']
 
         if not memory_constraints:
             self.debug(
@@ -543,7 +545,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 f"set to '{constraint.value}' because of '{constraint}'",
                 level=4)
 
-            assert isinstance(constraint.value, pint.Quantity)
             domain.memory_size = int(constraint.value.to('kB').magnitude)
 
     def _apply_hw_disk_size(self, domain: 'DomainConfiguration') -> 'QCow2StorageDevice':
@@ -564,7 +565,8 @@ class GuestTestcloud(tmt.GuestSsh):
         disk_size_constraints = [
             constraint
             for constraint in variant
-            if constraint.expand_name().name == 'disk'
+            if isinstance(constraint, tmt.hardware.SizeConstraint)
+            and constraint.expand_name().name == 'disk'
             and constraint.expand_name().child_name == 'size']
 
         if not disk_size_constraints:
@@ -588,7 +590,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 f"set to '{constraint.value}' because of '{constraint}'",
                 level=4)
 
-            assert isinstance(constraint.value, pint.Quantity)
             final_size = constraint.value
 
         return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
@@ -901,7 +902,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if data.hardware and data.hardware.constraint:
-            def _report_support(constraint: tmt.hardware.Constraint) -> bool:
+            def _report_support(constraint: tmt.hardware.Constraint[Any]) -> bool:
                 if constraint.expand_name().name == 'memory' \
                     and constraint.operator in (tmt.hardware.Operator.EQ,
                                                 tmt.hardware.Operator.GTE,

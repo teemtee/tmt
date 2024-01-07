@@ -34,15 +34,7 @@ import operator
 import re
 import sys
 from collections.abc import Iterable, Iterator
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    NamedTuple,
-    Optional,
-    TypeVar,
-    Union,
-    )
+from typing import TYPE_CHECKING, Any, Callable, Generic, NamedTuple, Optional, TypeVar, Union
 
 import pint
 
@@ -70,7 +62,9 @@ UNITS = pint.UnitRegistry()
 
 # Special type variable, used in `Constraint.from_specification` - we bound this return value to
 # always be a subclass of `Constraint` class, instead of just any class in general.
-T = TypeVar('T', bound='Constraint')
+# ignore[type-arg]: `Constraint` is a generic type, and making typevar bound by a generic type
+# is hard. It's easier to silence mypy for now, and maybe pyright would serve us better.
+T = TypeVar('T', bound='Constraint')  # type: ignore[type-arg]
 
 
 class Operator(enum.Enum):
@@ -166,6 +160,7 @@ Spec = Any
 
 #: A type of constraint values.
 ConstraintValue = Union[int, 'Size', str, bool]
+ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool)
 
 # TODO: this was ported from Artemis but it's not used as of now. That should
 # change with future support for flavors aka instance types.
@@ -349,8 +344,8 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
     def variants(
             self,
-            members: Optional[list['Constraint']] = None
-            ) -> Iterator[list['Constraint']]:
+            members: Optional[list['Constraint[Any]']] = None
+            ) -> Iterator[list['Constraint[Any]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -365,7 +360,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
         raise NotImplementedError
 
-    def variant(self) -> list['Constraint']:
+    def variant(self) -> list['Constraint[Any]']:
         """
         Pick one of the available variants of this contraints.
 
@@ -437,8 +432,8 @@ class CompoundConstraint(BaseConstraint):
 
     def variants(
             self,
-            members: Optional[list['Constraint']] = None
-            ) -> Iterator[list['Constraint']]:
+            members: Optional[list['Constraint[Any]']] = None
+            ) -> Iterator[list['Constraint[Any]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -458,7 +453,7 @@ class CompoundConstraint(BaseConstraint):
 
 
 @dataclasses.dataclass(repr=False)
-class Constraint(BaseConstraint):
+class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     """
     A constraint imposing a particular limit to one of the guest properties.
     """
@@ -476,7 +471,7 @@ class Constraint(BaseConstraint):
     operator_handler: OperatorHandlerType
 
     # Constraint value.
-    value: ConstraintValue
+    value: ConstraintValueT
 
     # Stored for possible inspection by more advanced processing.
     raw_value: str
@@ -486,16 +481,16 @@ class Constraint(BaseConstraint):
 
     # If set, it is a "bigger" constraint, to which this constraint logically
     # belongs as one of its aspects.
-    original_constraint: Optional['Constraint'] = None
+    original_constraint: Optional['Constraint[Any]'] = None
 
     @classmethod
-    def from_specification(
+    def _from_specification(
             cls: type[T],
             name: str,
             raw_value: str,
             as_quantity: bool = True,
-            as_cast: Optional[Callable[[str], ConstraintValue]] = None,
-            original_constraint: Optional['Constraint'] = None
+            as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
+            original_constraint: Optional['Constraint[Any]'] = None
             ) -> T:
         """
         Parse raw constraint specification into our internal representation.
@@ -618,8 +613,8 @@ class Constraint(BaseConstraint):
 
     def variants(
             self,
-            members: Optional[list['Constraint']] = None
-            ) -> Iterator[list['Constraint']]:
+            members: Optional[list['Constraint[ConstraintValueT]']] = None
+            ) -> Iterator[list['Constraint[ConstraintValueT]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -633,6 +628,80 @@ class Constraint(BaseConstraint):
         """
 
         yield (members or []) + [self]
+
+
+class SizeConstraint(Constraint['Size']):
+    """ A constraint representing a size of resource, usually a storage """
+
+    @classmethod
+    def from_specification(
+            cls: type[T],
+            name: str,
+            raw_value: str,
+            original_constraint: Optional['Constraint[Any]'] = None
+            ) -> T:
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=True,
+            original_constraint=original_constraint
+            )
+
+
+class FlagConstraint(Constraint[bool]):
+    """ A constraint representing a boolean flag, enabled/disabled, has/has not, etc. """
+
+    @classmethod
+    def from_specification(
+            cls: type[T],
+            name: str,
+            raw_value: bool,
+            original_constraint: Optional['Constraint[Any]'] = None
+            ) -> T:
+        return cls._from_specification(
+            name,
+            str(raw_value),
+            as_quantity=False,
+            as_cast=bool,
+            original_constraint=original_constraint
+            )
+
+
+class NumberConstraint(Constraint[int]):
+    """ A constraint representing a dimension-less number """
+
+    @classmethod
+    def from_specification(
+            cls: type[T],
+            name: str,
+            raw_value: str,
+            original_constraint: Optional['Constraint[Any]'] = None
+            ) -> T:
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=False,
+            as_cast=int,
+            original_constraint=original_constraint
+            )
+
+
+class TextConstraint(Constraint[str]):
+    """ A constraint representing a string, e.g. a name """
+
+    @classmethod
+    def from_specification(
+            cls: type[T],
+            name: str,
+            raw_value: str,
+            original_constraint: Optional['Constraint[Any]'] = None
+            ) -> T:
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=False,
+            original_constraint=original_constraint
+            )
 
 
 @dataclasses.dataclass(repr=False)
@@ -652,8 +721,8 @@ class And(CompoundConstraint):
 
     def variants(
             self,
-            members: Optional[list[Constraint]] = None
-            ) -> Iterator[list[Constraint]]:
+            members: Optional[list[Constraint[Any]]] = None
+            ) -> Iterator[list[Constraint[Any]]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -708,8 +777,8 @@ class Or(CompoundConstraint):
 
     def variants(
             self,
-            members: Optional[list[Constraint]] = None
-            ) -> Iterator[list[Constraint]]:
+            members: Optional[list[Constraint[Any]]] = None
+            ) -> Iterator[list[Constraint[Any]]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -796,8 +865,7 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
     group = And()
 
     if 'method' in spec:
-        constraint = Constraint.from_specification(
-            'boot.method', spec["method"], as_quantity=False)
+        constraint = TextConstraint.from_specification('boot.method', spec["method"])
 
         if constraint.operator == Operator.EQ:
             constraint.change_operator(Operator.CONTAINS)
@@ -823,31 +891,23 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
 
     if 'is-virtualized' in spec:
         group.constraints += [
-            Constraint.from_specification(
+            FlagConstraint.from_specification(
                 'virtualization.is_virtualized',
-                str(spec['is-virtualized']),
-                as_quantity=False,
-                as_cast=bool
-                )
+                spec['is-virtualized'])
             ]
 
     if 'is-supported' in spec:
         group.constraints += [
-            Constraint.from_specification(
+            FlagConstraint.from_specification(
                 'virtualization.is_supported',
-                str(spec['is-supported']),
-                as_quantity=False,
-                as_cast=bool
-                )
+                spec['is-supported'])
             ]
 
     if 'hypervisor' in spec:
         group.constraints += [
-            Constraint.from_specification(
+            TextConstraint.from_specification(
                 'virtualization.hypervisor',
-                spec['hypervisor'],
-                as_quantity=False
-                )
+                spec['hypervisor'])
             ]
 
     return group
@@ -865,11 +925,11 @@ def _parse_compatible(spec: Spec) -> BaseConstraint:
     group = And()
 
     for distro in spec.get('distro', []):
-        constraint = Constraint.from_specification('compatible.distro', distro, as_quantity=False)
+        constraint = TextConstraint.from_specification('compatible.distro', distro)
 
         constraint.change_operator(Operator.CONTAINS)
 
-        group.constraints.append(constraint)
+        group.constraints += [constraint]
 
     return group
 
@@ -886,10 +946,9 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += [
-        Constraint.from_specification(
+        NumberConstraint.from_specification(
             f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name])
-            )
+            str(spec[constraint_name]))
         for constraint_name in (
             'processors',
             'sockets',
@@ -904,24 +963,9 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
         ]
 
     group.constraints += [
-        Constraint.from_specification(
+        TextConstraint.from_specification(
             f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            as_quantity=False
-            )
-        for constraint_name in (
-            'model',
-            'family'
-            )
-        if constraint_name in spec
-        ]
-
-    group.constraints += [
-        Constraint.from_specification(
-            f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            as_quantity=False
-            )
+            str(spec[constraint_name]))
         for constraint_name in (
             'family-name',
             'model-name'
@@ -945,10 +989,9 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
     group = And()
 
     group.constraints += [
-        Constraint.from_specification(
+        SizeConstraint.from_specification(
             f'disk[{disk_index}].{constraint_name}',
-            str(spec[constraint_name])
-            )
+            str(spec[constraint_name]))
         for constraint_name in ('size',)
         if constraint_name in spec
         ]
@@ -992,11 +1035,9 @@ def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
     group = And()
 
     group.constraints += [
-        Constraint.from_specification(
+        TextConstraint.from_specification(
             f'network[{network_index}].{constraint_name}',
-            str(spec[constraint_name]),
-            as_quantity=False
-            )
+            str(spec[constraint_name]))
         for constraint_name in ('type',)
         if constraint_name in spec
         ]
@@ -1035,11 +1076,9 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
     group = And()
 
     if 'version' in spec:
-        group.constraints.append(
-            Constraint.from_specification(
-                'tpm.version',
-                spec['version'],
-                as_quantity=False))
+        group.constraints += [
+            TextConstraint.from_specification('tpm.version', spec['version'])
+            ]
 
     return group
 
@@ -1057,10 +1096,10 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'arch' in spec:
         group.constraints += [
-            Constraint.from_specification(
+            TextConstraint.from_specification(
                 'arch',
-                spec['arch'],
-                as_quantity=False)]
+                spec['arch'])
+            ]
 
     if 'boot' in spec:
         group.constraints += [_parse_boot(spec['boot'])]
@@ -1072,7 +1111,7 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [_parse_cpu(spec['cpu'])]
 
     if 'memory' in spec:
-        group.constraints += [Constraint.from_specification('memory', str(spec['memory']))]
+        group.constraints += [SizeConstraint.from_specification('memory', str(spec['memory']))]
 
     if 'disk' in spec:
         group.constraints += [_parse_disks(spec['disk'])]
@@ -1082,10 +1121,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'hostname' in spec:
         group.constraints += [
-            Constraint.from_specification(
+            TextConstraint.from_specification(
                 'hostname',
-                spec['hostname'],
-                as_quantity=False)]
+                spec['hostname'])]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]
@@ -1206,7 +1244,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
             self,
             *,
             names: Optional[list[str]] = None,
-            check: Optional[Callable[[Constraint], bool]] = None,
+            check: Optional[Callable[[Constraint[Any]], bool]] = None,
             logger: tmt.log.Logger) -> None:
         """
         Report all unsupported constraints.
