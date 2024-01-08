@@ -160,6 +160,42 @@ default-1:html:50"
 default-1:html:never"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test --update-missing preserves defined --how"
+        rlRun -s "$run plan -n /with-report \
+            report"
+
+        check "with-report" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+
+        rlRun -s "$run plan -n /with-report \
+            report --update-missing -h junit"
+
+        check "with-report" "One 'html' phase shall exist" "default-0:html:50"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test --update-missing sets undefined --how"
+        rlRun -s "$run plan -n /without-how \
+            report"
+
+        check "without-how" "One 'display' phase shall exist" "default-0:display:60"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to default how" "$(cat $rlRun_LOG)" "default-0:display"
+
+        rlRun -s "$run plan -n /without-how \
+            report --update-missing -h html"
+
+        check "without-how" "One 'html' phase shall exist" "default-0:html:60"
+
+        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
+        rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
+    rlPhaseEnd
+
     rlPhaseStartTest "Test /with-order"
         rlRun -s "$run plan -n /with-order"
 

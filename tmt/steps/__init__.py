@@ -209,8 +209,8 @@ PluginClass = type['BasePlugin']  # type: ignore[type-arg]
 
 
 class _RawStepData(TypedDict, total=False):
-    how: str
-    name: str
+    how: Optional[str]
+    name: Optional[str]
 
 
 RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
@@ -276,6 +276,11 @@ class StepData(
         """ Convert from a specification file or from a CLI option """
 
         cls.pre_normalization(raw_data, logger)
+
+        # TODO: narrows type, but it would be better to not allow Optional `how`
+        # or `name` at this point. But that would require a dedicated type.
+        assert raw_data['name']
+        assert raw_data['how']
 
         data = cls(name=raw_data['name'], how=raw_data['how'])
         data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
@@ -361,22 +366,29 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         # Create an empty step by default (can be updated from cli)
         if data is None:
-            self._raw_data = [{}]
+            raw_data: list[_RawStepData] = [{}]
 
         # Convert to list if only a single config provided
         elif isinstance(data, dict):
-            self._raw_data = [data]
+            raw_data = [data]
 
         # List is as good as it gets
         elif isinstance(data, list):
-            self._raw_data = data
+            raw_data = data
 
         # Shout about invalid configuration
         else:
             raise tmt.utils.GeneralError(
                 f"Invalid '{self}' config in '{self.plan}'.")
 
-        self._set_default_values(self._raw_data)
+        raw_data = self._set_default_names(raw_data)
+        raw_data = self._apply_cli_invocations(raw_data)
+
+        self._raw_data = raw_data
+
+    @property
+    def _cli_invocation_logger(self) -> tmt.log.LoggingFunction:
+        return functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """ Check for duplicate names in phases """
@@ -384,20 +396,49 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         for name in tmt.utils.duplicates(raw_datum.get('name', None) for raw_datum in raw_data):
             raise tmt.utils.GeneralError(f"Duplicate phase name '{name}' in step '{self.name}'.")
 
-    def _set_default_values(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
-        """ Set default values for ``name`` and ``how`` fields if not specified """
+    def _set_default_names(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
+        """ Set default values for ``name`` keys if not specified """
+
+        debug1 = self._cli_invocation_logger
+        debug2 = functools.partial(debug1, shift=1)
+
+        debug1(f'Update {self.__class__.__name__.lower()} phases with default names')
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
-        for _i, raw_datum in enumerate(raw_data):
+        for i, raw_datum in enumerate(raw_data):
+            debug1(f'raw step datum #{i}', str(raw_datum), shift=1)
+
             # Add default unique names even to multiple configs so that the users
             # don't need to specify it if they don't care about the name
             if raw_datum.get('name', None) is None:
                 raw_datum['name'] = name_generator.get()
 
+                debug2(f"setting 'name' to default '{raw_datum['name']}'", shift=2)
+
+            debug1(f'raw step datum #{i}', str(raw_datum), shift=1)
+
+        return raw_data
+
+    def _set_default_how(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
+        """ Set default values for ``how`` keys if not specified """
+
+        debug1 = self._cli_invocation_logger
+        debug2 = functools.partial(debug1, shift=1)
+        debug3 = functools.partial(debug1, shift=2)
+
+        debug1(f'Update {self.__class__.__name__.lower()} phases with default how')
+
+        for i, raw_datum in enumerate(raw_data):
+            debug2(f'raw step datum #{i}', str(raw_datum))
+
             # Set 'how' to the default if not specified
             if raw_datum.get('how', None) is None:
                 raw_datum['how'] = self.DEFAULT_HOW
+
+                debug3(f"setting 'how' to default '{raw_datum['how']}'")
+
+            debug2(f'raw step datum #{i}', str(raw_datum))
 
         return raw_data
 
@@ -423,6 +464,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             data.append(plugin.data)
 
+        # A final bit of logging, to record what we ended up with after all inputs and fixups were
+        # applied.
+        debug = self._cli_invocation_logger
+
+        for i, datum in enumerate(data):
+            debug(f'final step data #{i}', str(datum))
+
         return data
 
     def _export(
@@ -435,7 +483,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         def _export_datum(raw_datum: _RawStepData) -> _RawStepData:
             return cast(
                 _RawStepData,
-                {key_to_option(key): value for key, value in raw_datum.items()})
+                {
+                    key_to_option(key): value
+                    for key, value in raw_datum.items()
+                    })
 
         return cast(
             tmt.export._RawExportedInstance,
@@ -583,6 +634,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             self.debug('Step is done, not touching its data.')
             return
 
+    def _apply_cli_invocations(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
         # Override step data with command line options
         #
         # Do NOT iterate over `self.data`: reading `self.data` would trigger materialization
@@ -592,9 +644,15 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Instead, iterate over raw data, and replace incompatible plugins with the one given
         # on command line. There is no reason to ever let dropped plugin's `StepData` to
         # materialize when it's going to be thrown away anyway.
-        debug = functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
-        debug('Update phases by CLI invocations')
+        # CLI processing is a nasty business, with many levels and much logging.
+        # Let's spawn a couple of helpers.
+        debug1 = self._cli_invocation_logger
+        debug2 = functools.partial(debug1, shift=1)
+        debug3 = functools.partial(debug1, shift=2)
+        debug4 = functools.partial(debug1, shift=3)
+
+        debug1(f'Update {self.__class__.__name__.lower()} phases by CLI invocations')
 
         def _to_raw_step_datum(options: dict[str, Any]) -> _RawStepData:
             """
@@ -621,7 +679,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # modified by `--insert`, and entries may be modified as well. Note that we do not process
         # step data here, this list is not the input we iterate over - we process CLI invocations,
         # and based on their content we modify this list and its content.
-        raw_data: list[_RawStepData] = self._raw_data[:]
+        #
+        # Making copy of the original list, to not overwrite whatever the caller
+        # gave us. Processing CLI is a tricky task, and let's introduce a bit of
+        # immutability into our lives.
+        raw_data = raw_data[:]
 
         # Some invocations cannot be easily evaluated when we first spot them. To remain backward
         # compatible, `--update` without `--name` should result in all phases being converted into
@@ -658,11 +720,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             variable).
             """
 
-            local_debug = functools.partial(debug, shift=1)
-
-            local_debug('raw step datum', str(raw_datum))
-            local_debug('incoming raw step datum', str(incoming_raw_datum))
-            local_debug('CLI invocation', str(invocation.options))
+            debug3('raw step datum', str(raw_datum))
+            debug3('incoming raw step datum', str(incoming_raw_datum))
+            debug3('CLI invocation', str(invocation.options))
 
             for opt, value in incoming_raw_datum.items():
                 if opt == 'name':
@@ -671,15 +731,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 key = option_to_key(opt)
                 value_source = invocation.option_sources.get(key)
 
-                local_debug(f'{opt=} {key=} {value=} {value_source=}')
+                debug3(f'{opt=} {key=} {value=} {value_source=}')
 
                 # Ignore CLI input if it's been provided by option's default
                 if value_source not in (ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT):
-                    debug('value not really given via CLI/env, no effect', shift=2)
+                    debug4('value not really given via CLI/env, no effect')
                     continue
 
+                # The `how` has not been set in fmf, therefore --update-missing
+                # applies to `how` as well.
                 if missing_only and opt in raw_datum:
-                    debug('missing-only mode and key exists in raw datum, no effect', shift=2)
+                    debug4('missing-only mode and key exists in raw datum, no effect')
                     continue
 
                 # ignore[literal-required]: since raw_datum is a typed dict,
@@ -689,28 +751,28 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 # `_RawStepData` and we do expect there are keys we do not
                 # care about, keys that make sense to whatever plugin is
                 # materialized from the raw step data.
-                debug('apply invocation value', shift=2)
+                debug4('apply invocation value')
                 raw_datum[opt] = value  # type: ignore[literal-required]
 
-            local_debug('patched step datum', str(raw_datum))
+            debug3('patched step datum', str(raw_datum))
 
         # A bit of logging before we start messing with step data
         for i, raw_datum in enumerate(raw_data):
-            debug(f'raw step datum #{i}', str(raw_datum))
+            debug2(f'raw step datum #{i}', str(raw_datum))
 
         # The first pass, apply CLI invocations that can be applied
         for i, invocation in enumerate(self.__class__.cli_invocations):
-            debug(f'invocation #{i}', str(invocation.options))
+            debug2(f'invocation #{i}', str(invocation.options))
 
             how: Optional[str] = invocation.options.get('how')
 
             if how is None:
-                debug('  how-less phase (postponed)')
+                debug3('how-less phase (postponed)')
 
                 postponed_invocations.append(invocation)
 
             elif invocation.options.get('insert'):
-                debug('  inserting new phase')
+                debug3('inserting new phase')
 
                 raw_datum = _to_raw_step_datum(invocation.options)
                 raw_datum = _ensure_name(raw_datum)
@@ -718,7 +780,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 raw_data.append(raw_datum)
 
             elif invocation.options.get('update'):
-                debug('  updating existing phase')
+                debug3('updating existing phase')
 
                 needle = invocation.options.get('name')
 
@@ -738,12 +800,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                             f"Cannot update phase '{needle}', no such name was found.")
 
                 else:
-                    debug('  needle-less update (postponed)')
+                    debug3('needle-less update (postponed)')
 
                     postponed_invocations.append(invocation)
 
             elif invocation.options.get('update_missing'):
-                debug('  updating existing phase (missing fields only)')
+                debug3('updating existing phase (missing fields only)')
 
                 needle = invocation.options.get('name')
 
@@ -767,18 +829,18 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                             f"Cannot update phase '{needle}', no such name was found.")
 
                 else:
-                    debug('  needle-less update (postponed)')
+                    debug3('needle-less update (postponed)')
 
                     postponed_invocations.append(invocation)
 
             else:
-                debug('  action-less phase (postponed)')
+                debug3('action-less phase (postponed)')
 
                 postponed_invocations.append(invocation)
 
         # The second pass, evaluate postponed CLI invocations
         for i, invocation in enumerate(postponed_invocations):
-            debug(f'postponed invocation #{i}', str(invocation.options))
+            debug2(f'postponed invocation #{i}', str(invocation.options))
 
             pruned_raw_data: list[_RawStepData] = []
             incoming_raw_datum = _to_raw_step_datum(invocation.options)
@@ -790,21 +852,21 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             how = invocation.options.get('how')
 
             for j, raw_datum in enumerate(raw_data):
-                debug(f'raw step datum #{j}', str(raw_datum))
+                debug2(f'raw step datum #{j}', str(raw_datum))
 
                 if how is None:
-                    debug('  compatible step data (how-less invocation)')
+                    debug3('compatible step data (how-less invocation)')
 
-                elif raw_datum['how'] == how:
-                    debug('  compatible step data')
+                elif raw_datum.get('how') == how:
+                    debug3('compatible step data')
 
                 else:
-                    debug('  incompatible step data')
+                    debug3('incompatible step data')
 
                     data_base = self._plugin_base_class._data_class
 
-                    debug('  compatible base', f'{data_base.__module__}.{data_base.__name__}')
-                    debug('  compatible keys', list(data_base.keys()))
+                    debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
+                    debug3('compatible keys', list(data_base.keys()))
 
                     # Copy compatible keys only, ignore everything else
                     # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
@@ -830,16 +892,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         # And bit of logging after re're done with CLI invocations
         for i, raw_datum in enumerate(raw_data):
-            debug(f'updated raw step datum #{i}', str(raw_datum))
+            debug2(f'updated raw step datum #{i}', str(raw_datum))
 
-        self._set_default_values(raw_data)
-        self.data = self._normalize_data(raw_data, self._logger)
-        self._raw_data = raw_data
-
-        # A final bit of logging, to record what we ended up with after all inputs and fixups were
-        # applied.
-        for i, datum in enumerate(self.data):
-            debug(f'final step data #{i}', str(datum))
+        raw_data = self._set_default_names(raw_data)
+        return self._set_default_how(raw_data)
 
     def setup_actions(self) -> None:
         """ Insert login and reboot plugins if requested """
@@ -1209,6 +1265,10 @@ class BasePlugin(Phase, Generic[StepDataT]):
         if data is not None:
             how = data.how
         elif raw_data is not None:
+            # TODO: narrows type, but it would be better to not allow Optional `how`
+            # at this point. But that would require a dedicated type.
+            assert raw_data['how']
+
             how = raw_data['how']
         else:
             raise tmt.utils.GeneralError('Either data or raw data must be given.')
