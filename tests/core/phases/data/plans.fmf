@@ -23,3 +23,7 @@ execute:
   report:
     - how: html
       order: 60
+
+/without-how:
+  report:
+    - order: 60

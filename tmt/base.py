@@ -1543,6 +1543,14 @@ class Plan(
     _original_plan: Optional['Plan'] = field(default=None, internal=True)
     _remote_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
 
+    #: Used by steps to mark invocations that have been already applied to
+    #: this plan's phases. Needed to avoid the second evaluation in
+    #: py:meth:`Step.wake()`.
+    _applied_cli_invocations: list['tmt.cli.CliInvocation'] = field(
+        default_factory=list,
+        internal=True
+        )
+
     _extra_l2_keys = [
         'context',
         'environment',
@@ -1570,6 +1578,11 @@ class Plan(
             skip_validation=skip_validation,
             raise_on_validation_error=raise_on_validation_error,
             **kwargs)
+
+        # TODO: there is a bug in handling internal fields with `default_factory`
+        # set, incorrect default value is generated, and the field ends up being
+        # set to `None`. See https://github.com/teemtee/tmt/issues/2630.
+        self._applied_cli_invocations = []
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])

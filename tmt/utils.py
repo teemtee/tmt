@@ -5320,6 +5320,13 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     if not isinstance(node.data, dict):
         return node
 
+    # Do NOT modify the given node! Changing it might taint or hide important
+    # keys the later processing could need in their original state. Namely, we
+    # need to initialize `how` to reach at least some schema, but CLI processing
+    # needs to realize `how` was not given, and therefore it's possible to be
+    # modified with `--update-missing`...
+    node = node.copy()
+
     # Avoid possible circular imports
     import tmt.steps
 
