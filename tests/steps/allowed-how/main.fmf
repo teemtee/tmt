@@ -1,0 +1,2 @@
+summary: Check that plugins can be disallowed
+test: ./test.sh

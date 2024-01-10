@@ -163,3 +163,39 @@
         - tmt run finish
     link:
       - implemented-by: /tmt/steps/finish
+
+/allowed-how:
+    story: Allow only a subset of possible step plugins to be used
+    description: |
+        I wish to limit tmt to only a subset of plugins available
+        for a particular step. This can be achieved by manipulating
+        installed plugins, moving them around to different directories,
+        but that would be impractical.
+
+        Instead, every step subcommand offers ``--allowed-how`` option
+        which limits methods allowed to be used in the step. The option
+        accepts a regular expression allowed methods - names set with
+        ``how`` key or ``--how`` option - must match to be allowed.
+
+        By default, the pattern is set to ``.*``, i.e. all plugins and
+        all methods are allowed.
+
+        .. versionadded:: 1.31
+
+    example:
+        - |
+          # Allow only provision plugins using containers.
+          tmt run -a provision --allowed-how 'container'
+
+        - |
+          # Allow only provision plugins that don't require external services.
+          tmt run -a provision --allowed-how 'container|local|virtual'
+
+        - |
+          # Allow all provision plugins except one, virtual.libvirt. Note that
+          # other plugins of a "virtual" family remain allowed, e.g. "virtual.testcloud"
+          # would be accepted.
+          tmt run -a provision --allowed-how '^(?!.*virtual\\.libvirt).*$'
+
+    link:
+        - implemented-by: /tmt/steps

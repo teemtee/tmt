@@ -9,6 +9,7 @@ import re
 import shutil
 import textwrap
 from collections.abc import Iterable, Iterator
+from re import Pattern
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -60,6 +61,7 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 
+DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
 DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
 
@@ -101,6 +103,12 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
             or previous command line options. Use --name to specify which one, or omit --name and
             update all existing phases.
             """),
+    option(
+        '--allowed-how',
+        metavar='PATTERN',
+        default=None,
+        help='If set, only ``how`` matching given regular expression is allowed.'
+        ),
     option(
         '--name',
         type=str,
@@ -464,6 +472,29 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         return self.name in self.plan.my_run._cli_context_object.steps
 
+    @cached_property
+    def allowed_methods_pattern(self) -> Pattern[str]:
+        """ Return a pattern allowed methods must match """
+
+        try:
+            patterns: list[Pattern[str]] = [
+                DEFAULT_ALLOWED_HOW_PATTERN
+                ] + [
+                re.compile(invocation.options[option_to_key('allowed_how')])
+                for invocation in self.cli_invocations
+                if invocation.options.get(option_to_key('allowed-how'))
+                ]
+
+        except re.error as exc:
+            if exc.pattern is None:
+                raise GeneralError("Could not compile regular expression.") from exc
+
+            pattern = exc.pattern if isinstance(exc.pattern, str) else exc.pattern.decode()
+
+            raise GeneralError(f"Could not compile regular expression '{pattern}'.") from exc
+
+        return patterns[-1]
+
     @property
     def plugins_in_standalone_mode(self) -> int:
         """
@@ -606,7 +637,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             def _iter_options() -> Iterator[tuple[str, Any]]:
                 for name, value in options.items():
-                    if name in ('update', 'update_missing', 'insert'):
+                    if name in ('update', 'update_missing', 'insert', 'allowed-how'):
                         continue
 
                     yield key_to_option(name), value
@@ -1194,6 +1225,16 @@ class BasePlugin(Phase, Generic[StepDataT]):
         return sorted(cls._supported_methods.iter_plugins(), key=lambda method: method.order)
 
     @classmethod
+    def allowed_methods(cls, step: Step) -> list[Method]:
+        """ Return all allowed methods """
+
+        return [
+            method
+            for method in cls._supported_methods.iter_plugins()
+            if step.allowed_methods_pattern.match(method.name)
+            ]
+
+    @classmethod
     def delegate(
             cls,
             step: Step,
@@ -1218,9 +1259,16 @@ class BasePlugin(Phase, Generic[StepDataT]):
             level=3)
 
         # Filter matching methods, pick the one with the lowest order
+        allowed_methods = cls.allowed_methods(step)
+
         for method in cls.methods():
             assert method.class_ is not None
             if method.name.startswith(how):
+                if method not in allowed_methods:
+                    step.warn(
+                        f"Suitable provision method '{method.name}' disallowed by configuration.")
+                    continue
+
                 step.debug(
                     f"Using the '{method.class_.__name__}' plugin "
                     f"for the '{how}' method.", level=2)

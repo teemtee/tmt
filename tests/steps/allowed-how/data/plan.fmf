@@ -1,0 +1,8 @@
+discover:
+  how: shell
+  tests:
+    - name: A test
+      test: /bin/true
+
+execute:
+    how: tmt
