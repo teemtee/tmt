@@ -675,7 +675,7 @@ class FlagConstraint(Constraint[bool]):
             name,
             str(raw_value),
             as_quantity=False,
-            as_cast=bool,
+            as_cast=lambda x: x.lower() == 'true',
             original_constraint=original_constraint,
             allowed_operators=allowed_operators
             )

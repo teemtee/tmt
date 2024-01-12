@@ -48,7 +48,8 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.model',
     'disk.size',
     'hostname',
-    'memory'
+    'memory',
+    'virtualization.is_virtualized'
     ]
 
 
@@ -273,6 +274,24 @@ def constraint_to_beaker_filter(
             return MrackHWGroup(
                 'cpu',
                 children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+    if name == 'virtualization':
+        beaker_operator, actual_value, _ = operator_to_beaker_op(
+            constraint.operator,
+            str(constraint.value))
+
+        if child_name == 'is_virtualized':
+            test = (constraint.operator, constraint.value)
+
+            if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
+                return MrackHWGroup(
+                    'system',
+                    children=[MrackHWBinOp('hypervisor', '!=', '')])
+
+            if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
+                return MrackHWGroup(
+                    'system',
+                    children=[MrackHWBinOp('hypervisor', '==', '')])
 
     # Unsupported constraint has been already logged via report_support(). Make
     # sure user is aware it would have no effect, and since we have to return
