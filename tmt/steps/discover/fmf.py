@@ -614,11 +614,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 # Copy all parent main.fmf files
                 parent_dir = relative_test_path
                 while parent_dir.resolve() != Path.cwd().resolve():
+                    parent_dir = parent_dir.parent
                     if (self.testdir / parent_dir / 'main.fmf').exists():
                         shutil.copyfile(
                             self.testdir / parent_dir / 'main.fmf',
                             clonedir / parent_dir / 'main.fmf')
-                    parent_dir = parent_dir.parent
 
             # Prefix test path with 'tests' and possible 'path' prefix
             assert test.path is not None  # narrow type
