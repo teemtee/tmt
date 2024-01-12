@@ -104,21 +104,47 @@ description:
         web page, filter them via context attributes and get links
         to detailed test output and other test information.
     description:
-        Fill json with test results and other fmf data per each plan,
+        Provide test results and fmf data per each plan,
         and send it to a Report Portal instance via its API
         with token, url and project name given.
     example:
       - |
-        # Set environment variables accoriding to TMT_PLUGIN_REPORT_REPORTPORTAL_${OPTION}
+        # Optionally set environment variables according to TMT_PLUGIN_REPORT_REPORTPORTAL_${OPTION}
         export TMT_PLUGIN_REPORT_REPORTPORTAL_URL=${url-to-RP-instance}
         export TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN=${token-from-RP-profile}
       - |
-        # Enable ReportPortal report from the command line
+        # Enable ReportPortal report from the command line depending on the use case:
+
+        ## Simple upload with all project, url endpoint and user token passed in command line
+        tmt run --all report --how reportportal --project=baseosqe --url="https://reportportal.xxx.com" --token="abc...789"
+
+        ## Simple upload with url and token exported in environment variable
         tmt run --all report --how reportportal --project=baseosqe
-        tmt run --all report --how reportportal --project=baseosqe --launch=test_plan
-        tmt run --all report --how reportportal --project=baseosqe --url=... --token=...
-        tmt run --all report --how reportportal --project=baseosqe --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
-        tmt run -a report -h reportportal --merge --launch "Errata" --attributes "errata:123456"
+
+        ## Upload with project name in fmf data, filtering out parameters (environemnt variables) that tend to be unique and break the history aggregation
+        tmt run --all report --how reportportal --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+
+        ## Upload all plans as suites into one ReportPortal launch
+        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-description="..."
+
+        ## Rerun the launch with suite structure for the test results to be uploaded into the latest launch with the same name as a new 'Retry' tab (mapping based on unique paths)
+        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-rerun
+
+        ## Rerun the tmt run and append the new result logs under the previous one uploaded in ReportPortal (precise mapping)
+        tmt run --id run-012 --all report --how reportportal --again
+
+        ## Additional upload of new suites into given launch with suite structure
+        tmt run --all report --how reportportal --suite-per-plan --upload-to-launch=4321
+
+        ## Additional upload of new tests into given launch with non-suite structure
+        tmt run --all report --how reportportal --launch-per-plan --upload-to-launch=1234
+
+        ## Additional upload of new tests into given suite
+        tmt run --all report --how reportportal --upload-to-suite=123456
+
+        ## Upload Idle tests, then execute it and add result logs into prepared empty tests
+        tmt run discover report --how reportportal --defect-type=Idle
+        tmt run --last --all report --how reportportal --again
       - |
         # Use ReportPortal as the default report for given plan
         report:
