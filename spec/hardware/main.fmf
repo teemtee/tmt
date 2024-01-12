@@ -27,6 +27,21 @@ description: |
     ``>``, ``>=``, ``<``, ``>=``, ``~`` (regex match), and ``!~`` (regex *not*
     matches). When operator is omitted, ``=`` is assumed.
 
+    .. warning::
+
+        Only ``=``, ``!=``, ``>``, ``>=``, ``<`` and ``<=`` operators are
+        accepted for requirements that accept numeric values, e.g.
+        :ref:`cpu.cores </spec/hardware/cpu>` or
+        :ref:`tpm.version </spec/hardware/tpm>`.
+
+        Only ``=`` and ``!=`` operators are accepted for flag-like requirements,
+        e.g. :ref:`virtualization.is-virtualized </spec/hardware/virtualization>`.
+
+        Only ``=``, ``!``, ``~`` and ``!~`` operators are accepted for
+        requirements that accept string values, e.g.
+        :ref:`cpu.model-name </spec/hardware/cpu>` or
+        :ref:`virtualization.hypervisor </spec/hardware/virtualization>`.
+
     .. note::
 
         It is **highly** recommended to wrap values with single or double quotes,

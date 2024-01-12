@@ -490,7 +490,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             raw_value: str,
             as_quantity: bool = True,
             as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
-            original_constraint: Optional['Constraint[Any]'] = None
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None
             ) -> T:
         """
         Parse raw constraint specification into our internal representation.
@@ -502,9 +503,12 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         :param as_cast: if specified, this callable is used to convert raw value to its final type.
         :param original_constraint: when specified, new constraint logically belongs to
             ``original_constraint``, possibly representing one of its aspects.
-        :raises ParseError: when parsing fails.
+        :param allowed_operators: if specified, only operators on this list are accepted.
+        :raises ParseError: when parsing fails, or the operator is now allowed.
         :returns: a :py:class:`Constraint` representing the given specification.
         """
+
+        allowed_operators = allowed_operators or INPUTABLE_OPERATORS
 
         parsed_value = CONSTRAINT_VALUE_PATTERN.match(raw_value)
 
@@ -518,6 +522,12 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
         else:
             operator = Operator.EQ
+
+        if operator not in allowed_operators:
+            raise ParseError(
+                constraint_name=name,
+                raw_value=raw_value,
+                message=f"Operator '{operator} is not allowed.")
 
         raw_value = groups['value']
 
@@ -638,13 +648,15 @@ class SizeConstraint(Constraint['Size']):
             cls: type[T],
             name: str,
             raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None
             ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=True,
-            original_constraint=original_constraint
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators
             )
 
 
@@ -656,14 +668,16 @@ class FlagConstraint(Constraint[bool]):
             cls: type[T],
             name: str,
             raw_value: bool,
-            original_constraint: Optional['Constraint[Any]'] = None
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None
             ) -> T:
         return cls._from_specification(
             name,
             str(raw_value),
             as_quantity=False,
             as_cast=bool,
-            original_constraint=original_constraint
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators
             )
 
 
@@ -675,14 +689,16 @@ class NumberConstraint(Constraint[int]):
             cls: type[T],
             name: str,
             raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None
             ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=False,
             as_cast=int,
-            original_constraint=original_constraint
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators
             )
 
 
@@ -694,13 +710,15 @@ class TextConstraint(Constraint[str]):
             cls: type[T],
             name: str,
             raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None
             ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=False,
-            original_constraint=original_constraint
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators
             )
 
 
@@ -865,7 +883,10 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
     group = And()
 
     if 'method' in spec:
-        constraint = TextConstraint.from_specification('boot.method', spec["method"])
+        constraint = TextConstraint.from_specification(
+            'boot.method',
+            spec["method"],
+            allowed_operators=[Operator.EQ, Operator.NEQ])
 
         if constraint.operator == Operator.EQ:
             constraint.change_operator(Operator.CONTAINS)
@@ -893,21 +914,24 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
         group.constraints += [
             FlagConstraint.from_specification(
                 'virtualization.is_virtualized',
-                spec['is-virtualized'])
+                spec['is-virtualized'],
+                allowed_operators=[Operator.EQ, Operator.NEQ])
             ]
 
     if 'is-supported' in spec:
         group.constraints += [
             FlagConstraint.from_specification(
                 'virtualization.is_supported',
-                spec['is-supported'])
+                spec['is-supported'],
+                allowed_operators=[Operator.EQ, Operator.NEQ])
             ]
 
     if 'hypervisor' in spec:
         group.constraints += [
             TextConstraint.from_specification(
                 'virtualization.hypervisor',
-                spec['hypervisor'])
+                spec['hypervisor'],
+                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
             ]
 
     return group
@@ -948,7 +972,9 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
     group.constraints += [
         NumberConstraint.from_specification(
             f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]))
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
         for constraint_name in (
             'processors',
             'sockets',
@@ -965,7 +991,21 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
     group.constraints += [
         TextConstraint.from_specification(
             f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]))
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in (
+            'model',
+            'family'
+            )
+        if constraint_name in spec
+        ]
+
+    group.constraints += [
+        TextConstraint.from_specification(
+            f'cpu.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
         for constraint_name in (
             'family-name',
             'model-name'
@@ -1007,7 +1047,9 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
     group.constraints += [
         SizeConstraint.from_specification(
             f'disk[{disk_index}].{constraint_name}',
-            str(spec[constraint_name]))
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
         for constraint_name in ('size',)
         if constraint_name in spec
         ]
@@ -1053,7 +1095,8 @@ def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
     group.constraints += [
         TextConstraint.from_specification(
             f'network[{network_index}].{constraint_name}',
-            str(spec[constraint_name]))
+            str(spec[constraint_name]),
+            allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
         for constraint_name in ('type',)
         if constraint_name in spec
         ]
@@ -1093,7 +1136,12 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
 
     if 'version' in spec:
         group.constraints += [
-            TextConstraint.from_specification('tpm.version', spec['version'])
+            TextConstraint.from_specification(
+                'tpm.version',
+                spec['version'],
+                allowed_operators=[
+                    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT,
+                    Operator.GTE])
             ]
 
     return group
@@ -1127,7 +1175,14 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [_parse_cpu(spec['cpu'])]
 
     if 'memory' in spec:
-        group.constraints += [SizeConstraint.from_specification('memory', str(spec['memory']))]
+        group.constraints += [
+            SizeConstraint.from_specification(
+                'memory',
+                str(spec['memory']),
+                allowed_operators=[
+                    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT,
+                    Operator.GTE])
+            ]
 
     if 'disk' in spec:
         group.constraints += [_parse_disks(spec['disk'])]
@@ -1139,7 +1194,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [
             TextConstraint.from_specification(
                 'hostname',
-                spec['hostname'])]
+                spec['hostname'],
+                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+            ]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]
