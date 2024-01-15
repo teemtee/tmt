@@ -1364,7 +1364,7 @@ class GuestSsh(Guest):
 
         self.debug(f"Execute command '{remote_command}' on guest '{self.guest}'.")
 
-        return self._run_guest_command(
+        output = self._run_guest_command(
             ssh_command,
             log=log,
             friendly_command=friendly_command or str(command),
@@ -1373,6 +1373,18 @@ class GuestSsh(Guest):
             interactive=interactive,
             on_process_start=on_process_start,
             **kwargs)
+
+        # Drop ssh connection closed messages, #2524
+        if test_session and output.stdout:
+            # Get last line index
+            last_line_index = output.stdout.rfind(os.linesep, 0, -2)
+            # Drop the connection closed message line, keep the ending lineseparator
+            if 'Shared connection to ' in output.stdout[last_line_index:] \
+                    or 'Connection to ' in output.stdout[last_line_index:]:
+                output = dataclasses.replace(
+                    output, stdout=output.stdout[:last_line_index + len(os.linesep)])
+
+        return output
 
     def push(self,
              source: Optional[Path] = None,

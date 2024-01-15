@@ -33,6 +33,11 @@ rlJournalStart
             rlAssertGrep "out: finish: stdin: 0" $rlRun_LOG
             rlAssertGrep "out: finish: stdout: 0" $rlRun_LOG
             rlAssertGrep "out: finish: stderr: 0" $rlRun_LOG
+
+            # test for #2429, not related to tty
+            rlRun -s "tmt run --last report -vvv"
+            rlAssertNotGrep "Connection to.*closed" $rlRun_LOG
+            rlAssertNotGrep "Shared connection to.*closed" $rlRun_LOG
         rlPhaseEnd
 
        # NOTE: Our local provisioner cannot execute commands with a pty allocated
