@@ -380,7 +380,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         super().go(guest=guest, environment=environment, logger=logger)
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
@@ -621,7 +621,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             *,
             event: CheckEvent,
             invocation: TestInvocation,
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
 
         results: list[CheckResult] = []
@@ -649,7 +649,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             self,
             *,
             invocation: TestInvocation,
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
@@ -662,7 +662,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             self,
             *,
             invocation: TestInvocation,
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,

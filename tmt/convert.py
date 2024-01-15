@@ -15,6 +15,7 @@ from click import echo, style
 import tmt.base
 import tmt.export
 import tmt.identifier
+import tmt.log
 import tmt.utils
 from tmt.utils import ConvertError, GeneralError, Path, format_value
 
@@ -53,7 +54,8 @@ def read_manual(
         plan_id: int,
         case_id: int,
         disabled: bool,
-        with_script: bool) -> None:
+        with_script: bool,
+        logger: tmt.log.Logger) -> None:
     """
     Reads metadata of manual test cases from Nitrate
     """
@@ -106,7 +108,7 @@ def read_manual(
         md_content = read_manual_data(testcase)
 
         # Test case metadata
-        data = read_nitrate_case(testcase)
+        data = read_nitrate_case(testcase=testcase, logger=logger)
         data['manual'] = True
         data['test'] = 'test.md'
 
@@ -387,7 +389,8 @@ def read(
         disabled: bool,
         types: list[str],
         general: bool,
-        dry_run: bool
+        dry_run: bool,
+        logger: tmt.log.Logger
         ) -> ReadOutputType:
     """
     Read old metadata from various sources
@@ -591,7 +594,7 @@ def read(
     # Nitrate (extract contact, environment and relevancy)
     if nitrate and beaker_task:
         common_data, individual_data = read_nitrate(
-            beaker_task, data, disabled, general, dry_run)
+            beaker_task, data, disabled, general, dry_run, logger)
     else:
         common_data = data
         individual_data = []
@@ -658,7 +661,8 @@ def read_nitrate(
         common_data: NitrateDataType,
         disabled: bool,
         general: bool,
-        dry_run: bool
+        dry_run: bool,
+        logger: tmt.log.Logger
         ) -> ReadOutputType:
     """ Read old metadata from nitrate test cases """
 
@@ -701,7 +705,11 @@ def read_nitrate(
         # Testcase data must be fetched due to
         # https://github.com/psss/python-nitrate/issues/24
         testcase._fetch()
-        data = read_nitrate_case(testcase, common_data, general)
+        data = read_nitrate_case(
+            testcase=testcase,
+            makefile_data=common_data,
+            general=general,
+            logger=logger)
         individual_data.append(data)
         # Check testcase for manual data
         md_content_tmp = read_manual_data(testcase)
@@ -972,9 +980,11 @@ def extract_relevancy(
 
 
 def read_nitrate_case(
+        *,
         testcase: 'TestCase',
         makefile_data: Optional[NitrateDataType] = None,
-        general: bool = False
+        general: bool = False,
+        logger: tmt.log.Logger
         ) -> NitrateDataType:
     """ Read old metadata from nitrate test case """
     import tmt.export.nitrate
@@ -1005,7 +1015,7 @@ def read_nitrate_case(
         echo(style('contact: ', fg='green') + data['contact'])
     # Environment
     if testcase.arguments:
-        data['environment'] = tmt.utils.shell_to_dict(testcase.arguments)
+        data['environment'] = tmt.utils.Environment.from_sequence(testcase.arguments, logger)
         if not data['environment']:
             data.pop('environment')
         else:
@@ -1052,7 +1062,7 @@ def read_nitrate_case(
     field = tmt.utils.StructuredField(testcase.notes)
     relevancy = extract_relevancy(testcase.notes, field)
     if relevancy:
-        data['adjust'] = relevancy_to_adjust(relevancy)
+        data['adjust'] = relevancy_to_adjust(relevancy, logger)
         echo(style('adjust:', fg='green'))
         echo(tmt.utils.dict_to_yaml(data['adjust']).strip())
 
@@ -1155,7 +1165,8 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
 
 
 def relevancy_to_adjust(
-        relevancy: RelevancyType) -> list[NitrateDataType]:
+        relevancy: RelevancyType,
+        logger: tmt.log.Logger) -> list[NitrateDataType]:
     """
     Convert the old test case relevancy into adjust rules
 
@@ -1189,7 +1200,7 @@ def relevancy_to_adjust(
             rule['enabled'] = False
         else:
             try:
-                rule['environment'] = tmt.utils.shell_to_dict(decision)
+                rule['environment'] = tmt.utils.Environment.from_sequence(decision, logger)
             except tmt.utils.GeneralError:
                 raise tmt.utils.ConvertError(
                     f"Invalid test case relevancy decision '{decision}'.")

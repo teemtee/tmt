@@ -588,7 +588,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Perform preparation for the guests """
         super().go(guest=guest, environment=environment, logger=logger)

@@ -829,12 +829,12 @@ class Guest(tmt.utils.Common):
 
     def _prepare_environment(
         self,
-        execute_environment: Optional[tmt.utils.EnvironmentType] = None
-            ) -> tmt.utils.EnvironmentType:
+        execute_environment: Optional[tmt.utils.Environment] = None
+            ) -> tmt.utils.Environment:
         """ Prepare dict of environment variables """
         # Prepare environment variables so they can be correctly passed
         # to shell. Create a copy to prevent modifying source.
-        environment: tmt.utils.EnvironmentType = {}
+        environment = tmt.utils.Environment()
         environment.update(execute_environment or {})
         # Plan environment and variables provided on the command line
         # override environment provided to execute().
@@ -844,7 +844,7 @@ class Guest(tmt.utils.Common):
         return environment
 
     @staticmethod
-    def _export_environment(environment: tmt.utils.EnvironmentType) -> list[ShellScript]:
+    def _export_environment(environment: tmt.utils.Environment) -> list[ShellScript]:
         """ Prepare shell export of environment variables """
         if not environment:
             return []
@@ -859,7 +859,7 @@ class Guest(tmt.utils.Common):
             friendly_command: Optional[str] = None,
             silent: bool = False,
             cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.EnvironmentType] = None,
+            env: Optional[tmt.utils.Environment] = None,
             interactive: bool = False,
             log: Optional[tmt.log.LoggingFunction] = None,
             **kwargs: Any) -> tmt.utils.CommandOutput:
@@ -964,7 +964,7 @@ class Guest(tmt.utils.Common):
     def execute(self,
                 command: tmt.utils.ShellScript,
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,
@@ -979,7 +979,7 @@ class Guest(tmt.utils.Common):
     def execute(self,
                 command: tmt.utils.Command,
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,
@@ -993,7 +993,7 @@ class Guest(tmt.utils.Common):
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,
@@ -1368,7 +1368,7 @@ class GuestSsh(Guest):
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,

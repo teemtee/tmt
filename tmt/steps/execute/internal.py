@@ -18,7 +18,15 @@ from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
 from tmt.steps.provision import Guest
-from tmt.utils import Command, EnvironmentType, Path, ShellScript, Stopwatch, field
+from tmt.utils import (
+    Command,
+    Environment,
+    EnvVarValue,
+    Path,
+    ShellScript,
+    Stopwatch,
+    field,
+    )
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
@@ -223,31 +231,31 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             self,
             *,
             invocation: TestInvocation,
-            extra_environment: Optional[EnvironmentType] = None,
-            logger: tmt.log.Logger) -> EnvironmentType:
+            extra_environment: Optional[Environment] = None,
+            logger: tmt.log.Logger) -> Environment:
         """ Return test environment """
 
-        extra_environment = extra_environment or {}
+        extra_environment = extra_environment or Environment()
 
         environment = extra_environment.copy()
         environment.update(invocation.test.environment)
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
 
-        environment['TMT_TEST_PIDFILE'] = str(
+        environment['TMT_TEST_PIDFILE'] = EnvVarValue(
             effective_pidfile_root() / TEST_PIDFILE_FILENAME)
-        environment['TMT_TEST_PIDFILE_LOCK'] = str(
+        environment['TMT_TEST_PIDFILE_LOCK'] = EnvVarValue(
             effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
-        environment["TMT_TEST_NAME"] = invocation.test.name
-        environment["TMT_TEST_DATA"] = str(invocation.test_data_path)
-        environment['TMT_TEST_SERIAL_NUMBER'] = str(invocation.test.serial_number)
-        environment["TMT_TEST_METADATA"] = str(
+        environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
+        environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
+        environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
+        environment["TMT_TEST_METADATA"] = EnvVarValue(
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME)
-        environment["TMT_REBOOT_REQUEST"] = str(
+        environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
             invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file)
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = str(invocation._reboot_count)
+            environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
 
         # Add variables the framework wants to expose
         environment.update(
@@ -271,7 +279,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             self,
             *,
             invocation: TestInvocation,
-            extra_environment: Optional[EnvironmentType] = None,
+            extra_environment: Optional[Environment] = None,
             logger: tmt.log.Logger) -> list[Result]:
         """ Run test on the guest """
 
@@ -449,7 +457,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Execute available tests """
         super().go(guest=guest, environment=environment, logger=logger)
@@ -465,7 +473,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             self,
             *,
             guest: Guest,
-            extra_environment: Optional[EnvironmentType] = None,
+            extra_environment: Optional[Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Execute tests on provided guest """
 

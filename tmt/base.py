@@ -34,6 +34,7 @@ from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.checks
+import tmt.convert
 import tmt.export
 import tmt.frameworks
 import tmt.identifier
@@ -55,7 +56,8 @@ from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result
 from tmt.utils import (
     Command,
-    EnvironmentType,
+    Environment,
+    EnvVarValue,
     FmfContext,
     Path,
     SerializableContainer,
@@ -373,23 +375,6 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
                 topic=tmt.log.Topic.ADJUST_DECISIONS)
 
     return callback
-
-
-def normalize_test_environment(
-        key_address: str,
-        value: Optional[dict[str, Any]],
-        logger: tmt.log.Logger) -> EnvironmentType:
-    """ Normalize value of tests' ``environment`` key """
-
-    if value is None:
-        return {}
-
-    if isinstance(value, dict):
-        return {
-            name: str(value) for name, value in value.items()
-            }
-
-    raise tmt.utils.NormalizationError(key_address, value, 'unset or a dictionary')
 
 
 # Types describing content accepted by various require-like keys: strings, fmf ids,
@@ -1064,9 +1049,12 @@ class Test(
         default_factory=list,
         normalize=normalize_require,
         exporter=lambda value: [dependency.to_minimal_spec() for dependency in value])
-    environment: tmt.utils.EnvironmentType = field(
-        default_factory=dict,
-        normalize=normalize_test_environment)
+    environment: tmt.utils.Environment = field(
+        default_factory=tmt.utils.Environment,
+        normalize=tmt.utils.Environment.normalize,
+        serialize=lambda environment: environment.to_fmf_spec(),
+        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        exporter=lambda environment: environment.to_fmf_spec())
 
     duration: str = DEFAULT_TEST_DURATION_L1
     result: str = 'respect'
@@ -1415,7 +1403,9 @@ class Test(
         filename = self.fmf_sources[-1]
         metadata = tmt.utils.yaml_to_dict(self.read(filename))
 
-        metadata['adjust'] = tmt.convert.relevancy_to_adjust(metadata.pop('relevancy'))
+        metadata['adjust'] = tmt.convert.relevancy_to_adjust(
+            metadata.pop('relevancy'),
+            self._logger)
         self.write(filename, tmt.utils.dict_to_yaml(metadata))
 
         yield LinterOutcome.FIXED, 'relevancy converted into adjust'
@@ -1522,7 +1512,7 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
-def expand_node_data(data: T, fmf_context: dict[str, str]) -> T:
+def expand_node_data(data: T, fmf_context: FmfContext) -> T:
     """ Recursively expand variables in node data """
     if isinstance(data, str):
         # Expand environment and context variables. This is a bit
@@ -1556,7 +1546,7 @@ def expand_node_data(data: T, fmf_context: dict[str, str]) -> T:
         # which are to be referencing fmf dimensions rather than environment
         # variables.
         expanded_ctx = [first_item]
-        with tmt.utils.modify_environ(fmf_context):
+        with Environment.from_fmf_context(fmf_context).as_environ():
             for was_expanded, item, original_item in expanded_env:
                 if was_expanded:
                     expanded_ctx.append(item)
@@ -1662,13 +1652,11 @@ class Plan(
 
             self._initialize_data_directory()
 
-        self._plan_environment: EnvironmentType = {}
+        self._plan_environment = Environment()
 
         # Expand all environment and context variables in the node
-        with tmt.utils.modify_environ(self.environment):
-            expand_node_data(node.data, {
-                key: ','.join(value)
-                for (key, value) in self._fmf_context.items()})
+        with self.environment.as_environ():
+            expand_node_data(node.data, self._fmf_context)
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
@@ -1721,11 +1709,11 @@ class Plan(
         return next(self._test_serial_number_generator)
 
     @property
-    def environment(self) -> EnvironmentType:
+    def environment(self) -> Environment:
         """ Return combined environment from plan data, command line and original plan """
 
         # Store 'environment' and 'environment-file' keys content
-        environment_from_spec = tmt.utils.environment_from_spec(
+        environment_from_spec = Environment.from_inputs(
             raw_fmf_environment_files=self.node.get("environment-file") or [],
             raw_fmf_environment=self.node.get('environment', {}),
             raw_cli_environment_files=self.opt('environment-file') or [],
@@ -1735,9 +1723,8 @@ class Plan(
             logger=self._logger)
 
         # If this is an imported plan, update it with local environment stored in the original plan
-        environment_from_original_plan = {}
-        if self._original_plan:
-            environment_from_original_plan = self._original_plan.environment
+        environment_from_original_plan = self._original_plan.environment if self._original_plan \
+            else Environment()
 
         if self.my_run:
             combined = self._plan_environment.copy()
@@ -1746,24 +1733,24 @@ class Plan(
             # Command line variables take precedence
             combined.update(self.my_run.environment)
             # Include path to the plan data directory
-            combined["TMT_PLAN_DATA"] = str(self.data_directory)
+            combined["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
             # Include path to the plan environment file
-            combined["TMT_PLAN_ENVIRONMENT_FILE"] = str(self.plan_environment_file)
+            combined["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
             # And tree path if possible
             if self.worktree:
-                combined["TMT_TREE"] = str(self.worktree)
+                combined["TMT_TREE"] = EnvVarValue(self.worktree)
             # And tmt version
-            combined["TMT_VERSION"] = tmt.__version__
+            combined["TMT_VERSION"] = EnvVarValue(tmt.__version__)
             return combined
 
-        return {**environment_from_spec, **environment_from_original_plan}
+        return Environment({**environment_from_spec, **environment_from_original_plan})
 
     def _source_plan_environment_file(self) -> None:
         """ Add variables from the plan environment file to the environment """
         if (self.my_run and self.plan_environment_file.exists()
                 and self.plan_environment_file.stat().st_size > 0):
             # Use __wrapped__ to force the reload of the file
-            self._plan_environment = tmt.utils.environment_file_to_dict.__wrapped__(
+            self._plan_environment = tmt.utils.Environment.from_file(
                 filename=self.plan_environment_file.name,
                 root=self.plan_environment_file.parent,
                 logger=self._logger)
@@ -2448,10 +2435,8 @@ class Plan(
         self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger)
         self._imported_plan._original_plan = self
 
-        with tmt.utils.modify_environ(self.environment):
-            expand_node_data(node.data, {
-                key: ','.join(value)
-                for (key, value) in self._fmf_context.items()})
+        with self.environment.as_environ():
+            expand_node_data(node.data, self._fmf_context)
 
         return self._imported_plan
 
@@ -3192,8 +3177,12 @@ class RunData(SerializableContainer):
     # TODO: this needs resolution - _context_object.steps is List[Step],
     # but stores as a List[str] in run.yaml...
     steps: list[str]
-    environment: EnvironmentType
     remove: bool
+    environment: Environment = field(
+        default_factory=Environment,
+        serialize=lambda environment: environment.to_fmf_spec(),
+        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        )
 
 
 class Run(tmt.utils.Common):
@@ -3228,8 +3217,8 @@ class Run(tmt.utils.Common):
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
-        self._environment_from_workdir: EnvironmentType = {}
-        self._environment_from_options: Optional[EnvironmentType] = None
+        self._environment_from_workdir: Environment = Environment()
+        self._environment_from_options: Optional[Environment] = None
         self.remove = self.opt('remove')
 
     @tmt.utils.cached_property
@@ -3280,13 +3269,13 @@ class Run(tmt.utils.Common):
             self._use_default_plan()
 
     @property
-    def environment(self) -> EnvironmentType:
+    def environment(self) -> Environment:
         """ Return environment combined from wake up and command line """
         # Gather environment variables from options only once
         if self._environment_from_options is None:
             assert self.tree is not None  # narrow type
 
-            self._environment_from_options = tmt.utils.environment_from_spec(
+            self._environment_from_options = tmt.utils.Environment.from_inputs(
                 raw_cli_environment_files=self.opt('environment-file') or [],
                 raw_cli_environment=self.opt('environment'),
                 file_root=Path(self.tree.root) if self.tree.root else None,

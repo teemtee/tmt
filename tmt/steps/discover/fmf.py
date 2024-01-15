@@ -16,7 +16,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command, Path, field
+from tmt.utils import Command, Environment, EnvVarValue, Path, field
 
 
 def normalize_ref(
@@ -360,7 +360,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 url=url,
                 destination=self.testdir,
                 shallow=ref is None,
-                env={"GIT_ASKPASS": "echo"},
+                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                 logger=self._logger)
             git_root = self.testdir
         # Copy git repository root to workdir
@@ -650,7 +650,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Add TMT_SOURCE_DIR variable for each test
         if dist_git_source:
             for test in self._tests:
-                test.environment['TMT_SOURCE_DIR'] = str(sourcedir)
+                test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
     def tests(
             self,

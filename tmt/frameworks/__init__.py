@@ -62,7 +62,7 @@ class TestFramework:
     def get_environment_variables(
             cls,
             invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
+            logger: tmt.log.Logger) -> tmt.utils.Environment:
         """
         Provide additional environment variables for the test.
 
@@ -73,7 +73,7 @@ class TestFramework:
             might have already collected.
         """
 
-        return {}
+        return tmt.utils.Environment()
 
     @classmethod
     def get_test_command(

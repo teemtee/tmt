@@ -36,7 +36,8 @@ import tmt.utils
 from tmt.options import option, show_step_method_hints
 from tmt.utils import (
     DEFAULT_NAME,
-    EnvironmentType,
+    Environment,
+    EnvVarValue,
     GeneralError,
     Path,
     RunError,
@@ -1627,7 +1628,7 @@ class Plugin(BasePlugin[StepDataT]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Perform actions shared among plugins when beginning their tasks """
 
@@ -1865,7 +1866,7 @@ class Login(Action):
     def _login(
             self,
             cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.EnvironmentType] = None) -> None:
+            env: Optional[tmt.utils.Environment] = None) -> None:
         """ Run the interactive command """
         scripts = [
             tmt.utils.ShellScript(script)
@@ -1894,7 +1895,7 @@ class Login(Action):
             self,
             result: 'tmt.base.Result',
             cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.EnvironmentType] = None) -> None:
+            env: Optional[tmt.utils.Environment] = None) -> None:
         """ Check and login after test execution """
         if self._enabled_by_results([result]):
             self._login(cwd, env)
@@ -2074,14 +2075,14 @@ class Topology(SerializableContainer):
             dirpath: Path,
             guest: 'Guest',
             filename_base: Optional[Path] = None,
-            logger: tmt.log.Logger) -> EnvironmentType:
+            logger: tmt.log.Logger) -> Environment:
         """
         Save and push topology to a given guest.
         """
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 
-        environment: EnvironmentType = {}
+        environment = Environment()
 
         for filepath in topology_filepaths:
             logger.debug('test topology', filepath)
@@ -2092,10 +2093,10 @@ class Topology(SerializableContainer):
                 options=["-s", "-p", "--chmod=755"])
 
             if filepath.suffix == '.sh':
-                environment['TMT_TOPOLOGY_BASH'] = str(filepath)
+                environment['TMT_TOPOLOGY_BASH'] = EnvVarValue(filepath)
 
             elif filepath.suffix == '.yaml':
-                environment['TMT_TOPOLOGY_YAML'] = str(filepath)
+                environment['TMT_TOPOLOGY_YAML'] = EnvVarValue(filepath)
 
             else:
                 raise tmt.utils.GeneralError(f"Unhandled topology file '{filepath}'.")

@@ -8,7 +8,7 @@ import tmt.steps.execute
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome
-from tmt.utils import Path
+from tmt.utils import Environment, EnvVarValue, Path
 
 if TYPE_CHECKING:
     from tmt.base import DependencySimple, Test
@@ -31,12 +31,13 @@ class Beakerlib(TestFramework):
     def get_environment_variables(
             cls,
             invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> tmt.utils.EnvironmentType:
+            logger: tmt.log.Logger) -> tmt.utils.Environment:
 
-        return {
-            'BEAKERLIB_DIR': str(invocation.path),
-            'BEAKERLIB_COMMAND_SUBMIT_LOG': f'bash {tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.path}'
-            }
+        return Environment({
+            'BEAKERLIB_DIR': EnvVarValue(invocation.path),
+            'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
+                f'bash {tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.path}')
+            })
 
     @classmethod
     def get_pull_options(

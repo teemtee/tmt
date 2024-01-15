@@ -62,7 +62,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Perform finishing tasks on given guest """
         super().go(guest=guest, environment=environment, logger=logger)

@@ -288,7 +288,7 @@ class GuestContainer(tmt.Guest):
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,
