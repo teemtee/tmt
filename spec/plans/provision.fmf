@@ -36,10 +36,27 @@ example: |
         testcloud (libvirt). Testcloud takes care of downloading
         an image and making necessary changes to it for optimal
         experience (such as disabling UseDNS and GSSAPI for SSH).
-    example: |
+
+    example:
+      - |
+        # Provision a fedora virtual machine
         provision:
             how: virtual
             image: fedora
+      - |
+        # Provision a virtual machine from a specific QCOW2 file,
+        # using specific memory and disk settings, using the fedora user,
+        # and using sudo to run scripts.
+        provision:
+            how: virtual
+            image: https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
+            user: fedora
+            become: true
+            # in MB
+            memory: 2048
+            # in GB
+            disk: 30
+
     link:
       - implemented-by: /tmt/steps/provision/testcloud.py
 
@@ -62,10 +79,21 @@ example: |
     description:
         Download (if necessary) and start a new container using
         podman or docker.
-    example: |
+
+    example:
+      - |
+        # Use the fedora:latest image
         provision:
             how: container
             image: fedora:latest
+      - |
+        # Use an image with a non-root user with sudo privileges,
+        # and run scripts with sudo.
+        provision:
+            how: container
+            image: image with non-root user with sudo privileges
+            user: tester
+            become: true
     link:
       - implemented-by: /tmt/steps/provision/podman.py
 
@@ -137,6 +165,9 @@ example: |
             hostname or ip address of the box
         user
             user name to be used to log in, ``root`` by default
+        become
+            whether to run scripts with ``sudo``, ignored if user
+            is already root, ``false`` by default
         password
             user password to be used to log in
         key
@@ -146,18 +177,24 @@ example: |
     link:
       - implemented-by: /tmt/steps/provision/connect.py
 
-    example: |
+    example:
+      - |
+        # Connect to existing box with username and password
         provision:
             how: connect
             guest: hostname or ip address
             user: username
             password: password
 
+      - |
+        # Connect with user ``fedora`` using a key, and use
+        # ``sudo`` to run scripts
         provision:
             how: connect
             guest: hostname or ip address
+            user: fedora
+            become: true
             key: private-key-path
-
 
 /multihost:
     summary: Multihost testing specification
