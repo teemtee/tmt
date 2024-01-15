@@ -1662,16 +1662,6 @@ class Plan(
 
             self._initialize_data_directory()
 
-        # Store 'environment' and 'environment-file' keys content
-        self._environment = tmt.utils.environment_from_spec(
-            raw_fmf_environment_files=node.get("environment-file") or [],
-            raw_fmf_environment=node.get('environment', {}),
-            raw_cli_environment_files=self.opt('environment-file') or [],
-            raw_cli_environment=self.opt('environment'),
-            file_root=Path(node.root) if node.root else None,
-            key_address=node.name,
-            logger=self._logger)
-
         self._plan_environment: EnvironmentType = {}
 
         # Expand all environment and context variables in the node
@@ -1732,13 +1722,27 @@ class Plan(
 
     @property
     def environment(self) -> EnvironmentType:
-        """ Return combined environment from plan data and command line """
+        """ Return combined environment from plan data, command line and original plan """
+
+        # Store 'environment' and 'environment-file' keys content
+        environment_from_spec = tmt.utils.environment_from_spec(
+            raw_fmf_environment_files=self.node.get("environment-file") or [],
+            raw_fmf_environment=self.node.get('environment', {}),
+            raw_cli_environment_files=self.opt('environment-file') or [],
+            raw_cli_environment=self.opt('environment'),
+            file_root=Path(self.node.root) if self.node.root else None,
+            key_address=self.node.name,
+            logger=self._logger)
+
+        # If this is an imported plan, update it with local environment stored in the original plan
+        environment_from_original_plan = {}
+        if self._original_plan:
+            environment_from_original_plan = self._original_plan.environment
+
         if self.my_run:
             combined = self._plan_environment.copy()
-            combined.update(self._environment)
-            # Include environment of the importing plan
-            if self._original_plan is not None:
-                combined.update(self._original_plan.environment)
+            combined.update(environment_from_spec)
+            combined.update(environment_from_original_plan)
             # Command line variables take precedence
             combined.update(self.my_run.environment)
             # Include path to the plan data directory
@@ -1751,7 +1755,8 @@ class Plan(
             # And tmt version
             combined["TMT_VERSION"] = tmt.__version__
             return combined
-        return self._environment
+
+        return {**environment_from_spec, **environment_from_original_plan}
 
     def _source_plan_environment_file(self) -> None:
         """ Add variables from the plan environment file to the environment """
@@ -2443,8 +2448,6 @@ class Plan(
         self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger)
         self._imported_plan._original_plan = self
 
-        # Update imported plan environment with the local environment
-        self._imported_plan.environment.update(self.environment)
         with tmt.utils.modify_environ(self.environment):
             expand_node_data(node.data, {
                 key: ','.join(value)
