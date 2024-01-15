@@ -25,6 +25,8 @@ from tmt.utils import (
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: added cpu.flag constraint
+    '0.0.67',
     # NEW: fixed virtualization.hypervisor enum
     '0.0.58',
     # NEW: added user defined watchdog delay
