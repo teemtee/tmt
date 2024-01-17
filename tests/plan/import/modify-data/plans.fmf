@@ -1,7 +1,5 @@
-/must-be-imported-and-modified:
+/imported:
     summary: Test of correct environment variable expansion
-    environment:
-        VARIABLE: foo
     provision:
         how: local
     execute:
@@ -10,21 +8,46 @@
             set -x -o pipefail
             env | grep VARIABLE
 
+/imported/bare:
+    environment: {}
+
+/imported/with-environment:
+    environment:
+        VARIABLE: foo
+
 /importing:
     summary: Import plan and mess with its environment
 
-    plan:
-        import:
-            url: https://github.com/teemtee/tmt
-            ref: test-import-env-ordering
-            path: /tests/plan/import/modify-data
-            name: /plans/must-be-imported-and-modified
+    /bare:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                ref: test-import-env-ordering
+                path: /tests/plan/import/modify-data
+                name: /plans/imported/bare
 
-/importing/and-dont-modify:
-    summary: Import plan but do not modify its environment
+        /dont-modify:
+            summary: Import plan but do not modify its environment
 
-/importing/and-modify:
-    summary: Import plan but do modify its environment
+        /modify:
+            summary: Import plan and modify its environment
 
-    environment:
-        VARIABLE: bar
+            environment:
+                VARIABLE: bar
+
+    /with-environment:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                ref: test-import-env-ordering
+                path: /tests/plan/import/modify-data
+                name: /plans/imported/with-environment
+
+        /dont-modify:
+            summary: Import plan but do not modify its environment
+
+        /modify:
+            summary: Import plan and modify its environment
+
+            environment:
+                VARIABLE: bar
