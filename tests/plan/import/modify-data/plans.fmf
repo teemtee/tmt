@@ -1,16 +1,30 @@
 /must-be-imported-and-modified:
-    summary: Test of correct environment variable expansion of ${VARIABLE}
+    summary: Test of correct environment variable expansion
+    environment:
+        VARIABLE: foo
     provision:
         how: local
     execute:
-        script: test "${VARIABLE}" == "foobar"
+        # Cannot use `$VARIABLE`, tmt would overwrite it with the value from `environment` above.
+        script: |
+            set -x -o pipefail
+            env | grep VARIABLE
 
-/importing-other-plan-and-modify-environment:
-    summary: Import plan and modify it with environment variable
-    environment:
-        VARIABLE: foobar
+/importing:
+    summary: Import plan and mess with its environment
+
     plan:
         import:
             url: https://github.com/teemtee/tmt
+            ref: test-import-env-ordering
             path: /tests/plan/import/modify-data
             name: /plans/must-be-imported-and-modified
+
+/importing/and-dont-modify:
+    summary: Import plan but do not modify its environment
+
+/importing/and-modify:
+    summary: Import plan but do modify its environment
+
+    environment:
+        VARIABLE: bar
