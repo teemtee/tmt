@@ -92,7 +92,7 @@ generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-plugins: plugins/*.rst  ## Generate documentation sources for plugins
+generate-plugins: plugins/discover.rst plugins/execute.rst plugins/finish.rst plugins/prepare.rst plugins/provision.rst plugins/report.rst plugins/test-checks.rst  ## Generate documentation sources for plugins
 
 generate-autodocs:  ## Generate autodocs from source docstrings
 	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt
