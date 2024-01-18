@@ -317,7 +317,9 @@ class WhereableStepData:
 
     where: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
+        metavar='GUEST|ROLE',
+        help='Run this phase on given guest or guests with the given role only.'
         )
 
 

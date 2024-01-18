@@ -136,6 +136,7 @@ def main() -> None:
     # ... and render the template.
     output_filepath.write_text(render_template_file(
         template_filepath,
+        LOGGER=logger,
         STEP=step_name,
         REGISTRY=registry,
         container_fields=tmt.utils.container_fields,

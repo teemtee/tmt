@@ -2542,11 +2542,11 @@ class FieldMetadata(Generic[T]):
     _metavar: Optional[str] = None
 
     #: The default value for the field.
-    default: Optional[Any] = None
+    default: Optional[T] = None
 
     #: A zero-argument callable that will be called when a default value is
     #: needed for the field.
-    default_factory: Optional[Callable[[], Any]] = None
+    default_factory: Optional[Callable[[], T]] = None
 
     #: Marks the fields as a flag.
     is_flag: bool = False
@@ -2620,12 +2620,12 @@ class FieldMetadata(Generic[T]):
 
     @property
     def has_default(self) -> bool:
-        return self.default_factory not in (None, dataclasses.MISSING) \
+        return self.default_factory is not None \
             or self.default is not dataclasses.MISSING
 
     @property
     def materialized_default(self) -> Optional[T]:
-        if self.default_factory not in (None, dataclasses.MISSING):
+        if self.default_factory is not None:
             return self.default_factory()
 
         if self.default is not dataclasses.MISSING:
@@ -6251,7 +6251,7 @@ def field(
 def field(
         *,
         default: Any = dataclasses.MISSING,
-        default_factory: Any = dataclasses.MISSING,
+        default_factory: Any = None,
         # Options
         option: Optional[FieldCLIOption] = None,
         is_flag: bool = False,
@@ -6348,7 +6348,7 @@ def field(
     # overloading to narrow types *our* custom field() accepts.
     return dataclasses.field(  # type: ignore[call-overload]
         default=default,
-        default_factory=default_factory,
+        default_factory=default_factory or dataclasses.MISSING,
         metadata={'tmt': metadata}
         )
 
