@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
+from fmf.utils import filter as fmf_filter
 from fmf.utils import listed
 
 import tmt
@@ -202,6 +203,7 @@ class Discover(tmt.steps.Step):
             Result.from_serialized(data) for data in
             tmt.utils.yaml_to_list(self.read(old_results))]
         force_rerun_tests: list[str] = self.opt('force_rerun_test', [])
+        force_rerun_filters: list[str] = self.opt('force_rerun_filters', [])
 
         results_failed: list[Result] = []
         results_passed: list[Result] = []
@@ -218,6 +220,33 @@ class Discover(tmt.steps.Step):
             else:
                 results_passed.append(result)
 
+        # Filter out failed tests based on test name and serial number
+        filtered_tests: dict[str, list[tmt.base.Test]] = {}
+        for phase in self._tests:
+            current_phase_filtered: list[tmt.base.Test] = []
+            for test in self._tests[phase]:
+                # Check for any tests marked to rerun based on filter
+                if (
+                        force_rerun_filters and
+                        all(
+                            fmf_filter(rerun_filter, test._metadata, regexp=True)
+                            for rerun_filter in force_rerun_filters)):
+                    current_phase_filtered.append(test)
+                    # We need to also drop the test from passed so we don't have duplicate result
+                    for result_index in range(len(results_passed)):
+                        if (
+                                test.name == results_passed[result_index].name and
+                                test.serial_number == results_passed[result_index].serial_number):
+                            del results_passed[result_index]
+                            break
+                    continue
+                for result in results_failed:
+                    if test.name == result.name and test.serial_number == result.serial_number:
+                        current_phase_filtered.append(test)
+                        break
+            filtered_tests[phase] = current_phase_filtered
+        self._tests = filtered_tests
+
         # Save positive results to specific results.yaml
         old_results_positive: Path = (
             self.parent.last_run_execute / 'positive_results.yaml')
@@ -227,17 +256,6 @@ class Discover(tmt.steps.Step):
         self.write(
             old_results_positive,
             tmt.utils.dict_to_yaml([result.to_serialized() for result in results_passed]))
-
-        # Filter out failed tests based on test name and serial number
-        filtered_tests: dict[str, list[tmt.base.Test]] = {}
-        for phase in self._tests:
-            current_phase_filtered: list[tmt.base.Test] = []
-            for test in self._tests[phase]:
-                for result in results_failed:
-                    if test.name == result.name and test.serial_number == result.serial_number:
-                        current_phase_filtered.append(test)
-            filtered_tests[phase] = current_phase_filtered
-        self._tests = filtered_tests
 
     def _discover_from_execute(self) -> None:
         """ Check the execute step for possible shell script tests """

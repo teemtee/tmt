@@ -361,6 +361,12 @@ def main(
          regardless of their previous result. Can be provided multiple times.
          """)
 @option(
+    '--force-rerun-filter', 'force_rerun_filters', multiple=True, metavar='FILTER',
+    help="""
+         Apply advanced filter (see 'pydoc fmf.filter') to select tests that
+         are supposed to be rerun regardless of their previous result.
+         """)
+@option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
 @option(

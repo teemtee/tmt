@@ -902,9 +902,9 @@ to keep all the data for full report.
     $ tmt run --last --rerun
     # Failed tests are rerun
 
-Additionally you can add argument `--force-rerun-test` multiple times
+Additionally you can add argument `--force-rerun-test` or `--force-rerun-filter`
 to select out test cases that should be executed regardless of their
-previous result.
+previous result. Filter takes into account all test case metadata.
 
 .. versionadded:: 1.31
 
