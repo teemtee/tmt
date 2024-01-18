@@ -45,7 +45,6 @@ from tmt.utils import (
     container_field,
     container_keys,
     field,
-    flatten,
     key_to_option,
     option_to_key,
     )
@@ -1063,21 +1062,6 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             except OSError as error:
                 logger.warn(f"Unable to remove '{member}': {error}")
 
-    def requires(self) -> list['tmt.base.Dependency']:
-        """
-        Collect all requirements of all enabled plugins in this step.
-
-        Puts together a list of requirements which need to be installed on the
-        provisioned guest so that all enabled plugins of this step can be
-        successfully executed.
-
-        :returns: a list of requirements, with duplicaties removed.
-        """
-        return flatten(
-            (plugin.requires() for plugin in self.phases(classes=self._plugin_base_class)),
-            unique=True
-            )
-
 
 class Method:
     """ Step implementation method """
@@ -1591,8 +1575,16 @@ class BasePlugin(Phase, Generic[StepDataT]):
         # Include order in verbose mode
         logger.verbose('order', self.order, 'magenta', level=3)
 
-    def requires(self) -> list['tmt.base.Dependency']:
-        """ All requirements of the plugin on the guest """
+    def essential_requires(self) -> list['tmt.base.Dependency']:
+        """
+        Collect all essential requirements of the plugin.
+
+        Essential requirements of a plugin are necessary for the plugin to
+        perform its basic functionality.
+
+        :returns: a list of requirements.
+        """
+
         return []
 
     def prune(self, logger: tmt.log.Logger) -> None:

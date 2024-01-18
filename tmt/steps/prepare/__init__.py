@@ -217,10 +217,11 @@ class Prepare(tmt.steps.Step):
             def as_key(self) -> frozenset['tmt.base.DependencySimple']:
                 return frozenset(collection.dependencies)
 
-        # All phases from all steps *except the `discover` step - see note below.
+        # All phases from all steps.
         phases = [
             phase
-            for step in (self.plan.provision,
+            for step in (self.plan.discover,
+                         self.plan.provision,
                          self.plan.prepare,
                          self.plan.execute,
                          self.plan.finish,
@@ -250,7 +251,7 @@ class Prepare(tmt.steps.Step):
                     continue
 
                 collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
-                    phase.requires(),
+                    phase.essential_requires(),
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger)
 

@@ -29,7 +29,7 @@ rlJournalStart
             if [ "$step" = "provision" ]; then
                 rlRun "grep '^    $step$' -A12 output | grep -i interactive"
             elif [ "$step" = "prepare" ]; then
-                rlRun "grep '^    $step$' -A8 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A17 output | grep -i interactive"
             elif [ "$step" = "execute" ]; then
                 rlRun "grep '^    $step$' -A9 output | grep -i interactive"
             else

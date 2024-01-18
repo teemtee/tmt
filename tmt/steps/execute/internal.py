@@ -548,6 +548,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         """ Return test results """
         return self._results
 
-    def requires(self) -> list[tmt.base.Dependency]:
-        """ All requirements of the plugin on the guest """
-        return []
+    def essential_requires(self) -> list[tmt.base.Dependency]:
+        """
+        Collect all essential requirements of the plugin.
+
+        Essential requirements of a plugin are necessary for the plugin to
+        perform its basic functionality.
+
+        :returns: a list of requirements.
+        """
+
+        return [
+            tmt.base.DependencySimple('/usr/bin/flock')
+            ]

@@ -1099,8 +1099,16 @@ class Guest(tmt.utils.Common):
         return CheckRsyncOutcome.INSTALLED
 
     @classmethod
-    def requires(cls) -> list['tmt.base.Dependency']:
-        """ All requirements of the guest implementation """
+    def essential_requires(cls) -> list['tmt.base.Dependency']:
+        """
+        Collect all essential requirements of the guest.
+
+        Essential requirements of a guest are necessary for the guest to be
+        usable for testing.
+
+        :returns: a list of requirements.
+        """
+
         return []
 
 
@@ -1817,11 +1825,12 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         """
         raise NotImplementedError
 
-    def requires(self) -> list['tmt.base.Dependency']:
+    def essential_requires(self) -> list['tmt.base.Dependency']:
         """
-        All requirements of the guest implementation.
+        Collect all essential requirements of the guest implementation.
 
-        Provide a list of requirements for the workdir sync.
+        Essential requirements of a guest are necessary for the guest to be
+        usable for testing.
 
         By default, plugin's guest class, :py:attr:`ProvisionPlugin._guest_class`,
         is asked to provide the list of required packages via
@@ -1830,7 +1839,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
         :returns: a list of requirements.
         """
 
-        return self._guest_class.requires()
+        return self._guest_class.essential_requires()
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:

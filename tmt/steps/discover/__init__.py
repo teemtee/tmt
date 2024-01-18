@@ -1,5 +1,4 @@
 import dataclasses
-import itertools
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -19,7 +18,7 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import GeneralError, Path, field, flatten, key_to_option
+from tmt.utils import GeneralError, Path, field, key_to_option
 
 
 @dataclasses.dataclass
@@ -378,32 +377,3 @@ class Discover(tmt.steps.Step):
             return list(iterator())
 
         return [test for test in iterator() if test.enabled is enabled]
-
-    def requires(self) -> list['tmt.base.Dependency']:
-        """
-        Collect all test requirements of all discovered tests in this step.
-
-        Puts together a list of requirements which need to be installed on the
-        provisioned guest so that all discovered tests of this step can be
-        successfully executed.
-
-        :returns: a list of requirements, with duplicaties removed.
-        """
-
-        tests = self.tests(enabled=True)
-
-        return flatten(
-            itertools.chain(
-                (test.require for test in tests),
-                # cast: mypy believes we cannot merge `list[Depencency]` and
-                # `list[DependencySimple]`. I think we can, let's see what pyright
-                # will tell us once enabled.
-                (cast(list['tmt.base.Dependency'],
-                      test.test_framework.get_requirements(test, self._logger))
-                 for test in tests)
-                ),
-            unique=True)
-
-    def recommends(self) -> list['tmt.base.Dependency']:
-        """ Return all packages recommended by tests """
-        return flatten((test.recommend for test in self.tests(enabled=True)), unique=True)
