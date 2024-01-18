@@ -22,3 +22,7 @@ tier: null
     test: |
         /tmp/venv/bin/pip install .[all]
         /tmp/venv/bin/tmt --help
+    adjust:
+        result: xfail
+        when: distro == fedora-rawhide
+        because: https://github.com/aio-libs/multidict/issues/926
