@@ -2,12 +2,10 @@
 
 .. _/plugins/{{ STEP }}:
 
-{{ STEP | capitalize }} Plugins
+{{ STEP | replace('-', ' ') | capitalize }} Plugins
 {{ '~' * (8 + (STEP | length)) }}
 
-{% for PLUGIN_ID in REGISTRY.iter_plugin_ids() %}
-    {% set method = REGISTRY.get_plugin(PLUGIN_ID) %}
-    {% set PLUGIN = method.class_ %}
+{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
 .. _plugins/{{ STEP }}/{{ PLUGIN_ID | strip }}:
 
@@ -34,7 +32,7 @@ Configuration
 ^^^^^^^^^^^^^
 
 {% macro render_field(field_name) %}
-    {% set _, option, _, metadata = container_field(PLUGIN._data_class, field_name) %}
+    {% set _, option, _, metadata = container_field(PLUGIN_DATA_CLASS, field_name) %}
 
     {% if metadata.metavar %}
 {{ option }}: ``{{ metadata.metavar }}``
@@ -66,9 +64,9 @@ Configuration
     {% endif %}
 {%endmacro %}
 
-{% set ignored_fields = container_ignored_fields(PLUGIN._data_class) %}
-{% set inherited_fields = container_inherited_fields(PLUGIN._data_class) | sort %}
-{% set intrinsic_fields = container_intrinsic_fields(PLUGIN._data_class) | sort %}
+{% set ignored_fields = container_ignored_fields(PLUGIN_DATA_CLASS) %}
+{% set inherited_fields = container_inherited_fields(PLUGIN_DATA_CLASS) | sort %}
+{% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
 
 {% for field_name in intrinsic_fields %}
 {{ render_field(field_name) }}
