@@ -73,6 +73,8 @@ Recommends:     qemu-system-aarch64-core
 Recommends:     qemu-system-ppc-core
 Recommends:     qemu-system-s390x-core
 Recommends:     qemu-system-x86-core
+%else
+Recommends:     qemu-kvm-core
 %endif
 
 %description -n tmt+provision-virtual
