@@ -22,7 +22,6 @@
         plan:
             import:
                 url: https://github.com/teemtee/tmt
-                ref: test-import-env-ordering
                 path: /tests/plan/import/modify-data
                 name: /plans/imported/bare
 
@@ -39,7 +38,6 @@
         plan:
             import:
                 url: https://github.com/teemtee/tmt
-                ref: test-import-env-ordering
                 path: /tests/plan/import/modify-data
                 name: /plans/imported/with-environment
 
