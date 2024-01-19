@@ -68,13 +68,12 @@ Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
 Requires:       (ansible or ansible-core)
 # Recommend qemu system emulators for supported arches
+Recommends:     qemu-kvm-core
 %if 0%{?fedora}
 Recommends:     qemu-system-aarch64-core
 Recommends:     qemu-system-ppc-core
 Recommends:     qemu-system-s390x-core
 Recommends:     qemu-system-x86-core
-%else
-Recommends:     qemu-kvm-core
 %endif
 
 %description -n tmt+provision-virtual
