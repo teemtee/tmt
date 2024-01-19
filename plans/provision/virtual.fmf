@@ -1,9 +1,30 @@
-summary: Virtual machine via testcloud
-discover:
-    how: fmf
-    filter: 'tag:virtual & tier:1 | tag:provision-virtual-only'
-provision:
-    how: virtual
-#    image: fedora
-#    memory: 2048
-#    disk: 10
+/compatible-tests:
+    summary: Virtual machine via testcloud
+    discover:
+        how: fmf
+        filter: 'tag:virtual & tier:1 | tag:provision-virtual-only'
+    provision:
+        how: virtual
+
+/user:
+    summary: Regular user is able to use virtual provision on c9s
+
+    discover:
+        how: shell
+        tests:
+          - name: /tester
+            test: su -l tester -c "tmt run provision --how virtual finish"
+
+    provision:
+        how: virtual
+        image: centos-stream-9
+        memory: 4000
+
+    prepare:
+        script: |
+            dnf install -y epel-release
+            dnf config-manager --enable crb
+            dnf install -y tmt+provision-virtual qemu-kvm-core
+            useradd tester
+
+    enabled: true
