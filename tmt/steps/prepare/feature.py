@@ -35,13 +35,6 @@ class Feature(tmt.utils.Common):
             return None
         return os_release.get('PRETTY_NAME', None)
 
-    def get_guest_distro_id(self) -> Optional[str]:
-        """ Get guest distro ID by parsing the guest facts """
-        os_release = self.guest.facts.os_release_content
-        if os_release is None:
-            return None
-        return os_release.get('ID', '')
-
 
 class ToggleableFeature(Feature):
     def enable(self) -> None:
@@ -66,9 +59,7 @@ class EPEL(ToggleableFeature):
 
     def enable(self) -> None:
         distro_name = cast(str, self.get_guest_distro_name())
-        playbook_id = cast(str, self.get_guest_distro_id())
-        playbook_dir = Path(__file__).parent / 'feature'
-        playbook_path = playbook_dir / f"epel-enable-{playbook_id}.yaml"
+        playbook_path = Path(__file__).parent / 'feature/epel-enable.yaml'
         if not playbook_path.exists():
             self.warn(f"Enable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
             return
@@ -78,7 +69,15 @@ class EPEL(ToggleableFeature):
         self.guest.ansible(playbook_path)
 
     def disable(self) -> None:
-        pass
+        distro_name = cast(str, self.get_guest_distro_name())
+        playbook_path = Path(__file__).parent / 'feature/epel-disable.yaml'
+        if not playbook_path.exists():
+            self.warn(f"Disable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
+            return
+        self.info(f"Disable {self.KEY.upper()} on '{distro_name}' ...")
+        self.logger.info('playbook-path', playbook_path, 'green')
+        playbook_path = Path(playbook_path).relative_to(self.get_root_path())
+        self.guest.ansible(playbook_path)
 
 
 class CRB(ToggleableFeature):

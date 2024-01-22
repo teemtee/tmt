@@ -1,0 +1,53 @@
+- hosts: all
+  user: root
+  tasks:
+    # RHEL 7 or CentOS 7
+    - when: ansible_distribution_major_version == "7"
+      block:
+        - name: Install package 'yum-utils'
+          ansible.builtin.yum:
+            name: yum-utils
+            state: present
+
+        # Disable repos of 'epel' if package 'epel-release' is installed
+        - name: Detect package 'epel-release' is installed
+          command: rpm -q epel-release
+          register: result
+          ignore_errors: True
+        - name: Disable repos of 'epel'
+          shell: yum-config-manager --disable epel epel-debuginfo epel-source
+          when: result.rc == 0
+        - name: Fetch attribute 'enabled' of repos of 'epel'
+          shell: grep enabled /etc/yum.repos.d/epel.repo
+          when: result.rc == 0
+
+    # RHEL 8 or RHEL 9
+    # CentOS Stream 8 or CentOS Stream 9
+    - when: ansible_distribution_major_version == "8" or ansible_distribution_major_version == "9"
+      block:
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        # Disable repos of 'epel' if package 'epel-release' is installed
+        - name: Detect package 'epel-release' is installed
+          command: rpm -q epel-release
+          register: result
+          ignore_errors: True
+        - name: Disable repos of 'epel' if package 'epel-release' is installed
+          shell: dnf config-manager --disable epel epel-debuginfo epel-source
+          when: result.rc == 0
+        - name: Fetch attribute 'enabled' of repos of 'epel'
+          shell: grep enabled /etc/yum.repos.d/epel.repo
+          when: result.rc == 0
+
+        # Disable repos of 'epel-next' if package 'epel-next-release' is installed
+        - name: Detect package 'epel-next-release' is installed
+          command: rpm -q epel-next-release
+          register: result
+          ignore_errors: True
+        - name: Disable repos of 'epel-next'
+          shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
+          when: result.rc == 0
+        - name: Fetch attribute 'enabled' of repos of 'epel-next'
+          shell: grep enabled /etc/yum.repos.d/epel-next.repo
+          when: result.rc == 0
