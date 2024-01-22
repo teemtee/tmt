@@ -12,6 +12,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
     Environment,
@@ -229,9 +230,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 test: ./smoke.sh
                 path: /tests/shell
 
-    For DistGit repo one can download sources and use their code.
-    They are available in ``$TMT_SOURCE_DIR`` however no patches are applied.
-    By default tarballs are extracted which can be disabled.
+    For DistGit repo one can download sources and use code from them in the tests.
+    Sources are extracted into ``$TMT_SOURCE_DIR``, patches are applied by default.
+    See options to install build dependencies or to just download sources
+    without applying patches. To apply patches the ``prepare`` step has to be enabled.
 
     .. code-block:: yaml
 
@@ -393,15 +395,27 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                     f"Directory '{self.step.plan.my_run.tree.root}' "
                     f"is not a git repository.")
             try:
-                self.extract_distgit_source(
+                download_only: bool = self.get('dist-git-download-only')
+                self.download_distgit_source(
                     distgit_dir=git_root,
                     target_dir=sourcedir,
                     handler_name=self.get('dist-git-type'),
-                    download_only=self.get('dist-git-download-only'),
                     )
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
                 # FIXME 'worktree' could be used as sourcedir when 'url' is not set
                 shutil.copytree(git_root, sourcedir, symlinks=True, dirs_exist_ok=True)
+
+                if download_only:
+                    self.debug("Do not extract sources as 'download_only' is set.")
+                else:
+                    # Check if prepare is enabled, warn user if not
+                    if not self.step.plan.prepare.enabled:
+                        self.warn("Sources will not be extracted, prepare step is not enabled.")
+                    insert_to_prepare_step(
+                        discover_plugin=self,
+                        sourcedir=sourcedir,
+                        )
+
             except Exception as error:
                 raise tmt.utils.DiscoverError(
                     "Failed to process 'dist-git-source'.") from error
@@ -412,9 +426,11 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             tree=tests).tests(
             conditions=["manual is False"])
 
-        # Propagate `where` key
+        # Propagate `where` key and TMT_SOURCE_DIR
         for test in self._tests:
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
+            if dist_git_source:
+                test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
     def tests(
             self,

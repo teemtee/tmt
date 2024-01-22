@@ -252,12 +252,16 @@ description: |
         file of a DistGit (Fedora, CentOS) repository.  Plan using
         the option has to be defined in a DistGit repository or
         the ``url`` option needs to point to the root of such
-        repository.  At this moment, no patches are applied, only
-        sources are downloaded and tarballs extracted (can be
-        skipped).
+        repository.
 
         All source files are available for further use in the
         directory provided in the ``TMT_SOURCE_DIR`` variable.
+
+        Patches are applied by ``rpm-build -bp`` command which
+        runs in ``prepare`` step on the provisioned guest, with
+        order ``60``.
+
+        .. versionadded:: 1.32
 
         dist-git-source
             Download and (optionally) extract the sources.
@@ -268,14 +272,36 @@ description: |
             repositories.
 
         dist-git-download-only
-            When ``true`` no tarballs are extracted. Saves space
-            if one wants to apply patches later on their own.
+            When ``true`` sources are just downloaded.
+            No ``rpmbuild -bp``, nor installation of require
+            or buildddeps happens.
+
+        .. versionadded:: 1.29
+
+        dist-git-require
+            List of packages to install before ``rpmbuild -bp`` is attempted
+            on the sources. The rpm-build package itself is installed automatically.
+
+        .. versionadded:: 1.32
+
+        dist-git-install-builddeps
+            When set to ``true`` build requirements are installed.
+
+        .. versionadded:: 1.32
 
         The :ref:`/spec/plans/discover/fmf` plugin supports
         additional dist-git options, see its documentation for
         details.
 
-        .. versionadded:: 1.29
+        .. note::
+
+            In order to discover which tests would be executed,
+            without actually running them, it is necessary to
+            enable the `provision` and `prepare` steps as well:
+
+            .. code-block::
+
+                tmt run -v discover provision prepare finish
 
     example:
       - |

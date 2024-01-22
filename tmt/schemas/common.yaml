@@ -149,6 +149,14 @@ definitions:
   dist-git-download-only:
     type: boolean
 
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  dist-git-install-builddeps:
+    type: boolean
+
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
+  dist-git-require:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#duration
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#shell
   duration:

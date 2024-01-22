@@ -36,8 +36,6 @@ New environment variable ``TMT_TEST_ITERATION_ID`` has been added to
 run ID and the test serial number. The value is different for each
 new test execution.
 
-__ https://pagure.io/testcloud/
-
 New environment variable ``TMT_REPORT_ARTIFACTS_URL`` has been added
 to :ref:`command-variables`. It can be used to provide a link for
 detailed test artifacts for report plugins to pick.
@@ -45,6 +43,15 @@ detailed test artifacts for report plugins to pick.
 :ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
 support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
 HW requirement.
+
+The :ref:`/spec/plans/discover/dist-git-source` apply patches now using
+``rpmbuild -bp`` command. This is done on provisioned guest during
+the ``prepare`` step, before required packages are installed.
+It is possible to install build requires automatically with
+``dist-git-install-builddeps`` flag or specify additional
+packages required to be present with ``dist-git-require`` option.
+
+__ https://pagure.io/testcloud/
 
 
 tmt-1.31

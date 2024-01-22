@@ -618,6 +618,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         for data in self.data:
             self._plugin_base_class.delegate(self, data=data).show()
 
+    def summary(self) -> None:
+        """
+        Give a concise summary about the step result
+
+        To be implemented by each step.
+        """
+        raise NotImplementedError
+
     def load(self) -> None:
         """ Load status and step data from the workdir """
         try:
@@ -2160,7 +2168,7 @@ class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
     @property
     def name(self) -> str:
         return f'{self.phase_name} ' \
-               f'on {fmf.utils.listed(self.guest_ids)}'
+            f'on {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         self.phase.go(guest=guest, logger=logger)

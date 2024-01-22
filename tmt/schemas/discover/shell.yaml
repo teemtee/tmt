@@ -34,6 +34,15 @@ properties:
   dist-git-type:
     $ref: "/schemas/common#/definitions/dist-git-type"
 
+  dist-git-download-only:
+    $ref: "/schemas/common#/definitions/dist-git-download-only"
+
+  dist-git-install-builddeps:
+    $ref: "/schemas/common#/definitions/dist-git-install-builddeps"
+
+  dist-git-require:
+    $ref: "/schemas/common#/definitions/dist-git-require"
+
   order:
     $ref: "/schemas/core#/definitions/order"
 

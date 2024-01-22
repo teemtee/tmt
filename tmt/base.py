@@ -2289,7 +2289,7 @@ class Plan(
                 step.go()
                 # Finish plan if no tests found (except dry mode)
                 if (isinstance(step, tmt.steps.discover.Discover) and not step.tests()
-                        and not self.is_dry_run):
+                        and not self.is_dry_run and not step.extract_tests_later):
                     step.info(
                         'warning', 'No tests found, finishing plan.',
                         color='yellow', shift=1)

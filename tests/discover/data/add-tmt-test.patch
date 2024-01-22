@@ -1,0 +1,8 @@
+--- /dev/null	2024-03-21 08:31:36.527999950 +0100
++++ with-tmt-1/by-patch.fmf	2024-03-22 15:38:47.394101577 +0100
+@@ -0,0 +1,5 @@
++test: echo
++require:
++- tree
++recommend:
++- pcre

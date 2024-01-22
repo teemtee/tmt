@@ -37,6 +37,9 @@ tier: 3
 /distgit:
     summary: Get tests from the source tarball from dist-git lookaside
     test: ./distgit.sh
+    tag+:
+    - provision-virtual
+    - provision-container
 
 /dynamic-ref:
     /fmf:
