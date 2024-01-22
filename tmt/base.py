@@ -1584,6 +1584,11 @@ class Plan(
 
             self._initialize_data_directory()
 
+        # Set directory for last run execute data in case of a rerun
+        if self.is_rerun:
+            assert self.workdir is not None  # narrow type
+            self.last_run_execute: Path = self.workdir / 'last_run_execute'
+
         # Store 'environment' and 'environment-file' keys content
         self._environment = tmt.utils.environment_from_spec(
             raw_fmf_environment_files=node.get("environment-file") or [],
@@ -2223,6 +2228,16 @@ class Plan(
         self.debug('environment', format_value(self.environment), 'magenta', level=3)
         self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
 
+        # Save last run execute step if called with rerun
+        if self.is_rerun:
+            assert self.workdir is not None  # narrow type
+            if not (self.workdir / 'execute').exists():
+                raise tmt.utils.GeneralError(
+                    "Run id has to be specified and "
+                    "execute directory has to exist in order to use --rerun.")
+            self.debug(f"Saving last run execute into {self.last_run_execute}.")
+            shutil.copytree(self.workdir / 'execute', self.last_run_execute, dirs_exist_ok=True)
+
         # Wake up all steps
         self.wake()
 
@@ -2259,9 +2274,9 @@ class Plan(
         try:
             for step in self.steps(skip=['finish']):
                 step.go()
-                # Finish plan if no tests found (except dry mode)
+                # Finish plan if no tests found (except dry mode and rerun)
                 if (isinstance(step, tmt.steps.discover.Discover) and not step.tests()
-                        and not self.is_dry_run):
+                        and not self.is_dry_run and not self.is_rerun):
                     step.info(
                         'warning', 'No tests found, finishing plan.',
                         color='yellow', shift=1)

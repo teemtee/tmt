@@ -1,0 +1,8 @@
+/fmf:
+    /good:
+        summary: Passing test
+        tag: preparation
+        test: 'true'
+    /bad:
+        summary: Failing test
+        test: 'false'

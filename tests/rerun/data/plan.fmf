@@ -1,0 +1,18 @@
+provision:
+    how: local
+execute:
+    how: tmt
+
+/shell:
+    discover:
+        how: shell
+        tests:
+            - name: Passing test
+              test: 'true'
+            - name: Failing test
+              test: 'false'
+
+/fmf:
+    discover:
+        how: fmf
+        test: fmf

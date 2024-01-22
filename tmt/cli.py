@@ -352,6 +352,21 @@ def main(
     '--scratch', is_flag=True,
     help='Remove the run workdir before executing to start from scratch.')
 @option(
+    '--rerun', is_flag=True,
+    help='Rerun failed tests and update existing results.')
+@option(
+    '--force-rerun-test', multiple=True, metavar='[REGEXP|.]',
+    help="""
+         Regular expression to match test names that are supposed to be rerun
+         regardless of their previous result. Can be provided multiple times.
+         """)
+@option(
+    '--force-rerun-filter', 'force_rerun_filters', multiple=True, metavar='FILTER',
+    help="""
+         Apply advanced filter (see 'pydoc fmf.filter') to select tests that
+         are supposed to be rerun regardless of their previous result.
+         """)
+@option(
     '--follow', is_flag=True,
     help='Output the logfile as it grows.')
 @option(

@@ -1,8 +1,10 @@
 import dataclasses
+import re
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
+from fmf.utils import filter as fmf_filter
 from fmf.utils import listed
 
 import tmt
@@ -17,6 +19,7 @@ import tmt.steps
 import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
+from tmt.result import Result
 from tmt.steps import Action
 from tmt.utils import GeneralError, Path, field, flatten, key_to_option
 
@@ -192,6 +195,68 @@ class Discover(tmt.steps.Step):
 
         self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 
+    def _filter_for_rerun(self) -> None:
+        """ Filter out passed tests from previous run data """
+        assert isinstance(self.parent, tmt.base.Plan)  # narrow type
+        old_results: Path = self.parent.last_run_execute / 'results.yaml'
+        results = [
+            Result.from_serialized(data) for data in
+            tmt.utils.yaml_to_list(self.read(old_results))]
+        force_rerun_tests: list[str] = self.opt('force_rerun_test', [])
+        force_rerun_filters: list[str] = self.opt('force_rerun_filters', [])
+
+        results_failed: list[Result] = []
+        results_passed: list[Result] = []
+        for result in results:
+            if (
+                    force_rerun_tests and
+                    any(re.search(test, result.name) for test in force_rerun_tests)):
+                results_failed.append(result)
+                continue
+            if (
+                    result.result is not tmt.result.ResultOutcome.PASS and
+                    result.result is not tmt.result.ResultOutcome.INFO):
+                results_failed.append(result)
+            else:
+                results_passed.append(result)
+
+        # Filter out failed tests based on test name and serial number
+        filtered_tests: dict[str, list[tmt.base.Test]] = {}
+        for phase in self._tests:
+            current_phase_filtered: list[tmt.base.Test] = []
+            for test in self._tests[phase]:
+                # Check for any tests marked to rerun based on filter
+                if (
+                        force_rerun_filters and
+                        all(
+                            fmf_filter(rerun_filter, test._metadata, regexp=True)
+                            for rerun_filter in force_rerun_filters)):
+                    current_phase_filtered.append(test)
+                    # We need to also drop the test from passed so we don't have duplicate result
+                    for result_index in range(len(results_passed)):
+                        if (
+                                test.name == results_passed[result_index].name and
+                                test.serial_number == results_passed[result_index].serial_number):
+                            del results_passed[result_index]
+                            break
+                    continue
+                for result in results_failed:
+                    if test.name == result.name and test.serial_number == result.serial_number:
+                        current_phase_filtered.append(test)
+                        break
+            filtered_tests[phase] = current_phase_filtered
+        self._tests = filtered_tests
+
+        # Save positive results to specific results.yaml
+        old_results_positive: Path = (
+            self.parent.last_run_execute / 'positive_results.yaml')
+        self.debug(
+            f"Save positive results from last run to {old_results_positive}, these are: "
+            f"{', '.join([result.name for result in results_passed])}")
+        self.write(
+            old_results_positive,
+            tmt.utils.dict_to_yaml([result.to_serialized() for result in results_passed]))
+
     def _discover_from_execute(self) -> None:
         """ Check the execute step for possible shell script tests """
 
@@ -314,6 +379,10 @@ class Discover(tmt.steps.Step):
         for test in self.tests():
             test.serial_number = self.plan.draw_test_serial_number(test)
 
+        # Filter selected tests if this is a rerun
+        if self.is_rerun:
+            self._filter_for_rerun()
+
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module
         if self.opt('fmf_id'):
@@ -370,7 +439,7 @@ class Discover(tmt.steps.Step):
         provisioned guest so that all discovered tests of this step can be
         successfully executed.
 
-        :returns: a list of requirements, with duplicaties removed.
+        :returns: a list of requirements, with duplicates removed.
         """
         return flatten((test.require for test in self.tests(enabled=True)), unique=True)
 
