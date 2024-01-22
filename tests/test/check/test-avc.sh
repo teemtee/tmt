@@ -34,7 +34,7 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Test nasty AVC check with $method"
-            rlRun "tmt -c provision_method=$method run --id $run --scratch -a -vv provision -h $method test -n /avc/nasty"
+            rlRun "tmt -c provision_method=$method run --id $run --scratch -a -vvv provision -h $method test -n /avc/nasty"
 
             rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/nasty-1/checks/avc-after-test.txt"
 

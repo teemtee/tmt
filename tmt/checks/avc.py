@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 
 TEST_POST_AVC_FILENAME = 'avc-{event}.txt'
 
+#: Packages related to selinux and AVC reporting. Their versions would be made
+#: part of the report.
+INTERESTING_PACKAGES = [
+    'audit',
+    'selinux-policy'
+    ]
+
 
 @provides_check('avc')
 class AvcDenials(CheckPlugin[Check]):
@@ -120,18 +127,19 @@ class AvcDenials(CheckPlugin[Check]):
         else:
             report += _report_failure('sestatus', exc)
 
-        # Record selinux-policy NVR.
-        output, exc = _run_script(ShellScript('rpm -q selinux-policy'))
+        # Record NVRs of interesting packages.
+        interesting_packages = ' '.join(INTERESTING_PACKAGES)
+        output, exc = _run_script(ShellScript(f'rpm -q {interesting_packages}'))
 
         if exc is None:
             assert output is not None
 
             got_rpm = True
 
-            report += _report_success('rpm -q selinux-policy', output)
+            report += _report_success(f'rpm -q {interesting_packages}', output)
 
         else:
-            report += _report_failure('rpm -q selinux-policy', exc)
+            report += _report_failure(f'rpm -q {interesting_packages}', exc)
 
         # Finally, run `ausearch`, to list AVC denials from the time the test started.
         start_timestamp = datetime.datetime.fromisoformat(invocation.start_time).timestamp()
