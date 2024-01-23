@@ -14,4 +14,4 @@ execute:
         set -o pipefail
         pip3 install .[docs]
         make -C docs html 2>&1 | tee output
-        egrep 'ERROR|WARNING' output && exit 1 || exit 0
+        grep -E 'ERROR|WARNING' output && exit 1 || exit 0
