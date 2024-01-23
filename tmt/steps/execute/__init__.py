@@ -290,12 +290,15 @@ class TestInvocation:
             logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Terminate the invocation process.
+
         .. warning::
+
             This method should be used carefully. Process running the
             invocation's test has been started by some part of tmt code which
             is responsible for its well-being. Unless you have a really good
             reason to do so, doing things behind the tmt's back may lead to
             unexpected results.
+
         :param signal: signal to send to the invocation process.
         :param logger: logger to use for logging.
         """
