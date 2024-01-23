@@ -227,8 +227,9 @@ force_dry_options = create_options_decorator(tmt.options.FORCE_DRY_OPTIONS)
 again_option = create_options_decorator(tmt.options.AGAIN_OPTION)
 fix_options = create_options_decorator(tmt.options.FIX_OPTIONS)
 workdir_root_options = create_options_decorator(tmt.options.WORKDIR_ROOT_OPTIONS)
-filter_options = create_options_decorator(tmt.options.FILTER_OPTIONS)
-filter_options_long = create_options_decorator(tmt.options.FILTER_OPTIONS_LONG)
+filtering_options = create_options_decorator(tmt.options.FILTERING_OPTIONS)
+filtering_options_long = create_options_decorator(tmt.options.FILTERING_OPTIONS_LONG)
+filter_option = create_options_decorator(tmt.options.FILTER_OPTION)
 fmf_source_options = create_options_decorator(tmt.options.FMF_SOURCE_OPTIONS)
 story_flags_filter_options = create_options_decorator(tmt.options.STORY_FLAGS_FILTER_OPTIONS)
 remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
@@ -413,9 +414,7 @@ run.add_command(tmt.steps.Reboot.command())
 @option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match plan name or '.' for current directory.")
-@option(
-    '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
-    help="Apply advanced filter (see 'pydoc fmf.filter').")
+@filter_option
 @option(
     '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
     help="Use arbitrary Python expression for filtering.")
@@ -443,9 +442,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
 @option(
     '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
     help="Regular expression to match test name or '.' for current directory.")
-@option(
-    '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
-    help="Apply advanced filter (see 'pydoc fmf.filter').")
+@filter_option
 @option(
     '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
     help="Use arbitrary Python expression for filtering.")
@@ -593,7 +590,7 @@ def tests(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @tests.command(name='ls')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @verbosity_options
 def tests_ls(context: Context, **kwargs: Any) -> None:
     """
@@ -611,7 +608,7 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @tests.command(name='show')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @verbosity_options
 def tests_show(context: Context, **kwargs: Any) -> None:
     """
@@ -630,7 +627,7 @@ def tests_show(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @tests.command(name='lint')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @fmf_source_options
 @lint_options
 @fix_options
@@ -854,7 +851,7 @@ _test_export_default = 'yaml'
 
 @tests.command(name='export')
 @pass_context
-@filter_options_long
+@filtering_options_long
 @option(
     '-h', '--how', default=_test_export_default, show_default=True,
     help='Output format.',
@@ -977,7 +974,7 @@ def tests_export(
 # inference. See Context and ContextObjects above.
 @tests.command(name="id")  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @verbosity_options
 @force_dry_options
 def tests_id(context: Context, **kwargs: Any) -> None:
@@ -1021,7 +1018,7 @@ def plans(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @plans.command(name='ls')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @verbosity_options
 @remote_plan_options
 def plans_ls(context: Context, **kwargs: Any) -> None:
@@ -1040,7 +1037,7 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @plans.command(name='show')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @environment_options
 @verbosity_options
 @remote_plan_options
@@ -1061,7 +1058,7 @@ def plans_show(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @plans.command(name='lint')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @fmf_source_options
 @lint_options
 @fix_options
@@ -1149,7 +1146,7 @@ _plan_export_default = 'yaml'
 
 @plans.command(name='export')
 @pass_context
-@filter_options_long
+@filtering_options_long
 @option(
     '-h', '--how', default=_plan_export_default, show_default=True,
     help='Output format.',
@@ -1198,7 +1195,7 @@ def plans_export(
 # inference. See Context and ContextObjects above.
 @plans.command(name="id")  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @verbosity_options
 @force_dry_options
 def plans_id(context: Context, **kwargs: Any) -> None:
@@ -1240,7 +1237,7 @@ def stories(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @stories.command(name='ls')  # type: ignore[arg-type]
 @pass_context
-@filter_options_long
+@filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_ls(
@@ -1271,7 +1268,7 @@ def stories_ls(
 # inference. See Context and ContextObjects above.
 @stories.command(name='show')  # type: ignore[arg-type]
 @pass_context
-@filter_options_long
+@filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_show(
@@ -1338,7 +1335,7 @@ def stories_create(
 @option(
     '--code', is_flag=True, help='Show code coverage.')
 @pass_context
-@filter_options_long
+@filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_coverage(
@@ -1413,7 +1410,7 @@ _story_export_default = 'yaml'
 
 @stories.command(name='export')
 @pass_context
-@filter_options_long
+@filtering_options_long
 @story_flags_filter_options
 @option(
     '-h', '--how', default=_story_export_default, show_default=True,
@@ -1475,7 +1472,7 @@ def stories_export(
 # inference. See Context and ContextObjects above.
 @stories.command(name='lint')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @fmf_source_options
 @lint_options
 @fix_options
@@ -1514,7 +1511,7 @@ def stories_lint(
 # inference. See Context and ContextObjects above.
 @stories.command(name="id")  # type: ignore[arg-type]
 @pass_context
-@filter_options_long
+@filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 @force_dry_options
@@ -1912,7 +1909,7 @@ def clean_images(context: Context, **kwargs: Any) -> None:
 # inference. See Context and ContextObjects above.
 @main.command(name='lint')  # type: ignore[arg-type]
 @pass_context
-@filter_options
+@filtering_options
 @fmf_source_options
 @lint_options
 @fix_options

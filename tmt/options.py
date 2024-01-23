@@ -176,13 +176,30 @@ WORKDIR_ROOT_OPTIONS: list[ClickOptionDecoratorType] = [
              """)
     ]
 
-
-FILTER_OPTIONS: list[ClickOptionDecoratorType] = [
-    click.argument(
-        'names', nargs=-1, metavar='[REGEXP|.]'),
+FILTER_OPTION: list[ClickOptionDecoratorType] = [
     option(
         '-f', '--filter', 'filters', metavar='FILTER', multiple=True,
-        help="Apply advanced filter (see 'pydoc fmf.filter')."),
+        help="""
+        Apply an advanced filter using key:value pairs and logical operators.
+        For example 'tier:1 & tag:core'. Use the 'name' key to search by name.
+        See 'pydoc fmf.filter' for detailed documentation on the syntax.
+        """),
+    ]
+
+FILTER_OPTION_LONG: list[ClickOptionDecoratorType] = [
+    option(
+        '--filter', 'filters', metavar='FILTER', multiple=True,
+        help="""
+        Apply an advanced filter using key:value pairs and logical operators.
+        For example 'tier:1 & tag:core'. Use the 'name' key to search by name.
+        See 'pydoc fmf.filter' for detailed documentation on the syntax.
+        """),
+    ]
+
+FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
+    click.argument(
+        'names', nargs=-1, metavar='[REGEXP|.]'),
+    *FILTER_OPTION,
     option(
         '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
         help="Use arbitrary Python expression for filtering."),
@@ -204,12 +221,10 @@ FILTER_OPTIONS: list[ClickOptionDecoratorType] = [
     ]
 
 
-FILTER_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
+FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
     click.argument(
         'names', nargs=-1, metavar='[REGEXP|.]'),
-    option(
-        '--filter', 'filters', metavar='FILTER', multiple=True,
-        help="Apply advanced filter (see 'pydoc fmf.filter')."),
+    *FILTER_OPTION_LONG,
     option(
         '--condition', 'conditions', metavar="EXPR", multiple=True,
         help="Use arbitrary Python expression for filtering."),
