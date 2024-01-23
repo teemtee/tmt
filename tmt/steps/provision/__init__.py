@@ -56,8 +56,21 @@ if TYPE_CHECKING:
     import tmt.cli
 
 
-# Timeout in seconds of waiting for a connection after reboot
-CONNECTION_TIMEOUT = 5 * 60
+#: How many seconds to wait for a connection to succeed after guest reboot.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_REBOOT_TIMEOUT: int = 5 * 60
+
+#: How many seconds to wait for a connection to succeed after guest reboot.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_REBOOT_TIMEOUT``.
+REBOOT_TIMEOUT: int
+
+try:
+    REBOOT_TIMEOUT = int(os.environ.get('TMT_REBOOT_TIMEOUT', DEFAULT_REBOOT_TIMEOUT))
+
+except ValueError as exc:
+    raise tmt.utils.GeneralError(
+        f"Could not parse '{os.environ['TMT_REBOOT_TIMEOUT']}' as integer.") from exc
 
 # When waiting for guest to recover from reboot, try re-connecting every
 # this many seconds.
@@ -1024,7 +1037,7 @@ class Guest(tmt.utils.Common):
         """
         # The default is handled here rather than in the argument so that
         # the caller can pass in None as an argument (i.e. don't care value)
-        timeout = timeout or CONNECTION_TIMEOUT
+        timeout = timeout or REBOOT_TIMEOUT
         self.debug("Wait for a connection to the guest.")
 
         def try_whoami() -> None:
@@ -1618,7 +1631,7 @@ class GuestSsh(Guest):
                 self.debug('Failed to connect to the guest.')
                 raise tmt.utils.WaitingIncompleteError
 
-        timeout = timeout or CONNECTION_TIMEOUT
+        timeout = timeout or REBOOT_TIMEOUT
 
         try:
             tmt.utils.wait(

@@ -431,6 +431,10 @@ TMT_GIT_CLONE_TIMEOUT
     Overall maximum time in seconds to clone a git repository. By
     default, the limit is not set.
 
+TMT_REBOOT_TIMEOUT
+    How many seconds to wait for a connection to succeed after guest reboot.
+    By default, it is 5 minutes.
+
 .. _step-variables:
 
 Step Variables

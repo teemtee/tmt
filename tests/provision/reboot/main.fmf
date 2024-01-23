@@ -1,4 +1,8 @@
 summary: Check that the reboot command works
+
+environment:
+    PROVISION_METHODS: container
+
 adjust:
   - when: how == full
     environment:
