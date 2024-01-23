@@ -40,6 +40,10 @@ New environment variable ``TMT_REBOOT_TIMEOUT`` has been added to
 :ref:`command-variables`. It can be used to set a custom reboot
 timeout. The default timeout was increased to 10 minutes.
 
+New hardware specification key :ref:`/spec/hardware/zcrypt` has
+been defined. It will be used for selecting guests with the given
+`System z cryptographic adapter`.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

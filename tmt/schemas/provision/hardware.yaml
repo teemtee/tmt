@@ -274,6 +274,19 @@ definitions:
     additionalProperties: false
     minProperties: 1
 
+  # HW requirements: `zcrypt` block
+  zcrypt:
+    type: object
+
+    properties:
+      adapter:
+        type: string
+      mode:
+        type: string
+
+    additionalProperties: false
+    minProperties: 1
+
   # HW requirements: `virtualization` block
   virtualization:
     type: object
@@ -334,6 +347,9 @@ definitions:
 
       tpm:
         "$ref": "#/definitions/tpm"
+
+      zcrypt:
+        "$ref": "#/definitions/zcrypt"
 
       virtualization:
         "$ref": "#/definitions/virtualization"

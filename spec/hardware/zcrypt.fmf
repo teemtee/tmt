@@ -1,0 +1,20 @@
+summary: |
+    Select or provision a guest with the `System z cryptographic adapter`.
+
+description: |
+    .. code-block::
+
+       zcrypt:
+           # String, adapter requested.
+           adapter: "x"
+           # String, mode requested.
+           mode: "y"
+
+    .. versionadded:: 1.31
+
+example:
+  - |
+    # Require a presence of CEX8C adapter in the CCA mode
+    zcrypt:
+        adapter: "CEX8C"
+        mode: "CCA"
