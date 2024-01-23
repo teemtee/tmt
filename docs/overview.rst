@@ -433,7 +433,7 @@ TMT_GIT_CLONE_TIMEOUT
 
 TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after guest reboot.
-    By default, it is 5 minutes.
+    By default, it is 10 minutes.
 
 .. _step-variables:
 

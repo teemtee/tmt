@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the default value tmt would use unless told otherwise.
-DEFAULT_REBOOT_TIMEOUT: int = 5 * 60
+DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the effective value, combining the default and optional envvar,
