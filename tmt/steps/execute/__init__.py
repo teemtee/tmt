@@ -3,7 +3,9 @@ import dataclasses
 import datetime
 import json
 import os
+import signal as _signal
 import subprocess
+import threading
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
@@ -156,6 +158,7 @@ class TestInvocation:
     #: implementation and the test, it may be, for example, a shell process,
     #: SSH process, or a ``podman`` process.
     process: Optional[subprocess.Popen[bytes]] = None
+    process_lock: threading.Lock = field(default_factory=threading.Lock)
 
     return_code: Optional[int] = None
     start_time: Optional[str] = None
@@ -280,6 +283,38 @@ class TestInvocation:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")
 
         return True
+
+    def terminate_process(
+            self,
+            signal: _signal.Signals = _signal.SIGTERM,
+            logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Terminate the invocation process.
+
+        .. warning::
+
+            This method should be used carefully. Process running the
+            invocation's test has been started by some part of tmt code which
+            is responsible for its well-being. Unless you have a really good
+            reason to do so, doing things behind the tmt's back may lead to
+            unexpected results.
+
+        :param signal: signal to send to the invocation process.
+        :param logger: logger to use for logging.
+        """
+
+        logger = logger or self.logger
+
+        with self.process_lock:
+            if self.process is None:
+                logger.debug('Test invocation process cannot be terminated because it is unset.',
+                             level=3)
+
+                return
+
+            logger.debug(f'Terminating process {self.process.pid} with {signal.name}.', level=3)
+
+            self.process.send_signal(signal)
 
 
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):

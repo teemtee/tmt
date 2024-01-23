@@ -1,6 +1,8 @@
 import datetime
+import logging
 import queue
 import re
+import signal
 import textwrap
 import threading
 import time
@@ -8,6 +10,7 @@ import unittest
 import unittest.mock
 from datetime import timedelta
 from typing import Any, Optional
+from unittest.mock import MagicMock
 
 import fmf
 import pytest
@@ -37,6 +40,8 @@ from tmt.utils import (
     validate_git_status,
     wait,
     )
+
+from . import MATCH, assert_log
 
 run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
@@ -1537,3 +1542,48 @@ def test_format_value(value: Any, window_size: Optional[int], expected: str) -> 
     )
 def test_is_url(url: str, expected: bool) -> None:
     assert tmt.utils.is_url(url) == expected
+
+
+def test_invocation_terminate_process(root_logger: tmt.log.Logger, caplog) -> None:
+    from tmt.steps.execute import TestInvocation
+
+    pid = MagicMock(name='process.pid')
+
+    invocation = TestInvocation(
+        logger=root_logger,
+        phase=MagicMock(name='phase'),
+        test=MagicMock(name='test'),
+        guest=MagicMock(name='guest'),
+        process=MagicMock(name='process')
+        )
+
+    invocation.process.pid = pid
+
+    invocation.terminate_process(signal=signal.SIGFPE, logger=root_logger)
+
+    invocation.process.send_signal.assert_called_once_with(signal.SIGFPE)
+
+    assert_log(
+        caplog,
+        message=MATCH(rf'Terminating process {pid} with {signal.SIGFPE.name}.'),
+        levelno=logging.DEBUG)
+
+
+def test_invocation_terminate_process_not_running_anymore(
+        root_logger: tmt.log.Logger, caplog) -> None:
+    from tmt.steps.execute import TestInvocation
+
+    invocation = TestInvocation(
+        logger=root_logger,
+        phase=MagicMock(name='phase'),
+        test=MagicMock(name='test'),
+        guest=MagicMock(name='guest'),
+        process=None
+        )
+
+    invocation.terminate_process(signal=signal.SIGFPE, logger=root_logger)
+
+    assert_log(
+        caplog,
+        message=MATCH(r'Test invocation process cannot be terminated because it is unset.'),
+        levelno=logging.DEBUG)
