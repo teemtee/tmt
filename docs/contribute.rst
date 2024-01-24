@@ -384,9 +384,9 @@ Release a new package to Fedora and EPEL repositories:
 Finally, if everything went well:
 
 * Close the corresponding release milestone
-* Once the `copr build`__ is completed, move the ``quay`` branch
-  to point to the release commit as well to build fresh container
-  images.
+* Once the non development `copr build`__ is completed, move the
+  ``quay`` branch to point to the release commit as well to build
+  fresh container images.
 
 Handle manually what did not went well:
 
@@ -396,12 +396,8 @@ Handle manually what did not went well:
 * If there was a problem with creating Fedora pull requests, you
   can trigger them manually using ``/packit propose-downstream``
   in any open issue.
-* If running `packit propose-downstream`__ from your laptop make
-  sure that the ``post-upstream-clone`` action is disabled in
-  ``.packit.yaml`` to prevent bumping the devel version.
 
 __ https://github.com/teemtee/tmt/releases/
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
-__ https://copr.fedorainfracloud.org/coprs/psss/tmt/builds/
+__ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
 __ https://pypi.org/project/tmt/
-__ https://packit.dev/docs/cli/propose-downstream/

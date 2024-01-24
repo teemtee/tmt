@@ -137,8 +137,6 @@ jobs:
     dist_git_branches:
       - fedora-all
       - epel-9
-    actions:
-        post-upstream-clone: []
 
   - job: koji_build
     trigger: commit
