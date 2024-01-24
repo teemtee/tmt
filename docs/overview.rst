@@ -341,6 +341,7 @@ Variables
 The list of available environment variables which can be used to
 adjust the execution.
 
+.. _command-variables:
 
 Command Variables
 -----------------
@@ -432,8 +433,8 @@ TMT_GIT_CLONE_TIMEOUT
     default, the limit is not set.
 
 TMT_REBOOT_TIMEOUT
-    How many seconds to wait for a connection to succeed after guest reboot.
-    By default, it is 10 minutes.
+    How many seconds to wait for a connection to succeed after
+    guest reboot. By default, it is 10 minutes.
 
 .. _step-variables:
 

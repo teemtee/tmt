@@ -36,6 +36,10 @@ New option ``--again`` can be used to execute an already completed
 step once again without completely removing the step workdir which
 is done when ``--force`` is used.
 
+New environment variable ``TMT_REBOOT_TIMEOUT`` has been added to
+:ref:`command-variables`. It can be used to set a custom reboot
+timeout. The default timeout was increased to 10 minutes.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
