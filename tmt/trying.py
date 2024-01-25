@@ -196,7 +196,11 @@ class Try(tmt.utils.Common):
                     {c('q')}{a('uit')}       clean up the run and quit the session
                 """))
 
-            answer = input("> ")
+            try:
+                answer = input("> ")
+            except EOFError:
+                return "quit"
+
             try:
                 self.print("")
                 return {
