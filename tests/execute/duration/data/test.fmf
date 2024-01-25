@@ -12,7 +12,7 @@
     duration: 5s
 
     /shell:
-        test: sleep 120s
+        test: sleep 20s
     /beakerlib:
         framework: beakerlib
         test: ./long.sh

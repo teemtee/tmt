@@ -179,7 +179,12 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         default=False,
         option=('-i', '--interactive'),
         is_flag=True,
-        help='Run in interactive mode, do not capture output.')
+        help="""
+             Run tests in interactive mode, i.e. with input and output streams
+             shared with tmt itself. This allows input to be passed to tests
+             via stdin, e.g. responding to password prompts. Test output in this
+             mode is not captured, and ``duration`` has no effect.
+             """)
     no_progress_bar: bool = field(
         default=False,
         option='--no-progress-bar',
@@ -325,7 +330,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             command = f'./{test_wrapper_filename}'
         # Prepare the actual remote command
         remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
-            INTERACTIVE=self.get('interactive'),
+            INTERACTIVE=self.data.interactive,
             TTY=test.tty,
             REMOTE_COMMAND=ShellScript(command)
             ).strip())
@@ -364,16 +369,27 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         with Stopwatch() as timer:
             invocation.start_time = self.format_timestamp(timer.start_time)
 
+            timeout: Optional[int]
+
+            if self.data.interactive:
+                if test.duration:
+                    logger.warn('Ignoring requested duration, not supported in interactive mode.')
+
+                timeout = None
+
+            else:
+                timeout = tmt.utils.duration_to_seconds(test.duration)
+
             try:
                 output = guest.execute(
                     remote_command,
                     cwd=workdir,
                     env=environment,
                     join=True,
-                    interactive=self.get('interactive'),
+                    interactive=self.data.interactive,
                     tty=test.tty,
                     log=_test_output_logger,
-                    timeout=tmt.utils.duration_to_seconds(test.duration),
+                    timeout=timeout,
                     on_process_start=_save_process,
                     test_session=True,
                     friendly_command=str(test.test))
