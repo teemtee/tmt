@@ -37,16 +37,6 @@ class Feature(tmt.utils.Common):
 
 
 class ToggleableFeature(Feature):
-    def enable(self) -> None:
-        raise NotImplementedError
-
-    def disable(self) -> None:
-        raise NotImplementedError
-
-
-class EPEL(ToggleableFeature):
-    KEY = 'epel'
-
     def get_root_path(self) -> Path:
         assert self.parent is not None  # narrow type
         assert self.parent.parent is not None  # narrow type
@@ -57,47 +47,62 @@ class EPEL(ToggleableFeature):
         assert parent3.my_run.tree.root is not None  # narrow type
         return parent3.my_run.tree.root
 
-    def enable(self) -> None:
+    def _enable_or_disable_by_playbook(self, op: str, key: str, playbook: Path) -> None:
         distro_name = cast(str, self.get_guest_distro_name())
-        playbook_path = Path(__file__).parent / 'feature/epel-enable.yaml'
-        if not playbook_path.exists():
-            self.warn(f"Enable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
+        if not playbook.exists():
+            self.warn(f"{op} {key}: '{distro_name}' of the guest is unsupported.")
             return
-        self.info(f"Enable {self.KEY.upper()} on '{distro_name}' ...")
-        self.logger.info('playbook-path', playbook_path, 'green')
-        playbook_path = Path(playbook_path).relative_to(self.get_root_path())
-        self.guest.ansible(playbook_path)
+        self.info(f"{op} {key} on '{distro_name}' ...")
+        self.logger.info('playbook', playbook, 'green')
+        self.guest.ansible(playbook.relative_to(self.get_root_path()))
+
+    def enable_by_playbook(self, key: str, playbook: Path) -> None:
+        self._enable_or_disable_by_playbook('Enable', key, playbook)
+
+    def disable_by_playbook(self, key: str, playbook: Path) -> None:
+        self._enable_or_disable_by_playbook('Disable', key, playbook)
+
+    def enable(self) -> None:
+        raise NotImplementedError
 
     def disable(self) -> None:
-        distro_name = cast(str, self.get_guest_distro_name())
-        playbook_path = Path(__file__).parent / 'feature/epel-disable.yaml'
-        if not playbook_path.exists():
-            self.warn(f"Disable {self.KEY.upper()}: '{distro_name}' of the guest is unsupported.")
-            return
-        self.info(f"Disable {self.KEY.upper()} on '{distro_name}' ...")
-        self.logger.info('playbook-path', playbook_path, 'green')
-        playbook_path = Path(playbook_path).relative_to(self.get_root_path())
-        self.guest.ansible(playbook_path)
+        raise NotImplementedError
+
+
+class EPEL(ToggleableFeature):
+    KEY = 'epel'
+
+    def enable(self) -> None:
+        playbook = Path(__file__).parent / 'feature/epel-enable.yaml'
+        self.enable_by_playbook(self.KEY.upper(), playbook)
+
+    def disable(self) -> None:
+        playbook = Path(__file__).parent / 'feature/epel-disable.yaml'
+        self.disable_by_playbook(self.KEY.upper(), playbook)
 
 
 class CRB(ToggleableFeature):
     KEY = 'crb'
 
     def enable(self) -> None:
-        pass
+        playbook = Path(__file__).parent / 'feature/crb-enable.yaml'
+        self.enable_by_playbook(self.KEY.upper(), playbook)
 
     def disable(self) -> None:
-        pass
+        playbook = Path(__file__).parent / 'feature/crb-disable.yaml'
+        self.disable_by_playbook(self.KEY.upper(), playbook)
 
 
 class FIPS(ToggleableFeature):
     KEY = 'fips'
 
     def enable(self) -> None:
-        pass
+        playbook = Path(__file__).parent / 'feature/fips-enable.yaml'
+        self.enable_by_playbook(self.KEY.upper(), playbook)
 
     def disable(self) -> None:
-        pass
+        playbook = Path(__file__).parent / 'feature/fips-disable.yaml'
+        self.disable_by_playbook(self.KEY.upper(), playbook)
 
 
 _FEATURES = {
