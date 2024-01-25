@@ -349,17 +349,15 @@ class GuestTestcloud(tmt.GuestSsh):
 
         assert testcloud is not None
         assert libvirt is not None
-
-        with GuestTestcloud._testcloud_lock:
-            try:
-                state = testcloud.instance._find_domain(
-                    self._instance.name, self._instance.connection)
-                # Note the type of variable 'state' is 'Any'. Hence, we don't use:
-                #     return state == 'running'
-                # to avoid error from type checking.
-                return bool(state == "running")
-            except libvirt.libvirtError:
-                return False
+        try:
+            state = testcloud.instance._find_domain(
+                self._instance.name, self._instance.connection)
+            # Note the type of variable 'state' is 'Any'. Hence, we don't use:
+            #     return state == 'running'
+            # to avoid error from type checking.
+            return bool(state == "running")
+        except libvirt.libvirtError:
+            return False
 
     def _get_url(self, url: str, message: str) -> requests.Response:
         """ Get url, retry when fails, return response """
@@ -414,15 +412,12 @@ class GuestTestcloud(tmt.GuestSsh):
             level=2, shift=0)
         self.prepare_config()
         assert testcloud is not None
-        with GuestTestcloud._testcloud_lock:
-            self._image = testcloud.image.Image(self.image_url)
+        self._image = testcloud.image.Image(self.image_url)
         if self.instance_name is None:
             raise ProvisionError(f"The instance name '{self.instance_name}' is invalid.")
-
-        with GuestTestcloud._testcloud_lock:
-            self._instance = testcloud.instance.Instance(
-                self.instance_name, image=self._image,
-                connection=f"qemu:///{self.connection}", desired_arch=self.arch)
+        self._instance = testcloud.instance.Instance(
+            self.instance_name, image=self._image,
+            connection=f"qemu:///{self.connection}", desired_arch=self.arch)
 
     def prepare_ssh_key(self, key_type: Optional[str] = None) -> None:
         """ Prepare ssh key for authentication """
@@ -458,8 +453,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Get configuration
         assert testcloud is not None
-        with GuestTestcloud._testcloud_lock:
-            self.config = testcloud.config.get_config()
+        self.config = testcloud.config.get_config()
 
         self.debug(f"testcloud version: {testcloud.__version__}")
 
@@ -616,24 +610,23 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Initialize and prepare testcloud image
         assert testcloud is not None
-        with GuestTestcloud._testcloud_lock:
-            self._image = testcloud.image.Image(self.image_url)
-            self.verbose('qcow', self._image.name, 'green')
-            if not Path(self._image.local_path).exists():
-                self.info('progress', 'downloading...', 'cyan')
-            try:
-                self._image.prepare()
-            except FileNotFoundError as error:
-                raise ProvisionError(
-                    f"Image '{self._image.local_path}' not found.") from error
-            except (testcloud.exceptions.TestcloudPermissionsError,
-                    PermissionError) as error:
-                raise ProvisionError(
-                    f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
-                    f"directory permissions.") from error
-            except KeyError as error:
-                raise ProvisionError(
-                    f"Failed to prepare image '{self.image_url}'.") from error
+        self._image = testcloud.image.Image(self.image_url)
+        self.verbose('qcow', self._image.name, 'green')
+        if not Path(self._image.local_path).exists():
+            self.info('progress', 'downloading...', 'cyan')
+        try:
+            self._image.prepare()
+        except FileNotFoundError as error:
+            raise ProvisionError(
+                f"Image '{self._image.local_path}' not found.") from error
+        except (testcloud.exceptions.TestcloudPermissionsError,
+                PermissionError) as error:
+            raise ProvisionError(
+                f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
+                f"directory permissions.") from error
+        except KeyError as error:
+            raise ProvisionError(
+                f"Failed to prepare image '{self.image_url}'.") from error
 
         # Prepare hostname (get rid of possible unwanted characters)
         hostname = re.sub(r"[^a-zA-Z0-9\-]+", "-", self.name.lower()).strip("-")
@@ -668,91 +661,92 @@ class GuestTestcloud(tmt.GuestSsh):
         # Is the combination of host-requested architecture kvm capable?
         kvm = bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
 
-        with GuestTestcloud._testcloud_lock:
-            # Is this el <= 7?
-            legacy_os = testcloud.util.needs_legacy_net(self._image.name)
+        # Is this el <= 7?
+        legacy_os = testcloud.util.needs_legacy_net(self._image.name)
 
-            # Is this a CoreOS?
-            self._domain.coreos = bool(re.search('coreos|rhcos', self.image.lower()))
+        # Is this a CoreOS?
+        self._domain.coreos = bool(re.search('coreos|rhcos', self.image.lower()))
 
-            if self.arch == "x86_64":
-                self._domain.system_architecture = X86_64ArchitectureConfiguration(
-                    kvm=kvm,
-                    uefi=False,  # Configurable
-                    model="q35" if not legacy_os else "pc")
-            elif self.arch == "aarch64":
-                self._domain.system_architecture = AArch64ArchitectureConfiguration(
-                    kvm=kvm,
-                    uefi=True,  # Always enabled
-                    model="virt")
-            elif self.arch == "ppc64le":
-                self._domain.system_architecture = Ppc64leArchitectureConfiguration(
-                    kvm=kvm,
-                    uefi=False,  # Always disabled
-                    model="pseries")
-            elif self.arch == "s390x":
-                self._domain.system_architecture = S390xArchitectureConfiguration(
-                    kvm=kvm,
-                    uefi=False,  # Always disabled
-                    model="s390-ccw-virtio")
-            else:
-                raise tmt.utils.ProvisionError("Unknown architecture requested.")
+        if self.arch == "x86_64":
+            self._domain.system_architecture = X86_64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Configurable
+                model="q35" if not legacy_os else "pc")
+        elif self.arch == "aarch64":
+            self._domain.system_architecture = AArch64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=True,  # Always enabled
+                model="virt")
+        elif self.arch == "ppc64le":
+            self._domain.system_architecture = Ppc64leArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="pseries")
+        elif self.arch == "s390x":
+            self._domain.system_architecture = S390xArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="s390-ccw-virtio")
+        else:
+            raise tmt.utils.ProvisionError("Unknown architecture requested.")
 
-            mac_address = testcloud.util.generate_mac_address()
-            if f"qemu:///{self.connection}" == "qemu:///system":
-                self._domain.network_configuration = SystemNetworkConfiguration(
-                    mac_address=mac_address)
-            elif f"qemu:///{self.connection}" == "qemu:///session":
-                device_type = "virtio-net-pci" if not legacy_os else "e1000"
-                self._domain.network_configuration = UserNetworkConfiguration(
-                    mac_address=mac_address,
-                    port=testcloud.util.spawn_instance_port_file(self.instance_name),
-                    device_type=device_type)
-            else:
-                raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
+        mac_address = testcloud.util.generate_mac_address()
+        if f"qemu:///{self.connection}" == "qemu:///system":
+            self._domain.network_configuration = SystemNetworkConfiguration(
+                mac_address=mac_address)
+        elif f"qemu:///{self.connection}" == "qemu:///session":
+            device_type = "virtio-net-pci" if not legacy_os else "e1000"
+            with GuestTestcloud._testcloud_lock:
+                port = testcloud.util.spawn_instance_port_file(self.instance_name)
+            self._domain.network_configuration = UserNetworkConfiguration(
+                mac_address=mac_address,
+                port=port,
+                device_type=device_type)
+        else:
+            raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
 
-            self._domain.storage_devices.append(storage_image)
+        self._domain.storage_devices.append(storage_image)
 
-            if not self._domain.coreos:
-                seed_disk = RawStorageDevice(self._domain.seed_path)
-                self._domain.storage_devices.append(seed_disk)
+        if not self._domain.coreos:
+            seed_disk = RawStorageDevice(self._domain.seed_path)
+            self._domain.storage_devices.append(seed_disk)
 
-            self._instance = testcloud.instance.Instance(
-                hostname=hostname,
-                image=self._image,
-                connection=f"qemu:///{self.connection}",
-                domain_configuration=self._domain)
+        self._instance = testcloud.instance.Instance(
+            hostname=hostname,
+            image=self._image,
+            connection=f"qemu:///{self.connection}",
+            domain_configuration=self._domain)
 
-            self.verbose('name', self.instance_name, 'green')
+        self.verbose('name', self.instance_name, 'green')
 
-            # Decide if we want to multiply timeouts when emulating an architecture
-            time_coeff = NON_KVM_TIMEOUT_COEF if not kvm else 1
+        # Decide if we want to multiply timeouts when emulating an architecture
+        time_coeff = NON_KVM_TIMEOUT_COEF if not kvm else 1
 
-            # Prepare ssh key
-            # TODO: Maybe... some better way to do this?
-            if self._domain.coreos:
-                self._instance.coreos = True
-                # prepare_ssh_key() writes key directly to COREOS_DATA
-                self._instance.ssh_path = []
-            self.prepare_ssh_key(SSH_KEYGEN_TYPE)
+        # Prepare ssh key
+        # TODO: Maybe... some better way to do this?
+        if self._domain.coreos:
+            self._instance.coreos = True
+            # prepare_ssh_key() writes key directly to COREOS_DATA
+            self._instance.ssh_path = []
+        self.prepare_ssh_key(SSH_KEYGEN_TYPE)
 
-            # Boot the virtual machine
-            self.info('progress', 'booting...', 'cyan')
-            assert libvirt is not None
+        # Boot the virtual machine
+        self.info('progress', 'booting...', 'cyan')
+        assert libvirt is not None
 
-            try:
-                self._instance.prepare()
-                self._instance.spawn_vm()
-                self._instance.start(DEFAULT_BOOT_TIMEOUT * time_coeff)
-            except (testcloud.exceptions.TestcloudInstanceError,
-                    libvirt.libvirtError) as error:
-                raise ProvisionError(
-                    f'Failed to boot testcloud instance ({error}).')
-            self.guest = self._instance.get_ip()
-            self.port = int(self._instance.get_instance_port())
-            self.verbose('ip', self.guest, 'green')
-            self.verbose('port', self.port, 'green')
-            self._instance.create_ip_file(self.guest)
+        try:
+            self._instance.prepare()
+            self._instance.spawn_vm()
+            self._instance.start(DEFAULT_BOOT_TIMEOUT * time_coeff)
+        except (testcloud.exceptions.TestcloudInstanceError,
+                libvirt.libvirtError) as error:
+            raise ProvisionError(
+                f'Failed to boot testcloud instance ({error}).')
+        self.guest = self._instance.get_ip()
+        self.port = int(self._instance.get_instance_port())
+        self.verbose('ip', self.guest, 'green')
+        self.verbose('port', self.port, 'green')
+        self._instance.create_ip_file(self.guest)
 
         # Wait a bit until the box is up
         if not self.reconnect(
@@ -775,13 +769,11 @@ class GuestTestcloud(tmt.GuestSsh):
         if self._instance and self.guest:
             self.debug(f"Stopping testcloud instance '{self.instance_name}'.")
             assert testcloud is not None
-
-            with GuestTestcloud._testcloud_lock:
-                try:
-                    self._instance.stop()
-                except testcloud.exceptions.TestcloudInstanceError as error:
-                    raise tmt.utils.ProvisionError(
-                        f"Failed to stop testcloud instance: {error}")
+            try:
+                self._instance.stop()
+            except testcloud.exceptions.TestcloudInstanceError as error:
+                raise tmt.utils.ProvisionError(
+                    f"Failed to stop testcloud instance: {error}")
 
             self.info('guest', 'stopped', 'green')
 
@@ -789,13 +781,11 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Remove the guest (disk cleanup) """
         if self._instance:
             self.debug(f"Removing testcloud instance '{self.instance_name}'.")
-
-            with GuestTestcloud._testcloud_lock:
-                try:
-                    self._instance.remove(autostop=True)
-                except FileNotFoundError as error:
-                    raise tmt.utils.ProvisionError(
-                        f"Failed to remove testcloud instance: {error}")
+            try:
+                self._instance.remove(autostop=True)
+            except FileNotFoundError as error:
+                raise tmt.utils.ProvisionError(
+                    f"Failed to remove testcloud instance: {error}")
 
             self.info('guest', 'removed', 'green')
 
@@ -811,8 +801,7 @@ class GuestTestcloud(tmt.GuestSsh):
             return super().reboot(hard=hard, command=command)
         if not self._instance:
             raise tmt.utils.ProvisionError("No instance initialized.")
-        with GuestTestcloud._testcloud_lock:
-            self._instance.reboot(soft=not hard)
+        self._instance.reboot(soft=not hard)
         return self.reconnect(timeout=timeout)
 
 
