@@ -591,6 +591,51 @@ example, an interactive mode would be enabled in this run::
       $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
 
 
+.. _regular-expressions:
+
+Regular Expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many specification keys and command line options accept regular
+expressions, e.g. to filter a set of tests, ``tmt run ... test
+--name '^/foo'``. Whenever tmt works with regular expressions, the
+following rules apply.
+
+Python implementation
+    Since tmt is implemented in Python, Python's `re`__ package is
+    used for handling regular expressions. It comes with Python
+    standard library, and it is widely used and well documented.
+    For the deep dive into supported syntax, see
+    `Regular Expression Syntax`__ section, for a gentler
+    introduction there is a `Regular Expression`__ HOWTO.
+
+Search versus match
+    There are two ways how to check whether a regular expression
+    matches a string: "match" or "search":
+
+    * in the "match" mode, the pattern must match from the very
+      beginning of the string. For example, ``foo.ar`` would match
+      ``foobar`` but not ``/foobar``. It works in a "starts with"
+      fashion.
+    * on the other hand, the "search" mode is more similar to
+      "contains" approach, and allows pattern to match anywhere in
+      the string. In this mode, ``foo.ar`` would match both
+      ``foobar`` and ``/foobar``.
+
+    In both modes, any characters may follow the matching pattern,
+    e.g. regular expression ``foo.bar`` is the same as
+    ``foo.bar.*``.
+
+    tmt sticks to the "search" mode by default. But, to improve
+    user experience, some keys and command line options do use the
+    "match" mode. Such keys and options will note this in their
+    documentation or help texts.
+
+__ https://docs.python.org/3.9/library/re.html
+__ https://docs.python.org/3.9/library/re.html#regular-expression-syntax
+__ https://docs.python.org/3.9/howto/regex.html#regex-howto
+
+
 Links
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

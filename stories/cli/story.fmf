@@ -17,10 +17,12 @@ story: 'As a developer I want to comfortably work with stories'
 
 /filter:
     story: 'Search available stories'
-    description:
-        Search stories using a regular expression, a filter or
-        coverage status. Use ``.`` to select stories under the
+    description: |
+        Search stories using a
+        :ref:`regular expression <regular-expressions>`, a filter
+        or coverage status. Use ``.`` to select stories under the
         current directory.
+
     example:
         - tmt story ls .
         - tmt story ls REGEXP

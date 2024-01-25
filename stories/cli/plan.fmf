@@ -18,9 +18,12 @@ story: 'As a user I want to comfortably work with plans'
 
 /filter:
     story: 'Filter available plans'
-    description:
-        Search plans using a regular expression or a filter.
-        Use ``.`` to select plans under the current directory.
+    description: |
+        Search plans using a
+        :ref:`regular expression <regular-expressions>` or a
+        filter. Use ``.`` to select plans under the current
+        directory.
+
     example:
         - tmt plan ls .
         - tmt plan ls REGEXP

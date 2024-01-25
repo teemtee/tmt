@@ -174,11 +174,18 @@
 
         Instead, every step subcommand offers ``--allowed-how`` option
         which limits methods allowed to be used in the step. The option
-        accepts a regular expression allowed methods - names set with
-        ``how`` key or ``--how`` option - must match to be allowed.
+        accepts a :ref:`regular expression <regular-expressions>` that
+        allowed methods - names set with ``how`` key or ``--how`` option
+        - must match to be allowed.
 
         By default, the pattern is set to ``.*``, i.e. all plugins and
         all methods are allowed.
+
+        .. note::
+
+            Regular expression accepted by the ``--allowed-how``
+            option is applied in the "match" mode, i.e. it must
+            match from the start of the string.
 
         .. versionadded:: 1.31
 
