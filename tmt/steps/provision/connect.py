@@ -85,6 +85,10 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
     soft_reboot: Optional[ShellScript]
     hard_reboot: Optional[ShellScript]
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def reboot(
         self,
         hard: bool = False,
