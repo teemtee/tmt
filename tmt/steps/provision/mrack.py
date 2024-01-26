@@ -1186,6 +1186,10 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub

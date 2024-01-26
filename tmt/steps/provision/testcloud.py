@@ -715,6 +715,10 @@ class GuestTestcloud(tmt.GuestSsh):
         # Is this a CoreOS?
         return bool(re.search('coreos|rhcos', self.image.lower()))
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def _get_url(self, url: str, message: str) -> requests.Response:
         """
         Get url, retry when fails, return response
