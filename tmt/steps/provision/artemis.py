@@ -493,6 +493,10 @@ class GuestArtemis(tmt.GuestSsh):
         #        return True if self.guest is not None
         return self.primary_address is not None
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def _create(self) -> None:
         environment: dict[str, Any] = {
             'hw': {'arch': self.arch},

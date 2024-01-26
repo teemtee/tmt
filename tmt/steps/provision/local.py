@@ -32,6 +32,10 @@ class GuestLocal(tmt.Guest):
 
         return True
 
+    @property
+    def logs(self) -> list[str]:
+        return ['dmesg']
+
     def _run_ansible(
         self,
         playbook: tmt.steps.provision.AnsibleApplicable,
@@ -178,6 +182,12 @@ class GuestLocal(tmt.Guest):
         """
         Nothing to be done to pull workdir
         """
+
+    def acquire_log(self, log_name: str) -> Optional[str]:
+        """fetch and return content of a requested log"""
+        if log_name == 'dmesg':
+            return self.execute(Command('dmesg')).stdout
+        return None
 
 
 @tmt.steps.provides_method('local')

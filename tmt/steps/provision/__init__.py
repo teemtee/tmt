@@ -1113,6 +1113,11 @@ class Guest(tmt.utils.Common):
             else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR
         )
 
+    @property
+    def logs(self) -> list[str]:
+
+        raise NotImplementedError
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """
@@ -1701,6 +1706,42 @@ class Guest(tmt.utils.Common):
         """
 
         return []
+
+    def acquire_log(self, log_name: str) -> Optional[str]:
+        """fetch and return content of a requested log"""
+        raise NotImplementedError
+
+    def store_log(
+            self,
+            log_path: Path,
+            log_content: str,
+            log_name: Optional[str] = None) -> None:
+        """save log content and return the path"""
+        if log_name:
+            # if log_path contains log file name
+            if log_path.is_dir():
+                log_path.write_text(log_content)
+            else:
+                (log_path / log_name).write_text(log_content)
+        else:
+            log_path.write_text(log_content)
+
+    def handle_guest_logs(self,
+                          log_path: Optional[Path] = None,
+                          logs: Optional[list[str]] = None) -> None:
+        """get log content and save it to the workdir/provision/,
+        list the log dir in guests.yaml"""
+        logs = logs or []
+        log_path = log_path or self.workdir
+        for log_name in logs:
+            log_content = self.acquire_log(log_name)
+            if log_content:
+                if log_path:
+                    self.store_log(log_path, log_content, log_name)
+                else:
+                    self.store_log(Path.cwd(), log_content, log_name)
+            else:
+                self.debug(f'no content in {log_name}')
 
 
 @container
