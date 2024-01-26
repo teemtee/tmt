@@ -1,5 +1,6 @@
 """ Easily try tests and experiment with guests """
 
+import enum
 import re
 import textwrap
 from typing import Any
@@ -18,6 +19,68 @@ from tmt import Plan
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
+
+
+class Action(enum.Enum):
+    """ Available actions and their keyboard shortcuts """
+
+    TEST = "t", "rediscover tests and execute them again"
+    LOGIN = "l", "log into the guest for experimenting"
+    VERBOSE = "v", "set the desired level of verbosity"
+    DEBUG = "b", "choose a different debugging level"
+
+    DISCOVER = "d", "gather information about tests to be executed"
+    PREPARE = "p", "prepare the environment for testing"
+    EXECUTE = "e", "run tests using the specified executor"
+    REPORT = "r", "provide test results overview and send reports"
+    FINISH = "f", "perform the finishing tasks, clean up guests"
+
+    KEEP = "k", "exit the session but keep the run for later use"
+    QUIT = "q", "clean up the run and quit the session"
+
+    START_LOGIN = "-", "jump directly to login after start"
+    START_ASK = "-", "do nothing without first asking the user"
+    START_TEST = "-", "start directly with executing detected tests"
+
+    @property
+    def key(self) -> str:
+        """ Keyboard shortcut """
+        return self.value[0]
+
+    @property
+    def description(self) -> str:
+        """ Action description """
+        return self.value[1]
+
+    @property
+    def action(self) -> str:
+        """ Action name in lower case """
+        return self.name.lower()
+
+    @property
+    def menu(self) -> str:
+        """ Show menu with the keyboard shortcut highlighted """
+
+        index = self.action.index(self.key)
+
+        before = click.style(self.action[0:index], fg="bright_blue")
+        key = click.style(self.key, fg="blue", bold=True)
+        after = click.style(self.action[index + 1:], fg="bright_blue")
+
+        longest = max(len(action.name) for action in Action)
+        padding = " " * (longest + 3 - len(self.action))
+
+        return before + key + after + padding + self.description
+
+    @classmethod
+    def find(cls, key: str) -> "Action":
+        """ Return action for given keyboard shortcut """
+
+        for action in cls:
+            if action.key == key:
+                return action
+
+        raise KeyError
 
 
 class Try(tmt.utils.Common):
@@ -166,56 +229,36 @@ class Try(tmt.utils.Common):
 
         self.print(" ".join(parts) + ".")
 
-    def choose_action(self) -> str:
+    def choose_action(self) -> Action:
         """ Print menu, get next action """
-
-        def a(key: str) -> str:
-            """ Colorize the menu action """
-            return click.style(key, fg="bright_blue")
-
-        def c(key: str) -> str:
-            """ Colorize the menu key """
-            return click.style(key, fg="blue", bold=True)
 
         while True:
             self.print(textwrap.dedent(f"""
                 What do we do next?
 
-                    {c('t')}{a('est')}       rediscover tests and execute them again
-                    {c('l')}{a('ogin')}      log into the guest for experimenting
-                    {c('v')}{a('erbose')}    set the desired level of verbosity
-                    {a('de')}{c('b')}{a('ug')}      choose a different debugging level
+                    {Action.TEST.menu}
+                    {Action.LOGIN.menu}
+                    {Action.VERBOSE.menu}
+                    {Action.DEBUG.menu}
 
-                    {c('d')}{a('iscover')}   gather information about tests to be executed
-                    {c('p')}{a('repare')}    prepare the environment for testing
-                    {c('e')}{a('xecute')}    run tests using the specified executor
-                    {c('r')}{a('eport')}     provide test results overview and send reports
-                    {c('f')}{a('inish')}     perform the finishing tasks, clean up guests
+                    {Action.DISCOVER.menu}
+                    {Action.PREPARE.menu}
+                    {Action.EXECUTE.menu}
+                    {Action.REPORT.menu}
+                    {Action.FINISH.menu}
 
-                    {c('k')}{a('eep')}       exit the session but keep the run for later use
-                    {c('q')}{a('uit')}       clean up the run and quit the session
+                    {Action.KEEP.menu}
+                    {Action.QUIT.menu}
                 """))
 
             try:
                 answer = input("> ")
             except EOFError:
-                return "quit"
+                return Action.QUIT
 
             try:
                 self.print("")
-                return {
-                    "t": "test",
-                    "l": "login",
-                    "v": "verbose",
-                    "b": "debug",
-                    "d": "discover",
-                    "p": "prepare",
-                    "e": "execute",
-                    "r": "report",
-                    "f": "finish",
-                    "k": "keep",
-                    "q": "quit",
-                    }[answer]
+                return Action.find(answer)
             except KeyError:
                 self.print(click.style(f"Invalid action '{answer}'.", fg="red"))
 
@@ -359,28 +402,28 @@ class Try(tmt.utils.Common):
 
         # Choose the initial action
         if self.opt("login"):
-            action = "start_login"
+            action = Action.START_LOGIN
         elif self.opt("ask"):
-            action = "start_ask"
+            action = Action.START_ASK
         elif self.tests:
-            action = "start_test"
+            action = Action.START_TEST
         else:
-            action = "start_ask"
+            action = Action.START_ASK
 
         # Loop over the actions
         try:
             while True:
                 # Choose the verbose and debug level
-                if action in ["verbose", "debug"]:
-                    getattr(self, f"prompt_{action}")()
+                if action in [Action.VERBOSE, Action.DEBUG]:
+                    getattr(self, f"prompt_{action.action}")()
 
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
-                    getattr(self, f"action_{action}")(plan)
+                    getattr(self, f"action_{action.action}")(plan)
 
                 # Finish for keep and quit
-                if action in ["keep", "quit"]:
+                if action in [Action.KEEP, Action.QUIT]:
                     break
 
                 action = self.choose_action()
