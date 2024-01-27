@@ -36,7 +36,7 @@ dependencies = [              # F39 / PyPI
     "pint>=0.16.1,<0.20",     # 0.16.1 / 0.19.x  TODO: Pint 0.20 requires larger changes to tmt.hardware
     "requests>=2.25.1",       # 2.28.2 / 2.31.0
     "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
-    "urllib3>=1.26.5, <2.0",  # 1.26.16 / 2.0.4
+    "urllib3>=1.26.5, <3.0",  # 1.26.16 / 2.0.4
     ]
 
 [project.optional-dependencies]
