@@ -207,6 +207,10 @@ class BeakerLib(Library):
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self)]
+            # Check in case "tmt try retest" deleted the libs
+            assert self.parent.workdir
+            if not (self.parent.workdir / self.dest / self.repo).exists():
+                raise FileNotFoundError
             # The url must be identical
             if library.url != self.url:
                 # tmt guessed url so try if repo exists
@@ -244,7 +248,7 @@ class BeakerLib(Library):
             # Reuse the existing metadata tree
             self.tree: fmf.Tree = library.tree
         # Fetch the library and add it to the index
-        except KeyError:
+        except (KeyError, FileNotFoundError):
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
