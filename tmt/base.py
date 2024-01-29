@@ -1522,6 +1522,63 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
+def expand_node_data(data: T, fmf_context: dict[str, str]) -> T:
+    """ Recursively expand variables in node data """
+    if isinstance(data, str):
+        # Expand environment and context variables. This is a bit
+        # tricky as we do need to process each type individually and
+        # also properly handle variable/context name conflicts and
+        # situations when some variable is now known.
+
+        # First split data per $ which to avoid conflicts.
+        split_data = data.split('$')
+
+        # Don't process the first item as that was not a variable.
+        first_item = split_data.pop(0)
+
+        # Do the environment variable expansion for items not
+        # starting with @. Each item starting with @ is marked
+        # to be expanded later - we cannot blindly check whether
+        # the item starts with @ to prevent expansion of already
+        # expanded items later. Therefore we store a flag and the
+        # item - if the flag is `True`, item has been expanded
+        # already. We also store the original item - in case we
+        # don't expand it at all, let's put the original value back
+        # into the stream.
+        # See https://github.com/teemtee/tmt/issues/2654.
+        expanded_env: list[tuple[bool, str, str]] = [
+            (False, item[1:], item) if item.startswith('@')
+            else (True, os.path.expandvars(f'${item}'), item)
+            for item in split_data]
+
+        # Expand unexpanded items, this time with fmf context providing
+        # additional values. This should resolve items starting with $@,
+        # which are to be referencing fmf dimensions rather than environment
+        # variables.
+        expanded_ctx = [first_item]
+        with tmt.utils.modify_environ(fmf_context):
+            for was_expanded, item, original_item in expanded_env:
+                if was_expanded:
+                    expanded_ctx.append(item)
+                    continue
+
+                expanded = os.path.expandvars(f'${item}')
+                expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
+
+        # This cast is tricky: we get a string, and we return a
+        # string, so T -> T hold, yet mypy does not recognize this,
+        # and we need to help with an explicit cast().
+        return cast(T, ''.join(expanded_ctx))
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            data[key] = expand_node_data(value, fmf_context)
+    elif isinstance(data, list):
+        for i, item in enumerate(data):
+            data[i] = expand_node_data(item, fmf_context)
+    return data
+
+
 @dataclasses.dataclass(repr=False)
 class Plan(
         Core,
@@ -1619,7 +1676,7 @@ class Plan(
 
         # Expand all environment and context variables in the node
         with tmt.utils.modify_environ(self.environment):
-            self._expand_node_data(node.data, {
+            expand_node_data(node.data, {
                 key: ','.join(value)
                 for (key, value) in self._fmf_context.items()})
 
@@ -1656,51 +1713,6 @@ class Plan(
             )
 
         self._update_metadata()
-
-    def _expand_node_data(self, data: T, fmf_context: dict[str, str]) -> T:
-        """ Recursively expand variables in node data """
-        if isinstance(data, str):
-            # Expand environment and context variables. This is a bit
-            # tricky as we do need to process each type individually and
-            # also properly handle variable/context name conflicts and
-            # situations when some variable is now known.
-
-            # First split data per $ which to avoid conflicts.
-            split_data = data.split('$')
-
-            # Don't process the first item as that was not a variable.
-            first_item = split_data.pop(0)
-
-            # Do the environment variable expansion for items not
-            # starting with @.
-            expanded_env = [item if item.startswith('@')
-                            else os.path.expandvars(f'${item}')
-                            for item in split_data]
-
-            # Do context expansion for items starting with $@ defining
-            # environment variables using the fmf context dictionary.
-            expanded_ctx = [first_item]
-            with tmt.utils.modify_environ(fmf_context):
-                for item in expanded_env:
-                    if item.startswith('@'):
-                        expanded = os.path.expandvars(f'${item[1:]}')
-                        result = f'${item}' if expanded.startswith('$') else expanded
-                    else:
-                        result = item
-                    expanded_ctx.append(result)
-
-            # This cast is tricky: we get a string, and we return a
-            # string, so T -> T hold, yet mypy does not recognize this,
-            # and we need to help with an explicit cast().
-            return cast(T, ''.join(expanded_ctx))
-
-        if isinstance(data, dict):
-            for key, value in data.items():
-                data[key] = self._expand_node_data(value, fmf_context)
-        elif isinstance(data, list):
-            for i, item in enumerate(data):
-                data[i] = self._expand_node_data(item, fmf_context)
-        return data
 
     # TODO: better, more elaborate ways of assigning serial numbers to tests
     # can be devised - starting with a really trivial one: each test gets
@@ -2434,7 +2446,7 @@ class Plan(
         # Update imported plan environment with the local environment
         self._imported_plan.environment.update(self.environment)
         with tmt.utils.modify_environ(self.environment):
-            self._expand_node_data(node.data, {
+            expand_node_data(node.data, {
                 key: ','.join(value)
                 for (key, value) in self._fmf_context.items()})
 

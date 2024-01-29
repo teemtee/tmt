@@ -8,7 +8,7 @@ import pytest
 
 import tmt
 import tmt.cli
-from tmt.base import FmfId, Link, LinkNeedle, Links
+from tmt.base import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
 
 from .. import CliRunner
@@ -173,3 +173,112 @@ def test_pickleable_tree() -> None:
     tree = tmt.Tree.grow()
 
     pickle.dumps(tree)
+
+
+def test_expand_node_data(monkeypatch) -> None:
+    """
+    Test :py:func:`tmt.base.expand_node_data` handles various forms of variables.
+    """
+
+    # From ``_data` and `_expected` we construct lists with items, including
+    # another list and a dictionary, to verify `expand_node_data()` handles
+    # nested structures too.
+    #
+    # Then we will call `expand_node_data()` with custom fmf context and
+    # environment providing inputs.
+
+    fmf_context = {
+        'WALDO': 'plugh',
+        'XYZZY': 'thud'
+        }
+
+    environ = {
+        'CORGE': 'quuz',
+        # envvars starting with `@` resulted in `$@...` being the outcome,
+        # as described in https://github.com/teemtee/tmt/issues/2654
+        'FRED': '@XYZZY'
+        }
+
+    # All values should be propagated as they are, unless comment describes the expected
+    # transformation.
+    _data = [
+        'foo',
+        1,
+        True,
+
+        # `$CORGE` should be replaced with `quuz` from the environment
+        '$CORGE',
+        '  $CORGE  ',
+        'something${CORGE}else',
+
+        # `$FRED` should be replaced with `@XYZZY` from the environment
+        # Similar to `$CORGE`, but testing whether leading `@` is handled
+        # properly, see https://github.com/teemtee/tmt/issues/2654
+        '$FRED',
+        '  $FRED  ',
+        'something${FRED}else',
+
+        # `@WALDO` should be replaced by `plugh` from fmf context
+        '$@WALDO',
+        '  $@WALDO  ',
+        'something$@{WALDO}else',
+
+        # There is no source for these, therefore they remain untouched
+        '$GRAPLY',
+        '  $GRAPLY  ',
+        'something${GRAPLY}else',
+        '$@GRAPLY',
+        '  $@GRAPLY  ',
+        'something$@{GRAPLY}else'
+        ]
+
+    _expected = [
+        'foo',
+        1,
+        True,
+        'quuz',
+        '  quuz  ',
+        'somethingquuzelse',
+        '@XYZZY',
+        '  @XYZZY  ',
+        'something@XYZZYelse',
+        'plugh',
+        '  plugh  ',
+        'somethingplughelse',
+        '$GRAPLY',
+        '  $GRAPLY  ',
+        'something${GRAPLY}else',
+        '$@GRAPLY',
+        '  $@GRAPLY  ',
+        'something$@{GRAPLY}else'
+        ]
+
+    data = [
+        *_data,
+        [
+            *_data
+            ],
+        {
+            f'key{i}': value
+            for i, value in enumerate(_data)
+            }
+        ]
+
+    expected = [
+        *_expected,
+        [
+            *_expected
+            ],
+        {
+            f'key{i}': value
+            for i, value in enumerate(_expected)
+            }
+        ]
+
+    for envvar in os.environ:
+        monkeypatch.delenv(envvar)
+
+    for envvar, value in environ.items():
+        monkeypatch.setenv(envvar, value)
+
+    assert expand_node_data(data, fmf_context) == expected
