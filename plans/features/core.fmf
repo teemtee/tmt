@@ -5,4 +5,4 @@ description:
     tests and plans, presence of documentation. Usually fast.
 discover:
     how: fmf
-    filter: 'tier: 0, 1'
+    filter: 'tier: 0, 1 & tag:-provision-only'

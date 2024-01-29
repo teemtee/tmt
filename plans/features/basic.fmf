@@ -5,4 +5,4 @@ description:
     their individual duration should not exceed 5 minutes.
 discover:
     how: fmf
-    filter: 'tier: 2'
+    filter: 'tier: 2 & tag:-provision-only'
