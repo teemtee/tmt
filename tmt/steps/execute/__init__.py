@@ -33,8 +33,9 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.provision
 
-# Test data directory name
+# Test data and checks directory names
 TEST_DATA = 'data'
+CHECK_DATA = 'checks'
 
 # Default test framework
 DEFAULT_FRAMEWORK = 'shell'
@@ -181,9 +182,10 @@ class TestInvocation:
 
         path.mkdir(parents=True, exist_ok=True)
 
-        # Pre-create also the test data path - cannot use `self.test_data_path`,
-        # that would be an endless recursion.
+        # Pre-create also the test data and checks path - cannot use
+        # `self.test_data_path`, that would be an endless recursion.
         (path / TEST_DATA).mkdir(parents=True, exist_ok=True)
+        (path / CHECK_DATA).mkdir(parents=True, exist_ok=True)
 
         return path
 
@@ -211,9 +213,7 @@ class TestInvocation:
     def check_files_path(self) -> Path:
         """ Construct a directory path for check files needed by tmt """
 
-        path = self.path / "checks"
-        path.mkdir(exist_ok=True)
-        return path
+        return self.path / CHECK_DATA
 
     @tmt.utils.cached_property
     def reboot_request_path(self) -> Path:

@@ -3,3 +3,13 @@ execute:
 
 discover:
   how: fmf
+
+adjust:
+- when: provision_method == virtual
+  prepare+:
+    - name: Go back in time
+      how: shell
+      script: |
+        timedatectl set-ntp false &&
+        sleep 2 &&
+        timedatectl set-time -- -10s
