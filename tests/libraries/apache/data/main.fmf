@@ -1,0 +1,12 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: virtual
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    require:
+      - library(httpd/http)

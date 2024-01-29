@@ -13,13 +13,6 @@ execute:
     discover+:
         test: file
 
-/apache:
-    summary: "Apache test (library requires another library)"
-    discover+:
-        test: apache
-    provision:
-        how: virtual
-
 /strip_git_suffix:
     summary: "Check libraries can end in '.git' suffix"
     discover+:
@@ -76,10 +69,3 @@ execute:
     summary: "Many tests requiring same rpm-only library"
     discover+:
         test: querying
-
-/pruning:
-    summary: "Simple test for library pruning"
-    discover+:
-        test: pruning
-    provision:
-        how: virtual
