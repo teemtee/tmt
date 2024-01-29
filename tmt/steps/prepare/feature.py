@@ -99,11 +99,30 @@ class CRB(ToggleableFeature):
 class FIPS(ToggleableFeature):
     NAME = 'fips'
 
+    def is_unsupported(self) -> bool:
+        return isinstance(self.guest, (tmt.steps.provision.podman.GuestContainer,
+                                       tmt.steps.provision.local.GuestLocal))
+
+    def _reboot_guest(self) -> None:
+        self.info('reboot', 'Rebooting guest', color='yellow')
+        self.guest.reboot()
+        self.info('reboot', 'Reboot finished', color='yellow')
+
     def enable(self) -> None:
+        if self.is_unsupported():
+            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
+            return
+
         self._enable('fips-enable.yaml')
+        self._reboot_guest()
 
     def disable(self) -> None:
+        if self.is_unsupported():
+            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
+            return
+
         self._disable('fips-disable.yaml')
+        self._reboot_guest()
 
 
 _FEATURES: dict[str, type[Feature]] = {

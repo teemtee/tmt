@@ -1,0 +1,19 @@
+- hosts: all
+  user: root
+  tasks:
+    # RHEL 7 or CentOS 7
+    - when: ansible_distribution_major_version == "7"
+      block:
+        - name: Enable fips
+          command: echo UNSUPPORTED
+
+    # RHEL 8          or RHEL 9
+    # CentOS Stream 8 or CentOS Stream 9
+    - when: ansible_distribution_major_version == "8" or ansible_distribution_major_version == "9"
+      block:
+        - name: Install package 'crypto-policies-scripts'
+          ansible.builtin.yum:
+            name: crypto-policies-scripts
+            state: present
+        - name: Enable fips
+          command: fips-mode-setup --enable

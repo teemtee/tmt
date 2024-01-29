@@ -72,6 +72,12 @@ execute:
         prepare+:
             fips: enabled
 
+        environment+:
+            STATE: enabled
+
     /disabled:
         prepare+:
             fips: disabled
+
+        environment+:
+            STATE: disabled

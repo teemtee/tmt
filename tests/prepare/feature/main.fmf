@@ -1,6 +1,6 @@
-summary: Common feature to enable/disable EPEL
+summary: Common feature to enable/disable EPEL/FIPS
 description:
-    Make sure enable/disable EPEL work.
+    Make sure enable/disable EPEL/FIPS work.
 environment:
     PROVISION_METHODS: container virtual connect local
 adjust:
