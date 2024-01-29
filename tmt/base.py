@@ -932,8 +932,12 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    yield LinterOutcome.WARN, \
-                        f'key "{bad_property}" not recognized by schema {error.schema["$id"]}'
+                    if '$id' in error.schema:
+                        yield LinterOutcome.WARN, \
+                            f'key "{bad_property}" not recognized by schema {error.schema["$id"]}'
+                    else:
+                        yield LinterOutcome.WARN, \
+                            'key "{bad_property}" not recognized by schema'
 
             # A key not recognized, but when patternProperties are allowed. In that case,
             # the key is both not listed and not matching the pattern.
