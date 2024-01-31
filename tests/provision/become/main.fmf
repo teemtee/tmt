@@ -1,2 +1,5 @@
-summary: Check that become works
-description: As for now covers podman provision only.
+summary: Check that become works on virtual and container provision
+description: Ensures that become works when used in virtual instances and on containers.
+tag+: [provision-virtual,provision-container]
+duration: 20m
+tier: null

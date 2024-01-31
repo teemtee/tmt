@@ -25,9 +25,9 @@ discover:
 
     /inline:
         prepare:
-            script: test "$(whoami)" == "user"
+            script: test "$(whoami)" == "fedora"
         finish:
-            script: test "$(whoami)" == "user"
+            script: test "$(whoami)" == "fedora"
 
     /scripts:
         prepare:

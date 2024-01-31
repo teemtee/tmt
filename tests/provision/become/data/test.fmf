@@ -12,4 +12,4 @@
     discover:
         tests:
           - name: user-is-user
-            test: test "$(whoami)" == "user"
+            test: test "$(whoami)" == "fedora"

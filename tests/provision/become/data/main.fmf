@@ -1,7 +1,14 @@
 provision:
-    how: container
-    image: localhost/become-container-test:latest
-    user: user
+  user: fedora
+adjust:
+    - when: provisiontest == virtual
+      provision+:
+        how: virtual
+        image: fedora
+    - when: provisiontest == container
+      provision+:
+        how: container
+        image: localhost/become-container-test:latest
 
 execute:
     how: tmt
