@@ -1,9 +1,5 @@
 summary: Correctly handle rsync removed during test
-enabled: false
-
-adjust:
-  enabled: true
-  duration: 10m
-  when: how == full
-  because: this can be run only with a full virtualization
-  tag+: [additional_coverage]
+duration: 10m
+tag:
+  - provision-virtual
+  - provision-only

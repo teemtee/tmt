@@ -1,5 +1,6 @@
 summary: Check whether an injected shell code is executed
 tier: 4
+tag+: [provision-virtual]
 
 # By default, we run under a container only
 environment:
@@ -9,8 +10,3 @@ adjust:
     environment:
         PROVISION_METHODS: container local
     because: the pipeline does not support nested virtualization
-  - when: how == full
-    environment:
-        PROVISION_METHODS: container virtual local
-    because: local/virtual provision needs root/full virtualization
-    tag+: [additional_coverage]

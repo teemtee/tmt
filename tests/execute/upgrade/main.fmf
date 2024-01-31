@@ -8,10 +8,10 @@ tier: 4
     duration: 1h
     # requires nested virtualization (runs in VM)
     enabled: false
-    adjust:
-    - enabled: true
-      when: how == full
-      tag+: [additional_coverage]
+    adjust+:
+      - enabled: true
+        when: how == full
+        tag+: [additional_coverage]
 
 /simple:
     summary: Run a single task from upgrades repo

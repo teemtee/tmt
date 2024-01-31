@@ -2,13 +2,8 @@ summary: Scripts used in execute are pushed via sudo
 tag:
 - additional_coverage
 - virtual
+- provision-virtual
+- provision-only
 require:
 - tmt
 - tmt+provision-virtual
-tier: "3"
-
-enabled: false
-adjust:
-  - when: how == full
-    enabled: true
-    because: virtual provision needs full virtualization

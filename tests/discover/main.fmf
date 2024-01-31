@@ -38,7 +38,7 @@ tier: 3
     summary: Get tests from the source tarball from dist-git lookaside
     test: ./distgit.sh
     enabled: false
-    adjust:
+    adjust+:
     - enabled: true
       when: how == full or trigger == commit
       tag+: [additional_coverage]

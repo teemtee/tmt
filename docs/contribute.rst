@@ -121,6 +121,15 @@ Run selected tests or plans in verbose mode:
     tmt run --verbose plan --name basic
     tmt run -v test -n smoke
 
+
+Full Test
+------------------------------------------------------------------
+
+.. warning::
+
+    This full test approach is being obsoleted.
+    See the :ref:`provision-methods` section for details.
+
 Build the rpms and execute the whole test coverage, including
 tests which need the full virtualization support:
 
@@ -162,6 +171,10 @@ Similar as above but run only tests which don't run for merge requests:
     cd tests/full
     make test-complement
 
+
+Unit Tests
+------------------------------------------------------------------
+
 To run unit tests in hatch environment using pytest and generate coverage report:
 
 .. code-block:: shell
@@ -197,12 +210,50 @@ versions. For example:
    fixtures, see https://docs.pytest.org/en/7.1.x/how-to/unittest.html for
    details.
 
-.. note::
+.. _provision-methods:
 
-   Tests which try various provision methods should use ``PROVISION_METHODS``
-   environment variable to select which provision methods they can utilize
-   during their execution. This variable is likely to have default ``container``
-   or ``local`` and use ``adjust`` rule for ``how=full`` to add ``virtual`` method.
+Provision Methods
+------------------------------------------------------------------
+
+Tests which exercise various provision methods should use the
+``PROVISION_METHODS`` environment variable to select which
+provision methods they can utilize during their execution. This
+variable is likely to have ``local`` set as the default value to
+execute directly on the test runner as the default scenario.
+
+The following tags can be used to enable given test under the
+respective provision method plan:
+
+provision-artemis
+    For tests checking the :ref:`/spec/plans/provision/artemis`
+    plugin functionality.
+
+provision-beaker
+    For tests checking the :ref:`/spec/plans/provision/beaker`
+    plugin functionality using the ``mrack`` plugin.
+
+provision-connect
+    For tests checking the :ref:`/spec/plans/provision/connect`
+    plugin functionality.
+
+provision-container
+    For tests checking the :ref:`/spec/plans/provision/container`
+    provision method using the ``podman`` plugin.
+
+provision-virtual
+    For tests checking the :ref:`/spec/plans/provision/virtual`
+    provision method using the ``testcloud`` plugin.
+
+provision-ssh
+    Tests which are not tied to a specific provision method but
+    should be executed for all provision methods which are using
+    ``ssh`` to connect to guests.
+
+provision-only
+    Used to mark tests which are suitable to be run only under
+    specific provision methods. These will be excluded from
+    regular plans.
+
 
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

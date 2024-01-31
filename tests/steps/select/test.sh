@@ -19,9 +19,9 @@ rlJournalStart
             rlRun "tmt run $options $selected_step 2>&1 >/dev/null | tee output" $exitcode
             for step in $steps; do
                 if [[ $step == $selected_step ]]; then
-                    rlAssertGrep $step output
+                    rlAssertGrep "^ *$step" output
                 else
-                    rlAssertNotGrep $step output
+                    rlAssertNotGrep "^ *$step" output
                 fi
             done
         rlPhaseEnd

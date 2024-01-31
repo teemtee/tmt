@@ -150,7 +150,7 @@ systemd:
 
 # VM defaults
 DEFAULT_BOOT_TIMEOUT = 120     # seconds
-DEFAULT_CONNECT_TIMEOUT = 60   # seconds
+DEFAULT_CONNECT_TIMEOUT = 120  # seconds
 NON_KVM_ADDITIONAL_WAIT = 20   # seconds
 NON_KVM_TIMEOUT_COEF = 10      # times
 

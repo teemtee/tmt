@@ -57,6 +57,23 @@ jobs:
       - fedora-all
       - epel-9
 
+  # Test pull requests (provision)
+  - job: tests
+    identifier: provision
+    trigger: pull_request
+    manual_trigger: true
+    use_internal_tf: True
+    targets:
+      - fedora-latest-stable
+    tf_extra_params:
+        test:
+            tmt:
+                name: /plans/provision/virtual
+        environments:
+          - tmt:
+                context:
+                    how: provision
+
   # Test internal plugins
   - job: tests
     trigger: pull_request

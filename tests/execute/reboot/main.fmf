@@ -8,14 +8,10 @@ tier: 4
 /out-of-session:
     summary: Verify that reboot induced from outside of test session works
     test: ./out-of-session.sh
+    tag+: [provision-virtual]
 
     environment+:
         PROVISION_METHODS: container
-
-    adjust+:
-        - when: how==full
-          environment+:
-            PROVISION_METHODS: container virtual
 
 # Disabled until the testing environment 'hardware specification' can be set.
 # https://tmt.readthedocs.io/en/stable/spec/plans.html#hardware
@@ -35,8 +31,8 @@ tier: 4
     test: ./shorten-timeout.sh
     enabled: false
 
-    adjust:
-        enabled: true
+    adjust+:
+      - enabled: true
         when: how == full
         because: this can be run only with full virtualization
         tag+: [additional_coverage]
@@ -47,8 +43,8 @@ tier: 4
     test: ./reuse.sh
     enabled: false
 
-    adjust:
-        enabled: true
+    adjust+:
+      - enabled: true
         when: how == full
         because: this can be run only with full virtualization
         tag+: [additional_coverage]

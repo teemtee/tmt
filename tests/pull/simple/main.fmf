@@ -3,13 +3,9 @@ description:
     Make sure that provisioning a guest and clean it up works as
     expected even if no preparation, test execution or finish step
     scripts are performed.
+tag+: [provision-virtual]
 link:
   - verifies: https://github.com/teemtee/tmt/issues/1011
 
 environment:
     PROVISION_METHODS: container local
-adjust:
-  - when: how == full
-    environment:
-        PROVISION_METHODS: container virtual local
-    tag+: [additional_coverage]

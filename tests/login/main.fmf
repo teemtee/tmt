@@ -21,10 +21,7 @@
 /ready:
     summary: Try to log into guest to verify property is_ready
     test: ./ready.sh
+    duration: 15m
+    tag+: [provision-virtual]
     environment:
         PROVISION_METHODS: local container
-    adjust:
-      - when: how == full
-        environment:
-            PROVISION_METHODS: local container virtual
-        tag+: [additional_coverage]
