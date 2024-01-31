@@ -35,6 +35,7 @@ rlJournalStart
     # FIPS
     for method in ${PROVISION_METHODS:-"virtual"}; do
         # If provision method is container or local, it is unsupported to enable/disable FIPS
+        # because we have to reboot the guest
         [[ $method == "container" ]] && continue
         [[ $method == "local" ]] && continue
 
