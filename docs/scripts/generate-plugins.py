@@ -29,6 +29,8 @@ def _is_ignored(
         container: ContainerClass,
         field: dataclasses.Field[Any],
         metadata: tmt.utils.FieldMetadata) -> bool:
+    """ Check whether a given field is to be ignored in documentation """
+
     if field.name in ('how', '_OPTIONLESS_FIELDS'):
         return True
 
@@ -45,7 +47,10 @@ def _is_inherited(
         container: ContainerClass,
         field: dataclasses.Field[Any],
         metadata: tmt.utils.FieldMetadata) -> bool:
+    """ Check whether a given field is inherited from step data base class """
 
+    # TODO: for now, it's a list, but inspecting the actual tree of classes
+    # would be more generic. It's good enough for now.
     return field.name in ('name', 'where', 'order', 'summary', 'enabled')
 
 
@@ -64,7 +69,7 @@ def container_ignored_fields(container: ContainerClass) -> list[str]:
 
 
 def container_inherited_fields(container: ContainerClass) -> list[str]:
-    """ Collect container field names that are inherited from parent """
+    """ Collect container field names that are inherited from step data base class """
 
     field_names: list[str] = []
 
@@ -97,6 +102,8 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
 
 
 def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
+    """ Create iterator over plugins of a given registry """
+
     def plugin_iterator():
         for plugin_id in registry.iter_plugin_ids():
             plugin = registry.get_plugin(plugin_id).class_
@@ -107,6 +114,8 @@ def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.
 
 
 def _create_test_check_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
+    """ Create iterator over plugins of a test check registry """
+
     def plugin_iterator():
         for plugin_id in registry.iter_plugin_ids():
             plugin = registry.get_plugin(plugin_id)

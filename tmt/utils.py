@@ -2620,11 +2620,15 @@ class FieldMetadata(Generic[T]):
 
     @property
     def has_default(self) -> bool:
+        """ Whether the field has a default value """
+
         return self.default_factory is not None \
             or self.default is not dataclasses.MISSING
 
     @property
     def materialized_default(self) -> Optional[T]:
+        """ Returns the actual default value of the field """
+
         if self.default_factory is not None:
             return self.default_factory()
 
@@ -6589,7 +6593,21 @@ def is_url(url: str) -> bool:
     return bool(parsed.scheme and parsed.netloc)
 
 
+#
+# ReST rendering
+#
 class ReSTVisitor(docutils.nodes.NodeVisitor):
+    """
+    Custom renderer of docutils nodes.
+
+    See :py:class:`docutils.nodes.NodeVisitor` for details, but the
+    functionality is fairly simple: for each node type, a pair of
+    methods is expected, ``visit_$NODE_TYPE`` and ``depart_$NODE_TYPE``.
+    As the visitor class iterates over nodes in the document,
+    corresponding methods are called. These methods render the given
+    node, filling "rendered paragraphs" list with rendered strings.
+    """
+
     def __init__(self, document: docutils.nodes.document, logger: Logger) -> None:
         super().__init__(document)
 
@@ -6600,34 +6618,50 @@ class ReSTVisitor(docutils.nodes.NodeVisitor):
         self.log_departure = functools.partial(
             logger.debug, 'depart', level=4, topic=tmt.log.Topic.HELP_RENDERING)
 
+        #: Collects all rendered paragraps - text, blocks, lists, etc.
         self._rendered_paragraphs: list[str] = []
+        #: Collect components of a single paragraph - sentences, literals,
+        #: list items, etc.
         self._rendered_paragraph: list[str] = []
 
         self.in_literal_block: bool = False
         self.in_note: bool = False
         self.in_warning: bool = False
 
+        #: Used by rendering of nested blocks, e.g. paragraphs positioned
+        #: as list items.
         self._indent: int = 0
         self._text_prefix: Optional[str] = None
 
     @property
     def rendered(self) -> str:
+        """ Return the rendered document as a single string """
+
         return '\n'.join(self._rendered_paragraphs)
 
     def flush(self) -> None:
+        """ Finalize rendering of the current paragraph """
+
         self._rendered_paragraphs.append(''.join(self._rendered_paragraph))
         self._rendered_paragraph = []
 
     def nl(self) -> None:
+        """ Render a new, empty line """
+
+        # To simplify the implementation, this is merging of multiple
+        # empty lines into one. Rendering of nodes than does not have
+        # to worry about an empty line already being on the stack.
         if self._rendered_paragraphs[-1] != '':
             self._rendered_paragraphs.append('')
 
+    # Simple logging for nodes that have no effect
     def _noop_visit(self, node: docutils.nodes.Node) -> None:
         self.log_visit(str(node))
 
     def _noop_departure(self, node: docutils.nodes.Node) -> None:
         self.log_departure(str(node))
 
+    # Node renderers
     visit_document = _noop_visit
 
     def depart_document(self, node: docutils.nodes.document) -> None:
@@ -6766,6 +6800,8 @@ class ReSTVisitor(docutils.nodes.NodeVisitor):
 
 
 def parse_rst(text: str) -> docutils.nodes.document:
+    """ Parse a ReST document into docutils tree of nodes """
+
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
     settings = docutils.frontend.OptionParser(components=components).get_default_values()
@@ -6777,6 +6813,8 @@ def parse_rst(text: str) -> docutils.nodes.document:
 
 
 def render_rst(text: str, logger: Logger) -> str:
+    """ Render a ReST document """
+
     document = parse_rst(text)
     visitor = ReSTVisitor(document, logger)
 

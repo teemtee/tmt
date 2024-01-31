@@ -1099,7 +1099,7 @@ class Method:
         lines = self.doc.splitlines()
 
         self.summary: str = lines[0].strip()
-        self.description: str = '\n'.join(lines[1:])  # .lstrip()
+        self.description: str = '\n'.join(lines[1:])
 
     def describe(self) -> str:
         """ Format name and summary for a nice method overview """
