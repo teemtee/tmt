@@ -223,7 +223,7 @@ tags and links. If ``id`` is not found in Polarion it's generated
 and exported.
 
 Argument ``--polarion-case-id`` can be provided multiple times to import
-multiple test cases and it supports setting of test names (seprated by ``:``),
+multiple test cases and it supports setting of test names (separated by ``:``),
 if test name is not provided ``Polarion WorkItem ID`` is used
 and lastly when ``--no-link-polarion`` is used ``summary`` is taken as test name.
 Examples how to use the import with multiple cases and test names:
@@ -750,7 +750,7 @@ available for binary status filtering:
     $ tmt stories show --documented
     /stories/cli/common/debug
          summary Print out everything tmt is doing
-           story I want to have common command line options consistenly used
+           story I want to have common command line options consistently used
                  across all supported commands and subcommands.
          example tmt run -d
                  tmt run --debug

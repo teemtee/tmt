@@ -59,7 +59,7 @@ and let us know what you think! :)
 Now it's possible to use :ref:`custom_templates` when creating new
 tests, plans and stories. In this way you can substantially speed
 up the initial phase of the test creation by easily applying test
-metadata and test script skeletons taylored to your individual
+metadata and test script skeletons tailored to your individual
 needs.
 
 The :ref:`/spec/core/contact` key has been moved from the
@@ -74,7 +74,7 @@ containers as well.
 For the purpose of tmt exit code, ``info`` test results are no
 longer considered as failures, and therefore the exit code of tmt
 changes. ``info`` results are now treated as ``pass`` results, and
-would be counted towards the succesful exit code, ``0``, instead
+would be counted towards the successful exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
 The :ref:`/spec/plans/report/polarion` report now supports the
