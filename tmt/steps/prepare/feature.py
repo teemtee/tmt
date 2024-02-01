@@ -32,12 +32,10 @@ class Feature(tmt.utils.Common):
 
     def _find_playbook(self, filename: str) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
-
         if filepath.exists():
             return filepath
 
         self.warn(f"Cannot find any suitable playbook for '{filename}'.")
-
         return None
 
 
@@ -54,13 +52,11 @@ class ToggleableFeature(Feature):
 
     def _run_playbook(self, op: str, playbook_filename: str) -> None:
         playbook_path = self._find_playbook(playbook_filename)
-
         if not playbook_path:
             self.warn(f'{op.capitalize()} {self.NAME.upper()} is not supported on this guest.')
             return
 
         self.info(f'{op.capitalize()} {self.NAME.upper()}')
-
         self.guest.ansible(playbook_path.relative_to(self.get_root_path()))
 
     def _enable(self, playbook_filename: str) -> None:

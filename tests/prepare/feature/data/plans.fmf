@@ -42,7 +42,7 @@ execute:
         how: feature
 
     environment:
-        REPOSITORIES: epel
+        REPOSITORIES: crb
 
     /enabled:
         prepare+:

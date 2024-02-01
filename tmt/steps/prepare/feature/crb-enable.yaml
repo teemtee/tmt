@@ -1,0 +1,35 @@
+- hosts: all
+  user: root
+  tasks:
+    # RHEL N, where N >= 8
+    - when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 8
+      block:
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        - name: Enable repo of 'rhel-CRB'
+          shell: dnf config-manager --enable rhel-CRB
+
+        # XXX: Is it necessary to install package 'epel-release'?
+        #      > https://tmt.readthedocs.io/en/latest/overview.html#install
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            disable_gpg_check: true
+            state: present
+
+    # CentOS Stream N where N >= 8
+    - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 8
+      block:
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        - name: Enable repo of 'crb'
+          shell: dnf config-manager --enable crb
+
+        # XXX: Is it necessary to install package 'epel-release'?
+        #      > https://tmt.readthedocs.io/en/latest/overview.html#install
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: epel-release
+            state: present
