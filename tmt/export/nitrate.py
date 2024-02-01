@@ -192,12 +192,25 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
 def enabled_somewhere(test: 'tmt.Test') -> bool:
     """ True if the test is enabled for some context (adjust rules) """
+    # Already enabled, no need to dig deeper
+    if test.enabled:
+        return True
+    # We need to find 'enabled' value before adjust happened
     # node.original_data are fmf data _before_ adjust was processed
-    try:
-        if test.node.original_data['enabled']:
-            return True
-    except KeyError:
-        # Key defaults to True so we already know the outcome
+    node = test.node
+    enabled_not_set = True
+    while enabled_not_set and node is not None:
+        try:
+            if node.original_data['enabled']:
+                return True
+            enabled_not_set = False
+        except KeyError:
+            pass
+        # Not set in this node, check parent
+        node = node.parent
+
+    # Default value (True) of 'enabled' was used
+    if enabled_not_set:
         return True
 
     # Some rule in adjust enables the test
