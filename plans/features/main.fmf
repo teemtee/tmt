@@ -1,6 +1,0 @@
-adjust+:
-  - when: distro == centos-stream-8 and trigger == commit
-    environment+:
-      # Default PATH, spiked with ~/.local/bin for Python packages installed with --user.
-      # This is needed on Centos Stream 8 where the user-specific path is not in PATH.
-      PATH: "/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
