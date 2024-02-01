@@ -1,5 +1,4 @@
 - hosts: all
-  user: root
   tasks:
     # RHEL 7 or CentOS 7
     - when: ansible_distribution_major_version|int == 7
@@ -14,11 +13,9 @@
           command: rpm -q epel-release
           register: result
           ignore_errors: True
+
         - name: Disable repos of 'epel'
           shell: yum-config-manager --disable epel epel-debuginfo epel-source
-          when: result.rc == 0
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
           when: result.rc == 0
 
     # RHEL N or CentOS Stream N where N >= 8
@@ -32,11 +29,9 @@
           command: rpm -q epel-release
           register: result
           ignore_errors: True
+
         - name: Disable repos of 'epel' if package 'epel-release' is installed
           shell: dnf config-manager --disable epel epel-debuginfo epel-source
-          when: result.rc == 0
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
           when: result.rc == 0
 
         # Disable repos of 'epel-next' if package 'epel-next-release' is installed
@@ -44,9 +39,7 @@
           command: rpm -q epel-next-release
           register: result
           ignore_errors: True
+
         - name: Disable repos of 'epel-next'
           shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
-          when: result.rc == 0
-        - name: Fetch attribute 'enabled' of repos of 'epel-next'
-          shell: grep enabled /etc/yum.repos.d/epel-next.repo
           when: result.rc == 0

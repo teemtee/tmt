@@ -15,7 +15,7 @@ FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
 
 class Feature(tmt.utils.Common):
-    """ Base class for feature implementations """
+    """ Base class for ``feature`` prepare plugin implementations """
 
     NAME: str
 
@@ -41,6 +41,7 @@ class Feature(tmt.utils.Common):
 
 class ToggleableFeature(Feature):
     def get_root_path(self) -> Path:
+        """ Get the root path for getting the path of a playbook"""
         assert self.parent is not None  # narrow type
         assert self.parent.parent is not None  # narrow type
         assert self.parent.parent.parent is not None  # narrow type
@@ -53,8 +54,8 @@ class ToggleableFeature(Feature):
     def _run_playbook(self, op: str, playbook_filename: str) -> None:
         playbook_path = self._find_playbook(playbook_filename)
         if not playbook_path:
-            self.warn(f'{op.capitalize()} {self.NAME.upper()} is not supported on this guest.')
-            return
+            raise tmt.utils.GeneralError(
+                f"{op.capitalize()} {self.NAME.upper()} is not supported on this guest.")
 
         self.info(f'{op.capitalize()} {self.NAME.upper()}')
         self.guest.ansible(playbook_path.relative_to(self.get_root_path()))
@@ -100,7 +101,7 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
-    Enable or disable common feature `epel` on the guest
+    Enable or disable common feature ``epel`` on the guest
 
     Example config:
 

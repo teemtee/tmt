@@ -1,5 +1,4 @@
 - hosts: all
-  user: root
   tasks:
     # RHEL 7
     - when: ansible_distribution == 'RedHat' and ansible_distribution_major_version|int == 7
@@ -17,8 +16,6 @@
 
         - name: Enable repos of 'epel'
           shell: yum-config-manager --enable epel epel-debuginfo epel-source
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
 
     # RHEL N, where N >= 8
     - when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 8
@@ -40,13 +37,9 @@
 
         - name: Enable repos of 'epel'
           shell: dnf config-manager --enable epel epel-debuginfo epel-source
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
 
         - name: Enable repos of 'epel-next'
           shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
-        - name: Fetch attribute 'enabled' of repos of 'epel-next'
-          shell: grep enabled /etc/yum.repos.d/epel-next.repo
 
     # CentOS 7
     - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 7
@@ -63,8 +56,6 @@
 
         - name: Enable repos of 'epel'
           shell: yum-config-manager --enable epel epel-debuginfo epel-source
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
 
     # CentOS Stream N where N >= 8
     - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 8
@@ -84,10 +75,6 @@
 
         - name: Enable repos of 'epel'
           shell: dnf config-manager --enable epel epel-debuginfo epel-source
-        - name: Fetch attribute 'enabled' of repos of 'epel'
-          shell: grep enabled /etc/yum.repos.d/epel.repo
 
         - name: Enable repos of 'epel-next'
           shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
-        - name: Fetch attribute 'enabled' of repos of 'epel-next'
-          shell: grep enabled /etc/yum.repos.d/epel-next.repo
