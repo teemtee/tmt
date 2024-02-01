@@ -32,22 +32,6 @@ rlJournalStart
     #     done
     # done
 
-    # FIPS
-    for method in ${PROVISION_METHODS:-"virtual"}; do
-        # If provision method is container or local, it is unsupported to enable/disable FIPS
-        # because we have to reboot the guest
-        [[ $method == "container" ]] && continue
-        [[ $method == "local" ]] && continue
-
-        rlPhaseStartTest "Enable FIPS"
-            rlRun -s "tmt -vvv run -a plan --name '/fips/enabled'  provision --how $method"
-        rlPhaseEnd
-
-        rlPhaseStartTest "Disable FIPS"
-            rlRun -s "tmt -vvv run -a plan --name '/fips/disabled' provision --how $method"
-        rlPhaseEnd
-    done
-
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd

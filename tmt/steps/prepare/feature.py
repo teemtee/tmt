@@ -96,39 +96,9 @@ class CRB(ToggleableFeature):
         self._disable('crb-disable.yaml')
 
 
-class FIPS(ToggleableFeature):
-    NAME = 'fips'
-
-    def is_unsupported(self) -> bool:
-        return isinstance(self.guest, (tmt.steps.provision.podman.GuestContainer,
-                                       tmt.steps.provision.local.GuestLocal))
-
-    def _reboot_guest(self) -> None:
-        self.info('reboot', 'Rebooting guest', color='yellow')
-        self.guest.reboot()
-        self.info('reboot', 'Reboot finished', color='yellow')
-
-    def enable(self) -> None:
-        if self.is_unsupported():
-            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
-            return
-
-        self._enable('fips-enable.yaml')
-        self._reboot_guest()
-
-    def disable(self) -> None:
-        if self.is_unsupported():
-            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
-            return
-
-        self._disable('fips-disable.yaml')
-        self._reboot_guest()
-
-
 _FEATURES: dict[str, type[Feature]] = {
     EPEL.NAME: EPEL,
-    CRB.NAME: CRB,
-    FIPS.NAME: FIPS
+    CRB.NAME: CRB
     }
 
 
@@ -148,18 +118,11 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
         help='Whether CRB repository should be enabled or disabled.'
         )
 
-    fips: Optional[str] = field(
-        default=None,
-        option='--fips',
-        metavar='enabled|disabled',
-        help='Whether FIPS should be enabled or disabled.'
-        )
-
 
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
-    Enable or disable common features such as epel, crb and fips on the guest
+    Enable or disable common features such as epel, crb on the guest
 
     Example config:
 
@@ -167,7 +130,6 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             how: feature
             epel: enabled
             crb: enabled
-            fips: enabled
 
         Or
 
@@ -175,7 +137,6 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             how: feature
             epel: disabled
             crb: disabled
-            fips: disabled
     """
 
     _data_class = PrepareFeatureData
@@ -193,26 +154,20 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return
 
-        # Enable or disable epel/crb/fips
+        # Enable or disable epel/crb
         for feature_key in _FEATURES:
             value = cast(Optional[str], getattr(self.data, feature_key, None))
-
             if value is None:
                 continue
 
             feature = _FEATURES[feature_key](parent=self, guest=guest, logger=logger)
-
             if isinstance(feature, ToggleableFeature):
                 value = value.lower()
-
                 if value == 'enabled':
                     feature.enable()
-
                 elif value == 'disabled':
                     feature.disable()
-
                 else:
                     raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
-
             else:
                 raise tmt.utils.GeneralError(f"Unsupported feature '{feature_key}'.")

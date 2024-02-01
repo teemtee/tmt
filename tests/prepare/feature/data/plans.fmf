@@ -57,27 +57,3 @@ execute:
 
         environment+:
             STATE: disabled
-
-/fips:
-    discover:
-        how: shell
-        tests:
-          - name: test
-            test: ./check-fips.sh
-
-    prepare:
-        how: feature
-
-    /enabled:
-        prepare+:
-            fips: enabled
-
-        environment+:
-            STATE: enabled
-
-    /disabled:
-        prepare+:
-            fips: disabled
-
-        environment+:
-            STATE: disabled
