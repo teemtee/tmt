@@ -15,12 +15,6 @@ rlJournalStart
         rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Apache"
-        rlRun -s "$tmt apache"
-        rlAssertGrep "Fetch library 'httpd/http'" $rlRun_LOG
-        rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
-    rlPhaseEnd
-
     rlPhaseStartTest "Recommend"
         rlRun -s "$tmt recommend" 0
         rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
@@ -75,13 +69,6 @@ rlJournalStart
         # However we do it all just once
         LINES=$(grep "Repository 'https://github.com/beakerlib/FOOBAR' not found." "$tmp/querying/log.txt" | wc -l)
         rlAssertEquals "Just one attempt on non-existent repository" "1" "$LINES"
-
-    rlPhaseStartTest "Pruning"
-        rlRun -s "tmt run -vv --debug plan --name pruning"
-        lib_path=$(grep 'Library database/mariadb is copied into' "$rlRun_LOG"|rev|cut -d' ' -f1|rev)
-        rlAssertNotExists "${lib_path}/postgresql"
-        rlAssertNotExists "${lib_path}/mysql"
-    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

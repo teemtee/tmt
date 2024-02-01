@@ -1,0 +1,15 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: virtual
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    framework: beakerlib
+    require:
+      - url: https://github.com/beakerlib/database
+        name: /mariadb
+        type: library

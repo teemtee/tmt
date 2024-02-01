@@ -5,4 +5,4 @@ description:
     installation works as expected. These can take some time.
 discover:
     how: fmf
-    filter: 'tier: 4'
+    filter: 'tier: 4 & tag:-provision-only'
