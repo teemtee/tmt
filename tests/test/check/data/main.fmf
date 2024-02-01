@@ -13,6 +13,7 @@
 
   /harmless:
     test: /bin/true
+    order: 100
 
   /nasty:
     test: |

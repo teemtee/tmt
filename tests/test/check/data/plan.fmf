@@ -12,4 +12,5 @@ adjust:
       script: |
         timedatectl set-ntp false &&
         sleep 2 &&
-        timedatectl set-time -- -10s
+        timedatectl set-time -- -10s &&
+        echo > /var/log/audit/audit.log

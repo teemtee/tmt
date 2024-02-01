@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import TYPE_CHECKING, Optional, Union
 
 import tmt.log
@@ -138,6 +139,11 @@ def create_ausearch_timestamp(
 
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
     report: list[str] = []
+
+    # Wait one second before storing the timestamp because ausearch
+    # could catch denials from the previous test if they are executed
+    # during the same second
+    time.sleep(1)
 
     script = ShellScript(f"""
 set -x
