@@ -82,19 +82,8 @@ class EPEL(ToggleableFeature):
         self._disable('epel-disable.yaml')
 
 
-class CRB(ToggleableFeature):
-    NAME = 'crb'
-
-    def enable(self) -> None:
-        self._enable('crb-enable.yaml')
-
-    def disable(self) -> None:
-        self._disable('crb-disable.yaml')
-
-
 _FEATURES: dict[str, type[Feature]] = {
-    EPEL.NAME: EPEL,
-    CRB.NAME: CRB
+    EPEL.NAME: EPEL
     }
 
 
@@ -107,32 +96,23 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
         help='Whether EPEL repository should be installed & enabled or disabled.'
         )
 
-    crb: Optional[str] = field(
-        default=None,
-        option='--crb',
-        metavar='enabled|disabled',
-        help='Whether CRB repository should be enabled or disabled.'
-        )
-
 
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
-    Enable or disable common features such as epel, crb on the guest
+    Enable or disable common feature `epel` on the guest
 
     Example config:
 
         prepare:
             how: feature
             epel: enabled
-            crb: enabled
 
         Or
 
         prepare:
             how: feature
             epel: disabled
-            crb: disabled
     """
 
     _data_class = PrepareFeatureData
@@ -150,7 +130,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return
 
-        # Enable or disable epel/crb
+        # Enable or disable epel
         for feature_key in _FEATURES:
             value = cast(Optional[str], getattr(self.data, feature_key, None))
             if value is None:

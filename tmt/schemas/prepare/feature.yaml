@@ -25,17 +25,5 @@ properties:
       - enabled
       - disabled
 
-  crb:
-    type: string
-    enum:
-      - enabled
-      - disabled
-
-  fips:
-    type: string
-    enum:
-      - enabled
-      - disabled
-
 required:
   - how
