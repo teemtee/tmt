@@ -1,0 +1,32 @@
+provision:
+    how: container
+
+execute:
+    how: tmt
+
+/epel:
+    discover:
+        how: shell
+        tests:
+          - name: test
+            test: ./check-repos.sh
+
+    prepare:
+        how: feature
+
+    environment:
+        REPOSITORIES: epel
+
+    /enabled:
+        prepare+:
+            epel: enabled
+
+        environment+:
+            STATE: enabled
+
+    /disabled:
+        prepare+:
+            epel: disabled
+
+        environment+:
+            STATE: disabled

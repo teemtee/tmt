@@ -1,0 +1,45 @@
+- hosts: all
+  tasks:
+    # RHEL 7 or CentOS 7
+    - when: ansible_distribution_major_version|int == 7
+      block:
+        - name: Install package 'yum-utils'
+          ansible.builtin.yum:
+            name: yum-utils
+            state: present
+
+        # Disable repos of 'epel' if package 'epel-release' is installed
+        - name: Detect package 'epel-release' is installed
+          command: rpm -q epel-release
+          register: result
+          ignore_errors: True
+
+        - name: Disable repos of 'epel'
+          shell: yum-config-manager --disable epel epel-debuginfo epel-source
+          when: result.rc == 0
+
+    # RHEL N or CentOS Stream N where N >= 8
+    - when: ansible_distribution_major_version|int >= 8
+      block:
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        # Disable repos of 'epel' if package 'epel-release' is installed
+        - name: Detect package 'epel-release' is installed
+          command: rpm -q epel-release
+          register: result
+          ignore_errors: True
+
+        - name: Disable repos of 'epel' if package 'epel-release' is installed
+          shell: dnf config-manager --disable epel epel-debuginfo epel-source
+          when: result.rc == 0
+
+        # Disable repos of 'epel-next' if package 'epel-next-release' is installed
+        - name: Detect package 'epel-next-release' is installed
+          command: rpm -q epel-next-release
+          register: result
+          ignore_errors: True
+
+        - name: Disable repos of 'epel-next'
+          shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
+          when: result.rc == 0

@@ -1,0 +1,80 @@
+- hosts: all
+  tasks:
+    # RHEL 7
+    - when: ansible_distribution == 'RedHat' and ansible_distribution_major_version|int == 7
+      block:
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            disable_gpg_check: true
+            state: present
+
+        - name: Install package 'yum-utils'
+          ansible.builtin.yum:
+            name: yum-utils
+            state: present
+
+        - name: Enable repos of 'epel'
+          shell: yum-config-manager --enable epel epel-debuginfo epel-source
+
+    # RHEL N, where N >= 8
+    - when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 8
+      block:
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            disable_gpg_check: true
+            state: present
+
+        - name: Install package 'epel-next-release'
+          ansible.builtin.yum:
+            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            disable_gpg_check: true
+            state: present
+
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        - name: Enable repos of 'epel'
+          shell: dnf config-manager --enable epel epel-debuginfo epel-source
+
+        - name: Enable repos of 'epel-next'
+          shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+
+    # CentOS 7
+    - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 7
+      block:
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: epel-release
+            state: present
+
+        - name: Install package 'yum-utils'
+          ansible.builtin.yum:
+            name: yum-utils
+            state: present
+
+        - name: Enable repos of 'epel'
+          shell: yum-config-manager --enable epel epel-debuginfo epel-source
+
+    # CentOS Stream N where N >= 8
+    - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 8
+      block:
+        - name: Install package 'epel-release'
+          ansible.builtin.yum:
+            name: epel-release
+            state: present
+
+        - name: Install package 'epel-next-release'
+          ansible.builtin.yum:
+            name: epel-next-release
+            state: present
+
+        - name: Install 'dnf config-manager'
+          shell: dnf -y install 'dnf-command(config-manager)'
+
+        - name: Enable repos of 'epel'
+          shell: dnf config-manager --enable epel epel-debuginfo epel-source
+
+        - name: Enable repos of 'epel-next'
+          shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
