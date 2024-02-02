@@ -1,45 +1,54 @@
-- hosts: all
+- name: Disable EPEL repositories
+  hosts: all
   tasks:
-    # RHEL 7 or CentOS 7
-    - when: ansible_distribution_major_version|int == 7
+    - name: Disable EPEL repos on RHEL 7 or CentOS 7
+      when: ansible_distribution in ["RedHat", "CentOS"] and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'yum-utils'
           ansible.builtin.yum:
             name: yum-utils
             state: present
 
-        # Disable repos of 'epel' if package 'epel-release' is installed
         - name: Detect package 'epel-release' is installed
-          command: rpm -q epel-release
+          ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
           register: result
-          ignore_errors: True
+          ignore_errors: true
+          changed_when: false
 
-        - name: Disable repos of 'epel'
-          shell: yum-config-manager --disable epel epel-debuginfo epel-source
+        - name: Disable EPEL repos
           when: result.rc == 0
+          ansible.builtin.command: yum-config-manager --disable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-    # RHEL N or CentOS Stream N where N >= 8
-    - when: ansible_distribution_major_version|int >= 8
+    - name: Disable EPEL and EPEL-Next repos on RHEL 8+ or CentOS Stream 8+
+      when: ansible_distribution in ["RedHat", "CentOS"] and ansible_distribution_major_version | int >= 8
       block:
         - name: Install 'dnf config-manager'
-          shell: dnf -y install 'dnf-command(config-manager)'
+          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
+          register: output
+          changed_when: output.rc != 0
 
-        # Disable repos of 'epel' if package 'epel-release' is installed
         - name: Detect package 'epel-release' is installed
-          command: rpm -q epel-release
+          ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
           register: result
-          ignore_errors: True
+          ignore_errors: true
+          changed_when: false
 
-        - name: Disable repos of 'epel' if package 'epel-release' is installed
-          shell: dnf config-manager --disable epel epel-debuginfo epel-source
+        - name: Disable EPEL repos
           when: result.rc == 0
+          ansible.builtin.command: dnf config-manager --disable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-        # Disable repos of 'epel-next' if package 'epel-next-release' is installed
         - name: Detect package 'epel-next-release' is installed
-          command: rpm -q epel-next-release
+          ansible.builtin.command: rpm -q epel-release # noqa: command-instead-of-module
           register: result
-          ignore_errors: True
+          ignore_errors: true
+          changed_when: false
 
-        - name: Disable repos of 'epel-next'
-          shell: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
+        - name: Disable EPEL-Next repos
           when: result.rc == 0
+          ansible.builtin.command: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
+          register: output
+          changed_when: output.rc != 0

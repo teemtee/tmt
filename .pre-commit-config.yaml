@@ -112,6 +112,22 @@ repos:
       - id: yamllint
         files: ^tmt/schemas/.*\.yaml
 
+  - repo: https://github.com/ansible-community/ansible-lint.git
+    rev: v24.2.1
+    hooks:
+      - id: ansible-lint
+        args:
+          - ansible/
+          - examples/ansible/
+          - examples/redis/ansible/
+          - tests/finish/ansible/data/
+          - tests/run/worktree/data/ansible/
+          - tmt/steps/prepare/feature/
+          - --profile=production
+          - --exclude=examples/redis/ansible/tasks/redis.yml
+          # redis.yml example requires posix module to be installed
+          # in order to be parsed by ansible-lint
+
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.3.3
     hooks:

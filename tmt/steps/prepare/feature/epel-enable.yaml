@@ -1,7 +1,8 @@
-- hosts: all
+- name: Enable EPEL repositories
+  hosts: all
   tasks:
-    # RHEL 7
-    - when: ansible_distribution == 'RedHat' and ansible_distribution_major_version|int == 7
+    - name: Enable EPEL repos on RHEL 7
+      when: ansible_distribution == "RedHat" and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.yum:
@@ -14,11 +15,13 @@
             name: yum-utils
             state: present
 
-        - name: Enable repos of 'epel'
-          shell: yum-config-manager --enable epel epel-debuginfo epel-source
+        - name: Enable EPEL repos
+          ansible.builtin.command: yum-config-manager --enable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-    # RHEL N, where N >= 8
-    - when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 8
+    - name: Enable EPEL and EPEL-Next repos on RHEL 8+
+      when: ansible_distribution == "RedHat" and ansible_distribution_major_version | int >= 8
       block:
         - name: Install package 'epel-release'
           ansible.builtin.yum:
@@ -33,16 +36,22 @@
             state: present
 
         - name: Install 'dnf config-manager'
-          shell: dnf -y install 'dnf-command(config-manager)'
+          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
+          register: output
+          changed_when: output.rc != 0
 
-        - name: Enable repos of 'epel'
-          shell: dnf config-manager --enable epel epel-debuginfo epel-source
+        - name: Enable EPEL repos
+          ansible.builtin.command: dnf config-manager --enable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-        - name: Enable repos of 'epel-next'
-          shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+        - name: Enable EPEL-Next repos
+          ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+          register: output
+          changed_when: output.rc != 0
 
-    # CentOS 7
-    - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 7
+    - name: Enable EPEL repos on CentOS 7
+      when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.yum:
@@ -54,11 +63,13 @@
             name: yum-utils
             state: present
 
-        - name: Enable repos of 'epel'
-          shell: yum-config-manager --enable epel epel-debuginfo epel-source
+        - name: Enable EPEL repos
+          ansible.builtin.command: yum-config-manager --enable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-    # CentOS Stream N where N >= 8
-    - when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 8
+    - name: Enable EPEL and EPEL-Next repos on CentOS Stream 8+
+      when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int >= 8
       block:
         - name: Install package 'epel-release'
           ansible.builtin.yum:
@@ -71,10 +82,16 @@
             state: present
 
         - name: Install 'dnf config-manager'
-          shell: dnf -y install 'dnf-command(config-manager)'
+          ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
+          register: output
+          changed_when: output.rc != 0
 
-        - name: Enable repos of 'epel'
-          shell: dnf config-manager --enable epel epel-debuginfo epel-source
+        - name: Enable EPEL repos
+          ansible.builtin.command: dnf config-manager --enable epel epel-debuginfo epel-source
+          register: output
+          changed_when: output.rc != 0
 
-        - name: Enable repos of 'epel-next'
-          shell: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+        - name: Enable EPEL-Next repos
+          ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
+          register: output
+          changed_when: output.rc != 0

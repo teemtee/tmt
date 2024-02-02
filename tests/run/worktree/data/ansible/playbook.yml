@@ -1,6 +1,11 @@
-- hosts: all
+- name: Copy and check test file
+  hosts: all
   tasks:
-    - copy:
+    - name: Copy test file
+      ansible.builtin.copy:
         src: testfile
         dest: /tmp/testfile
-    - command: grep PASS /tmp/testfile
+        mode: preserve
+    - name: Check test file
+      ansible.builtin.command: grep PASS /tmp/testfile
+      changed_when: false

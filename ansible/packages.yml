@@ -1,6 +1,7 @@
-- hosts: all
+- name: Install packages
+  hosts: all
   tasks:
-  - name: Install necessary dependencies
-    dnf:
-      state: present
-      name: tmt
+    - name: Install necessary dependencies
+      ansible.builtin.dnf:
+        state: present
+        name: tmt

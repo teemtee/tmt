@@ -1,4 +1,5 @@
-- hosts: all
+- name: Verify the test file was prepared
+  hosts: all
   vars:
     simple: "{{ lookup('env', 'SIMPLE') }}"
     spaces: "{{ lookup('env', 'SPACES') }}"
@@ -7,11 +8,14 @@
       copy:
         dest: /tmp/prepared
         content: pass
+        mode: preserve
 
     - name: Make sure a simple environment variable is respected
       command: echo "SIMPLE='{{ simple }}'"
       failed_when: simple != 'word'
+      changed_when: false
 
     - name: Make sure variables with spaces are correctly handed over
       command: echo "SPACES='{{ spaces }}'"
       failed_when: spaces != 'several words with spaces'
+      changed_when: false
