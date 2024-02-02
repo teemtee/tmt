@@ -6,20 +6,17 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    # Define images if provision method is 'container'
-    images=${PROVISION_CONTAINER_IMAGES:-"centos:stream9 centos:stream8"}
+    images="centos:stream9 centos:stream8 ubi9 ubi8"
 
     # EPEL
-    for method in ${PROVISION_METHODS:-"container"}; do
-        for image in $images; do
-            rlPhaseStartTest "Enable EPEL"
-                rlRun -s "tmt -vvv run -a plan --name '/epel/enabled'  provision --how $method --image $image"
-            rlPhaseEnd
+    for image in $images; do
+        rlPhaseStartTest "Enable EPEL on $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled' provision --how container --image $image"
+        rlPhaseEnd
 
-            rlPhaseStartTest "Disable EPEL"
-                rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how $method --image $image"
-            rlPhaseEnd
-        done
+        rlPhaseStartTest "Disable EPEL on $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how container --image $image"
+        rlPhaseEnd
     done
 
     rlPhaseStartCleanup

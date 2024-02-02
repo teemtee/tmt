@@ -44,6 +44,10 @@ New hardware specification key :ref:`/spec/hardware/zcrypt` has
 been defined. It will be used for selecting guests with the given
 `System z cryptographic adapter`.
 
+A prepare step plugin :ref:`/spec/plans/prepare/feature` has been
+implemented. As the first supported feature, ``epel`` repositories
+can now be enabled using a concise configuration.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
