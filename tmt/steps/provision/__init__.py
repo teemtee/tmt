@@ -1114,9 +1114,10 @@ class Guest(tmt.utils.Common):
         )
 
     @property
-    def logs(self) -> list[str]:
+    def log_names(self) -> list[str]:
+        """Return name list of logs the guest could provide."""
 
-        raise NotImplementedError
+        return []
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
@@ -1708,7 +1709,11 @@ class Guest(tmt.utils.Common):
         return []
 
     def acquire_log(self, log_name: str) -> Optional[str]:
-        """fetch and return content of a requested log"""
+        """
+        Fetch and return content of a log.
+        :param log_name: name of the log.
+        :returns: content of the log.
+        """
         raise NotImplementedError
 
     def store_log(
@@ -1716,30 +1721,43 @@ class Guest(tmt.utils.Common):
             log_path: Path,
             log_content: str,
             log_name: Optional[str] = None) -> None:
-        """save log content and return the path"""
-        if log_name:
-            # if log_path contains log file name
-            if log_path.is_dir():
-                log_path.write_text(log_content)
-            else:
-                (log_path / log_name).write_text(log_content)
-        else:
+        """
+        Save log content to a file.
+        :param log_path: a path to save into,could be a directory
+        or a file path.
+        :param log_content: content of the log.
+        :param log_name: name of the log, if not set, log_path
+        is supposed to be '/dev/null' or  a file path.
+        """
+        # if log_path is file path or /dev/null
+        if not log_path.is_dir() or str(log_path) == '/dev/null':
             log_path.write_text(log_content)
+        # log_path is a directory
+        else:
+            if log_name:
+                name_str = log_name
+            else:
+                name_str = 'tmt-guestlog-' + \
+                    datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+                self.warn(f'log_name is not set, using file name:{name_str}')
+            (log_path / name_str).write_text(log_content)
 
     def handle_guest_logs(self,
                           log_path: Optional[Path] = None,
-                          logs: Optional[list[str]] = None) -> None:
-        """get log content and save it to the workdir/provision/,
-        list the log dir in guests.yaml"""
-        logs = logs or []
-        log_path = log_path or self.workdir
-        for log_name in logs:
+                          log_names: Optional[list[str]] = None) -> None:
+        """
+        Get log content and save it to a directory.
+        :param log_path: a directory to save into.If not set,self.workdir
+        or Path.cwd() will be used.
+        :param log_names: name list of logs need to be handled.If not set,
+        self.log_names will be used.
+        """
+        log_names = log_names or self.log_names
+        log_path = log_path or self.workdir or Path.cwd()
+        for log_name in log_names:
             log_content = self.acquire_log(log_name)
             if log_content:
-                if log_path:
-                    self.store_log(log_path, log_content, log_name)
-                else:
-                    self.store_log(Path.cwd(), log_content, log_name)
+                self.store_log(log_path, log_content, log_name)
             else:
                 self.debug(f'no content in {log_name}')
 

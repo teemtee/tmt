@@ -33,7 +33,8 @@ class GuestLocal(tmt.Guest):
         return True
 
     @property
-    def logs(self) -> list[str]:
+    def log_names(self) -> list[str]:
+        """Return name list of logs the guest could provide."""
         return ['dmesg']
 
     def _run_ansible(
@@ -184,7 +185,11 @@ class GuestLocal(tmt.Guest):
         """
 
     def acquire_log(self, log_name: str) -> Optional[str]:
-        """fetch and return content of a requested log"""
+        """
+        Fetch and return content of a log.
+        :param log_name: name of the log.
+        :returns: content of the log.
+        """
         if log_name == 'dmesg':
             return self.execute(Command('dmesg')).stdout
         return None

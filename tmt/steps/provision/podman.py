@@ -129,7 +129,8 @@ class GuestContainer(tmt.Guest):
         return str(cmd_output.stdout).strip() == 'true'
 
     @property
-    def logs(self) -> list[str]:
+    def log_names(self) -> list[str]:
+        """Return name list of logs the guest could provide."""
         return []
 
     def wake(self) -> None:
