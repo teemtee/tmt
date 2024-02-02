@@ -101,15 +101,19 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
-    Enable or disable common feature ``epel`` on the guest
+    Enable or disable common features like repositories on the guest.
 
     Example config:
+
+    .. code-block:: yaml
 
         prepare:
             how: feature
             epel: enabled
 
-        Or
+    Or
+
+    .. code-block:: yaml
 
         prepare:
             how: feature
