@@ -29,6 +29,7 @@ Table of Contents
     Overview <overview>
     Guide <guide>
     Specification <spec>
+    Plugins <plugins/index>
     Examples <examples>
     Stories <stories>
     Questions <questions>

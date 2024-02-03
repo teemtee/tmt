@@ -16,7 +16,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help generate-stories generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
+.PHONY: help generate-plugins plugins/*.rst generate-stories generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
 
 clean:
 	rm -rf $(BUILDDIR) stories spec code/autodocs/*.rst
@@ -53,7 +53,9 @@ TMTDIR        = $(REPODIR)/tmt
 SCRIPTSDIR    = scripts
 TEMPLATESDIR  = templates
 
-generate: spec stories generate-lint-checks generate-test-checks generate-stories generate-autodocs  ## Refresh all generated documentation sources
+PLUGINS_TEMPLATE := $(TEMPLATESDIR)/plugins.rst.j2
+
+generate: spec stories generate-lint-checks generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 spec:
 	mkdir -p spec
@@ -64,7 +66,25 @@ stories:
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $(TMTDIR)/base.py
 	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
 
-spec/test-checks.rst: $(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $(TMTDIR)/checks/*.py
+plugins/discover.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/discover/*.py
+	$(SCRIPTSDIR)/generate-plugins.py discover $(PLUGINS_TEMPLATE) $@
+
+plugins/execute.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/execute/*.py
+	$(SCRIPTSDIR)/generate-plugins.py execute $(PLUGINS_TEMPLATE) $@
+
+plugins/finish.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/finish/*.py
+	$(SCRIPTSDIR)/generate-plugins.py finish $(PLUGINS_TEMPLATE) $@
+
+plugins/prepare.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/prepare/*.py
+	$(SCRIPTSDIR)/generate-plugins.py prepare $(PLUGINS_TEMPLATE) $@
+
+plugins/provision.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/provision/*.py
+	$(SCRIPTSDIR)/generate-plugins.py provision $(PLUGINS_TEMPLATE) $@
+
+plugins/report.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/report/*.py
+	$(SCRIPTSDIR)/generate-plugins.py report $(PLUGINS_TEMPLATE) $@
+
+plugins/test-checks.rst: $(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $(TMTDIR)/checks/*.py
 	$(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $@
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
@@ -72,7 +92,7 @@ generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-test-checks: spec spec/test-checks.rst  ## Generate documentation sources for test checks
+generate-plugins: plugins/discover.rst plugins/execute.rst plugins/finish.rst plugins/prepare.rst plugins/provision.rst plugins/report.rst plugins/test-checks.rst  ## Generate documentation sources for plugins
 
 generate-autodocs:  ## Generate autodocs from source docstrings
 	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt

@@ -14,7 +14,7 @@ description: |
     panic detection, core dump collection or collection of system
     logs.
 
-    See :ref:`/spec/test-checks` for the list of available checks.
+    See :ref:`/plugins/test-checks` for the list of available checks.
 
 example:
   - |

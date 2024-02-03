@@ -2531,20 +2531,44 @@ class FieldMetadata(Generic[T]):
 
     #: Help text documenting the field.
     help: Optional[str] = None
+
     #: If field accepts a value, this string would represent it in documentation.
-    metavar: Optional[str] = None
-    #: Field default value.
+    #: This stores the metavar provided when field was created - it may be unset.
+    #: py:attr:`metavar` provides the actual metavar to be used.
+    _metavar: Optional[str] = None
+
+    #: The default value for the field.
     default: Optional[Any] = None
-    #: Field default value factory.
+
+    #: A zero-argument callable that will be called when a default value is
+    #: needed for the field.
     default_factory: Optional[Callable[[], Any]] = None
 
-    #: CLI option parameters, for lazy option creation.
-    option_args: Optional['FieldCLIOption'] = None
-    option_kwargs: Optional[dict[str, Any]] = None
-    option_choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None
+    #: Marks the fields as a flag.
+    is_flag: bool = False
 
-    #: A :py:func:`click.option` decorator defining a corresponding CLI option.
-    _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
+    #: Marks the field as accepting multiple values. When used on command line,
+    #: the option could be used multiple times, accumulating values.
+    multiple: bool = False
+
+    #: If set, show the default value in command line help.
+    show_default: bool = False
+
+    #: Either a list of allowed values the field can take, or a zero-argument
+    #: callable that would return such a list.
+    _choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None
+
+    #: Environment variable providing value for the field.
+    envvar: Optional[str] = None
+
+    #: Mark the option as deprecated. Instance of :py:class:`Deprecated`
+    #: describes the version in which the field was deprecated plus an optional
+    #: hint with the recommended alternative. Documentation and help texts would
+    #: contain this info.
+    deprecated: Optional['tmt.options.Deprecated'] = None
+
+    #: One or more command-line option names.
+    cli_option: Optional[FieldCLIOption] = None
 
     #: A normalization callback to call when loading the value from key source
     #: (performed by :py:class:`NormalizeKeysMixin`).
@@ -2559,20 +2583,62 @@ class FieldMetadata(Generic[T]):
     #: :py:class:`tmt.export.Exportable`).
     export_callback: Optional['FieldExporter[T]'] = None
 
+    #: CLI option parameters, for lazy option creation.
+    _option_args: Optional['FieldCLIOption'] = None
+    _option_kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    #: A :py:func:`click.option` decorator defining a corresponding CLI option.
+    _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
+
+    @cached_property
+    def choices(self) -> Optional[Sequence[str]]:
+        """ A list of allowed values the field can take """
+
+        if isinstance(self._choices, (list, tuple)):
+            return list(self._choices)
+
+        if callable(self._choices):
+            return self._choices()
+
+        return None
+
+    @cached_property
+    def metavar(self) -> Optional[str]:
+        """ Placeholder for field's value in documentation and help """
+
+        if self._metavar:
+            return self._metavar
+
+        if self.choices:
+            return '|'.join(self.choices)
+
+        return None
+
     @property
     def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
-        if self._option is None and self.option_args and self.option_kwargs:
+        if self._option is None and self.cli_option:
             from tmt.options import option
 
-            if isinstance(self.option_choices, (list, tuple)):
-                self.option_kwargs['choices'] = self.option_choices
+            self._option_args = (self.cli_option,) if isinstance(self.cli_option, str) \
+                else self.cli_option
 
-            elif callable(self.option_choices):
-                self.option_kwargs['choices'] = self.option_choices()
+            self._option_kwargs.update({
+                'is_flag': self.is_flag,
+                'multiple': self.multiple,
+                'envvar': self.envvar,
+                'metavar': self.metavar,
+                'choices': self.choices,
+                'show_default': self.show_default,
+                'help': self.help,
+                'deprecated': self.deprecated
+                })
+
+            if self.default is not dataclasses.MISSING and not self.is_flag:
+                self._option_kwargs['default'] = self.default
 
             self._option = option(
-                *self.option_args,
-                **self.option_kwargs
+                *self._option_args,
+                **self._option_kwargs
                 )
 
         return self._option
@@ -6138,6 +6204,31 @@ def field(
     pass
 
 
+@overload
+def field(
+        *,
+        # Options
+        option: Optional[FieldCLIOption] = None,
+        is_flag: bool = False,
+        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+        multiple: bool = False,
+        metavar: Optional[str] = None,
+        envvar: Optional[str] = None,
+        deprecated: Optional['tmt.options.Deprecated'] = None,
+        help: Optional[str] = None,
+        show_default: bool = False,
+        internal: bool = False,
+        # Input data normalization
+        normalize: Optional[NormalizeCallback[T]] = None,
+        # Custom serialization
+        serialize: Optional[SerializeCallback[T]] = None,
+        unserialize: Optional[UnserializeCallback[T]] = None,
+        # Custom exporter
+        exporter: Optional[FieldExporter[T]] = None
+        ) -> T:
+    pass
+
+
 def field(
         *,
         default: Any = dataclasses.MISSING,
@@ -6209,40 +6300,28 @@ def field(
         Consumed by :py:class:`tmt.export.Exportable`.
     """
 
-    if default is dataclasses.MISSING and default_factory is dataclasses.MISSING:
-        raise GeneralError("Container field must define one of 'default' or 'default_factory'.")
+    if is_flag is False and isinstance(default, bool):
+        raise GeneralError("Container field must be a flag to have boolean default value.")
+
+    if is_flag is True and not isinstance(default, bool):
+        raise GeneralError("Container field must have a boolean default value when it is a flag.")
 
     metadata: FieldMetadata[T] = FieldMetadata(
         internal=internal,
         help=textwrap.dedent(help).strip() if help else None,
-        metavar=metavar,
+        _metavar=metavar,
         default=default,
-        default_factory=default_factory)
-
-    if option:
-        assert is_flag is False or isinstance(default, bool)
-
-        metadata.option_args = (option,) if isinstance(option, str) else option
-        metadata.option_kwargs = {
-            'is_flag': is_flag,
-            'multiple': multiple,
-            'metavar': metavar,
-            'envvar': envvar,
-            'help': help,
-            'show_default': show_default,
-            'deprecated': deprecated
-            }
-        metadata.option_choices = choices
-
-        if default is not dataclasses.MISSING and not is_flag:
-            metadata.option_kwargs['default'] = default
-
-    if normalize:
-        metadata.normalize_callback = normalize
-
-    metadata.serialize_callback = serialize
-    metadata.unserialize_callback = unserialize
-    metadata.export_callback = exporter
+        default_factory=default_factory,
+        is_flag=is_flag,
+        multiple=multiple,
+        _choices=choices,
+        envvar=envvar,
+        deprecated=deprecated,
+        cli_option=option,
+        normalize_callback=normalize,
+        serialize_callback=serialize,
+        unserialize_callback=unserialize,
+        export_callback=exporter)
 
     # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
