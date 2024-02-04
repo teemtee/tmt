@@ -1115,7 +1115,7 @@ class Guest(tmt.utils.Common):
 
     @property
     def log_names(self) -> list[str]:
-        """Return name list of logs the guest could provide."""
+        """ Return name list of logs the guest could provide. """
 
         return []
 
@@ -1711,8 +1711,9 @@ class Guest(tmt.utils.Common):
     def acquire_log(self, log_name: str) -> Optional[str]:
         """
         Fetch and return content of a log.
+
         :param log_name: name of the log.
-        :returns: content of the log.
+        :returns: content of the log, or None if the log cannot be retrieved.
         """
         raise NotImplementedError
 
@@ -1723,34 +1724,33 @@ class Guest(tmt.utils.Common):
             log_name: Optional[str] = None) -> None:
         """
         Save log content to a file.
+
         :param log_path: a path to save into,could be a directory
-        or a file path.
+            or a file path.
         :param log_content: content of the log.
         :param log_name: name of the log, if not set, log_path
-        is supposed to be '/dev/null' or  a file path.
+            is supposed to be a file path.
         """
-        # if log_path is file path or /dev/null
-        if not log_path.is_dir() or str(log_path) == '/dev/null':
+        # if log_path is file path
+        if not log_path.is_dir():
             log_path.write_text(log_content)
         # log_path is a directory
         else:
             if log_name:
-                name_str = log_name
+                (log_path / log_name).write_text(log_content)
             else:
-                name_str = 'tmt-guestlog-' + \
-                    datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
-                self.warn(f'log_name is not set, using file name:{name_str}')
-            (log_path / name_str).write_text(log_content)
+                raise tmt.utils.GeneralError('log_name is None.')
 
     def handle_guest_logs(self,
                           log_path: Optional[Path] = None,
                           log_names: Optional[list[str]] = None) -> None:
         """
         Get log content and save it to a directory.
+
         :param log_path: a directory to save into.If not set,self.workdir
-        or Path.cwd() will be used.
+            or Path.cwd() will be used.
         :param log_names: name list of logs need to be handled.If not set,
-        self.log_names will be used.
+            self.log_names will be used.
         """
         log_names = log_names or self.log_names
         log_path = log_path or self.workdir or Path.cwd()
