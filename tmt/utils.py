@@ -6680,11 +6680,11 @@ class RestVisitor(docutils.nodes.NodeVisitor):
             else:
                 self._rendered_paragraph.append(' ' * self._indent)
 
-        if self.in_note:
+        elif self.in_note:
             self._rendered_paragraph.append(click.style('NOTE: ', fg='blue', bold=True))
             return
 
-        if self.in_warning:
+        elif self.in_warning:
             self._rendered_paragraph.append(click.style('WARNING: ', fg='yellow', bold=True))
             return
 
