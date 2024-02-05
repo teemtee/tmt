@@ -242,8 +242,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             url: https://github.com/teemtee/tmt.git
             ref: "1.18.0"
             tests:
-            - name: first test
-              test: ./script-from-the-repo.sh
+              - name: first test
+                test: ./script-from-the-repo.sh
     """
 
     _data_class = DiscoverShellData

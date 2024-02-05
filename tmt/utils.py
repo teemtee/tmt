@@ -6596,7 +6596,7 @@ def is_url(url: str) -> bool:
 #
 # ReST rendering
 #
-class ReSTVisitor(docutils.nodes.NodeVisitor):
+class RestVisitor(docutils.nodes.NodeVisitor):
     """
     Custom renderer of docutils nodes.
 
@@ -6681,11 +6681,11 @@ class ReSTVisitor(docutils.nodes.NodeVisitor):
                 self._rendered_paragraph.append(' ' * self._indent)
 
         if self.in_note:
-            self._rendered_paragraph.append(click.style('NOTE: ', fg='yellow', bold=True))
+            self._rendered_paragraph.append(click.style('NOTE: ', fg='blue', bold=True))
             return
 
         if self.in_warning:
-            self._rendered_paragraph.append(click.style('WARNING: ', fg='red', bold=True))
+            self._rendered_paragraph.append(click.style('WARNING: ', fg='yellow', bold=True))
             return
 
     def depart_paragraph(self, node: docutils.nodes.paragraph) -> None:
@@ -6703,12 +6703,12 @@ class ReSTVisitor(docutils.nodes.NodeVisitor):
             return
 
         if self.in_note:
-            self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
+            self._rendered_paragraph.append(click.style(node.astext(), fg='blue'))
 
             return
 
         if self.in_warning:
-            self._rendered_paragraph.append(click.style(node.astext(), fg='red'))
+            self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
 
             return
 
@@ -6719,7 +6719,7 @@ class ReSTVisitor(docutils.nodes.NodeVisitor):
     def visit_literal(self, node: docutils.nodes.literal) -> None:
         self.log_visit(str(node))
 
-        self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
+        self._rendered_paragraph.append(click.style(node.astext(), fg='green'))
 
     depart_literal = _noop_departure
 
@@ -6816,7 +6816,7 @@ def render_rst(text: str, logger: Logger) -> str:
     """ Render a ReST document """
 
     document = parse_rst(text)
-    visitor = ReSTVisitor(document, logger)
+    visitor = RestVisitor(document, logger)
 
     document.walkabout(visitor)
 

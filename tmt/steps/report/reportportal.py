@@ -47,7 +47,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results to a ReportPortal instance via API.
 
-    Requires a ``token```` for authentication, a URL of the ReportPortal
+    Requires a ``token`` for authentication, a URL of the ReportPortal
     instance and the ``project`` name. In addition to command line options
     it's possible to use environment variables to set the URL and token:
 
