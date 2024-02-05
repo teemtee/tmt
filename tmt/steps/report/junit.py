@@ -91,7 +91,7 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
         default=None,
         option='--file',
         metavar='PATH',
-        help='Path to the file to store Junit to.',
+        help='Path to the file to store JUnit to.',
         normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
 
 
