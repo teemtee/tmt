@@ -550,18 +550,22 @@ class GuestArtemis(tmt.GuestSsh):
         if self.post_install_script:
             if tmt.utils.is_url(self.post_install_script):
                 try:
-                    response = requests.get(self.post_install_script)
-                    response.raise_for_status()
+                    with retry_session() as session:
+                        response = session.get(self.post_install_script)
 
-                except requests.exceptions.RequestException:
+                    if not response.ok:
+                        raise ArtemisProvisionError(
+                            "Failed to get the post_install_script file")
+
+                except requests.RequestException as exc:
                     raise ArtemisProvisionError(
-                        "failed to get the post_install_script file")
+                        "Failed to get the post_install_script file") from exc
 
                 post_install_script = response.text
             else:
-                self.info('post-install-script argument is treated as a raw script')
+                self.debug('post-install-script argument is treated as a raw script')
 
-                post_install_script = post_install_script.replace('\\n', '\n')
+                post_install_script = self.post_install_script.replace('\\n', '\n')
 
             data['post_install_script'] = post_install_script
 
