@@ -48,6 +48,20 @@ A prepare step plugin :ref:`/spec/plans/prepare/feature` has been
 implemented. As the first supported feature, ``epel`` repositories
 can now be enabled using a concise configuration.
 
+The report plugin :ref:`/spec/plans/report` has received new options.
+Namely option ``--launch-per-plan`` for creating a new launch per each
+plan, option ``--suite-per-plan`` for mapping a suite per each plan,
+all enclosed in one launch (launch uuid is stored in run of the first
+plan), option ``--launch-description`` for providing unified launch
+description, intended mainly for suite-per-plan mapping, option
+``--upload-to-launch LAUNCH_ID`` to append new plans to an existing
+launch, option ``--upload-to-suite SUITE_ID`` to append new tests
+to an existing suite within launch, option ``--launch-rerun`` for
+reruns with 'Retry' item in RP, and option ``--defect-type`` for
+passing the defect type to failing tests, enables report idle tests
+to be additionally updated. Environment variables were rewritten to
+the uniform form ``TMT_PLUGIN_REPORT_REPORTPORTAL_${option}``.
+
 
 tmt-1.30
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

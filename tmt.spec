@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.30.0
+Version:        1.31.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -148,6 +148,87 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Tue Feb 06 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.31.0
+- Simple ReST renderer for CLI help texts (#2574)
+- Generate plugin documentation from their sources (#2549)
+- Fix environment from command line updated twice (#2614)
+- Introduce a new prepare plugin for common features (#2198)
+- Remove `xfail` for the `multidict` issue on `rawhide`
+- Prevent catching avc denials from previous tests
+- Remove an obsolete workaround for `centos-stream-8`
+- Enable the `/tests/discover/libraries` test (#2222)
+- Add documentation on tmt & regular expressions
+- Fix expansion of envvar starting with `@` in fmf nodes
+- Add the `zcrypt` adapter specification
+- Allow urllib3 2.x
+- Enable `/plans/provision/virtual` for pull requests (#2558)
+- Remove the dns failures workaround
+- Fix reporting of schema errors without the `$id` key
+- AVC check now saves a timestamp on guest instead of using runner's time
+- Add check to prevent `tmt try` deleting imported libraries
+- Reduce usage of locks in the `testcloud` plugin
+- Add support for envvars import and export to Polarion
+- Use enumeration to implement action handling
+- Handle the `ctrl-d` shortcut in `tmt try`
+- Run tests with `interactive` mode during `tmt try`
+- Fix `tmt import --dry` and Polarion import file name
+- Document that `name` is supported in `--filter` search (#2637)
+- Refactor running of interactive commands (#2554)
+- Create container images from the latest non-dev copr build
+- Fail `dmesg` check if it contains `Call Trace` or `segfault`
+- Mention the reboot timeout variable in the release notes
+- Bump the default reboot timeout to 10 minutes
+- Allow change of the default reboot timeout via environment variable
+- Introduce essential requirements
+- Allow `--update-missing` to change the default `how` value
+- Document the new `become` feature
+- Raise an error when loading pre-1.24 `tests.yaml`
+- Support terminating process running test via its test invocation (#2589)
+- Fix `egrep` warning in `/plans/install/docs`
+- Test framework may provide additional test requirements
+- Improve logging of AVC check plugin and its test
+- Cleanup logging in `tmt.utils.create_file()`
+- Drop connection closed messages from test output
+- Recommend `qemu-kvm-core` for `provision-virtual`
+- Fix `/tests/plan/import` to not use special ref (#2627)
+- Improve imported plan modification test to verify the order as well (#2618)
+- Retry the `git clone` action multiple times
+- Simplify the debuginfo installation test
+- Support `virtualization.is-virtualized` in `mrack` plugin
+- Support running all or selected steps `--again`
+- Allow hardware requirements limit acceptable operators
+- Fix inheritance of some keys in provision step data
+- Run a callback when command process starts
+- Add support for hard reboot to Beaker provision plugin
+- Make collected requires/recommends guest-aware
+- Copy top level `main.fmf` during testdir pruning
+- Add support for Artemis API v0.0.67
+- Add support for `cpu.flag` hardware requirement
+- Use a different pidfile location for the full test
+- Clear test invocation data path use and derived paths
+- Add support for disallowing plugins via command line
+- Use constraint classes specific for particular value type
+- Making rhts metric value optional.
+- Ignore tarballs and generated man page
+- Cover `tmt.libraries` with `pyright` checks
+- Parallelize the `provision` step
+- Let `click` know about the maximal output width
+- Cover `tmt.identifier` with `pyright` checks
+- Extend `duration` of `/tests/core/escaping` a bit
+- Move docs templates into their own directory
+- Drop no longer needed `tmt.utils.copytree()`
+- Drop no longer used `tmt.utils.listify()`
+- Provision plugins use `self.data` instead of `self.get()`
+- Prepare and finish plugins use self.data instead of self.get()
+- Fix tmt.utils.format to allow int and float values
+- Move code-related pages under new `code` directory
+- Warn on test case not found in Polarion during report
+- Bump pre-commit linters
+- When cloning a logger, give it its own copy of labels
+- Add a `Toolbelt Catalog` entry for `tmt`
+- Enable the `avc` check for all `tmt` tests
+- Fix dmesg check test on Fedora rawhide & newer
+
 * Fri Dec 08 2023 Petr Šplíchal <psplicha@redhat.com> - 1.30.0
 - Make `arch` field unsupported in the spec
 - Introduce `tty` test attribute to control terminal environment
