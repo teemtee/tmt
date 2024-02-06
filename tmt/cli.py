@@ -7,6 +7,7 @@ import enum
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 import click
@@ -44,8 +45,18 @@ if TYPE_CHECKING:
     R = TypeVar('R')
 
 
+#: A logger to use before the proper one can be established.
+#:
+#: .. warning::
+#:
+#:    This logger should be used with utmost care for logging while tmt
+#:    is still starting. Once properly configured logger is spawned,
+#:    honoring relevant options, this logger should not be used anymore.
+_BOOTSTRAP_LOGGER = tmt.log.Logger.get_bootstrap_logger()
+
+
 # Explore available plugins (need to detect all supported methods first)
-tmt.plugins.explore(tmt.log.Logger.get_bootstrap_logger())
+tmt.plugins.explore(_BOOTSTRAP_LOGGER)
 
 
 class TmtExitCode(enum.IntEnum):
@@ -216,6 +227,26 @@ class CustomGroup(click.Group):
             return click.Group.get_command(self, context, matches[0])
         context.fail(f"Did you mean {fmf.utils.listed(sorted(matches), join='or')}?")
         return None
+
+
+class HelpFormatter(click.HelpFormatter):
+    """ Custom help formatter capable of rendering ReST syntax """
+
+    # Override parent implementation
+    def write_dl(
+            self,
+            rows: Sequence[tuple[str, str]],
+            col_max: int = 30,
+            col_spacing: int = 2) -> None:
+        rows = [
+            (option, tmt.utils.render_rst(help, _BOOTSTRAP_LOGGER))
+            for option, help in rows
+            ]
+
+        super().write_dl(rows, col_max=col_max, col_spacing=col_spacing)
+
+
+click.Context.formatter_class = HelpFormatter
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

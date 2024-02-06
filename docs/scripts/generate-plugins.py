@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
+import dataclasses
 import sys
 import textwrap
+from typing import Any
 
+import tmt.checks
 import tmt.log
 import tmt.plugins
+import tmt.steps
 import tmt.steps.discover
 import tmt.steps.execute
 import tmt.steps.finish
@@ -12,13 +16,113 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
 import tmt.utils
-from tmt.utils import Path, render_template_file
+from tmt.utils import ContainerClass, Path, render_template_file
 
 HELP = textwrap.dedent("""
 Usage: generate-plugins.py <STEP-NAME> <TEMPLATE-PATH> <OUTPUT-PATH>
 
 Generate pages for step plugins sources.
 """).strip()
+
+
+def _is_ignored(
+        container: ContainerClass,
+        field: dataclasses.Field[Any],
+        metadata: tmt.utils.FieldMetadata) -> bool:
+    """ Check whether a given field is to be ignored in documentation """
+
+    if field.name in ('how', '_OPTIONLESS_FIELDS'):
+        return True
+
+    if metadata.internal is True:
+        return True
+
+    if hasattr(container, '_OPTIONLESS_FIELDS') and field.name in container._OPTIONLESS_FIELDS:
+        return True
+
+    return False
+
+
+def _is_inherited(
+        container: ContainerClass,
+        field: dataclasses.Field[Any],
+        metadata: tmt.utils.FieldMetadata) -> bool:
+    """ Check whether a given field is inherited from step data base class """
+
+    # TODO: for now, it's a list, but inspecting the actual tree of classes
+    # would be more generic. It's good enough for now.
+    return field.name in ('name', 'where', 'order', 'summary', 'enabled')
+
+
+def container_ignored_fields(container: ContainerClass) -> list[str]:
+    """ Collect container field names that are never displayed """
+
+    field_names: list[str] = []
+
+    for field in tmt.utils.container_fields(container):
+        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+
+        if _is_ignored(container, field, metadata):
+            field_names.append(field.name)
+
+    return field_names
+
+
+def container_inherited_fields(container: ContainerClass) -> list[str]:
+    """ Collect container field names that are inherited from step data base class """
+
+    field_names: list[str] = []
+
+    for field in tmt.utils.container_fields(container):
+        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+
+        if _is_inherited(container, field, metadata):
+            field_names.append(field.name)
+
+    return field_names
+
+
+def container_intrinsic_fields(container: ContainerClass) -> list[str]:
+    """ Collect container fields specific for the given step data """
+
+    field_names: list[str] = []
+
+    for field in tmt.utils.container_fields(container):
+        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+
+        if _is_ignored(container, field, metadata):
+            continue
+
+        if _is_inherited(container, field, metadata):
+            continue
+
+        field_names.append(field.name)
+
+    return field_names
+
+
+def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
+    """ Create iterator over plugins of a given registry """
+
+    def plugin_iterator():
+        for plugin_id in registry.iter_plugin_ids():
+            plugin = registry.get_plugin(plugin_id).class_
+
+            yield plugin_id, plugin, plugin._data_class
+
+    return plugin_iterator
+
+
+def _create_test_check_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
+    """ Create iterator over plugins of a test check registry """
+
+    def plugin_iterator():
+        for plugin_id in registry.iter_plugin_ids():
+            plugin = registry.get_plugin(plugin_id)
+
+            yield plugin_id, plugin, plugin._check_class
+
+    return plugin_iterator
 
 
 def main() -> None:
@@ -39,22 +143,31 @@ def main() -> None:
     tmt.plugins.explore(logger)
 
     if step_name == 'discover':
-        registry = tmt.steps.discover.DiscoverPlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.discover.DiscoverPlugin._supported_methods)
 
     elif step_name == 'execute':
-        registry = tmt.steps.execute.ExecutePlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.execute.ExecutePlugin._supported_methods)
 
     elif step_name == 'finish':
-        registry = tmt.steps.finish.FinishPlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.finish.FinishPlugin._supported_methods)
 
     elif step_name == 'prepare':
-        registry = tmt.steps.prepare.PreparePlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.prepare.PreparePlugin._supported_methods)
 
     elif step_name == 'provision':
-        registry = tmt.steps.provision.ProvisionPlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.provision.ProvisionPlugin._supported_methods)
 
     elif step_name == 'report':
-        registry = tmt.steps.report.ReportPlugin._supported_methods
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.report.ReportPlugin._supported_methods)
+
+    elif step_name == 'test-checks':
+        plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
 
     else:
         raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
@@ -62,10 +175,14 @@ def main() -> None:
     # ... and render the template.
     output_filepath.write_text(render_template_file(
         template_filepath,
+        LOGGER=logger,
         STEP=step_name,
-        REGISTRY=registry,
+        PLUGINS=plugin_generator,
         container_fields=tmt.utils.container_fields,
-        container_field=tmt.utils.container_field))
+        container_field=tmt.utils.container_field,
+        container_ignored_fields=container_ignored_fields,
+        container_inherited_fields=container_inherited_fields,
+        container_intrinsic_fields=container_intrinsic_fields))
 
 
 if __name__ == '__main__':

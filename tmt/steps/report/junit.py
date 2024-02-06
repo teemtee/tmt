@@ -90,18 +90,18 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
     file: Optional[Path] = field(
         default=None,
         option='--file',
-        metavar='FILE',
-        help='Path to the file to store junit to.',
+        metavar='PATH',
+        help='Path to the file to store JUnit to.',
         normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
 
 
 @tmt.steps.provides_method('junit')
 class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     """
-    Write test results in JUnit format
+    Save test results in JUnit format.
 
-    When FILE is not specified output is written to the 'junit.xml'
-    located in the current workdir.
+    When ``file`` is not specified, output is written into a file
+    named ``junit.xml`` located in the current workdir.
     """
 
     _data_class = ReportJUnitData

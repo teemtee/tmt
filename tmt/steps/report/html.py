@@ -41,9 +41,11 @@ class ReportHtmlData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method('html')
 class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     """
-    Format test results into an html report
+    Format test results into an HTML report.
 
     Example config:
+
+    .. code-block:: yaml
 
         report:
             how: html

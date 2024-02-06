@@ -30,7 +30,7 @@ class ReportDisplayData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method('display')
 class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     """
-    Show test results on the terminal
+    Show test results on the terminal.
 
     Give a concise summary of test results directly on the terminal.
     List individual test results in verbose mode.

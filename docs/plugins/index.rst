@@ -1,7 +1,8 @@
 .. _plugins:
 
-Plugins
-=======
+======================
+    Plugins
+======================
 
 Here you will find documentation for plugins shipped with tmt.
 

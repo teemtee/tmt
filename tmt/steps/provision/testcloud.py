@@ -808,14 +808,18 @@ class GuestTestcloud(tmt.GuestSsh):
 @tmt.steps.provides_method('virtual.testcloud')
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
-    Local virtual machine using testcloud
+    Local virtual machine using ``testcloud`` library.
 
-    Minimal config which uses the latest fedora image:
+    Minimal config which uses the latest Fedora image:
+
+    .. code-block:: yaml
 
         provision:
             how: virtual
 
     Here's a full config example:
+
+    .. code-block:: yaml
 
         provision:
             how: virtual
@@ -823,33 +827,36 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             user: root
             memory: 2048
 
-    As the image use 'fedora' for the latest released Fedora compose,
-    'fedora-rawhide' for the latest Rawhide compose, short aliases such as
-    'fedora-32', 'f-32' or 'f32' for specific release or a full url to
-    the qcow2 image for example from:
+    As the image use ``fedora`` for the latest released Fedora compose,
+    ``fedora-rawhide`` for the latest Rawhide compose, short aliases such as
+    ``fedora-32``, ``f-32`` or ``f32`` for specific release or a full url to
+    the qcow2 image for example from https://kojipkgs.fedoraproject.org/compose/.
 
-        https://kojipkgs.fedoraproject.org/compose/
+    Short names are also provided for ``centos``, ``centos-stream``, ``alma``,
+    ``rocky``, ``oracle``, ``debian`` and ``ubuntu`` (e.g. ``centos-8`` or ``c8``).
 
-    Short names are also provided for 'centos', 'centos-stream', 'alma',
-    'rocky', 'oracle', 'debian' and 'ubuntu' (e.g. 'centos-8' or 'c8').
+    .. note::
 
-    Note that the non-rpm distros are not fully supported yet in tmt as
-    the package installation is performed solely using dnf/yum and rpm.
-    But you should be able the login to the provisioned guest and start
-    experimenting. Full support is coming in the future :)
+        The non-rpm distros are not fully supported yet in tmt as
+        the package installation is performed solely using ``dnf``/``yum``
+        and ``rpm``.
+        But you should be able the login to the provisioned guest and start
+        experimenting. Full support is coming in the future :)
 
     Supported Fedora CoreOS images are:
 
-        fedora-coreos
-        fedora-coreos-stable
-        fedora-coreos-testing
-        fedora-coreos-next
+    * ``fedora-coreos``
+    * ``fedora-coreos-stable``
+    * ``fedora-coreos-testing``
+    * ``fedora-coreos-next``
 
     Use the full path for images stored on local disk, for example:
 
+    .. code-block:: shell
+
         /var/tmp/images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2
 
-    In addition to the qcow2 format, vagrant boxes can be used as well,
+    In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
     """
 

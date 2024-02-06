@@ -177,19 +177,19 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
 @tmt.steps.provides_method('fmf')
 class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
-    Discover available tests from fmf metadata
+    Discover available tests from fmf metadata.
 
     By default all available tests from the current repository are used
     so the minimal configuration looks like this:
 
-    .. code-block::
+    .. code-block:: yaml
 
         discover:
             how: fmf
 
     Full config example:
 
-    .. code-block::
+    .. code-block:: yaml
 
         discover:
             how: fmf
@@ -199,14 +199,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             test: /tests/basic
             filter: 'tier: 1'
 
-    If no 'ref' is provided, the default branch from the origin is used.
+    If no ``ref`` is provided, the default branch from the origin is used.
 
     For DistGit repo one can extract source tarball first and discover
-    tests from it by using 'distgit-source: true'. It can be used
-    together with 'ref', 'path' and 'url', However 'ref' is not possible
-    without using 'url'.
+    tests from it by using ``distgit-source: true``. It can be used
+    together with ``ref``, ``path`` and ``url``, however ``ref`` is not possible
+    without using ``url``.
 
-    .. code-block::
+    .. code-block:: yaml
 
         discover:
             how: fmf
@@ -214,21 +214,21 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     Related config options (all optional):
 
-    * dist-git-merge - set to True if you want to copy in extracted
+    * ``dist-git-merge`` - set to ``true`` if you want to copy in extracted
       sources to the local repo
-    * dist-git-init - set to True and 'fmf init' will be called inside
-      extracted sources (at dist-git-extract or top directory)
-    * dist-git-extract - directory (glob supported) to copy from
-      extracted sources (defaults to inner fmf-root)
-    * dist-git-remove-fmf-root - set to True to remove fmf root from
+    * ``dist-git-init`` - set to ``true`` and ``fmf init`` will be called inside
+      extracted sources (at ``dist-git-extract`` or top directory)
+    * ``dist-git-extract`` - directory (glob supported) to copy from
+      extracted sources (defaults to inner fmf root)
+    * ``dist-git-remove-fmf-root`` - set to ``true`` to remove fmf root from
       extracted sources
 
-    Selecting tests containing specified link is possible using 'link'
-    option accepting RELATION:TARGET format of values. Regular
+    Selecting tests containing specified link is possible using ``link``
+    key accepting ``RELATION:TARGET`` format of values. Regular
     expressions are supported for both relation and target part of the
     value. Relation can be omitted to target match any relation.
 
-    .. code-block::
+    .. code-block:: yaml
 
         discover:
             how: fmf
@@ -240,13 +240,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     Related config options (all optional):
 
-    * modified-only - set to True if you want to filter modified tests
-    * modified-url - fetched as "reference" remote in the test dir
-    * modified-ref - the ref to compare against
+    * ``modified-only`` - set to ``true`` if you want to filter modified tests
+    * ``modified-url`` - fetched as "reference" remote in the test dir
+    * ``modified-ref`` - the ref to compare against
 
-    Example to compare local repo against upstream 'main' branch:
+    Example to compare local repo against upstream ``main`` branch:
 
-    .. code-block::
+    .. code-block:: yaml
 
         discover:
             how: fmf
@@ -255,7 +255,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             modified-ref: reference/main
 
     Note that internally the modified tests are appended to the list
-    specified via 'test', so those tests will also be selected even if
+    specified via ``test``, so those tests will also be selected even if
     not modified.
     """
 

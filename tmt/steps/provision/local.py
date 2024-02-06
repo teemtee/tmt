@@ -137,20 +137,24 @@ class GuestLocal(tmt.Guest):
 @tmt.steps.provides_method('local')
 class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     """
-    Use local host for test execution
+    Use local host for test execution.
 
-    In general it is not recommended to run tests on your local machine
-    as there might be security risks. Run only those tests which you
-    know are safe so that you don't destroy your laptop ;-)
+    .. warning::
+
+        In general it is not recommended to run tests on your local machine
+        as there might be security risks. Run only those tests which you
+        know are safe so that you don't destroy your laptop ;-)
 
     Example config:
+
+    .. code-block:: yaml
 
         provision:
             how: local
 
-    Note that 'tmt run' is expected to be executed under a regular user.
+    Note that ``tmt run`` is expected to be executed under a regular user.
     If there are admin rights required (for example in the prepare step)
-    you might be asked for a sudo password.
+    you might be asked for a ``sudo`` password.
     """
 
     _data_class = ProvisionLocalData

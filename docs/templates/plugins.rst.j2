@@ -2,17 +2,15 @@
 
 .. _/plugins/{{ STEP }}:
 
-{{ STEP | capitalize }} Plugins
-{{ '=' * (8 + (STEP | length)) }}
+{{ STEP | replace('-', ' ') | capitalize }} Plugins
+{{ '~' * (8 + (STEP | length)) }}
 
-{% for PLUGIN_ID in REGISTRY.iter_plugin_ids() %}
-    {% set method = REGISTRY.get_plugin(PLUGIN_ID) %}
-    {% set PLUGIN = method.class_ %}
+{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
 .. _plugins/{{ STEP }}/{{ PLUGIN_ID | strip }}:
 
 {{ PLUGIN_ID }}
-{{ '^' * (PLUGIN_ID | length)}}
+{{ '-' * (PLUGIN_ID | length)}}
 
 {#
     TODO: once we start getting reviewed and polished plugins, drop the warning
@@ -30,31 +28,58 @@
 {{ PLUGIN.__doc__ | dedent | strip }}
 {% endif %}
 
-**Configuration**
+Configuration
+^^^^^^^^^^^^^
 
-{% for field in container_fields(PLUGIN._data_class) %}
-    {% if (
-        field.name not in ('how', 'name', 'where', '_OPTIONLESS_FIELDS')
-        and field.internal != true
-        and (
-            not PLUGIN._data_class._OPTIONLESS_FIELDS
-            or field.name not in PLUGIN._data_class._OPTIONLESS_FIELDS
-        )
-     ) %}
-        {% set _, option, _, metadata = container_field(PLUGIN._data_class, field.name) %}
+{% macro render_field(field_name) %}
+    {% set _, option, _, metadata = container_field(PLUGIN_DATA_CLASS, field_name) %}
 
-        {% if metadata.metavar %}
+    {% if metadata.metavar %}
 {{ option }}: ``{{ metadata.metavar }}``
-        {% elif metadata.default is boolean %}
+    {% elif metadata.default is boolean %}
 {{ option }}: ``true|false``
-        {% else %}
+    {% else %}
 {{ option }}:
-        {% endif %}
-        {% if metadata.help %}
+    {% endif %}
+    {% if metadata.help %}
 {{ metadata.help | strip | indent(4, first=true) }}
+    {% endif %}
+    {% if metadata.has_default %}
+        {% set actual_default = metadata.materialized_default %}
+
+        {% if actual_default is sequence and not actual_default %}
+    Default: *not set*
+        {% elif actual_default is boolean %}
+    Default: ``{{ actual_default | string | lower }}``
+        {% elif actual_default is string %}
+    Default: ``{{ actual_default }}``
+        {% elif actual_default is integer %}
+    Default: ``{{ actual_default }}``
+        {% elif actual_default is none %}
+    Default: *not set*
+        {% else %}
+            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, PLUGIN_ID, field_name, actual_default)) %}
+    Default: *could not render default value correctly*
         {% endif %}
     {% endif %}
+{%endmacro %}
+
+{% set ignored_fields = container_ignored_fields(PLUGIN_DATA_CLASS) %}
+{% set inherited_fields = container_inherited_fields(PLUGIN_DATA_CLASS) | sort %}
+{% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
+
+{% for field_name in intrinsic_fields %}
+{{ render_field(field_name) }}
 {% endfor %}
+
+{% if inherited_fields %}
+Common Keys
+"""""""""""
+
+{% for field_name in inherited_fields %}
+{{ render_field(field_name) }}
+{% endfor %}
+{% endif %}
 
 {% if not loop.last %}
 ----

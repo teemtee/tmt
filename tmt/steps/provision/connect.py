@@ -132,9 +132,11 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 @tmt.steps.provides_method('connect')
 class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]):
     """
-    Connect to a provisioned guest using ssh
+    Connect to a provisioned guest using SSH.
 
     Private key authentication:
+
+    .. code-block:: yaml
 
         provision:
             how: connect
@@ -144,14 +146,18 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
 
     Password authentication:
 
+    .. code-block:: yaml
+
         provision:
             how: connect
             guest: host.example.org
             user: root
             password: secret
 
-    User defaults to 'root', so if you have private key correctly set
+    User defaults to ``root``, so if you have private key correctly set
     the minimal configuration can look like this:
+
+    .. code-block:: yaml
 
         provision:
             how: connect

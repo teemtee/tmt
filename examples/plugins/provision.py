@@ -14,10 +14,14 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
 
     Minimal configuration using the latest nothing image:
 
+    .. code-block:: yaml
+
         provision:
             how: example
 
     Full configuration example:
+
+    .. code-block:: yaml
 
         provision:
             how: example

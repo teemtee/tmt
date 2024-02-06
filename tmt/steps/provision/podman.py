@@ -405,18 +405,20 @@ class GuestContainer(tmt.Guest):
 @tmt.steps.provides_method('container')
 class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     """
-    Create a new container using podman
+    Create a new container using ``podman``.
 
     Example config:
+
+    .. code-block:: yaml
 
         provision:
             how: container
             image: fedora:latest
 
-    In order to always pull the fresh container image use 'pull: true'.
+    In order to always pull the fresh container image use ``pull: true``.
 
-    In order to run the container with different user as the default 'root',
-    use 'user: USER'.
+    In order to run the container with different user as the default ``root``,
+    use ``user: USER``.
     """
 
     _data_class = ProvisionPodmanData

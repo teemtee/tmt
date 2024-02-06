@@ -199,7 +199,7 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
 @tmt.steps.provides_method('shell')
 class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     """
-    Use provided list of shell script tests
+    Use provided list of shell script tests.
 
     List of test cases to be executed can be defined manually directly
     in the plan as a list of dictionaries containing test name, actual
@@ -210,16 +210,16 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         discover:
             how: shell
             tests:
-            - name: /help/main
-              test: tmt --help
-            - name: /help/test
-              test: tmt test --help
-            - name: /help/smoke
-              test: ./smoke.sh
-              path: /tests/shell
+              - name: /help/main
+                test: tmt --help
+              - name: /help/test
+                test: tmt test --help
+              - name: /help/smoke
+                test: ./smoke.sh
+                path: /tests/shell
 
     For DistGit repo one can download sources and use their code.
-    They are available in TMT_SOURCE_DIR however no patches are applied.
+    They are available in ``$TMT_SOURCE_DIR`` however no patches are applied.
     By default tarballs are extracted which can be disabled.
 
     .. code-block:: yaml
@@ -228,11 +228,11 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             how: shell
             dist-git-source: true
             tests:
-            - name: /upstream
-              test: cd $TMT_SOURCE_DIR/*/tests && make test
+              - name: /upstream
+                test: cd $TMT_SOURCE_DIR/*/tests && make test
 
-    To clone a remote repository and use it as a source specify `url`.
-    It accepts also `ref` to checkout provided reference. Dynamic
+    To clone a remote repository and use it as a source specify ``url``.
+    It accepts also ``ref`` to checkout provided reference. Dynamic
     reference feature is supported as well.
 
     .. code-block:: yaml
@@ -242,8 +242,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             url: https://github.com/teemtee/tmt.git
             ref: "1.18.0"
             tests:
-            - name: first test
-              test: ./script-from-the-repo.sh
+              - name: first test
+                test: ./script-from-the-repo.sh
     """
 
     _data_class = DiscoverShellData

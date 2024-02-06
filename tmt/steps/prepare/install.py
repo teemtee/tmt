@@ -522,7 +522,7 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('install')
 class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     """
-    Install packages on the guest
+    Install packages on the guest.
 
     Example config:
 
@@ -534,9 +534,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             package: tmt-all
             missing: fail
 
-    Use 'copr' for enabling desired copr repository and 'missing' to
-    choose if missing packages should be silently ignored (skip) or a
-    preparation error should be reported (fail), which is the default.
+    Use ``copr`` for enabling desired Copr repository and ``missing`` to choose
+    whether missing packages should be silently ignored (``skip``) or a
+    preparation error should be reported (``fail``), which is the default.
 
     In addition to package name you can also use one or more paths to
     local rpm files to be installed:
@@ -549,8 +549,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 - tmp/RPMS/noarch/tmt-0.15-1.fc31.noarch.rpm
                 - tmp/RPMS/noarch/python3-tmt-0.15-1.fc31.noarch.rpm
 
-    Use 'directory' to install all packages from given folder and
-    'exclude' to skip selected packages:
+    Use ``directory`` to install all packages from given folder and
+    ``exclude`` to skip selected packages:
 
     .. code-block:: yaml
 
@@ -559,17 +559,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             directory: tmp/RPMS/noarch
             exclude: tmt+provision-virtual
 
-    Use 'order' attribute to select in which order preparation should
-    happen if there are multiple configs. Default order is '50'.
-    Default order of required packages installation is '70'.
+    .. note::
 
-    Note: When testing ostree booted deployments tmt will use
-    `rpm-ostree` as the package manager to perform the installation of
-    requested packages. The current limitations of the rpm-ostree
-    implementation are:
+        When testing ostree booted deployments tmt will use
+        ``rpm-ostree`` as the package manager to perform the installation of
+        requested packages. The current limitations of the ``rpm-ostree``
+        implementation are:
 
-    * Cannot install new version of already installed local rpm.
-    * No support for installing debuginfo packages at this time.
+        * Cannot install new version of already installed local rpm.
+        * No support for installing debuginfo packages at this time.
     """
 
     _data_class = PrepareInstallData

@@ -84,8 +84,8 @@ plugins/provision.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(T
 plugins/report.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/report/*.py
 	$(SCRIPTSDIR)/generate-plugins.py report $(PLUGINS_TEMPLATE) $@
 
-plugins/test-checks.rst: $(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $(TMTDIR)/checks/*.py
-	$(SCRIPTSDIR)/generate-test-checks.py $(TEMPLATESDIR)/test-checks.rst.j2 $@
+plugins/test-checks.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/checks/*.py
+	$(SCRIPTSDIR)/generate-plugins.py test-checks $(PLUGINS_TEMPLATE) $@
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
