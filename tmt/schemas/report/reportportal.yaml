@@ -34,6 +34,27 @@ properties:
   launch:
     type: string
 
+  launch-description:
+    type: string
+
+  launch-per-plan:
+    type: boolean
+
+  suite-per-plan:
+    type: boolean
+
+  upload-to-launch:
+    type: string
+
+  upload-to-suite:
+    type: string
+
+  launch-rerun:
+    type: boolean
+
+  defect_type:
+    type: string
+
   exclude-variables:
     type: string
 
