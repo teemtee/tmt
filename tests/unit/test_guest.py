@@ -13,12 +13,12 @@ def test_multihost_name(root_logger: Logger) -> None:
     assert Guest(
         logger=root_logger,
         name='foo',
-        data=GuestData(guest='bar')).multihost_name == 'foo'
+        data=GuestData(primary_address='bar')).multihost_name == 'foo'
 
     assert Guest(
         logger=root_logger,
         name='foo',
-        data=GuestData(guest='bar', role='client')).multihost_name == 'foo (client)'
+        data=GuestData(primary_address='bar', role='client')).multihost_name == 'foo (client)'
 
 
 @pytest.mark.parametrize(('stdout', 'expected'), [
@@ -57,7 +57,7 @@ def test_execute_no_connection_closed(
     guest = GuestSsh(
         logger=root_logger,
         name='foo',
-        data=GuestSshData(guest='bar')
+        data=GuestSshData(primary_address='bar')
         )
 
     monkeypatch.setattr(
