@@ -49,7 +49,8 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'disk.size',
     'hostname',
     'memory',
-    'virtualization.is_virtualized'
+    'virtualization.is_virtualized',
+    'boot.method'
     ]
 
 
@@ -139,6 +140,20 @@ class MrackHWBinOp(MrackHWElement):
         super().__init__(name)
 
         self.attributes = {
+            '_op': operator,
+            '_value': value
+            }
+
+
+@dataclasses.dataclass(init=False)
+class MrackHWKV(MrackHWElement):
+    """ An key-value element """
+
+    def __init__(self, name: str, operator: str, value: str) -> None:
+        super().__init__('key_value')
+
+        self.attributes = {
+            '_key': name,
             '_op': operator,
             '_value': value
             }
@@ -292,6 +307,24 @@ def constraint_to_beaker_filter(
                 return MrackHWGroup(
                     'system',
                     children=[MrackHWBinOp('hypervisor', '==', '')])
+
+    if name == 'boot':
+        beaker_operator, actual_value, _ = operator_to_beaker_op(
+            constraint.operator,
+            str(constraint.value))
+        if child_name == 'method':
+
+            beaker_operator, actual_value, _ = operator_to_beaker_op(
+                constraint.operator,
+                constraint.value)
+            if actual_value == 'uefi' and beaker_operator == '!=':
+                actual_value = 'bios'
+                beaker_operator = '=='
+            if actual_value == 'bios':
+                return MrackHWKV('NETBOOT_METHOD', beaker_operator, 'pxe')
+            if actual_value == 'uefi':
+                return MrackHWKV('NETBOOT_METHOD', 'like', '%grub%')
+            raise ProvisionError('boot.method should be one of uefi/bios')
 
     # Unsupported constraint has been already logged via report_support(). Make
     # sure user is aware it would have no effect, and since we have to return
