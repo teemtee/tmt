@@ -3238,7 +3238,7 @@ class Run(tmt.utils.Common):
 
         return tmt.steps.provision.local.GuestLocal(
             data=tmt.steps.provision.GuestData(
-                guest='localhost',
+                primary_address='localhost',
                 role=None),
             name='tmt runner',
             logger=self._logger)

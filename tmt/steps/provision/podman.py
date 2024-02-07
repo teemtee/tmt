@@ -184,8 +184,9 @@ class GuestContainer(tmt.Guest):
         # Mount the whole plan directory in the container
         workdir = self.parent.plan.workdir
 
-        self.container = self.guest = self._tmt_name()
-        self.verbose('name', self.container, 'green')
+        self.container = self.primary_address = self.topology_address = self._tmt_name()
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
 
         additional_args = []
 

@@ -234,7 +234,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             if param:
                 properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
         if use_facts:
-            properties['polarion-custom-hostname'] = self.step.plan.provision.guests()[0].guest
+            properties['polarion-custom-hostname'] = \
+                self.step.plan.provision.guests()[0].primary_address
             properties['polarion-custom-arch'] = self.step.plan.provision.guests()[0].facts.arch
         if template:
             properties['polarion-testrun-template-id'] = template

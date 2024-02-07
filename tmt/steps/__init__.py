@@ -1911,7 +1911,7 @@ class GuestTopology(SerializableContainer):
     def __init__(self, guest: 'Guest') -> None:
         self.name = guest.name
         self.role = guest.role
-        self.hostname = guest.guest
+        self.hostname = guest.topology_address
 
 
 @dataclasses.dataclass(init=False)
