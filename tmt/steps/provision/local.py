@@ -189,7 +189,7 @@ class GuestLocal(tmt.Guest):
         Fetch and return content of a log.
 
         :param log_name: name of the log.
-        :returns: content of the log, or None if the log cannot be retrieved.
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         if log_name == 'dmesg':
             return self.execute(Command('dmesg')).stdout

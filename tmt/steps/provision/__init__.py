@@ -1713,7 +1713,7 @@ class Guest(tmt.utils.Common):
         Fetch and return content of a log.
 
         :param log_name: name of the log.
-        :returns: content of the log, or None if the log cannot be retrieved.
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         raise NotImplementedError
 
@@ -1725,7 +1725,7 @@ class Guest(tmt.utils.Common):
         """
         Save log content to a file.
 
-        :param log_path: a path to save into,could be a directory
+        :param log_path: a path to save into, could be a directory
             or a file path.
         :param log_content: content of the log.
         :param log_name: name of the log, if not set, log_path
@@ -1735,11 +1735,11 @@ class Guest(tmt.utils.Common):
         if not log_path.is_dir():
             log_path.write_text(log_content)
         # log_path is a directory
+        elif log_name:
+            (log_path / log_name).write_text(log_content)
         else:
-            if log_name:
-                (log_path / log_name).write_text(log_content)
-            else:
-                raise tmt.utils.GeneralError('log_name is None.')
+            raise tmt.utils.GeneralError(
+                'Log path is a directory but log name is not defined.')
 
     def handle_guest_logs(self,
                           log_path: Optional[Path] = None,
@@ -1747,10 +1747,10 @@ class Guest(tmt.utils.Common):
         """
         Get log content and save it to a directory.
 
-        :param log_path: a directory to save into.If not set,self.workdir
-            or Path.cwd() will be used.
-        :param log_names: name list of logs need to be handled.If not set,
-            self.log_names will be used.
+        :param log_path: a directory to save into. If not set, step's working directory
+            (:py:attr:`workdir`) or current working directory will be used.
+        :param log_names: name list of logs need to be handled. If not set, all guest logs
+            would be collected, as reported by :py:attr:`log_names`.
         """
         log_names = log_names or self.log_names
         log_path = log_path or self.workdir or Path.cwd()
