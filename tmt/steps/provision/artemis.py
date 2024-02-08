@@ -265,8 +265,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     post_install_script: Optional[str] = field(
         default=None,
         option='--post-install-script',
-        metavar='SCRIPT',
-        help='If set, this script will be executed on the guest after provisioning.')
+        metavar='SCRIPT|URL',
+        help='If set, the script provided or fetched will be executed.')
 
 
 @dataclasses.dataclass
@@ -555,11 +555,11 @@ class GuestArtemis(tmt.GuestSsh):
 
                     if not response.ok:
                         raise ArtemisProvisionError(
-                            "Failed to get the post_install_script file")
+                            "Failed to download the post-install script")
 
                 except requests.RequestException as exc:
                     raise ArtemisProvisionError(
-                        "Failed to get the post_install_script file") from exc
+                        "Failed to download the post-install script") from exc
 
                 post_install_script = response.text
             else:
