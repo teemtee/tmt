@@ -162,24 +162,6 @@ class Prepare(tmt.steps.Step):
             self.preparations_applied, 'preparation')
         self.info('summary', f'{preparations} applied', 'green', shift=1)
 
-    def _prepare_roles(self) -> collections.defaultdict[str, list[str]]:
-        """ Create a mapping of roles to guest names """
-        role_mapping = collections.defaultdict(list)
-        for guest in self.plan.provision.guests():
-            if guest.role:
-                role_mapping[guest.role].append(guest.name)
-        return role_mapping
-
-    def _prepare_hosts(self) -> dict[str, str]:
-        """ Create a mapping of guest names to IP addresses """
-        host_mapping = {}
-        for guest in self.plan.provision.guests():
-            if hasattr(guest, 'guest') and guest.guest:
-                # FIXME: guest.guest may not be simply an IP address but also
-                #        a host name.
-                host_mapping[guest.name] = guest.guest
-        return host_mapping
-
     def go(self, force: bool = False) -> None:
         """ Prepare the guests """
         super().go(force=force)
