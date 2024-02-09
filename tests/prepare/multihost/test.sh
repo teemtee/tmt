@@ -4,6 +4,9 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd data"
+
+        rlRun "export TMT_BOOT_TIMEOUT=300"
+        rlRun "export TMT_CONNECT_TIMEOUT=300"
     rlPhaseEnd
 
     for method in ${PROVISION_METHODS:-container}; do

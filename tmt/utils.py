@@ -128,6 +128,47 @@ class Path(pathlib.PosixPath):
         return self
 
 
+def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
+    """
+    Deduce the actual value of a global constant which may be left unset.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+
+    if envvar not in os.environ:
+        return default
+
+    try:
+        return int(os.environ[envvar])
+
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(
+            f"Could not parse '{envvar}={os.environ[envvar]}' as integer.") from exc
+
+
+def configure_constant(default: int, envvar: str) -> int:
+    """
+    Deduce the actual value of global constant.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+
+    try:
+        return int(os.environ.get(envvar, default))
+
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(
+            f"Could not parse '{envvar}={os.environ[envvar]}' as integer.") from exc
+
+
 log = fmf.utils.Logging('tmt').logger
 
 
@@ -137,19 +178,15 @@ WORKDIR_MAX = 1000
 
 # Maximum number of lines of stdout/stderr to show upon errors
 OUTPUT_LINES = 100
-# Default & actual output width
+
+#: How wide should the output be at maximum.
+#: This is the default value tmt would use unless told otherwise.
 DEFAULT_OUTPUT_WIDTH: int = 79
 
-if 'TMT_OUTPUT_WIDTH' not in os.environ:
-    OUTPUT_WIDTH: int = DEFAULT_OUTPUT_WIDTH
-
-else:
-    try:
-        OUTPUT_WIDTH = int(os.environ['TMT_OUTPUT_WIDTH'])
-
-    except ValueError as exc:
-        # Cannot raise our GeneralError, it has not been defined yet...
-        raise Exception(f"Could not parse '{os.environ['TMT_OUTPUT_WIDTH']}' as integer.") from exc
+#: How wide should the output be at maximum.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_OUTPUT_WIDTH``.
+OUTPUT_WIDTH: int = configure_constant(DEFAULT_OUTPUT_WIDTH, 'TMT_OUTPUT_WIDTH')
 
 # Hierarchy indent
 INDENT = 4
@@ -200,8 +237,15 @@ DEFAULT_WAIT_TICK: float = 30.0
 DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 
 # Defaults for GIT attempts and interval
+DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
+GIT_CLONE_TIMEOUT: Optional[int] = configure_optional_constant(
+    DEFAULT_GIT_CLONE_TIMEOUT, 'TMT_GIT_CLONE_TIMEOUT')
+
 DEFAULT_GIT_CLONE_ATTEMPTS: int = 3
+GIT_CLONE_ATTEMPTS: int = configure_constant(DEFAULT_GIT_CLONE_ATTEMPTS, 'TMT_GIT_CLONE_ATTEMPTS')
+
 DEFAULT_GIT_CLONE_INTERVAL: int = 10
+GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GIT_CLONE_INTERVAL')
 
 # A stand-in variable for generic use.
 T = TypeVar('T')
@@ -5062,16 +5106,6 @@ def git_clone(
     :returns: Command output, bundled in a :py:class:`CommandOutput` tuple.
     """
 
-    def get_env(env: str, default_value: Optional[int]) -> Optional[int]:
-        """ Check environment variable, convert to integer """
-        value = os.getenv(env, None)
-        if value is None:
-            return default_value
-        try:
-            return int(value)
-        except ValueError:
-            raise GeneralError(f"Invalid '{env}' value, should be 'int', got '{value}'.")
-
     def clone_the_repo(
             url: str,
             destination: Path,
@@ -5084,9 +5118,9 @@ def git_clone(
         return Command('git', 'clone', *depth, url, destination).run(
             cwd=Path('/'), env=env, timeout=timeout, logger=logger)
 
-    timeout = timeout or get_env('TMT_GIT_CLONE_TIMEOUT', None)
-    attempts = attempts or cast(int, get_env('TMT_GIT_CLONE_ATTEMPTS', DEFAULT_GIT_CLONE_ATTEMPTS))
-    interval = interval or cast(int, get_env('TMT_GIT_CLONE_INTERVAL', DEFAULT_GIT_CLONE_INTERVAL))
+    timeout = timeout or GIT_CLONE_TIMEOUT
+    attempts = attempts or GIT_CLONE_ATTEMPTS
+    interval = interval or GIT_CLONE_INTERVAL
 
     # Update url only once
     if can_change:

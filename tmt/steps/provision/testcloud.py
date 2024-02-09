@@ -24,6 +24,7 @@ from tmt.utils import (
     Path,
     ProvisionError,
     ShellScript,
+    configure_constant,
     field,
     retry_session,
     )
@@ -149,8 +150,24 @@ systemd:
 """
 
 # VM defaults
-DEFAULT_BOOT_TIMEOUT = 120     # seconds
-DEFAULT_CONNECT_TIMEOUT = 120  # seconds
+#: How many seconds to wait for a VM to start.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_BOOT_TIMEOUT: int = 2 * 60
+
+#: How many seconds to wait for a VM to start.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_BOOT_TIMEOUT``.
+BOOT_TIMEOUT: int = configure_constant(DEFAULT_BOOT_TIMEOUT, 'TMT_BOOT_TIMEOUT')
+
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_CONNECT_TIMEOUT = 2 * 60
+
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_CONNECT_TIMEOUT``.
+CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
+
 NON_KVM_ADDITIONAL_WAIT = 20   # seconds
 NON_KVM_TIMEOUT_COEF = 10      # times
 
@@ -378,11 +395,11 @@ class GuestTestcloud(tmt.GuestSsh):
         try:
             return tmt.utils.wait(
                 self, try_get_url, datetime.timedelta(
-                    seconds=DEFAULT_CONNECT_TIMEOUT), tick=1)
+                    seconds=CONNECT_TIMEOUT), tick=1)
 
         except tmt.utils.WaitingTimedOutError:
             raise ProvisionError(
-                f'Failed to {message} in {DEFAULT_CONNECT_TIMEOUT}s.')
+                f'Failed to {message} in {CONNECT_TIMEOUT}s.')
 
     def _guess_image_url(self, name: str) -> str:
         """ Guess image url for given name """
@@ -737,7 +754,7 @@ class GuestTestcloud(tmt.GuestSsh):
         try:
             self._instance.prepare()
             self._instance.spawn_vm()
-            self._instance.start(DEFAULT_BOOT_TIMEOUT * time_coeff)
+            self._instance.start(BOOT_TIMEOUT * time_coeff)
         except (testcloud.exceptions.TestcloudInstanceError,
                 libvirt.libvirtError) as error:
             raise ProvisionError(
@@ -750,11 +767,11 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Wait a bit until the box is up
         if not self.reconnect(
-                timeout=DEFAULT_CONNECT_TIMEOUT *
+                timeout=CONNECT_TIMEOUT *
                 time_coeff,
                 tick=1):
             raise ProvisionError(
-                f"Failed to connect in {DEFAULT_CONNECT_TIMEOUT * time_coeff}s.")
+                f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
 
         if not self._instance.kvm:
             self.debug(

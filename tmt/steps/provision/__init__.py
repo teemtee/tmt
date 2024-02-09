@@ -47,6 +47,7 @@ from tmt.utils import (
     SerializableContainer,
     ShellScript,
     cached_property,
+    configure_constant,
     field,
     key_to_option,
     )
@@ -63,14 +64,7 @@ DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the effective value, combining the default and optional envvar,
 #: ``TMT_REBOOT_TIMEOUT``.
-REBOOT_TIMEOUT: int
-
-try:
-    REBOOT_TIMEOUT = int(os.environ.get('TMT_REBOOT_TIMEOUT', DEFAULT_REBOOT_TIMEOUT))
-
-except ValueError as exc:
-    raise tmt.utils.GeneralError(
-        f"Could not parse '{os.environ['TMT_REBOOT_TIMEOUT']}' as integer.") from exc
+REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIMEOUT')
 
 # When waiting for guest to recover from reboot, try re-connecting every
 # this many seconds.

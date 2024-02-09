@@ -432,6 +432,19 @@ TMT_GIT_CLONE_TIMEOUT
     Overall maximum time in seconds to clone a git repository. By
     default, the limit is not set.
 
+TMT_BOOT_TIMEOUT
+    How many seconds to wait for a guest to boot. Applies to provision
+    plugins that control the guest creation, e.g. ``virtual``. By
+    default, it is 2 minutes.
+
+    .. versionadded:: 1.32
+
+TMT_CONNECT_TIMEOUT
+    How many seconds to wait for a connection to succeed after guest
+    boot. By default, it is 2 minutes.
+
+    .. versionadded:: 1.32
+
 TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
