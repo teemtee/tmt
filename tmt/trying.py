@@ -64,7 +64,7 @@ class Action(enum.Enum):
         index = self.action.index(self.key)
 
         before = click.style(self.action[0:index], fg="bright_blue")
-        key = click.style(self.key, fg="blue", bold=True)
+        key = click.style(self.key, fg="blue", bold=True, underline=True)
         after = click.style(self.action[index + 1:], fg="bright_blue")
 
         longest = max(len(action.name) for action in Action)
