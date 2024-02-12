@@ -1,9 +1,10 @@
 #!/bin/bash
 TESTARGS=${TESTARGS:-"fail"}
 REPORT=${REPORT:-"restraint"}
-
+OUTPUTFILE="/tmp/output"
 function report_result {
 	if [ $REPORT == "rhts" ]; then
+            touch $OUTPUTFILE
 	    rhts-report-result "$1" "$2" "$OUTPUTFILE" "$3"
 	else
 	    rstrnt-report-result "$1" "$2" "$3"
