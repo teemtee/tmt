@@ -1,0 +1,46 @@
+summary: To verify custom reporting using rstrnt-report-result script.
+description:
+    Ensures that custom reporting of tests utilising the
+    rstrnt-report-result script is handled correctly.
+
+/custom_rstrnt_fail:
+    test: |
+        touch /tmp/pass_log ; rstrnt-report-result /test/good PASS -o /tmp/pass_log
+        rstrnt-report-result /test/weird WARN
+        rstrnt-report-result /test/bad FAIL
+    result: custom
+
+/custom_rstrnt_pass:
+    test: |
+        touch /tmp/pass_log ; rstrnt-report-result /test/good_1 PASS -o /tmp/pass_log
+        rstrnt-report-result /test/good_2 PASS
+        rstrnt-report-result /test/good_3 PASS
+    result: custom
+
+/custom_rstrnt_skip:
+    test: |
+        touch /tmp/skip_log ; rstrnt-report-result /test/skip_1 SKIP -o /tmp/skip_log
+        rstrnt-report-result /test/skip_2 SKIP
+        rstrnt-report-result /test/skip_3 SKIP
+    result: custom
+
+/custom_rhts_fail:
+    test: |
+        touch /tmp/pass_log; rhts-report-result /test/good PASS /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/weird WARN /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/bad FAIL /tmp/pass_log
+    result: custom
+
+/custom_rhts_pass:
+    test: |
+        touch /tmp/pass_log; rhts-report-result /test/good_1 PASS /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/good_2 PASS /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/good_3 PASS /tmp/pass_log
+    result: custom
+
+/custom_rhts_skip:
+    test: |
+        touch /tmp/skip_log; rhts-report-result /test/skip_1 SKIP /tmp/skip_log
+        touch /tmp/skip_log; rhts-report-result /test/skip_2 SKIP /tmp/skip_log
+        touch /tmp/skip_log; rhts-report-result /test/skip_3 SKIP /tmp/skip_log
+    result: custom
