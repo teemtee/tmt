@@ -2,6 +2,7 @@ import dataclasses
 import webbrowser
 
 import tmt
+import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.report
@@ -66,11 +67,18 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         environment = tmt.utils.default_template_environment()
 
         if self.data.absolute_paths:
-            environment.filters["linkable_path"] = lambda x: str(Path(x).absolute())
+            def _linkable_path(x: str) -> str:
+                return str(Path(x).absolute())
+
+            environment.filters["linkable_path"] = _linkable_path
         else:
             # Links used in html should be relative to a workdir
-            assert self.workdir is not None  # narrow type
-            environment.filters["linkable_path"] = lambda x: str(Path(x).relative_to(self.workdir))
+            def _linkable_path(x: str) -> str:
+                assert self.workdir is not None  # narrow type
+
+                return str(Path(x).relative_to(self.workdir))
+
+            environment.filters["linkable_path"] = _linkable_path
 
         if self.data.display_guest == 'always':
             display_guest = True
@@ -81,7 +89,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         else:
             seen_guests = {
                 result.guest.name
-                for result in self.step.plan.execute.results() if result.guest.name is not None
+                for result in self.step.plan.execute.results()
                 }
 
             display_guest = len(seen_guests) > 1

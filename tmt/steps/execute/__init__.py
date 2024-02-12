@@ -30,6 +30,7 @@ from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
 if TYPE_CHECKING:
     import tmt.cli
     import tmt.options
+    import tmt.result
     import tmt.steps.discover
     import tmt.steps.provision
 
