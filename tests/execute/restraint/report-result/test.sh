@@ -41,6 +41,28 @@ rlJournalStart
         rlAssertGrep "fail /multi_reports/rhts-bad" $rlRun_LOG
         rlAssertGrep "pass /multi_reports/rhts-skip" $rlRun_LOG
         rlAssertGrep "warn /multi_reports/rhts-warn" $rlRun_LOG
+
+	# custom restraint
+	rlAssertGrep "pass /custom/custom_rstrnt_fail/test/good" $rlRun_LOG
+	rlAssertGrep "warn /custom/custom_rstrnt_fail/test/weird" $rlRun_LOG
+	rlAssertGrep "fail /custom/custom_rstrnt_fail/test/bad" $rlRun_LOG
+	rlAssertGrep "pass /custom/custom_rstrnt_pass/test/good_1" $rlRun_LOG
+	rlAssertGrep "pass /custom/custom_rstrnt_pass/test/good_2" $rlRun_LOG
+	rlAssertGrep "pass /custom/custom_rstrnt_pass/test/good_3" $rlRun_LOG
+	rlAssertGrep "skip /custom/custom_rstrnt_skip/test/skip_1" $rlRun_LOG
+	rlAssertGrep "skip /custom/custom_rstrnt_skip/test/skip_2" $rlRun_LOG
+	rlAssertGrep "skip /custom/custom_rstrnt_skip/test/skip_3" $rlRun_LOG
+
+	# custom rhts
+        rlAssertGrep "pass /custom/custom_rhts_fail/test/good" $rlRun_LOG
+        rlAssertGrep "warn /custom/custom_rhts_fail/test/weird" $rlRun_LOG
+        rlAssertGrep "fail /custom/custom_rhts_fail/test/bad" $rlRun_LOG
+        rlAssertGrep "pass /custom/custom_rhts_pass/test/good_1" $rlRun_LOG
+        rlAssertGrep "pass /custom/custom_rhts_pass/test/good_2" $rlRun_LOG
+        rlAssertGrep "pass /custom/custom_rhts_pass/test/good_3" $rlRun_LOG
+        rlAssertGrep "skip /custom/custom_rhts_skip/test/skip_1" $rlRun_LOG
+        rlAssertGrep "skip /custom/custom_rhts_skip/test/skip_2" $rlRun_LOG
+        rlAssertGrep "skip /custom/custom_rhts_skip/test/skip_3" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
