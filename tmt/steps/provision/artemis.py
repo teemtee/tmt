@@ -265,8 +265,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     post_install_script: Optional[str] = field(
         default=None,
         option='--post-install-script',
-        metavar='SCRIPT',
-        help='If set, this script will be executed on the guest after provisioning.')
+        metavar='SCRIPT|URL',
+        help='If set, the script provided or fetched will be executed.')
 
 
 @dataclasses.dataclass
@@ -548,7 +548,26 @@ class GuestArtemis(tmt.GuestSsh):
         # TODO: spot instance
 
         if self.post_install_script:
-            data['post_install_script'] = self.post_install_script
+            if tmt.utils.is_url(self.post_install_script):
+                try:
+                    with retry_session() as session:
+                        response = session.get(self.post_install_script)
+
+                    if not response.ok:
+                        raise ArtemisProvisionError(
+                            "Failed to download the post-install script")
+
+                except requests.RequestException as exc:
+                    raise ArtemisProvisionError(
+                        "Failed to download the post-install script") from exc
+
+                post_install_script = response.text
+            else:
+                self.debug('post-install-script argument is treated as a raw script')
+
+                post_install_script = self.post_install_script.replace('\\n', '\n')
+
+            data['post_install_script'] = post_install_script
 
         if self.log_type:
             data['log_types'] = list({tuple(log.split('/', 1)) for log in self.log_type})
