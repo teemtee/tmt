@@ -52,22 +52,20 @@ jobs:
   - job: tests
     identifier: full
     trigger: pull_request
-    manual_trigger: true
     targets:
       - fedora-all
       - epel-9
     require:
-      label:
-        present:
-          - full test
-        absent:
-          - discuss
+        label:
+          present:
+            - full test
+          absent:
+            - discuss
 
   # Test pull requests (provision)
   - job: tests
     identifier: provision
     trigger: pull_request
-    manual_trigger: true
     use_internal_tf: True
     targets:
       - fedora-latest-stable
@@ -80,11 +78,11 @@ jobs:
                 context:
                     how: provision
     require:
-      label:
-        present:
-          - full test
-        absent:
-          - discuss
+        label:
+          present:
+            - full test
+          absent:
+            - discuss
 
   # Test internal plugins
   - job: tests
@@ -102,11 +100,11 @@ jobs:
                     tags:
                         BusinessUnit: tmt
     require:
-      label:
-        present:
-          - full test
-        absent:
-          - discuss
+        label:
+          present:
+            - full test
+          absent:
+            - discuss
 
   # Test internal wow
   - job: tests
@@ -124,11 +122,11 @@ jobs:
                     tags:
                         BusinessUnit: tmt
     require:
-      label:
-        present:
-          - full test
-        absent:
-          - discuss
+        label:
+          present:
+            - full test
+          absent:
+            - discuss
 
   # Build commits to main
   - job: copr_build
