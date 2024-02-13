@@ -353,12 +353,10 @@ it, for example:
 
 By default only a core set of tests is executed against a newly
 created pull request and its updates to verify basic sanity of the
-change. In order to run the full test suite add the following
-comment to the pull request:
-
-.. code-block::
-
-   /packit test --identifier full
+change. Once the pull request content is ready for a thorough
+testing add the ``full test`` label and make sure that the
+``discuss`` label is not present. All future changes of the pull
+request will be tested with the full test coverage.
 
 
 Merging
