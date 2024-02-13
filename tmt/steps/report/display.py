@@ -147,7 +147,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         else:
             seen_guests = {
                 result.guest.name
-                for result in self.step.plan.execute.results() if result.guest.name is not None
+                for result in self.step.plan.execute.results()
                 }
 
             display_guest = len(seen_guests) > 1
