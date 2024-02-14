@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     import tmt.base
     from tmt.result import CheckResult
     from tmt.steps.execute import TestInvocation
+    from tmt.steps.provision import Guest
 
 
 #: A type variable representing a :py:class:`Check` instances.
@@ -179,6 +180,23 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
 
         return cast(CheckPlugin[CheckT], find_plugin(raw_data['how'])) \
             ._check_class.from_spec(raw_data, logger)
+
+    @classmethod
+    def essential_requires(
+            cls,
+            guest: 'Guest',
+            test: 'tmt.base.Test',
+            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+        """
+        Collect all essential requirements of the test check.
+
+        Essential requirements of a check are necessary for the check to
+        perform its basic functionality.
+
+        :returns: a list of requirements.
+        """
+
+        return []
 
     @classmethod
     def before_test(

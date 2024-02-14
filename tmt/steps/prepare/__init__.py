@@ -261,6 +261,12 @@ class Prepare(tmt.steps.Step):
                     test,
                     self._logger)
 
+                for check in test.check:
+                    collected_requires[guest].dependencies += check.plugin.essential_requires(
+                        guest,
+                        test,
+                        self._logger)
+
         # Now we have guests and all their requirements. There can be
         # duplicities, multiple tests requesting the same package, but also
         # some guests may share the set of packages to be installed on them.

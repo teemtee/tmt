@@ -11,7 +11,9 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import CommandOutput, Path, ShellScript, render_run_exception_streams
 
 if TYPE_CHECKING:
+    import tmt.base
     from tmt.steps.execute import TestInvocation
+    from tmt.steps.provision import Guest
 
 #: The filename of the final check report file.
 TEST_POST_AVC_FILENAME = 'avc.txt'
@@ -284,6 +286,23 @@ class AvcDenials(CheckPlugin[Check]):
     """
 
     _check_class = Check
+
+    @classmethod
+    def essential_requires(
+            cls,
+            guest: 'Guest',
+            test: 'tmt.base.Test',
+            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+        if not guest.facts.has_selinux:
+            return []
+
+        # Avoid circular imports
+        import tmt.base
+
+        return [
+            tmt.base.DependencySimple('/usr/bin/sestatus'),
+            tmt.base.DependencySimple('/usr/sbin/ausearch')
+            ]
 
     @classmethod
     def before_test(
