@@ -8,6 +8,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
+from tmt.steps.provision import GuestCapability
 from tmt.utils import Path, render_run_exception_streams
 
 if TYPE_CHECKING:
@@ -62,7 +63,16 @@ class DmesgCheck(CheckPlugin[Check]):
                 level=level,
                 topic=topic)
 
-        return guest.execute(tmt.utils.ShellScript('dmesg -c'), log=_test_output_logger)
+        if guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_CLEAR):
+            script = tmt.utils.ShellScript('dmesg -c')
+
+        else:
+            script = tmt.utils.ShellScript('dmesg')
+
+        if not guest.facts.is_superuser:
+            script = tmt.utils.ShellScript(f'sudo {script.to_shell_command()}')
+
+        return guest.execute(script, log=_test_output_logger)
 
     @classmethod
     def _save_dmesg(
@@ -106,6 +116,9 @@ class DmesgCheck(CheckPlugin[Check]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
+        if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+
         outcome, path = cls._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]
@@ -118,6 +131,9 @@ class DmesgCheck(CheckPlugin[Check]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
+        if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+
         outcome, path = cls._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]

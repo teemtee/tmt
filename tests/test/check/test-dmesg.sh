@@ -38,36 +38,37 @@ rlJournalStart
 
             rlRun "cat $results"
 
-            rlAssertExists "$dump_before"
             if [ "$method" = "container" ]; then
-                assert_check_result "dmesg as a before-test should fail with containers" "error" "before-test" "harmless"
+                assert_check_result "dmesg as a before-test should skip with containers" "skip" "before-test" "harmless"
 
-                if rlIsFedora ">=38"; then
-                    rlAssertGrep "dmesg: read kernel buffer failed: Operation not permitted" "$dump_before"
-                else
-                    rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_before"
-                fi
+                rlAssertNotExists "$dump_before"
+
             else
                 assert_check_result "dmesg as a before-test should pass" "pass" "before-test" "harmless"
+
+                rlAssertExists "$dump_before"
+                rlLogInfo "$(cat $dump_before)"
             fi
-            rlLogInfo "$(cat $dump_before)"
 
-            rlAssertExists "$dump_after"
             if [ "$method" = "container" ]; then
-                assert_check_result "dmesg as an after-test should fail with containers" "error" "after-test" "harmless"
+                assert_check_result "dmesg as an after-test should skip with containers" "skip" "after-test" "harmless"
 
-                if rlIsFedora ">=38"; then
-                    rlAssertGrep "dmesg: read kernel buffer failed: Operation not permitted" "$dump_after"
-                else
-                    rlAssertGrep "dmesg: read kernel buffer failed: Permission denied" "$dump_after"
-                fi
+                rlAssertNotExists "$dump_after"
+
             elif [ "$method" = "virtual" ]; then
                 assert_check_result "dmesg as an after-test should fail" "fail" "after-test" "segfault"
+
+                rlAssertExists "$dump_after"
+                rlLogInfo "$(cat $dump_after)"
+
                 rlAssertGrep "Some segfault happened" "$segfault/checks/dmesg-after-test.txt"
+
             else
                 assert_check_result "dmesg as an after-test should pass" "pass" "after-test" "harmless"
+
+                rlAssertExists "$dump_after"
+                rlLogInfo "$(cat $dump_after)"
             fi
-            rlLogInfo "$(cat $dump_after)"
         rlPhaseEnd
     done
 
