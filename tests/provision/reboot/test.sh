@@ -2,10 +2,9 @@
 # vim: dict+=/usr/share/beakerlib/dictionary.vim cpt=.,w,b,u,t,i,k
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-PROVISION_METHODS=${PROVISION_METHODS:-container}
-
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "run_connect=\$(mktemp -d)" 0 "Create run directory for connect plugin"
@@ -15,7 +14,7 @@ rlJournalStart
         rlRun "tmt plan create -t mini plan"
     rlPhaseEnd
 
-    if [[ "$PROVISION_METHODS" =~ container ]]; then
+    if [[ "$PROVISION_HOW" =~ container ]]; then
         rlPhaseStartTest "Container"
             rlRun "tmt run -i $run provision -h container"
 
@@ -27,7 +26,7 @@ rlJournalStart
         rlPhaseEnd
     fi
 
-    if [[ "$PROVISION_METHODS" =~ beaker ]]; then
+    if [[ "$PROVISION_HOW" =~ beaker ]]; then
         rlPhaseStartTest "Beaker"
             rlRun "tmt run --scratch -i $run provision -h beaker"
 
@@ -43,7 +42,7 @@ rlJournalStart
         rlPhaseEnd
     fi
 
-    if [[ "$PROVISION_METHODS" =~ virtual ]]; then
+    if [[ "$PROVISION_HOW" =~ virtual ]]; then
         rlPhaseStartTest "Virtual"
             rlRun "tmt run --scratch -i $run provision -h virtual"
 
@@ -59,7 +58,7 @@ rlJournalStart
         rlPhaseEnd
     fi
 
-    if [[ "$PROVISION_METHODS" =~ connect ]]; then
+    if [[ "$PROVISION_HOW" =~ connect ]]; then
         rlPhaseStartTest "Connect"
             rlRun "tmt run --scratch -i $run provision -h virtual"
 

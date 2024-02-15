@@ -3,21 +3,20 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmt directory"
         rlRun "pushd $tmp"
     rlPhaseEnd
 
-    for method in ${PROVISION_METHODS:-local}; do
-        rlPhaseStartTest "Test one step ($method)"
-            rlRun "tmt run -i $run --scratch provision -h $method finish"
-        rlPhaseEnd
+    rlPhaseStartTest "Test one step ($PROVISION_HOW)"
+        rlRun "tmt run -i $run --scratch provision -h $PROVISION_HOW finish"
+    rlPhaseEnd
 
-        rlPhaseStartTest "Test two steps ($method)"
-            rlRun "tmt run -i $run --scratch provision -h $method"
-            rlRun "tmt run -i $run finish"
-        rlPhaseEnd
-    done
+    rlPhaseStartTest "Test two steps ($PROVISION_HOW)"
+        rlRun "tmt run -i $run --scratch provision -h $PROVISION_HOW"
+        rlRun "tmt run -i $run finish"
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

@@ -9,10 +9,7 @@ description:
     against `local` and during `full` testing using `virtual` as
     well.
 require+: [tmt+provision-container]
-
-environment:
-    PROVISION_METHODS: 'container'
-adjust+:
-  - environment:
-        PROVISION_METHODS: 'container local'
-    when: trigger == commit
+tag+:
+  - provision-only
+  - provision-container
+  - provision-local

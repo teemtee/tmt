@@ -6,7 +6,6 @@ description:
 test: ./test.sh
 framework: beakerlib
 tag-: [container, virtual]
-tag+: [provision-virtual]
-
-environment:
-    PROVISION_METHODS: local container
+tag+:
+  - provision-container
+  - provision-virtual

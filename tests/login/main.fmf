@@ -22,6 +22,6 @@
     summary: Try to log into guest to verify property is_ready
     test: ./ready.sh
     duration: 15m
-    tag+: [provision-virtual]
-    environment:
-        PROVISION_METHODS: local container
+    tag+:
+      - provision-container
+      - provision-virtual

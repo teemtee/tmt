@@ -1,11 +1,5 @@
 summary: Check that requirement installation is guest-aware in multihost scenario
-tag+: [provision-virtual]
-
-environment:
-    PROVISION_METHODS: container
-
-adjust+:
-  - when: trigger == commit
-    environment:
-        PROVISION_METHODS: container
-    because: the pipeline does not support nested virtualization
+tag+:
+  - provision-only
+  - provision-container
+  - provision-virtual

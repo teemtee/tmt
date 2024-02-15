@@ -1,6 +1,5 @@
 summary: Verify TTY handling in test environment
-tag+: [provision-virtual]
+tag+:
+  - provision-container
+  - provision-virtual
 duration: 10m
-
-environment:
-    PROVISION_METHODS: local container

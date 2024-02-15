@@ -3,14 +3,13 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
         rlRun "pushd data"
     rlPhaseEnd
 
-    for method in ${PROVISION_METHODS:-local}; do
-        rlPhaseStartTest "Test ($method)"
-            rlRun "tmt run -arvvv provision -h $method"
-        rlPhaseEnd
-    done
+    rlPhaseStartTest "Test ($PROVISION_HOW)"
+        rlRun "tmt run -arvvv provision --how $PROVISION_HOW"
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

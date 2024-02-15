@@ -215,11 +215,14 @@ versions. For example:
 Provision Methods
 ------------------------------------------------------------------
 
-Tests which exercise various provision methods should use the
-``PROVISION_METHODS`` environment variable to select which
-provision methods they can utilize during their execution. This
-variable is likely to have ``local`` set as the default value to
-execute directly on the test runner as the default scenario.
+Tests which exercise multiple provision methods should use the
+``PROVISION_HOW`` environment variable to select which provision
+method should be exercised during their execution. This variable
+is likely to have ``local`` set as the default value in the test
+script to execute directly on the test runner as the default
+scenario. If a test does not support the ``local`` provision
+method make sure to use the ``provision-only`` tag so that the
+test in question is excluded from the regular plans.
 
 The following tags can be used to enable given test under the
 respective provision method plan:

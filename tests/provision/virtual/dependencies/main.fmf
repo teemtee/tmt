@@ -5,7 +5,8 @@ description:
     `system` connection to work without additional steps except
     for setting group and starting the `libvirtd` service for the
     `system` case.
-tag: provision-virtual-only
-tier: null
+tag+:
+  - provision-only
+  - provision-virtual
 require: tmt+provision-virtual
 order: 10

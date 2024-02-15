@@ -2,10 +2,7 @@ summary: Verify paths and names with white-space characters
 description:
     Ensure that test execution including workdir pull and push
     works as expected when file names and paths contain spaces.
-test: ./test.sh
-framework: beakerlib
 tag-: [container, virtual]
-tag+: [provision-virtual]
-
-environment:
-    PROVISION_METHODS: local container
+tag+:
+  - provision-container
+  - provision-virtual

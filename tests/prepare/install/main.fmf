@@ -4,11 +4,8 @@ description:
     Make sure that special characters are correctly escaped.
     Verify that installation from copr works for epel7. Exercises
     all provision methods in full mode, container only by default.
-tag+: [provision-virtual]
-environment:
-    PROVISION_METHODS: container
-adjust+:
-  - when: trigger == commit
-    environment:
-        PROVISION_METHODS: container local
-    because: the pipeline does not support nested virtualization
+tag+:
+  - provision-only
+  - provision-container
+  - provision-local
+  - provision-virtual
