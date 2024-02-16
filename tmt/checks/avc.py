@@ -293,7 +293,8 @@ class AvcDenials(CheckPlugin[Check]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        create_ausearch_timestamp(invocation, logger)
+        if invocation.guest.facts.has_selinux:
+            create_ausearch_timestamp(invocation, logger)
 
         return []
 
@@ -305,6 +306,11 @@ class AvcDenials(CheckPlugin[Check]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.EnvironmentType] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
+        if not invocation.guest.facts.has_selinux:
+            return [CheckResult(
+                name='avc',
+                result=ResultOutcome.SKIP)]
+
         assert invocation.phase.step.workdir is not None  # narrow type
 
         outcome, path = create_final_report(invocation, logger)

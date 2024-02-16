@@ -9,6 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
 # Timeout in seconds of waiting for a connection
@@ -455,6 +456,11 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             name=self.name,
             parent=self.step)
         self._guest.start()
+
+        # TODO: this might be allowed with `--privileged`...
+        self._guest.facts.capabilities[GuestCapability.SYSLOG_ACTION_READ_ALL] = False
+        # ... while this seems to be forbidden completely.
+        self._guest.facts.capabilities[GuestCapability.SYSLOG_ACTION_READ_CLEAR] = False
 
     def guest(self) -> Optional[GuestContainer]:
         """ Return the provisioned guest """

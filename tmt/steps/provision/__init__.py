@@ -109,6 +109,16 @@ class GuestPackageManager(enum.Enum):
 T = TypeVar('T')
 
 
+class GuestCapability(enum.Enum):
+    """ Various Linux capabilities """
+
+    # See man 2 syslog:
+    #: Read all messages remaining in the ring buffer.
+    SYSLOG_ACTION_READ_ALL = 'syslog-action-read-all'
+    #: Read and clear all messages remaining in the ring buffer.
+    SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
+
+
 @dataclasses.dataclass
 class GuestFacts(SerializableContainer):
     """
@@ -135,8 +145,28 @@ class GuestFacts(SerializableContainer):
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
 
+    #: Various Linux capabilities and whether they are permitted to
+    #: commands executed on this guest.
+    capabilities: dict[GuestCapability, bool] = field(
+        default_factory=cast(Callable[[], dict[GuestCapability, bool]], dict),
+        serialize=lambda capabilities: {
+            capability.value: enabled
+            for capability, enabled in capabilities.items()
+            } if capabilities else {},
+        unserialize=lambda raw_value: {
+            GuestCapability(raw_capability): enabled
+            for raw_capability, enabled in raw_value.items()
+            }
+        )
+
     os_release_content: dict[str, str] = field(default_factory=dict)
     lsb_release_content: dict[str, str] = field(default_factory=dict)
+
+    def has_capability(self, cap: GuestCapability) -> bool:
+        if not self.capabilities:
+            return False
+
+        return self.capabilities.get(cap, False)
 
     # TODO nothing but a fancy helper, to check for some special errors that
     # may appear this soon in provisioning. But, would it make sense to put
@@ -339,6 +369,14 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'root'
 
+    def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
+        # TODO: there must be a canonical way of getting permitted capabilities.
+        # For now, we're interested in whether we can access kernel message buffer.
+        return {
+            GuestCapability.SYSLOG_ACTION_READ_ALL: True,
+            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True
+            }
+
     def sync(self, guest: 'Guest') -> None:
         """ Update stored facts to reflect the given guest """
 
@@ -351,6 +389,7 @@ class GuestFacts(SerializableContainer):
         self.package_manager = self._query_package_manager(guest)
         self.has_selinux = self._query_has_selinux(guest)
         self.is_superuser = self._query_is_superuser(guest)
+        self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True
 
