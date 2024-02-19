@@ -256,6 +256,15 @@ class InstallBase(tmt.utils.Common):
         if self.debuginfo_packages:
             self.install_debuginfo()
 
+    def rpm_check(self, package: str, mode: str = '-q') -> None:
+        """
+        Run rpm command to check package existence
+        Throws tmt.utils.RunError
+        """
+        output = self.guest.execute(Command('rpm', mode, package), silent=True)
+        assert output.stdout
+        self.debug(f"Package '{output.stdout.strip()}' already installed.")
+
 
 class InstallDnf(InstallBase):
     """ Install packages using dnf """
@@ -389,9 +398,12 @@ class InstallRpmOstree(InstallBase):
         self.required_packages = []
         for package in self.repository_packages:
             try:
-                output = self.guest.execute(Command('rpm', '-q', package), silent=True)
-                assert output.stdout
-                self.debug(f"Package '{output.stdout.strip()}' already installed.")
+                if package.startswith('/'):
+                    # Dependencies can also be files, let's check those as well
+                    # TODO: PR 2557 needs to check for files as well
+                    self.rpm_check(package=package, mode='-qf')
+                else:
+                    self.rpm_check(package=package)
             except tmt.utils.RunError:
                 if self.skip_missing:
                     self.recommended_packages.append(package)
