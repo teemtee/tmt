@@ -82,6 +82,8 @@ class Action(enum.Enum):
     def find(cls, answer: str) -> "Action":
         """ Return action for given keyboard input (shortcut or whole word) """
 
+        answer = answer.lower()
+
         for action in cls:
             if answer in (action.key, action.action):
                 return action
