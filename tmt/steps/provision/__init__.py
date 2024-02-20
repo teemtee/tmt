@@ -475,10 +475,13 @@ class GuestData(SerializableContainer):
     # fields are not created by `field()` - not sure why, but we can fix that
     # later.
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
-    _OPTIONLESS_FIELDS: tuple[str, ...] = ('guest', 'facts')
+    _OPTIONLESS_FIELDS: tuple[str, ...] = ('primary_address', 'topology_address', 'facts')
 
-    # hostname or ip address
-    guest: Optional[str] = None
+    #: Primary hostname or IP address for tmt/guest communication.
+    primary_address: Optional[str] = None
+
+    #: Guest topology hostname or IP address for guest/guest communication.
+    topology_address: Optional[str] = None
 
     role: Optional[str] = field(
         default=None,
@@ -589,7 +592,10 @@ class GuestData(SerializableContainer):
             else:
                 printable_value = str(value)
 
-            logger.info(tmt.utils.key_to_option(key), printable_value, color='green')
+            logger.info(
+                tmt.utils.key_to_option(key).replace('-', ' '),
+                printable_value,
+                color='green')
 
 
 class Guest(tmt.utils.Common):
@@ -615,7 +621,13 @@ class Guest(tmt.utils.Common):
     _data_class: type[GuestData] = GuestData
 
     role: Optional[str]
-    guest: Optional[str]
+
+    #: Primary hostname or IP address for tmt/guest communication.
+    primary_address: Optional[str] = None
+
+    #: Guest topology hostname or IP address for guest/guest communication.
+    topology_address: Optional[str] = None
+
     become: bool
 
     hardware: Optional[tmt.hardware.Hardware]
@@ -710,7 +722,7 @@ class Guest(tmt.utils.Common):
         attach to a running guest instance and execute commands. Called
         after load() is completed so all guest data should be prepared.
         """
-        self.debug(f"Doing nothing to wake up guest '{self.guest}'.")
+        self.debug(f"Doing nothing to wake up guest '{self.primary_address}'.")
 
     def start(self) -> None:
         """
@@ -720,7 +732,7 @@ class Guest(tmt.utils.Common):
         any configuration necessary to get it started. Called after
         load() is completed so all guest data should be available.
         """
-        self.debug(f"Doing nothing to start guest '{self.guest}'.")
+        self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
     # A couple of requiremens for this field:
     #
@@ -804,7 +816,7 @@ class Guest(tmt.utils.Common):
 
     def _ansible_playbook_path(self, playbook: Path) -> Path:
         """ Prepare full ansible playbook path """
-        self.debug(f"Applying playbook '{playbook}' on guest '{self.guest}'.")
+        self.debug(f"Applying playbook '{playbook}' on guest '{self.primary_address}'.")
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
         assert parent.plan.my_run is not None  # narrow type
@@ -1101,7 +1113,7 @@ class Guest(tmt.utils.Common):
         Completely remove all guest instance data so that it does not
         consume any disk resources.
         """
-        self.debug(f"Doing nothing to remove guest '{self.guest}'.")
+        self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
     def _check_rsync(self) -> CheckRsyncOutcome:
         """
@@ -1233,7 +1245,7 @@ class GuestSsh(Guest):
 
     def _ssh_guest(self) -> str:
         """ Return user@guest """
-        return f'{self.user}@{self.guest}'
+        return f'{self.user}@{self.primary_address}'
 
     def _ssh_socket(self) -> Path:
         """ Prepare path to the master connection socket """
@@ -1351,7 +1363,7 @@ class GuestSsh(Guest):
         """ Detect guest is ready or not """
 
         # Enough for now, ssh connection can be created later
-        return self.guest is not None
+        return self.primary_address is not None
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -1375,7 +1387,7 @@ class GuestSsh(Guest):
         """
 
         # Abort if guest is unavailable
-        if self.guest is None and not self.is_dry_run:
+        if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         ssh_command: tmt.utils.Command = self._ssh_command()
@@ -1416,7 +1428,7 @@ class GuestSsh(Guest):
             remote_command
             ]
 
-        self.debug(f"Execute command '{remote_command}' on guest '{self.guest}'.")
+        self.debug(f"Execute command '{remote_command}' on guest '{self.primary_address}'.")
 
         output = self._run_guest_command(
             ssh_command,
@@ -1457,7 +1469,7 @@ class GuestSsh(Guest):
         sudo on the Guest (e.g. pushing to r/o destination)
         """
         # Abort if guest is unavailable
-        if self.guest is None and not self.is_dry_run:
+        if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the push command
@@ -1471,7 +1483,7 @@ class GuestSsh(Guest):
             assert parent.plan.workdir is not None
 
             source = parent.plan.workdir
-            self.debug(f"Push workdir to guest '{self.guest}'.")
+            self.debug(f"Push workdir to guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
@@ -1524,7 +1536,7 @@ class GuestSsh(Guest):
         and 'extend_options' to extend them (e.g. by exclude).
         """
         # Abort if guest is unavailable
-        if self.guest is None and not self.is_dry_run:
+        if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
         # Prepare options and the pull command
@@ -1540,7 +1552,7 @@ class GuestSsh(Guest):
             assert parent.plan.workdir is not None
 
             source = parent.plan.workdir
-            self.debug(f"Pull workdir from guest '{self.guest}'.")
+            self.debug(f"Pull workdir from guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
@@ -1724,7 +1736,7 @@ class GuestSsh(Guest):
         Completely remove all guest instance data so that it does not
         consume any disk resources.
         """
-        self.debug(f"Doing nothing to remove guest '{self.guest}'.")
+        self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
     def _check_rsync(self) -> CheckRsyncOutcome:
         """

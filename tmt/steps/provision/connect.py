@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import tmt
 import tmt.steps
@@ -56,6 +56,22 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
         unserialize=lambda serialized: None if serialized is None else ShellScript(serialized)
         )
+
+    @classmethod
+    def from_plugin(
+            cls: type['ConnectGuestData'],
+            container: 'ProvisionConnect') -> 'ConnectGuestData':  # type: ignore[override]
+
+        options: dict[str, Any] = {
+            key: container.get(option)
+            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+            # "Type[ArtemisGuestData]" has no attribute "__iter__" (not iterable)
+            for key, option in cls.options()
+            }
+
+        options['primary_address'] = options['topology_address'] = options.pop('guest')
+
+        return ConnectGuestData(**options)
 
 
 @dataclasses.dataclass
@@ -127,6 +143,14 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             timeout=timeout,
             tick=tick,
             tick_increase=tick_increase)
+
+    def start(self) -> None:
+        """ Start the guest """
+
+        self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
+
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
 
 
 @tmt.steps.provides_method('connect')

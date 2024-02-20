@@ -759,11 +759,12 @@ class GuestTestcloud(tmt.GuestSsh):
                 libvirt.libvirtError) as error:
             raise ProvisionError(
                 f'Failed to boot testcloud instance ({error}).')
-        self.guest = self._instance.get_ip()
+        self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
-        self.verbose('ip', self.guest, 'green')
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
         self.verbose('port', self.port, 'green')
-        self._instance.create_ip_file(self.guest)
+        self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
         if not self.reconnect(
@@ -783,7 +784,7 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Stop provisioned guest """
         super().stop()
         # Stop only if the instance successfully booted
-        if self._instance and self.guest:
+        if self._instance and self.primary_address:
             self.debug(f"Stopping testcloud instance '{self.instance_name}'.")
             assert testcloud is not None
             try:

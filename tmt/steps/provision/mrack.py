@@ -680,8 +680,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     f'of time (--provision-timeout={self.provision_timeout}).'
                     )
 
-        self.guest = guest_info['system']
-        self.info('address', self.guest, 'green')
+        self.primary_address = self.topology_address = guest_info['system']
 
     def start(self) -> None:
         """
@@ -692,8 +691,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         load() is completed so all guest data should be available.
         """
 
-        if self.job_id is None or self.guest is None:
+        if self.job_id is None or self.primary_address is None:
             self._create(self._tmt_name())
+
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
 
     def stop(self) -> None:
         """ Stop the guest """
@@ -736,9 +738,10 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         if not command and hard:
             self.debug("Reboot using the reboot command 'bkr system-power --action reboot'.")
 
+            reboot_script = ShellScript(f'bkr system-power --action reboot {self.primary_address}')
+
             return self.perform_reboot(
-                lambda: self._run_guest_command(ShellScript(
-                    f'bkr system-power --action reboot {self.guest}').to_shell_command()),
+                lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase)

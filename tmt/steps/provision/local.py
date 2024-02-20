@@ -102,10 +102,18 @@ class GuestLocal(tmt.Guest):
             on_process_start=on_process_start,
             **kwargs)
 
+    def start(self) -> None:
+        """ Start the guest """
+
+        self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
+
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
+
     def stop(self) -> None:
         """ Stop the guest """
 
-        self.debug(f"Doing nothing to stop guest '{self.guest}'.")
+        self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(self,
                hard: bool = False,
@@ -113,7 +121,7 @@ class GuestLocal(tmt.Guest):
                timeout: Optional[int] = None) -> bool:
         """ Reboot the guest, return True if successful """
 
-        self.debug(f"Doing nothing to reboot guest '{self.guest}'.")
+        self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
 
         return False
 
@@ -171,7 +179,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         # Create a GuestLocal instance
         data = tmt.steps.provision.GuestData.from_plugin(self)
-        data.guest = 'localhost'
+        data.primary_address = 'localhost'
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 

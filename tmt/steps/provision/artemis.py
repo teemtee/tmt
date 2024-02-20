@@ -494,7 +494,7 @@ class GuestArtemis(tmt.GuestSsh):
 
         # FIXME: A more robust solution should be provided. Currently just
         #        return True if self.guest is not None
-        return self.guest is not None
+        return self.primary_address is not None
 
     def _create(self) -> None:
         environment: dict[str, Any] = {
@@ -620,8 +620,7 @@ class GuestArtemis(tmt.GuestSsh):
                     f'Failed to provision in the given amount '
                     f'of time (--provision-timeout={self.provision_timeout}).')
 
-        self.guest = guest_info['address']
-        self.info('address', self.guest, 'green')
+        self.primary_address = self.topology_address = guest_info['address']
 
     def start(self) -> None:
         """
@@ -632,8 +631,11 @@ class GuestArtemis(tmt.GuestSsh):
         load() is completed so all guest data should be available.
         """
 
-        if self.guestname is None or self.guest is None:
+        if self.guestname is None or self.primary_address is None:
             self._create()
+
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
 
     def remove(self) -> None:
         """ Remove the guest """
