@@ -75,7 +75,7 @@ EOF
 
     rlPhaseStartTest "Verbose execute prints result - reboot case"
         # Before the reboot results is not known
-        rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /xfail-with-reboot provision --how container execute -v 2>&1 >/dev/null"
+        rlRun -s "tmt -vvvvdddd run --id \${run} --scratch --until execute tests -n /xfail-with-reboot provision --how container execute -v 2>&1 >/dev/null"
         EXPECTED=$(cat <<EOF
             00:00:00 /test/xfail-with-reboot [1/1]
             00:00:00 pass /test/xfail-with-reboot (on default-0) (original result: fail) [1/1]
