@@ -162,6 +162,9 @@ class TestInvocation:
     process: Optional[subprocess.Popen[bytes]] = None
     process_lock: threading.Lock = field(default_factory=threading.Lock)
 
+    results: list[Result] = dataclasses.field(default_factory=list)
+    check_results: list[CheckResult] = dataclasses.field(default_factory=list)
+
     return_code: Optional[int] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None

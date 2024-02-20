@@ -14,7 +14,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
-from tmt.result import BaseResult, CheckResult, Result, ResultOutcome
+from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
 from tmt.steps.provision import Guest
@@ -272,14 +272,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             *,
             invocation: TestInvocation,
             extra_environment: Optional[EnvironmentType] = None,
-            logger: tmt.log.Logger) -> list[CheckResult]:
+            logger: tmt.log.Logger) -> list[Result]:
         """ Run test on the guest """
 
         test, guest = invocation.test, invocation.guest
 
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
-
-        test_check_results: list[CheckResult] = []
 
         # Test will be executed in it's own directory, relative to the workdir
         assert self.discover.workdir is not None  # narrow type
@@ -359,7 +357,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
-        test_check_results += self.run_checks_before_test(
+        invocation.check_results += self.run_checks_before_test(
             invocation=invocation,
             environment=environment,
             logger=logger
@@ -415,15 +413,36 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / TEST_OUTPUT_FILENAME,
             stdout or '', mode='a', level=3)
 
-        # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
-        # to use some reusable decorator.
-        test_check_results += self.run_checks_after_test(
+        # Fetch #1: we need logs and everything the test produced so we could
+        # collect its results.
+        guest.pull(
+            source=invocation.path,
+            extend_options=test.test_framework.get_pull_options(invocation, logger))
+
+        # Produce list of results
+        if not invocation.reboot_requested:
+            invocation.results += self.extract_results(invocation, logger)
+
+        invocation.check_results += self.run_checks_after_test(
             invocation=invocation,
             environment=environment,
             logger=logger
             )
 
-        return test_check_results
+        # Fetch #2: after-test checks might have produced remote files as well,
+        # we need to fetch them too.
+        guest.pull(
+            source=invocation.path,
+            extend_options=test.test_framework.get_pull_options(invocation, logger))
+
+        # Attach check results to every test result. There might be more than one,
+        # and it's hard to pick the main one, who knows what custom results might
+        # cover, so let's make sure every single result can lead to check results
+        # related to its lifetime.
+        for result in invocation.results:
+            result.check = invocation.check_results
+
+        return invocation.results
 
     def go(
             self,
@@ -472,19 +491,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 logger.verbose(
                     'test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-                test_check_results: list[CheckResult] = self.execute(
+                self.execute(
                     invocation=invocation,
                     extra_environment=extra_environment,
                     logger=logger)
-
-                guest.pull(
-                    source=invocation.path,
-                    extend_options=test.test_framework.get_pull_options(invocation, logger))
-
-                results = self.extract_results(invocation, logger)  # Produce list of results
-
-                for result in results:
-                    result.check = test_check_results
 
                 assert invocation.real_duration is not None  # narrow type
                 duration = click.style(invocation.real_duration, fg='cyan')
@@ -499,21 +509,21 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         if invocation.handle_reboot():
                             continue
                     except tmt.utils.RebootTimeoutError:
-                        for result in results:
+                        for result in invocation.results:
                             result.result = ResultOutcome.ERROR
                             result.note = 'reboot timeout'
                 abort = self.check_abort_file(invocation)
                 if abort:
-                    for result in results:
+                    for result in invocation.results:
                         # In case of aborted all results in list will be aborted
                         result.note = 'aborted'
-                self._results.extend(results)
+                self._results.extend(invocation.results)
 
                 # If test duration information is missing, print 8 spaces to keep indention
                 def _format_duration(result: BaseResult) -> str:
                     return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
 
-                for result in results:
+                for result in invocation.results:
                     logger.verbose(
                         f"{_format_duration(result)} {result.show()} [{progress}]",
                         shift=shift)
