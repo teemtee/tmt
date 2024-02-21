@@ -10,3 +10,9 @@ tag+:
   - provision-virtual
 require: tmt+provision-virtual
 order: 10
+
+# In order to properly verify that all packages necessary for the
+# virtual provision are installed on the guest, this test would
+# have to be a single one in the plan. Probably not worth it.
+# Disabling for now to prevent wasting resources.
+enabled: false
