@@ -12,9 +12,15 @@ description: |
 
     .. versionadded:: 1.31
 
+    .. versionchanged:: 1.32
+       ``beaker`` plugin supports ``zcrypt``
+
 example:
   - |
     # Require a presence of CEX8C adapter in the CCA mode
     zcrypt:
         adapter: "CEX8C"
         mode: "CCA"
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py

@@ -52,7 +52,8 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'disk.driver',
     'hostname',
     'memory',
-    'virtualization.is_virtualized'
+    'virtualization.is_virtualized',
+    'zcrypt',
     ]
 
 
@@ -357,6 +358,42 @@ def _transform_virtualization_is_virtualized(
     return _transform_unsupported(constraint, logger)
 
 
+def _transform_zcrypt_adapter(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup(
+                'system',
+                children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)])])
+
+    return MrackHWGroup(
+        'system',
+        children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)])
+
+
+def _transform_zcrypt_mode(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup(
+                'system',
+                children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])])
+
+    return MrackHWGroup(
+        'system',
+        children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -370,7 +407,9 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
     'virtualization.is_virtualized': \
-    _transform_virtualization_is_virtualized  # type: ignore[dict-item]
+    _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
+    'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
+    'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     }
 
 

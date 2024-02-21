@@ -11,6 +11,7 @@ from tmt.hardware import (
     _parse_hostname,
     _parse_memory,
     _parse_virtualization,
+    _parse_zcrypt,
     )
 from tmt.log import Logger
 from tmt.steps.provision.mrack import (
@@ -81,6 +82,9 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             is-supported: true
             is-virtualized: false
             hypervisor: "~ xen"
+        zcrypt:
+            adapter: "CEX8C"
+            mode: "CCA"
     """
 
     hw = Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(hw_spec)))
@@ -229,6 +233,28 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                         },
                     {'or': []},
                     {'or': []}
+                    ]
+                },
+            {
+                'and': [
+                    {
+                        'system': {
+                            'key_value': {
+                                '_key': 'ZCRYPT_MODEL',
+                                '_op': '==',
+                                '_value': 'CEX8C'
+                                }
+                            }
+                        },
+                    {
+                        'system': {
+                            'key_value': {
+                                '_key': 'ZCRYPT_MODE',
+                                '_op': '==',
+                                '_value': 'CCA'
+                                }
+                            }
+                        }
                     ]
                 }
             ]
@@ -444,6 +470,118 @@ def test_virtualization_is_virtualized(root_logger: Logger) -> None:
             'hypervisor': {
                 '_op': '==',
                 '_value': ''
+                }
+            }
+        }
+
+
+def test_zcrypt_adapter(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
+        _parse_zcrypt({'adapter': 'CEX8C'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODEL',
+                '_op': '==',
+                '_value': 'CEX8C'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
+        _parse_zcrypt({'adapter': '!= CEX8C'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODEL',
+                '_op': '!=',
+                '_value': 'CEX8C'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
+        _parse_zcrypt({'adapter': '~ CEX.*'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODEL',
+                '_op': 'like',
+                '_value': 'CEX%'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.adapter'](
+        _parse_zcrypt({'adapter': '!~ CEX.*'}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'system': {
+                'key_value': {
+                    '_key': 'ZCRYPT_MODEL',
+                    '_op': 'like',
+                    '_value': 'CEX%'
+                    }
+                }
+            }
+        }
+
+
+def test_zcrypt_mode(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
+        _parse_zcrypt({'mode': 'CCA'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODE',
+                '_op': '==',
+                '_value': 'CCA'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
+        _parse_zcrypt({'mode': '!= CCA'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODE',
+                '_op': '!=',
+                '_value': 'CCA'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
+        _parse_zcrypt({'mode': '~ C.*A'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'ZCRYPT_MODE',
+                '_op': 'like',
+                '_value': 'C%A'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['zcrypt.mode'](
+        _parse_zcrypt({'mode': '!~ C.*A'}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'system': {
+                'key_value': {
+                    '_key': 'ZCRYPT_MODE',
+                    '_op': 'like',
+                    '_value': 'C%A'
+                    }
                 }
             }
         }

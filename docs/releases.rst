@@ -10,7 +10,7 @@ tmt-1.32
 The hardware specification for :ref:`/spec/hardware/disk` has been
 extended with the new keys ``driver`` and ``model-name``. Users
 can provision Beaker guests with a given disk model or driver using
-the :ref:`/spec/plans/provision/beaker` plugin.
+the :ref:`/spec/plans/provision/beaker` provision plugin.
 
 The :ref:`/spec/plans/provision/virtual` provision plugin gains support
 for :ref:`TPM hardware requirement</spec/hardware/tpm>`. It is limited
@@ -41,6 +41,10 @@ __ https://pagure.io/testcloud/
 New environment variable ``TMT_REPORT_ARTIFACTS_URL`` has been added
 to :ref:`command-variables`. It can be used to provide a link for
 detailed test artifacts for report plugins to pick.
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
+HW requirement.
 
 
 tmt-1.31

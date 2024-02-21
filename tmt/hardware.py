@@ -1208,6 +1208,34 @@ def _parse_hostname(spec: Spec) -> BaseConstraint:
 
 
 @ungroupify
+def _parse_zcrypt(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``zcrypt`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    if 'adapter' in spec:
+        group.constraints += [
+            TextConstraint.from_specification(
+                'zcrypt.adapter',
+                spec['adapter'],
+                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])]
+
+    if 'mode' in spec:
+        group.constraints += [
+            TextConstraint.from_specification(
+                'zcrypt.mode',
+                spec['mode'],
+                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])]
+
+    return group
+
+
+@ungroupify
 def _parse_generic_spec(spec: Spec) -> BaseConstraint:
     """
     Parse actual constraints.
@@ -1251,6 +1279,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'virtualization' in spec:
         group.constraints += [_parse_virtualization(spec['virtualization'])]
+
+    if 'zcrypt' in spec:
+        group.constraints += [_parse_zcrypt(spec['zcrypt'])]
 
     return group
 
