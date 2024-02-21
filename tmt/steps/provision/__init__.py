@@ -1286,6 +1286,13 @@ class GuestSsh(Guest):
                 options.extend(['-i', key])
         if self.password:
             options.extend(['-oPasswordAuthentication=yes'])
+        else:
+            # Make sure the connection is rejected when we want key-
+            # based authetication only instead of presenting a prompt.
+            # Prevents issues like https://github.com/teemtee/tmt/issues/2687
+            # from happening and makes the ssh connection more robust
+            # by allowing proper re-try mechanisms to kick-in.
+            options.extend(['-oPasswordAuthentication=no'])
 
         # Use the shared master connection
         options.append(f'-S{self._ssh_socket()}')
