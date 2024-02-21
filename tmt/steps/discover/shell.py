@@ -327,12 +327,33 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         sourcedir = self.workdir / 'source'
         dist_git_source = self.get('dist-git-source', False)
 
-        # Fetch remote repository
+        # Fetch remote repository related
         url = self.get('url', None)
         ref = self.get('ref', None)
+
         # Git metadata are necessary for dist_git_source
         keep_git_metadata = True if dist_git_source else self.get('keep_git_metadata', False)
-        self.fetch_remote_repository(url, ref, testdir, keep_git_metadata)
+
+        if url:
+            self.fetch_remote_repository(url, ref, testdir, keep_git_metadata)
+        else:
+            # Symlink tests directory to the plan work tree
+            assert self.step.plan.worktree  # narrow type
+
+            relative_path = self.step.plan.worktree.relative_to(self.workdir)
+            testdir.symlink_to(relative_path)
+
+            if keep_git_metadata:
+                # Copy .git which is excluded when worktree is initialized
+                tree_root = Path(self.step.plan.node.root)
+                # If exists, git_root can be only the same or parent of fmf_root
+                git_root = tmt.utils.git_root(fmf_root=tree_root, logger=self._logger)
+                if git_root:
+                    if git_root != tree_root:
+                        raise tmt.utils.DiscoverError(
+                            "The 'keep-git-metadata' option can be "
+                            "used only when fmf root is the same as git root.")
+                    self.run(Command("rsync", "-ar", f"{git_root}/.git", testdir))
 
         # Check and process each defined shell test
         for data in self.data.tests:
@@ -368,14 +389,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 if key != 'name' and (key == 'duration' or value != data.default(key))
                 }
             tests.child(data.name, test_fmf_keys)
-
-        # Symlink tests directory to the plan work tree
-        # (unless remote repository is provided using 'url')
-        if not url:
-            assert self.step.plan.worktree  # narrow type
-
-            relative_path = self.step.plan.worktree.relative_to(self.workdir)
-            testdir.symlink_to(relative_path)
 
         if dist_git_source:
             assert self.step.plan.my_run is not None  # narrow type

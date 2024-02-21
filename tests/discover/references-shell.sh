@@ -13,7 +13,7 @@ rlJournalStart
         rlRun -s 'tmt run --id $tmp/run discover -v plan --name $plan'
         discovered_workdir="$tmp/run/plans/$plan/discover/default-0/tests"
         rlAssertExists "$discovered_workdir/tmt.spec"
-        # .git is intentionally removed
+        # .git is intentionally removed (test for /tests/discover/keep-git-metadata)
         rlAssertNotExists "$discovered_workdir/.git"
     rlPhaseEnd
 

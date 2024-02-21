@@ -1,0 +1,45 @@
+execute:
+    how: tmt
+provision:
+    how: local
+
+/url:
+    /keep:
+        discover:
+            how: shell
+            keep-git-metadata: true
+            url: https://github.com/teemtee/fmf
+            tests:
+            - name: git is present
+              test: test -e .git
+/local:
+    discover:
+        how: shell
+
+    /default:
+        discover+:
+            tests:
+            - name: git not present
+              test: "! test -e .git"
+    /keep:
+        discover+:
+            keep-git-metadata: true
+            tests:
+            - name: git not present
+              test: "test -e .git"
+
+/git_parent_of_fmf:
+    discover:
+        how: shell
+        keep-git-metadata: true
+        tests:
+        - name: /
+          test: echo
+
+/fmf_parent_of_git:
+    discover:
+        how: shell
+        keep-git-metadata: true
+        tests:
+        - name: /
+          test: echo

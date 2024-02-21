@@ -800,6 +800,35 @@ it for future usage with an `alias`__.
 __ https://yaml.org/spec/1.2.2/#3222-anchors-and-aliases
 __ https://yaml.org/spec/1.2.2/#alias-nodes
 
+.. _git-metadata:
+
+Git Metadata
+------------------------------------------------------------------
+
+In order to save space and bandwidth, the ``.git`` directory is
+not synced to the guest by default. If you want to have it
+available, use the respective ``discover`` step option to have it
+copied to the guest.
+
+.. code-block:: yaml
+
+    discover:
+      - name: Keep git for fmf discovery
+        how: fmf
+        sync-repo: true
+
+.. code-block:: yaml
+
+    discover:
+      - name: Keep git for shell discovery
+        how: shell
+        keep-git-metadata: true
+
+.. note::
+
+    Git metadata cannot be copied for the ``prepare`` or
+    ``finish`` steps yet.
+
 
 .. _multihost-testing:
 
