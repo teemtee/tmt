@@ -5,7 +5,6 @@ import os
 import platform
 import re
 import threading
-import time
 import types
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
@@ -169,7 +168,9 @@ DEFAULT_CONNECT_TIMEOUT = 2 * 60
 #: ``TMT_CONNECT_TIMEOUT``.
 CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
 
-NON_KVM_ADDITIONAL_WAIT = 20   # seconds
+#: How many times should the timeouts be multiplied in kvm-less cases.
+#: These include emulating a different architecture than the host,
+#: some nested virtualization cases, and hosts with degraded virt caps.
 NON_KVM_TIMEOUT_COEF = 10      # times
 
 # SSH key type, set None for ssh-keygen default one
@@ -794,12 +795,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 tick=1):
             raise ProvisionError(
                 f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
-
-        if not self._instance.kvm:
-            self.debug(
-                f"Waiting {NON_KVM_ADDITIONAL_WAIT} seconds "
-                f"for non-kvm instance...")
-            time.sleep(NON_KVM_ADDITIONAL_WAIT)
 
     def stop(self) -> None:
         """ Stop provisioned guest """
