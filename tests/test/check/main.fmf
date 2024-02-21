@@ -3,13 +3,11 @@ tier: 2
 tag+: [provision-virtual]
 
 /dmesg:
-  test: ./test-dmesg.sh
-
-  environment:
-      PROVISION_METHODS: local container
+    test: ./test-dmesg.sh
+    tag+:
+      - provision-only
+      - provision-container
+      - provision-local
 
 /avc:
-  test: ./test-avc.sh
-
-  environment:
-      PROVISION_METHODS: local
+    test: ./test-avc.sh

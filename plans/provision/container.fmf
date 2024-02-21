@@ -1,8 +1,24 @@
-summary: Run tests in a container
+summary: Verify the container provision plugin
+
+description: |
+    Run tests which exercise various features of the podman plugin
+    even if not directly related to the provision implementation.
+
+    The plan takes care of fetching the images to speed up the
+    execution. Each test should set the `provision-container` tag
+    to get picked by the plan, consume the `PROVISION_HOW`
+    variable and use `provision --how container` on their own.
+
 discover:
     how: fmf
-    filter: 'tag: container & tier: 1'
-provision:
-    how: container
-#    image: fedora
-#    pull: false
+    filter: 'tag:provision-container'
+
+prepare+:
+  - name: dnf-cache
+    summary: Fetch dnf cache to speed up the test execution
+    script: prepare/podman-images.sh
+
+environment:
+    PROVISION_HOW: container
+
+enabled: true

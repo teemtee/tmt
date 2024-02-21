@@ -5,7 +5,14 @@ description:
     `system` connection to work without additional steps except
     for setting group and starting the `libvirtd` service for the
     `system` case.
-tag: provision-virtual-only
-tier: null
+tag+:
+  - provision-only
+  - provision-virtual
 require: tmt+provision-virtual
 order: 10
+
+# In order to properly verify that all packages necessary for the
+# virtual provision are installed on the guest, this test would
+# have to be a single one in the plan. Probably not worth it.
+# Disabling for now to prevent wasting resources.
+enabled: false

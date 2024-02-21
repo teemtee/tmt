@@ -1,12 +1,6 @@
 summary: Check whether an injected shell code is executed
-tier: 4
-tag+: [provision-virtual]
-
-# By default, we run under a container only
-environment:
-    PROVISION_METHODS: container
-adjust:
-  - when: trigger == commit
-    environment:
-        PROVISION_METHODS: container local
-    because: the pipeline does not support nested virtualization
+tier: null
+tag+:
+  - provision-container
+  - provision-local
+  - provision-virtual

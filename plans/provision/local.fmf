@@ -1,0 +1,22 @@
+summary: Verify the local provision plugin
+
+description: |
+    Run tests which exercise features of the local provision
+    plugin and need to be run under the root user so they are not
+    suitable to be run by default as part of the tier plans.
+
+    The plan takes care of fetching the images to speed up the
+    execution. Each test should set the `provision-local` tag
+    to get picked by the plan, consume the `PROVISION_HOW`
+    variable and use `provision --how local` on their own.
+
+discover:
+    how: fmf
+    filter: 'tag:provision-local'
+
+environment:
+    PROVISION_HOW: local
+
+adjust+:
+  - enabled: true
+    when: trigger == commit

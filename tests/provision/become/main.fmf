@@ -1,5 +1,9 @@
 summary: Check that become works on virtual and container provision
-description: Ensures that become works when used in virtual instances and on containers.
-tag+: [provision-virtual,provision-container]
+description:
+    Ensure that become works when used in virtual instances and on
+    containers.
+tag+:
+  - provision-only
+  - provision-container
+  - provision-virtual
 duration: 20m
-tier: null
