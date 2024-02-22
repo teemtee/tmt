@@ -20,31 +20,20 @@ tier: 4
     test: ./efi.sh
     enabled: false
 
-
 /multi-part:
     summary: Verify reboot during multiple consecutive tests
     test: ./multi-part.sh
 
-
 /shorten-timeout:
     summary: Verify that timeout shortening works
     test: ./shorten-timeout.sh
-    enabled: false
-
-    adjust+:
-      - enabled: true
-        when: how == full
-        because: this can be run only with full virtualization
-        tag+: [additional_coverage]
-
+    tag+:
+      - provision-only
+      - provision-virtual
 
 /reuse-provision:
     summary: Verify that provision can be reused for reboot
     test: ./reuse.sh
-    enabled: false
-
-    adjust+:
-      - enabled: true
-        when: how == full
-        because: this can be run only with full virtualization
-        tag+: [additional_coverage]
+    tag+:
+      - provision-only
+      - provision-virtual

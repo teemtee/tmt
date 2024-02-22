@@ -20,7 +20,7 @@ rlJournalStart
     rlPhaseStartTest "Reuse the same provision"
         rlRun "tmt run -i $provision_run provision -h virtual"
         guests="$provision_run/plan/provision/guests.yaml"
-        guest=$(get_value "guest" "$guests")
+        guest=$(get_value "primary-address" "$guests")
         port=$(get_value "port" "$guests")
         user=$(get_value "user" "$guests")
         key=$(get_value "key" "$guests")
