@@ -122,56 +122,6 @@ Run selected tests or plans in verbose mode:
     tmt run -v test -n smoke
 
 
-Full Test
-------------------------------------------------------------------
-
-.. warning::
-
-    This full test approach is being obsoleted.
-    See the :ref:`provision-methods` section for details.
-
-Build the rpms and execute the whole test coverage, including
-tests which need the full virtualization support:
-
-.. code-block:: shell
-
-    make build-deps
-    make rpm
-    tmt -c how=full run
-
-This would install the freshly built rpms on your laptop. In order
-to run the full test suite more safely under a virtual machine run
-the full test suite wrapper against the desired branch:
-
-.. code-block:: shell
-
-    cd tests/full
-    tmt run --environment BRANCH=target
-
-Or schedule the full test suite under an external test system:
-
-.. code-block:: shell
-
-    cd tests/full
-    tmt test export --fmf-id | wow fedora-35 x86_64 --fmf-id - --taskparam=BRANCH=target
-
-Or run local modifications copied to the virtual machine. Because this
-requires changes outside of the fmf root you need to run make
-which tars sources to the expected location:
-
-.. code-block:: shell
-
-    cd tests/full
-    make test
-
-Similar as above but run only tests which don't run for merge requests:
-
-.. code-block:: shell
-
-    cd tests/full
-    make test-complement
-
-
 Unit Tests
 ------------------------------------------------------------------
 
@@ -419,7 +369,6 @@ Release
 
 Follow the steps below to create a new major or minor release:
 
-* Run the full test coverage using ``tmt -c how=full run``
 * Use ``git log --oneline --no-decorate x.y-1..`` to generate the changelog
 * Update ``overview.rst`` with new contributors since the last release
 * Review the release notes in ``releases.rst``, update as needed
