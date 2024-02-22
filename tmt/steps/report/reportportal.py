@@ -2,7 +2,7 @@ import dataclasses
 import os
 import re
 from time import time
-from typing import Optional
+from typing import Optional, overload
 
 import requests
 
@@ -12,79 +12,142 @@ from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
 
+def _flag_env_to_default(option: str, default: bool) -> bool:
+    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
+    if env_var not in os.environ:
+        return default
+    return bool(os.getenv(env_var) == '1')
+
+
+@overload
+def _str_env_to_default(option: str, default: None) -> Optional[str]:
+    pass
+
+
+@overload
+def _str_env_to_default(option: str, default: str) -> str:
+    pass
+
+
+def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
+    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
+    if env_var not in os.environ or os.getenv(env_var) is None:
+        return default
+    return str(os.getenv(env_var))
+
+
 @dataclasses.dataclass
 class ReportReportPortalData(tmt.steps.report.ReportStepData):
+
     url: Optional[str] = field(
         option="--url",
         metavar="URL",
-        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_URL'),
+        default=_str_env_to_default('url', None),
         help="The URL of the ReportPortal instance where the data should be sent to.")
+
     token: Optional[str] = field(
         option="--token",
         metavar="TOKEN",
-        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN'),
+        default=_str_env_to_default('token', None),
         help="The token to use for upload to the ReportPortal instance (from the user profile).")
+
     project: Optional[str] = field(
         option="--project",
         metavar="PROJECT_NAME",
-        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_PROJECT'),
+        default=_str_env_to_default('project', None),
         help="Name of the project into which the results should be uploaded.")
+
     launch: Optional[str] = field(
         option="--launch",
         metavar="LAUNCH_NAME",
-        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH'),
-        help="The launch name (name of plan per launch is used by default).")
+        default=_str_env_to_default('launch', None),
+        help="""
+             Set the launch name, otherwise name of the plan is used by default.
+             Should be defined with suite-per-plan option or it will be named after the first plan.
+             """)
+
     launch_description: Optional[str] = field(
         option="--launch-description",
-        metavar="LAUNCH_DESCRIPTION",
-        default=os.getenv('TMT_PLUGIN_REPORT_REPORTPORTAL_LAUNCH_DESCRIPTION'),
-        help="Pass the description for ReportPortal launch, especially with '--suite-per-plan' "
-             "option (Otherwise Summary from plan fmf data per each launch is used by default).")
+        metavar="DESCRIPTION",
+        default=_str_env_to_default('launch_description', None),
+        help="""
+             Pass the description for ReportPortal launch with '--suite-per-plan' option
+             or append the original (plan summary) with additional info.
+             Appends test description with upload-to-launch/suite options.
+             """)
+
     launch_per_plan: bool = field(
         option="--launch-per-plan",
-        default=False,
+        default=_flag_env_to_default('launch_per_plan', False),
         is_flag=True,
         help="Mapping launch per plan, creating one or more launches with no suite structure.")
+
     suite_per_plan: bool = field(
         option="--suite-per-plan",
-        default=False,
+        default=_flag_env_to_default('suite_per_plan', False),
         is_flag=True,
-        help="Mapping suite per plan, creating one launch and continous uploading suites into it. "
-             "Recommended to use with '--launch' and '--launch-description' options."
-             "Can be used with '--upload-to-launch' option to avoid creating a new launch.")
+        help="""
+             Mapping suite per plan, creating one launch and continous uploading suites into it.
+             Recommended to use with '--launch' and '--launch-description' options.
+             Can be used with '--upload-to-launch' option to avoid creating a new launch.
+             """)
+
     upload_to_launch: Optional[str] = field(
         option="--upload-to-launch",
         metavar="LAUNCH_ID",
-        default=None,
-        help="Pass the launch ID for an additional test/suite upload to an existing launch. "
-             "ID can be found in the launch URL.")
+        default=_str_env_to_default('upload_to_launch', None),
+        help="""
+             Pass the launch ID for an additional test/suite upload to an existing launch.
+             ID can be found in the launch URL.
+             To upload specific info into description see also launch-description.
+             """)
+
     upload_to_suite: Optional[str] = field(
         option="--upload-to-suite",
         metavar="LAUNCH_SUITE",
-        default=None,
-        help="Pass the suite ID for an additional test upload to a suite "
-             "within an existing launch. ID can be found in the suite URL.")
+        default=_str_env_to_default('upload_to_suite', None),
+        help="""
+             Pass the suite ID for an additional test upload to a suite
+             within an existing launch. ID can be found in the suite URL.
+             To upload specific info into description see also launch-description.
+             """)
+
     launch_rerun: bool = field(
         option="--launch-rerun",
-        default=False,
+        default=_flag_env_to_default('launch_rerun', False),
         is_flag=True,
-        help="Rerun the last launch based on its name and unique test paths to create Retry item"
-             "with a new version per each test. Supported in 'suite-per-plan' structure only.")
+        help="""
+             Rerun the last launch based on its name and unique test paths to create Retry item
+             with a new version per each test. Supported in 'suite-per-plan' structure only.
+             """)
+
     defect_type: Optional[str] = field(
         option="--defect-type",
         metavar="DEFECT_NAME",
-        default=None,
-        help="Pass the defect type to be used for failed test, which is defined in the project"
-             " (e.g. 'Idle'). 'To Investigate' is used by default.")
+        default=_str_env_to_default('defect_type', None),
+        help="""
+             Pass the defect type to be used for failed test, which is defined in the project
+             (e.g. 'Idle'). 'To Investigate' is used by default.
+             """)
+
     exclude_variables: str = field(
         option="--exclude-variables",
         metavar="PATTERN",
-        default="^TMT_.*",
-        help="Regular expression for excluding environment variables "
-             "from reporting to ReportPortal ('^TMT_.*' used by default)."
-             "Parameters in ReportPortal get filtered out by the pattern"
-             "to prevent overloading and to preserve the history aggregation"
-             "for ReportPortal item if tmt id is not provided")
+        default=_str_env_to_default('defect_type', "^TMT_.*"),
+        help="""
+             Regular expression for excluding environment variables
+             from reporting to ReportPortal ('^TMT_.*' used by default).
+             Parameters in ReportPortal get filtered out by the pattern
+             to prevent overloading and to preserve the history aggregation
+             for ReportPortal item if tmt id is not provided.
+             """)
+
+    api_version: str = field(
+        option="--api-version",
+        metavar="VERSION",
+        default=_str_env_to_default('api_version', "v1"),
+        help="Override the default reportportal API version (v1).")
+
     artifacts_url: Optional[str] = field(
         metavar="ARTIFACTS_URL",
         option="--artifacts-url",
@@ -108,11 +171,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     following options:
 
     * token for authentication
-    * URL of the ReportPortal instance
+    * url of the ReportPortal instance
     * project name
-    * optional API version to override the default one (v1)
-    * optional launch name to override the deafult name based on the tmt
-      plan name
 
     In addition to command line options it's possible to use environment
     variables:
@@ -121,10 +181,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         export TMT_PLUGIN_REPORT_REPORTPORTAL_${MY_OPTION}=${MY_VALUE}
 
-    The optional launch name doesn't have to be provided if it is the
-    same as the plan name (by default). Assuming the URL and token
-    are provided by the environment variables, the plan config can look
-    like this:
+    Assuming the URL and token are provided by the environment variables,
+    the plan config can look like this:
 
     .. code-block:: yaml
 
@@ -152,13 +210,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
       resulting in one or more launches.
     * suite-per-plan with reported structure 'launch > suite > test'
       resulting in one launch only, and one or more suites within.
-      (Recommended to define launch-name and launch-description in
-      addition)
+      It is recommended to define launch name and launch description in addition.
     """
 
     _data_class = ReportReportPortalData
-
-    DEFAULT_API_VERSION = "v1"
 
     TMT_TO_RP_RESULT_STATUS = {
         ResultOutcome.PASS: "PASSED",
@@ -208,9 +263,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 "Content-Type": "application/json"}
 
     def get_url(self) -> str:
-        api_version = os.getenv(
-            'TMT_PLUGIN_REPORT_REPORTPORTAL_API_VERSION') or self.DEFAULT_API_VERSION
-        return f"{self.data.url}/api/{api_version}/{self.data.project}"
+        return f"{self.data.url}/api/{self.data.api_version}/{self.data.project}"
 
     def construct_launch_attributes(self, suite_per_plan: bool,
                                     attributes: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -252,6 +305,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                headers=self.get_headers())
         self.handle_response(response)
         return response
+
+    def append_description(self, curr_description: str) -> str:
+        """ Extend text with the launch description (if provided) """
+        if self.data.launch_description:
+            if curr_description:
+                curr_description += "<br>" + self.data.launch_description
+            else:
+                curr_description = self.data.launch_description
+        return curr_description
 
     def go(self) -> None:
         """
@@ -321,7 +383,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             for key, value in self.step.plan._fmf_context.items()]
         launch_attributes = self.construct_launch_attributes(suite_per_plan, attributes)
 
-        launch_description = self.data.launch_description or self.step.plan.summary
+        if suite_per_plan:
+            launch_description = self.data.launch_description
+            suite_description = self.step.plan.summary or ""
+            if (self.data.upload_to_launch and suite_per_plan):
+                suite_description = self.append_description(suite_description)
+        else:
+            launch_description = self.step.plan.summary or ""
+            launch_description = self.append_description(launch_description)
+
         # Check whether artifacts URL has been provided
         if not launch_description:
             launch_description = self.data.artifacts_url
@@ -382,7 +452,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     url=f"{self.get_url()}/item",
                     headers=self.get_headers(),
                     json={"name": suite_name,
-                          "description": self.step.plan.summary,
+                          "description": suite_description,
                           "attributes": attributes,
                           "startTime": launch_time,
                           "launchUuid": launch_uuid,
@@ -419,13 +489,19 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     if not re.search(envar_pattern, key)]
 
                 if create_test:
+
+                    test_description = test.summary or ""
+                    if ((self.data.upload_to_launch and launch_per_plan)
+                            or self.data.upload_to_suite):
+                        test_description = self.append_description(test_description)
+
                     # Create a test item
                     self.info("test", test.name, color="cyan")
                     response = session.post(
                         url=f"{self.get_url()}/item{f'/{suite_uuid}' if suite_uuid else ''}",
                         headers=self.get_headers(),
                         json={"name": test.name,
-                              "description": test.summary,
+                              "description": test_description,
                               "attributes": item_attributes,
                               "parameters": env_vars,
                               "codeRef": test.web_link() or None,

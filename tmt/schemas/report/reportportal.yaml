@@ -61,6 +61,9 @@ properties:
   artifacts-url:
     type: string
 
+  api-version:
+    type: string
+
 required:
   - how
   - project
