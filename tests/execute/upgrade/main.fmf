@@ -2,16 +2,13 @@ duration: 10m
 tier: 4
 
 /full:
-    summary: Perform a full upgrade from F35 to F36
+    summary: Perform a full distro upgrade
     test: ./full.sh
     # dnf upgrade is run, this may take quite long
     duration: 1h
-    # requires nested virtualization (runs in VM)
-    enabled: false
-    adjust+:
-      - enabled: true
-        when: how == full
-        tag+: [additional_coverage]
+    tag+:
+      - provision-only
+      - provision-virtual
 
 /simple:
     summary: Run a single task from upgrades repo
