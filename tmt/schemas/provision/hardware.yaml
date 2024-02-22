@@ -142,6 +142,8 @@ definitions:
         anyOf:
           - type: string
           - type: integer
+      model-name:
+        type: string
 
     additionalProperties: false
 

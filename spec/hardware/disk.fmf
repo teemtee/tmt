@@ -9,6 +9,11 @@ description: |
            # Number or string, the amount of storage requested.
            # Bytes are assumed when no unit is specified.
          - size: 1234|">= 512 GiB"
+           # String, disk model requested.
+         - model-name: "well-known disk model"
+
+    .. versionchanged:: 1.32
+       Added `model-name` into specification.
 
 example:
   - |
@@ -17,13 +22,20 @@ example:
       - size: 500 GB
 
   - |
+    # Require a disk with specified model
+    disk:
+      - model-name: 'PERC H310'
+
+  - |
     # Multiple disks can be requested as well
     disk:
       - size: '>= 2 GB'
-      - size: '>= 20 GB'
+      - model-name: 'PERC H310'
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+    note: "``size`` only"
   - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``size`` only"
   - implemented-by: /tmt/steps/provision/testcloud.py
-    note: "``=``, ``>=`` and ``<=`` operators only"
+    note: "``size`` only with ``=``, ``>=`` and ``<=`` operators only"
