@@ -47,6 +47,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.processors',
     'cpu.model',
     'disk.size',
+    'disk.model_name',
     'hostname',
     'memory',
     'virtualization.is_virtualized'
@@ -231,6 +232,20 @@ def constraint_to_beaker_filter(
         return MrackHWGroup(
             'disk',
             children=[MrackHWBinOp('size', beaker_operator, actual_value)])
+
+    if name == "disk" and child_name == 'model_name':
+        beaker_operator, actual_value, negate = operator_to_beaker_op(
+            constraint.operator,
+            constraint.value)
+
+        if negate:
+            return MrackHWNotGroup(children=[
+                MrackHWBinOp('model', beaker_operator, actual_value)
+                ])
+
+        return MrackHWGroup(
+            'disk',
+            children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
     if name == 'hostname':
         assert isinstance(constraint.value, str)
