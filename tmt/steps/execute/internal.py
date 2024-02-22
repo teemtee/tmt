@@ -419,7 +419,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             source=invocation.path,
             extend_options=test.test_framework.get_pull_options(invocation, logger))
 
-        # Produce list of results
+        # Extract test results and store them in the invocation. Note
+        # that these results will be overwritten with a fresh set of
+        # results after a successful reboot in the middle of a test.
         invocation.results = self.extract_results(invocation, logger)
 
         invocation.check_results += self.run_checks_after_test(
