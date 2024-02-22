@@ -1,6 +1,5 @@
 summary: Test test checks
 tier: 2
-tag+: [provision-virtual]
 
 /dmesg:
     test: ./test-dmesg.sh
@@ -8,6 +7,10 @@ tag+: [provision-virtual]
       - provision-only
       - provision-container
       - provision-local
+      - provision-virtual
 
 /avc:
     test: ./test-avc.sh
+    tag+:
+      - provision-local
+      - provision-virtual
