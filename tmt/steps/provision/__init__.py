@@ -48,6 +48,7 @@ from tmt.utils import (
     ShellScript,
     cached_property,
     configure_constant,
+    effective_workdir_root,
     field,
     key_to_option,
     )
@@ -734,6 +735,13 @@ class Guest(tmt.utils.Common):
         """
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
+    def setup(self) -> None:
+        """
+        Setup the guest
+
+        Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
+        """
+
     # A couple of requiremens for this field:
     #
     # * it should be valid, i.e. when someone tries to access it, the values
@@ -1364,6 +1372,26 @@ class GuestSsh(Guest):
 
         # Enough for now, ssh connection can be created later
         return self.primary_address is not None
+
+    def setup(self) -> None:
+        if self.is_dry_run:
+            return
+        if not self.facts.is_superuser and self.become:
+            assert self.facts.package_manager is not None
+            # TODO: refactor this after PR #2557 is completed
+            self.execute(
+                Command(
+                    'sudo',
+                    f'{self.facts.package_manager.value}',
+                    'install',
+                    '-y',
+                    'acl'))
+            workdir_root = effective_workdir_root()
+            self.execute(ShellScript(
+                f"""
+                    mkdir -p {workdir_root};
+                    setfacl -d -m o:rX {workdir_root}
+                    """))
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],

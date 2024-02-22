@@ -1,0 +1,14 @@
+summary: Check that become works when instance umask is restricted
+description:
+    Ensures that become works when used in virtual instances with
+    umask set to 0027 like in hardened OSs.
+provision+:
+    become: true
+discover:
+    tests:
+      - name: Beakerlib test to generate report files on guest
+        test: ./umask.sh
+        framework: beakerlib
+prepare:
+    how: shell
+    script: "echo 'umask 0027' >> /etc/profile; echo 'umask 0027' >> /etc/bashrc"

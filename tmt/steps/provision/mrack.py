@@ -811,6 +811,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             logger=self._logger,
             )
         self._guest.start()
+        self._guest.setup()
 
     def guest(self) -> Optional[GuestBeaker]:
         """ Return the provisioned guest """

@@ -229,6 +229,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             data=data,
             name=self.name,
             parent=self.step)
+        self._guest.setup()
 
     def guest(self) -> Optional[tmt.GuestSsh]:
         """ Return the provisioned guest """

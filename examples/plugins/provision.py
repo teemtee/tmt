@@ -88,6 +88,7 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
 
         self._guest = GuestExample(data, name=self.name, parent=self.step)
         self._guest.start()
+        self._guest.setup()
 
     def guest(self):
         """
@@ -110,6 +111,7 @@ class GuestExample(tmt.Guest):
     user ....... user name to log in
     key ........ private key
     password ... password
+    become ..... whether to run the scripts with sudo
 
     These are by default imported into instance attributes (see the
     class attribute '_keys' in tmt.Guest class).
@@ -189,6 +191,16 @@ class GuestExample(tmt.Guest):
 
         raise tmt.utils.ProvisionError(
             "All attempts to provision a machine with example failed.")
+
+    def setup(self):
+        """
+        Setup the guest
+
+        This should include all necessary configurations inside the instance
+        to get the plans to work. For example, ensure the permissions in
+        TMT_WORKDIR_ROOT will work if the user is non-root.
+        """
+        print("setup() called")
 
     # For advanced development
     def execute(self, command, **kwargs):

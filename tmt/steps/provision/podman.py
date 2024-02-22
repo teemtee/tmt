@@ -457,6 +457,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             name=self.name,
             parent=self.step)
         self._guest.start()
+        self._guest.setup()
 
         # TODO: this might be allowed with `--privileged`...
         self._guest.facts.capabilities[GuestCapability.SYSLOG_ACTION_READ_ALL] = False

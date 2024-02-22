@@ -37,6 +37,12 @@ rlJournalStart
         rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/user/scripts"
     rlPhaseEnd
 
+    if [[ "$PROVISION_HOW" == "virtual" ]]; then
+        rlPhaseStartTest "$PROVISION_HOW, umask with become=true"
+            rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /umask"
+        rlPhaseEnd
+    fi
+
     rlPhaseStartCleanup
         rlRun "popd"
         if [[ "$PROVISION_HOW" == "container" ]]; then

@@ -956,6 +956,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             name=self.name,
             parent=self.step)
         self._guest.start()
+        self._guest.setup()
 
     def guest(self) -> Optional[tmt.Guest]:
         """ Return the provisioned guest """

@@ -187,6 +187,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
+        self._guest.setup()
 
     def guest(self) -> Optional[GuestLocal]:
         """ Return the provisioned guest """

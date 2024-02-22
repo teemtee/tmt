@@ -6,3 +6,4 @@ tag+:
   - provision-only
   - provision-container
   - provision-virtual
+duration: 24m
