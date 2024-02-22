@@ -420,8 +420,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             extend_options=test.test_framework.get_pull_options(invocation, logger))
 
         # Produce list of results
-        if not invocation.reboot_requested:
-            invocation.results += self.extract_results(invocation, logger)
+        invocation.results = self.extract_results(invocation, logger)
 
         invocation.check_results += self.run_checks_after_test(
             invocation=invocation,
