@@ -15,7 +15,7 @@ from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
-from tmt.utils import Path, field
+from tmt.utils import Environment, EnvVarValue, Path, field
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'
@@ -169,7 +169,7 @@ class ExecuteUpgrade(ExecuteInternal):
             self,
             *,
             guest: 'tmt.steps.provision.Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Execute available tests """
         # Inform about the how, skip the actual execution
@@ -337,7 +337,10 @@ class ExecuteUpgrade(ExecuteInternal):
             names_backup.append(test.name)
             test.name = f'/{prefix}/{test.name.lstrip("/")}'
 
-        self._run_tests(guest=guest, extra_environment={STATUS_VARIABLE: prefix}, logger=logger)
+        self._run_tests(
+            guest=guest,
+            extra_environment=Environment({STATUS_VARIABLE: EnvVarValue(prefix)}),
+            logger=logger)
 
         tests = self.discover.tests(enabled=True)
         for i, test in enumerate(tests):

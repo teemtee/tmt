@@ -96,7 +96,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
             self,
             *,
             guest: 'tmt.steps.provision.Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Prepare the guest (common actions) """
         super().go(guest=guest, environment=environment, logger=logger)

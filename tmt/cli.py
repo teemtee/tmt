@@ -834,7 +834,7 @@ def tests_import(
         if not (case or plan):
             raise tmt.utils.GeneralError(
                 "Option --case or --plan is mandatory when using --manual.")
-        tmt.convert.read_manual(plan, case, disabled, with_script)
+        tmt.convert.read_manual(plan, case, disabled, with_script, context.obj.logger)
         return
 
     if not paths:
@@ -849,7 +849,7 @@ def tests_import(
         # Gather old metadata and store them as fmf
         common, individual = tmt.convert.read(
             path, makefile, restraint, nitrate, polarion, polarion_case_id, link_polarion,
-            purpose, disabled, types, general, dry)
+            purpose, disabled, types, general, dry, context.obj.logger)
         # Add path to common metadata if there are virtual test cases
         if individual:
             # TODO: fmf is not annotated yet, fmf.Tree.root is seen by pyright as possibly

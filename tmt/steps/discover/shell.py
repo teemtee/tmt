@@ -12,7 +12,16 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
-from tmt.utils import Command, Path, SerializableContainer, ShellScript, SpecBasedContainer, field
+from tmt.utils import (
+    Command,
+    Environment,
+    EnvVarValue,
+    Path,
+    SerializableContainer,
+    ShellScript,
+    SpecBasedContainer,
+    field,
+    )
 
 T = TypeVar('T', bound='TestDescription')
 
@@ -114,10 +123,12 @@ class TestDescription(
             for recommend in serialized_recommends
             ]
         )
-    environment: tmt.utils.EnvironmentType = field(
-        default_factory=dict,
-        normalize=tmt.base.normalize_test_environment
-        )
+    environment: tmt.utils.Environment = field(
+        default_factory=tmt.utils.Environment,
+        normalize=tmt.utils.Environment.normalize,
+        serialize=lambda environment: environment.to_fmf_spec(),
+        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        exporter=lambda environment: environment.to_fmf_spec())
     duration: str = '1h'
     result: str = 'respect'
 
@@ -276,7 +287,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             url=url,
             destination=testdir,
             shallow=ref is None,
-            env={"GIT_ASKPASS": "echo"},
+            env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
             logger=self._logger)
 
         # Resolve possible dynamic references
@@ -342,7 +353,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
             # Add source dir path variable
             if dist_git_source:
-                data.environment['TMT_SOURCE_DIR'] = str(sourcedir)
+                data.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
             # Create a simple fmf node, with correct name. Emit only keys and values
             # that are no longer default. Do not add `name` itself into the node,

@@ -127,7 +127,7 @@ class Check(
             *,
             event: CheckEvent,
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         """
         Run the check.
@@ -204,7 +204,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             *,
             check: CheckT,
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []
 
@@ -214,7 +214,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             *,
             check: CheckT,
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list['CheckResult']:
         return []
 

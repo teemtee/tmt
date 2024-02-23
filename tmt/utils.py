@@ -311,7 +311,7 @@ class FmfContext(dict[str, list[str]]):
 
         return FmfContext({
             key: value.split(',')
-            for key, value in environment_to_dict(variables=spec, logger=logger).items()})
+            for key, value in Environment.from_sequence(spec, logger).items()})
 
     @classmethod
     def _normalize_fmf(
@@ -368,8 +368,513 @@ class FmfContext(dict[str, list[str]]):
         return dict(self)
 
 
-# A "environment" type, representing name/value environment variables.
-EnvironmentType = dict[str, str]
+#: A type of environment variable name.
+EnvVarName: 'TypeAlias' = str
+
+# This one is not an alias: a full-fledged class makes type linters
+# enforce strict instantiation of objects rather than accepting
+# strings where `EnvVarValue` is expected.
+
+
+class EnvVarValue(str):
+    """ A type of environment variable value """
+
+    def __new__(cls, raw_value: Any) -> 'EnvVarValue':
+        if isinstance(raw_value, str):
+            return str.__new__(cls, raw_value)
+
+        if isinstance(raw_value, Path):
+            return str.__new__(cls, str(raw_value))
+
+        raise GeneralError(
+            f"Only strings and paths can be environment variables, '{type(raw_value)}' found.")
+
+
+class Environment(dict[str, EnvVarValue]):
+    """
+    Represents a set of environment variables.
+
+    See https://tmt.readthedocs.io/en/latest/spec/tests.html#environment,
+    https://tmt.readthedocs.io/en/latest/spec/plans.html#environment and
+    https://tmt.readthedocs.io/en/latest/spec/plans.html#environment-file.
+    """
+
+    def __init__(self, data: Optional[dict[EnvVarName, EnvVarValue]] = None) -> None:
+        super().__init__(data or {})
+
+    @classmethod
+    def from_dotenv(cls, content: str) -> 'Environment':
+        """
+        Construct environment from a ``.env`` format.
+
+        :param content: string containing variables defined in the "dotenv"
+            format, https://hexdocs.pm/dotenvy/dotenv-file-format.html.
+        """
+
+        environment = Environment()
+
+        try:
+            for line in shlex.split(content, comments=True):
+                key, value = line.split("=", maxsplit=1)
+
+                environment[key] = EnvVarValue(value)
+
+        except Exception as exc:
+            raise GeneralError("Failed to extract variables from 'dotenv' format.") from exc
+
+        return environment
+
+    @classmethod
+    def from_yaml(cls, content: str) -> 'Environment':
+        """
+        Construct environment from a YAML format.
+
+        :param content: string containing variables defined in a YAML
+            dictionary, i.e. ``key: value`` entries.
+        """
+
+        try:
+            yaml = YAML(typ="safe").load(content)
+
+        except Exception as exc:
+            raise GeneralError('Failed to extract variables from YAML format.') from exc
+
+        # Handle empty file as an empty environment
+        if yaml is None:
+            return Environment()
+
+        if not isinstance(yaml, dict):
+            raise GeneralError(
+                'Failed to extract variables from YAML format, '
+                'YAML defining variables must be a dictionary.')
+
+        if any(isinstance(v, (dict, list)) for v in yaml.values()):
+            raise GeneralError(
+                'Failed to extract variables from YAML format, '
+                'only primitive types are accepted as values.')
+
+        return Environment({
+            key: EnvVarValue(str(value))
+            for key, value in yaml.items()
+            })
+
+    @classmethod
+    def from_yaml_file(
+            cls,
+            filepath: Path,
+            logger: tmt.log.Logger) -> 'Environment':
+        """
+        Construct environment from a YAML file.
+
+        File is expected to contain variables in a YAML dictionary, i.e.
+        ``key: value`` entries. Only primitive types - strings, numbers,
+        booleans - are allowed as values.
+
+        :param path: path to the file with variables.
+        :param logger: used for logging.
+        """
+
+        try:
+            content = filepath.read_text()
+
+        except Exception as exc:
+            raise GeneralError(f"Failed to extract variables from YAML file '{filepath}'.") \
+                from exc
+
+        return cls.from_yaml(content)
+
+    @classmethod
+    def from_sequence(
+            cls,
+            variables: Union[str, list[str]],
+            logger: tmt.log.Logger) -> 'Environment':
+        """
+        Construct environment from a sequence of variables.
+
+        Variables may be specified in two ways:
+
+        * ``NAME=VALUE`` pairs, or
+        * ``@foo.yaml`` signaling variables to be read from a file.
+
+        If a "variable" starts with ``@``, it is treated as a path to
+        a YAML file that contains key/value pairs which are then
+        transparently loaded and added to the final environment.
+
+        :param variables: string or a sequence of strings containing
+            variables. The acceptable formats are:
+
+            * ``'X=1'``
+            * ``'X=1 Y=2 Z=3'``
+            * ``['X=1', 'Y=2', 'Z=3']``
+            * ``['X=1 Y=2 Z=3', 'A=1 B=2 C=3']``
+            * ``'TXT="Some text with spaces in it"'``
+            * ``@foo.yaml``
+            * ``@../../bar.yaml``
+        """
+
+        if not isinstance(variables, (list, tuple)):
+            variables = [variables]
+
+        result = Environment()
+
+        for variable in variables:
+            if variable is None:
+                continue
+            for var in shlex.split(variable):
+                if var.startswith('@'):
+                    if not var[1:]:
+                        raise GeneralError(
+                            f"Invalid variable file specification '{var}'.")
+
+                    filepath = Path(var[1:])
+
+                    environment = cls.from_yaml_file(filepath, logger)
+
+                    if not environment:
+                        logger.warn(f"Empty environment file '{filepath}'.")
+
+                    result.update(environment)
+
+                else:
+                    matched = re.match("([^=]+)=(.*)", var)
+                    if not matched:
+                        raise GeneralError(f"Invalid variable specification '{var}'.")
+                    name, value = matched.groups()
+                    result[name] = EnvVarValue(value)
+
+        return result
+
+    @classmethod
+    def from_file(
+            cls,
+            *,
+            filename: str,
+            root: Optional[Path] = None,
+            logger: tmt.log.Logger) -> 'Environment':
+        """
+        Construct environment from a file.
+
+        YAML files - recognized by ``.yaml`` or ``.yml`` suffixes - or
+        ``.env``-like files are supported.
+
+        .. code-block:: bash
+           :caption: dotenv file example
+
+           A=B
+           C=D
+
+        .. code-block:: yaml
+           :caption: YAML file example
+
+           A: B
+           C: D
+
+        .. note::
+
+            For loading environment variables from multiple files, see
+            :py:meth:`Environment.from_files`.
+        """
+
+        root = root or Path.cwd()
+        filename = filename.strip()
+        environment_filepath: Optional[Path] = None
+
+        # Fetch a remote file
+        if filename.startswith("http"):
+            # Create retry session for longer retries, see #1229
+            session = retry_session.create(
+                retries=ENVFILE_RETRY_SESSION_RETRIES,
+                backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
+                allowed_methods=('GET',),
+                status_forcelist=(
+                    429,  # Too Many Requests
+                    500,  # Internal Server Error
+                    502,  # Bad Gateway
+                    503,  # Service Unavailable
+                    504   # Gateway Timeout
+                    ),
+                )
+            try:
+                response = session.get(filename)
+                response.raise_for_status()
+                content = response.text
+            except requests.RequestException as error:
+                raise GeneralError(f"Failed to extract variables from URL '{filename}'.") \
+                    from error
+
+        # Read a local file
+        else:
+            # Ensure we don't escape from the metadata tree root
+
+            root = root.resolve()
+            environment_filepath = root.joinpath(filename).resolve()
+
+            if not environment_filepath.is_relative_to(root):
+                raise GeneralError(
+                    f"Failed to extract variables from file '{environment_filepath}' as it "
+                    f"lies outside the metadata tree root '{root}'.")
+            if not environment_filepath.is_file():
+                raise GeneralError(f"File '{environment_filepath}' doesn't exist.")
+
+            content = environment_filepath.read_text()
+
+        # Parse yaml file
+        if os.path.splitext(filename)[1].lower() in ('.yaml', '.yml'):
+            environment = cls.from_yaml(content)
+
+        else:
+            environment = cls.from_dotenv(content)
+
+        if not environment:
+            logger.warn(f"Empty environment file '{filename}'.")
+
+            return Environment()
+
+        return environment
+
+    @classmethod
+    def from_files(
+            cls,
+            *,
+            filenames: Iterable[str],
+            root: Optional[Path] = None,
+            logger: tmt.log.Logger) -> 'Environment':
+        """
+        Read environment variables from the given list of files.
+
+        Files should be in YAML format (``.yaml`` or ``.yml`` suffixes), or in dotenv format.
+
+        .. code-block:: bash
+           :caption: dotenv file example
+
+           A=B
+           C=D
+
+        .. code-block:: yaml
+           :caption: YAML file example
+
+           A: B
+           C: D
+
+        Path to each file should be relative to the metadata tree root.
+
+        .. note::
+
+            For loading environment variables from a single file, see
+            :py:meth:`Environment.from_file`, which is a method called
+            for each file, accumulating data from all input files.
+        """
+
+        root = root or Path.cwd()
+
+        result = Environment()
+
+        for filename in filenames:
+            result.update(cls.from_file(filename=filename, root=root, logger=logger))
+
+        return result
+
+    @classmethod
+    def from_inputs(
+            cls,
+            *,
+            raw_fmf_environment: Any = None,
+            raw_fmf_environment_files: Any = None,
+            raw_cli_environment: Any = None,
+            raw_cli_environment_files: Any = None,
+            file_root: Optional[Path] = None,
+            key_address: Optional[str] = None,
+            logger: tmt.log.Logger) -> 'Environment':
+        """
+        Extract environment variables from various sources.
+
+        Combines various raw sources into a set of environment variables. Calls
+        necessary functions to process environment files, dictionaries and CLI
+        inputs.
+
+        All inputs are optional, and there is a clear order of preference, which is,
+        from the most prefered:
+
+        * ``--environment`` CLI option (``raw_cli_environment``)
+        * ``--environment-file`` CLI option (``raw_cli_environment_files``)
+        * ``environment`` fmf key (``raw_fmf_environment``)
+        * ``environment-file`` fmf key (``raw_fmf_environment_files``)
+
+        :param raw_fmf_environment: content of ``environment`` fmf key. ``None``
+            and a dictionary are accepted.
+        :param raw_fmf_environment_files: content of ``environment-file`` fmf key.
+            ``None`` and a list of paths are accepted.
+        :param raw_cli_environment: content of ``--environment`` CLI option.
+            ``None``, a tuple or a list are accepted.
+        :param raw_cli_environment_files: content of `--environment-file`` CLI
+            option. ``None``, a tuple or a list are accepted.
+        :raises NormalizationError: when an input is of a type which is not allowed
+            for that particular source.
+        """
+
+        key_address_prefix = f'{key_address}:' if key_address else ''
+
+        from_fmf_files = Environment()
+        from_fmf_dict = Environment()
+        from_cli_files = Environment()
+        from_cli = Environment()
+
+        if raw_fmf_environment_files is None:
+            pass
+        elif isinstance(raw_fmf_environment_files, list):
+            from_fmf_files = cls.from_files(
+                filenames=raw_fmf_environment_files,
+                root=file_root,
+                logger=logger)
+        else:
+            raise NormalizationError(
+                f'{key_address_prefix}environment-file',
+                raw_fmf_environment_files,
+                'unset or a list of paths')
+
+        if raw_fmf_environment is None:
+            pass
+        elif isinstance(raw_fmf_environment, dict):
+            from_fmf_dict = Environment.from_dict(raw_fmf_environment)
+        else:
+            raise NormalizationError(
+                f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary')
+
+        if raw_cli_environment_files is None:
+            pass
+        elif isinstance(raw_cli_environment_files, (list, tuple)):
+            from_cli_files = Environment.from_files(
+                filenames=raw_cli_environment_files,
+                root=file_root,
+                logger=logger)
+        else:
+            raise NormalizationError(
+                'environment-file', raw_cli_environment_files, 'unset or a list of paths')
+
+        if raw_cli_environment is None:
+            pass
+        elif isinstance(raw_cli_environment, (list, tuple)):
+            from_cli = Environment.from_sequence(list(raw_cli_environment), logger)
+        else:
+            raise NormalizationError(
+                'environment', raw_cli_environment, 'unset or a list of key/value pairs')
+
+        # Combine all sources into one mapping, honor the order in which they override
+        # other sources.
+        return Environment({
+            **from_fmf_files,
+            **from_fmf_dict,
+            **from_cli_files,
+            **from_cli
+            })
+
+    @classmethod
+    def from_dict(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
+        """ Create environment variables from a dictionary """
+        if not data:
+            return Environment()
+
+        return Environment({
+            str(key): EnvVarValue(str(value))
+            for key, value in data.items()
+            })
+
+    @classmethod
+    def from_environ(cls) -> 'Environment':
+        """ Extract environment variables from the live environment """
+
+        return Environment({
+            key: EnvVarValue(value) for key, value in os.environ.items()
+            })
+
+    @classmethod
+    def from_fmf_context(cls, fmf_context: FmfContext) -> 'Environment':
+        """ Create environment variables from an fmf context """
+
+        return Environment({
+            key: EnvVarValue(','.join(value))
+            for key, value in fmf_context.items()
+            })
+
+    @classmethod
+    def from_fmf_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
+        """ Create environment from an fmf specification """
+
+        if not data:
+            return Environment()
+
+        return Environment({
+            key: EnvVarValue(str(value)) for key, value in data.items()
+            })
+
+    def to_fmf_spec(self) -> dict[str, str]:
+        """ Convert to an fmf specification """
+
+        return {
+            key: str(value) for key, value in self.items()
+            }
+
+    def to_popen(self) -> dict[str, str]:
+        """ Convert to a form accepted by :py:class:`subprocess.Popen` """
+
+        return self.to_environ()
+
+    def to_environ(self) -> dict[str, str]:
+        """ Convert to a form compatible with :py:attr:`os.environ` """
+
+        return {
+            key: str(value) for key, value in self.items()
+            }
+
+    def copy(self) -> 'Environment':
+        return Environment(self)
+
+    @classmethod
+    def normalize(
+            cls,
+            key_address: str,
+            value: Any,
+            logger: tmt.log.Logger) -> 'Environment':
+        """ Normalize value of ``environment`` key """
+
+        # Note: this normalization callback is an exception, it does not
+        # bother with CLI input. Environment handling is complex, and CLI
+        # options have their special handling. The `environment` as an
+        # fmf key does not really have a 1:1 CLI option, the corresponding
+        # options are always "special".
+        if value is None:
+            return cls()
+
+        if isinstance(value, dict):
+            return cls({
+                k: EnvVarValue(str(v)) for k, v in value.items()
+                })
+
+        raise NormalizationError(key_address, value, 'unset or a dictionary')
+
+    @contextlib.contextmanager
+    def as_environ(self) -> Iterator[None]:
+        """
+        A context manager replacing :py:attr:`os.environ` with this environment.
+
+        When left, the original content of ``os.environ`` is restored.
+
+        .. warning::
+
+            This method is not thread safe! Beware of using it in code
+            that runs in multiple threads, e.g. from
+            provision/prepare/execute/finish phases.
+        """
+
+        environ_backup = os.environ.copy()
+        os.environ.clear()
+        os.environ.update(self)
+        try:
+            yield
+        finally:
+            os.environ.clear()
+            os.environ.update(environ_backup)
+
 
 # Workdir argument type, can be True, a string, a path or None
 WorkdirArgumentType = Union[Literal[True], Path, None]
@@ -639,7 +1144,7 @@ class Command:
             *,
             cwd: Optional[Path],
             shell: bool = False,
-            env: Optional[EnvironmentType] = None,
+            env: Optional[Environment] = None,
             dry: bool = False,
             join: bool = False,
             interactive: bool = False,
@@ -713,11 +1218,11 @@ class Command:
 
         # Prepare the environment: use the current process environment, but do
         # not modify it if caller wants something extra, make a copy.
-        actual_env: Optional[EnvironmentType] = None
+        actual_env: Optional[Environment] = None
 
         # Do not modify current process environment
         if env is not None:
-            actual_env = os.environ.copy()
+            actual_env = Environment.from_environ()
             actual_env.update(env)
 
         logger.debug('environment', format_value(actual_env), level=4)
@@ -731,7 +1236,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_env,
+                    env=actual_env.to_popen() if actual_env is not None else None,
                     # Disabling for now: When used together with the
                     # local provision this results into errors such as:
                     # 'cannot set terminal process group: Inappropriate
@@ -749,7 +1254,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_env,
+                    env=actual_env.to_popen() if actual_env is not None else None,
                     start_new_session=True,
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
@@ -1422,7 +1927,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             cwd: Optional[Path] = None,
             ignore_dry: bool = False,
             shell: bool = False,
-            env: Optional[EnvironmentType] = None,
+            env: Optional[Environment] = None,
             interactive: bool = False,
             join: bool = False,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -2068,369 +2573,6 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
     return [Path(path) for path in set(found_paths)]  # return all matching unique paths as Path's
 
 
-# These two are helpers for shell_to_dict and environment_to_dict -
-# there is some overlap of their functionality.
-def _add_simple_var(result: EnvironmentType, var: str) -> None:
-    """
-    Add a single NAME=VALUE pair into result dictionary
-
-    Parse given string VAR to its constituents, NAME and VALUE, and add
-    them to the provided dict.
-    """
-
-    matched = re.match("([^=]+)=(.*)", var)
-    if not matched:
-        raise GeneralError(f"Invalid variable specification '{var}'.")
-    name, value = matched.groups()
-    result[name] = value
-
-
-def _add_file_vars(
-        *,
-        result: EnvironmentType,
-        filepath: str,
-        logger: tmt.log.Logger) -> None:
-    """
-    Add variables loaded from file into the result dictionary
-
-    Load mapping from a YAML file 'filepath', and add its content -
-    "name: value" entries - to the provided dict.
-    """
-
-    if not filepath[1:]:
-        raise GeneralError(
-            f"Invalid variable file specification '{filepath}'.")
-
-    try:
-        with open(filepath[1:]) as file:
-            # Handle empty file as an empty environment
-            content = file.read()
-            if not content:
-                logger.warn(f"Empty environment file '{filepath}'.")
-                return
-            file_vars = yaml_to_dict(content)
-    except Exception as exception:
-        raise GeneralError(
-            f"Failed to load variables from '{filepath}': {exception}")
-
-    for name, value in file_vars.items():
-        result[name] = str(value)
-
-
-def shell_to_dict(variables: Union[str, list[str]]) -> EnvironmentType:
-    """
-    Convert shell-like variables into a dictionary
-
-    Accepts single string or list of strings. Allowed forms are:
-    'X=1'
-    'X=1 Y=2 Z=3'
-    ['X=1', 'Y=2', 'Z=3']
-    ['X=1 Y=2 Z=3', 'A=1 B=2 C=3']
-    'TXT="Some text with spaces in it"'
-    """
-    if not isinstance(variables, (list, tuple)):
-        variables = [variables]
-    result: EnvironmentType = {}
-    for variable in variables:
-        if variable is None:
-            continue
-        for var in shlex.split(variable):
-            _add_simple_var(result, var)
-
-    return result
-
-
-def environment_to_dict(
-        *,
-        variables: Union[str, list[str]],
-        logger: tmt.log.Logger) -> EnvironmentType:
-    """
-    Convert environment variables into a dictionary
-
-    Variables may be specified in the following two ways:
-
-    * NAME=VALUE pairs
-    * @foo.yaml
-
-    If "variable" starts with "@" character, it is treated as a path to
-    a YAML file that contains "key: value" pairs which are then
-    transparently loaded and added to the final dictionary.
-
-    In general, allowed inputs are the same as in "shell_to_dict"
-    function, with the addition of "@foo.yaml" form:
-    'X=1'
-    'X=1 Y=2 Z=3'
-    ['X=1', 'Y=2', 'Z=3']
-    ['X=1 Y=2 Z=3', 'A=1 B=2 C=3']
-    'TXT="Some text with spaces in it"'
-    @foo.yaml
-    @../../bar.yaml
-    """
-
-    if not isinstance(variables, (list, tuple)):
-        variables = [variables]
-    result: EnvironmentType = {}
-
-    for variable in variables:
-        if variable is None:
-            continue
-        for var in shlex.split(variable):
-            if var.startswith('@'):
-                _add_file_vars(result=result, filepath=var, logger=logger)
-            else:
-                _add_simple_var(result, var)
-
-    return result
-
-
-@functools.cache
-def environment_file_to_dict(
-        *,
-        filename: str,
-        root: Optional[Path] = None,
-        logger: tmt.log.Logger) -> EnvironmentType:
-    """
-    Read environment variables from the given file.
-
-    File should be in YAML format (``.yaml`` or ``.yml`` suffixes), or in dotenv format.
-
-    .. code-block:: bash
-       :caption: dotenv file example
-
-       A=B
-       C=D
-
-    .. code-block:: yaml
-       :caption: YAML file example
-
-       A: B
-       C: D
-
-    Path to each file should be relative to the metadata tree root.
-
-    .. note::
-
-       For loading environment variables from multiple files, see
-       :py:func:`environment_files_to_dict`.
-    """
-
-    root = root or Path.cwd()
-    filename = filename.strip()
-    environment_filepath: Optional[Path] = None
-
-    # Fetch a remote file
-    if filename.startswith("http"):
-        # Create retry session for longer retries, see #1229
-        session = retry_session.create(
-            retries=ENVFILE_RETRY_SESSION_RETRIES,
-            backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
-            allowed_methods=('GET',),
-            status_forcelist=(
-                429,  # Too Many Requests
-                500,  # Internal Server Error
-                502,  # Bad Gateway
-                503,  # Service Unavailable
-                504   # Gateway Timeout
-                ),
-            )
-        try:
-            response = session.get(filename)
-            response.raise_for_status()
-            content = response.text
-        except requests.RequestException as error:
-            raise GeneralError(
-                f"Failed to fetch the environment file from '{filename}'. "
-                f"The problem was: '{error}'")
-
-    # Read a local file
-    else:
-        # Ensure we don't escape from the metadata tree root
-
-        root = root.resolve()
-        environment_filepath = root.joinpath(filename).resolve()
-
-        if not environment_filepath.is_relative_to(root):
-            raise GeneralError(
-                f"The 'environment-file' path '{environment_filepath}' is outside "
-                f"of the metadata tree root '{root}'.")
-        if not environment_filepath.is_file():
-            raise GeneralError(f"File '{environment_filepath}' doesn't exist.")
-
-        content = environment_filepath.read_text()
-
-    # Parse yaml file
-    if os.path.splitext(filename)[1].lower() in ('.yaml', '.yml'):
-        environment = parse_yaml(content)
-
-    else:
-        try:
-            environment = parse_dotenv(content)
-
-        except ValueError:
-            raise GeneralError(
-                f"Failed to extract variables from environment file "
-                f"'{environment_filepath or filename}'. Ensure it has the proper format "
-                f"(i.e. A=B).")
-
-    if not environment:
-        logger.warn(f"Empty environment file '{filename}'.")
-
-        return {}
-
-    return environment
-
-
-def environment_files_to_dict(
-        *,
-        filenames: Iterable[str],
-        root: Optional[Path] = None,
-        logger: tmt.log.Logger) -> EnvironmentType:
-    """
-    Read environment variables from the given list of files.
-
-    Files should be in YAML format (``.yaml`` or ``.yml`` suffixes), or in dotenv format.
-
-    .. code-block:: bash
-       :caption: dotenv file example
-
-       A=B
-       C=D
-
-    .. code-block:: yaml
-       :caption: YAML file example
-
-       A: B
-       C: D
-
-    Path to each file should be relative to the metadata tree root.
-
-    .. note::
-
-       For loading environment variables from a single file, see
-       :py:func:`environment_file_to_dict`, which is a function
-       ``environment_files_to_dict()`` calls for each file,
-       accumulating data from all input files.
-    """
-
-    root = root or Path.cwd()
-
-    result: EnvironmentType = {}
-
-    for filename in filenames:
-        result.update(environment_file_to_dict(filename=filename, root=root, logger=logger))
-
-    return result
-
-
-def environment_from_spec(
-        *,
-        raw_fmf_environment: Any = None,
-        raw_fmf_environment_files: Any = None,
-        raw_cli_environment: Any = None,
-        raw_cli_environment_files: Any = None,
-        file_root: Optional[Path] = None,
-        key_address: Optional[str] = None,
-        logger: tmt.log.Logger) -> EnvironmentType:
-    """
-    Extract environment variables from various sources.
-
-    Combines various raw sources into a set of environment variables. Calls
-    necessary functions to process environment files, dictionaries and CLI
-    inputs.
-
-    All inputs are optional, and there is a clear order of preference, which is,
-    from the most prefered:
-
-    * ``--environment`` CLI option (``raw_cli_environment``)
-    * ``--environment-file`` CLI option (``raw_cli_environment_files``)
-    * ``environment`` fmf key (``raw_fmf_environment``)
-    * ``environment-file`` fmf key (``raw_fmf_environment_files``)
-
-    :param raw_fmf_environment: content of ``environment`` fmf key. ``None``
-        and a dictionary are accepted.
-    :param raw_fmf_environment_files: content of ``environment-file`` fmf key.
-        ``None`` and a list of paths are accepted.
-    :param raw_cli_environment: content of ``--environment`` CLI option.
-        ``None``, a tuple or a list are accepted.
-    :param raw_cli_environment_files: content of `--environment-file`` CLI
-        option. ``None``, a tuple or a list are accepted.
-    :raises NormalizationError: when an input is of a type which is not allowed
-        for that particular source.
-    """
-
-    key_address_prefix = f'{key_address}:' if key_address else ''
-
-    from_fmf_files: EnvironmentType = {}
-    from_fmf_dict: EnvironmentType = {}
-    from_cli_files: EnvironmentType = {}
-    from_cli: EnvironmentType = {}
-
-    if raw_fmf_environment_files is None:
-        pass
-    elif isinstance(raw_fmf_environment_files, list):
-        from_fmf_files = environment_files_to_dict(
-            filenames=raw_fmf_environment_files,
-            root=file_root,
-            logger=logger)
-    else:
-        raise NormalizationError(
-            f'{key_address_prefix}environment-file',
-            raw_fmf_environment_files,
-            'unset or a list of paths')
-
-    if raw_fmf_environment is None:
-        pass
-    elif isinstance(raw_fmf_environment, dict):
-        from_fmf_dict = {
-            str(key): str(value)
-            for key, value in raw_fmf_environment.items()}
-    else:
-        raise NormalizationError(
-            f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary')
-
-    if raw_cli_environment_files is None:
-        pass
-    elif isinstance(raw_cli_environment_files, (list, tuple)):
-        from_cli_files = environment_files_to_dict(
-            filenames=raw_cli_environment_files,
-            root=file_root,
-            logger=logger)
-    else:
-        raise NormalizationError(
-            'environment-file', raw_cli_environment_files, 'unset or a list of paths')
-
-    if raw_cli_environment is None:
-        pass
-    elif isinstance(raw_cli_environment, (list, tuple)):
-        from_cli = environment_to_dict(variables=list(raw_cli_environment), logger=logger)
-    else:
-        raise NormalizationError(
-            'environment', raw_cli_environment, 'unset or a list of key/value pairs')
-
-    # Combine all sources into one mapping, honor the order in which they override
-    # other sources.
-    return {
-        **from_fmf_files,
-        **from_fmf_dict,
-        **from_cli_files,
-        **from_cli
-        }
-
-
-@contextlib.contextmanager
-def modify_environ(
-        new_elements: EnvironmentType) -> Iterator[None]:
-    """ A context manager for os.environ that restores the initial state """
-    environ_backup = os.environ.copy()
-    os.environ.clear()
-    os.environ.update(new_elements)
-    try:
-        yield
-    finally:
-        os.environ.clear()
-        os.environ.update(environ_backup)
-
-
 def dict_to_yaml(
         data: Union[dict[str, Any], list[Any], 'tmt.base._RawFmfId'],
         width: Optional[int] = None,
@@ -2461,6 +2603,11 @@ def dict_to_yaml(
     yaml.representer.add_representer(pathlib.Path, _represent_path)
     yaml.representer.add_representer(pathlib.PosixPath, _represent_path)
     yaml.representer.add_representer(Path, _represent_path)
+
+    def _represent_environment(representer: Representer, data: Environment) -> Any:
+        return representer.represent_mapping('tag:yaml.org,2002:map', data.to_fmf_spec())
+
+    yaml.representer.add_representer(Environment, _represent_environment)
 
     # Convert multiline strings
     scalarstring.walk_tree(data)
@@ -4324,25 +4471,6 @@ def default_branch(
     return head.read_text().strip().split('/')[-1]
 
 
-def parse_dotenv(content: str) -> EnvironmentType:
-    """ Parse dotenv (shell) format of variables """
-    return dict([line.split("=", maxsplit=1)
-                for line in shlex.split(content, comments=True)])
-
-
-def parse_yaml(content: str) -> EnvironmentType:
-    """ Parse variables from yaml, ensure flat dictionary format """
-    yaml_as_dict = YAML(typ="safe").load(content)
-    # Handle empty file as an empty environment
-    if yaml_as_dict is None:
-        return {}
-    if any(isinstance(val, dict) for val in yaml_as_dict.values()):
-        raise GeneralError(
-            "Can't set the environment from the nested yaml config. The "
-            "config should be just key, value pairs.")
-    return {key: str(value) for key, value in yaml_as_dict.items()}
-
-
 def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     """
     Validate that test has current metadata on fmf_id
@@ -5083,7 +5211,7 @@ def git_clone(
         destination: Path,
         shallow: bool = False,
         can_change: bool = True,
-        env: Optional[EnvironmentType] = None,
+        env: Optional[Environment] = None,
         attempts: Optional[int] = None,
         interval: Optional[int] = None,
         timeout: Optional[int] = None,
@@ -5110,7 +5238,7 @@ def git_clone(
             url: str,
             destination: Path,
             shallow: bool = False,
-            env: Optional[EnvironmentType] = None,
+            env: Optional[Environment] = None,
             timeout: Optional[int] = None) -> CommandOutput:
         """ Clone the repo, handle history depth """
 

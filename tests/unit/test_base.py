@@ -188,8 +188,8 @@ def test_expand_node_data(monkeypatch) -> None:
     # environment providing inputs.
 
     fmf_context = {
-        'WALDO': 'plugh',
-        'XYZZY': 'thud'
+        'WALDO': ['plugh'],
+        'XYZZY': ['thud']
         }
 
     environ = {

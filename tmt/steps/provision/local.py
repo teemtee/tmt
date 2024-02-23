@@ -69,7 +69,7 @@ class GuestLocal(tmt.Guest):
     def execute(self,
                 command: Union[Command, ShellScript],
                 cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.EnvironmentType] = None,
+                env: Optional[tmt.utils.Environment] = None,
                 friendly_command: Optional[str] = None,
                 test_session: bool = False,
                 tty: bool = False,
@@ -80,7 +80,7 @@ class GuestLocal(tmt.Guest):
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """ Execute command on localhost """
         # Prepare the environment (plan/cli variables override)
-        environment: tmt.utils.EnvironmentType = {}
+        environment = tmt.utils.Environment()
         environment.update(env or {})
         if self.parent:
             environment.update(self.parent.plan.environment)

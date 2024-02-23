@@ -130,7 +130,7 @@ class DmesgCheck(CheckPlugin[Check]):
             *,
             check: 'Check',
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
@@ -145,7 +145,7 @@ class DmesgCheck(CheckPlugin[Check]):
             *,
             check: 'Check',
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]

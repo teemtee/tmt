@@ -12,7 +12,7 @@ import tmt.utils
 from tmt.base import DependencyFmfId, DependencySimple
 from tmt.convert import write
 from tmt.steps.discover import Discover
-from tmt.utils import Command, Path
+from tmt.utils import Command, Environment, EnvVarValue, Path
 
 from . import Library, LibraryError
 
@@ -225,7 +225,7 @@ class BeakerLib(Library):
                                 url=self.url,
                                 destination=Path(tmp),
                                 shallow=True,
-                                env={"GIT_ASKPASS": "echo"},
+                                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                                 logger=self._logger)
                         except (tmt.utils.RunError, tmt.utils.RetryError):
                             self.parent.debug(f"Repository '{self.url}' not found.")
@@ -268,7 +268,7 @@ class BeakerLib(Library):
                             url=self.url,
                             destination=clone_dir,
                             shallow=self.ref is None,
-                            env={"GIT_ASKPASS": "echo"},
+                            env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                             logger=self._logger)
 
                     # Detect the default branch from the origin

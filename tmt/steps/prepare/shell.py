@@ -60,12 +60,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             self,
             *,
             guest: 'Guest',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Prepare the guests """
         super().go(guest=guest, environment=environment, logger=logger)
 
-        environment = environment or {}
+        environment = environment or tmt.utils.Environment()
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')

@@ -310,7 +310,7 @@ class AvcDenials(CheckPlugin[Check]):
             *,
             check: 'Check',
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if invocation.guest.facts.has_selinux:
             create_ausearch_timestamp(invocation, logger)
@@ -323,7 +323,7 @@ class AvcDenials(CheckPlugin[Check]):
             *,
             check: 'Check',
             invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.EnvironmentType] = None,
+            environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_selinux:
             return [CheckResult(
