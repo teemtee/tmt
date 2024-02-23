@@ -1225,7 +1225,7 @@ class Command:
             actual_env = Environment.from_environ()
             actual_env.update(env)
 
-        logger.debug('environment', format_value(actual_env), level=4)
+        logger.debug('environment', actual_env, level=4)
 
         # Set special executable only when shell was requested
         executable = DEFAULT_SHELL if shell else None

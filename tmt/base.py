@@ -68,7 +68,6 @@ from tmt.utils import (
     container_field,
     dict_to_yaml,
     field,
-    format_value,
     git_clone,
     normalize_shell_script,
     verdict,
@@ -2249,8 +2248,8 @@ class Plan(
         # Additional debug info like plan environment
         self.debug('info', color='cyan', shift=0, level=3)
         # TODO: something better than str()?
-        self.debug('environment', format_value(self.environment), 'magenta', level=3)
-        self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
+        self.debug('environment', self.environment, 'magenta', level=3)
+        self.debug('context', self._fmf_context, 'magenta', level=3)
 
         # Wake up all steps
         self.wake()

@@ -1472,7 +1472,21 @@ _test_format_value_big_list = list(range(1, 20))
             """
             '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18' and '19'
             """  # noqa: E501
-            )
+            ),
+        # environment
+        (
+            tmt.utils.Environment.from_dict({'FOO': 'BAR'}),
+            None,
+            'FOO: BAR'),
+        # fmf context
+        (
+            tmt.utils.FmfContext({'foo': ['bar', 'baz']}),
+            None,
+            """
+            foo:
+              - bar
+              - baz
+            """)
         ],
     ids=(
         'true',
@@ -1491,6 +1505,8 @@ _test_format_value_big_list = list(range(1, 20))
         'long list',
         'long list within small window',
         'long list within huge window',
+        'environment',
+        'fmf context'
         )
     )
 def test_format_value(value: Any, window_size: Optional[int], expected: str) -> None:

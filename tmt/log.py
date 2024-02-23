@@ -76,6 +76,8 @@ LoggableValue = Union[
     int,
     bool,
     float,
+    'tmt.utils.Environment',
+    'tmt.utils.FmfContext',
     'tmt.utils.Path',
     'tmt.utils.Command',
     'tmt.utils.ShellScript']
