@@ -6497,6 +6497,7 @@ def field(
         _metavar=metavar,
         default=default,
         default_factory=default_factory,
+        show_default=show_default,
         is_flag=is_flag,
         multiple=multiple,
         _choices=choices,
