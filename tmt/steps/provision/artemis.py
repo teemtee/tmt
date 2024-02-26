@@ -25,6 +25,8 @@ from tmt.utils import (
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: zcrypt HW requirement
+    '0.0.69',
     # NEW: added cpu.flag constraint
     '0.0.67',
     # NEW: fixed virtualization.hypervisor enum
