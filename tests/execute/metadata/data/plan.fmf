@@ -4,3 +4,6 @@ provision:
     how: container
 execute:
     how: tmt
+context:
+    common_context: original-plan-value
+    plan_context: plan-value

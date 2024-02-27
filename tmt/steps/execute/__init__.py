@@ -410,9 +410,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 
+            # Exported metadata is the test's metadata along with other variables like the context
+            test_metadata = test._metadata.copy()
+            test_metadata["context"] = self.step.plan._fmf_context.to_spec()
             self.write(
                 invocation.path / TEST_METADATA_FILENAME,
-                tmt.utils.dict_to_yaml(test._metadata))
+                tmt.utils.dict_to_yaml(test_metadata))
 
         return invocations
 

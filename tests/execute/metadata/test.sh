@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun "tmt run -vi $tmp"
+        rlRun "tmt -c cli_context=cli-value -c common_context=new-cli-value run -vi $tmp"
         metadata="$tmp/plan/execute/data/guest/default-0/test-1/metadata.yaml"
         rlRun "cat $metadata" 0 "Check metadata.yaml content"
         rlAssertGrep "name: /test" $metadata
@@ -19,6 +19,13 @@ rlJournalStart
         rlAssertGrep "duration: 5m" $metadata
         rlRun "yq .recommend[] $metadata | grep forest" \
             0 "Recommend should be converted to a list"
+        # Check context in metadata is the final context
+        rlRun "yq .context.plan_context $metadata | grep 'plan-value'" \
+        		0 "Context should contain plan's context"
+        rlRun "yq .context.cli_context $metadata | grep 'cli-value'" \
+        		0 "Context should contain cli's context"
+        rlRun "yq .context.common_context $metadata | grep 'new-cli-value'" \
+        		0 "Context should have the final value"
     rlPhaseEnd
 
     rlPhaseStartCleanup
