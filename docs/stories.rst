@@ -16,6 +16,7 @@ couple of examples demonstrating expected usage.
     stories/docs
     stories/cli
     stories/features
+    stories/deferred
 
 
 It is also possible to list and search stories directly from the

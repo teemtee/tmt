@@ -31,6 +31,7 @@ AREA_TITLES = {
     '/stories/cli': 'Command Line',
     '/stories/install': 'Installation',
     '/stories/features': 'Features',
+    '/stories/deferred': 'Deferred',
     '/spec/core': 'Core',
     '/spec/tests': 'Tests',
     '/spec/plans': 'Plans',

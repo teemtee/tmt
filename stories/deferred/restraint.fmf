@@ -1,0 +1,31 @@
+story:
+    As a tester I want the option to execute tests using the
+    ``restraint`` harness.
+
+description: |
+    Restraint is the default harness in beaker for RHEL8 and
+    beyond. In order to provide compatibility with beaker
+    style tests, I would like a way to invoke ``tmt`` using
+    the Restaint harness. This would enable Restraint tests to
+    be invoked by ``tmt`` without modification. Some common
+    commands include ``rstrnt-reboot``, ``rstrnt-abort``, and
+    ``rstrnt-report-result``.
+
+    Although implementation of the full execute step plugin has
+    been deferred, backward compatiblity scripts have been
+    provided for several most commonly used restraint commands:
+
+    rstrnt-abort
+        :ref:`/stories/features/abort`
+
+    rstrnt-reboot
+        :ref:`/stories/features/reboot`
+
+    rstrnt-report-log
+        :ref:`/stories/features/report-log`
+
+    rstrnt-report-result
+        :ref:`/stories/features/report-result`
+
+example:
+  - tmt run --all execute --how restraint
