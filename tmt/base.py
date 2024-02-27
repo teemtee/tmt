@@ -893,7 +893,17 @@ class Core(
     def _lint_keys(self, additional_keys: list[str]) -> list[str]:
         """ Return list of invalid keys used, empty when all good """
         known_keys = additional_keys + self._keys()
-        return [key for key in self.node.get() if key not in known_keys]
+        node_keys = list(self.node.get().keys())
+        prop_adjust = self.node.get('adjust')
+        if prop_adjust is not None:
+            if isinstance(prop_adjust, dict):
+                node_keys.extend(prop_adjust.keys())
+            elif isinstance(prop_adjust, (list, tuple)):
+                node_keys.extend([key for element in prop_adjust for key in element])
+            else:
+                raise tmt.utils.GeneralError(
+                    f"Invalid adjust '{prop_adjust}'.")
+        return [key for key in node_keys if key not in known_keys]
 
     def lint_validate(self) -> LinterReturn:
         """ C000: fmf node should pass the schema validation """
