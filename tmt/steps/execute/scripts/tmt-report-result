@@ -1,32 +1,15 @@
 #!/bin/bash
 set -o errexit -o pipefail -o noclobber -o nounset
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/results.yaml"
-server=
 outputFile=
-disablePlugin=
-port=
-message=
 help=False
 
 die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 
 write_report_file () {
-    if [ -n "$server" ]; then message="$message server=$server"; fi
-    if [ -n "$port" ]; then message="$message port=$port"; fi
-    if [ -n "$METRIC" ]; then message="$message metric=$METRIC"; fi
-    if [ -n "$disablePlugin" ]; then message="$message disablePlugin=$disablePlugin"; fi
     echo "  - name: ${TESTNAME}" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "    fmf_id:" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "        name: ${TESTNAME}" >> "$REPORT_RESULT_OUTPUTFILE"
     echo "    result: ${TESTRESULT}" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "    note: ${message}" >> "$REPORT_RESULT_OUTPUTFILE"
-    if [ -n "${outputFile}" ]; then
-        echo "    log:" >> "$REPORT_RESULT_OUTPUTFILE"
-        echo "      - ${outputFile}" >> "$REPORT_RESULT_OUTPUTFILE"
-    fi
-    echo "    data-path: $TMT_TEST_DATA" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "">> "$REPORT_RESULT_OUTPUTFILE"
 }
 
 copy_outputfile_to_data_dir () {
@@ -50,16 +33,16 @@ check_opt_args () {
             OPT="${OPTARG%%=*}"       # extract long option name
         fi
         case "$OPT" in
-            server )         needs_arg; eval "server=\"\$$OPTIND\"" ; OPTIND=$((OPTIND+1)) ;;
-            s )              needs_arg; server=$OPTARG ;;
+            server )         needs_arg; OPTIND=$((OPTIND+1)) ;;
+            s )              needs_arg; ;;
             outputfile )     needs_arg; eval "outputFile=\"\$$OPTIND\"" ; OPTIND=$((OPTIND+1)) ;;
             o )              needs_arg; outputFile="$OPTARG" ;;
-            p )              needs_arg; disablePlugin="$OPTARG" ;;
-            disable-plugin ) needs_arg; eval "disablePlugin=\"\$$OPTIND\"" ; OPTIND=$((OPTIND+1)) ;;
-            t )              needs_arg; message="$OPTARG" ;;
-            message )        needs_arg; eval "message=\"\$$OPTIND\"" ; OPTIND=$((OPTIND+1)) ;;
-            port )           needs_arg; eval "port=\"\$$OPTIND\"" ; OPTIND=$((OPTIND+1)) ;;
-            no-plugins )     disablePlugin="*" ;;
+            p )              needs_arg; ;;
+            disable-plugin ) needs_arg; OPTIND=$((OPTIND+1)) ;;
+            t )              needs_arg; ;;
+            message )        needs_arg; OPTIND=$((OPTIND+1)) ;;
+            port )           needs_arg; OPTIND=$((OPTIND+1)) ;;
+            no-plugins )     ;;
             help )           help=True ;;
             ??* )            die "Illegal option --$OPT" ;;  # bad long option
             ? )              exit 2 ;;  # bad short option (error reported via getopts)
@@ -101,23 +84,12 @@ TESTRESULT=$(echo "$2" | tr '[:upper:]' '[:lower:]')
 if [[ "$0" == *"rhts-report-result"* ]]; then
     outputFile=$3
     copy_outputfile_to_data_dir
-    METRIC=
-    if [ $# -gt 3 ];then
-        METRIC=$4
-    fi
     write_report_file
     exit 0
 fi
 
 shift 2 #$((OPTIND-1)) # remove parsed options and args from $@ list
-METRIC=
 if [ $# -gt 0 ];then
-    value1=$1
-    firstChar=${value1:0:1}
-    if [ "$firstChar" != '-' ]; then
-        METRIC=$1
-        shift 1
-    fi
     check_opt_args "$@"
 fi
 

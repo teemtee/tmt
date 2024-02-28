@@ -578,17 +578,19 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             return []
 
         # Check the test result
-        self.debug(f"tmt-report-results file '{report_result_path} detected.")
+        self.debug(f"tmt-report-results file '{report_result_path}' detected.")
 
-        hierarchy = {'skip': 1, 'pass': 2, 'warn': 3, 'fail': 4}
-        with open(report_result_path) as result_file:
-            result_list = [line.split(':')[1].strip()
-                           for line in result_file.readlines() if "result:" in line]
+        result_list = [
+            result.get('result')
+            for result in tmt.utils.yaml_to_list(self.read(report_result_path))
+            ]
+
         if not result_list:
             raise tmt.utils.ExecuteError(
                 f"Test result not found in result file '{report_result_path}'.")
-        num_result = [hierarchy[line] for line in result_list]
-        result = list(hierarchy.keys())[list(hierarchy.values()).index(max(num_result))]
+        hierarchy = ['skip', 'pass', 'warn', 'fail']
+        result_indices = [hierarchy.index(line) for line in result_list]
+        result = hierarchy[max(result_indices)]
 
         # Map the restraint result to the corresponding tmt value
         actual_result = ResultOutcome.ERROR
