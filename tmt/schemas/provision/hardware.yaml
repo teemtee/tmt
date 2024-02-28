@@ -145,6 +145,9 @@ definitions:
       model-name:
         type: string
 
+      driver:
+        type: string
+
     additionalProperties: false
 
     # enforce at least one property - we don't care which one, but we don't want

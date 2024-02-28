@@ -8,8 +8,8 @@ tmt-1.32
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The hardware specification for :ref:`/spec/hardware/disk` has been
-extended with the new ``model-name`` key. Users can provision
-Beaker guests with a given disk model using the
+extended with the new keys ``driver`` and ``model-name``. Users
+can provision Beaker guests with a given disk model using the
 :ref:`/spec/plans/provision/beaker` plugin.
 
 

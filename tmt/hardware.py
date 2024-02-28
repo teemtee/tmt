@@ -1064,6 +1064,16 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
         if constraint_name in spec
         ]
 
+    group.constraints += [
+        TextConstraint.from_specification(
+            f'disk[{disk_index}].{constraint_name}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+        for constraint_name in ('driver',)
+        if constraint_name in spec
+        ]
+
     return group
 
 
