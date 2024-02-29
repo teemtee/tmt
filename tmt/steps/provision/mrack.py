@@ -370,6 +370,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             req: dict[str, Any] = super().create_host_requirement(host)
             whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
             req.update({"whiteboard": whiteboard})
+            logger.info('whiteboard', whiteboard, 'green')
             return req
 
     _MRACK_IMPORTED = True
