@@ -300,7 +300,7 @@ class AvcDenials(CheckPlugin[Check]):
         import tmt.base
 
         return [
-            tmt.base.DependencySimple('/usr/bin/sestatus'),
+            tmt.base.DependencySimple('/usr/sbin/sestatus'),
             tmt.base.DependencySimple('/usr/sbin/ausearch')
             ]
 
