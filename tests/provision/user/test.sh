@@ -8,14 +8,22 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest "Container, default user root"
+    rlPhaseStartTest "$PROVISION_HOW, default user root"
         rlRun -s "tmt run -i $run -a provision --how $PROVISION_HOW report -vvv"
         rlAssertGrep "uid=0(root) gid=0(root) groups=0(root)" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Container, set specific user"
-        rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW --user nobody report -vvv"
-        rlAssertGrep "uid=65534(nobody) gid=65534(nobody) groups=65534(nobody)" $rlRun_LOG
+    rlPhaseStartTest "$PROVISION_HOW, set specific user"
+        if [ "$PROVISION_HOW" = "virtual" ]; then
+            user="fedora"
+            ids="1000"
+        else
+            user="nobody"
+            ids="65534"
+        fi
+
+        rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW --user $user report -vvv"
+        rlAssertGrep "uid=$ids($user) gid=$ids($user) groups=$ids($user)" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
