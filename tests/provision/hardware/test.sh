@@ -7,15 +7,14 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         rlRun "set -o pipefail"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
     rlPhaseEnd
 
-    for provision_method in ${PROVISION_METHODS:-local}; do
-        rlPhaseStartTest "Check $provision_method plugin"
-            rlRun -s "tmt -vv plan show /plan/$provision_method"
+    rlPhaseStartTest "Check $PROVISION_HOW plugin"
+        rlRun -s "tmt -vv plan show /plan/$PROVISION_HOW"
 
-            rlAssertNotGrep "warn: " $rlRun_LOG
-        rlPhaseEnd
-    done
+        rlAssertNotGrep "warn: " $rlRun_LOG
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

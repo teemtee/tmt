@@ -7,7 +7,7 @@ description: |
 
     The plan takes care of fetching the image to speed up the
     execution. Each test should set the `provision-virtual` tag to
-    get picked by the plan, consume the `PROVISION_METHODS`
+    get picked by the plan, consume the `PROVISION_HOW`
     variable and use `provision --how virtual` on their own.
 
 discover:
@@ -33,7 +33,7 @@ prepare+:
         done
 
 environment:
-    PROVISION_METHODS: virtual
+    PROVISION_HOW: virtual
 
 adjust+:
   - enabled: true
