@@ -24,6 +24,7 @@ from tmt.utils import (
     Path,
     ProvisionError,
     ShellScript,
+    cached_property,
     configure_constant,
     field,
     retry_session,
@@ -376,6 +377,24 @@ class GuestTestcloud(tmt.GuestSsh):
         except libvirt.libvirtError:
             return False
 
+    @cached_property
+    def is_kvm(self) -> bool:
+        # Is the combination of host-requested architecture kvm capable?
+        return bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
+
+    @cached_property
+    def is_legacy_os(self) -> bool:
+        assert testcloud is not None  # narrow post-import type
+        assert self._image is not None  # narrow type
+
+        # Is this el <= 7?
+        return cast(bool, testcloud.util.needs_legacy_net(self._image.name))
+
+    @cached_property
+    def is_coreos(self) -> bool:
+        # Is this a CoreOS?
+        return bool(re.search('coreos|rhcos', self.image.lower()))
+
     def _get_url(self, url: str, message: str) -> requests.Response:
         """ Get url, retry when fails, return response """
 
@@ -432,9 +451,14 @@ class GuestTestcloud(tmt.GuestSsh):
         self._image = testcloud.image.Image(self.image_url)
         if self.instance_name is None:
             raise ProvisionError(f"The instance name '{self.instance_name}' is invalid.")
+
+        self._domain = DomainConfiguration(self.instance_name)
+        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
+
         self._instance = testcloud.instance.Instance(
-            self.instance_name, image=self._image,
-            connection=f"qemu:///{self.connection}", desired_arch=self.arch)
+            domain_configuration=self._domain,
+            image=self._image, desired_arch=self.arch,
+            connection=f"qemu:///{self.connection}")
 
     def prepare_ssh_key(self, key_type: Optional[str] = None) -> None:
         """ Prepare ssh key for authentication """
@@ -605,6 +629,30 @@ class GuestTestcloud(tmt.GuestSsh):
 
         return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
 
+    def _apply_hw_arch(self, domain: 'DomainConfiguration', kvm: bool, legacy_os: bool) -> None:
+        if self.arch == "x86_64":
+            domain.system_architecture = X86_64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Configurable
+                model="q35" if not legacy_os else "pc")
+        elif self.arch == "aarch64":
+            domain.system_architecture = AArch64ArchitectureConfiguration(
+                kvm=kvm,
+                uefi=True,  # Always enabled
+                model="virt")
+        elif self.arch == "ppc64le":
+            domain.system_architecture = Ppc64leArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="pseries")
+        elif self.arch == "s390x":
+            domain.system_architecture = S390xArchitectureConfiguration(
+                kvm=kvm,
+                uefi=False,  # Always disabled
+                model="s390-ccw-virtio")
+        else:
+            raise tmt.utils.ProvisionError("Unknown architecture requested.")
+
     def start(self) -> None:
         """ Start provisioned guest """
         if self.is_dry_run:
@@ -675,44 +723,17 @@ class GuestTestcloud(tmt.GuestSsh):
         self.debug('final domain memory', str(self._domain.memory_size))
         self.debug('final domain disk size', str(storage_image.size))
 
-        # Is the combination of host-requested architecture kvm capable?
-        kvm = bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
-
-        # Is this el <= 7?
-        legacy_os = testcloud.util.needs_legacy_net(self._image.name)
-
         # Is this a CoreOS?
-        self._domain.coreos = bool(re.search('coreos|rhcos', self.image.lower()))
+        self._domain.coreos = self.is_coreos
 
-        if self.arch == "x86_64":
-            self._domain.system_architecture = X86_64ArchitectureConfiguration(
-                kvm=kvm,
-                uefi=False,  # Configurable
-                model="q35" if not legacy_os else "pc")
-        elif self.arch == "aarch64":
-            self._domain.system_architecture = AArch64ArchitectureConfiguration(
-                kvm=kvm,
-                uefi=True,  # Always enabled
-                model="virt")
-        elif self.arch == "ppc64le":
-            self._domain.system_architecture = Ppc64leArchitectureConfiguration(
-                kvm=kvm,
-                uefi=False,  # Always disabled
-                model="pseries")
-        elif self.arch == "s390x":
-            self._domain.system_architecture = S390xArchitectureConfiguration(
-                kvm=kvm,
-                uefi=False,  # Always disabled
-                model="s390-ccw-virtio")
-        else:
-            raise tmt.utils.ProvisionError("Unknown architecture requested.")
+        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
 
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":
             self._domain.network_configuration = SystemNetworkConfiguration(
                 mac_address=mac_address)
         elif f"qemu:///{self.connection}" == "qemu:///session":
-            device_type = "virtio-net-pci" if not legacy_os else "e1000"
+            device_type = "virtio-net-pci" if not self.is_legacy_os else "e1000"
             with GuestTestcloud._testcloud_lock:
                 port = testcloud.util.spawn_instance_port_file(self.instance_name)
             self._domain.network_configuration = UserNetworkConfiguration(
@@ -737,7 +758,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self.verbose('name', self.instance_name, 'green')
 
         # Decide if we want to multiply timeouts when emulating an architecture
-        time_coeff = NON_KVM_TIMEOUT_COEF if not kvm else 1
+        time_coeff = NON_KVM_TIMEOUT_COEF if not self.is_kvm else 1
 
         # Prepare ssh key
         # TODO: Maybe... some better way to do this?
