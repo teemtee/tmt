@@ -888,12 +888,6 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
             spec["method"],
             allowed_operators=[Operator.EQ, Operator.NEQ])
 
-        if constraint.operator == Operator.EQ:
-            constraint.change_operator(Operator.CONTAINS)
-
-        elif constraint.operator == Operator.NEQ:
-            constraint.change_operator(Operator.NOTCONTAINS)
-
         group.constraints += [constraint]
 
     return group
