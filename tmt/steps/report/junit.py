@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING, Any, Optional, cast, overload
 
 import tmt
 import tmt.base
+import tmt.log
 import tmt.options
 import tmt.result
 import tmt.steps
 import tmt.steps.report
+import tmt.utils
 from tmt.utils import Path, field
 
 if TYPE_CHECKING:

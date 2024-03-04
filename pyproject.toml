@@ -228,7 +228,6 @@ ignore = [
     "tmt/steps/prepare/*.py",
     "tmt/steps/provision/*.py",
     "tmt/steps/report/__init__.py",
-    "tmt/steps/report/junit.py",
     "tmt/steps/report/polarion.py",
     "tmt/steps/report/reportportal.py",
     "tmt/__init__.py",
