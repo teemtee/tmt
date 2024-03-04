@@ -420,7 +420,7 @@ class InstallRpmOstree(InstallBase):
 
         command += Command('rpm-ostree')
 
-        options = Command('--apply-live', '--idempotent', '--allow-inactive')
+        options = Command('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
 
         for package in self.exclude:
             # exclude not supported in rpm-ostree
