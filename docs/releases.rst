@@ -31,6 +31,11 @@ beyond the ecosystem of rpm-based distributions. As a preview, ``apt``,
 the package manager used by Debian and Ubuntu, has been included in this
 release.
 
+New environment variable ``TMT_TEST_ITERATION_ID`` has been added to
+:ref:`test-variables`. This variable is a combination of a unique
+run ID and the test serial number. The value is different for each
+new test execution.
+
 __ https://pagure.io/testcloud/
 
 

@@ -241,6 +241,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment.update(invocation.test.environment)
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
+        assert self.parent.plan.my_run is not None
 
         environment['TMT_TEST_PIDFILE'] = EnvVarValue(
             effective_pidfile_root() / TEST_PIDFILE_FILENAME)
@@ -249,6 +250,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
+        environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
+            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}")
         environment["TMT_TEST_METADATA"] = EnvVarValue(
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME)
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(

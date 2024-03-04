@@ -3219,6 +3219,7 @@ class Run(tmt.utils.Common):
         self._environment_from_workdir: Environment = Environment()
         self._environment_from_options: Optional[Environment] = None
         self.remove = self.opt('remove')
+        self.unique_id = str(time.time()).split('.')[0]
 
     @tmt.utils.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':

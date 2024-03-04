@@ -488,6 +488,8 @@ TMT_PLAN_ENVIRONMENT_FILE
 TMT_VERSION
     The version of tmt.
 
+.. _test-variables:
+
 Test Variables
 --------------
 
@@ -507,6 +509,12 @@ TMT_TEST_DATA
 TMT_TEST_SERIAL_NUMBER
     The serial number of running test in the whole plan. Each test
     is assigned its own serial number.
+
+TMT_TEST_ITERATION_ID
+    The iteration ID is a combination of a unique run ID and the test
+    serial number. The value is different for each new test execution.
+
+    .. versionadded:: 1.32
 
 TMT_TEST_METADATA
     Path to a YAML-formatted file with test metadata collected
