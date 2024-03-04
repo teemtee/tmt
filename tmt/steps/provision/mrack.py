@@ -46,6 +46,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.flag',
     'cpu.processors',
     'cpu.model',
+    'cpu.cores',
     'disk.size',
     'hostname',
     'memory',
@@ -274,6 +275,11 @@ def constraint_to_beaker_filter(
             return MrackHWGroup(
                 'cpu',
                 children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+        if child_name == 'cores':
+            return MrackHWGroup(
+                'cpu',
+                children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
 
     if name == 'virtualization':
         beaker_operator, actual_value, _ = operator_to_beaker_op(
