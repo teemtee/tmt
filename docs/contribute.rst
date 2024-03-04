@@ -87,6 +87,14 @@ Enter the environment by running:
 
     hatch -e dev shell
 
+When interacting from within the development environment with
+services with internal certificates, you need to export the
+following environment variable:
+
+.. code-block:: shell
+
+    export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+
 Install the ``pre-commit`` script to run all available checks for
 your commits to the project:
 

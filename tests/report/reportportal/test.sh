@@ -4,7 +4,7 @@
 TOKEN=$TMT_REPORT_REPORTPORTAL_TOKEN
 URL=$TMT_REPORT_REPORTPORTAL_URL
 PROJECT="$(yq -r .report.project 'data/plan.fmf')"
-
+ARTIFACTS=$TMT_REPORT_ARTIFACTS_URL
 
 rlJournalStart
     rlPhaseStartSetup
@@ -41,7 +41,16 @@ rlJournalStart
         rlAssertEquals "Assert the id of launch is correct (id from url)" "$(echo $response | jq -r '.id')" "$launch_id"
         rlAssertEquals "Assert the name of launch is correct" "$(echo $response | jq -r '.name')" "/plan"
         rlAssertEquals "Assert the status of launch is correct" "$(echo $response | jq -r '.status')" "FAILED"
-        rlAssertEquals "Assert the description of launch is correct" "$(echo $response | jq -r '.description')" "$(yq -r '.summary' plan.fmf)"
+        plan_summary=$(yq -r '.summary' plan.fmf)
+	if [[ -z $ARTIFACTS ]]; then
+            rlAssertEquals "Assert the description of launch is correct" "$(echo $response | jq -r '.description')" "$plan_summary"
+	else
+	    if [[ $plan_summary == "null" ]]; then
+	    rlAssertEquals "Assert the description of launch is correct" "$(echo $response | jq -r '.description')" "$ARTIFACTS"
+	    else
+	    rlAssertEquals "Assert the description of launch is correct" "$(echo $response | jq -r '.description')" "$plan_summary, $ARTIFACTS"
+	    fi
+	fi
 
         # Check all the launch attributes
         rl_message="Test attributes of the launch (context)"

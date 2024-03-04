@@ -85,6 +85,11 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              "Parameters in ReportPortal get filtered out by the pattern"
              "to prevent overloading and to preserve the history aggregation"
              "for ReportPortal item if tmt id is not provided")
+    artifacts_url: Optional[str] = field(
+        metavar="ARTIFACTS_URL",
+        option="--artifacts-url",
+        default=os.getenv('TMT_REPORT_ARTIFACTS_URL'),
+        help="Link to test artifacts provided for report plugins.")
 
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
@@ -314,10 +319,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         attributes = [
             {'key': key, 'value': value[0]}
             for key, value in self.step.plan._fmf_context.items()]
-
         launch_attributes = self.construct_launch_attributes(suite_per_plan, attributes)
 
         launch_description = self.data.launch_description or self.step.plan.summary
+        # Check whether artifacts URL has been provided
+        if not launch_description:
+            launch_description = self.data.artifacts_url
+        elif self.data.artifacts_url:
+            launch_description = f"{launch_description}, {self.data.artifacts_url}"
 
         # Communication with RP instance
         with tmt.utils.retry_session() as session:

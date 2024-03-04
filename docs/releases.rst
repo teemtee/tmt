@@ -38,6 +38,10 @@ new test execution.
 
 __ https://pagure.io/testcloud/
 
+New environment variable ``TMT_REPORT_ARTIFACTS_URL`` has been added
+to :ref:`command-variables`. It can be used to provide a link for
+detailed test artifacts for report plugins to pick.
+
 
 tmt-1.31
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

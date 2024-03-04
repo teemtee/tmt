@@ -52,10 +52,13 @@ properties:
   launch-rerun:
     type: boolean
 
-  defect_type:
+  defect-type:
     type: string
 
   exclude-variables:
+    type: string
+
+  artifacts-url:
     type: string
 
 required:

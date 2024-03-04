@@ -449,6 +449,11 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
+TMT_REPORT_ARTIFACTS_URL
+    Link to test artifacts provided for report plugins.
+
+    .. versionadded:: 1.32
+
 .. _step-variables:
 
 Step Variables
