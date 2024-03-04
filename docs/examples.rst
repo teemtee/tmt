@@ -1618,3 +1618,22 @@ Use the ``tmt.utils.Path`` class when specifying paths:
     from tmt.utils import Path
 
     tree = tmt.Tree.grow(path=Path("/path/to/the/tree"))
+
+Some functions and methods require a ``logger`` instance. Creating
+it and enabling more detailed logging to console is simple:
+
+.. code-block:: python
+
+    import tmt.log
+    import tmt.utils
+
+    # Create a new logger with the desired debug/verbosity level
+    logger = tmt.log.Logger.create(debug=3, verbose=3)
+
+    # Add a console handler to show debugging output on the terminal
+    logger.add_console_handler()
+
+    tmt.utils.git_clone(
+        url="https://github.com/teemtee/tmt/",
+        destination="/tmp/something",
+        logger=logger)
