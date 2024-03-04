@@ -1,4 +1,3 @@
 tier: 3
 duration: 30m
-tag-: [container]
 require+: [tmt+provision-container]

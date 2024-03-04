@@ -4,3 +4,4 @@ description:
     in the git repository structure are successfully executed.
 test: cd data && tmt run -v
 framework: shell
+tag+: [beakerlib]

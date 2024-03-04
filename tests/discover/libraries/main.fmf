@@ -7,6 +7,6 @@ description:
     test successfully passed. Needs a full virtualization.
 tier: 3
 duration: 25m
-tag-: [virtual, container]
+tag+: [beakerlib]
 require+:
   - tmt+provision-container

@@ -1,6 +1,5 @@
 summary: Scripts used in execute are pushed via sudo
 tag:
-- virtual
 - provision-virtual
 - provision-only
 require:

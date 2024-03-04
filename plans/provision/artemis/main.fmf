@@ -12,7 +12,7 @@ description: |
 
 discover:
     how: fmf
-    filter: 'tag: artemis'
+    filter: 'tag: provision-artemis'
 
 provision:
     how: artemis

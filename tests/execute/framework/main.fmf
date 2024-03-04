@@ -4,4 +4,4 @@ description:
     Combining different frameworks under a single plan.
 duration: 30m
 tier: 3
-tag-: [container]
+tag+: [beakerlib]

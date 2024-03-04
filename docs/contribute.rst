@@ -208,6 +208,26 @@ provision-only
     regular plans.
 
 
+Tags
+------------------------------------------------------------------
+In additon to the tags related to the :ref:`provision-methods` tags,
+following are used in the tests:
+
+as_root
+    Test has to be executed as the root (or priviledged) user to
+    execute properly.  For example test adds user, changes the
+    system, etc.
+
+beakerlib
+    Test integration of `BeakerLib`__ framework with the tmt.
+
+integration
+    Test using `requre`__ to mock connections to other servers.
+
+__ https://github.com/beakerlib/beakerlib
+__ https://requre.readthedocs.io/en/latest/
+
+
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

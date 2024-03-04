@@ -1,0 +1,14 @@
+summary: Integration plan with beakerlib
+
+description:
+    Ensure that the basic functionality of tests written in
+    beakerlib is working as expected. This plan is run for
+    upstream pull requests in the beakerlib repository.
+
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tmt
+    filter: "tag:beakerlib & tag:-provision-only"
+
+link:
+  - relates: https://github.com/beakerlib/beakerlib/

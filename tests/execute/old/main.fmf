@@ -4,3 +4,4 @@ description:
     the Makefile metadata work with the new metadata.yaml file.
 duration: 15m
 tier: 3
+tag+: [beakerlib]

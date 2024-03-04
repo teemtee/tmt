@@ -1,4 +1,5 @@
 summary: Dummy test to execute on remote machine
 tier: 1
 tag:
-  - artemis
+  - provision-only
+  - provision-artemis

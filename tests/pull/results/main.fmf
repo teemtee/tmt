@@ -6,3 +6,4 @@ description:
 tag+:
   - provision-container
   - provision-virtual
+  - beakerlib
