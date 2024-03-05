@@ -45,3 +45,12 @@ adjust+:
                 is-supported: true
             memory: ">= 4 GB"
     when: trigger == commit
+
+  - prepare+:
+      - name: Disable IPv6
+        how: shell
+        script:
+          - sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          - sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
+    when: trigger == commit
