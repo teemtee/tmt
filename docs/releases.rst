@@ -9,8 +9,8 @@ tmt-1.32
 
 The hardware specification for :ref:`/spec/hardware/disk` has been
 extended with the new keys ``driver`` and ``model-name``. Users
-can provision Beaker guests with a given disk model using the
-:ref:`/spec/plans/provision/beaker` plugin.
+can provision Beaker guests with a given disk model or driver using
+the :ref:`/spec/plans/provision/beaker` plugin.
 
 The :ref:`/spec/plans/provision/virtual` provision plugin gains support
 for :ref:`TPM hardware requirement</spec/hardware/tpm>`. It is limited

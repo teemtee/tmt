@@ -49,6 +49,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.model',
     'disk.size',
     'disk.model_name',
+    'disk.driver',
     'hostname',
     'memory',
     'virtualization.is_virtualized'
@@ -141,6 +142,20 @@ class MrackHWBinOp(MrackHWElement):
         super().__init__(name)
 
         self.attributes = {
+            '_op': operator,
+            '_value': value
+            }
+
+
+@dataclasses.dataclass(init=False)
+class MrackHWKeyValue(MrackHWElement):
+    """ A key-value element """
+
+    def __init__(self, name: str, operator: str, value: str) -> None:
+        super().__init__('key_value')
+
+        self.attributes = {
+            '_key': name,
             '_op': operator,
             '_value': value
             }
@@ -287,6 +302,21 @@ def constraint_to_beaker_filter(
         return MrackHWGroup(
             'disk',
             children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+    if name == "disk" and child_name == 'driver':
+        beaker_operator, actual_value, negate = operator_to_beaker_op(
+            constraint.operator,
+            constraint.value)
+
+        if negate:
+            return MrackHWNotGroup(children=[
+                MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
+                ])
+
+        return MrackHWKeyValue(
+            'BOOTDISK',
+            beaker_operator,
+            actual_value)
 
     if name == "cpu":
         if child_name == 'flag':

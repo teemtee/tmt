@@ -46,6 +46,5 @@ link:
   - implemented-by: /tmt/steps/provision/artemis.py
     note: "``size`` only"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``size`` and ``model-name`` only"
   - implemented-by: /tmt/steps/provision/testcloud.py
     note: "``size`` only with ``=``, ``>=`` and ``<=`` operators only"
