@@ -1172,6 +1172,35 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
     return group
 
 
+def _parse_memory(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``memory`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    return SizeConstraint.from_specification(
+        'memory',
+        str(spec['memory']),
+        allowed_operators=[
+            Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+
+
+def _parse_hostname(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``hostname`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    return TextConstraint.from_specification(
+        'hostname',
+        spec['hostname'],
+        allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+
+
 @ungroupify
 def _parse_generic_spec(spec: Spec) -> BaseConstraint:
     """
@@ -1200,14 +1229,7 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [_parse_cpu(spec['cpu'])]
 
     if 'memory' in spec:
-        group.constraints += [
-            SizeConstraint.from_specification(
-                'memory',
-                str(spec['memory']),
-                allowed_operators=[
-                    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT,
-                    Operator.GTE])
-            ]
+        group.constraints += [_parse_memory(spec)]
 
     if 'disk' in spec:
         group.constraints += [_parse_disks(spec['disk'])]
@@ -1216,12 +1238,7 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [_parse_networks(spec['network'])]
 
     if 'hostname' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'hostname',
-                spec['hostname'],
-                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-            ]
+        group.constraints += [_parse_hostname(spec)]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]

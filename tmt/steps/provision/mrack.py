@@ -3,9 +3,10 @@ import dataclasses
 import datetime
 import logging
 import os
+from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Optional, TypedDict, Union, cast
+from typing import Any, Callable, Optional, TypedDict, Union, cast
 
 import tmt
 import tmt.hardware
@@ -189,6 +190,46 @@ class MrackHWNotGroup(MrackHWGroup):
     name: str = 'not'
 
 
+def _transform_hostname(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWBinOp('hostname', beaker_operator, actual_value)
+            ])
+
+    return MrackHWBinOp(
+        'hostname',
+        beaker_operator,
+        actual_value)
+
+
+def _transform_memory(
+        constraint: tmt.hardware.SizeConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(int(constraint.value.to('MiB').magnitude)))
+
+    return MrackHWGroup(
+        'system',
+        children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
+
+
+ConstraintTransformer = Callable[[
+    tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
+
+_CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
+    'hostname': _transform_hostname,  # type: ignore[dict-item]
+    'memory': _transform_memory  # type: ignore[dict-item]
+    }
+
+
 def constraint_to_beaker_filter(
         constraint: tmt.hardware.BaseConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -214,14 +255,14 @@ def constraint_to_beaker_filter(
 
     name, _, child_name = constraint.expand_name()
 
-    if name == 'memory':
-        beaker_operator, actual_value, _ = operator_to_beaker_op(
-            constraint.operator,
-            str(int(cast('tmt.hardware.Size', constraint.value).to('MiB').magnitude)))
+    if child_name:
+        transformer = _CONSTRAINT_TRANSFORMERS.get(f'{name}.{child_name}')
 
-        return MrackHWGroup(
-            'system',
-            children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
+    else:
+        transformer = _CONSTRAINT_TRANSFORMERS.get(name)
+
+    if transformer:
+        return transformer(constraint, logger)
 
     if name == "disk" and child_name == 'size':
         beaker_operator, actual_value, _ = operator_to_beaker_op(
@@ -246,23 +287,6 @@ def constraint_to_beaker_filter(
         return MrackHWGroup(
             'disk',
             children=[MrackHWBinOp('model', beaker_operator, actual_value)])
-
-    if name == 'hostname':
-        assert isinstance(constraint.value, str)
-
-        beaker_operator, actual_value, negate = operator_to_beaker_op(
-            constraint.operator,
-            constraint.value)
-
-        if negate:
-            return MrackHWNotGroup(children=[
-                MrackHWBinOp('hostname', beaker_operator, actual_value)
-                ])
-
-        return MrackHWBinOp(
-            'hostname',
-            beaker_operator,
-            actual_value)
 
     if name == "cpu":
         if child_name == 'flag':
