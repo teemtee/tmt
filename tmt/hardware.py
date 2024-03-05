@@ -59,6 +59,9 @@ if TYPE_CHECKING:
 #: Unit registry, used and shared by all code.
 UNITS = pint.UnitRegistry()
 
+# The default formatting should use unit symbols rather than full names.
+UNITS.default_format = '~'
+
 
 # Special type variable, used in `Constraint.from_specification` - we bound this return value to
 # always be a subclass of `Constraint` class, instead of just any class in general.
