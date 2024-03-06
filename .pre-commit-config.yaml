@@ -54,7 +54,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.344
+    rev: v1.1.352
     hooks:
       - id: pyright
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.

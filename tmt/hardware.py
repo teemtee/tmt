@@ -34,7 +34,17 @@ import operator
 import re
 import sys
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Callable, Generic, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    )
 
 import pint
 
@@ -537,9 +547,16 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         if as_quantity:
             value: ConstraintValue = UNITS(raw_value)
 
-            # Number-like raw_value, without units, get converted into pure `int`
-            # or `float`. Stick to `Quantity` for quantities.
-            if not isinstance(value, pint.Quantity):
+            # Number-like raw_value, without units, get converted into
+            # pure `int` or `float`. Force `Quantity` for quantities by
+            # explicitly wrapping built-in types with `Quantity`.
+            #
+            # reportUnnecessaryIsInstance: pyright cannot infere this
+            # little trick Pint plays with us, and considers the `isinstance`
+            # call to be pointless. But it's not. mypy does not care...
+            if not isinstance(
+                    value,
+                    pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
                 value = pint.Quantity(value)
 
         elif as_cast is not None:
@@ -760,10 +777,10 @@ class And(CompoundConstraint):
         members = members or []
 
         # List of non-compound constraints - we just slap these into every combination we generate
-        simple_constraints = [
+        simple_constraints: list[Constraint[Any]] = [
             constraint
             for constraint in self.constraints
-            if not isinstance(constraint, CompoundConstraint)
+            if isinstance(constraint, Constraint)
             ]
 
         # Compound constraints - these we will ask to generate their variants, and we produce
@@ -778,7 +795,9 @@ class And(CompoundConstraint):
                                            for constraint in compound_constraints]):
             # Note that `product` returns an item for each iterable, and those items are lists,
             # because that's what `variants()` returns. Use `sum` to linearize the list of lists.
-            yield members + sum(compounds, []) + simple_constraints
+            yield members \
+                + sum(compounds, cast(list[Constraint[Any]], [])) \
+                + simple_constraints
 
 
 @dataclasses.dataclass(repr=False)
@@ -1391,9 +1410,6 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
 
         for variant in self.constraint.variants():
             for constraint in variant:
-                if not isinstance(constraint, Constraint):
-                    continue
-
                 name, _, child_name = constraint.expand_name()
 
                 if name in names \

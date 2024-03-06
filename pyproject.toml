@@ -234,7 +234,6 @@ ignore = [
     "tmt/__init__.py",
     "tmt/base.py",
     "tmt/convert.py",
-    "tmt/hardware.py",
     "tmt/lint.py",
     "tmt/queue.py",
     "tmt/trying.py",
