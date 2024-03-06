@@ -64,7 +64,9 @@ if TYPE_CHECKING:
         from typing_extensions import TypeAlias
 
     #: A type of values describing sizes of things like storage or RAM.
-    Size: TypeAlias = 'Quantity[int]'
+    # Note: type-hinting is a bit wonky with pyright
+    # https://github.com/hgrecco/pint/issues/1166
+    Size: TypeAlias = Quantity
 
 #: Unit registry, used and shared by all code.
 UNITS = pint.UnitRegistry()

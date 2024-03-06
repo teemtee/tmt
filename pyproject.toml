@@ -249,7 +249,8 @@ ignore = [
     "tmt/convert.py",
     "tmt/lint.py",
     "tmt/queue.py",
-    "tmt/utils.py"
+    "tmt/utils.py",
+    "tmt/hardware.py",  # pyright does not pick up pint's _typing.py or something :/
 ]
 
 pythonVersion = "3.9"
