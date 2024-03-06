@@ -53,6 +53,9 @@ import tmt.utils
 from tmt.utils import SpecBasedContainer
 
 if TYPE_CHECKING:
+    import importlib.metadata
+
+    from packaging import version
     from pint import Quantity
 
     # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
@@ -64,7 +67,14 @@ if TYPE_CHECKING:
         from typing_extensions import TypeAlias
 
     #: A type of values describing sizes of things like storage or RAM.
-    Size: TypeAlias = 'Quantity[int]'
+    if version.parse(importlib.metadata.version("pint")) >= version.parse("0.20"):
+        # Note, type-hinting is not properly supported in pint
+        # https://github.com/hgrecco/pint/issues/1166
+        Size: TypeAlias = Quantity
+    else:
+        # But this one used to work < 0.20 ¯\_(ツ)_/¯
+        # https://github.com/hgrecco/pint/pull/1259
+        Size: TypeAlias = 'Quantity[int]'
 
 #: Unit registry, used and shared by all code.
 UNITS = pint.UnitRegistry()
