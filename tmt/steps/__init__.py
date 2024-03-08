@@ -9,6 +9,7 @@ import re
 import shutil
 import textwrap
 from collections.abc import Iterable, Iterator, Sequence
+from contextlib import suppress
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
@@ -28,6 +29,7 @@ import fmf.utils
 import packaging.version
 from click import echo
 from click.core import ParameterSource
+from fmf.context import CannotDecide, Context
 
 import tmt.export
 import tmt.log
@@ -196,6 +198,9 @@ class Phase(tmt.utils.Common):
         """ Phases are enabled across all guests by default """
         return True
 
+    def enabled_when(self) -> bool:
+        return True
+
     @property
     def is_in_standalone_mode(self) -> bool:
         """
@@ -287,6 +292,12 @@ class StepData(
     order: int = field(
         default=tmt.utils.DEFAULT_PLUGIN_ORDER,
         help='Order in which the phase should be handled.')
+    when: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list,
+        metavar='RULE',
+        help='If used, phase is run only if some rule matches.'
+        )
     summary: Optional[str] = field(
         default=None,
         help='Concise summary describing purpose of the phase.')
@@ -1598,6 +1609,20 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         # Show the rest
         for key in keys:
             _emit_key(key)
+
+    def enabled_when(self) -> bool:
+        """ Check if the plugin is enabled by 'when' keyword """
+        fmf_context = Context(**self.step.plan._fmf_context)
+        when_rules = self.get('when', [])
+        if not when_rules:
+            # No 'when' -> enabled everywhere
+            return True
+        for when in when_rules:
+            with suppress(CannotDecide):
+                if fmf_context.matches(when):
+                    return True
+        # No 'when' ruled matched -> disabled
+        return False
 
     def enabled_on_guest(self, guest: 'Guest') -> bool:
         """ Check if the plugin is enabled on the specific guest """

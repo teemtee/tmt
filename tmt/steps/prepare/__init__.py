@@ -238,6 +238,8 @@ class Prepare(tmt.steps.Step):
             # First, check phases - plugins have their own requirements,
             # the essential requirements.
             for phase in phases:
+                if not phase.enabled_when():
+                    continue
                 if not phase.enabled_on_guest(guest):
                     continue
 
@@ -388,7 +390,7 @@ class Prepare(tmt.steps.Step):
             if isinstance(prepare_phase, Action):
                 queue.enqueue_action(phase=prepare_phase)
 
-            else:
+            elif prepare_phase.enabled_when():
                 queue.enqueue_plugin(
                     phase=prepare_phase,  # type: ignore[arg-type]
                     guests=[

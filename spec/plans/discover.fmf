@@ -415,3 +415,25 @@ description: |
       - verified-by: /tests/multihost/complete
       - verified-by: /tests/multihost/web
       - documented-by: /docs/guide.rst#multihost-testing
+
+/when:
+    summary: Conditional step configuration
+    description: |
+        Using the ``when`` key makes it easier to restrict a step configuration
+        to run only if any of the specified rules matches.
+        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+
+        Values can be single string with the rule or list of rules.
+    example: |
+        discover:
+          - name: Private tests, applicable only for RHEL
+            when: distro == rhel
+            how: fmf
+            url: https://secret
+          - name: Public tests
+            how: fmf
+            url: https://public
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/steps/when
+      - documented-by: /docs/guide.rst
