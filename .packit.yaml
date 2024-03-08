@@ -41,12 +41,12 @@ jobs:
     identifier: core
     trigger: pull_request
     targets:
-      - fedora-all
+      - fedora-latest-stable
       - epel-9
     tf_extra_params:
         test:
             tmt:
-                name: /plans/features/(core|basic)
+                name: /plans/(features/core|features/basic|install/docs)
 
   # Test pull requests (full)
   # Do not run extended unit tests, that plan gets its own job because

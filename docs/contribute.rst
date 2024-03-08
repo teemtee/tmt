@@ -309,7 +309,8 @@ created pull request and its updates to verify basic sanity of the
 change. Once the pull request content is ready for a thorough
 testing add the ``full test`` label and make sure that the
 ``discuss`` label is not present. All future changes of the pull
-request will be tested with the full test coverage.
+request will be tested with the full test coverage. For changes
+related to documentation only the full test suite is not required.
 
 
 Merging
