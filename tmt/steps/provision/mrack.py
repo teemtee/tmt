@@ -205,6 +205,105 @@ class MrackHWNotGroup(MrackHWGroup):
     name: str = 'not'
 
 
+def _transform_unsupported(
+        constraint: tmt.hardware.Constraint[Any],
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    # Unsupported constraint has been already logged via report_support(). Make
+    # sure user is aware it would have no effect, and since we have to return
+    # something, return an empty `or` group - no harm done, composable with other
+    # elements.
+    logger.warn(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+
+    return MrackHWOrGroup()
+
+
+def _transform_cpu_flag(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator = OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ] \
+        if constraint.operator is tmt.hardware.Operator.CONTAINS \
+        else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
+    actual_value = str(constraint.value)
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('flag', beaker_operator, actual_value)]
+        )
+
+
+def _transform_cpu_model(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+
+def _transform_cpu_processors(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('cpu_count', beaker_operator, actual_value)])
+
+
+def _transform_disk_driver(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
+            ])
+
+    return MrackHWKeyValue(
+        'BOOTDISK',
+        beaker_operator,
+        actual_value)
+
+
+def _transform_disk_size(
+        constraint: tmt.hardware.SizeConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(int(constraint.value.to('B').magnitude))
+        )
+
+    return MrackHWGroup(
+        'disk',
+        children=[MrackHWBinOp('size', beaker_operator, actual_value)])
+
+
+def _transform_disk_model_name(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup(
+                'disk',
+                children=[MrackHWBinOp('model', beaker_operator, actual_value)])])
+
+    return MrackHWGroup(
+        'disk',
+        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+
 def _transform_hostname(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -236,12 +335,42 @@ def _transform_memory(
         children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
 
 
+def _transform_virtualization_is_virtualized(
+        constraint: tmt.hardware.FlagConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    test = (constraint.operator, constraint.value)
+
+    if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
+        return MrackHWGroup(
+            'system',
+            children=[MrackHWBinOp('hypervisor', '!=', '')])
+
+    if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
+        return MrackHWGroup(
+            'system',
+            children=[MrackHWBinOp('hypervisor', '==', '')])
+
+    return _transform_unsupported(constraint, logger)
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
+    'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
+    'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
+    'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
+    'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
+    'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
+    'disk.size': _transform_disk_size,  # type: ignore[dict-item]
     'hostname': _transform_hostname,  # type: ignore[dict-item]
-    'memory': _transform_memory  # type: ignore[dict-item]
+    'memory': _transform_memory,  # type: ignore[dict-item]
+    'virtualization.is_virtualized': \
+    _transform_virtualization_is_virtualized  # type: ignore[dict-item]
     }
 
 
@@ -279,96 +408,7 @@ def constraint_to_beaker_filter(
     if transformer:
         return transformer(constraint, logger)
 
-    if name == "disk" and child_name == 'size':
-        beaker_operator, actual_value, _ = operator_to_beaker_op(
-            constraint.operator,
-            str(int(cast('tmt.hardware.Size', constraint.value).to('B').magnitude))
-            )
-
-        return MrackHWGroup(
-            'disk',
-            children=[MrackHWBinOp('size', beaker_operator, actual_value)])
-
-    if name == "disk" and child_name == 'model_name':
-        beaker_operator, actual_value, negate = operator_to_beaker_op(
-            constraint.operator,
-            constraint.value)
-
-        if negate:
-            return MrackHWNotGroup(children=[
-                MrackHWBinOp('model', beaker_operator, actual_value)
-                ])
-
-        return MrackHWGroup(
-            'disk',
-            children=[MrackHWBinOp('model', beaker_operator, actual_value)])
-
-    if name == "disk" and child_name == 'driver':
-        beaker_operator, actual_value, negate = operator_to_beaker_op(
-            constraint.operator,
-            constraint.value)
-
-        if negate:
-            return MrackHWNotGroup(children=[
-                MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
-                ])
-
-        return MrackHWKeyValue(
-            'BOOTDISK',
-            beaker_operator,
-            actual_value)
-
-    if name == "cpu":
-        if child_name == 'flag':
-            beaker_operator = OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ] \
-                if constraint.operator is tmt.hardware.Operator.CONTAINS \
-                else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
-            actual_value = str(constraint.value)
-
-            return MrackHWGroup(
-                'cpu',
-                children=[MrackHWBinOp('flag', beaker_operator, actual_value)]
-                )
-
-        beaker_operator, actual_value, _ = operator_to_beaker_op(
-            constraint.operator,
-            str(constraint.value))
-
-        if child_name == 'processors':
-            return MrackHWGroup(
-                'cpu',
-                children=[MrackHWBinOp('cpu_count', beaker_operator, actual_value)])
-
-        if child_name == 'model':
-            return MrackHWGroup(
-                'cpu',
-                children=[MrackHWBinOp('model', beaker_operator, actual_value)])
-
-    if name == 'virtualization':
-        beaker_operator, actual_value, _ = operator_to_beaker_op(
-            constraint.operator,
-            str(constraint.value))
-
-        if child_name == 'is_virtualized':
-            test = (constraint.operator, constraint.value)
-
-            if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
-                return MrackHWGroup(
-                    'system',
-                    children=[MrackHWBinOp('hypervisor', '!=', '')])
-
-            if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
-                return MrackHWGroup(
-                    'system',
-                    children=[MrackHWBinOp('hypervisor', '==', '')])
-
-    # Unsupported constraint has been already logged via report_support(). Make
-    # sure user is aware it would have no effect, and since we have to return
-    # something, return an empty `or` group - no harm done, composable with other
-    # elements.
-    logger.warn(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
-
-    return MrackHWOrGroup()
+    return _transform_unsupported(constraint, logger)
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:

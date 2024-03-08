@@ -3,7 +3,15 @@ import textwrap
 import pytest
 
 import tmt.utils
-from tmt.hardware import Hardware, Operator, _parse_hostname, _parse_memory
+from tmt.hardware import (
+    Hardware,
+    Operator,
+    _parse_cpu,
+    _parse_disk,
+    _parse_hostname,
+    _parse_memory,
+    _parse_virtualization,
+    )
 from tmt.log import Logger
 from tmt.steps.provision.mrack import (
     _CONSTRAINT_TRANSFORMERS,
@@ -57,7 +65,9 @@ def test_maximal_constraint(root_logger: Logger) -> None:
               - "!= smep"
         disk:
             - size: 40 GiB
+              model-name: "PERC H310"
             - size: 120 GiB
+              driver: mpt3sas
         gpu:
             device-name: G86 [Quadro NVS 290]
         hostname: "~ .*.foo.redhat.com"
@@ -111,15 +121,6 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             }
                         },
                     {'or': []},
-                    {
-                        'cpu': {
-                            'model': {
-                                '_op': '==',
-                                '_value': '62'
-                                }
-                            }
-                        },
-                    {'or': []},
                     {'or': []},
                     {'or': []},
                     {
@@ -163,21 +164,44 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             {
                 'and': [
                     {
-                        'disk': {
-                            'size': {
-                                '_op': '==',
-                                '_value': '42949672960'
+                        'and': [
+                            {
+                                'disk': {
+                                    'size': {
+                                        '_op': '==',
+                                        '_value': '42949672960'
+                                        }
+                                    }
+                                },
+                            {
+                                'disk': {
+                                    'model': {
+                                        '_op': '==',
+                                        '_value': 'PERC H310'
+                                        }
+                                    }
                                 }
-                            }
+                            ]
                         },
                     {
-                        'disk': {
-                            'size': {
-                                '_op': '==',
-                                '_value': '128849018880'
+                        'and': [
+                            {
+                                'disk': {
+                                    'size': {
+                                        '_op': '==',
+                                        '_value': '128849018880'
+                                        }
+                                    }
+                                },
+                            {
+                                'key_value': {
+                                    '_key': 'BOOTDISK',
+                                    '_op': '==',
+                                    '_value': 'mpt3sas'
+                                    }
                                 }
-                            }
-                        }
+                            ]
+                        },
                     ]
                 },
             {
@@ -208,6 +232,147 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     ]
                 }
             ]
+        }
+
+
+def test_cpu_model(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.model'](_parse_cpu({'model': '79'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'model': {
+                '_op': '==',
+                '_value': '79'
+                }
+            }
+        }
+
+
+def test_cpu_processors(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.processors'](
+        _parse_cpu({'processors': '79'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'cpu_count': {
+                '_op': '==',
+                '_value': '79'
+                }
+            }
+        }
+
+
+def test_disk_driver(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
+        _parse_disk({'driver': 'mpt3sas'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'key_value': {
+            '_key': 'BOOTDISK',
+            '_op': '==',
+            '_value': 'mpt3sas'
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
+        _parse_disk({'driver': '!= mpt3sas'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'key_value': {
+            '_key': 'BOOTDISK',
+            '_op': '!=',
+            '_value': 'mpt3sas'
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
+        _parse_disk({'driver': '~ mpt3.*'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'key_value': {
+            '_key': 'BOOTDISK',
+            '_op': 'like',
+            '_value': 'mpt3%'
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
+        _parse_disk({'driver': '!~ mpt3.*'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'key_value': {
+                '_key': 'BOOTDISK',
+                '_op': 'like',
+                '_value': 'mpt3%'
+                }
+            }
+        }
+
+
+def test_disk_size(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['disk.size'](
+        _parse_disk({'size': '>= 40 GiB'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'disk': {
+            'size': {
+                '_op': '>=',
+                '_value': '42949672960'
+                }
+            }
+        }
+
+
+def test_disk_model_name(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+        _parse_disk({'model-name': 'PERC H310'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'disk': {
+            'model': {
+                '_op': '==',
+                '_value': 'PERC H310'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+        _parse_disk({'model-name': '!= PERC H310'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'disk': {
+            'model': {
+                '_op': '!=',
+                '_value': 'PERC H310'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+        _parse_disk({'model-name': '~ PERC.*'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'disk': {
+            'model': {
+                '_op': 'like',
+                '_value': 'PERC%'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['disk.model_name'](
+        _parse_disk({'model-name': '!~ PERC.*'}, 1), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'disk': {
+                'model': {
+                    '_op': 'like',
+                    '_value': 'PERC%'
+                    }
+                }
+            }
         }
 
 
@@ -253,6 +418,32 @@ def test_hostname(root_logger: Logger) -> None:
             'hostname': {
                 '_op': 'like',
                 '_value': 'foo%.dot%.com'
+                }
+            }
+        }
+
+
+def test_virtualization_is_virtualized(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
+        _parse_virtualization({'is-virtualized': True}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'hypervisor': {
+                '_op': '!=',
+                '_value': ''
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.is_virtualized'](
+        _parse_virtualization({'is-virtualized': False}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'hypervisor': {
+                '_op': '==',
+                '_value': ''
                 }
             }
         }

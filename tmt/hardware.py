@@ -1014,19 +1014,6 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
         TextConstraint.from_specification(
             f'cpu.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
-        for constraint_name in (
-            'model',
-            'family'
-            )
-        if constraint_name in spec
-        ]
-
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
             allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
         for constraint_name in (
             'family-name',
