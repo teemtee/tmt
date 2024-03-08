@@ -2684,7 +2684,13 @@ class Provision(tmt.steps.Step):
         # the order or their `order` key. We will group provisioning phases
         # not interrupted by action into batches, and run the sequence of
         # provisioning phases in parallel.
-        all_phases = self.phases(classes=(Action, ProvisionPlugin))
+        all_phases = [
+            p for p in self.phases(
+                classes=(
+                    Action,
+                    ProvisionPlugin)) if isinstance(
+                p,
+                Action) or p.enabled_when()]
         all_phases.sort(key=lambda x: x.order)
 
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []

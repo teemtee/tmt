@@ -74,3 +74,25 @@ example: |
     link:
       - implemented-by: /tmt/steps
       - documented-by: /docs/guide.rst
+
+/when:
+    summary: Conditional step configuration
+    description: |
+        Using the ``when`` key makes it easier to restrict a step configuration
+        to run only if any of the specified rules matches.
+        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+
+        Values can be single string with the rule or list of rules.
+    example: |
+        finish:
+          - name: finish config to run only on Fedora
+            when: distro == fedora
+            how: shell
+            script: ./fedora_specific.
+          - name: Runs always
+            how: shell
+            script: ./setup.sh
+    link:
+      - implemented-by: /tmt/steps
+      - verified-by: /tests/steps/when
+      - documented-by: /docs/guide.rst

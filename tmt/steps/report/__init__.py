@@ -118,7 +118,9 @@ class Report(tmt.steps.Step):
             # but pre-commit's mypy sees `Phase` - which should not be the right answer
             # since `classes` is clearly not `None`. Adding `cast()` to overcome this
             # because I can't find the actual error :/
-            cast(Union[Action, ReportPlugin[ReportStepData]], phase).go()
+            phase = cast(Union[Action, ReportPlugin[ReportStepData]], phase)
+            if phase.enabled_when():
+                phase.go()
 
         # Give a summary, update status and save
         self.summary()

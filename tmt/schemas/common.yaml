@@ -456,6 +456,10 @@ definitions:
   where:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
+  # If used, run step config only if any of the rules matches
+  when:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   result_outcome:
     type: string
     enum:
