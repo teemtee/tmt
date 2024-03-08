@@ -44,9 +44,9 @@ story:
 /format:
     summary: Provide machine readable output in given format
     example:
-        - tmt test ls --format json
-        - tmt plan show --format yaml
-        - tmt story export --format rst
+        - tmt test export --how json
+        - tmt plan export --how yaml
+        - tmt story export --how rst
     link:
       - implemented-by: /tmt/cli.py
       - implemented-by: /tmt/base.py

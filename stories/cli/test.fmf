@@ -56,13 +56,13 @@ story: 'As a user I want to comfortably work with tests'
 
     /format:
         story: 'I want to export test metadata into given format.'
-        example: tmt test export --format yaml
+        example: tmt test export --how yaml
         link:
           - implemented-by: /tmt/base.py
 
     /nitrate:
         story: 'I want to export test metadata into nitrate.'
-        example: tmt test export --nitrate
+        example: tmt test export --how nitrate
         description: |
             In order to keep metadata in sync with the old test
             case management system we need to export selected set
@@ -104,8 +104,32 @@ story: 'As a user I want to comfortably work with tests'
             allow easy search for migrated test cases directly
             from the web interface.
         link:
-          - implemented-by: /tmt/export.py
+          - implemented-by: /tmt/export/nitrate.py
           - documented-by: /docs/questions.rst#nitrate-migration
+
+    /polarion:
+        story: 'I want to export test metadata into polarion.'
+        example: tmt test export --how polarion
+        description: |
+            In order to synchronize test metadata to the Polarion
+            test case management system set up the Pylero config
+            file ``~/.pylero`` with a valid user token:
+
+            .. code-block:: ini
+
+                [webservice]
+                url=https://{your polarion web URL}/polarion
+                svn_repo=https://{your polarion web URL}/repo
+                default_project={your project name}
+                token={your personal access token}
+
+            See the `Pylero Documentation`__ for more details on how
+            to configure the ``pylero`` module.
+
+            __ https://github.com/RedHatQE/pylero
+        link:
+          - implemented-by: /tmt/export/polarion.py
+          - verified-by: /plans/remote/polarion
 
 /filter:
     story: 'Filter available tests'

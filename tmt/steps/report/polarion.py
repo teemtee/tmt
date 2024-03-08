@@ -183,7 +183,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     """
-    Write test results into a xUnit file and upload to Polarion.
+    Write test results into an xUnit file and upload to Polarion.
     """
 
     _data_class = ReportPolarionData

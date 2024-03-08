@@ -62,14 +62,30 @@ description:
         - implemented-by: /tmt/steps/report/junit.py
 
 /polarion:
-    summary: Generate a xUnit file and export it into Polarion
+    summary: Generate an xUnit file and export it into Polarion
     story:
         As a tester I want to review tests in Polarion
         and have all results linked to existing test cases there.
     description: |
-        Create a xUnit file ``xunit.xml`` with test results
-        and Polarion properties so the xUnit can then be
-        exported into Polarion.
+        Write test results into an xUnit file and upload to Polarion.
+
+        In order to get quickly started create a pylero config
+        file ``~/.pylero`` in your home directory with the
+        following content:
+
+        .. code-block:: ini
+
+            [webservice]
+            url=https://{your polarion web URL}/polarion
+            svn_repo=https://{your polarion web URL}/repo
+            default_project={your project name}
+            user={your username}
+            password={your password}
+
+        See the `Pylero Documentation`__ for more details on how
+        to configure the ``pylero`` module.
+
+        __ https://github.com/RedHatQE/pylero
 
         .. note::
 
