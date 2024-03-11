@@ -965,7 +965,8 @@ class StreamLogger(Thread):
             *,
             stream: Optional[IO[bytes]] = None,
             logger: Optional[tmt.log.LoggingFunction] = None,
-            click_context: Optional[click.Context] = None) -> None:
+            click_context: Optional[click.Context] = None,
+            stream_output: bool = True) -> None:
         super().__init__(daemon=True)
 
         self.stream = stream
@@ -973,6 +974,7 @@ class StreamLogger(Thread):
         self.log_header = log_header
         self.logger = logger
         self.click_context = click_context
+        self.stream_output = stream_output
 
     def run(self) -> None:
         if self.stream is None:
@@ -986,7 +988,7 @@ class StreamLogger(Thread):
 
         for _line in self.stream:
             line = _line.decode('utf-8', errors='replace')
-            if line != '':
+            if self.stream_output and line != '':
                 self.logger(
                     self.log_header,
                     line.rstrip('\n'),
@@ -1155,6 +1157,7 @@ class Command:
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
             silent: bool = False,
+            stream_output: bool = True,
             caller: Optional['Common'] = None,
             logger: tmt.log.Logger) -> CommandOutput:
         """
@@ -1182,6 +1185,9 @@ class Command:
             default, ``logger.debug`` is used.
         :param silent: if set, logging of steps taken by this function would be
             reduced.
+        :param stream_output: if set, command output would be streamed
+            live into the log. When unset, the output would be logged
+            only when the command fails.
         :param caller: optional "parent" of the command execution, used for better
             linked exceptions.
         :param logger: logger to use for logging.
@@ -1277,7 +1283,8 @@ class Command:
                 'out',
                 stream=process.stdout,
                 logger=output_logger,
-                click_context=click.get_current_context(silent=True))
+                click_context=click.get_current_context(silent=True),
+                stream_output=stream_output)
 
             if join:
                 stderr_logger: StreamLogger = UnusedStreamLogger('err')
@@ -1287,7 +1294,8 @@ class Command:
                     'err',
                     stream=process.stderr,
                     logger=output_logger,
-                    click_context=click.get_current_context(silent=True))
+                    click_context=click.get_current_context(silent=True),
+                    stream_output=stream_output)
 
             stdout_logger.start()
             stderr_logger.start()
@@ -1346,6 +1354,15 @@ class Command:
         # Handle the exit code, return output
         if process.returncode != 0:
             logger.debug(f"Command returned '{process.returncode}'.", level=3)
+
+            if not stream_output:
+                if stdout is not None:
+                    for line in stdout.splitlines():
+                        output_logger('out', value=line, color='yellow', level=3)
+
+                if stderr is not None:
+                    for line in stderr.splitlines():
+                        output_logger('err', value=line, color='yellow', level=3)
 
             raise RunError(
                 f"Command '{friendly_command or str(self)}' returned {process.returncode}.",

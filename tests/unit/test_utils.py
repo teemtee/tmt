@@ -20,6 +20,7 @@ import tmt.log
 import tmt.plugins
 import tmt.steps.discover
 import tmt.utils
+from tmt.log import Logger
 from tmt.utils import (
     Command,
     Common,
@@ -41,7 +42,7 @@ from tmt.utils import (
     wait,
     )
 
-from . import MATCH, assert_log
+from . import MATCH, assert_log, assert_not_log
 
 run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
@@ -698,6 +699,35 @@ def test_run_big(root_logger):
         logger=root_logger)
     assert "n n" in output.stdout
     assert len(output.stdout) == 200000
+
+
+def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
+    ShellScript('ls -al /').to_shell_command().run(
+        cwd=Path.cwd(),
+        stream_output=True,
+        logger=root_logger)
+
+    assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
+
+    caplog.clear()
+
+    ShellScript('ls -al /').to_shell_command().run(
+        cwd=Path.cwd(),
+        stream_output=False,
+        logger=root_logger)
+
+    assert_not_log(caplog, message=MATCH('out: drwx.+? mnt'))
+
+    caplog.clear()
+
+    with pytest.raises(tmt.utils.RunError):
+        ShellScript('ls -al / /does/not/exist').to_shell_command().run(
+            cwd=Path.cwd(),
+            stream_output=False,
+            logger=root_logger)
+
+    assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
+    assert_log(caplog, message=MATCH("err: ls: cannot access '/does/not/exist'"))
 
 
 def test_get_distgit_handler():

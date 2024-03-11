@@ -243,6 +243,7 @@ class WatchdogCheck(Check):
                                        '-c',
                                        str(self.ping_packets),
                                        invocation.guest.primary_address) .run(cwd=Path.cwd(),
+                                                                              stream_output=False,
                                                                               logger=logger)
 
             _handle_output(output.stdout or '')
@@ -327,6 +328,7 @@ class WatchdogCheck(Check):
                                        '-zv',
                                        invocation.guest.primary_address,
                                        str(invocation.guest.port or 22)) .run(cwd=Path.cwd(),
+                                                                              stream_output=False,
                                                                               logger=logger)
 
             _success(output.stderr or '')
