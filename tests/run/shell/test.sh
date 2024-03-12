@@ -6,7 +6,6 @@ USER=test_user$$
 
 rlJournalStart
     rlPhaseStartSetup
-
         [[ $(id -u) -eq 0 ]] || rlDie "Test has to run as root"
 
         rlRun "set -o pipefail"
