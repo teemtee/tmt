@@ -32,6 +32,10 @@ rlJournalStart
         rlLogInfo "PYTEST_MARK=$PYTEST_MARK"
 
         rlRun "PYTEST_COMMAND='pytest -vvv -ra --showlocals'"
+
+        rlLogInfo "pip is $(which pip), $(pip --version)"
+        rlLogInfo "hatch is $(which hatch), $(hatch --version)"
+        rlLogInfo "hatch is $(which hatch), $(hatch --version)"
     rlPhaseEnd
 
     if [ "$WITH_SYSTEM_PACKAGES" = "yes" ]; then
@@ -48,7 +52,7 @@ rlJournalStart
         rlPhaseEnd
     else
         rlPhaseStartTest "Unit tests"
-            rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
+            rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
         rlPhaseEnd
     fi
 
