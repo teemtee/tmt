@@ -557,6 +557,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 'modified-ref',
                 tmt.utils.default_branch(repository=self.testdir, logger=self._logger))
             self.info('modified-ref', modified_ref, 'green')
+            ref_commit = self.run(
+                Command('git', 'rev-parse', '--short', str(modified_ref)),
+                cwd=self.testdir)
+            assert ref_commit.stdout is not None
+            self.verbose('modified-ref hash', ref_commit.stdout.strip(), 'green')
             output = self.run(
                 Command(
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
@@ -566,6 +571,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 modified = {f"^/{re.escape(name)}" for name in directories if name}
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
                 names.extend(modified)
+            else:
+                self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
