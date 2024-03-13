@@ -20,20 +20,11 @@ require+:
   - jq
   - podman
   - buildah
+  - hatch
 
 # Run against development packages via `hatch`.
 /with-development-packages:
     enabled: true
-
-    # /tests/unit/with-development-packages/* needs `hatch` but there seem
-    # to be none for CentOS Stream 9. Test will request it, but on CentOS,
-    # we need a `prepare` phase to install it from PyPI. If we find
-    # `hatch` packaged, we can drop this workaround and make `hatch` a
-    # regular required package.
-    adjust+:
-      - when: distro == centos-stream
-        require+:
-          - hatch
 
     /basic:
         summary: Basic unit tests (development packages)
