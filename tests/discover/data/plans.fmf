@@ -169,6 +169,14 @@ execute:
             modified-only: true
             modified-ref: 8329db0^
 
+    /empty-modified:
+        discover:
+            how: fmf
+            path: ../../..
+            ref: 8329db0
+            modified-only: true
+            modified-ref: 8329db0
+
     /distgit:
         summary: Extract distgit sources
         discover:
