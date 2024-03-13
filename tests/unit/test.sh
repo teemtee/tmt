@@ -35,7 +35,6 @@ rlJournalStart
 
         rlLogInfo "pip is $(which pip), $(pip --version)"
         rlLogInfo "hatch is $(which hatch), $(hatch --version)"
-        rlLogInfo "hatch is $(which hatch), $(hatch --version)"
     rlPhaseEnd
 
     if [ "$WITH_SYSTEM_PACKAGES" = "yes" ]; then
@@ -52,6 +51,10 @@ rlJournalStart
         rlPhaseEnd
     else
         rlPhaseStartTest "Unit tests"
+            # Only pip 21.3+ will be able to install project in editable mode.
+            # See https://github.com/pypa/hatch/discussions/806#discussioncomment-5503233
+            rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:pip install -U '>=21.3'"
+
             rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
         rlPhaseEnd
     fi
