@@ -31,3 +31,10 @@ adjust:
         how: install
         directory: tmp/RPMS/noarch
     when: how == full
+
+  - when: distro == centos-stream-9
+    prepare+:
+      - name: Install recent pip
+        how: shell
+        script:
+          - pip3 install --user pip
