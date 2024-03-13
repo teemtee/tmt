@@ -6,3 +6,15 @@ description:
 discover:
     how: fmf
     filter: 'tier: 0, 1 & tag:-provision-only'
+
+adjust+:
+  # /tests/unit/with-development-packages/* needs `hatch` but there seem
+  # to be none for CentOS Stream 9. Test will request it, but on CentOS,
+  # we need a `prepare` phase to install it from PyPI. If we find
+  # `hatch` packaged, we can drop this workaround.
+  - when: distro == centos-stream
+    prepare+:
+      - how: shell
+        script:
+          - pip3 install --user hatch || pip3 install hatch
+          - hatch --help
