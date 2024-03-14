@@ -52,10 +52,10 @@ rlJournalStart
     else
         rlPhaseStartTest "Unit tests"
             if rlIsCentOS; then
-                rlRun "hatch -vv run $HATCH_ENVIRONMENT:ls" 1
+                rlRun "hatch -v run $HATCH_ENVIRONMENT:ls" 1
             fi
 
-            rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
+            rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
         rlPhaseEnd
     fi
 
