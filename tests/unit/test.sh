@@ -51,9 +51,9 @@ rlJournalStart
         rlPhaseEnd
     else
         rlPhaseStartTest "Unit tests"
-            # Only pip 21.3+ will be able to install project in editable mode.
-            # See https://github.com/pypa/hatch/discussions/806#discussioncomment-5503233
-            rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:pip install -U 'pip>=21.3'"
+            if rlIsCentOS; then
+                rlRun "hatch -vv run $HATCH_ENVIRONMENT:ls" 1
+            fi
 
             rlRun "hatch -vvvv run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK tests/unit"
         rlPhaseEnd
