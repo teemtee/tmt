@@ -132,7 +132,9 @@ dependencies = [
     # which is the version a developer encounters given the requirements are not
     # frozen.
     "types-Markdown",
-    "types-requests",
+    # prevent conflict between types-requests and urllib3
+    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
     "types-urllib3",
