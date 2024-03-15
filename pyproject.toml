@@ -159,6 +159,11 @@ requre = [
     "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
     ]
 
+[tool.hatch.envs.dev-not-editable]
+template = "dev"
+description = "Same as 'dev', but not using editable install"
+dev-mode = false
+
 [tool.hatch.envs.test]
 template = "dev"
 description = "Run scripts with multiple Python versions"

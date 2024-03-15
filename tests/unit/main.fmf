@@ -9,6 +9,11 @@ environment:
     ENABLE_CONTAINERS: "no"
     WITH_SYSTEM_PACKAGES: "no"
 
+adjust+:
+  - when: distro == centos-stream-9
+    environment+:
+      HATCH_ENVIRONMENT: dev-not-editable
+
 require+:
   - gcc
   - git
