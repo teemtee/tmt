@@ -38,4 +38,4 @@ example:
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``virtualization.is-virtualized`` only"
+    note: "``virtualization.is-virtualized`` ``virtualization.hypervisor`` only"

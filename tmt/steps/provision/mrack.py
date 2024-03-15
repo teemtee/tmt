@@ -52,7 +52,8 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'disk.driver',
     'hostname',
     'memory',
-    'virtualization.is_virtualized'
+    'virtualization.is_virtualized',
+    'virtualization.hypervisor'
     ]
 
 
@@ -362,6 +363,10 @@ def constraint_to_beaker_filter(
                     'system',
                     children=[MrackHWBinOp('hypervisor', '==', '')])
 
+        if child_name == 'hypervisor':
+            return MrackHWGroup(
+                'system',
+                children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)])
     # Unsupported constraint has been already logged via report_support(). Make
     # sure user is aware it would have no effect, and since we have to return
     # something, return an empty `or` group - no harm done, composable with other
