@@ -37,6 +37,7 @@ repos:
           # Help installation by reducing the set of inspected botocore release.
           # There is *a lot* of them, and hatch might fetch many of them.
           - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+          - "boto3>=1.22.10"         # 1.22.10 is the current one available for RHEL9
 
           # report-junit
           - "junit_xml>=1.9"
@@ -82,6 +83,7 @@ repos:
           # Help installation by reducing the set of inspected botocore release.
           # There is *a lot* of them, and hatch might fetch many of them.
           - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+          - "boto3>=1.22.10"         # 1.22.10 is the current one available for RHEL9
 
           # report-junit
           - "junit_xml>=1.9"
