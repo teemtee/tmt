@@ -14,6 +14,7 @@ adjust+:
       - name: disable systemd resolved
         how: shell
         script: |
+            set -x
             systemctl unmask systemd-resolved
             systemctl disable systemd-resolved
             systemctl mask systemd-resolved
@@ -21,6 +22,7 @@ adjust+:
             systemctl restart NetworkManager
             sleep 5
             cat /etc/resolv.conf
+            ps xa | grep resolv
 
   - when: trigger == commit
     provision:
