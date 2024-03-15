@@ -498,7 +498,24 @@ def normalize_hardware(
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
 
-            if components.name == 'cpu' and components.child_name == 'flag':
+            if components.peer_index is not None:
+                if components.child_name is None:
+                    raise tmt.utils.SpecificationError(
+                        f"Hardware requirement '{raw_datum}' lacks child property.")
+
+                if components.name not in merged:
+                    merged[components.name] = []
+
+                # Fill in empty spots between the existing ones and the one we're adding.
+                if len(merged[components.name]) <= components.peer_index:
+                    merged[components.name] += [
+                        {} for _ in range(components.peer_index - len(merged[components.name]) + 1)
+                        ]
+
+                merged[components.name][components.peer_index][components.child_name] = \
+                    f'{components.operator} {components.value}'
+
+            elif components.name == 'cpu' and components.child_name == 'flag':
                 if 'flag' not in merged['cpu']:
                     merged['cpu']['flag'] = []
 

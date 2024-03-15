@@ -595,7 +595,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
         names: list[str] = []
 
-        if components.peer_index:
+        if components.peer_index is not None:
             names.append(f'{components.name.replace("_", "-")}[{components.peer_index}]')
 
         else:
