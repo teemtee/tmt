@@ -13,6 +13,7 @@ adjust+:
   - when: distro == centos-stream-9
     environment+:
       HATCH_ENVIRONMENT: dev-not-editable
+    duration: 1h
 
 require+:
   - gcc
@@ -44,6 +45,10 @@ require+:
             ENABLE_PARALLELIZATION: "yes"
             ENABLE_CONTAINERS: "yes"
 
+        adjust+:
+          - when: distro == centos-stream-9
+            duration: 2h
+
 # Run against system, distro-packaged ones via `venv`.
 /with-system-packages:
     enabled: false
@@ -68,3 +73,7 @@ require+:
         duration: 1h
 
         environment+: *extended_environment
+
+        adjust+:
+          - when: distro == centos-stream-9
+            duration: 2h
