@@ -727,10 +727,10 @@ def _generate_test_check_presence() -> Iterator[
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
-                Package('util-linux-core'), \
+                Package('coreutils'), \
                 True, \
-                r"rpm -q --whatprovides util-linux-core", \
-                r'\s+out:\s+util-linux-core-', \
+                r"rpm -q --whatprovides coreutils", \
+                r'\s+out:\s+coreutils-', \
                 None
 
             yield container, \
@@ -743,10 +743,10 @@ def _generate_test_check_presence() -> Iterator[
 
             yield container, \
                 package_manager_class, \
-                FileSystemPath('/usr/bin/flock'), \
+                FileSystemPath('/usr/bin/arch'), \
                 True, \
-                r"rpm -q --whatprovides /usr/bin/flock", \
-                r'\s+out:\s+util-linux-core-', \
+                r"rpm -q --whatprovides /usr/bin/arch", \
+                r'\s+out:\s+coreutils-', \
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
@@ -773,6 +773,31 @@ def _generate_test_check_presence() -> Iterator[
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
                     r'\s+out:\s+util-linux-', \
+                    None
+
+            elif 'fedora:rawhide' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('coreutils'), \
+                    True, \
+                    r"rpm -q --whatprovides coreutils", \
+                    r'\s+out:\s+coreutils-', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    Package('tree-but-spelled-wrong'), \
+                    False, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/arch'), \
+                    True, \
+                    r"rpm -q --whatprovides /usr/bin/arch", \
+                    r'\s+out:\s+coreutils-', \
                     None
 
             else:
@@ -824,6 +849,31 @@ def _generate_test_check_presence() -> Iterator[
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
                     r'\s+out:\s+util-linux-', \
+                    None
+
+            elif 'fedora:rawhide' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('coreutils'), \
+                    True, \
+                    r"rpm -q --whatprovides coreutils", \
+                    r'\s+out:\s+coreutils-', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    Package('tree-but-spelled-wrong'), \
+                    False, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/arch'), \
+                    True, \
+                    r"rpm -q --whatprovides /usr/bin/arch", \
+                    r'\s+out:\s+coreutils-', \
                     None
 
             else:
