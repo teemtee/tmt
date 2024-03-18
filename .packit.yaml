@@ -49,6 +49,8 @@ jobs:
                 name: /plans/features/(core|basic)
 
   # Test pull requests (full)
+  # Do not run extended unit tests, that plan gets its own job because
+  # of podman vs systemd-resolved flakiness.
   - job: tests
     identifier: full
     trigger: pull_request
@@ -61,6 +63,26 @@ jobs:
             - full test
           absent:
             - discuss
+    tf_extra_params:
+        test:
+            tmt:
+                name: '^(?!/plans/features/extended-unit-tests).*$'
+
+  - job: tests
+    identifier: extended-unit-tests
+    trigger: pull_request
+    targets:
+      - fedora-39
+    require:
+        label:
+          present:
+            - full test
+          absent:
+            - discuss
+    tf_extra_params:
+        test:
+            tmt:
+                name: '/plans/features/extended-unit-tests$'
 
   # Test pull requests (provision)
   - job: tests

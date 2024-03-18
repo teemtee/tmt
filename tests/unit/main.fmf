@@ -29,7 +29,13 @@ require+:
 
 # Run against development packages via `hatch`.
 /with-development-packages:
-    enabled: true
+    enabled: false
+
+    adjust+:
+      - when: initiator is not defined or distro == fedora-39
+        because: Enable locally or in CI on Fedora 39
+
+        enabled: true
 
     /basic:
         summary: Basic unit tests (development packages)
@@ -56,6 +62,8 @@ require+:
 
     adjust+:
       - when: initiator == packit
+        because: Enable in CI only
+
         enabled: true
 
     /basic:
