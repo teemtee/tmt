@@ -121,7 +121,7 @@
 {% endmacro %}
 
 {% if INCLUDE_TITLE %}
-{% set depth = STORY.name | findall('/') | length - 1 %}
+{% set depth = STORY.name | regex_findall('/') | length - 1 %}
 {% set title_underline = '=~^:-><'[depth] %}
 {% if STORY.title and STORY.title != STORY.node.parent.get('title') %}
     {% set title = STORY.title %}
@@ -129,19 +129,19 @@
     {% set title = STORY.name | regex_replace('.*/', '') %}
 {% endif %}
 
-.. _{{ STORY.name | strip }}:
+.. _{{ STORY.name | trim }}:
 
-{{ title | strip }}
+{{ title | trim }}
 {{ title_underline * title | length }}
 {% endif %}
 
 {# Summary, story and description #}
 {% if STORY.summary and STORY.summary != STORY.node.parent.get('summary') %}
-{{ STORY.summary | strip }}
+{{ STORY.summary | trim }}
 {% endif %}
 
 {% if STORY.story != STORY.node.parent.get('story') %}
-*{{ STORY.story | strip }}*
+*{{ STORY.story | trim }}*
 {% endif %}
 
 {# Insert note about unimplemented feature (leaf nodes only) #}

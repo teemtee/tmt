@@ -16,10 +16,10 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help generate-plugins plugins/*.rst generate-stories generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
+.PHONY: help generate-plugins plugins/*.rst generate-stories generate-template-filters generate-autodocs clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
 
 clean:
-	rm -rf $(BUILDDIR) stories spec code/autodocs/*.rst
+	rm -rf $(BUILDDIR) stories spec code/autodocs/*.rst code/template-filters.rst
 
 ##
 ## Building documentation
@@ -55,7 +55,7 @@ TEMPLATESDIR  = templates
 
 PLUGINS_TEMPLATE := $(TEMPLATESDIR)/plugins.rst.j2
 
-generate: spec stories generate-lint-checks generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: spec stories generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 spec:
 	mkdir -p spec
@@ -65,6 +65,9 @@ stories:
 
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $(TMTDIR)/base.py
 	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
+
+code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $(TMTDIR)/utils.py
+	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
 
 plugins/discover.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/discover/*.py
 	$(SCRIPTSDIR)/generate-plugins.py discover $(PLUGINS_TEMPLATE) $@
@@ -88,6 +91,8 @@ plugins/test-checks.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $
 	$(SCRIPTSDIR)/generate-plugins.py test-checks $(PLUGINS_TEMPLATE) $@
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
+
+generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
