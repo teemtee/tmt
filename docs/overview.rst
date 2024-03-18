@@ -662,6 +662,8 @@ __ https://docs.python.org/3.9/library/re.html#regular-expression-syntax
 __ https://docs.python.org/3.9/howto/regex.html#regex-howto
 
 
+.. include:: template-filters.rst
+
 Links
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

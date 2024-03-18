@@ -9,6 +9,7 @@ docs/plugins/prepare.rst
 docs/plugins/provision.rst
 docs/plugins/report.rst
 docs/plugins/test-checks.rst
+docs/template-filters.rst
 docs/_build
 docs/spec
 docs/stories

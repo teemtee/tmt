@@ -7,7 +7,7 @@
 
 {% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
-.. _plugins/{{ STEP }}/{{ PLUGIN_ID | strip }}:
+.. _plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
 
 {{ PLUGIN_ID }}
 {{ '-' * (PLUGIN_ID | length)}}
@@ -25,7 +25,7 @@
     formatting is often suboptional.
 
 {% if PLUGIN.__doc__ %}
-{{ PLUGIN.__doc__ | dedent | strip }}
+{{ PLUGIN.__doc__ | dedent | trim }}
 {% endif %}
 
 Configuration
@@ -42,7 +42,7 @@ Configuration
 {{ option }}:
     {% endif %}
     {% if metadata.help %}
-{{ metadata.help | strip | indent(4, first=true) }}
+{{ metadata.help | trim | indent(4, first=true) }}
     {% endif %}
     {% if metadata.has_default %}
         {% set actual_default = metadata.materialized_default %}
