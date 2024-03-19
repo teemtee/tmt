@@ -24,6 +24,13 @@ connections, and may force reboot of the guest when it becomes
 unresponsive. This is the first step towards helping tests handle kernel
 panics and similar situations.
 
+Internal implementation of basic package manager actions has been
+refactored. tmt now supports package implementations to be shipped as
+plugins, therefore allowing for tmt to work natively with distributions
+beyond the ecosystem of rpm-based distributions. As a preview, ``apt``,
+the package manager used by Debian and Ubuntu, has been included in this
+release.
+
 __ https://pagure.io/testcloud/
 
 

@@ -1064,13 +1064,25 @@ class ShellScript:
         return self._script
 
     def __add__(self, other: 'ShellScript') -> 'ShellScript':
+        if not other:
+            return self
+
         return ShellScript.from_scripts([self, other])
 
     def __and__(self, other: 'ShellScript') -> 'ShellScript':
+        if not other:
+            return self
+
         return ShellScript(f'{self} && {other}')
 
     def __or__(self, other: 'ShellScript') -> 'ShellScript':
+        if not other:
+            return self
+
         return ShellScript(f'{self} || {other}')
+
+    def __bool__(self) -> bool:
+        return bool(self._script)
 
     @classmethod
     def from_scripts(cls, scripts: list['ShellScript']) -> 'ShellScript':
@@ -1083,7 +1095,7 @@ class ShellScript:
         :param scripts: scripts to merge into one.
         """
 
-        return ShellScript('; '.join(script._script for script in scripts))
+        return ShellScript('; '.join(script._script for script in scripts if bool(script)))
 
     def to_element(self) -> _CommandElement:
         """ Convert a shell script to a command element """

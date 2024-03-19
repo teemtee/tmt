@@ -7,7 +7,7 @@ from typing import Any, Callable
 import _pytest.logging
 import pytest
 
-import tmt.utils
+from tmt.utils import remove_color
 
 
 class PatternMatching:
@@ -56,6 +56,7 @@ class SEARCH(PatternMatching):
 def _assert_log(
         caplog: _pytest.logging.LogCaptureFixture,
         evaluator: Callable[[Iterable[Any]], bool] = any,
+        remove_colors: bool = False,
         not_present: bool = False,
         **tests: Any
         ) -> None:
@@ -86,12 +87,15 @@ def _assert_log(
     operators: list[tuple[Callable[[Any], Any], str, Callable[[Any, Any], bool], Any]] = []
 
     for field_name, expected_value in tests.items():
-        if field_name.startswith('details_'):
+        if field_name == 'message' and remove_colors:
+            def field_getter(record, name): return remove_color(getattr(record, name))
+
+        elif field_name.startswith('details_'):
             field_name = field_name.replace('details_', '')
             def field_getter(record, name): return getattr(record.details, name, None)
 
         elif field_name == 'message':
-            def field_getter(record, name): return tmt.utils.remove_color(getattr(record, name))
+            def field_getter(record, name): return remove_color(getattr(record, name))
 
         else:
             def field_getter(record, name): return getattr(record, name)
@@ -164,14 +168,26 @@ def _assert_log(
 def assert_log(
         caplog: _pytest.logging.LogCaptureFixture,
         evaluator: Callable[[Iterable[Any]], bool] = any,
+        remove_colors: bool = False,
         **tests: Any
         ) -> None:
-    _assert_log(caplog, evaluator=evaluator, not_present=False, **tests)
+    _assert_log(
+        caplog,
+        evaluator=evaluator,
+        remove_colors=remove_colors,
+        not_present=False,
+        **tests)
 
 
 def assert_not_log(
         caplog: _pytest.logging.LogCaptureFixture,
         evaluator: Callable[[Iterable[Any]], bool] = any,
+        remove_colors: bool = False,
         **tests: Any
         ) -> None:
-    _assert_log(caplog, evaluator=evaluator, not_present=True, **tests)
+    _assert_log(
+        caplog,
+        evaluator=evaluator,
+        remove_colors=remove_colors,
+        not_present=True,
+        **tests)

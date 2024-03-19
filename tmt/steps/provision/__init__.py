@@ -34,12 +34,14 @@ from click import echo
 import tmt
 import tmt.hardware
 import tmt.log
+import tmt.package_managers
 import tmt.plugins
 import tmt.queue
 import tmt.steps
 import tmt.utils
 from tmt.log import Logger
 from tmt.options import option
+from tmt.package_managers import FileSystemPath, Package
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
@@ -102,13 +104,6 @@ class CheckRsyncOutcome(enum.Enum):
     INSTALLED = 'installed'
 
 
-class GuestPackageManager(enum.Enum):
-    DNF = 'dnf'
-    DNF5 = 'dnf5'
-    YUM = 'yum'
-    RPM_OSTREE = 'rpm-ostree'
-
-
 T = TypeVar('T')
 
 
@@ -138,12 +133,10 @@ class GuestFacts(SerializableContainer):
     arch: Optional[str] = None
     distro: Optional[str] = None
     kernel_release: Optional[str] = None
-    package_manager: Optional[GuestPackageManager] = field(
+    package_manager: Optional['tmt.package_managers.GuestPackageManager'] = field(
         # cast: since the default is None, mypy cannot infere the full type,
         # and reports `package_manager` parameter to be `object`.
-        default=cast(Optional[GuestPackageManager], None),
-        serialize=lambda package_manager: package_manager.value if package_manager else None,
-        unserialize=lambda raw_value: GuestPackageManager(raw_value) if raw_value else None)
+        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None))
 
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
@@ -340,16 +333,15 @@ class GuestFacts(SerializableContainer):
                 (Command('uname', '-r'), r'(.+)')
                 ])
 
-    def _query_package_manager(self, guest: 'Guest') -> Optional[GuestPackageManager]:
+    def _query_package_manager(
+            self,
+            guest: 'Guest') -> Optional['tmt.package_managers.GuestPackageManager']:
         return self._probe(
             guest,
             [
-                (Command('stat', '/run/ostree-booted'), GuestPackageManager.RPM_OSTREE),
-                (Command('dnf5', '--version'), GuestPackageManager.DNF5),
-                (Command('dnf', '--version'), GuestPackageManager.DNF),
-                (Command('yum', '--version'), GuestPackageManager.YUM),
-                # And, one day, we'd follow up on this with...
-                # (Command('dpkg', '-l', 'apt'), 'apt')
+                (package_manager_class.probe_command, plugin_id)
+                for plugin_id, package_manager_class
+                in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
                 ])
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
@@ -409,7 +401,7 @@ class GuestFacts(SerializableContainer):
         yield 'kernel_release', 'kernel', self.kernel_release or 'unknown'
         yield 'package_manager', \
             'package manager', \
-            self.package_manager.value if self.package_manager else 'unknown'
+            self.package_manager if self.package_manager else 'unknown'
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
 
@@ -686,6 +678,15 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @cached_property
+    def package_manager(self) -> 'tmt.package_managers.PackageManager':
+        if not self.facts.package_manager:
+            raise tmt.utils.GeneralError(
+                f"Package manager was not detected on guest '{self.name}'.")
+
+        return tmt.package_managers.find_package_manager(
+            self.facts.package_manager)(guest=self, logger=self._logger)
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """
@@ -849,8 +850,9 @@ class Guest(tmt.utils.Common):
         # Plan environment and variables provided on the command line
         # override environment provided to execute().
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
-        environment.update(parent.plan.environment)
+        if self.parent:
+            parent = cast(Provision, self.parent)
+            environment.update(parent.plan.environment)
         return environment
 
     @staticmethod
@@ -1141,28 +1143,23 @@ class Guest(tmt.utils.Common):
         except tmt.utils.RunError:
             pass
 
-        # Check the package manager
-        self.debug("Check the package manager.")
-        try:
-            self.execute(Command('dnf', '--version'))
-            package_manager = "dnf"
-        except tmt.utils.RunError:
-            package_manager = "yum"
-
         # Install under '/root/pkg' for read-only distros
         # (for now the check is based on 'rpm-ostree' presence)
         # FIXME: Find a better way how to detect read-only distros
-        self.debug("Check for a read-only distro.")
-        try:
-            self.execute(Command('rpm-ostree', '--version'))
-            readonly = (
-                " --installroot=/root/pkg --releasever / "
-                "&& ln -sf /root/pkg/bin/rsync /usr/local/bin/rsync")
-        except tmt.utils.RunError:
-            readonly = ""
+        # self.debug("Check for a read-only distro.")
+        if self.facts.package_manager == 'rpm-ostree':
+            self.package_manager.install(
+                Package('rsync'),
+                options=tmt.package_managers.Options(
+                    install_root=Path('/root/pkg'),
+                    release_version='/'
+                    )
+                )
 
-        # Install the rsync
-        self.execute(ShellScript(f"{package_manager} install -y rsync" + readonly))
+            self.execute(Command('ln', '-sf', '/root/pkg/bin/rsync', '/usr/local/bin/rsync'))
+
+        else:
+            self.package_manager.install(Package('rsync'))
 
         return CheckRsyncOutcome.INSTALLED
 
@@ -1457,15 +1454,7 @@ class GuestSsh(Guest):
         if self.is_dry_run:
             return
         if not self.facts.is_superuser and self.become:
-            assert self.facts.package_manager is not None
-            # TODO: refactor this after PR #2557 is completed
-            self.execute(
-                Command(
-                    'sudo',
-                    f'{self.facts.package_manager.value}',
-                    'install',
-                    '-y',
-                    'acl'))
+            self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             workdir_root = effective_workdir_root()
             self.execute(ShellScript(
                 f"""
@@ -1835,47 +1824,6 @@ class GuestSsh(Guest):
         consume any disk resources.
         """
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
-
-    def _check_rsync(self) -> CheckRsyncOutcome:
-        """
-        Make sure that rsync is installed on the guest
-
-        On read-only distros install it under the '/root/pkg' directory.
-        Returns 'already installed' when rsync is already present.
-        """
-
-        # Check for rsync (nothing to do if already installed)
-        self.debug("Ensure that rsync is installed on the guest.")
-        try:
-            self.execute(Command('rsync', '--version'))
-            return CheckRsyncOutcome.ALREADY_INSTALLED
-        except tmt.utils.RunError:
-            pass
-
-        # Check the package manager
-        self.debug("Check the package manager.")
-        try:
-            self.execute(Command('dnf', '--version'))
-            package_manager = "dnf"
-        except tmt.utils.RunError:
-            package_manager = "yum"
-
-        # Install under '/root/pkg' for read-only distros
-        # (for now the check is based on 'rpm-ostree' presence)
-        # FIXME: Find a better way how to detect read-only distros
-        self.debug("Check for a read-only distro.")
-        try:
-            self.execute(Command('rpm-ostree', '--version'))
-            readonly = (
-                " --installroot=/root/pkg --releasever / "
-                "&& ln -sf /root/pkg/bin/rsync /usr/local/bin/rsync")
-        except tmt.utils.RunError:
-            readonly = ""
-
-        # Install the rsync
-        self.execute(ShellScript(f"{package_manager} install -y rsync" + readonly))
-
-        return CheckRsyncOutcome.INSTALLED
 
 
 @dataclasses.dataclass

@@ -1,50 +1,32 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import tmt
-from tmt.log import Logger
+from tmt.base import DependencySimple
 from tmt.steps.prepare.install import InstallBase
 
 
-def prepare_command(self):
-    """ Fake prepare_command() for InstallBase """
-    return ("command", "options")
-
-
-def get(what, default=None):
-    """ Fake get() for parent PrepareInstall """
-
-    if what == "directory":
-        return []
-
-    if what == "missing":
-        return "skip"
-
-    if what == "package":
-        return [
-            # Regular packages
-            "wget",
-            "debuginfo-something",
-            "elfutils-debuginfod",
-            # Debuginfo packages
-            "grep-debuginfo",
-            "elfutils-debuginfod-debuginfo",
-            ]
-
-    return None
-
-
-@patch.object(tmt.steps.prepare.install.InstallBase, 'prepare_command', prepare_command)
-def test_debuginfo():
+def test_debuginfo(root_logger):
     """ Check debuginfo package parsing """
 
-    logger = Logger.create()
     parent = MagicMock()
-    parent.get = get
     guest = MagicMock()
 
-    install = InstallBase(parent=parent, logger=logger, guest=guest)
+    install = InstallBase(
+        parent=parent,
+        dependencies=[
+            # Regular packages
+            DependencySimple("wget"),
+            DependencySimple("debuginfo-something"),
+            DependencySimple("elfutils-debuginfod"),
+            # Debuginfo packages
+            DependencySimple("grep-debuginfo"),
+            DependencySimple("elfutils-debuginfod-debuginfo"),
+            ],
+        directories=[],
+        exclude=[],
+        logger=root_logger,
+        guest=guest)
 
-    assert install.repository_packages == [
+    assert install.packages == [
         "wget",
         "debuginfo-something",
         "elfutils-debuginfod",

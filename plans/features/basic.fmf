@@ -6,3 +6,4 @@ description:
 discover:
     how: fmf
     filter: 'tier: 2 & tag:-provision-only'
+    exclude: '/tests/unit/.*?/extended'

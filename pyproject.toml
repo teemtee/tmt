@@ -119,6 +119,8 @@ dependencies = [
     "mypy",
     "pytest",
     "python-coveralls",
+    "pytest-container",
+    "pytest-xdist",
     "requre",
     "yq==3.1.1",
     "pre-commit",
@@ -126,7 +128,9 @@ dependencies = [
     # which is the version a developer encounters given the requirements are not
     # frozen.
     "types-Markdown",
-    "types-requests",
+    # prevent conflict between types-requests and urllib3
+    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
     "types-urllib3",
@@ -141,18 +145,23 @@ lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
 type = ["mypy {args:tmt}"]
 check = ["lint", "type"]
 
-unit = "pytest -vvv -ra --showlocals tests/unit"
-smoke = "pytest -vvv -ra --showlocals tests/unit/test_cli.py"
+unit = "pytest -vvv -ra --showlocals -n 0 tests/unit"
+smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
 cov = [
-    "coverage run --source=tmt -m pytest -vvv -ra --showlocals tests",
+    "coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests",
     "coverage report",
     "coverage annotate",
     ]
 requre = [
     "cd {root}/tests/integration",
-    "pytest -vvv -ra --showlocals",
+    "pytest -vvv -ra --showlocals -n 0",
     "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
     ]
+
+[tool.hatch.envs.dev-not-editable]
+template = "dev"
+description = "Same as 'dev', but not using editable install"
+dev-mode = false
 
 [tool.hatch.envs.test]
 template = "dev"
@@ -314,4 +323,7 @@ extend-immutable-calls = ["tmt.utils.field"]
 known-first-party = ["tmt"]
 
 [tool.pytest.ini_options]
-markers = ["web: tests which need to access the web"]
+markers = [
+    "containers: tests which need to spawn containers",
+    "web: tests which need to access the web"
+    ]

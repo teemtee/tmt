@@ -86,7 +86,7 @@ images:  ## Build tmt images for podman/docker
 ## Development
 ##
 develop: _deps  ## Install development requirements
-	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq}-devel jq podman
+	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah
 
 # Git vim tags and cleanup
 tags:

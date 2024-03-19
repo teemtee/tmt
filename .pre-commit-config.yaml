@@ -34,6 +34,7 @@ repos:
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
           - "urllib3>=1.26.5, <2.0"  # 1.26.16 / 2.0.4
+
           # report-junit
           - "junit_xml>=1.9"
 
@@ -44,7 +45,9 @@ repos:
           # which is the version a developer encounters given the requirements are not
           # frozen.
           - "types-Markdown"
-          - "types-requests"
+          # prevent conflict between types-requests and urllib3
+          - "types-requests<2.31.0.7; python_version < '3.10'"
+          - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
           - "types-urllib3"
@@ -75,6 +78,7 @@ repos:
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
           - "urllib3>=1.26.5, <2.0"  # 1.26.16 / 2.0.4
+
           # report-junit
           - "junit_xml>=1.9"
 
@@ -85,7 +89,9 @@ repos:
           # which is the version a developer encounters given the requirements are not
           # frozen.
           - "types-Markdown"
-          - "types-requests"
+          # prevent conflict between types-requests and urllib3
+          - "types-requests<2.31.0.7; python_version < '3.10'"
+          - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
           - "types-urllib3"
@@ -122,3 +128,6 @@ repos:
         - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
         - "pint<0.20"
         - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
+        # Help installation by reducing the set of inspected botocore release.
+        # There is *a lot* of them, and hatch might fetch many of them.
+        - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9

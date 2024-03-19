@@ -158,6 +158,19 @@ class GuestContainer(tmt.Guest):
         """ Start provisioned guest """
         if self.is_dry_run:
             return
+
+        if self.container:
+            self.primary_address = self.topology_address = self.container
+
+            self.verbose('primary address', self.primary_address, 'green')
+            self.verbose('topology address', self.topology_address, 'green')
+
+            return
+
+        self.container = self.primary_address = self.topology_address = self._tmt_name()
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
+
         # Check if the image is available
         assert self.image is not None
 
@@ -184,9 +197,7 @@ class GuestContainer(tmt.Guest):
         # Mount the whole plan directory in the container
         workdir = self.parent.plan.workdir
 
-        self.container = self.primary_address = self.topology_address = self._tmt_name()
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+        self.verbose('name', self.container, 'green')
 
         additional_args = []
 
