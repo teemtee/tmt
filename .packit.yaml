@@ -72,7 +72,7 @@ jobs:
     identifier: extended-unit-tests
     trigger: pull_request
     targets:
-      - fedora-39
+      - fedora-latest-stable
     require:
         label:
           present:
