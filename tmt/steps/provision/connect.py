@@ -2,6 +2,7 @@ import dataclasses
 from typing import Any, Optional, Union
 
 import tmt
+import tmt.hardware
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
@@ -84,6 +85,16 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 
     soft_reboot: Optional[ShellScript]
     hard_reboot: Optional[ShellScript]
+
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                f"""
+                arch: {self.facts.arch}
+                """
+                )
+            )
 
     def reboot(
             self,

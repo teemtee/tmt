@@ -4,6 +4,7 @@ import datetime
 import os
 import platform
 import re
+import textwrap
 import threading
 import types
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
@@ -208,6 +209,22 @@ TPM_VERSION_SUPPORTED_VERSIONS = {
     # an input parameter of TPM configuration.
     False: ['2.0', '2']
     }
+
+
+_ACTUAL_HARDWARE_TEMPLATE = """
+arch: "{{ GUEST.arch }}"
+memory: "{{ GUEST._domain.memory_size }} kB"
+{% if GUEST._domain.storage_devices %}
+disk:
+    {% for device in GUEST._domain.storage_devices %}
+        {% if device.size %}
+    - size: "{{ device.size }} GB"
+        {% endif %}
+    {% endfor %}
+{% else %}
+disk: []
+{% endif %}
+"""
 
 
 def normalize_memory_size(
@@ -502,6 +519,19 @@ class GuestTestcloud(tmt.GuestSsh):
     def is_coreos(self) -> bool:
         # Is this a CoreOS?
         return bool(re.search('coreos|rhcos', self.image.lower()))
+
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        assert self._domain is not None  # narrow type
+
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                tmt.utils.render_template(
+                    textwrap.dedent(_ACTUAL_HARDWARE_TEMPLATE),
+                    GUEST=self
+                    )
+                )
+            )
 
     def _get_url(self, url: str, message: str) -> requests.Response:
         """ Get url, retry when fails, return response """
@@ -816,10 +846,10 @@ class GuestTestcloud(tmt.GuestSsh):
         self._combine_hw_memory()
         self._combine_hw_disk_size()
 
-        if self.hardware:
+        if self.hardware and self.hardware.constraint:
             self.verbose(
                 'effective hardware',
-                self.hardware.to_spec(),
+                tmt.utils.dict_to_yaml(self.hardware.to_spec()).strip(),
                 color='green')
 
             for line in self.hardware.format_variants():

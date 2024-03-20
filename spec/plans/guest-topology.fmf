@@ -22,6 +22,14 @@ description: |
 
     .. note::
 
+        The ``hardware`` key, describing the actual HW configuration of the
+        guest, as understood by tmt, is using
+        :ref:`hardware specification </spec/hardware>`
+        and as such is still a work in progress. Not all hardware properties
+        might be available yet.
+
+    .. note::
+
         The shell-friendly file is easy to ingest for a shell-based tests,
         it can be simply ``source``-ed. For parsing the YAML file in shell,
         pure shell parsers like https://github.com/sopos/yash can be used.
@@ -34,6 +42,7 @@ description: |
             name: ...
             role: ...
             hostname: ...
+            hardware: ...
 
         # List of names of all provisioned guests.
         guest-names:
@@ -48,10 +57,12 @@ description: |
                 name: guest1
                 role: ...
                 hostname: ...
+                hardware: ...
             guest2:
                 name: guest2
                 role: ...
                 hostname: ...
+                hardware: ...
             ...
 
         # List of all known roles.
@@ -101,6 +112,9 @@ description: |
         TMT_ROLES[role1]="guest1 guest2 ..."
         TMT_ROLES[role2]="guestN ..."
         ...
+
+    .. versionadded:: 1.31
+        Guest HW exposed via ``hardware`` key.
 
 example:
   - |
