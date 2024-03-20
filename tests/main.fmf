@@ -4,6 +4,7 @@ contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 tag: [container, virtual]
 require: [tmt]
+duration: 10m
 
 adjust:
   - check: [avc]
