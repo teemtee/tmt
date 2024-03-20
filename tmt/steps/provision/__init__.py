@@ -749,6 +749,12 @@ class Guest(tmt.utils.Common):
         return tmt.package_managers.find_package_manager(
             self.facts.package_manager)(guest=self, logger=self._logger)
 
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        """ An actual HW configuration expressed with tmt hardware specification """
+
+        raise NotImplementedError
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """
@@ -862,6 +868,19 @@ class Guest(tmt.utils.Common):
 
             elif key in GUEST_FACTS_VERBOSE_FIELDS:
                 self.verbose(key_formatted, value_formatted, color='green')
+
+        if self.hardware and self.hardware.constraint:
+            self.info(
+                'hardware',
+                tmt.utils.dict_to_yaml(self.hardware.to_spec()).strip(),
+                color='green')
+
+        self.info(
+            'actual hardware',
+            tmt.utils.dict_to_yaml(
+                tmt.hardware.simplify_actual_hardware(
+                    self.actual_hardware)).strip(),
+            color='green')
 
     def _ansible_verbosity(self) -> list[str]:
         """ Prepare verbose level based on the --debug option count """

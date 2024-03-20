@@ -1,8 +1,10 @@
 import dataclasses
+import os
 from typing import Any, Optional, Union
 
 import tmt
 import tmt.base
+import tmt.hardware
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
@@ -25,6 +27,19 @@ class GuestLocal(tmt.Guest):
     def is_ready(self) -> bool:
         """ Local is always ready """
         return True
+
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        memory = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                f"""
+                arch: {self.facts.arch}
+                memory: {memory} bytes
+                """
+                )
+            )
 
     def _run_ansible(
             self,

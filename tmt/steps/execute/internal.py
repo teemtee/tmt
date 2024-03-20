@@ -325,13 +325,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             options=["-s", "-p", "--chmod=755"])
 
         # Create topology files
-        topology = tmt.steps.Topology(self.step.plan.provision.guests())
-        topology.guest = tmt.steps.GuestTopology(guest)
-
-        environment.update(topology.push(
-            dirpath=invocation.path,
-            guest=guest,
-            logger=logger))
+        invocation.inject_topology(environment)
 
         command: str
         if guest.become and not guest.facts.is_superuser:

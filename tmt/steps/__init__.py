@@ -29,6 +29,7 @@ from click import echo
 from click.core import ParameterSource
 
 import tmt.export
+import tmt.hardware
 import tmt.log
 import tmt.options
 import tmt.queue
@@ -1916,11 +1917,13 @@ class GuestTopology(SerializableContainer):
     name: str
     role: Optional[str]
     hostname: Optional[str]
+    hardware: Optional[tmt.hardware.Spec]
 
     def __init__(self, guest: 'Guest') -> None:
         self.name = guest.name
         self.role = guest.role
         self.hostname = guest.topology_address
+        self.hardware = tmt.hardware.simplify_actual_hardware(guest.actual_hardware)
 
 
 @dataclasses.dataclass(init=False)
@@ -2109,6 +2112,49 @@ class Topology(SerializableContainer):
                 raise tmt.utils.GeneralError(f"Unhandled topology file '{filepath}'.")
 
         return environment
+
+    @classmethod
+    def inject(
+            cls,
+            *,
+            environment: Environment,
+            guests: list['Guest'],
+            guest: 'Guest',
+            dirpath: Path,
+            filename_base: Optional[Path] = None,
+            logger: tmt.log.Logger) -> 'Topology':
+        """
+        Create, save and push topology to a given guest.
+
+        .. note::
+
+            A helper for simplified use from plugins. It delivers exactly what
+            :py:meth:`save` and :py:meth:`push` would do, but is easier to use
+            for a common plugin developer.
+
+        :param environment: environment to update with topology variables.
+        :param guests: list of all provisioned guests.
+        :param guest: a guest on which the plugin would run its actions.
+        :param dirpath: a directory to save the topology into.
+        :param filename_base: if set, it would be used as a base for filenames,
+            correct suffixes would be added.
+        :param logger: logger to use for logging.
+        :returns: instantiated topology container.
+        """
+
+        topology = cls(guests)
+        topology.guest = GuestTopology(guest)
+
+        environment.update(
+            topology.push(
+                dirpath=dirpath,
+                guest=guest,
+                filename_base=filename_base,
+                logger=logger
+                )
+            )
+
+        return topology
 
 
 @dataclasses.dataclass
