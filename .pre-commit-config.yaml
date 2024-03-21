@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.0.4'
+    rev: 'v2.1.0'
     hooks:
       - id: autopep8
 
@@ -15,7 +15,7 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.8.0"
+    rev: "v1.9.0"
     hooks:
       - id: mypy
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
@@ -59,7 +59,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.352
+    rev: v1.1.355
     hooks:
       - id: pyright
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
@@ -100,20 +100,20 @@ repos:
           - "types-docutils"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.27.3"
+    rev: "0.28.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.33.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.11
+    rev: v0.3.3
     hooks:
       - id: ruff
         args:
@@ -121,7 +121,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.30.0
+    rev: 1.31.0
     hooks:
     - id: tmt-lint
       additional_dependencies:

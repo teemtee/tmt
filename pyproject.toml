@@ -275,7 +275,7 @@ max-line-length = "99"
 line-length = 99
 src = ["tmt", "tests"]
 target-version = "py39"
-select = [
+lint.select = [
     "F",  # pyflakes
     "E",  # pycodestyle
     "W",  # pycodestyle
@@ -303,12 +303,12 @@ select = [
     "PLR1",
     "RUF",  # ruff
     ]
-ignore = [
+lint.ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     # tmt codebase uses `warn` by default - disabling the check, switching to
     # `warning` can be done in an extra patch.
-    "PGH002",  # `warn` is deprecated in favor of `warning`
+    "G010",  # `warn` is deprecated in favor of `warning`
     "PIE790",  # Unnecessary `pass` statement
     "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
     "PLE1205",  # Too many arguments for `logging` format string
@@ -316,10 +316,10 @@ ignore = [
     "RUF013",  # PEP 484 prohibits implicit `Optional`
     ]
 
-[tool.ruff.flake8-bugbear]
+[tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["tmt.utils.field"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["tmt"]
 
 [tool.pytest.ini_options]

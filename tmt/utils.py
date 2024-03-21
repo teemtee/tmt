@@ -2554,7 +2554,7 @@ def flatten(lists: Iterable[list[T]], unique: bool = False) -> list[T]:
     :returns: list of items from all given lists.
     """
 
-    flattened: list[T] = sum(lists, [])
+    flattened: list[T] = [item for sublist in lists for item in sublist]
 
     return uniq(flattened) if unique else flattened
 
