@@ -262,6 +262,12 @@ commits with your changes on the top of the branch instead of
 amending the original commit and doing a force push. This will
 make it easier for the reviewers to see what has recently changed.
 
+When addressing review comments, you can resolve the review thread
+if you believe you've addressed the issue and no further discussion
+is needed. If you'd like the reviewer to look at your changes again,
+comment on the thread and ask for a re-review by clicking the
+``Re-request review`` button in the ``Reviewers`` section.
+
 Once the pull request has been successfully reviewed and all tests
 passed, please rebase on the latest ``main`` branch content and
 squash the changes into a single commit. Use multiple commits to
