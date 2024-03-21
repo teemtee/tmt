@@ -2159,8 +2159,7 @@ class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
 
     @property
     def name(self) -> str:
-        return f'{self.phase_name} ' \
-               f'on {fmf.utils.listed(self.guest_ids)}'
+        return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         self.phase.go(guest=guest, logger=logger)
