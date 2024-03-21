@@ -1658,8 +1658,8 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
     It's also possible to select the provision method for each guest:
 
     \b
-        tmt run fedora@container
-        tmt run centos-stream-9@virtual
+        tmt try fedora@container
+        tmt try centos-stream-9@virtual
     """
 
     tmt.trying.Try.store_cli_invocation(context)
