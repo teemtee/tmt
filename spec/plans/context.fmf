@@ -11,6 +11,13 @@ description: |
     for the full list of supported context dimensions. Must be a
     ``dictionary``.
 
+    .. note::
+
+        The context dimensions which are defined in the plan are
+        not evaluated when the :ref:`/spec/core/adjust` rules are
+        applied to the plan itself. Use the command line option
+        ``--context`` to provide the desired context instead.
+
 example:
   - |
     summary:
