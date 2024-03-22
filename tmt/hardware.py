@@ -63,8 +63,10 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
+    # Note, type-hinting is not properly supported in pint. Change to `Quantity[int]` when
+    # supported (https://github.com/hgrecco/pint/issues/1166)
     #: A type of values describing sizes of things like storage or RAM.
-    Size: TypeAlias = 'Quantity[int]'
+    Size: TypeAlias = Quantity
 
 #: Unit registry, used and shared by all code.
 UNITS = pint.UnitRegistry()
