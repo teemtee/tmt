@@ -1023,18 +1023,19 @@ def test_wait_success_but_too_late(root_logger):
 
 def test_import_member(root_logger):
     klass = tmt.plugins.import_member(
-        module_name='tmt.steps.discover', member_name='Discover', logger=root_logger)
+        module='tmt.steps.discover', member='Discover', logger=root_logger)[1]
 
     assert klass is tmt.steps.discover.Discover
 
 
 def test_import_member_no_such_module(root_logger):
     with pytest.raises(
-            tmt.utils.GeneralError,
-            match=r"Failed to import module 'tmt\.steps\.nope_does_not_exist'."):
+            SystemExit,
+            match=rf"Failed to import the 'tmt\.steps\.nope_does_not_exist'"
+                  rf" module from '{Path.cwd()}'."):
         tmt.plugins.import_member(
-            module_name='tmt.steps.nope_does_not_exist',
-            member_name='Discover',
+            module='tmt.steps.nope_does_not_exist',
+            member='Discover',
             logger=root_logger)
 
 
@@ -1043,8 +1044,8 @@ def test_import_member_no_such_class(root_logger):
             tmt.utils.GeneralError,
             match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'."):
         tmt.plugins.import_member(
-            module_name='tmt.steps.discover',
-            member_name='NopeDoesNotExist',
+            module='tmt.steps.discover',
+            member='NopeDoesNotExist',
             logger=root_logger)
 
 

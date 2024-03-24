@@ -1,6 +1,5 @@
 import dataclasses
-import types
-from typing import TYPE_CHECKING, Any, Optional, cast, overload
+from typing import TYPE_CHECKING, Optional, overload
 
 import tmt
 import tmt.base
@@ -10,29 +9,32 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+from tmt.plugins import ModuleImporter
 from tmt.utils import Path, field
 
 if TYPE_CHECKING:
+    import junit_xml
+
     from tmt.steps.report import ReportPlugin, ReportStepDataT
 
 DEFAULT_NAME = "junit.xml"
 
-junit_xml: Optional[types.ModuleType] = None
 
-# Thanks to import burried in a function, we don't get the regular missing annotations
-# but "name ... is not defined". Define a special type to follow the test suite instance
-# around, and if junit_xml ever gets annotations, we can replace it with provided type.
-JunitTestSuite = Any
-
-
-def import_junit_xml() -> None:
-    """ Import junit_xml module only when needed """
-    global junit_xml
-    try:
-        import junit_xml
-    except ImportError:
-        raise tmt.utils.ReportError(
-            "Install 'tmt+report-junit' for JUnit XML reports")
+# ignore[unused-ignore]: Pyright would report that "module cannot be
+# used as a type", and it would be correct. On the other hand, it works,
+# and both mypy and pyright are able to propagate the essence of a given
+# module through `ModuleImporter` that, eventually, the module object
+# returned by the importer does have all expected members.
+#
+# The error message does not have its own code, but simple `type: ignore`
+# is enough to suppress it. And then mypy complains about an unused
+# ignore, hence `unused-ignore` code, leading to apparently confusing
+# directive.
+import_junit_xml: ModuleImporter['junit_xml'] = ModuleImporter(  # type: ignore[unused-ignore]
+    'junit_xml',
+    tmt.utils.ReportError,
+    "Missing 'junit-xml', fixable by 'pip install tmt[report-junit]'.",
+    tmt.log.Logger.get_bootstrap_logger())
 
 
 @overload
@@ -55,10 +57,9 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
             f"Malformed duration '{duration}' ({error}).")
 
 
-def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> JunitTestSuite:
+def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSuite':
     """ Create junit xml object """
-    import_junit_xml()
-    assert junit_xml
+    junit_xml = import_junit_xml()
 
     suite = junit_xml.TestSuite(report.step.plan.name)
 
@@ -84,7 +85,7 @@ def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> JunitTestSuite:
         # Passed state is the default
         suite.test_cases.append(case)
 
-    return cast(JunitTestSuite, suite)
+    return suite
 
 
 @dataclasses.dataclass
@@ -116,9 +117,8 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
         """ Read executed tests and write junit """
         super().go()
 
+        junit_xml = import_junit_xml()
         suite = make_junit_xml(self)
-
-        assert junit_xml  # narrow type
 
         assert self.workdir is not None
         f_path = self.data.file or self.workdir / DEFAULT_NAME

@@ -3278,9 +3278,9 @@ class SerializableContainer(DataContainer):
 
         klass_info = serialized.pop('__class__')
         klass = import_member(
-            module_name=klass_info['module'],
-            member_name=klass_info['name'],
-            logger=logger)
+            module=klass_info['module'],
+            member=klass_info['name'],
+            logger=logger)[1]
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
@@ -5650,9 +5650,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         step_class_name = step_name.capitalize()
 
         step_class = import_member(
-            module_name=step_module_name,
-            member_name=step_class_name,
-            logger=logger)
+            module=step_module_name,
+            member=step_class_name,
+            logger=logger)[1]
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(

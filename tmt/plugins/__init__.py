@@ -6,12 +6,16 @@ import pkgutil
 import sys
 from collections.abc import Iterator
 from importlib.metadata import entry_points
-from typing import Any, Generic, Optional, TypeVar
+from types import ModuleType
+from typing import Any, Generic, Optional, TypeVar, cast
 
 import tmt
 import tmt.utils
 from tmt.log import Logger
 from tmt.utils import Path
+
+ModuleT = TypeVar('ModuleT', bound=ModuleType)
+
 
 # Two possibilities to load additional plugins:
 # entry_points (setup_tools)
@@ -79,7 +83,7 @@ def _explore_package(package: str, path: Path, logger: Logger) -> None:
     logger = logger.descend()
 
     for module in discover(path):
-        import_(module=f'{package}.{module}', logger=logger)
+        import_module(module=f'{package}.{module}', logger=logger)
 
 
 def _explore_directory(path: Path, logger: Logger) -> None:
@@ -94,7 +98,7 @@ def _explore_directory(path: Path, logger: Logger) -> None:
         if _path not in sys.path:
             sys.path.insert(0, _path)
 
-        import_(module=module, path=path, logger=logger)
+        import_module(module=module, path=path, logger=logger)
 
 
 def _explore_custom_directories(logger: Logger) -> None:
@@ -181,42 +185,109 @@ def explore(logger: Logger, again: bool = False) -> None:
     ALREADY_EXPLORED = True
 
 
-def import_(*, module: str, path: Optional[Path] = None, logger: Logger) -> None:
-    """ Attempt to import requested module """
+# ignore[type-var,misc]: the actual type is provided by caller - the
+# return value would be assigned a name, with a narrower module type.
+# This type would be propagated into this type var.
+def _import(
+        *,
+        module: str,
+        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    """
+    Import a module.
+
+    :param module: name of a module to import. It may represent a
+        submodule as well, using common dot notation (``foo.bar.baz``).
+    :returns: imported module.
+    :raises tmt.utils.GeneralError: when import fails.
+    """
 
     if module in sys.modules:
         logger.debug(f"Module '{module}' already imported.")
-        return
+
+        return cast(ModuleT, sys.modules[module])
 
     try:
-        importlib.import_module(module)
-        logger.debug(f"Successfully imported the '{module}' module.")
-    except (ImportError, SystemExit) as error:
-        # setup.py when executed during import raises SystemExit
-        raise SystemExit(
-            f"Failed to import the '{module}' module" +
-            (f" from '{path}'." if path else ".")) from error
+        imported = cast(ModuleT, importlib.import_module(module))
+
+    except ImportError as exc:
+        raise tmt.utils.GeneralError("Failed to import the '{module}' module.") from exc
+
+    if module not in sys.modules:
+        raise tmt.utils.GeneralError(f"Module '{module}' imported but not accessible.")
+
+    logger.debug(f"Successfully imported the '{module}' module.")
+
+    return imported
 
 
-def import_member(*, module_name: str, member_name: str, logger: Logger) -> Any:
+# ignore[type-var,misc]: the actual type is provided by caller - the
+# return value would be assigned a name, with a narrower module type.
+# This type would be propagated into this type var.
+def _import_or_raise(
+        *,
+        module: str,
+        exc_class: type[BaseException],
+        exc_message: str,
+        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    """
+    Import a module, or raise an exception.
+
+    :param module: name of a module to import. It may represent a submodule as well,
+        using common dot notation (``foo.bar.baz``).
+    :param exc_class: an exception class to raise on failure.
+    :param exc_message: an exception message.
+    :returns: imported module.
+    """
+
+    try:
+        return _import(module=module, logger=logger)
+
+    except tmt.utils.GeneralError as exc:
+        raise exc_class(exc_message) from exc
+
+
+# ignore[type-var,misc]: the actual type is provided by caller - the
+# return value would be assigned a name, with a narrower module type.
+# This type would be propagated into this type var.
+def import_module(
+        *,
+        module: str,
+        path: Optional[Path] = None,
+        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    """
+    Import a module.
+
+    :param module: name of a module to import. It may represent a
+        submodule as well, using common dot notation (``foo.bar.baz``).
+    :param path: if specified, it would be incorporated in exception
+        message.
+    :returns: imported module.
+    :raises SystemExit: when import fails.
+    """
+
+    path = path or Path.cwd()
+
+    return _import_or_raise(
+        module=module,
+        exc_class=SystemExit,
+        exc_message=f"Failed to import the '{module}' module from '{path}'.",
+        logger=logger)
+
+
+def import_member(
+        *,
+        module: str,
+        member: str,
+        logger: Logger) -> tuple[ModuleT, Any]:
     """ Import member from given module, handle errors nicely """
-    # Make sure the module is imported. It probably is, but really,
-    # make sure of it.
-    try:
-        import_(module=module_name, logger=logger)
-    except SystemExit as exc:
-        raise tmt.utils.GeneralError(f"Failed to import module '{module_name}'.") from exc
 
-    # Now the module should be available in `sys.modules` like any
-    # other, and we can go and grab the class we need from it.
-    if module_name not in sys.modules:
-        raise tmt.utils.GeneralError(f"Failed to import module '{module_name}'.")
-    module = sys.modules[module_name]
+    imported: ModuleT = import_module(module=module, logger=logger)
 
     # Get the member and return it
-    if not hasattr(module, member_name):
-        raise tmt.utils.GeneralError(f"No such member '{member_name}' in module '{module_name}'.")
-    return getattr(module, member_name)
+    if not hasattr(imported, member):
+        raise tmt.utils.GeneralError(f"No such member '{member}' in module '{module}'.")
+
+    return (imported, getattr(imported, member))
 
 
 # Small helper for one specific package - export plugins are needed when
@@ -302,3 +373,38 @@ class PluginRegistry(Generic[RegisterableT]):
 
     def items(self) -> Iterator[tuple[str, RegisterableT]]:
         yield from self._plugins.items()
+
+
+class ModuleImporter(Generic[ModuleT]):
+    """
+    Import and return a module when called.
+
+    A helper class for importing modules that cannot be imported in boot
+    time. Constructs a callable that, when called, would import and
+    return a given module. The module may be already imported, then it's
+    taken from :py:attr:`sys.modules`.
+    """
+
+    def __init__(
+            self,
+            module: str,
+            exc_class: type[Exception],
+            exc_message: str,
+            logger: Logger) -> None:
+        self._module_name = module
+        self._exc_class = exc_class
+        self._exc_message = exc_message
+        self._logger = logger
+
+        self._module: Optional[ModuleT] = None
+
+    def __call__(self) -> ModuleT:
+        if self._module is None:
+            self._module = _import_or_raise(
+                module=self._module_name,
+                exc_class=self._exc_class,
+                exc_message=self._exc_message,
+                logger=self._logger)
+
+        assert self._module  # narrow type
+        return self._module
