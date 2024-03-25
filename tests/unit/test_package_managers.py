@@ -42,6 +42,8 @@ CONTAINER_CENTOS_STREAM_8 = Container(url='quay.io/centos/centos:stream8')
 CONTAINER_CENTOS_7 = Container(url='quay.io/centos/centos:7')
 CONTAINER_UBUNTU_2204 = Container(url='docker.io/library/ubuntu:22.04')
 CONTAINER_FEDORA_COREOS = Container(url='quay.io/fedora/fedora-coreos:stable')
+# Local image created via `make image-alpine`, reference to local registry
+CONTAINER_ALPINE = Container(url='containers-storage:localhost/alpine:tmt-unit-tests')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
 PACKAGE_MANAGER_DNF = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf')
@@ -49,6 +51,7 @@ PACKAGE_MANAGER_YUM = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_
 PACKAGE_MANAGER_APT = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apt')
 PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY \
     .get_plugin('rpm-ostree')
+PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
 
 
 CONTAINER_BASE_MATRIX = [
@@ -73,6 +76,9 @@ CONTAINER_BASE_MATRIX = [
 
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_RPMOSTREE),
+
+    # Alpine
+    (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
     ]
 
 CONTAINER_MATRIX_IDS = [
@@ -181,6 +187,13 @@ def _parametrize_test_install() -> \
                 'Installing: tree', \
                 None  # noqa: E501
 
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk info -e tree \|\| apk add tree", \
+                'Installing tree', \
+                None
+
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
@@ -276,6 +289,13 @@ def _parametrize_test_install_nonexistent() -> \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree-but-spelled-wrong", \
                 'no package provides tree-but-spelled-wrong', \
                 'error: Packages not found: tree-but-spelled-wrong'  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong", \
+                None, \
+                'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]'  # noqa: E501
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -373,6 +393,13 @@ def _parametrize_test_install_nonexistent_skip() -> \
                 'no package provides tree-but-spelled-wrong', \
                 'error: Packages not found: tree-but-spelled-wrong'  # noqa: E501
 
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong \|\| /bin/true", \
+                None, \
+                'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]'  # noqa: E501
+
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
@@ -453,6 +480,13 @@ def _parametrize_test_install_dont_check_first() -> \
                 'Installing: tree', \
                 None
 
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk add tree", \
+                'Installing tree', \
+                None
+
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
@@ -506,6 +540,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
             if 'centos:7' in container.url:
                 yield container, \
                     package_manager_class, \
+                    Package('tar'), \
                     True, \
                     r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar", \
                     'Reinstalling:\n tar', \
@@ -514,6 +549,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
             else:
                 yield container, \
                     package_manager_class, \
+                    Package('tar'), \
                     True, \
                     r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar", \
                     'Reinstalled:\n  tar', \
@@ -522,6 +558,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
                 package_manager_class, \
+                Package('tar'), \
                 True, \
                 r"rpm -q --whatprovides tar && dnf reinstall -y  tar", \
                 'Reinstalled:\n  tar', \
@@ -530,6 +567,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
+                Package('tar'), \
                 True, \
                 r"rpm -q --whatprovides tar && dnf5 reinstall -y  tar", \
                 'Reinstalling tar', \
@@ -538,6 +576,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
+                Package('tar'), \
                 True, \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tar && apt reinstall -y  tar", \
                 'Setting up tar', \
@@ -546,9 +585,19 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
+                Package('tar'), \
                 False, \
                 None, \
                 None, \
+                None
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                Package('bash'), \
+                True, \
+                r"apk info -e bash && apk fix bash", \
+                'Reinstalling bash', \
                 None
 
         else:
@@ -558,6 +607,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
 @pytest.mark.containers()
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
+                          'package',
                           'supported',
                           'expected_command',
                           'expected_stdout',
@@ -569,6 +619,7 @@ def test_reinstall(
         container_per_test: ContainerData,
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
+        package: Package,
         supported: bool,
         expected_command: Optional[str],
         expected_stdout: Optional[str],
@@ -584,14 +635,14 @@ def test_reinstall(
     if supported:
         assert expected_command is not None
 
-        output = package_manager.reinstall(Package('tar'))
+        output = package_manager.reinstall(package)
 
         assert_log(caplog, message=MATCH(
             rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     else:
         with pytest.raises(tmt.utils.GeneralError) as excinfo:
-            package_manager.reinstall(Package('tar'))
+            package_manager.reinstall(package)
 
         assert excinfo.value.message \
             == "rpm-ostree does not support reinstall operation."
@@ -665,6 +716,14 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                 None, \
                 None, \
                 None
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                True, \
+                r"apk info -e tree-but-spelled-wrong && apk fix tree-but-spelled-wrong", \
+                None, \
+                ''
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -949,6 +1008,31 @@ def _generate_test_check_presence() -> Iterator[
                 True, \
                 r"rpm -qf /usr/bin/flock", \
                 r'\s+out:\s+util-linux-core', \
+                None
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                Package('busybox'), \
+                True, \
+                r"apk info -e busybox", \
+                r'\s+out:\s+busybox', \
+                None
+
+            yield container, \
+                package_manager_class, \
+                Package('tree-but-spelled-wrong'), \
+                False, \
+                r"apk info -e tree-but-spelled-wrong", \
+                None, \
+                ''
+
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/arch'), \
+                True, \
+                r"apk info -e busybox", \
+                r'\s+out:\s+busybox', \
                 None
 
         else:

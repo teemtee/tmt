@@ -35,6 +35,8 @@ rlJournalStart
 
         rlLogInfo "pip is $(which pip), $(pip --version)"
         rlLogInfo "hatch is $(which hatch), $(hatch --version)"
+
+        rlRun "make -C $TMT_TREE images-unit-tests"
     rlPhaseEnd
 
     if [ "$WITH_SYSTEM_PACKAGES" = "yes" ]; then

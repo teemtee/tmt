@@ -6,6 +6,7 @@
 
 # Prepare variables
 TMP = $(CURDIR)/tmp
+UNIT_TESTS_IMAGE_TAG = tmt-unit-tests
 
 # Define special targets
 .DEFAULT_GOAL := help
@@ -81,6 +82,11 @@ ver2spec:
 images:  ## Build tmt images for podman/docker
 	podman build -t tmt --squash -f ./containers/Containerfile.mini .
 	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
+
+images-unit-tests: image-alpine  ## Build images for unit tests
+
+image-alpine:  ## Build local alpine image for unit tests
+	podman build -t alpine:$(UNIT_TESTS_IMAGE_TAG) -f ./containers/Containerfile.alpine .
 
 ##
 ## Development

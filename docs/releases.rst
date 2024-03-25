@@ -28,8 +28,9 @@ Internal implementation of basic package manager actions has been
 refactored. tmt now supports package implementations to be shipped as
 plugins, therefore allowing for tmt to work natively with distributions
 beyond the ecosystem of rpm-based distributions. As a preview, ``apt``,
-the package manager used by Debian and Ubuntu, has been included in this
-release.
+the package manager used by Debian and Ubuntu, ``rpm-ostree``, the
+package manager used by ``rpm-ostree``-based Linux systems and ``apk``,
+the package manager of Alpine Linux have been included in this release.
 
 New environment variable ``TMT_TEST_ITERATION_ID`` has been added to
 :ref:`test-variables`. This variable is a combination of a unique
