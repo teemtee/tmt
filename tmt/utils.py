@@ -6030,6 +6030,36 @@ def normalize_string_list(
     return [value] if isinstance(value, str) else value
 
 
+def normalize_pattern_list(
+        key_address: str,
+        value: Union[None, str, list[str]],
+        logger: tmt.log.Logger) -> list[Pattern[str]]:
+    """
+    Normalize a pattern-or-list-of-patterns input value.
+
+    .. code-block:: yaml
+
+       foo: 'bar.*'
+
+       foo:
+         - 'bar.*'
+         - '(?i)BaZ+'
+    """
+
+    normalized_value = normalize_string_list(key_address, value, logger)
+
+    patterns: list[Pattern[str]] = []
+
+    for i, raw_pattern in enumerate(normalized_value):
+        try:
+            patterns.append(re.compile(raw_pattern))
+
+        except Exception:
+            raise NormalizationError(f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+
+    return patterns
+
+
 def normalize_path(
         key_address: str,
         value: Any,

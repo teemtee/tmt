@@ -46,9 +46,7 @@ Configuration
     {% if metadata.has_default %}
         {% set actual_default = metadata.materialized_default %}
 
-        {% if actual_default is sequence and not actual_default %}
-    Default: *not set*
-        {% elif actual_default is boolean %}
+        {% if actual_default is boolean %}
     Default: ``{{ actual_default | string | lower }}``
         {% elif actual_default is string %}
     Default: ``{{ actual_default }}``
@@ -56,6 +54,12 @@ Configuration
     Default: ``{{ actual_default }}``
         {% elif actual_default is none %}
     Default: *not set*
+        {% elif actual_default is sequence %}
+            {% if not actual_default %}
+    Default: *not set*
+            {% else %}
+    Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}`` {% endfor %}
+            {% endif %}
         {% else %}
             {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, PLUGIN_ID, field_name, actual_default)) %}
     Default: *could not render default value correctly*

@@ -20,6 +20,10 @@ of the guest. See :ref:`command-variables` for details.
 New section :ref:`review` describing benefits and various forms of
 pull request reviews has been added to the :ref:`contribute` docs.
 
+The :ref:`dmesg test check<plugins/test-checks/dmesg>` can be
+configured to look for custom patterns in the output of ``dmesg``
+command, by setting its ``failure-pattern`` key.
+
 
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

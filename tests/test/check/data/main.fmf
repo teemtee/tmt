@@ -1,11 +1,17 @@
 /dmesg:
+    test: /bin/true
     check: dmesg
 
     /harmless:
-        test: /bin/true
 
     /segfault:
         test: echo Some segfault happened > /dev/kmsg
+
+    /custom-patterns:
+        check:
+          - how: dmesg
+            failure-pattern:
+              - 'Hypervisor detected'
 
 /avc:
   check:

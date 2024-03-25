@@ -1,15 +1,17 @@
+import dataclasses
 import datetime
 import re
+from re import Pattern
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.checks import Check, CheckEvent, CheckPlugin, provides_check
+from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
-from tmt.utils import Path, render_run_exception_streams
+from tmt.utils import Path, field, render_run_exception_streams
 
 if TYPE_CHECKING:
     import tmt.base
@@ -17,7 +19,8 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 TEST_POST_DMESG_FILENAME = 'dmesg-{event}.txt'
-FAILURE_PATTERNS = [
+
+DEFAULT_FAILURE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
         r'Call Trace:',
@@ -26,37 +29,32 @@ FAILURE_PATTERNS = [
     ]
 
 
-@provides_check('dmesg')
-class DmesgCheck(CheckPlugin[Check]):
-    """
-    Save the content of kernel ring buffer (aka "console") into a file.
+@dataclasses.dataclass
+class DmesgCheck(Check):
+    failure_pattern: list[Pattern[str]] = field(
+        default_factory=lambda: DEFAULT_FAILURE_PATTERNS[:],
+        help="""
+             List of regular expressions to look for in ``dmesg``
+             output. If any of patterns is found, ``dmesg`` check will
+             report ``fail`` result.
+             """,
+        normalize=tmt.utils.normalize_pattern_list,
+        exporter=lambda patterns: [pattern.pattern for pattern in patterns],
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized]
+        )
 
-    The check saves one file before the test, and then again
-    when test finishes.
+    # TODO: fix `to_spec` of `Check` to support nested serializables
+    def to_spec(self) -> _RawCheck:
+        spec = super().to_spec()
 
-    .. code-block:: yaml
+        spec['failure-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+            pattern.pattern for pattern in self.failure_pattern]
 
-        check:
-          - name: dmesg
+        return spec
 
-    .. versionadded:: 1.28
-    """
-
-    _check_class = Check
-
-    @classmethod
-    def essential_requires(
-            cls,
-            guest: 'Guest',
-            test: 'tmt.base.Test',
-            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
-        if not guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return []
-
-        # Avoid circular imports
-        import tmt.base
-
-        return [tmt.base.DependencySimple('/usr/bin/dmesg')]
+    def to_minimal_spec(self) -> _RawCheck:
+        return self.to_spec()
 
     @classmethod
     def _fetch_dmesg(
@@ -90,9 +88,8 @@ class DmesgCheck(CheckPlugin[Check]):
 
         return guest.execute(script, log=_test_output_logger)
 
-    @classmethod
     def _save_dmesg(
-            cls,
+            self,
             invocation: 'TestInvocation',
             event: CheckEvent,
             logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
@@ -106,7 +103,7 @@ class DmesgCheck(CheckPlugin[Check]):
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
         try:
-            dmesg_output = cls._fetch_dmesg(invocation.guest, logger)
+            dmesg_output = self._fetch_dmesg(invocation.guest, logger)
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
@@ -115,7 +112,7 @@ class DmesgCheck(CheckPlugin[Check]):
         else:
             outcome = ResultOutcome.PASS
             output = dmesg_output.stdout or ''
-            if any(pattern.search(output) for pattern in FAILURE_PATTERNS):
+            if any(pattern.search(output) for pattern in self.failure_pattern):
                 outcome = ResultOutcome.FAIL
 
         invocation.phase.write(
@@ -124,18 +121,70 @@ class DmesgCheck(CheckPlugin[Check]):
 
         return outcome, path.relative_to(invocation.phase.step.workdir)
 
+
+@provides_check('dmesg')
+class Dmesg(CheckPlugin[DmesgCheck]):
+    """
+    Save the content of kernel ring buffer (aka "console") into a file.
+
+    The check saves one file before the test, and then again
+    when test finishes.
+
+    .. code-block:: yaml
+
+        check:
+          - how: dmesg
+
+    Check will identify patterns that signal kernel crashes and
+    core dumps, and when detected, it will report as failed result.
+    It is possible to define custom patterns:
+
+    .. code-block:: yaml
+
+        check:
+          - how: dmesg
+            failure-pattern:
+              # These are default patterns
+              - 'Call Trace:
+              - '\\ssegfault\\s'
+
+              # More patterns to look for
+              - '\\[Firmware Bug\\]'
+
+    .. versionadded:: 1.28
+
+    .. versionchanged:: 1.33
+       ``failure-pattern`` has been added.
+    """
+
+    _check_class = DmesgCheck
+
+    @classmethod
+    def essential_requires(
+            cls,
+            guest: 'Guest',
+            test: 'tmt.base.Test',
+            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+        if not guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+            return []
+
+        # Avoid circular imports
+        import tmt.base
+
+        return [tmt.base.DependencySimple('/usr/bin/dmesg')]
+
     @classmethod
     def before_test(
             cls,
             *,
-            check: 'Check',
+            check: 'DmesgCheck',
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = cls._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
+        outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]
 
@@ -143,7 +192,7 @@ class DmesgCheck(CheckPlugin[Check]):
     def after_test(
             cls,
             *,
-            check: 'Check',
+            check: 'DmesgCheck',
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
@@ -153,6 +202,6 @@ class DmesgCheck(CheckPlugin[Check]):
         if invocation.hard_reboot_requested:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = cls._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
+        outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
         return [CheckResult(name='dmesg', result=outcome, log=[path])]
