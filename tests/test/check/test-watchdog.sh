@@ -46,8 +46,10 @@ rlJournalStart
 
             assert_check_result "watchdog as an after-test should pass" "pass" "after-test"
 
-            rlAssertGrep    "TMT_REBOOT_COUNT=\"0\"" $test_log
-            rlAssertNotGrep "TMT_REBOOT_COUNT=\"1\"" $test_log
+            rlAssertGrep    "TMT_REBOOT_COUNT=\"0\""       $test_log
+            rlAssertGrep    "TMT_TEST_RESTART_COUNT=\"0\"" $test_log
+            rlAssertNotGrep "TMT_REBOOT_COUNT=\"1\""       $test_log
+            rlAssertNotGrep "TMT_TEST_RESTART_COUNT=\"1\"" $test_log
             rlAssertGrep "/proc/sysrq-trigger: Read-only file system" $test_log
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
@@ -57,8 +59,10 @@ rlJournalStart
 
             assert_check_result "watchdog as an after-test should pass" "pass" "after-test"
 
-            rlAssertGrep "TMT_REBOOT_COUNT=\"0\"" $test_log
-            rlAssertGrep "TMT_REBOOT_COUNT=\"1\"" $test_log
+            rlAssertGrep "TMT_REBOOT_COUNT=\"0\""       $test_log
+            rlAssertGrep "TMT_TEST_RESTART_COUNT=\"0\"" $test_log
+            rlAssertGrep "TMT_REBOOT_COUNT=\"1\""       $test_log
+            rlAssertGrep "TMT_TEST_RESTART_COUNT=\"1\"" $test_log
             rlAssertGrep "++ exit 0" $test_log
 
             rlAssertGrep "# ssh-ping reported"     $watchdog_log
@@ -67,7 +71,7 @@ rlJournalStart
             rlAssertGrep "# failed 3 of 3 allowed" $watchdog_log
 
             rlRun "grep -E '\\[watchdog\\][[:space:]]+fail: exhausted 3 SSH ping attempts' $log"
-            rlAssertGrep "Hard reboot during test '/watchdog/ping' with reboot count 1." $log
+            rlAssertGrep "Hard reboot during test '/watchdog/ping' with reboot count 1 and test restart count 1." $log
         fi
     rlPhaseEnd
 

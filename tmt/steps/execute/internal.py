@@ -259,6 +259,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
+        environment['TMT_TEST_RESTART_COUNT'] = EnvVarValue(str(invocation._restart_count))
 
         # Add variables the framework wants to expose
         environment.update(
