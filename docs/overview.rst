@@ -556,6 +556,15 @@ TMT_REBOOT_COUNT
     for requesting the reboot, variables ``REBOOTCOUNT`` and
     ``RSTRNT_REBOOTCOUNT`` contain number of reboots as well.
 
+TMT_TEST_RESTART_COUNT
+    This variable contains number of times the test was restarted. Such
+    restarts may be consequence of guest reboot, in which case
+    ``TMT_REBOOT_COUNT`` gets incremented as well, or test crashed and
+    has been restarted. Value is set to ``0`` when the test starts for
+    the first time.
+
+    .. versionadded:: 1.33
+
 TMT_TOPOLOGY_BASH, TMT_TOPOLOGY_YAML
     Paths of files describing existing guests, their roles and the
     guest on which the test is running. Format of these files
