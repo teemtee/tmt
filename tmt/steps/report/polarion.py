@@ -158,6 +158,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         help="""
              Location of the logs for this test run,
              also uses environment variable TMT_PLUGIN_REPORT_POLARION_LOGS.
+             Ultimately also uses environment variable TMT_REPORT_ARTIFACTS_URL.
              """
         )
 
@@ -239,6 +240,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             properties['polarion-custom-arch'] = self.step.plan.provision.guests()[0].facts.arch
         if template:
             properties['polarion-testrun-template-id'] = template
+        logs = os.getenv('TMT_REPORT_ARTIFACTS_URL')
+        if logs and 'polarion-custom-logs' not in properties:
+            properties['polarion-custom-logs'] = logs
         testsuites_properties = ElementTree.SubElement(xml_tree, 'properties')
         for name, value in properties.items():
             ElementTree.SubElement(testsuites_properties, 'property', attrib={
