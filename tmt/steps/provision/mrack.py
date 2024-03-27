@@ -814,7 +814,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             raise ProvisionError(
                 f"Failed to create, response: '{response}'.")
 
-        self.job_id = response["id"]
+        self.job_id = f'J:{response["id"]}'
         self.info('job id', self.job_id, 'green')
 
         with UpdatableMessage("status", indent_level=self._level()) as progress_message:
