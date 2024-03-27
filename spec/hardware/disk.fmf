@@ -16,8 +16,19 @@ description: |
            # String, disk driver requested.
          - driver: "well-known disk driver"
 
+    The :ref:`/spec/plans/guest-topology` may include the following
+    fields in its description of the actual guest hardware:
+
+    .. code-block::
+
+       # String, path to the block device representing this disk.
+       block-device: "/dev/vda"
+
     .. versionchanged:: 1.32
        Added `driver` and `model-name` into specification.
+
+    .. versionchanged:: 1.33
+       Added ``block-device`` into specification.
 
 example:
   - |
@@ -41,6 +52,19 @@ example:
       - size: '>= 2 GB'
       - model-name: 'PERC H310'
       - driver: '~ sas.*'
+
+  - |
+    # Guest topology exposing details about the actual disks
+    disk:
+      - size: 21474836480
+        model-name: PERC H310
+        driver: megaraid_sas
+        block-device: /dev/sda
+
+      - size: 21474836480
+        model-name: PERC H310
+        driver: megaraid_sas
+        block-device: /dev/sdb
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
