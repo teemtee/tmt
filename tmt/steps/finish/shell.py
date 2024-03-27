@@ -67,12 +67,24 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
         """ Perform finishing tasks on given guest """
         super().go(guest=guest, environment=environment, logger=logger)
 
+        environment = environment or tmt.utils.Environment()
+
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
         self.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
+
+        if not self.is_dry_run:
+            tmt.steps.Topology.inject(
+                environment=environment,
+                guests=self.step.plan.provision.guests(),
+                guest=guest,
+                dirpath=workdir,
+                filename_base=safe_filename(tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest),
+                logger=logger
+                )
 
         finish_wrapper_filename = safe_filename(FINISH_WRAPPER_FILENAME, self, guest)
         finish_wrapper_path = workdir / finish_wrapper_filename
