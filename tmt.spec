@@ -148,6 +148,75 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Wed Mar 27 2024 Martin Hoyer <mhoyer@redhat.com> - 1.32.0
+- Support Alpine Linux `apk` package manager
+- Update the `reportportal` plugin
+- Allow `keep-git-metadata` to be used without url
+- Use `TMT_REPORT_ARTIFACTS_URL` in Polarion report plugin
+- Prepare dist-git sources using `rpmbuild -bp`
+- Add support for `zcrypt` to Beaker plugin
+- Introduce ansible-lint to format ansible files
+- Add support for linking artifacts from the report
+- Document test tags and mark beakerlib integration
+- Clarify that plan context is not applied to plan
+- Increase the default test `duration` a bit
+- Update pre-commit checks
+- Fix typos in the `tmt try` help message examples
+- Add new environment variable for test iteration identifier
+- Select no tests if `modified-only` returns nothing (#2761)
+- Debug output for `discover -h fmf --modified-only`
+- Finish unit testing of HW transformations in mrack plugin
+- Run `/plans/install/docs` in core `packit` jobs
+- Extract "package manager" functionality into plugins (#2557)
+- Allow commands whose output is not logged unless they fail
+- Move `/tests/run/shell` to `/plans/provision/local`
+- Include a simple config for the `polarion` plugin
+- Cover `report/junit` with `pyright`
+- Implement the new test check `watchdog`
+- Support `disk.driver` hw requirement for `mrack`
+- Cover `tmt.hardware` with `pyright` check
+- Bootstrap unit tests for Beaker XML transformation of HW requirements
+- Add support for emulated TPM into virtual provision plugin
+- Set default formatting of Pint units to use symbols, not names (#2736)
+- Disable IPv6 for /plans/provision/virtual in CI
+- Add support for `disk.driver` hardware requirement
+- Remove now unnecessary `NON_KVM_ADDITIONAL_WAIT` from testcloud
+- Support `disk.model-name` hw requirement for `mrack`
+- Include `context` in the test `metadata.yaml` file
+- Pass `domain_configuration` to testcloud's `wake()`
+- Document how to enable verbose/debug logging
+- Disable password authentication when using keys
+- Fix /plans/provision/virtual to set correct PROVISION_* variable
+- Log the beaker job whiteboard
+- /usr/sbin/sestatus instead of /usr/bin/sestatus (#2720)
+- Set acl permissions on the `workdir` root
+- Extend the `duration` for time-demanding tests
+- Add support for `disk.model-name` hardware requirement
+- Move deferred user stories into a separate section
+- Mark test check tests with more fitting provision tags
+- Add `Environment` and `FmfContext` among loggable types
+- Bump supported Artemis API versions to 0.0.69
+- "Show default" flag was dropped from CLI option initialization
+- Convert environment handling into a dict-like class (#2612)
+- Enable `additional_coverage` tests for pull requests (#2700)
+- Add essential requirements to checks
+- Remove mention about the full test suite from docs
+- Use the `PROVISION_HOW` variable in `provision` plans (#2688)
+- Properly detect if test is enabled somewhere
+- Check for files in `rpm-ostree install` script
+- Collect test/test check results in test invocation (#2608)
+- Test the `become` key under `virtual` provision
+- Introduce "topology" addresses for guests (#2670)
+- Make checks smarter about environments in which they should not run (#2686)
+- Cover report/display and report/html with pyright (#2682)
+- Cover `tmt.templates` with `pyright`
+- Allow custom boot/connect timeouts for testcloud VMs
+- Underline `try` menu keys
+- Drop two no longer used methods from prepare step
+- Enable the full test execution using a label (#2683)
+- Support URL as post-install-script for Artemis plugin
+- Fix dmesg check test for recent Fedoras
+
 * Tue Feb 06 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.31.0
 - Simple ReST renderer for CLI help texts (#2574)
 - Generate plugin documentation from their sources (#2549)
