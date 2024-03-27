@@ -34,9 +34,14 @@ DEFAULT_IMAGE = 'fedora'
 DEFAULT_PROVISION_TIMEOUT = 3600  # 1 hour timeout at least
 DEFAULT_PROVISION_TICK = 60  # poll job each minute
 
+#: How often Beaker session should be refreshed to pick up up-to-date
+#: Kerberos ticket.
+DEFAULT_API_SESSION_REFRESH = 3600
 
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
+
+
 class GuestInspectType(TypedDict):
     status: str
     system: str
@@ -582,6 +587,15 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              {DEFAULT_PROVISION_TICK} seconds by default.
              """,
         normalize=tmt.utils.normalize_int)
+    api_session_refresh_tick: int = field(
+        default=DEFAULT_API_SESSION_REFRESH,
+        option='--api-session-refresh-tick',
+        metavar='SECONDS',
+        help=f"""
+             How often should Beaker session be refreshed to pick up-to-date Kerberos ticket,
+             {DEFAULT_API_SESSION_REFRESH} seconds by default.
+             """,
+        normalize=tmt.utils.normalize_int)
 
 
 @dataclasses.dataclass
@@ -713,17 +727,34 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     # Timeouts and deadlines
     provision_timeout: int
     provision_tick: int
+    api_session_refresh_tick: int
+
     _api: Optional[BeakerAPI] = None
+    _api_timestamp: Optional[datetime.datetime] = None
 
     @property
     def api(self) -> BeakerAPI:
         """ Create BeakerAPI leveraging mrack """
-        if self._api is None:
+
+        def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
             assert self.parent is not None
 
             import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
 
-            self._api = BeakerAPI(self)
+            return BeakerAPI(self), datetime.datetime.now(datetime.timezone.utc)
+
+        if self._api is None:
+            self._api, self._api_timestamp = _construct_api()
+
+        else:
+            assert self._api_timestamp is not None
+
+            delta = datetime.datetime.now(datetime.timezone.utc) - self._api_timestamp
+
+            if delta.total_seconds() >= self.api_session_refresh_tick:
+                self.debug(f'Refresh Beaker API client as it is too old, {delta}.')
+
+                self._api, self._api_timestamp = _construct_api()
 
         return self._api
 
@@ -783,7 +814,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             raise ProvisionError(
                 f"Failed to create, response: '{response}'.")
 
-        self.job_id = response["id"]
+        self.job_id = f'J:{response["id"]}'
         self.info('job id', self.job_id, 'green')
 
         with UpdatableMessage("status", indent_level=self._level()) as progress_message:
