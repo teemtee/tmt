@@ -199,6 +199,19 @@ definitions:
   hostname:
     type: string
 
+  # HW requirements: single `location` item
+  location:
+    type: object
+
+    properties:
+      lab-controller:
+        type: string
+
+    additionalProperties: false
+
+    # enforce at least one property
+    minProperties: 1
+
   memory:
     anyOf:
       - type: string
@@ -346,6 +359,9 @@ definitions:
 
       hostname:
         "$ref": "#/definitions/hostname"
+
+      location:
+        "$ref": "#/definitions/location"
 
       memory:
         "$ref": "#/definitions/memory"
