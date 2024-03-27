@@ -122,6 +122,13 @@ def test_parse_maximal_constraint() -> None:
         network:
             - type: eth
             - type: eth
+        system:
+            vendor: 0x413C
+            vendor-name: "~ Dell.*"
+            model: 79
+            model-name: "~ PowerEdge R750"
+            numa-nodes: "< 4"
+            lab-controller: "!~ lab-%.foo.bar.com"
         tpm:
             version: "2.0"
         virtualization:
