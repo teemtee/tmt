@@ -113,7 +113,7 @@ description: |
         TMT_ROLES[role2]="guestN ..."
         ...
 
-    .. versionadded:: 1.31
+    .. versionadded:: 1.33
         Guest HW exposed via ``hardware`` key.
 
 example:
