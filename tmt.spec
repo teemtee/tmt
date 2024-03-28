@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.31.0
+Version:        1.32.1
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -148,6 +148,10 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Thu Mar 28 2024 Martin Hoyer <mhoyer@redhat.com> - 1.32.1
+- rpm .spec file version bump
+- Update pytest on c9s when using site-packages
+
 * Wed Mar 27 2024 Martin Hoyer <mhoyer@redhat.com> - 1.32.0
 - Support Alpine Linux `apk` package manager
 - Update the `reportportal` plugin
