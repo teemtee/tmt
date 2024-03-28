@@ -79,20 +79,41 @@ EOF
         # Force broken test into repo
         rlRun -s "git commit --no-verify -m wrong" "0"
 
-        # Add another good test, pre-commit should pass because /wrong
-        # is not touched
+        ## Add another good test, pre-commit should pass because /wrong
+        ## is not touched
         rlRun "echo summary: hello world > good.fmf"
         rlRun "git add good.fmf"
         rlRun -s "git commit -m 'add_good'"
         rlAssertGrep "$expected_command.*Passed" $rlRun_LOG
 
-        # Modify main.fmf so /wrong is checked
+        ## Modify main.fmf so /wrong is checked
         # /good is checked as well but since it passes it is not reported
         rlRun "echo summary: foo >> main.fmf"
         rlRun -s "git commit -a -m 'modify_main'" "1"
         rlAssertGrep "$expected_command.*Failed" $rlRun_LOG
         rlAssertNotGrep '/good' $rlRun_LOG
         rlAssertGrep '/wrong' $rlRun_LOG
+
+        ## Check it works in different fmf_root
+        rlRun "mkdir tmt_root"
+        rlRun -s "git mv .fmf/ tmt_root/.fmf/"
+        # Should fail because fmf_root is in different location
+        # (Also tests that pre-commit runs when .fmf/version is changed)
+        rlRun -s "git commit -m 'wrong_fmf_root'" "1"
+        rlAssertGrep "$expected_command.*Failed" $rlRun_LOG
+        # Add the correct root
+cat <<EOF > .pre-commit-config.yaml
+repos:
+  - repo: $REPO
+    rev: "$REV"
+    hooks:
+    - id: "$hook"
+      args: [ --root, tmt_root ]
+EOF
+        rlRun -s "git add .pre-commit-config.yaml"
+        rlRun -s "git mv main.fmf tmt_root"
+        rlRun -s "git commit -m 'pass different root'"
+        rlAssertGrep "$expected_command.*Passed" $rlRun_LOG
 
         rlRun "popd"
         rlRun "rm -rf $tmp" 0 "Removing tmp directory"

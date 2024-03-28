@@ -121,6 +121,8 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %install
 %pyproject_install
 %pyproject_save_files tmt
+# Executable only used for pre-commit. Should not be installed
+rm %{buildroot}/%{_bindir}/tmt-pre-commit
 
 mkdir -p %{buildroot}%{_mandir}/man1
 install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1

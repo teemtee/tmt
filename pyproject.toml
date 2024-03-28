@@ -84,6 +84,7 @@ docs = [
 
 [project.scripts]
 tmt = "tmt.__main__:run_cli"
+tmt-pre-commit = "tmt.cli:pre_commit"
 
 [project.urls]
 Homepage = "https://github.com/teemtee/tmt"
