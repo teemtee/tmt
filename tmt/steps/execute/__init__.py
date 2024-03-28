@@ -90,7 +90,7 @@ TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
         Path("/usr/local/bin/rstrnt-report-result"),
         Path("/usr/local/bin/rhts-report-result")],
     related_variables=[],
-    created_file="restraint-result"
+    created_file="results.yaml"
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
@@ -481,23 +481,28 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             return []
 
         # Check the test result
-        self.debug(f"tmt-report-results file '{report_result_path} detected.")
+        self.debug(f"tmt-report-results file '{report_result_path}' detected.")
 
-        with open(report_result_path) as result_file:
-            result_list = [line for line in result_file.readlines() if "TESTRESULT" in line]
+        result_list = [
+            result.get('result')
+            for result in tmt.utils.yaml_to_list(self.read(report_result_path))
+            ]
+
         if not result_list:
             raise tmt.utils.ExecuteError(
                 f"Test result not found in result file '{report_result_path}'.")
-        result = result_list[0].split("=")[1].strip()
+        hierarchy = ['skip', 'pass', 'warn', 'fail']
+        result_indices = [hierarchy.index(line) for line in result_list]
+        result = hierarchy[max(result_indices)]
 
         # Map the restraint result to the corresponding tmt value
         actual_result = ResultOutcome.ERROR
         note: Optional[str] = None
 
         try:
-            actual_result = ResultOutcome(result.lower())
+            actual_result = ResultOutcome(result)
         except ValueError:
-            if result == 'SKIP':
+            if result == 'skip':
                 actual_result = ResultOutcome.INFO
             else:
                 note = f"invalid test result '{result}' in result file"
