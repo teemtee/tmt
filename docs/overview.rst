@@ -328,7 +328,7 @@ and only check for the exit code.
 1
     There was a fail or warn identified, but no error.
 2
-    Errors occured during test execution.
+    Errors occurred during test execution.
 3
     No test results found.
 4
@@ -425,7 +425,7 @@ TMT_GIT_CLONE_ATTEMPTS
     fails. By default, 3 attempts are done.
 
 TMT_GIT_CLONE_INTERVAL
-    The interval (in seconds) to retry clonning a git repository
+    The interval (in seconds) to retry cloning a git repository
     again, 10 seconds by default.
 
 TMT_GIT_CLONE_TIMEOUT
