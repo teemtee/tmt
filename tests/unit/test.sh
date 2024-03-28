@@ -44,6 +44,10 @@ rlJournalStart
             rlRun "TEST_VENV=$(mktemp -d)"
 
             rlRun "python3 -m venv $TEST_VENV --system-site-packages"
+            # pytest-container==0.4.0 is not compatible with c9s pytest 6.2.2
+            if rlIsCentOS "=9"; then
+                 rlRun "$TEST_VENV/bin/pip install -U pytest"
+            fi
             rlRun "$TEST_VENV/bin/pip install pytest-container pytest-xdist"
 
             # Note: we're not in the root directory!
