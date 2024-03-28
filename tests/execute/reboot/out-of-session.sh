@@ -62,10 +62,12 @@ rlJournalStart
         rlLogInfo "$(cat tmt.output)"
 
         rlAssertGrep "TMT_REBOOT_COUNT=0" tmt.output
+        rlAssertGrep "TMT_TEST_RESTART_COUNT=0" tmt.output
         rlAssertGrep "Before reboot" tmt.output
         rlAssertGrep "Running 'sleep 3600'" tmt.output
 
         rlAssertGrep "TMT_REBOOT_COUNT=1" tmt.output
+        rlAssertGrep "TMT_TEST_RESTART_COUNT=1" tmt.output
         rlAssertGrep "After first reboot" tmt.output
 
         rlAssertGrep "OVERALL RESULT: PASS" tmt.output

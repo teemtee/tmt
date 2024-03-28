@@ -11,11 +11,11 @@ rlJournalStart
     for interactive in "" "--interactive"; do
         rlPhaseStartTest "Simple reboot test (interactivity: $interactive)"
             rlRun -s "tmt run --scratch -i $run -dddvvva execute -h tmt $interactive"
-            rlAssertGrep "Soft reboot during test '/test' with reboot count 1" $rlRun_LOG
+            rlAssertGrep "Soft reboot during test '/test' with reboot count 1 and test restart count 1." $rlRun_LOG
             rlAssertGrep "After first reboot" $rlRun_LOG
-            rlAssertGrep "Soft reboot during test '/test' with reboot count 2" $rlRun_LOG
+            rlAssertGrep "Soft reboot during test '/test' with reboot count 2 and test restart count 2." $rlRun_LOG
             rlAssertGrep "After second reboot" $rlRun_LOG
-            rlAssertGrep "Soft reboot during test '/test' with reboot count 3" $rlRun_LOG
+            rlAssertGrep "Soft reboot during test '/test' with reboot count 3 and test restart count 3." $rlRun_LOG
             rlAssertGrep "After third reboot" $rlRun_LOG
             rlRun "rm $rlRun_LOG"
 

@@ -172,6 +172,9 @@ class TestInvocation:
     end_time: Optional[str] = None
     real_duration: Optional[str] = None
 
+    #: Number of times the test has been restarted.
+    _restart_count: int = 0
+    #: Number of times the guest has been rebooted.
     _reboot_count: int = 0
 
     @cached_property
@@ -256,10 +259,12 @@ class TestInvocation:
             return False
 
         self._reboot_count += 1
+        self._restart_count += 1
 
         self.logger.debug(
             f"{'Hard' if self.hard_reboot_requested else 'Soft'} reboot during test '{self.test}'"
-            f" with reboot count {self._reboot_count}.")
+            f" with reboot count {self._reboot_count}"
+            f" and test restart count {self._restart_count}.")
 
         reboot_command: Optional[ShellScript] = None
         timeout: Optional[int] = None
