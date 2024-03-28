@@ -1,11 +1,14 @@
 
+import collections
 import dataclasses
 import datetime
+import itertools
 import os
 import platform
 import re
 import threading
 import types
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import click
@@ -690,10 +693,22 @@ class GuestTestcloud(tmt.GuestSsh):
 
             domain.memory_size = int(constraint.value.to('kB').magnitude)
 
-    def _apply_hw_disk_size(self, domain: 'DomainConfiguration') -> 'QCow2StorageDevice':
+    def _apply_hw_disk_size(self, domain: 'DomainConfiguration') -> None:
         """ Apply ``disk`` constraint to given VM domain """
 
         final_size: 'Size' = DEFAULT_DISK
+
+        def _generate_disk_filepaths() -> Iterator[Path]:
+            """ Generate paths to use for files representing VM storage """
+
+            # Start with the path already decided by testcloud...
+            yield Path(domain.local_disk)
+
+            # ... and use it as a basis for remaining paths.
+            for i in itertools.count(1, 1):
+                yield Path(f'{domain.local_disk}.{i}')
+
+        disk_filepath_generator = _generate_disk_filepaths()
 
         if not self.hardware or not self.hardware.constraint:
             self.debug(
@@ -701,10 +716,17 @@ class GuestTestcloud(tmt.GuestSsh):
                 f"set to '{final_size}' because of no constraints",
                 level=4)
 
-            return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+            domain.storage_devices = [
+                QCow2StorageDevice(
+                    str(next(disk_filepath_generator)),
+                    int(final_size.to('GB').magnitude))
+                ]
+
+            return
 
         variant = self.hardware.constraint.variant()
 
+        # Collect all `disk.size` constraints, ignore the rest.
         disk_size_constraints = [
             constraint
             for constraint in variant
@@ -718,7 +740,17 @@ class GuestTestcloud(tmt.GuestSsh):
                 f"set to '{final_size}' because of no 'disk.size' constraints",
                 level=4)
 
-            return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+            domain.storage_devices = [
+                QCow2StorageDevice(
+                    str(next(disk_filepath_generator)),
+                    int(final_size.to('GB').magnitude))
+                ]
+
+            return
+
+        # Now sort them into groups by their `peer_index`, i.e. `disk[0]`,
+        # `disk[1]` and so on.
+        by_peer_index: dict[int, list[tmt.hardware.SizeConstraint]] = collections.defaultdict(list)
 
         for constraint in disk_size_constraints:
             if constraint.operator not in (
@@ -728,14 +760,31 @@ class GuestTestcloud(tmt.GuestSsh):
                 raise ProvisionError(
                     f"Cannot apply hardware requirement '{constraint}', operator not supported.")
 
-            self.debug(
-                'disk[0].size',
-                f"set to '{constraint.value}' because of '{constraint}'",
-                level=4)
+            components = constraint.expand_name()
 
-            final_size = constraint.value
+            assert components.peer_index is not None  # narrow type
 
-        return QCow2StorageDevice(domain.local_disk, int(final_size.to('GB').magnitude))
+            by_peer_index[components.peer_index].append(constraint)
+
+        # Process each disk and its constraints, construct the
+        # corresponding storage device, and the last constraint wins
+        # & sets its size.
+        for peer_index in sorted(by_peer_index.keys()):
+            final_size = DEFAULT_DISK
+
+            for constraint in by_peer_index[peer_index]:
+                self.debug(
+                    f'disk[{peer_index}].size',
+                    f"set to '{constraint.value}' because of '{constraint}'",
+                    level=4)
+
+                final_size = constraint.value
+
+            domain.storage_devices.append(
+                QCow2StorageDevice(
+                    str(next(disk_filepath_generator)),
+                    int(final_size.to('GB').magnitude))
+                )
 
     def _apply_hw_arch(self, domain: 'DomainConfiguration', kvm: bool, legacy_os: bool) -> None:
         if self.arch == "x86_64":
@@ -826,11 +875,14 @@ class GuestTestcloud(tmt.GuestSsh):
                 self._logger.debug('effective hardware', line, level=4)
 
         self._apply_hw_memory(self._domain)
-        storage_image = self._apply_hw_disk_size(self._domain)
+        self._apply_hw_disk_size(self._domain)
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
         self.debug('final domain memory', str(self._domain.memory_size))
-        self.debug('final domain disk size', str(storage_image.size))
+        self.debug('final domain root disk size', str(self._domain.storage_devices[0].size))
+
+        for i, device in enumerate(self._domain.storage_devices):
+            self.debug(f'final domain disk #{i} size', str(device.size))
 
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
@@ -851,8 +903,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 device_type=device_type)
         else:
             raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
-
-        self._domain.storage_devices.append(storage_image)
 
         if not self._domain.coreos:
             seed_disk = RawStorageDevice(self._domain.seed_path)
