@@ -3810,7 +3810,12 @@ class Clean(tmt.utils.Common):
         self.info('guests', color='blue')
         root_path = Path(self.opt('workdir-root'))
         # FIXME: cast() - typeless "dispatcher" method
-        id_ = cast(str, self.opt('id_'))
+        id_ = tmt.utils.Config().last_run if self.opt('last') else cast(str, self.opt('id_'))
+        if id_ and not (root_path / Path(id_).name).exists():
+            self.warn(
+                f"Directory '{root_path / Path(id_).name}' does not exist, "
+                f"skipping guest cleanup.")
+
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
