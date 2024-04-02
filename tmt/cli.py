@@ -1786,7 +1786,7 @@ def clean(context: Context, **kwargs: Any) -> None:
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
             logger=context.obj.clean_logger
-            .descend(logger_name='clean-images', extra_shift=0)
+            .descend(logger_name='clean', extra_shift=0)
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context))
