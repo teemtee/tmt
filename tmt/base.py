@@ -3812,7 +3812,7 @@ class Clean(tmt.utils.Common):
         # FIXME: cast() - typeless "dispatcher" method
         id_ = tmt.utils.Config().last_run if self.opt('last') else cast(str, self.opt('id_'))
         if id_ and not (root_path / Path(id_).name).exists():
-            self.warn(
+            raise tmt.utils.GeneralError(
                 f"Directory '{root_path / Path(id_).name}' does not exist, "
                 f"skipping guest cleanup.")
 
