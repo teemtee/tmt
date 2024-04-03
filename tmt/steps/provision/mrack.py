@@ -573,7 +573,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_PROVISION_TIMEOUT,
         option='--provision-timeout',
         metavar='SECONDS',
-        help="""
+        help=f"""
              How long to wait for provisioning to complete,
              {DEFAULT_PROVISION_TIMEOUT} seconds by default.
              """,
