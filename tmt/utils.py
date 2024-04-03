@@ -926,7 +926,9 @@ class Config:
             self._last_run_symlink.symlink_to(workdir)
         except FileExistsError:
             # Race when tmt runs in parallel
-            log.warning(f"Race condition, unable to save last run '{workdir}'.")
+            log.warning(
+                f"Unable to mark '{workdir}' as the last run, "
+                "'tmt run --last' might not pick the right run directory.")
         except OSError as error:
             raise GeneralError(
                 f"Unable to save last run '{self.path}'.\n{error}")
