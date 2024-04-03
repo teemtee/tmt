@@ -1,0 +1,16 @@
+[project]
+name = "demo-plugins"
+version = "0.0.1"
+dependencies = [
+    "tmt",
+    ]
+
+[tool.setuptools]
+py-modules = [
+    "discover",
+    "provision",
+]
+
+[project.entry-points."tmt.plugin"]
+ProvisionExample = "provision:ProvisionExample"
+DiscoverExample = "discover:DiscoverExample"
