@@ -2486,8 +2486,12 @@ def render_exception(exception: BaseException) -> Iterator[str]:
             else:
                 for line in item.splitlines():
                     yield f'{INDENT * " "}{line}'
-
-    yield click.style(str(exception), fg='red')
+    # XXX: We should handle option `--no-color`
+    no_color = True # FIXME: should get the no_color from tmt/__main__.py
+    if no_color:
+        yield str(exception)
+    else:
+        yield click.style(str(exception), fg='red')
 
     if isinstance(exception, RunError):
         yield ''
