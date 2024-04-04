@@ -473,7 +473,7 @@ def read(
     else:
         old_testinfo = None
 
-    # Make Makefile 'makeable' without extra dependecies
+    # Make Makefile 'makeable' without extra dependencies
     # (replace targets, make include optional and remove rhts-lint)
     if makefile_file:
         datafile = datafile.replace('$(METADATA)', 'testinfo.desc')

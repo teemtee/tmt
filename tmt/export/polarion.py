@@ -155,7 +155,7 @@ def add_hyperlink(polarion_case: PolarionTestCase, link: str, role: str = 'tests
     else:
         for hyperlink in set(existing_hyperlinks):
             for _ in range(existing_hyperlinks.count(hyperlink) - 1):
-                # Remove all but one occurence of the same hyperlink
+                # Remove all but one occurrence of the same hyperlink
                 polarion_case.remove_hyperlink(hyperlink)
 
 

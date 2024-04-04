@@ -375,9 +375,9 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
     def variant(self) -> list['Constraint[Any]']:
         """
-        Pick one of the available variants of this contraints.
+        Pick one of the available variants of this constraints.
 
-        As the contraint can yield many variants, often there's an interest in
+        As the constraint can yield many variants, often there's an interest in
         just one. There can be many different ways for picking the best one,
         whatever that may mean depending on the context, as a starting point
         this method is provided. In the future, provision plugins would probably
@@ -408,7 +408,7 @@ class CompoundConstraint(BaseConstraint):
 
         :param reducer: a callable reducing a list of results from child constraints into the final
             answer.
-        :param constraints: child contraints.
+        :param constraints: child constraints.
         """
 
         self.reducer = reducer
@@ -847,7 +847,7 @@ def ungroupify(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseCon
     """
     Swap returned single-child compound constraint and that child.
 
-    Helps reduce the number of levels in the contraint tree: if the return value
+    Helps reduce the number of levels in the constraint tree: if the return value
     is a compound constraint which contains just a single child, return the
     child instead of the compound constraint.
 
@@ -873,7 +873,7 @@ def ungroupify_indexed(
     """
     Swap returned single-child compound constraint and that child.
 
-    Helps reduce the number of levels in the contraint tree: if the return value
+    Helps reduce the number of levels in the constraint tree: if the return value
     is a compound constraint which contains just a single child, return the
     child instead of the compound constraint.
 

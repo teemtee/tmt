@@ -40,7 +40,7 @@ class GuestLocal(tmt.Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
-        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+        :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.

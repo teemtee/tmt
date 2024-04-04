@@ -534,7 +534,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         result.note = 'aborted'
                 self._results.extend(invocation.results)
 
-                # If test duration information is missing, print 8 spaces to keep indention
+                # If test duration information is missing, print 8 spaces to keep indentation
                 def _format_duration(result: BaseResult) -> str:
                     return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
 

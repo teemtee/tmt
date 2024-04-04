@@ -153,3 +153,9 @@ repos:
         # Help installation by reducing the set of inspected botocore release.
         # There is *a lot* of them, and hatch might fetch many of them.
         - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli  # Required for python < 3.11

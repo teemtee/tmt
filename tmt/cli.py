@@ -68,7 +68,7 @@ class TmtExitCode(enum.IntEnum):
     #: There was a fail or warn identified, but no error.
     FAIL = 1
 
-    #: Errors occured during test execution.
+    #: Errors occurred during test execution.
     ERROR = 2
 
     #: No test results found.

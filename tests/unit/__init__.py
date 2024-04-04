@@ -73,7 +73,7 @@ def _assert_log(
 
     :param caplog: Pytest's `caplog` fixture.
     :param evaluator: a callable reducing a given list of booleans into a single boolean. It is
-        used to evaluate whether the search for matching record was successfull: each record is
+        used to evaluate whether the search for matching record was successful: each record is
         tested, and results of these per-record tests are passed to `evaluator` for the final
         decision.
     """

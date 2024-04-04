@@ -153,7 +153,7 @@ class WatchdogCheck(Check):
         log = render_report_path(invocation)
 
         def _fail_parse_error(ping_output: str) -> None:
-            """ Handle unparseable ``ping`` output """
+            """ Handle unparsable ``ping`` output """
 
             logger.fail('failed to parse ping output')
 
@@ -187,12 +187,12 @@ class WatchdogCheck(Check):
                 )
 
         def _success(ping_output: str) -> None:
-            """ Handle successfull response """
+            """ Handle successful response """
 
             logger.verbose('Received successful response to ping.', level=2)
 
             report = [
-                '# successfull response'
+                '# successful response'
                 ]
 
             if guest_context.ping_failures != 0:
@@ -301,12 +301,12 @@ class WatchdogCheck(Check):
                             command_output=ncat_output)
 
         def _success(ncat_output: str) -> None:
-            """ Handle successfull response """
+            """ Handle successful response """
 
             logger.verbose('Received successful response to SSH ping.', level=2)
 
             report = [
-                '# successfull response'
+                '# successful response'
                 ]
 
             if guest_context.ssh_ping_failures != 0:
@@ -368,7 +368,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
     * "reboot" action issues a hard reboot of the guest.
 
     Each probe has a "budget" of allowed failures, and when it runs out,
-    the action is taken. A successfull probe replenishes its budget to
+    the action is taken. A successful probe replenishes its budget to
     the original level.
 
     Multiple probes can be enabled at the same time, for the action to

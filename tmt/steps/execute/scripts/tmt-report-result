@@ -44,7 +44,7 @@ check_report_file () {
         fileHierarchy="${RESULTS_HIERARCHY[$fileResult]}"
         # Compare the current result hierarchy against
         # the hierarchy result retrieved from the file.
-        # Overwrite the file if the current hierachy is higher.
+        # Overwrite the file if the current hierarchy is higher.
         thisResultHierarchy="${RESULTS_HIERARCHY[$TESTRESULT]}"
         if [ $thisResultHierarchy -gt $fileHierarchy ]; then
             write_report_file

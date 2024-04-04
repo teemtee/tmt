@@ -6,7 +6,7 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd custom"
         rlRun "set -o pipefail"
-        rlRun "run=\$(mktemp -d)" 0 "Creating run direcotory/id"
+        rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
     rlPhaseEnd
 
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vv test --name"

@@ -30,7 +30,7 @@ rlJournalStart
 
         # Check beakerlib's backup directory pull
         if [[ "$PROVISION_HOW" =~ local|container ]]; then
-            # No pull happened so it shoud be present
+            # No pull happened so it should be present
             rlAssertExists "$data/guest/default-0/test/beakerlib-2/backup"
             rlAssertExists "$data/guest/default-0/test/beakerlib-2/backup-NS1"
             rlAssertNotEquals "any backup dir is present" "$(eval 'echo $data/guest/default-0/test/beakerlib-2/backup*')" "$data/guest/default-0/test/beakerlib-2/backup*"

@@ -192,7 +192,7 @@ class Discover(tmt.steps.Step):
 
             for raw_test_datum in raw_test_data:
                 # The name of `discover` phases providing the test was added in 1.24.
-                # Unfortunatelly, the field is required for correct work of `execute`,
+                # Unfortunately, the field is required for correct work of `execute`,
                 # now when it is parallel in nature. Without it, it's not possible
                 # to pick the right `discover` phase which then provides the list
                 # of tests to execute. Therefore raising an error instead of guessing

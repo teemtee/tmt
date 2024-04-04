@@ -13,7 +13,7 @@ description:
     description:
         Global default values common for all users on the system
         should be stored under the ``/etc/tmt`` folder. It is
-        overriden by user configuration if present.
+        overridden by user configuration if present.
     example: |
         provision:
             how: container

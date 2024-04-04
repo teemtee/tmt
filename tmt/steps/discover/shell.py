@@ -35,7 +35,7 @@ class TestDescription(
     """
     Keys necessary to describe a shell-based test.
 
-    Provides basic functionality for tansition between "raw" step data representation,
+    Provides basic functionality for transition between "raw" step data representation,
     which consists of keys and values given by fmf tree and CLI options, and this
     container representation for internal use.
     """
@@ -43,10 +43,10 @@ class TestDescription(
     name: str
 
     # TODO: following keys are copy & pasted from base.Test. It would be much, much better
-    # to re-use the definitions from base.Test instead copying them here, but base.Test
+    # to reuse the definitions from base.Test instead copying them here, but base.Test
     # does not support save/load operations. This is a known issue, introduced by a patch
     # transitioning step data to data classes, it is temporary, and it will be fixed as
-    # soon as possible - nobody want's to keep two very same lists of attributes.
+    # soon as possible - nobody wants to keep two very same lists of attributes.
     test: ShellScript = field(
         default=ShellScript(''),
         normalize=lambda key_address, raw_value, logger: ShellScript(raw_value),

@@ -8,21 +8,21 @@ rlJournalStart
 
     rlPhaseStartTest "Login enabled after tests"
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true" 1
-        rlAssertEquals "There should 5 occurences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "5"
+        rlAssertEquals "There should 5 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "5"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Login enabled after tests and after steps"
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s discover -s prepare" 1
-        rlAssertEquals "There should 6 occurences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "6"
+        rlAssertEquals "There should 6 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "6"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Login enabled after failed tests and during report step if fail"
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s report -w fail" 1
-        rlAssertEquals "There should 2 occurences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "2"
+        rlAssertEquals "There should 2 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "2"
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
 

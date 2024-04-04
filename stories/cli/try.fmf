@@ -63,7 +63,7 @@ link:
 
     description: |
         Sometimes it's handy to be able to quickly spawn a new
-        clean guest and start experimeting in the sand box. Run
+        clean guest and start experimenting in the sand box. Run
         the ``tmt try`` command in a directory without tests or
         explicitly ask for interactive shell with ``--login``.
 

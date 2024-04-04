@@ -455,7 +455,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Always show the real beaker job id
 - Create a production copr build for each release
 - AVC denials check for tests (#2331)
-- Add nice & colorfull help to "make" targets
+- Add nice & colorful help to "make" targets
 - Include more dependencies in the dev environment
 - Stop using the `_version.py` file
 - Replace `opt()` for `--dry/--force` with properties
@@ -874,7 +874,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Prune irrelevant files during the `finish` step
 - Add junit plugin schema
 - Support to import empty key from Makefile
-- Deleting unsed and duplicite part of finish step
+- Deleting unused and duplicite part of finish step
 - Support absolute paths in HTML reports
 - Capture exceptions when getting `image_url`
 - Enable verbose output for `provision` & `prepare`
@@ -1117,8 +1117,8 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Remove duplicated short option in tmt lint
 - Adjust the `rstrnt-report-result` implementation
 - Backwards compatibility for `rstrnt-report-result`
-- Set the `1777` permision for `/var/tmp/tmt`
-- Adjust the fix for the `rpm-ostree` intallation
+- Set the `1777` permission for `/var/tmp/tmt`
+- Adjust the fix for the `rpm-ostree` installation
 - Fix package installation using `rpm-ostree`
 - Handle empty fmf file as an empty dictionary
 - Fix distgit testsuite after tmt packaging change
@@ -1340,7 +1340,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Require beakerlib-1.28 for beakerlib tests
 - Adjust the dist git source discover implementation
 - Discover tmt tests from sources
-- Reenable plans/install/docs
+- Re-enable plans/install/docs
 - Correct the `playbook` attribute in the spec (#948)
 - Ansible plugin for Finish step
 - Thread processing of executed commands inside tmt
@@ -1609,7 +1609,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Strip whitespace before relevancy comment
 - Ensure rsync is installed on the guest if needed
 - Use the default branch in the discover fmf plugin
-- Suport the 'el' shortcut for the distro context
+- Support the 'el' shortcut for the distro context
 - Implement the 'tmt --version' option [fix #445]
 - Adjust test create test, fix missing dots
 - Support creating tests in the current directory
@@ -1919,7 +1919,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Add a story and examples describing manual tests
 - Sync more extra-* attributes when exporting [#199]
 - Enable checks for essential test attributes
-- Handle require in Dicovery
+- Handle require in Discovery
 - Store imported metadata in a sane order [fix #86]
 - Enable Python 3.8 in Travis, update classifiers
 - Add missing 'require' attribute to the Test class
@@ -1930,7 +1930,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Merge improved import of tier from tags [#187]
 - Adjust tier import from test case tags
 - Merge tmt test export --nitrate --create [#185]
-- Adjust suppport for creating new nitrate testcases
+- Adjust support for creating new nitrate testcases
 - Allow creation of nitrate cases when exporting
 - Create tier attribute from multiple Tier tags
 - Fix run.sh to work with RHEL/CentOS 7 as well
@@ -2189,7 +2189,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Enable bash completion feature
 
 * Thu Oct 17 2019 Petr Šplíchal <psplicha@redhat.com> - 0.4-1
-- Add tests for 'tmt init', allow overwritting
+- Add tests for 'tmt init', allow overwriting
 - Use plural commands to prevent confusion [fix #10]
 - Add a link to Packit & Testing Farm documentation
 - Add a simple develop section to the readme
@@ -2214,7 +2214,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Add a story for the mock shortcut [fix #5, fix #6]
 - Add a story for core option --format
 - Propose a dream for hands-free debugging
-- Rename remaining testset occurences to plan
+- Rename remaining testset occurrences to plan
 - Implement 'tmt plan lint' with initial checks
 
 * Thu Oct 10 2019 Petr Šplíchal <psplicha@redhat.com> - 0.3-1
@@ -2232,7 +2232,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 - Provide one-letter versions for select options
 - Implement 'tmt run --all' to run all test steps
 - Support command abbreviation, add related stories
-- Add the Quick Start Guide story to documention
+- Add the Quick Start Guide story to documentation
 - Add coverage options to tmt story ls and show
 - Initialize metadata tree only when accessed
 - Remove show functionality from the 'run' command

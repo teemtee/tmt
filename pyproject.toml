@@ -331,3 +331,8 @@ markers = [
     "containers: tests which need to spawn containers",
     "web: tests which need to access the web"
     ]
+
+[tool.codespell]
+ignore-words = "docs/codespell.dic"
+exclude-file = "docs/codespell.ignore"
+skip = "tests/execute/weird/data/weird.txt,tests/lint/plan/data/invalid_attr.fmf,tests/lint/plan/test.sh"

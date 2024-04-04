@@ -693,7 +693,7 @@ class Environment(dict[str, EnvVarValue]):
         inputs.
 
         All inputs are optional, and there is a clear order of preference, which is,
-        from the most prefered:
+        from the most preferred:
 
         * ``--environment`` CLI option (``raw_cli_environment``)
         * ``--environment-file`` CLI option (``raw_cli_environment_files``)
@@ -942,7 +942,7 @@ class Config:
             raise MetadataError(f"Config tree not found in '{self.path}'.") from error
 
 
-# TODO: `StreamLogger` is a dedicated thread fillowing given stream, passing their content to
+# TODO: `StreamLogger` is a dedicated thread following given stream, passing their content to
 # tmt's logging methods. Thread is needed because of some amount of blocking involved in the
 # process, but it has a side effect of `NO_COLOR` envvar being ignored. When tmt spots `NO_COLOR`
 # envvar, it flips a `color` flag in its Click context. But since contexts are thread-local,
@@ -2290,7 +2290,7 @@ class RunError(GeneralError):
         # Store instance of caller to get additional details
         # in post processing (e.g. verbose level)
         self.caller = caller
-        # Since logger may get swaped, to better reflect context (guests start
+        # Since logger may get swapped, to better reflect context (guests start
         # with logger inherited from `provision` but may run under `prepare` or
         # `finish`), save a logger for later.
         self.logger = caller._logger if isinstance(caller, Common) else None
@@ -2329,7 +2329,7 @@ class NormalizationError(SpecificationError):
         A subclass of :py:class:`SpecificationError`, but describing errors
         that appear in a very specific point of key loading in a unified manner.
 
-        :param key_address: the key in question, preferrably with detailed location,
+        :param key_address: the key in question, preferably with detailed location,
             e.g. ``/plans/foo:discover[0].tests``.
         :param raw_value: input value, the one that failed the normalization.
         :param expected_type: string description of expected, allowed types, as
@@ -3232,7 +3232,7 @@ class SerializableContainer(DataContainer):
                     yield key, value
 
         # Set attribute by adding it to __dict__ directly. Messing with setattr()
-        # might cause re-use of mutable values by other instances.
+        # might cause reuse of mutable values by other instances.
         # obj.__dict__[keyname] = unserialize_callback(value)
 
         return cls(**dict(_produce_unserialized()))
@@ -3820,7 +3820,7 @@ def format_value(
         # UX: if there are multiple items, we do not add prefixes as long as
         # there are no multi-line items - once there is just a single one item
         # rendered across multiple lines, we need to add `-` prefix & indentation
-        # to signal where items start and end visualy.
+        # to signal where items start and end visually.
         if len(value) > 1 and any('\n' in formatted_item for formatted_item in formatted_value):
             prefixed: list[str] = []
 
@@ -4076,7 +4076,7 @@ def check_git_url(url: str) -> str:
 
 
 PUBLIC_GIT_URL_PATTERNS: list[tuple[str, str]] = [
-    # Gitlab on private namepace is synced to pkgs.devel.redhat.com
+    # Gitlab on private namespace is synced to pkgs.devel.redhat.com
     # old: https://gitlab.com/redhat/rhel/tests/bash
     # old: git@gitlab.com:redhat/rhel/tests/bash
     # new: https://pkgs.devel.redhat.com/git/tests/bash
@@ -4155,10 +4155,10 @@ def inject_auth_git_url(url: str) -> str:
     Inject username or token to the git url
 
     :param url: original git repo url
-    :returns: URL with injected authentification based on pattern from the environment
+    :returns: URL with injected authentication based on pattern from the environment
         or unmodified URL
     """
-    # Try all environement variables sorted by their name
+    # Try all environment variables sorted by their name
     for name, value in sorted(os.environ.items(), key=lambda x: x[0]):
         # First one which matches url is taken into the account
         if name.startswith(INJECT_CREDENTIALS_URL_PREFIX) and re.search(value, url):
@@ -4324,7 +4324,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
         # Detect a subset of exception we do not want to follow with a retry.
         # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
-        # readibility.
+        # readability.
         if error is not None:  # noqa: SIM102
             # Failed certificate verification - this issue will probably not get any better
             # should we try again.
@@ -5443,7 +5443,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
 def find_fmf_root(path: Path, ignore_paths: Optional[list[Path]] = None) -> list[Path]:
     """
-    Search trough path and return all fmf roots that exist there
+    Search through path and return all fmf roots that exist there
 
     Returned list is ordered by path length, shortest one first.
 
@@ -5616,7 +5616,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
        This function is not part of the normalization process that happens after validation. The
        purpose of this function is to make the world nice and shiny for tmt users while avoiding
        the possibility of schema becoming way too complicated, especially when we would need
-       non-trivial amount fo time for experiments.
+       non-trivial amount of time for experiments.
 
        The real normalization process takes place after validation, and is responsible for
        converting raw fmf data to data types and structures more suited for tmt internal
@@ -5632,7 +5632,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     # value - but it's not our job to validate the general structure of node data. Walk the "happy"
     # path, touch the node only when it matches the specification of being a mapping of steps and
     # these being either mappings or lists of mappings. Whenever we notice some value does not
-    # match this basic structure, ignore the step completely - its issues will be cought by schema
+    # match this basic structure, ignore the step completely - its issues will be caught by schema
     # later, don't waste time on steps that do not follow specification.
 
     # Fmf data describing a plan shall be a mapping (with keys like `discover` or `adjust`).
@@ -5758,9 +5758,9 @@ def wait(
     To test the condition state, a ``check`` callback is called every ``tick``
     seconds until ``check`` reports a success. The callback may:
 
-    * decide the condition has been fulfilled. This is a successfull outcome,
+    * decide the condition has been fulfilled. This is a successful outcome,
       ``check`` shall then simply return, and waiting ends. Or,
-    * decide more time is needed. This is not a successfull outcome, ``check``
+    * decide more time is needed. This is not a successful outcome, ``check``
       shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
       will try again later.
 
@@ -5771,8 +5771,8 @@ def wait(
         without exception. Its return value will be propagated by ``wait()`` up
         to ``wait()``'s. All other exceptions raised by ``check`` will propagate
         to ``wait()``'s caller as well, terminating the wait.
-    :param timeout: amount of time ``wait()`` is alowed to spend waiting for
-        successfull outcome of ``check`` call.
+    :param timeout: amount of time ``wait()`` is allowed to spend waiting for
+        successful outcome of ``check`` call.
     :param tick: how many seconds to wait between two consecutive calls of
         ``check``.
     :param tick_increase: a multiplier applied to ``tick`` after every attempt.
@@ -5954,7 +5954,7 @@ def dataclass_normalize_field(
                 topic=tmt.log.Topic.KEY_NORMALIZATION)
 
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
-    # might cause re-use of mutable values by other instances.
+    # might cause reuse of mutable values by other instances.
     container.__dict__[keyname] = value
 
     return value

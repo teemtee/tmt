@@ -460,7 +460,7 @@ class Logger:
             command-line option.
         :param debug_level: desired debugging level, usually derived from ``-d``
             command-line option.
-        :param quiet: if set, all messages would be supressed, with the exception of
+        :param quiet: if set, all messages would be suppressed, with the exception of
             warnings (:py:meth:`warn`), errors (:py:meth:`fail`) and messages emitted
             with :py:meth:`print`.
         """
@@ -541,7 +541,7 @@ class Logger:
         Create a copy of this logger instance, but with a new raw logger.
 
         New :py:class:`logging.Logger` instance is created from our raw logger, forming a
-        parent/child relationship betwen them, and it's then wrapped with ``Logger`` instance.
+        parent/child relationship between them, and it's then wrapped with ``Logger`` instance.
         Settings of this logger are copied to new one, with the exception of ``base_shift``
         which is increased by one, effectively indenting all messages passing through new logger.
 

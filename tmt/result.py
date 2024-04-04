@@ -395,7 +395,7 @@ def results_to_exit_code(results: list[Result]) -> int:
     if sum(stats.values()) == 0:
         return TmtExitCode.NO_RESULTS_FOUND
 
-    # "Errors occured during test execution."
+    # "Errors occurred during test execution."
     if stats[ResultOutcome.ERROR]:
         return TmtExitCode.ERROR
 

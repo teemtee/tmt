@@ -1,7 +1,7 @@
 # Multiple tool support for test discovery & execution
 /test:
     /build:
-        # Standard Test Inteface
+        # Standard Test Interface
         /sti:
             execute:
                 how: sti

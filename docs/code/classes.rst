@@ -307,7 +307,7 @@ of default implementations.
     If you think of using ``to_dict()``, please, think again and be sure
     you know what are you doing. Despite its output being sometimes
     perfectly compatible with output of ``to_serialized()`` or ``to_spec()``,
-    it is not generaly true, and using it instead of proper methods may lead
+    it is not generally true, and using it instead of proper methods may lead
     to unexpected exceptions.
 
     The same applies to ``to_minimal_dict()``.

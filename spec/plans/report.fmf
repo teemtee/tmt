@@ -137,7 +137,7 @@ description:
         ## Simple upload with url and token exported in environment variable
         tmt run --all report --how reportportal --project=baseosqe
 
-        ## Upload with project name in fmf data, filtering out parameters (environemnt variables) that tend to be unique and break the history aggregation
+        ## Upload with project name in fmf data, filtering out parameters (environment variables) that tend to be unique and break the history aggregation
         tmt run --all report --how reportportal --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
 
         ## Upload all plans as suites into one ReportPortal launch

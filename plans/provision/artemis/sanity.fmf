@@ -2,7 +2,7 @@
     summary: Sanity tests of Artemis provision plugin
 
 /hardware:
-    summary: Sanity tests hardware requirements suport
+    summary: Sanity tests hardware requirements support
 
     provision:
         how: artemis

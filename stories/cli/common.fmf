@@ -1,5 +1,5 @@
 story:
-    I want to have common command line options consistenly
+    I want to have common command line options consistently
     used across all supported commands and subcommands.
 
 /verbose:

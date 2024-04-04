@@ -20,7 +20,7 @@ description: |
     "dnf system-upgrade reboot"``.
 
     In some scenarios, rebooting may take longer than usual. The
-    default timeout used in tmt can be overriden using the ``-t``
+    default timeout used in tmt can be overridden using the ``-t``
     option of the reboot script, e.g. ``tmt-reboot -t 3600`` to
     wait for up to an hour for the guest to come back up.
 

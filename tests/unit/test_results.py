@@ -14,7 +14,7 @@ from tmt.result import ResultOutcome, results_to_exit_code
             [],
             TmtExitCode.NO_RESULTS_FOUND
             ),
-        # Errors occured during test execution.
+        # Errors occurred during test execution.
         (
             [
                 ResultOutcome.PASS,
@@ -66,7 +66,7 @@ from tmt.result import ResultOutcome, results_to_exit_code
     # IDs copied from the specification:
     ids=(
         "No test results found",
-        "Errors occured during test execution",
+        "Errors occurred during test execution",
         "There was a fail or warn identified, but no error",
         "Tests were executed, and all reported the ``skip`` result",
         "At least one test passed, there was no fail, warn or error",

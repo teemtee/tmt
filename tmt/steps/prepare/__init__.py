@@ -239,7 +239,7 @@ class Prepare(tmt.steps.Step):
 
             # The `discover` step is different: no phases, just query tests
             # collected by the step itself. Maybe we could iterate over
-            # `discover` phases, but I think re-runs and workdir re-use would
+            # `discover` phases, but I think re-runs and workdir reuse would
             # use what the step loads from its storage, `tests.yaml`. Which
             # means, there probably would be no phases to inspect from time to
             # time, therefore going after the step itself.

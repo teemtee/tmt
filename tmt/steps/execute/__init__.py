@@ -819,7 +819,7 @@ class Execute(tmt.steps.Step):
                 queue.enqueue_action(phase=phase)
 
             else:
-                # A single execute plugin is expected to process (potentialy)
+                # A single execute plugin is expected to process (potentially)
                 # multiple discover phases. There must be a way to tell the execute
                 # plugin which discover phase to focus on. Unfortunately, the
                 # current way is the execute plugin checking its `discover`
@@ -848,7 +848,7 @@ class Execute(tmt.steps.Step):
                 continue
 
         # Execute plugins do not return results. Instead, plugin collects results
-        # in its internal `_results` list. To accomodate for different discover
+        # in its internal `_results` list. To accommodate for different discover
         # phases, we create a copy of the execute phase for each discover phase
         # we have. All these copies share the `_results` list, and append to it.
         #

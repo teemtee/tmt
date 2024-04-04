@@ -48,7 +48,7 @@ tmt init</code></p>
 
         expect = convert_manual_to_nitrate(file_name)[1]
         html_generated = """<b>Test</b>\
-<p>Step 1.</p><p>Text similar to the one bellow is displayed
+<p>Step 1.</p><p>Text similar to the one below is displayed
 ```
 Usage: tmt [OPTIONS] COMMAND [ARGS]...</p>
 <p>Test Management Tool</p>

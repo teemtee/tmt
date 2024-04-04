@@ -210,7 +210,7 @@ def test_config():
 
 
 def test_last_run_race(tmppath: Path, monkeypatch):
-    """ Race in last run symlink should't be fatal """
+    """ Race in last run symlink shouldn't be fatal """
     config_path = tmppath / 'config'
     config_path.mkdir()
     monkeypatch.setattr(tmt.utils, 'CONFIG_DIR', config_path)

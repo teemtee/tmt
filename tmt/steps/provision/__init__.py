@@ -300,7 +300,7 @@ class GuestFacts(SerializableContainer):
             guest: 'Guest',
             probes: list[tuple[Command, T]]) -> Optional[T]:
         """
-        Find a first successfull command.
+        Find a first successful command.
 
         :param guest: the guest to run commands on.
         :param probes: list of command/mark pairs.
@@ -320,7 +320,7 @@ class GuestFacts(SerializableContainer):
             guest: 'Guest',
             probes: list[tuple[Command, str]]) -> Optional[str]:
         """
-        Find a first successfull command, and extract info from its output.
+        Find a first successful command, and extract info from its output.
 
         :param guest: the guest to run commands on.
         :param probes: list of command/pattenr pairs.
@@ -987,7 +987,7 @@ class Guest(tmt.utils.Common):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
-        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+        :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -1009,11 +1009,11 @@ class Guest(tmt.utils.Common):
         """
         Run an Ansible playbook on the guest.
 
-        A wrapper for :py:meth:`_run_ansible` which is reponsible for running
+        A wrapper for :py:meth:`_run_ansible` which is responsible for running
         the playbook while this method makes sure our logging is consistent.
 
         :param playbook: path to the playbook to run.
-        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+        :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -1353,7 +1353,7 @@ class GuestSsh(Guest):
             options.extend(['-oPasswordAuthentication=yes'])
         else:
             # Make sure the connection is rejected when we want key-
-            # based authetication only instead of presenting a prompt.
+            # based authentication only instead of presenting a prompt.
             # Prevents issues like https://github.com/teemtee/tmt/issues/2687
             # from happening and makes the ssh connection more robust
             # by allowing proper re-try mechanisms to kick-in.
@@ -1464,7 +1464,7 @@ class GuestSsh(Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
-        :param extra_args: aditional arguments to be passed to ``ansible-playbook``
+        :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -1612,7 +1612,7 @@ class GuestSsh(Guest):
 
         By default the whole plan workdir is synced to the same location
         on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parametr to modify default options
+        location and the 'options' parameter to modify default options
         which are '-Rrz --links --safe-links --delete'.
 
         Set 'superuser' if rsync command has to run as root or passwordless

@@ -7,7 +7,7 @@ description: |
 
     The :ref:`/spec/plans/prepare/install` plugin provides an easy
     way to install required or recommended packages from disk and
-    from the offical distribution or copr repositories. Use the
+    from the official distribution or copr repositories. Use the
     :ref:`/spec/plans/prepare/ansible` plugin for applying custom
     playbooks or execute :ref:`/spec/plans/prepare/shell` scripts
     to perform arbitrary preparation tasks.
@@ -115,7 +115,7 @@ example: |
         on the guest. They can either be specified using their
         names, paths to local rpm files or urls to remote rpms.
 
-        Additionaly, the ``directory`` attribute can be used to
+        Additionally, the ``directory`` attribute can be used to
         install all packages from the given directory. Copr
         repositories can be enabled using the ``copr`` attribute.
         Use the ``exclude`` option to skip selected packages from

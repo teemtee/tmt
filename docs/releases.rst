@@ -45,7 +45,7 @@ the :ref:`/spec/plans/provision/beaker` provision plugin.
 The :ref:`/spec/plans/provision/virtual` provision plugin gains support
 for :ref:`TPM hardware requirement</spec/hardware/tpm>`. It is limited
 to TPM 2.0 for now, the future release of `testcloud`__, the
-library behing ``virtual`` plugin, will extend the support to more
+library behind ``virtual`` plugin, will extend the support to more
 versions.
 
 A new :ref:`watchdog test check<plugins/test-checks/watchdog>` has been
@@ -158,7 +158,7 @@ and let us know what you think! :)
 Now it's possible to use :ref:`custom_templates` when creating new
 tests, plans and stories. In this way you can substantially speed
 up the initial phase of the test creation by easily applying test
-metadata and test script skeletons taylored to your individual
+metadata and test script skeletons tailored to your individual
 needs.
 
 The :ref:`/spec/core/contact` key has been moved from the
@@ -173,7 +173,7 @@ containers as well.
 For the purpose of tmt exit code, ``info`` test results are no
 longer considered as failures, and therefore the exit code of tmt
 changes. ``info`` results are now treated as ``pass`` results, and
-would be counted towards the succesful exit code, ``0``, instead
+would be counted towards the successful exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
 The :ref:`/spec/plans/report/polarion` report now supports the

@@ -228,7 +228,7 @@ example of test metadata:
     require: wget
     duration: 1m
 
-Instead of writing the plan and test metadata manualy, you might
+Instead of writing the plan and test metadata manually, you might
 want to simply apply the ``base`` template which contains the plan
 mentioned above together with a test example including both test
 metadata and test script skeleton for inspiration:
@@ -406,7 +406,7 @@ Custom Templates
 
 If you create new tests often, you might want to create a custom
 template in order to get quickly started with a new test skeleton
-taylored exactly to your needs. The same applies for plans and
+tailored exactly to your needs. The same applies for plans and
 stories.
 
 Templates can be defined inside the config directory
@@ -945,7 +945,7 @@ Current Limits
 .. note::
 
     For the most up-to-date list of issues related to multihost,
-    our Github can display all isues with the `multihost`__ label.
+    our Github can display all issues with the `multihost`__ label.
 
 * requirements of all tests (:ref:`/spec/tests/require`,
   :ref:`/spec/tests/recommend`) are installed on all guests. See

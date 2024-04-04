@@ -10,7 +10,7 @@ Here you will find documentation for plugins shipped with tmt.
 
     Please, be aware that the documentation below is a work in progress. We are
     working on fixing it, adding missing bits and generally making it better.
-    Also, it was originaly used for command line help only, therefore the
+    Also, it was originally used for command line help only, therefore the
     formatting is often suboptional.
 
 .. toctree::

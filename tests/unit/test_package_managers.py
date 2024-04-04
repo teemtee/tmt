@@ -59,7 +59,7 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
 
 
-# Note: keep the list ordered by the most desired packag manager to the
+# Note: keep the list ordered by the most desired package manager to the
 # least desired one. For most of the tests, the order is not important,
 # but the list is used to generate the discovery tests as well, and the
 # order is used to find out what package manager is expected to be

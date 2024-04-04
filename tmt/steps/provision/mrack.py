@@ -105,7 +105,7 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[
 # Transcription of our HW constraints into Mrack's own representation. It's based
 # on dictionaries, and it's slightly weird. There is no distinction between elements
 # that do not have attributes, like <and/>, and elements that must have them, like
-# <memory/> and other binary operations. Also, there is no distinction betwen
+# <memory/> and other binary operations. Also, there is no distinction between
 # element attribute and child element, both are specified as dictionary key, just
 # the former would be a string, the latter another, nested, dictionary.
 #
@@ -514,7 +514,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         from mrack.providers.beaker import BeakerProvider
         from mrack.transformers.beaker import BeakerTransformer
 
-        # HAX remove mrack stdout and move the logfile to /tmp
+        # hack: remove mrack stdout and move the logfile to /tmp
         mrack.logger.removeHandler(mrack.console_handler)
         mrack.logger.removeHandler(mrack.file_handler)
 

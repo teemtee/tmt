@@ -301,7 +301,7 @@ _RawLinkRelationName = Literal[
 # Link target - can be either a string (like test case name or URL), or an fmf id.
 _RawLinkTarget = Union[str, _RawFmfId]
 
-# Basic "relation-aware" link - essentialy a mapping with one key/value pair.
+# Basic "relation-aware" link - essentially a mapping with one key/value pair.
 _RawLinkRelation = dict[_RawLinkRelationName, _RawLinkTarget]
 
 # A single link can be represented as a string or FMF ID (meaning only target is specified),
@@ -940,7 +940,7 @@ class Core(
                         f' and does not match "{match.group(2)}" pattern'
 
             # A key value is not recognized. This is often a case with keys whose values are
-            # limited by an enum, like `how`. Unfortunatelly, validator will record every mismatch
+            # limited by an enum, like `how`. Unfortunately, validator will record every mismatch
             # between a value and enum even if eventually a match is found. So it might be tempting
             # to ignore this particular kind of error - it may also indicate a genuine typo in
             # key name or completely misplaced key, so it's still necessary to report the error.
@@ -3303,7 +3303,7 @@ class Run(tmt.utils.Common):
     def load_from_workdir(self) -> None:
         """
         Load the run from its workdir, do not require the root in
-        run.yaml to exist. Doest not load the fmf tree.
+        run.yaml to exist. Does not load the fmf tree.
 
         Use only when the data in workdir is sufficient (e.g. tmt
         clean and status only require the steps to be loaded and

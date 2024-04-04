@@ -219,11 +219,11 @@ provision-only
 
 Tags
 ------------------------------------------------------------------
-In additon to the tags related to the :ref:`provision-methods` tags,
+In addition to the tags related to the :ref:`provision-methods` tags,
 following are used in the tests:
 
 as_root
-    Test has to be executed as the root (or priviledged) user to
+    Test has to be executed as the root (or privileged) user to
     execute properly.  For example test adds user, changes the
     system, etc.
 

@@ -16,7 +16,7 @@ tmt --help
 
 
 ## Expect
-Text similar to the one bellow is displayed
+Text similar to the one below is displayed
 ```
 Usage: tmt [OPTIONS] COMMAND [ARGS]...
 

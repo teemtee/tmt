@@ -87,7 +87,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         default=_flag_env_to_default('suite_per_plan', False),
         is_flag=True,
         help="""
-             Mapping suite per plan, creating one launch and continous uploading suites into it.
+             Mapping suite per plan, creating one launch and continuous uploading suites into it.
              Recommended to use with '--launch' and '--launch-description' options.
              Can be used with '--upload-to-launch' option to avoid creating a new launch.
              """)
@@ -167,7 +167,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results to a ReportPortal instance via API.
 
-    For communication with Report Portal API is neccessary to provide
+    For communication with Report Portal API is necessary to provide
     following options:
 
     * token for authentication
@@ -239,7 +239,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         """
         Write warning if there might be caused an unexpected behaviour by the option combinations
         """
-        # TODO: Update restriction of forbiden option combinations based on feedback.
+        # TODO: Update restriction of forbidden option combinations based on feedback.
 
         if self.data.launch_per_plan and self.data.suite_per_plan:
             raise tmt.utils.ReportError(

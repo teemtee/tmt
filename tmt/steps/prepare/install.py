@@ -259,7 +259,7 @@ class InstallDnf(InstallBase, Copr):
         """ Install packages stored in a local directory """
 
         # Use both dnf install/reinstall to get all packages refreshed
-        # FIXME Simplify this once BZ#1831022 is fixed/implemeted.
+        # FIXME Simplify this once BZ#1831022 is fixed/implemented.
         filelist = [PackagePath(self.package_directory / filename)
                     for filename in self.local_packages]
 

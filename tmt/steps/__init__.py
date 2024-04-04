@@ -711,7 +711,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Do NOT iterate over `self.data`: reading `self.data` would trigger materialization
         # of its content, calling plugins owning various raw step data to create corresponding
         # `StepData` instances. That is actually harmful, as plugins that might be explicitly
-        # overriden by `--how` option, would run, with unexpected side-effects.
+        # overridden by `--how` option, would run, with unexpected side-effects.
         # Instead, iterate over raw data, and replace incompatible plugins with the one given
         # on command line. There is no reason to ever let dropped plugin's `StepData` to
         # materialize when it's going to be thrown away anyway.
@@ -1179,7 +1179,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
     # Methods ("how: ..." implementations) registered for the same step.
     #
     # The field is declared here, in a base class of all plugin classes, and
-    # each step-specific base plugin class assignes it a value as a class-level
+    # each step-specific base plugin class assigns it a value as a class-level
     # attribute. This guarantees steps would not share a registry instance while
     # the declaration below make the name and type visible across all
     # subclasses.
@@ -1435,7 +1435,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
             # still matches the default value, instead of returning the default
             # value right away, call `self.default()` so the plugin has chance to
             # catch calls for computed or virtual keys, keys that don't exist as
-            # atributes of our step data.
+            # attributes of our step data.
             #
             # One way would be to subclass step's base plugin class' step data class
             # (which is a subclass of `StepData` and `SerializedContainer`), and
@@ -1509,7 +1509,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
 
             echo(tmt.utils.format(key_to_option(key), value))
 
-        # First, follow the order prefered by step data, but emit only the keys
+        # First, follow the order preferred by step data, but emit only the keys
         # that are allowed. Each emitted key would be removed so we wouldn't
         # emit it again when showing the unsorted rest of keys.
         for key in self.data._KEYS_SHOW_ORDER:
@@ -2298,7 +2298,7 @@ def safe_filename(basename: str, phase: Phase, guest: 'Guest') -> Path:
     Function adds enough uniqueness to the starting base name by adding a phase
     name and a guest name that the eventual filename would be safe against
     conflicting access from a phase running on multiple guests, and against
-    re-use when created by the same plugin in different phases.
+    reuse when created by the same plugin in different phases.
 
     At first glance, the name might be an overkill: at one moment, there is
     just one phase running on the given guest, why bother? No other phase
@@ -2313,7 +2313,7 @@ def safe_filename(basename: str, phase: Phase, guest: 'Guest') -> Path:
        --guest $IP``. Therefore it may happen that one phase, running
        against two guests, would actually run on the very same HW. Therefore
        even the remote per-guest uniqueness is needed.
-    3. the phase name is included to avoid re-use of the filename by different
+    3. the phase name is included to avoid reuse of the filename by different
        phases. A plugin may be invoked by multiple phases, and it might use a
        "constant" name for the file. That would lead to the filename being
        re-used by different plugin executions. Adding the phase name should

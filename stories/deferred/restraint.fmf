@@ -12,7 +12,7 @@ description: |
     ``rstrnt-report-result``.
 
     Although implementation of the full execute step plugin has
-    been deferred, backward compatiblity scripts have been
+    been deferred, backward compatibility scripts have been
     provided for several most commonly used restraint commands:
 
     rstrnt-abort

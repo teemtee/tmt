@@ -23,7 +23,7 @@ story:
         As a command line user I want to check the man page to get
         a basic overview about the tool.
     description:
-        There should be a manual page availabe in the package.
+        There should be a manual page available in the package.
         Man page should contain brief introduction about the tool
         and a list of essential commands and options.
     example:

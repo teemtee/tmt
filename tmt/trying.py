@@ -195,7 +195,7 @@ class Try(tmt.utils.Common):
 
         self.debug("Matching plans found\n" + tmt.utils.format_value(self.plans))
 
-        # Attach a login instace to each plan
+        # Attach a login instance to each plan
         for plan in self.plans:
             plan.login = tmt.steps.Login(
                 logger=plan.provision._logger.descend(),

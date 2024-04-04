@@ -211,7 +211,7 @@ description: |
     summary: Execute shell scripts
     story: As a user I want to easily run shell script as a test.
     description: |
-        Execute arbitratry shell commands and check their exit
+        Execute arbitrary shell commands and check their exit
         code which is used as a test result. The ``script`` field
         is provided to cover simple test use cases only and must
         not be combined with the :ref:`/spec/plans/discover` step

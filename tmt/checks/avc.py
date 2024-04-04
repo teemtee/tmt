@@ -113,7 +113,7 @@ def _run_script(
 
 
 def _report_success(label: str, output: tmt.utils.CommandOutput) -> list[str]:
-    """ Format successfull command output for the report """
+    """ Format successful command output for the report """
 
     return [
         f'# {label}',

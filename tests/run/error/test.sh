@@ -9,7 +9,7 @@ rlJournalStart
         rlRun "pushd $tmp"
     rlPhaseEnd
 
-    # 2 ... Errors occured during test execution.
+    # 2 ... Errors occurred during test execution.
     ECODE=2
 
     rlPhaseStartTest "Truncated"

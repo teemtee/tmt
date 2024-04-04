@@ -315,7 +315,7 @@ description: |
               - name: /print/pyproject
                 test: cat $TMT_SOURCE_DIR/tmt-*/pyproject.toml
       - |
-        # Just download sources, test is reponsible for rpmbuild
+        # Just download sources, test is responsible for rpmbuild
         # and running tests
         discover:
             how: shell

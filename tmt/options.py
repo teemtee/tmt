@@ -51,7 +51,7 @@ MethodDictType = dict[str, click.core.Command]
 # produced by click.option() calls: not options, but decorators, functions that attach
 # options to a given command.
 # Since click.decorators does not have a dedicated type for this purpose, we need
-# to construct it on our own, but we can re-use a typevar click.decorators has.
+# to construct it on our own, but we can reuse a typevar click.decorators has.
 _ClickOptionDecoratorType = Callable[[FC], FC]
 # The type above is a generic type, `FC` being a typevar, so we have two options:
 # * each place using the type would need to fill the variable, i.e. add [foo]`, or

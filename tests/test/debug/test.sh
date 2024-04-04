@@ -25,7 +25,7 @@ rlJournalStart
         rlRun "echo -e '#!/bin/bash\n/bin/true' > test/test.sh"
         rlRun "$tmt discover --force execute --force" 0 "Fixed test"
 
-        # Clenup until finish
+        # Cleanup until finish
         rlRun "$tmt --until finish"
     rlPhaseEnd
 
