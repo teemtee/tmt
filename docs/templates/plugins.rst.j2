@@ -12,17 +12,16 @@
 {{ PLUGIN_ID }}
 {{ '-' * (PLUGIN_ID | length)}}
 
-{#
-    TODO: once we start getting reviewed and polished plugins, drop the warning
-    for those that would be done and ready. Probably with some temporary list
-    to which we would add their names.
-#}
+{# Emit the warning only for plugins that have not been reviewed yet. #}
+{% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
+{% if plugin_full_id not in REVIEWED_PLUGINS %}
 .. warning::
 
     Please, be aware that the documentation below is a work in progress. We are
     working on fixing it, adding missing bits and generally making it better.
     Also, it was originaly used for command line help only, therefore the
     formatting is often suboptional.
+{% endif %}
 
 {% if PLUGIN.__doc__ %}
 {{ PLUGIN.__doc__ | dedent | trim }}

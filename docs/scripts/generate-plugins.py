@@ -18,6 +18,11 @@ import tmt.steps.report
 import tmt.utils
 from tmt.utils import ContainerClass, Path, render_template_file
 
+REVIEWED_PLUGINS: tuple[str, ...] = (
+    'prepare/ansible',
+    )
+
+
 HELP = textwrap.dedent("""
 Usage: generate-plugins.py <STEP-NAME> <TEMPLATE-PATH> <OUTPUT-PATH>
 
@@ -178,6 +183,7 @@ def main() -> None:
         LOGGER=logger,
         STEP=step_name,
         PLUGINS=plugin_generator,
+        REVIEWED_PLUGINS=REVIEWED_PLUGINS,
         container_fields=tmt.utils.container_fields,
         container_field=tmt.utils.container_field,
         container_ignored_fields=container_ignored_fields,

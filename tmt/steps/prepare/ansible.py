@@ -27,8 +27,8 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         multiple=True,
         metavar='PATH|URL',
         help="""
-             Path or URL of an ansible playbook to run. The playbook path must
-             be relative to the metadata tree root.
+             Path or URL of an ansible playbook to run.
+             The playbook path must be relative to the metadata tree root.
              """,
         normalize=tmt.utils.normalize_string_list
         )
@@ -36,8 +36,8 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
     extra_args: Optional[str] = field(
         default=None,
         option='--extra-args',
-        metavar='EXTRA-ARGS',
-        help='Optional arguments for ``ansible-playbook``.'
+        metavar='ANSIBLE-PLAYBOOK-OPTIONS',
+        help='Additional CLI options for ``ansible-playbook``.'
         )
 
     # ignore[override]: method violates a liskov substitution principle,
@@ -64,6 +64,14 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     """
     Prepare guest using Ansible.
 
+    Run Ansible playbooks against the guest, by running
+    ``ansible-playbook`` for all given playbooks.
+
+    .. warning::
+
+        When specifying playbooks with paths, all paths must be
+        relative to the metadata tree root.
+
     Run a single playbook on the guest:
 
     .. code-block:: yaml
@@ -72,7 +80,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             how: ansible
             playbook: ansible/packages.yml
 
-    Run multiple playbook in one phase, with extra arguments for
+    .. code-block:: shell
+
+        prepare --how ansible --playbook ansible/packages.yml
+
+    Run multiple playbooks in one phase, with extra arguments for
     ``ansible-playbook``:
 
     .. code-block:: yaml
@@ -80,10 +92,13 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         prepare:
             how: ansible
             playbook:
-              - playbook/one.yml
-              - playbook/two.yml
-              - playbook/three.yml
+              - one.yml
+              - two.yml
             extra-args: '-vvv'
+
+    .. code-block:: shell
+
+        prepare --how ansible --playbook one.yml --playbook two.yml --extra-args '-vvv'
 
     Remote playbooks can be referenced as well as local ones, and both
     kinds can be intermixed:
@@ -93,13 +108,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         prepare:
             how: ansible
             playbook:
-              - playbook/one.yml
-              - https://foo.bar/two.yml
-              - playbook/three.yml
+              - https://foo.bar/one.yml
+              - two.yml
 
-    The playbook path must be relative to the metadata tree root.
+    .. code-block:: shell
 
-    The playbook path should be relative to the metadata tree root.
+        prepare --how ansible --playbook https://foo.bar/two.yml --playbook two.yml
     """
 
     _data_class = PrepareAnsibleData
