@@ -131,6 +131,7 @@ class Apk(tmt.package_managers.PackageManager):
 
         script = ShellScript(
             f'{self.command.to_script()} {self.install_command.to_script()} '
+            f'{"--allow-untrusted " if options.allow_untrusted else ""}'
             f'{" ".join(escape_installables(*packages))}')
 
         if options.check_first:

@@ -3,11 +3,17 @@ provision:
     how: local
 
 prepare+:
-  # Install jq and yq for cleaner tests
+  # Install jq and yq for cleaner tests, and required make
   - how: install
     package:
       - jq
+      - make
       - python3-pip
+
+  # Make sure test container images are built
+  - how: shell
+    script:
+      - make -C $TMT_TREE images-tests
 
   - how: shell
     script:
