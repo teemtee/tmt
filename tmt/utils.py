@@ -7138,11 +7138,25 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
         return '\n'.join(self._rendered_paragraphs)
 
+    def _emit(self, s: str) -> None:
+        """ Add a string to the paragraph being rendered """
+
+        self._rendered_paragraph.append(s)
+
+    def _emit_paragraphs(self, paragraphs: list[str]) -> None:
+        """ Add new rendered paragraphs """
+
+        self._rendered_paragraphs += paragraphs
+
     def flush(self) -> None:
         """ Finalize rendering of the current paragraph """
 
-        self._rendered_paragraphs.append(''.join(self._rendered_paragraph))
-        self._rendered_paragraph = []
+        if not self._rendered_paragraph:
+            self.nl()
+
+        else:
+            self._emit_paragraphs([''.join(self._rendered_paragraph)])
+            self._rendered_paragraph = []
 
     def nl(self) -> None:
         """ Render a new, empty line """
@@ -7151,7 +7165,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         # empty lines into one. Rendering of nodes than does not have
         # to worry about an empty line already being on the stack.
         if self._rendered_paragraphs[-1] != '':
-            self._rendered_paragraphs.append('')
+            self._emit_paragraphs([''])
 
     # Simple logging for nodes that have no effect
     def _noop_visit(self, node: docutils.nodes.Node) -> None:
@@ -7173,18 +7187,18 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
         if isinstance(node.parent, docutils.nodes.list_item):
             if self._text_prefix:
-                self._rendered_paragraph.append(self._text_prefix)
+                self._emit(self._text_prefix)
                 self._text_prefix = None
 
             else:
-                self._rendered_paragraph.append(' ' * self._indent)
+                self._emit(' ' * self._indent)
 
         elif self.in_note:
-            self._rendered_paragraph.append(click.style('NOTE: ', fg='blue', bold=True))
+            self._emit(click.style('NOTE: ', fg='blue', bold=True))
             return
 
         elif self.in_warning:
-            self._rendered_paragraph.append(click.style('WARNING: ', fg='yellow', bold=True))
+            self._emit(click.style('WARNING: ', fg='yellow', bold=True))
             return
 
     def depart_paragraph(self, node: docutils.nodes.paragraph) -> None:
@@ -7202,23 +7216,23 @@ class RestVisitor(docutils.nodes.NodeVisitor):
             return
 
         if self.in_note:
-            self._rendered_paragraph.append(click.style(node.astext(), fg='blue'))
+            self._emit(click.style(node.astext(), fg='blue'))
 
             return
 
         if self.in_warning:
-            self._rendered_paragraph.append(click.style(node.astext(), fg='yellow'))
+            self._emit(click.style(node.astext(), fg='yellow'))
 
             return
 
-        self._rendered_paragraph.append(node.astext())
+        self._emit(node.astext())
 
     depart_Text = _noop_departure  # noqa: N815
 
     def visit_literal(self, node: docutils.nodes.literal) -> None:
         self.log_visit(str(node))
 
-        self._rendered_paragraph.append(click.style(node.astext(), fg='green'))
+        self._emit(click.style(node.astext(), fg='green'))
 
     depart_literal = _noop_departure
 
@@ -7227,9 +7241,17 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
         self.flush()
 
-        self._rendered_paragraphs += [
-            f'    {click.style(line, fg="cyan")}' for line in node.astext().splitlines()
-            ]
+        fg: str = 'cyan'
+
+        if 'yaml' in node.attributes['classes']:
+            pass
+
+        elif 'shell' in node.attributes['classes']:
+            fg = 'yellow'
+
+        self._emit_paragraphs([
+            f'    {click.style(line, fg=fg)}' for line in node.astext().splitlines()
+            ])
 
         self.in_literal_block = True
 
