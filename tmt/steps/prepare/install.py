@@ -704,9 +704,13 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 exclude=self.data.exclude,
                 guest=guest)
 
+        elif guest.facts.package_manager is None:
+            raise tmt.utils.PrepareError('Unrecognized package manager.')
+
         else:
             raise tmt.utils.PrepareError(
-                f'Package manager "{guest.facts.package_manager}" is not supported.')
+                f"Package manager '{guest.facts.package_manager}' "
+                "is not supported by 'prepare/install'.")
 
         # Enable copr repositories...
         if isinstance(installer, Copr):
