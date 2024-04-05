@@ -1,7 +1,7 @@
 import copy
-import dataclasses
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
+import attrs
 import click
 import fmf
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import tmt.cli
 
 
-@dataclasses.dataclass
+@attrs.define
 class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
