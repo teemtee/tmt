@@ -381,7 +381,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         # Create an empty step by default (can be updated from cli)
         if data is None:
-            raw_data: list[_RawStepData] = [{}]
+            raw_data: list[_RawStepData] = []
 
         # Convert to list if only a single config provided
         elif isinstance(data, dict):
@@ -683,11 +683,13 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Special handling for the report step to always enable force mode in
         # order to cover a very frequent use case 'tmt run --last report'
         # FIXME find a better way how to enable always-force per plugin
-        if (isinstance(self, tmt.steps.report.Report) and
-                self.data[0].how in ['display', 'html']):
-            self.debug("Report step always force mode enabled.")
-            self._workdir_cleanup()
-            self.status('todo')
+        if isinstance(self, tmt.steps.report.Report):
+            self._assert_default_phase()
+
+            if self.data[0].how in ['display', 'html']:
+                self.debug("Report step always force mode enabled.")
+                self._workdir_cleanup()
+                self.status('todo')
 
         # Nothing more to do when the step is already done and not asked
         # to run again
@@ -704,6 +706,30 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         raw_data = self._apply_cli_invocations(raw_data)
 
         self._raw_data = raw_data
+
+    def _assert_default_phase(self) -> None:
+        if self.data:
+            return
+
+        debug1 = self._cli_invocation_logger
+        debug2 = functools.partial(debug1, shift=1)
+
+        debug1(f'Adding default phase to {self.__class__.__name__.lower()}')
+
+        raw_datum: _RawStepData = {}
+        raw_data = [raw_datum]
+
+        raw_data = self._set_default_how(raw_data)
+        raw_data = self._set_default_names(raw_data)
+
+        debug2('default raw step datum', str(raw_datum))
+
+        plugin = self._plugin_base_class.delegate(self, raw_data=raw_data[0])
+
+        self.data = [plugin.data]
+        self._raw_data = [plugin.data.to_spec()]
+
+        debug2('final default raw step datum', str(self._raw_data[0]))
 
     def _apply_cli_invocations(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
         # Override step data with command line options
@@ -772,6 +798,20 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             return raw_datum
 
+        def _ensure_default_phase() -> list[_RawStepData]:
+            if raw_data:
+                return raw_data
+
+            raw_datum: _RawStepData = {
+                'how': self.DEFAULT_HOW
+                }
+
+            raw_datum = _ensure_name(raw_datum)
+
+            debug2('default raw step datum', str(raw_datum))
+
+            return [raw_datum]
+
         def _patch_raw_datum(
                 raw_datum: _RawStepData,
                 incoming_raw_datum: _RawStepData,
@@ -827,6 +867,50 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             debug3('patched step datum', str(raw_datum))
 
             self.plan._applied_cli_invocations.append(invocation)
+
+        from tmt.steps import discover, execute, finish, prepare, provision, report
+
+        if isinstance(self, discover.Discover):
+            if self.enabled:
+                raw_data = _ensure_default_phase()
+
+        elif isinstance(self, provision.Provision):
+            if self.enabled:
+                raw_data = _ensure_default_phase()
+
+            elif self.__class__.cli_invocations:
+                # /tests/try/basic
+                # {'image': 'fedora', 'how': 'local'}
+                if any(invocation.options['how'] for invocation in self.__class__.cli_invocations):
+                    raw_data = _ensure_default_phase()
+
+        elif isinstance(self, prepare.Prepare):
+            # /tests/status/base:
+            #   {'how': 'shell', 'script': ('false',), 'insert': False, 'update': False, 'update_missing': False, 'allowed_how': None, 'name': None, 'order': 50, 'verbose': 0, 'debug': 0, 'quiet': None, 'log_topic': (), 'force': None, 'dry': False, 'again': None}
+
+            if self.__class__.cli_invocations:
+                # $ tmt --root examples/local/ -vv run prepare
+                # {'how': None, 'insert': False, 'update': False, 'update_missing': False})
+                if any(invocation.options['how'] for invocation in self.__class__.cli_invocations):
+                    raw_data = _ensure_default_phase()
+
+            # if self.enabled:
+            #     raw_data = _ensure_default_phase()
+
+            pass
+
+        elif isinstance(self, execute.Execute):
+            if self.enabled:
+                raw_data = _ensure_default_phase()
+
+        elif isinstance(self, finish.Finish):
+            # if self.enabled:
+            #     raw_data = _ensure_default_phase()
+            pass
+
+        elif isinstance(self, report.Report):
+            if self.enabled:
+                raw_data = _ensure_default_phase()
 
         # A bit of logging before we start messing with step data
         for i, raw_datum in enumerate(raw_data):
