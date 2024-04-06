@@ -7,12 +7,10 @@
 tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
-support for :ref:`CPU cores</spec/hardware/cpu>` HW requirement.
-
-:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
-support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
-HW requirement.
+The :ref:`/spec/plans/provision/beaker` provision plugin gains
+support for :ref:`cpu.cores</spec/hardware/cpu>` and
+:ref:`virtualization.hypervisor</spec/hardware/virtualization>`
+hardware requirements.
 
 It is now possible to set SSH options for all connections spawned by tmt
 by setting environment variables ``TMT_SSH_*``. This complements the

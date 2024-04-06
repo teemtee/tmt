@@ -1,6 +1,9 @@
 summary: |
     Select or provision a guest with requested virtualization properties.
 
+    .. versionchanged:: 1.33
+       ``beaker`` plugin supports ``virtualization.hypervisor``
+
     .. versionchanged:: 1.31
        ``beaker`` plugin supports ``virtualization.is-virtualized``
 
@@ -38,4 +41,6 @@ example:
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``virtualization.is-virtualized`` only"
+    note: >-
+        ``virtualization.is-virtualized`` and
+        ``virtualization.hypervisor`` only
