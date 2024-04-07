@@ -288,6 +288,20 @@ def test_cpu_processors(root_logger: Logger) -> None:
         }
 
 
+def test_cpu_cores(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.cores'](
+        _parse_cpu({'cores': '2'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'cores': {
+                '_op': '==',
+                '_value': '2'
+                }
+            }
+        }
+
+
 def test_disk_driver(root_logger: Logger) -> None:
     result = _CONSTRAINT_TRANSFORMERS['disk.driver'](
         _parse_disk({'driver': 'mpt3sas'}, 1), root_logger)
