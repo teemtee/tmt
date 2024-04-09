@@ -251,13 +251,17 @@ GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GI
 T = TypeVar('T')
 
 
-def effective_workdir_root() -> Path:
+def effective_workdir_root(workdir_root_option: Optional[str] = None) -> Path:
     """
     Find out what the actual workdir root is.
 
-    If ``TMT_WORKDIR_ROOT`` variable is set, it is used as the workdir root.
+    If ``workdir-root`` cli option is set, it is used as the workdir root.
+    Otherwise, ``TMT_WORKDIR_ROOT`` variable is used, if it is set.
     Otherwise, the default of :py:data:`WORKDIR_ROOT` is used.
     """
+
+    if workdir_root_option:
+        return Path(workdir_root_option)
 
     if 'TMT_WORKDIR_ROOT' in os.environ:
         return Path(os.environ['TMT_WORKDIR_ROOT'])
