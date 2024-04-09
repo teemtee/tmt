@@ -64,6 +64,11 @@ execute:
             summary: "Missing reference"
             discover+:
                 test: missing/reference
+        /node-metadata:
+            summary: "Missing node with such name, but path exists"
+            discover+:
+                test: missing/node-metadata
+
 
 /querying:
     summary: "Many tests requiring same rpm-only library"

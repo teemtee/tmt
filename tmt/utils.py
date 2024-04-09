@@ -2580,7 +2580,10 @@ def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     Go through fmf tree nodes using given relative node path
     and return full data as dictionary.
     """
-    return fmf.Tree(fmf_tree_path).find(node_path).data
+    try:
+        return fmf.Tree(fmf_tree_path).find(node_path).data
+    except AttributeError:
+        raise MetadataError(f"'{node_path}' not found in the '{fmf_tree_path}' Tree.")
 
 
 def filter_paths(directory: Path, searching: list[str], files_only: bool = False) -> list[Path]:

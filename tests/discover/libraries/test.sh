@@ -40,6 +40,9 @@ rlJournalStart
         rlAssertGrep 'Repository .* does not contain fmf metadata.' $rlRun_LOG
         rlRun -s "$tmt missing/reference" 2
         rlAssertGrep 'Reference .* not found.' $rlRun_LOG
+        rlRun -s "$tmt missing/node-metadata" 2
+        rlAssertGrep 'Library with fmf_id=' $rlRun_LOG
+        rlAssertNotGrep 'has no attribute' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Deep"

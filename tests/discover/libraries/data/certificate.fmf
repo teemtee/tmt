@@ -63,6 +63,13 @@ test: ./certificate.sh
         require:
           - url: https://github.com/psss/try
             type: library
+    /node-metadata:
+        summary: Path exists but node of such name does not
+        require:
+          - url: https://github.com/teemtee/tests
+            type: library
+            name: /dir-without-fmf
+            path: /nested
     /reference:
         summary: Requested reference does not exist
         require:

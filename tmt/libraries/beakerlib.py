@@ -330,7 +330,17 @@ class BeakerLib(Library):
                     shutil.copytree(library_path, local_library_path, dirs_exist_ok=True)
 
                     # Remove metadata file(s) and create one with full data
-                    self._merge_metadata(library_path, local_library_path)
+                    # Node with library might not exist, provide usable error message
+                    try:
+                        self._merge_metadata(library_path, local_library_path)
+                    except tmt.utils.MetadataError as error:
+                        fmf_id = ', '.join([s for s in [
+                            f'name: {self.name}' if self.name else None,
+                            f'url: {self.url}' if self.url else None,
+                            f'ref: {self.ref}' if self.ref else None,
+                            f'path: {self.path}' if self.path else None] if s is not None])
+                        raise tmt.utils.SpecificationError(
+                            f"Library with {fmf_id=} doesn't exist.") from error
 
                     # Copy fmf metadata
                     shutil.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
