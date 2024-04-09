@@ -7,12 +7,18 @@ repos:
       - id: autopep8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.5.0"
+    rev: "v4.6.0"
     hooks:
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: destroyed-symlinks
+      - id: detect-private-key
       - id: end-of-file-fixer
       - id: mixed-line-ending
+      - id: no-commit-to-branch
+        args: [--branch, main]
       - id: trailing-whitespace
-      - id: check-toml
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.9.0"
@@ -59,7 +65,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.355
+    rev: v1.1.357
     hooks:
       - id: pyright
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
@@ -100,7 +106,7 @@ repos:
           - "types-docutils"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.28.0"
+    rev: "0.28.1"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -129,7 +135,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.3.3
+    rev: v0.3.5
     hooks:
       - id: ruff
         args:
@@ -137,7 +143,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.31.0
+    rev: 1.32.1
     hooks:
     - id: tmt-lint
       additional_dependencies:
