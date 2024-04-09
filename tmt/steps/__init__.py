@@ -708,6 +708,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         self._raw_data = raw_data
 
     def _assert_default_phase(self) -> None:
+        """
+        Make sure the step has at least one phase.
+
+        If no phase exists yet, a default one is created.
+        """
+
         if self.data:
             return
 
@@ -799,6 +805,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return raw_datum
 
         def _ensure_default_phase() -> list[_RawStepData]:
+            """ Make sure at least one phase exists """
+
             if raw_data:
                 return raw_data
 
@@ -868,48 +876,24 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
             self.plan._applied_cli_invocations.append(invocation)
 
+        cli_invocations = self.__class__.cli_invocations
+
         from tmt.steps import discover, execute, finish, prepare, provision, report
 
-        if isinstance(self, discover.Discover):
+        # Under some conditions, the step may need to have at least one phase
+        # defined.
+        if isinstance(self, (discover.Discover, execute.Execute, report.Report)):
             if self.enabled:
                 raw_data = _ensure_default_phase()
 
         elif isinstance(self, provision.Provision):
-            if self.enabled:
+            if self.enabled or cli_invocations and \
+                    any(invocation.options['how'] for invocation in cli_invocations):
                 raw_data = _ensure_default_phase()
 
-            elif self.__class__.cli_invocations:
-                # /tests/try/basic
-                # {'image': 'fedora', 'how': 'local'}
-                if any(invocation.options['how'] for invocation in self.__class__.cli_invocations):
-                    raw_data = _ensure_default_phase()
-
-        elif isinstance(self, prepare.Prepare):
-            # /tests/status/base:
-            #   {'how': 'shell', 'script': ('false',), 'insert': False, 'update': False, 'update_missing': False, 'allowed_how': None, 'name': None, 'order': 50, 'verbose': 0, 'debug': 0, 'quiet': None, 'log_topic': (), 'force': None, 'dry': False, 'again': None}
-
-            if self.__class__.cli_invocations:
-                # $ tmt --root examples/local/ -vv run prepare
-                # {'how': None, 'insert': False, 'update': False, 'update_missing': False})
-                if any(invocation.options['how'] for invocation in self.__class__.cli_invocations):
-                    raw_data = _ensure_default_phase()
-
-            # if self.enabled:
-            #     raw_data = _ensure_default_phase()
-
-            pass
-
-        elif isinstance(self, execute.Execute):
-            if self.enabled:
-                raw_data = _ensure_default_phase()
-
-        elif isinstance(self, finish.Finish):
-            # if self.enabled:
-            #     raw_data = _ensure_default_phase()
-            pass
-
-        elif isinstance(self, report.Report):
-            if self.enabled:
+        elif isinstance(self, (prepare.Prepare, finish.Finish)):  # noqa: SIM102
+            if cli_invocations and \
+                    any(invocation.options['how'] for invocation in cli_invocations):
                 raw_data = _ensure_default_phase()
 
         # A bit of logging before we start messing with step data
@@ -917,7 +901,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             debug2(f'raw step datum #{i}', str(raw_datum))
 
         # The first pass, apply CLI invocations that can be applied
-        for i, invocation in enumerate(self.__class__.cli_invocations):
+        for i, invocation in enumerate(cli_invocations):
             debug2(f'invocation #{i}', str(invocation.options))
 
             if invocation in self.plan._applied_cli_invocations:
