@@ -220,13 +220,16 @@ class BeakerLib(Library):
                         raise LibraryError
                     with TemporaryDirectory() as tmp:
                         assert self.url is not None  # narrow type
+                        destination = Path(tmp)
                         try:
                             tmt.utils.git_clone(
                                 url=self.url,
-                                destination=Path(tmp),
+                                destination=destination,
                                 shallow=True,
                                 env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                                 logger=self._logger)
+                            self.parent.debug('hash', tmt.utils.git_hash(
+                                directory=destination, logger=self._logger))
                         except (tmt.utils.RunError, tmt.utils.RetryError):
                             self.parent.debug(f"Repository '{self.url}' not found.")
                             self._nonexistent_url.add(self.url)
@@ -312,6 +315,10 @@ class BeakerLib(Library):
                         self.parent.fail(
                             f"Reference '{self.ref}' for library '{self}' not found.")
                         raise
+
+                    # Log what HEAD really is
+                    self.parent.debug('hash', tmt.utils.git_hash(
+                        directory=clone_dir, logger=self._logger))
 
                     # Copy only the required library
                     library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')

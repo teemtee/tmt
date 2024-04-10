@@ -4426,6 +4426,26 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
+def git_hash(*, directory: Path, logger: tmt.log.Logger) -> Optional[str]:
+    """
+    Return short hash of current HEAD in the git repo in directory.
+
+    :param directory: path to a local git repository.
+    :param logger: used for logging.
+    :returns: short hash as string
+    """
+    cmd = Command("git", "rev-parse", "--short", "HEAD")
+    result = cmd.run(cwd=directory, logger=logger)
+
+    if result.stdout is None:
+        raise RunError(message="No output from 'git' when looking for the hash of HEAD.",
+                       command=cmd,
+                       returncode=0,
+                       stderr=result.stderr)
+
+    return result.stdout.strip()
+
+
 def git_root(*, fmf_root: Path, logger: tmt.log.Logger) -> Optional[Path]:
     """
     Find a path to the root of git repository containing an fmf root.

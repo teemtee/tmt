@@ -1,3 +1,4 @@
+import contextlib
 import dataclasses
 import glob
 import os
@@ -431,13 +432,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Show current commit hash if inside a git repository
         if self.testdir.is_dir():
-            try:
-                output = self.run(Command("git", "rev-parse", "--short", "HEAD"),
-                                  cwd=self.testdir)
-                if output.stdout is not None:
-                    self.verbose('hash', output.stdout.strip(), 'green')
-            except (tmt.utils.RunError, AttributeError):
-                pass
+            with contextlib.suppress(tmt.utils.RunError, AttributeError):
+                self.verbose(
+                    'hash',
+                    tmt.utils.git_hash(directory=self.testdir, logger=self._logger),
+                    'green'
+                    )
 
         # Dist-git source processing during discover step
         if dist_git_source:
