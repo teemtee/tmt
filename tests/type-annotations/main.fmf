@@ -1,0 +1,53 @@
+summary: Check type annotations in tmt code
+duration: 10m
+environment:
+    LANG: en_US.UTF-8
+
+    WITH_SYSTEM_PACKAGES: "no"
+
+tier: 0
+
+adjust+:
+  - when: distro == centos-stream-9
+    environment+:
+      HATCH_ENVIRONMENT: dev-not-editable
+
+require+:
+  - gcc
+  - git
+  - python3-nitrate
+  - libvirt-devel
+  - krb5-devel
+  - libpq-devel
+  - python3-devel
+  - jq
+  - podman
+  - buildah
+  - hatch
+
+# Run against development packages via `hatch`.
+/with-development-packages:
+    enabled: false
+
+    adjust+:
+      - when: initiator is not defined or distro == fedora-39
+        because: Enable locally or in CI on Fedora 39
+
+        enabled: true
+
+    summary: Check type annotations against development packages
+
+# Run against system, distro-packaged ones via `venv`.
+/with-system-packages:
+    enabled: false
+
+    environment+:
+        WITH_SYSTEM_PACKAGES: "yes"
+
+    adjust+:
+      - when: initiator == packit
+        because: Enable in CI only
+
+        enabled: true
+
+    summary: Check type annotations against system packages
