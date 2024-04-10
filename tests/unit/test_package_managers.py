@@ -9,6 +9,7 @@ from pytest_container.container import ContainerData
 
 import tmt.log
 import tmt.package_managers
+import tmt.package_managers.apk
 import tmt.package_managers.apt
 import tmt.package_managers.dnf
 import tmt.package_managers.rpm_ostree
@@ -1086,3 +1087,108 @@ def test_check_presence(
 
     if expected_stderr:
         assert_log(caplog, remove_colors=True, message=MATCH(expected_stderr))
+
+
+def _parametrize_test_install_filesystempath() -> Iterator[
+        tuple[Container, PackageManagerClass, FileSystemPath, Optional[str], Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf5 install -y  /usr/bin/dos2unix", \
+                '[1/1] dos2unix', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf install -y  /usr/bin/dos2unix", \
+                'Installed:\n  dos2unix-', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos:7' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/dos2unix'), \
+                    r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix", \
+                    'Installed:\n  dos2unix.', \
+                    None  # noqa: E501
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/dos2unix'), \
+                    r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix", \
+                    'Installed:\n  dos2unix-', \
+                    None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show dos2unix \|\| apt install -y  dos2unix", \
+                "Setting up dos2unix", \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  /usr/bin/dos2unix", \
+                "Installing 1 packages:\n  dos2unix-", \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"apk info -e dos2unix \|\| apk add dos2unix", \
+                'Installing dos2unix', \
+                None
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'installable',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_filesystempath()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_filesystempath(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        installable: FileSystemPath,
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.install(installable)
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    if expected_stdout:
+        assert output.stdout is not None
+        assert expected_stdout in output.stdout
+
+    if expected_stderr:
+        assert output.stderr is not None
+        assert expected_stderr in output.stderr
