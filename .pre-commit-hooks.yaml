@@ -1,6 +1,8 @@
 -   id: tmt-lint
     name: tmt lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt lint --failed-only --source $@" PAD
+    # Use a simple wrapper instead of simply `tmt lint` in order to reorder
+    # some arguments that need to be passed to `tmt`
+    entry: python -m tmt._pre_commit --pre-check lint --failed-only --source
     files: '(?:.*\.fmf|.*/\.fmf/version)$'
     verbose: false
     pass_filenames: true
@@ -9,7 +11,7 @@
 
 -   id: tmt-tests-lint
     name: tmt tests lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt tests lint --failed-only --source $@" PAD
+    entry: python -m tmt._pre_commit --pre-check tests lint --failed-only --source
     files: '(?:.*\.fmf|.*/\.fmf/version)$'
     verbose: false
     pass_filenames: true
@@ -18,7 +20,7 @@
 
 -   id: tmt-plans-lint
     name: tmt plans lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt plans lint --failed-only --source $@" PAD
+    entry: python -m tmt._pre_commit --pre-check plans lint --failed-only --source
     files: '(?:.*\.fmf|.*/\.fmf/version)$'
     verbose: false
     pass_filenames: true
@@ -27,7 +29,7 @@
 
 -   id: tmt-stories-lint
     name: tmt stories lint
-    entry: bash -c "git ls-files --error-unmatch $(python3 -c 'import tmt; print(tmt.Tree(logger=tmt.Logger.create(), path=\".\").root)')/.fmf/version && tmt stories lint --failed-only --source $@" PAD
+    entry: python -m tmt._pre_commit --pre-check stories lint --failed-only --source
     files: '(?:.*\.fmf|.*/\.fmf/version)$'
     verbose: false
     pass_filenames: true
