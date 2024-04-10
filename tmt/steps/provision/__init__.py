@@ -77,21 +77,24 @@ RECONNECT_WAIT_TICK = 5
 RECONNECT_WAIT_TICK_INCREASE = 1.0
 
 
-def configure_default_ssh_options() -> tmt.utils.RawCommand:
+def configure_ssh_options() -> tmt.utils.RawCommand:
+    """ Extract custom SSH options from environment variables """
+
     options: tmt.utils.RawCommand = []
 
     for name, value in os.environ.items():
-        match = re.match(r'TMT_SSH_([A-Z_]+)', name)
+        match = re.match(r'TMT_SSH_([a-zA-Z_]+)', name)
 
         if not match:
             continue
 
-        DEFAULT_SSH_OPTIONS.append(f'{match.group(1).title().replace("_", "")}={value}')
+        options.append(f'-o{match.group(1).title().replace("_", "")}={value}')
 
     return options
 
 
 #: Default SSH options.
+#: This is the default set of SSH options tmt would use for all SSH connections.
 DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
     '-oForwardX11=no',
     '-oStrictHostKeyChecking=no',
@@ -106,6 +109,12 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
     '-oServerAliveInterval=5',
     '-oServerAliveCountMax=60'
     ]
+
+#: Base SSH options.
+#: This is the base set of SSH options tmt would use for all SSH
+#: connections. It is a combination of the default SSH options and those
+#: provided by environment variables.
+BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_options()
 
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
@@ -1326,7 +1335,7 @@ class GuestSsh(Guest):
     def _ssh_options(self) -> Command:
         """ Return common SSH options """
 
-        options = DEFAULT_SSH_OPTIONS[:]
+        options = BASE_SSH_OPTIONS[:]
 
         if self.key or self.password:
             # Skip ssh-agent (it adds additional identities)
