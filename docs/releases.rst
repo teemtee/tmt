@@ -14,6 +14,12 @@ support for :ref:`CPU cores</spec/hardware/cpu>` HW requirement.
 support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
 HW requirement.
 
+It is now possible to set SSH options for all connections spawned by tmt
+by setting environment variables ``TMT_SSH_*``. This complements the
+existing way of setting guest-specific SSH options by ``ssh-options`` key
+of the guest. See :ref:`command-variables` for details.
+
+
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -21,6 +27,7 @@ Set priorities for package manager discovery. They are now probed
 in order: ``rpm-ostree``, ``dnf5``, ``dnf``, ``yum``, ``apk``, ``apt``.
 This order picks the right package manager in the case when the
 guest is ``ostree-booted`` but has the dnf installed.
+
 
 tmt-1.32
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
