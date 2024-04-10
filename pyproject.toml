@@ -289,6 +289,7 @@ lint.select = [
     "D",    # pydocstyle
     "UP",  # pyupgrade
     "B",  # flake8-bugbear
+    "A",  # flake8-builtins
     "C4",  # flake8-comprehensions
     "YTT",  # flake8-2020
     "S",  # flake8-bandit
@@ -374,6 +375,9 @@ extend-immutable-calls = ["tmt.utils.field"]
 # the most up-to-date info.
 convention = "pep257"
 property-decorators = ["tmt.utils.cached_property"]
+
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]

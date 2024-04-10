@@ -2605,7 +2605,7 @@ def quote(string: str) -> str:
     return f'"{string}"'
 
 
-def ascii(text: Any) -> bytes:
+def pure_ascii(text: Any) -> bytes:
     """ Transliterate special unicode characters into pure ascii """
     if not isinstance(text, str):
         text = str(text)
@@ -2632,7 +2632,7 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
     Returns list of matching paths.
     """
     all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
-    alldirs = [str(dir) for dir in all_paths if dir.is_dir()]
+    alldirs = [str(d) for d in all_paths if d.is_dir()]
     allfiles = [str(file) for file in all_paths if not file.is_dir()]
     found_paths: list[str] = []
 
@@ -5129,7 +5129,7 @@ class StructuredField:
             content = self._sections[section]
         except KeyError:
             raise StructuredFieldError(
-                f"Section [{ascii(section)!r}] not found")
+                f"Section [{pure_ascii(section)!r}] not found")
         # Return the whole section content
         if item is None:
             return content
@@ -5138,7 +5138,7 @@ class StructuredField:
             return self._read_section(content)[item]
         except KeyError:
             raise StructuredFieldError(
-                f"Unable to read '{ascii(item)!r}' from section '{ascii(section)!r}'")
+                f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'")
 
     def set(self, section: str, content: Any,
             item: Optional[str] = None) -> None:
@@ -5178,7 +5178,7 @@ class StructuredField:
                 del self._order[self._order.index(section)]
             except KeyError:
                 raise StructuredFieldError(
-                    f"Section [{ascii(section)!r}] not found")
+                    f"Section [{pure_ascii(section)!r}] not found")
         # Remove only selected item from the section
         else:
             try:
@@ -5186,7 +5186,9 @@ class StructuredField:
                 del (dictionary[item])
             except KeyError:
                 raise StructuredFieldError(
-                    f"Unable to remove '{ascii(item)!r}' from section '{ascii(section)!r}'")
+                    f"Unable to remove '{pure_ascii(item)!r}' "
+                    f"from section '{pure_ascii(section)!r}'"
+                    )
             self._sections[section] = self._write_section(dictionary)
 
 
