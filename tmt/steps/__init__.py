@@ -1389,9 +1389,8 @@ class BasePlugin(Phase, Generic[StepDataT]):
 
                 assert data is not None
                 assert data.__class__ is plugin_data_class, \
-                    f'Data package is instance of {data.__class__.__name__}, ' \
-                    f'plugin {plugin_class.__name__} ' \
-                    f'expects {plugin_data_class.__name__}'
+                    (f'Data package is instance of {data.__class__.__name__}, '
+                     f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}')
 
                 plugin = plugin_class(
                     logger=step._logger.descend(logger_name=None),
@@ -1551,9 +1550,8 @@ class BasePlugin(Phase, Generic[StepDataT]):
         """
 
         assert self.data.__class__ is self._data_class, \
-            f'Plugin {self.__class__.__name__} woken with incompatible ' \
-            f'data {self.data}, ' \
-            f'expects {self._data_class.__name__}'
+            (f'Plugin {self.__class__.__name__} woken with incompatible '
+             f'data {self.data}, expects {self._data_class.__name__}')
 
         if self.step.status() == 'done':
             self.debug('step is done, not overwriting plugin data')
@@ -2167,8 +2165,7 @@ class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
 
     @property
     def name(self) -> str:
-        return f'{self.phase_name} ' \
-            f'on {fmf.utils.listed(self.guest_ids)}'
+        return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         self.phase.go(guest=guest, logger=logger)

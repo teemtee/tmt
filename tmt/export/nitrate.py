@@ -264,8 +264,8 @@ def return_markdown_file() -> Optional[Path]:
     files = '\n'.join(os.listdir())
     reg_exp = r'.+\.md$'
     md_files = re.findall(reg_exp, files, re.M)
-    fail_message = "in the current working directory.\n" \
-                   "Manual steps couldn't be exported"
+    fail_message = ("in the current working directory.\n"
+                    "Manual steps couldn't be exported")
     if len(md_files) == 1:
         return Path.cwd() / str(md_files[0])
     if not md_files:
