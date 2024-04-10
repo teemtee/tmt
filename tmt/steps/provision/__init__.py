@@ -3,8 +3,8 @@ import dataclasses
 import datetime
 import enum
 import os
-import random
 import re
+import secrets
 import shlex
 import signal as _signal
 import string
@@ -778,7 +778,7 @@ class Guest(tmt.utils.Common):
         # Append at least 5 random characters
         min_random_part = max(5, length - len(prefix))
         name = prefix + ''.join(
-            random.choices(string.ascii_letters, k=min_random_part))
+            secrets.choice(string.ascii_letters) for _ in range(min_random_part))
         # Return tail (containing random characters) of name
         return name[-length:]
 
@@ -1391,11 +1391,10 @@ class GuestSsh(Guest):
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
-        # Use '/run/user/uid' if it exists, '/tmp' otherwise.
+        # Use '/run/user/uid' if it exists, 'temp dir' otherwise.
         run_dir = Path(f"/run/user/{os.getuid()}")
-        socket_dir = run_dir / "tmt" if run_dir.is_dir() else Path("/tmp")
-        socket_dir.mkdir(exist_ok=True)
-        return Path(tempfile.mktemp(dir=socket_dir))
+        socket_dir = run_dir if run_dir.is_dir() else Path(tempfile.mkdtemp())
+        return socket_dir / "tmt"
 
     @property
     def _ssh_options(self) -> Command:
