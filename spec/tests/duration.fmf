@@ -7,9 +7,11 @@ story:
 description:
     In order to prevent stuck tests consuming resources we define a
     maximum time for test execution. If the limit is exceeded the
-    running test is killed by the test harness. Use the same
-    format as the ``sleep`` command. Must be a ``string``. The
-    default value is ``5m``.
+    running test is killed by the test harness. Value extends the
+    format of the ``sleep`` command by allowing multiplication (``*[number]``).
+    First all time values are sum together and only after that are multiplied.
+
+    Must be a ``string``. The default value is ``5m``
 
 example:
   - |
@@ -29,10 +31,21 @@ example:
     duration: 1h 3h 2m 3
 
   - |
+    # Multiplication is evaluated last (total 24s: 2s * 3 * 4)
+    duration: *3 2s *4
+
+  - |
     # Use context adjust to extend duration for given arch
     duration: 5m
     adjust:
         duration+: 15m
+        when: arch == aarch64
+
+  - |
+    # Use context adjust to scale duration for given arch
+    duration: 5m
+    adjust:
+        duration+: *2
         when: arch == aarch64
 
 

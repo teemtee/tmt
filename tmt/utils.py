@@ -3346,19 +3346,29 @@ def shell_variables(
 
 
 def duration_to_seconds(duration: str) -> int:
-    """ Convert sleep time format into seconds """
+    """ Convert extended sleep time format into seconds """
     units = {
         's': 1,
         'm': 60,
         'h': 60 * 60,
         'd': 60 * 60 * 24,
         }
-    if re.match(r'^(\d+ *?[smhd]? *)+$', str(duration)) is None:
+    # Couldn't create working validation regexp to accept '2 1m4'
+    # thus fixing the string so \b works well
+    fixed_duration = re.sub(r'([smhd])(\d)', r'\1 \2', str(duration))
+    re_validate = r'^((\*\s*\d+(?!\s*[smhd])\b\s*)|(\d+\s*[smhd]?\b)\s*)+$'
+    re_split = r'(?:(?:(\*)\s*(\d+)(?!\s*[smhd])\b\s*)|(?:(\d+)\s*([smhd]?)\b)\s*)'
+    if re.match(re_validate, fixed_duration) is None:
         raise SpecificationError(f"Invalid duration '{duration}'.")
     total_time = 0
-    for number, suffix in re.findall(r'(\d+) *([smhd]?)', str(duration)):
-        total_time += int(number) * units.get(suffix, 1)
-    return total_time
+    multiply_by = 1
+    for prefix, p_number, number_s, suffix in re.findall(re_split, fixed_duration):
+        if prefix == '*':
+            multiply_by *= int(p_number)
+        else:
+            total_time += int(number_s) * units.get(suffix, 1)
+    # Multiply in the end
+    return total_time * multiply_by
 
 
 @overload
