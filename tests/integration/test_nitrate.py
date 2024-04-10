@@ -24,8 +24,8 @@ class Base(RequreTestCase):
 
     def setUp(self):
         super().setUp()
-        self.tmpdir = Path(tempfile.mktemp(prefix=str(TEST_DIR)))
-        shutil.copytree(self.EXAMPLES, self.tmpdir)
+        self.tmpdir = Path(tempfile.mkdtemp(prefix=str(TEST_DIR)))
+        shutil.copytree(self.EXAMPLES, self.tmpdir, dirs_exist_ok=True)
         self.cwd = os.getcwd()
         self.runner_output = None
 

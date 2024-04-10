@@ -2824,8 +2824,9 @@ class Tree(tmt.utils.Common):
                 # Links are in OR relation
                 if links and all(not node.has_link(needle) for needle in links):
                     continue
-            except BaseException:
+            except Exception as exc:
                 # Handle broken link as not matching
+                self.debug(f'Invalid link ignored, exception was {exc}')
                 continue
             # Exclude
             if any(node for expr in excludes if re.search(expr, node.name)):

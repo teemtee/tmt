@@ -291,6 +291,7 @@ lint.select = [
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
     "YTT",  # flake8-2020
+    "S",  # flake8-bandit
     "PT",  # flake8-pytest-style
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
@@ -321,6 +322,12 @@ lint.ignore = [
     "PLE1205",  # Too many arguments for `logging` format string
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013",  # PEP 484 prohibits implicit `Optional`
+    # flake8-bandit (S) https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "S101",  # Use of `assert` detected
+    "S602",  # `subprocess` call with `shell=True` identified
+    "S603",  # `subprocess` call: check for execution of untrusted input
+    "S607",  # Starting a process with a partial executable path
+    "S105",  # Possible hardcoded password assigned to: "PASS"
 
     # pydocstyle
     # TODO: the permanent list (drop this comment once the temporary list
@@ -344,6 +351,15 @@ lint.ignore = [
     "D400",  # First line should end with a period
     "D401",  # First line of docstring should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
+    ]
+
+[tool.ruff.lint.per-file-ignores]
+# Less strict security checks in tests
+"tests/unit*" = [
+    "S604",  # Function call with shell=True parameter identified, security issue
+    "S605",  # Starting a process with a shell: seems safe, but may be changed in the future
+    "S318",  # Using xml to parse untrusted data is known to be vulnerable to XML attacks
+    "S108",  # Probable insecure usage of temporary file or directory: "{}"
     ]
 
 [tool.ruff.lint.flake8-bugbear]
