@@ -797,13 +797,13 @@ class Logger:
                 message_topic=topic)
             )
 
-    def warn(
+    def warning(
             self,
             message: str,
             shift: int = 0
             ) -> None:
         self._log(
-            logging.WARN,
+            logging.WARNING,
             LogRecordDetails(
                 key='warn',
                 value=message,

@@ -1077,7 +1077,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     shutil.rmtree(member)
             except OSError as error:
-                logger.warn(f"Unable to remove '{member}': {error}")
+                logger.warning(f"Unable to remove '{member}': {error}")
 
 
 class Method:
@@ -1616,7 +1616,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         try:
             shutil.rmtree(self.workdir)
         except OSError as error:
-            logger.warn(f"Unable to remove '{self.workdir}': {error}")
+            logger.warning(f"Unable to remove '{self.workdir}': {error}")
 
 
 class GuestlessPlugin(BasePlugin[StepDataT]):

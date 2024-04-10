@@ -204,7 +204,7 @@ def _transform_unsupported(
     # sure user is aware it would have no effect, and since we have to return
     # something, return an empty `or` group - no harm done, composable with other
     # elements.
-    logger.warn(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+    logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
 
     return MrackHWOrGroup()
 

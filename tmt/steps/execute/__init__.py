@@ -382,7 +382,7 @@ class TestInvocation:
             raise
 
         except tmt.utils.ProvisionError:
-            self.logger.warn(
+            self.logger.warning(
                 "Guest does not support soft reboot, trying hard reboot.")
 
             rebooted = self.guest.reboot(hard=True, timeout=timeout)

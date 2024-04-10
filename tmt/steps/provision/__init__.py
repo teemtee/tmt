@@ -1480,7 +1480,7 @@ class GuestSsh(Guest):
                 self._ssh_master_process.wait(timeout=3)
 
             except subprocess.TimeoutExpired:
-                logger.warn(
+                logger.warning(
                     f'Terminating the SSH master process {self._ssh_master_process.pid}'
                     ' timed out.')
 
