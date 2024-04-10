@@ -485,15 +485,15 @@ class Logger:
         self._decolorize_output = create_decolorizer(apply_colors_output)
 
     def __repr__(self) -> str:
-        return '<Logger:' \
-            f' name={self._logger.name}' \
-            f' verbosity={self.verbosity_level}' \
-            f' debug={self.debug_level}' \
-            f' quiet={self.quiet}' \
-            f' topics={self.topics}' \
-            f' apply_colors_output={self.apply_colors_output}' \
-            f' apply_colors_logging={self.apply_colors_logging}' \
-            '>'
+        return (f'<Logger:'
+                f' name={self._logger.name}'
+                f' verbosity={self.verbosity_level}'
+                f' debug={self.debug_level}'
+                f' quiet={self.quiet}'
+                f' topics={self.topics}'
+                f' apply_colors_output={self.apply_colors_output}'
+                f' apply_colors_logging={self.apply_colors_logging}'
+                f'>')
 
     @property
     def labels_span(self) -> int:

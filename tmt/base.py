@@ -940,9 +940,8 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    yield LinterOutcome.WARN, \
-                        f'key "{bad_property}" not recognized by schema,' \
-                        f' and does not match "{match.group(2)}" pattern'
+                    yield LinterOutcome.WARN, (f'key "{bad_property}" not recognized by schema, '
+                                               f'and does not match "{match.group(2)}" pattern')
 
             # A key value is not recognized. This is often a case with keys whose values are
             # limited by an enum, like `how`. Unfortunately, validator will record every mismatch
@@ -1513,9 +1512,8 @@ class Test(
 
         if not tmt.utils.is_key_origin(self.node, 'require') \
                 and all(dependency in metadata.get('require', []) for dependency in missing_type):
-            yield LinterOutcome.FAIL, \
-                'some library/file requirement are missing type, but inherited from test parent,' \
-                ' please, fix manually'
+            yield LinterOutcome.FAIL, ('some library/file requirement are missing type, '
+                                       'but inherited from test parent, please, fix manually')
             return
 
         for dependency in metadata.get('require', []):
@@ -2213,20 +2211,19 @@ class Plan(
                         continue
 
                     if guest_names and guest_roles:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"guests {names_formatted} " \
-                            f"and roles {roles_formatted} were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role '{where}',"
+                               f" guests {names_formatted} and roles {roles_formatted} were found")
 
                     elif guest_names:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"guests {names_formatted} and no roles were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role "
+                               f"'{where}', guests {names_formatted} and no roles were found")
 
                     else:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"roles {roles_formatted} and no guests were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role "
+                               f"'{where}', roles {roles_formatted} and no guests were found")
 
         yield from _lint_step('prepare')
         yield from _lint_step('execute')

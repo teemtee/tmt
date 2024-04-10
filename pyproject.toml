@@ -300,6 +300,7 @@ lint.select = [
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
+    "ISC",  # flake8-implicit-str-concat
     "PIE",  # flake8-pie
     "RSE",  # flake8-raise
     "PGH",  # pygrep-hooks
