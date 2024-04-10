@@ -412,12 +412,12 @@ def _apply_hw_tpm(
 
     for constraint in tpm_constraints:
         if constraint.operator not in TPM_VERSION_ALLOWED_OPERATORS:
-            logger.warn(
+            logger.warning(
                 f"Cannot apply hardware requirement '{constraint}', operator not supported.")
             return
 
         if constraint.value not in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]:
-            logger.warn(
+            logger.warning(
                 f"Cannot apply hardware requirement '{constraint}',"
                 " TPM version not supported.")
             return
@@ -1101,13 +1101,13 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
             if data.memory is not None and data.hardware.constraint.uses_constraint(
                     'memory', self._logger):
-                self._logger.warn(
+                self._logger.warning(
                     "Hardware requirement 'memory' is specified in 'hardware' key,"
                     " it will be overruled by 'memory' key.")
 
             if data.disk is not None and data.hardware.constraint.uses_constraint(
                     'disk.size', self._logger):
-                self._logger.warn(
+                self._logger.warning(
                     "Hardware requirement 'disk.size' is specified in 'hardware' key,"
                     " it will be overruled by 'disk' key.")
 

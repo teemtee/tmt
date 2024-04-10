@@ -154,8 +154,9 @@ def test_tpm_unsupported_version(
 
     assert_log(
         caplog,
-        message=MATCH(r"warn: Cannot apply hardware requirement 'tpm\.version: == 0\.0\.0', TPM version not supported."),  # noqa: E501
-        levelno=logging.WARN)
+        message=MATCH(r"warn: Cannot apply hardware requirement 'tpm\.version: == 0\.0\.0', "
+                      r"TPM version not supported."),
+        levelno=logging.WARNING)
 
 
 @pytest.mark.parametrize(
@@ -181,4 +182,4 @@ def test_tpm_unsupported_operator(
     assert_log(
         caplog,
         message=MATCH(rf"warn: Cannot apply hardware requirement 'tpm\.version: {op} 2\.0', operator not supported."),  # noqa: E501
-        levelno=logging.WARN)
+        levelno=logging.WARNING)

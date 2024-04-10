@@ -1552,7 +1552,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
                         or check(constraint):
                     continue
 
-                logger.warn(
+                logger.warning(
                     f"Hardware requirement '{constraint.printable_name}' is not supported.")
 
     def format_variants(self) -> Iterator[str]:

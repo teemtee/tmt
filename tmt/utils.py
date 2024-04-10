@@ -532,7 +532,7 @@ class Environment(dict[str, EnvVarValue]):
                     environment = cls.from_yaml_file(filepath, logger)
 
                     if not environment:
-                        logger.warn(f"Empty environment file '{filepath}'.")
+                        logger.warning(f"Empty environment file '{filepath}'.")
 
                     result.update(environment)
 
@@ -627,7 +627,7 @@ class Environment(dict[str, EnvVarValue]):
             environment = cls.from_dotenv(content)
 
         if not environment:
-            logger.warn(f"Empty environment file '{filename}'.")
+            logger.warning(f"Empty environment file '{filename}'.")
 
             return Environment()
 
@@ -1949,7 +1949,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     def warn(self, message: str, shift: int = 0) -> None:
         """ Show a yellow warning message on info level, send to stderr """
-        self._logger.warn(message, shift=shift)
+        self._logger.warning(message, shift=shift)
 
     def fail(self, message: str, shift: int = 0) -> None:
         """ Show a red failure message on info level, send to stderr """
@@ -5947,7 +5947,7 @@ class ValidateFmfMixin(_CommonBase):
                     validation_errors=errors)
 
             for _, error_message in errors:
-                logger.warn(error_message, shift=1)
+                logger.warning(error_message, shift=1)
 
     def __init__(
             self,

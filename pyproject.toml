@@ -301,6 +301,8 @@ lint.select = [
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
     "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "G",  # flake8-logging-format
     "PIE",  # flake8-pie
     "RSE",  # flake8-raise
     "PGH",  # pygrep-hooks
@@ -316,9 +318,7 @@ lint.select = [
 lint.ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
-    # tmt codebase uses `warn` by default - disabling the check, switching to
-    # `warning` can be done in an extra patch.
-    "G010",  # `warn` is deprecated in favor of `warning`
+    "G004",  # Logging statement uses f-string
     "PIE790",  # Unnecessary `pass` statement
     "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
     "PLE1205",  # Too many arguments for `logging` format string
@@ -354,6 +354,8 @@ lint.ignore = [
     "D401",  # First line of docstring should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
     ]
+
+lint.logger-objects = ["tmt.log.Logger"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests

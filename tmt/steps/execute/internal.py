@@ -393,7 +393,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
             if self.data.interactive:
                 if test.duration:
-                    logger.warn('Ignoring requested duration, not supported in interactive mode.')
+                    logger.warning(
+                        'Ignoring requested duration, not supported in interactive mode.')
 
                 timeout = None
 
@@ -423,7 +424,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     logger.debug(f"Test duration '{test.duration}' exceeded.")
 
                 elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                    logger.warn('Test failed to manage its pidfile.')
+                    logger.warning('Test failed to manage its pidfile.')
 
         with invocation.process_lock:
             invocation.process = None
