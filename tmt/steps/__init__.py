@@ -1016,7 +1016,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         """
 
         if classes is None:
-            _classes: tuple[Union[type[Phase], type[PhaseT]], ...] = (Phase,)
+            _classes: tuple[type[Union[Phase, PhaseT]], ...] = (Phase,)
 
         elif not isinstance(classes, tuple):
             _classes = (classes,)
