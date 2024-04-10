@@ -3920,7 +3920,7 @@ def format_value(
 
 def format(
         key: str,
-        value: Union[None, int, float, bool, str, list[Any], dict[Any, Any]] = None,
+        value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
         indent: int = 24,
         window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
@@ -4493,7 +4493,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             status_forcelist=self.status_forcelist,
             timeout=self.timeout)
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         pass
 
 
@@ -5462,7 +5462,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
     def __enter__(self: 'Self') -> 'Self':
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         if self.clear_on_exit:
             self.clear()
 
@@ -7141,7 +7141,7 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.end_time = datetime.datetime.now(datetime.timezone.utc)
 
     @property
