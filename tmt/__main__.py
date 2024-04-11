@@ -33,7 +33,10 @@ def run_cli() -> None:
         # ignore[unused-ignore]: mypy does not recognize this issue, and therefore
         # the waiver seems pointless to it...
         try:
-            tmt.utils.show_exception(error)  # type: ignore[reportUnboundVariable,unused-ignore]
+            import tmt.cli
+            context = tmt.cli.cli_click_context
+            tmt.utils.show_exception(error,
+                                     context)  # type: ignore[reportUnboundVariable,unused-ignore]
             raise SystemExit(2) from error
 
         except Exception as nested_error:

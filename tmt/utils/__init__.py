@@ -2486,12 +2486,8 @@ def render_exception(exception: BaseException) -> Iterator[str]:
             else:
                 for line in item.splitlines():
                     yield f'{INDENT * " "}{line}'
-    # XXX: We should handle option `--no-color`
-    no_color = True # FIXME: should get the no_color from tmt/__main__.py
-    if no_color:
-        yield str(exception)
-    else:
-        yield click.style(str(exception), fg='red')
+
+    yield click.style(str(exception), fg='red')
 
     if isinstance(exception, RunError):
         yield ''
@@ -2502,18 +2498,18 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield from _indent(render_exception_stack(exception))
 
     # Follow the chain and render all causes
-    def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
+    def _render_cause(number: int, cause: BaseException, no_color: bool) -> Iterator[str]:
         yield ''
         yield f'Cause number {number}:'
         yield ''
-        yield from _indent(render_exception(cause))
+        yield from _indent(render_exception(cause, no_color))
 
-    def _render_causes(causes: list[BaseException]) -> Iterator[str]:
+    def _render_causes(causes: list[BaseException], no_color: bool) -> Iterator[str]:
         yield ''
         yield f'The exception was caused by {len(causes)} earlier exceptions'
 
         for number, cause in enumerate(causes, start=1):
-            yield from _render_cause(number, cause)
+            yield from _render_cause(number, cause, no_color)
 
     causes: list[BaseException] = []
 
@@ -2524,14 +2520,20 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         causes += [exception.__cause__]
 
     if causes:
-        yield from _render_causes(causes)
+        yield from _render_causes(causes, no_color)
 
 
-def show_exception(exception: BaseException) -> None:
+def show_exception(exception: BaseException, click_context: Optional[click.Context]) -> None:
     """ Display the exception and its causes """
+    if click_context is None:
+        apply_colors_logging = False
+    else:
+        _, apply_colors_logging = tmt.log.decide_colorization(
+            click_context.params['no_color'],
+            click_context.params['force_color'])
 
     print('', file=sys.stderr)
-    print('\n'.join(render_exception(exception)), file=sys.stderr)
+    print('\n'.join(render_exception(exception, not apply_colors_logging)), file=sys.stderr)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

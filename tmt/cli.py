@@ -30,6 +30,8 @@ import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path
 
+cli_click_context = None  # A global variable to save the context of click
+
 if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
@@ -313,6 +315,10 @@ def main(
         pre_check: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
+
+    # Save the context, which will be used when handling the exception
+    global cli_click_context
+    cli_click_context = click_contex  # type: ignore[reportUnboundVariable,unused-ignore]
 
     # Let Click know about the output width - this affects mostly --help output.
     click_contex.max_content_width = tmt.utils.OUTPUT_WIDTH
