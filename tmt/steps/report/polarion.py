@@ -189,7 +189,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated xunit report """
-        pass
 
     def go(self) -> None:
         """ Go through executed tests and report into Polarion """

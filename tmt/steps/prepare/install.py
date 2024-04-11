@@ -152,19 +152,15 @@ class InstallBase(tmt.utils.Common):
 
     def install_from_repository(self) -> None:
         """ Default base install method for packages from repositories """
-        pass
 
     def install_local(self) -> None:
         """ Default base install method for local packages """
-        pass
 
     def install_from_url(self) -> None:
         """ Default base install method for packages which are from URL """
-        pass
 
     def install_debuginfo(self) -> None:
         """ Default base install method for debuginfo packages """
-        pass
 
     def install(self) -> None:
         """ Perform the actual installation """

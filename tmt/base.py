@@ -2918,24 +2918,12 @@ class Tree(tmt.utils.Common):
                 Test(node=test, logger=self._logger.descend()) for test in self.tree.prune(
                     keys=keys, sources=cmd_line_names)]
 
-        else:
+        elif not unique and names:
             # First let's build the list of test objects based on keys & names.
             # If duplicate test names are allowed, match test name/regexp
             # one-by-one and preserve the order of tests within a plan.
-            if not unique and names:
-                tests = []
-                for name in names:
-                    selected_tests = [
-                        Test(
-                            node=test,
-                            tree=self,
-                            logger=logger.descend(
-                                logger_name=test.get('name', None)
-                                )  # .apply_verbosity_options(**self._options),
-                            ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
-                    tests.extend(sorted(selected_tests, key=lambda test: test.order))
-            # Otherwise just perform a regular key/name filtering
-            else:
+            tests = []
+            for name in names:
                 selected_tests = [
                     Test(
                         node=test,
@@ -2943,8 +2931,19 @@ class Tree(tmt.utils.Common):
                         logger=logger.descend(
                             logger_name=test.get('name', None)
                             )  # .apply_verbosity_options(**self._options),
-                        ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
-                tests = sorted(selected_tests, key=lambda test: test.order)
+                        ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
+                tests.extend(sorted(selected_tests, key=lambda test: test.order))
+        # Otherwise just perform a regular key/name filtering
+        else:
+            selected_tests = [
+                Test(
+                    node=test,
+                    tree=self,
+                    logger=logger.descend(
+                        logger_name=test.get('name', None)
+                        )  # .apply_verbosity_options(**self._options),
+                    ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
+            tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
         return self._filters_conditions(

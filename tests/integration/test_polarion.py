@@ -4,9 +4,9 @@ import pytest
 from fmf import Tree
 
 import tmt.cli
+from tests import CliRunner
 from tmt.identifier import ID_KEY
 
-from .. import CliRunner
 from .test_nitrate import TEST_DIR, Base
 
 

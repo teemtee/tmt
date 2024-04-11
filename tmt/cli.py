@@ -2034,7 +2034,7 @@ def setup_completion(shell: str, install: bool) -> None:
 
     if install:
         with open(script, 'w') as f:
-            subprocess.run(command, stdout=f, shell=True, check=False)
+            subprocess.run(command, stdout=f, check=False)
         # If requested, modify .bashrc or .zshrc
         if shell != 'fish':
             config_path = Path(f'~/.{shell}rc').expanduser()
@@ -2043,7 +2043,7 @@ def setup_completion(shell: str, install: bool) -> None:
                 shell_config.write(f'source {script}')
 
     else:
-        subprocess.run(command, stdout=sys.stdout, shell=True, check=False)
+        subprocess.run(command, stdout=sys.stdout, check=False)
 
 
 @completion.command(name='bash')

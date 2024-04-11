@@ -8,10 +8,9 @@ import fmf
 import tmt
 import tmt.cli
 import tmt.log
+from tests import CliRunner
 from tmt.identifier import ID_KEY
 from tmt.utils import Path
-
-from .. import CliRunner
 
 runner = CliRunner()
 test_path = Path(__file__).parent / "id"

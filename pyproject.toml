@@ -282,37 +282,40 @@ src = ["tmt", "tests"]
 target-version = "py39"
 lint.select = [
     "F",  # pyflakes
-    "E",  # pycodestyle
-    "W",  # pycodestyle
+    "E",  # pycodestyle error
+    "W",  # pycodestyle warning
     "I",  # isort
     "N",  # pep8-naming
     "D",    # pydocstyle
     "UP",  # pyupgrade
+    "YTT",  # flake8-2020
+    "ASYNC",  # flake8-async
+    "S",  # flake8-bandit
     "B",  # flake8-bugbear
     "A",  # flake8-builtins
-    "C4",  # flake8-comprehensions
-    "YTT",  # flake8-2020
-    "S",  # flake8-bandit
-    "PT",  # flake8-pytest-style
-    "RET",  # flake8-return
-    "SIM",  # flake8-simplify
     "COM",  # flake8-commas
+    "C4",  # flake8-comprehensions
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
     "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
     "PIE",  # flake8-pie
     "PYI",  # flake8-pyi
+    "PT",  # flake8-pytest-style
+    "Q003",  # avoidable-escaped-quote
+    "Q004",  # unnecessary-escaped-quote
     "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "INT",  # flake8-gettext
     "PGH",  # pygrep-hooks
     "PLC",  # pylint-convention
     "PLE",  # pylint-error
-    "PLR01",  # pylint-refactor
-    "PLR02",
-    "PLR04",
-    "PLR1",
+    "PLR",  # pylint-refactor
     "RUF",  # ruff
     "D",    # pydocstyle
     ]
@@ -323,6 +326,8 @@ lint.ignore = [
     "PIE790",  # Unnecessary `pass` statement
     "PLC1901",  # `{}` can be simplified to `{}` as an empty string is falsey
     "PLE1205",  # Too many arguments for `logging` format string
+    "PLR09",  # Too many branches/statements/arguments/returns
+    "PLR2004",  # Magic value used in comparison
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013",  # PEP 484 prohibits implicit `Optional`
     # flake8-bandit (S) https://docs.astral.sh/ruff/rules/#flake8-bandit-s
