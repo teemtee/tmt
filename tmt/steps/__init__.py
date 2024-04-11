@@ -279,8 +279,6 @@ class StepData(
     def post_normalization(self, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """ Called after normalization, useful for tweaking normalized data """
 
-        pass
-
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]

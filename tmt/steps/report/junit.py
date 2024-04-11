@@ -111,7 +111,6 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated junit report """
-        pass
 
     def go(self) -> None:
         """ Read executed tests and write junit """

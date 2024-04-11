@@ -69,10 +69,10 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
 
     for (expected_name, expected_value), (actual_name, actual_value) in zip(
             expected_attributes, actual_attributes):
-        assert expected_name == actual_name, (f"Attribute mismatch at {tree_path_joined}: "
-                                              f"expected {expected_name}=\"{expected_value}\"")
-        assert expected_value == actual_value, (f"Attribute mismatch at {tree_path_joined}: "
-                                                f"found {actual_name}=\"{actual_value}\"")
+        assert expected_name == actual_name, (f'Attribute mismatch at {tree_path_joined}: '
+                                              f'expected {expected_name}="{expected_value}"')
+        assert expected_value == actual_value, (f'Attribute mismatch at {tree_path_joined}: '
+                                                f'found {actual_name}="{actual_value}"')
 
     # Hooray, attributes match. Dig deeper, how about children?
     # To compare children, use this very function to compare each child with

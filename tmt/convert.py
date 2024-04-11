@@ -1006,16 +1006,15 @@ def read_nitrate_case(
         # Full 'Name Surname <example@email.com>' form
         if testcase.tester.name is not None:
             data['contact'] = f'{testcase.tester.name} <{testcase.tester.email}>'
+        elif makefile_data is None or 'contact' not in makefile_data:
+            # Otherwise use just the email address
+            data['contact'] = testcase.tester.email
+        # Use contact from Makefile if it's there and email matches
+        elif re.search(testcase.tester.email, makefile_data['contact']):
+            data['contact'] = makefile_data['contact']
         else:
-            if makefile_data is None or 'contact' not in makefile_data:
-                # Otherwise use just the email address
-                data['contact'] = testcase.tester.email
-            # Use contact from Makefile if it's there and email matches
-            elif re.search(testcase.tester.email, makefile_data['contact']):
-                data['contact'] = makefile_data['contact']
-            else:
-                # Otherwise use just the email address
-                data['contact'] = testcase.tester.email
+            # Otherwise use just the email address
+            data['contact'] = testcase.tester.email
         echo(style('contact: ', fg='green') + data['contact'])
     # Environment
     if testcase.arguments:

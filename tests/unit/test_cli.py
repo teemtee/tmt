@@ -9,8 +9,7 @@ import pytest
 
 import tmt.cli
 import tmt.log
-
-from .. import CliRunner
+from tests import CliRunner
 
 # Prepare path to examples
 PATH = os.path.dirname(os.path.realpath(__file__))

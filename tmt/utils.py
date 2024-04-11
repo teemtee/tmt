@@ -3657,12 +3657,11 @@ def _format_str(
                 if is_multiline:
                     yield ''
 
-    else:
-        if not value.rstrip():
-            yield ''
+    elif not value.rstrip():
+        yield ''
 
-        else:
-            yield from value.rstrip().split('\n')
+    else:
+        yield from value.rstrip().split('\n')
 
 
 def _format_dict(

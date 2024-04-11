@@ -3,6 +3,7 @@ import textwrap
 import pytest
 
 import tmt.utils
+from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS
 from tmt.hardware import (
     Hardware,
     Operator,
@@ -19,8 +20,6 @@ from tmt.steps.provision.mrack import (
     constraint_to_beaker_filter,
     operator_to_beaker_op,
     )
-
-from ...test_hardware import FULL_HARDWARE_REQUIREMENTS
 
 
 @pytest.mark.parametrize(

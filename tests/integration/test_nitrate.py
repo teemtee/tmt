@@ -11,9 +11,8 @@ from ruamel.yaml import YAML
 import tmt.base
 import tmt.cli
 import tmt.log
+from tests import CliRunner
 from tmt.utils import ConvertError, Path
-
-from .. import CliRunner
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent

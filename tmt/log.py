@@ -305,12 +305,11 @@ class _Formatter(logging.Formatter):
             pass
 
         # Otherwise render the message.
-        else:
-            if record.msg and record.args:
-                record.message = record.msg % record.args
+        elif record.msg and record.args:
+            record.message = record.msg % record.args
 
-            else:
-                record.message = record.msg
+        else:
+            record.message = record.msg
 
         # Original code from Formatter.format() - hard to inherit when overriding
         # Formatter.format()...
