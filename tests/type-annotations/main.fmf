@@ -30,8 +30,8 @@ require+:
     enabled: false
 
     adjust+:
-      - when: initiator is not defined or distro == fedora-39
-        because: Enable locally or in CI on Fedora 39
+      - when: initiator is not defined
+        because: Enable locally only
 
         enabled: true
 
