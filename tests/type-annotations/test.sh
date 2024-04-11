@@ -28,7 +28,7 @@ rlJournalStart
 
             # Note: we're not in the root directory!
             pushd ../../
-            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml"
+            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --install-types"
             rlRun "$TEST_VENV/bin/python3 -m pyright"
             popd
 
