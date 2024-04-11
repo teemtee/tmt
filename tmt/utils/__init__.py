@@ -2498,18 +2498,18 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield from _indent(render_exception_stack(exception))
 
     # Follow the chain and render all causes
-    def _render_cause(number: int, cause: BaseException, no_color: bool) -> Iterator[str]:
+    def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
         yield ''
         yield f'Cause number {number}:'
         yield ''
-        yield from _indent(render_exception(cause, no_color))
+        yield from _indent(render_exception(cause))
 
-    def _render_causes(causes: list[BaseException], no_color: bool) -> Iterator[str]:
+    def _render_causes(causes: list[BaseException]) -> Iterator[str]:
         yield ''
         yield f'The exception was caused by {len(causes)} earlier exceptions'
 
         for number, cause in enumerate(causes, start=1):
-            yield from _render_cause(number, cause, no_color)
+            yield from _render_cause(number, cause)
 
     causes: list[BaseException] = []
 
@@ -2520,20 +2520,16 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         causes += [exception.__cause__]
 
     if causes:
-        yield from _render_causes(causes, no_color)
+        yield from _render_causes(causes)
 
 
-def show_exception(exception: BaseException, click_context: Optional[click.Context]) -> None:
+def show_exception(exception: BaseException) -> None:
     """ Display the exception and its causes """
-    if click_context is None:
-        apply_colors_logging = False
-    else:
-        _, apply_colors_logging = tmt.log.decide_colorization(
-            click_context.params['no_color'],
-            click_context.params['force_color'])
 
-    print('', file=sys.stderr)
-    print('\n'.join(render_exception(exception, not apply_colors_logging)), file=sys.stderr)
+    from tmt.cli import EXCEPTION_LOGGER
+
+    EXCEPTION_LOGGER.print('', file=sys.stderr)
+    EXCEPTION_LOGGER.print('\n'.join(render_exception(exception)), file=sys.stderr)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
