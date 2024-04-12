@@ -53,6 +53,13 @@ detailed test artifacts for report plugins to pick.
 support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
 HW requirement.
 
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`Cpu cores</spec/hardware/cpu>`HW requirement.
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
+HW requirement.
+
 The :ref:`/spec/plans/discover/dist-git-source` apply patches now using
 ``rpmbuild -bp`` command. This is done on provisioned guest during
 the ``prepare`` step, before required packages are installed.
