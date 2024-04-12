@@ -105,7 +105,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                 'and': [
                     {
                         'cpu': {
-                            'cpu_count': {
+                            'processors': {
                                 '_op': '>',
                                 '_value': '8'
                                 }
@@ -280,7 +280,7 @@ def test_cpu_processors(root_logger: Logger) -> None:
 
     assert result.to_mrack() == {
         'cpu': {
-            'cpu_count': {
+            'processors': {
                 '_op': '==',
                 '_value': '79'
                 }

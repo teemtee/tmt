@@ -258,7 +258,7 @@ def _transform_cpu_processors(
 
     return MrackHWGroup(
         'cpu',
-        children=[MrackHWBinOp('cpu_count', beaker_operator, actual_value)])
+        children=[MrackHWBinOp('processors', beaker_operator, actual_value)])
 
 
 def _transform_disk_driver(
