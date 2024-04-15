@@ -26,7 +26,6 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/latest/spec/plans.html#hardware
 """
 
-import dataclasses
 import enum
 import functools
 import itertools
@@ -38,6 +37,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Generic,
     NamedTuple,
     Optional,
@@ -46,6 +46,7 @@ from typing import (
     cast,
     )
 
+import attrs
 import pint
 
 import tmt.log
@@ -196,7 +197,7 @@ class ConstraintNameComponents(NamedTuple):
     child_name: Optional[str]
 
 
-@dataclasses.dataclass
+@attrs.define
 class ConstraintComponents:
     """
     Components of a constraint.
@@ -327,7 +328,7 @@ class ParseError(tmt.utils.MetadataError):
 # Constraint classes
 #
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class BaseConstraint(SpecBasedContainer[Spec, Spec]):
     """
     Base class for all classes representing one or more constraints.
@@ -392,27 +393,16 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
         return variants[0]
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class CompoundConstraint(BaseConstraint):
     """
     Base class for all *compound* constraints.
     """
 
-    def __init__(
-            self,
-            reducer: ReducerType = any,
-            constraints: Optional[list[BaseConstraint]] = None
-            ) -> None:
-        """
-        Construct a compound constraint, constraint imposed to more than one dimension.
-
-        :param reducer: a callable reducing a list of results from child constraints into the final
-            answer.
-        :param constraints: child contraints.
-        """
-
-        self.reducer = reducer
-        self.constraints = constraints or []
+    #: a callable reducing a list of results from child constraints into the final answer.
+    reducer: ClassVar[ReducerType] = any
+    #: child constraints.
+    constraints: list[BaseConstraint] = attrs.field(factory=list)
 
     @property
     def size(self) -> int:
@@ -465,7 +455,7 @@ class CompoundConstraint(BaseConstraint):
         raise NotImplementedError
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     """
     A constraint imposing a particular limit to one of the guest properties.
@@ -742,20 +732,13 @@ class TextConstraint(Constraint[str]):
             )
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class And(CompoundConstraint):
     """
     Represents constraints that are grouped in ``and`` fashion.
     """
 
-    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
-        """
-        Hold constraints that are grouped in ``and`` fashion.
-
-        :param constraints: list of constraints to group.
-        """
-
-        super().__init__(all, constraints=constraints)
+    reducer = all
 
     def variants(
             self,
@@ -800,20 +783,11 @@ class And(CompoundConstraint):
                 + simple_constraints
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class Or(CompoundConstraint):
     """
     Represents constraints that are grouped in ``or`` fashion.
     """
-
-    def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
-        """
-        Hold constraints that are grouped in ``or`` fashion.
-
-        :param constraints: list of constraints to group.
-        """
-
-        super().__init__(any, constraints=constraints)
 
     def variants(
             self,
@@ -1355,7 +1329,7 @@ def parse_hw_requirements(spec: Spec) -> BaseConstraint:
     return _parse_block(spec)
 
 
-@dataclasses.dataclass
+@attrs.define
 class Hardware(SpecBasedContainer[Spec, Spec]):
     constraint: Optional[BaseConstraint]
     spec: Spec
