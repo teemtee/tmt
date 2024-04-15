@@ -19,7 +19,7 @@ rlJournalStart
 
         kernel="$(uname -r)"
 
-        package_manager="dnf\|yum"
+	package_manager="\(dnf\|dnf5\|yum\)"
 
         grep "selinuxfs" /proc/filesystems &> /dev/null
         if [ $? -eq 1 ]; then
