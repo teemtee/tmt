@@ -17,7 +17,7 @@ from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScrip
 class RpmOstree(tmt.package_managers.PackageManager):
     NAME = 'rpm-ostree'
 
-    probe_command = ShellScript('stat /etc/ostree-booted || type rpm-ostree').to_shell_command()
+    probe_command = Command('stat', '/run/ostree-booted')
     # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
     probe_priority = 100
 

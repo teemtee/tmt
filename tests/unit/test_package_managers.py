@@ -84,6 +84,7 @@ CONTAINER_BASE_MATRIX = [
 
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_RPMOSTREE),
+    (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),
 
     # Alpine
     (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
@@ -157,10 +158,21 @@ def create_package_manager(
     guest.start()
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
-        guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+        # Note that our CoreOS image is customized and contains dnf5
+        if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
+            pass
+
+        else:
+            guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
     elif package_manager_class is tmt.package_managers.apt.Apt:
         guest.execute(ShellScript('apt update'))
+
+    # Simulate ostree environment for `rpm-ostree` package manager
+    guest.execute(ShellScript('rm -f /run/ostree-booted'))
+
+    if package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+        guest.execute(ShellScript('touch /run/ostree-booted'))
 
     return package_manager_class(guest=guest, logger=logger)
 
@@ -190,6 +202,17 @@ def test_discovery(
         guest.facts.sync(guest)
 
         assert guest.facts.package_manager == expected
+
+    # CoreOS container needs to be tested twice, once to discover
+    # `rpm-ostree`, and once to discover `dnf5`. Simulate that by
+    # mocking `/run/ostree-booted`.
+    if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
+        # Note that our CoreOS image is customized and contains dnf5
+        _test_discovery(tmt.package_managers.dnf.Dnf5.NAME)
+
+        guest.execute(ShellScript('touch /run/ostree-booted'))
+
+        _test_discovery(expected_package_manager.NAME)
 
     # Images in which `dnf5`` would be the best possible choice, do not
     # come with `dnf5`` pe-installed. Therefore run the discovery first,
