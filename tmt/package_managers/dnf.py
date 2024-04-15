@@ -14,7 +14,13 @@ from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScrip
 
 @provides_package_manager('dnf')
 class Dnf(tmt.package_managers.PackageManager):
+    NAME = 'dnf'
+
     probe_command = Command('dnf', '--version')
+    # The priority of preference: `rpm-ostree` > `dnf5` > `dnf` > `yum`.
+    # `rpm-ostree` has its own implementation and its own priority, and
+    # the `dnf` family just stays below it.
+    probe_priority = 50
 
     _base_command = Command('dnf')
 
@@ -149,7 +155,10 @@ class Dnf(tmt.package_managers.PackageManager):
 
 @provides_package_manager('dnf5')
 class Dnf5(Dnf):
-    probe_command = Command('dnf5', '--version')
+    NAME = 'dnf5'
+
+    probe_command = probe_command = Command('dnf5', '--version')
+    probe_priority = 60
 
     _base_command = Command('dnf5')
     skip_missing_option = '--skip-unavailable'
@@ -157,7 +166,10 @@ class Dnf5(Dnf):
 
 @provides_package_manager('yum')
 class Yum(Dnf):
-    probe_command = Command('yum', '--version')
+    NAME = 'yum'
+
+    probe_command = probe_command = Command('yum', '--version')
+    probe_priority = 40
 
     _base_command = Command('yum')
 

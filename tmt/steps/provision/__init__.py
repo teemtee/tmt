@@ -41,7 +41,7 @@ import tmt.steps
 import tmt.utils
 from tmt.log import Logger
 from tmt.options import option
-from tmt.package_managers import FileSystemPath, Package
+from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
@@ -336,13 +336,29 @@ class GuestFacts(SerializableContainer):
     def _query_package_manager(
             self,
             guest: 'Guest') -> Optional['tmt.package_managers.GuestPackageManager']:
-        return self._probe(
-            guest,
-            [
-                (package_manager_class.probe_command, plugin_id)
-                for plugin_id, package_manager_class
-                in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
-                ])
+        # Discover as many package managers as possible: sometimes, the
+        # first discovered package manager is not the only or the best
+        # one available. Collect them, and sort them by their priorities
+        # to find the most suitable one.
+
+        discovered_package_managers: list[PackageManagerClass] = []
+
+        for _, package_manager_class \
+                in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
+            if self._execute(guest, package_manager_class.probe_command):
+                discovered_package_managers.append(package_manager_class)
+
+        discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
+
+        if discovered_package_managers:
+            guest.debug(
+                'Discovered package managers',
+                fmf.utils.listed([pm.NAME for pm in discovered_package_managers]),
+                level=4)
+
+            return discovered_package_managers[0].NAME
+
+        return None
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """

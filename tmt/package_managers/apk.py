@@ -33,6 +33,8 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 
 @provides_package_manager('apk')
 class Apk(tmt.package_managers.PackageManager):
+    NAME = 'apk'
+
     probe_command = Command('apk', '--version')
 
     install_command = Command('add')

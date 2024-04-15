@@ -15,7 +15,11 @@ from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScrip
 
 @provides_package_manager('rpm-ostree')
 class RpmOstree(tmt.package_managers.PackageManager):
-    probe_command = Command('stat', '/run/ostree-booted')
+    NAME = 'rpm-ostree'
+
+    probe_command = ShellScript('stat /etc/ostree-booted || type rpm-ostree').to_shell_command()
+    # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
+    probe_priority = 100
 
     def prepare_command(self) -> tuple[Command, Command]:
         """ Prepare installation command for rpm-ostree"""
