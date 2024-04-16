@@ -29,6 +29,10 @@ restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
 now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
 restarts of a said test. See :ref:`/spec/tests/restart` for details.
 
+Requirements of the :ref:`/spec/plans/execute/upgrade` execute
+plugin tasks are now correctly installed before the upgrade is
+performed on the guest.
+
 
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

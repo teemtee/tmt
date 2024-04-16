@@ -11,7 +11,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt -c upgrade-path="${PATH}" \
-            run --scratch -avvvdddi $run --rm --before finish \
+            run --scratch -avvvdddi $run --rm --before finish --environment REMOVE_BEAKERLIB=1 \
             plan -n /plan/no-path \
             execute -h upgrade -t '/tasks/prepare' \
             provision -h container -i fedora:${PREVIOUS_VERSION}" \

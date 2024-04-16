@@ -15,6 +15,7 @@ from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
+from tmt.steps.prepare import PreparePlugin, _RawPrepareStepData
 from tmt.utils import Environment, EnvVarValue, Path, field
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
@@ -258,6 +259,26 @@ class ExecuteUpgrade(ExecuteInternal):
             if cli_invocation:
                 cli_invocation.options['quiet'] = quiet
 
+    def _install_dependencies(
+            self,
+            guest: tmt.steps.provision.Guest,
+            dependencies: list[tmt.base.DependencySimple],
+            recommends: bool = False) -> None:
+        """ Install packages required/recommended for upgrade """
+        phase_name = 'recommended' if recommends else 'required'
+        data: _RawPrepareStepData = {
+            'how': 'install',
+            'name': f'{phase_name}-packages-upgrade',
+            'summary': f'Install packages {phase_name} by the upgrade',
+            'package': [
+                dependency.to_spec()
+                for dependency in tmt.utils.uniq(dependencies)
+                ],
+            'missing': 'skip' if recommends else 'fail'
+            }
+        PreparePlugin.delegate(self.step, raw_data=data).go(  # type:ignore[attr-defined]
+            guest=guest, logger=self._logger)
+
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
         """ Merge remote discover data with the local filters """
         if len(plan.discover.data) > 1:
@@ -312,8 +333,39 @@ class ExecuteUpgrade(ExecuteInternal):
                 self._run_discover_upgrade()
                 # Pass in the path-specific env variables
                 extra_environment = plan.environment
+
+            required_packages: list[tmt.base.DependencySimple] = []
+            recommended_packages: list[tmt.base.DependencySimple] = []
             for test in self._discover_upgrade.tests(enabled=True):
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
+
+                # Gathering dependencies for upgrade tasks
+                required_packages += (tmt.base.assert_simple_dependencies(
+                    test.require,
+                    'After beakerlib processing, tests may have only simple requirements',
+                    self._logger)
+                    )
+
+                recommended_packages += (tmt.base.assert_simple_dependencies(
+                    test.recommend,
+                    'After beakerlib processing, tests may have only simple requirements',
+                    self._logger)
+                    )
+
+                required_packages += (test.test_framework.get_requirements(
+                    test,
+                    self._logger)
+                    )
+
+                for check in test.check:
+                    required_packages += (check.plugin.essential_requires(
+                        guest,
+                        test,
+                        self._logger)
+                        )
+
+            self._install_dependencies(guest, required_packages)
+            self._install_dependencies(guest, recommended_packages, recommends=True)
             self.discover_phase = self._discover_upgrade.name
             self._run_tests(guest=guest, extra_environment=extra_environment, logger=logger)
         finally:
