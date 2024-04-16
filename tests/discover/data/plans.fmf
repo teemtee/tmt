@@ -203,3 +203,11 @@ execute:
                 url: https://github.com/teemtee/tmt
                 how: fmf
                 ref: "@tests/discover/data/dynamic-ref.fmf"
+    /adjust-tests:
+        discover:
+            how: fmf
+            test: /tests/discover1
+            adjust-tests:
+            - duration+: " 10h"
+            - require+:
+                - foo

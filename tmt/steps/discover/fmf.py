@@ -157,6 +157,12 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         show_default=True,
         help="Copy only immediate directories of executed tests and their required files.")
 
+    # Edit discovered tests
+    adjust_tests: list[Any] = field(
+        multiple=True,
+        default_factory=list
+        )
+
     # Upgrade plan path so the plan is not pruned
     upgrade_path: Optional[str] = None
 
@@ -564,7 +570,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
-            fmf_context=self.step.plan._fmf_context)
+            fmf_context=self.step.plan._fmf_context,
+            additional_rules=self.get('adjust-tests'))
         self._tests = tree.tests(
             filters=filters,
             names=names,
