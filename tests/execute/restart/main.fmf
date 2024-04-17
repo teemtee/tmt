@@ -1,0 +1,17 @@
+duration: 20m
+tier: 4
+
+summary: Verify that test restart works
+
+tag+:
+  - provision-only
+  - provision-virtual
+
+/basic:
+    tag+:
+      - provision-container
+      - provision-local
+
+/with-reboot:
+    environment+:
+        WITH_REBOOT: "yes"

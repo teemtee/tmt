@@ -6080,6 +6080,42 @@ def normalize_pattern_list(
     return patterns
 
 
+def normalize_integer_list(
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger) -> list[int]:
+    """
+    Normalize an integer-or-list-of-integers input value.
+
+    .. code-block:: yaml
+
+       foo: 11
+
+       foo:
+         - 11
+         - 79
+
+    :param value: input value from key source.
+    """
+
+    if value is None:
+        return []
+
+    normalized: list[int] = []
+
+    if not isinstance(value, list):
+        value = [value]
+
+    for i, item in enumerate(value):
+        try:
+            normalized.append(int(item))
+
+        except Exception as exc:
+            raise NormalizationError(f'{key_address}[{i}]', item, 'an integer') from exc
+
+    return normalized
+
+
 def normalize_path(
         key_address: str,
         value: Any,

@@ -1,0 +1,7 @@
+summary: Verify test restart
+
+discover:
+    how: fmf
+
+execute:
+    how: tmt

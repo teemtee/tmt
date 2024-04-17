@@ -243,6 +243,82 @@ class TestInvocation:
         """ Whether a guest reboot has been requested while the test was running """
         return self.soft_reboot_requested or self.hard_reboot_requested
 
+    @property
+    def restart_requested(self) -> bool:
+        """ Whether a test restart has been requested """
+
+        return self.return_code in self.test.restart_test_on_exit_code
+
+    @property
+    def is_guest_alive(self) -> bool:
+        """
+        Whether the guest is deemed to be alive and responsive.
+
+        .. note::
+
+            The answer is deduced from various flags set by execute code
+            while observing the test, no additional checks are
+            performed.
+        """
+
+        if self.hard_reboot_requested:
+            return False
+
+        if self.restart_requested:
+            return False
+
+        return True
+
+    def handle_restart(self) -> bool:
+        """
+        "Restart" the test if the test requested it.
+
+        .. note::
+
+            The test is not actually restarted, becase running the test
+            is managed by a plugin calling this method. Instead, the
+            method performs all necessary steps before letting plugin
+            know it should run the test once again.
+
+        Check whether a test restart was needed and allowed, and update
+        the accounting info before letting the plugin know it's time to
+        run the test once again.
+
+        If requested by the test, the guest might be rebooted as well.
+
+        :return: ``True`` when the restart is to take place, ``False``
+            otherwise.
+        """
+
+        if not self.restart_requested:
+            return False
+
+        if self._restart_count >= self.test.restart_test_max_times:
+            self.logger.debug(
+                f"Test restart denied during test '{self.test}'"
+                f" with reboot count {self._reboot_count}"
+                f" and test restart count {self._restart_count}.")
+
+            return False
+
+        if self.test.reboot_before_test_restart:
+            self.hard_reboot_requested = True
+
+            if not self.handle_reboot():
+                return False
+
+        else:
+            self._restart_count += 1
+
+        self.logger.debug(
+            f"Test restart during test '{self.test}'"
+            f" with reboot count {self._reboot_count}"
+            f" and test restart count {self._restart_count}.")
+
+        self.guest.push()
+
+        return True
+
     def handle_reboot(self) -> bool:
         """
         Reboot the guest if the test requested it.

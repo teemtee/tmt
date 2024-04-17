@@ -1,0 +1,12 @@
+summary: Observe test reboot behavior
+test: ./test.sh
+framework: beakerlib
+
+restart-test-on-exit-code: [79]
+restart-test-max-times: 5
+
+/basic:
+    reboot-before-test-restart: false
+
+/with-reboot:
+    reboot-before-test-restart: true
