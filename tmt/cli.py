@@ -155,7 +155,8 @@ def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]'
     ``type: ignore[arg-type]``.
     """
 
-    return click.pass_context(fn)  # type: ignore[arg-type]
+    # TODO: explain waivers before merging!
+    return click.pass_context(fn)  # type: ignore[arg-type,return-value,unused-ignore]
 
 
 @dataclasses.dataclass
