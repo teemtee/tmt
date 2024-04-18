@@ -21,10 +21,16 @@ rlJournalStart
             rlRun "mypy_version=$(yq -r '.repos | .[] | select(.repo | test("^.*/mirrors-mypy$")) | .rev' ../../.pre-commit-config.yaml | tr -d 'v')"
             rlRun "pyright_version=$(yq -r '.repos | .[] | select(.repo | test("^.*/pyright-python$")) | .rev' ../../.pre-commit-config.yaml | tr -d 'v')"
 
+            rlRun "echo 'mypy==v${mypy_version}' > requirements.txt"
+            rlRun "echo 'pyright==v${pyright_version}' > requirements.txt"
+            rlRun "yq -r '.repos | .[] | select(.repo | test(\"^.*/mirrors-mypy$\")) | .hooks[0].additional_dependencies | .[] | select(test(\"^types-.*\"))' ../../.pre-commit-config.yaml >> requirements.txt"
+
+            rlRun "cat requirements.txt"
+
             rlRun "TEST_VENV=$(mktemp -d)"
 
             rlRun "python3 -m venv $TEST_VENV --system-site-packages"
-            rlRun "$TEST_VENV/bin/pip install mypy==$mypy_version pyright==$pyright_version"
+            rlRun "$TEST_VENV/bin/pip install -r requirements.txt"
 
             # Note: we're not in the root directory!
             pushd ../../
