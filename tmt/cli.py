@@ -309,6 +309,10 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
     '--force-color', is_flag=True, default=False,
     help='Forces tmt to use colors in the output and logging.'
     )
+@option(
+    '--pre-check', is_flag=True, default=False, hidden=True,
+    help='Run pre-checks on the git root. (Used by pre-commit wrapper).'
+    )
 def main(
         click_contex: Context,
         root: str,
@@ -316,6 +320,7 @@ def main(
         no_color: bool,
         force_color: bool,
         show_time: bool,
+        pre_check: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
 
@@ -340,6 +345,18 @@ def main(
 
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
+
+    # Run pre-checks
+    if pre_check:
+        git_command = tmt.utils.Command('git', 'rev-parse', '--show-toplevel')
+        git_root = git_command.run(cwd=None, logger=logger).stdout
+        if not git_root:
+            raise tmt.utils.RunError("git rev-parse did not produce a path", git_command, 0)
+        git_root = git_root.strip()
+        git_command = tmt.utils.Command(
+            'git', 'ls-files', '--error-unmatch', f"{git_root}/{root}/.fmf/version"
+            )
+        git_command.run(cwd=None, logger=logger)
 
     # Initialize metadata tree (from given path or current directory)
     tree = tmt.Tree(logger=logger, path=Path(root))
@@ -2079,98 +2096,3 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for fish """
     setup_completion('fish', install)
-
-
-@click.command(context_settings={
-    "ignore_unknown_options": True,
-    "allow_extra_args": True,
-    })
-@click.pass_context
-@click.option(
-    '-r', '--root', metavar='PATH', show_default=True, default='.',
-    help='Variable passed to tmt main. See `tmt --help`')
-@click.option(
-    '-v', '--verbose', count=True, default=0,
-    help='Variable passed to tmt main. See `tmt --help`')
-@click.option(
-    '-d', '--debug', count=True, default=0,
-    help='Variable passed to tmt main. See `tmt --help`')
-@click.option(
-    '--no-color', is_flag=True, default=False,
-    help='Variable passed to tmt main. See `tmt --help`'
-    )
-@click.option(
-    '--force-color', is_flag=True, default=False,
-    help='Variable passed to tmt main. See `tmt --help`'
-    )
-@click.option(
-    '--version', is_flag=True,
-    help="Variable passed to tmt main. See `tmt --help`")
-@click.option(
-    '--lint-what', default=None,
-    type=click.Choice(['tests', 'plans', 'stories']),
-    help='tmt types to lint')
-def pre_commit(
-        context: click.Context,
-        root: str,
-        verbose: int,
-        debug: int,
-        version: bool,
-        no_color: bool,
-        force_color: bool,
-        lint_type: Optional[str]) -> None:
-    """Cli wrapper of tmt lint."""
-    # Special handling for --version
-    if version:
-        main(['--version'])
-
-    # Create logger to reuse tmt.utils.Command utility
-    # apply_colors_output is not used because this is recreated and handled by main app instead
-    apply_colors_output, apply_colors_logging = tmt.log.decide_colorization(no_color, force_color)
-    logger = tmt.log.Logger.create(
-        apply_colors_output=apply_colors_output,
-        apply_colors_logging=apply_colors_logging
-        )
-    logger.add_console_handler()
-
-    # Check that .fmf/version file is present for the specific root requested
-    try:
-        git_command = tmt.utils.Command('git', 'rev-parse', '--show-toplevel')
-        git_root = git_command.run(cwd=None, logger=logger).stdout
-        if not git_root:
-            logger.fail("git rev-parse did not produce a path")
-            sys.exit(1)
-        git_root = git_root.strip()
-        git_command = tmt.utils.Command(
-            'git', 'ls-files', '--error-unmatch', f"{git_root}/{root}/.fmf/version"
-            )
-        git_command.run(cwd=None, logger=logger)
-    except tmt.utils.RunError as err:
-        # Forward git command error for more legible output
-        if err.stderr:
-            logger.fail(err.stderr)
-        sys.exit(err.returncode)
-
-    # Construct the arguments for main cli
-    args = ['--root', f"{git_root}/{root}"]
-    if verbose:
-        args += ['-' + 'v' * verbose]
-    if debug:
-        args += ['-' + 'd' * debug]
-    if no_color:
-        args += ['--no-color']
-    if force_color:
-        args += ['--force-color']
-
-    # Pass test/plan/stories before lint
-    if lint_type:
-        args += [lint_type]
-    # Pass lint and default flags of the lint command
-    args += ['lint', '--source', '--failed-only']
-    # Get everything else
-    if '--source' in context.args:
-        context.args.remove('--source')
-    if '--failed-only' in context.args:
-        context.args.remove('--failed-only')
-    args += context.args
-    main(args)
