@@ -62,6 +62,9 @@ description: |
     model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
     are also useful resources.
 
+    .. versionchanged:: 1.32
+       ``beaker`` plugin supports ``cpu.cores``
+
     .. versionchanged:: 1.31
        ``beaker`` plugin supports ``cpu.flag``
 
@@ -89,7 +92,12 @@ example:
           - avx
           - avx2
 
+  - |
+    # Request a CPU with more than 4 cores.
+    cpu:
+        cores: ">= 4"
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model`` only"
+    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores`` only"
