@@ -21,8 +21,9 @@ rlJournalStart
             rlRun "mypy_version=$(yq -r '.repos | .[] | select(.repo | test("^.*/mirrors-mypy$")) | .rev' ../../.pre-commit-config.yaml | tr -d 'v')"
             rlRun "pyright_version=$(yq -r '.repos | .[] | select(.repo | test("^.*/pyright-python$")) | .rev' ../../.pre-commit-config.yaml | tr -d 'v')"
 
-            rlRun "echo 'mypy==v${mypy_version}' > requirements.txt"
-            rlRun "echo 'pyright==v${pyright_version}' > requirements.txt"
+            rlRun "rm -f requirements.txt && touch requirements.txt"
+            rlRun "echo 'mypy==v${mypy_version}' >> requirements.txt"
+            rlRun "echo 'pyright==v${pyright_version}' >> requirements.txt"
             rlRun "yq -r '.repos | .[] | select(.repo | test(\"^.*/mirrors-mypy$\")) | .hooks[0].additional_dependencies | .[] | select(test(\"^types-.*\"))' ../../.pre-commit-config.yaml >> requirements.txt"
 
             rlRun "cat requirements.txt"
@@ -34,7 +35,7 @@ rlJournalStart
 
             # Note: we're not in the root directory!
             pushd ../../
-            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --install-types"
+            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml"
             rlRun "$TEST_VENV/bin/python3 -m pyright"
             popd
 
