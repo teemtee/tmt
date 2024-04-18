@@ -52,6 +52,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.flag',
     'cpu.processors',
     'cpu.model',
+    'cpu.cores',
     'disk.size',
     'disk.model_name',
     'disk.driver',

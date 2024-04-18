@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.33
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`Cpu cores</spec/hardware/cpu>`HW requirement.
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
+HW requirement.
+
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -51,13 +61,6 @@ detailed test artifacts for report plugins to pick.
 
 :ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
 support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
-HW requirement.
-
-:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
-support for :ref:`Cpu cores</spec/hardware/cpu>`HW requirement.
-
-:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
-support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
 HW requirement.
 
 The :ref:`/spec/plans/discover/dist-git-source` apply patches now using
