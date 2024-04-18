@@ -108,13 +108,17 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             def _linkable_path(path: str) -> str:
                 return str(Path(path).absolute())
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            environment.filters["linkable_path"] \
+                = _linkable_path  # type: ignore[reportArgumentType,unused-ignore]
         else:
             # Links used in html should be relative to a workdir
             def _linkable_path(path: str) -> str:
                 return str(Path(path).relative_to(self.phase_workdir))
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            environment.filters["linkable_path"] \
+                = _linkable_path  # type: ignore[reportArgumentType,unused-ignore]
 
         if self.data.display_guest == 'always':
             display_guest = True

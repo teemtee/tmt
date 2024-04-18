@@ -39,7 +39,7 @@ rlJournalStart
             rlRun "$TEST_VENV/bin/python3 -m pyright"
             popd
 
-            rlRun "rm -rf $TEST_VENV"
+            # rlRun "rm -rf $TEST_VENV"
         rlPhaseEnd
     else
         rlPhaseStartTest "Check type annotations against development packages"
