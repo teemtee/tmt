@@ -20,8 +20,6 @@ Obsoletes:      tmt-report-reportportal < %{version}-%{release}
 
 Recommends:     bash-completion
 
-%define workdir_root /var/tmp/tmt
-
 %py_provides    python3-tmt
 
 %description
@@ -126,7 +124,6 @@ mkdir -p %{buildroot}%{_mandir}/man1
 install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
-mkdir -pm 1777 %{buildroot}%{workdir_root}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
@@ -137,7 +134,6 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %doc README.rst examples
 %{_bindir}/tmt
 %{_mandir}/man1/tmt.1.gz
-%dir %{workdir_root}
 %{_datadir}/bash-completion/completions/%{name}
 
 %files -n tmt+provision-container -f %{_pyproject_ghost_distinfo}
