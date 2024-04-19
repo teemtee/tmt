@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.32.1
+Version:        1.32.2
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -144,6 +144,17 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Fri Apr 19 2024 Lukáš Zachar <lzachar@redhat.com> - 1.32.2
+- Remove /var/tmp workdir from rpm packaging
+- Refactor package manager discovery to allow priorities
+- Add unit test for package manager installing a file system path
+- Update pre-commit checks and add a couple of new ones
+- Removing c9s workaround for pytest-container
+- Clarify the `--last` symlink creation race a bit
+- Remove the `.travis.yml` config file
+- Correctly show the `--provision-timeout` default
+- Refresh Beaker API client in mrack to use up-to-date Kerberos ticket
+
 * Thu Mar 28 2024 Martin Hoyer <mhoyer@redhat.com> - 1.32.1
 - rpm .spec file version bump
 - Update pytest on c9s when using site-packages
