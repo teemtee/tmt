@@ -8,7 +8,7 @@ tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
-support for :ref:`Cpu cores</spec/hardware/cpu>`HW requirement.
+support for :ref:`CPU cores</spec/hardware/cpu>` HW requirement.
 
 :ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
 support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
