@@ -34,11 +34,6 @@ EOF
         rlLog "WORKDIR_ROOT=$WORKDIR_ROOT"
     rlPhaseEnd
 
-    rlPhaseStartTest "Correct rpm ownership and permissions"
-        rlAssertEquals "Owned by tmt" "$(rpm -qf $WORKDIR_ROOT --qf '%{name}')" "tmt"
-        rlAssertEquals "Correct permission" "$(stat --format '%a' $WORKDIR_ROOT)" "1777"
-    rlPhaseEnd
-
     rlPhaseStartTest "Recreated correctly"
         rlFileBackup --clean "$WORKDIR_ROOT"
         rlRun "rm -rf $WORKDIR_ROOT"

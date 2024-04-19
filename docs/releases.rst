@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.32.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Set priorities for package manager discovery. They are now probed
+in order: ``rpm-ostree``, ``dnf5``, ``dnf``, ``yum``, ``apk``, ``apt``.
+This order picks the right package manager in the case when the
+guest is ``ostree-booted`` but has the dnf installed.
+
 tmt-1.32
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
