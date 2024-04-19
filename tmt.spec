@@ -12,15 +12,13 @@ BuildRequires:  python3-devel
 
 Requires:       git-core rsync sshpass
 
-Obsoletes:      python3-tmt < %{version}-%{release}
-Obsoletes:      tmt-report-html < %{version}-%{release}
-Obsoletes:      tmt-report-junit < %{version}-%{release}
-Obsoletes:      tmt-report-polarion < %{version}-%{release}
-Obsoletes:      tmt-report-reportportal < %{version}-%{release}
-
 Recommends:     bash-completion
 
 %py_provides    python3-tmt
+
+%global _metapackage_description %{expand:
+This is a metapackage bringing in extra dependencies for tmt.
+It contains no code, just makes sure the dependencies are installed.}
 
 %description
 The tmt Python module and command line tool implement the test
@@ -32,7 +30,6 @@ metadata specification (L1 and L2) and allows easy test execution.
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
-Obsoletes:      tmt-test-convert < %{version}-%{release}
 Requires:       tmt == %{version}-%{release}
 Requires:       make
 Requires:       python3-bugzilla
@@ -40,26 +37,18 @@ Requires:       python3-nitrate
 Requires:       python3-html2text
 Requires:       python3-markdown
 
-%description -n tmt+test-convert
-This is a metapackage bringing in extra dependencies for tmt.
-It contains no code, just makes sure the dependencies are installed.
+%description -n tmt+test-convert %_metapackage_description
 
 %package -n     tmt+provision-container
 Summary:        Dependencies required for tmt container provisioner
-Obsoletes:      tmt-provision-container < %{version}-%{release}
-Obsoletes:      tmt-container < 0.17
 Requires:       tmt == %{version}-%{release}
 Requires:       podman
 Requires:       (ansible or ansible-collection-containers-podman)
 
-%description -n tmt+provision-container
-This is a metapackage bringing in extra dependencies for tmt.
-It contains no code, just makes sure the dependencies are installed.
+%description -n tmt+provision-container %_metapackage_description
 
 %package -n     tmt+provision-virtual
 Summary:        Dependencies required for tmt virtual machine provisioner
-Obsoletes:      tmt-provision-virtual < %{version}-%{release}
-Obsoletes:      tmt-testcloud < 0.17
 Requires:       tmt == %{version}-%{release}
 Requires:       python3-testcloud >= 0.9.10
 Requires:       libvirt-daemon-config-network
@@ -74,26 +63,18 @@ Recommends:     qemu-system-s390x-core
 Recommends:     qemu-system-x86-core
 %endif
 
-%description -n tmt+provision-virtual
-This is a metapackage bringing in extra dependencies for tmt.
-It contains no code, just makes sure the dependencies are installed.
+%description -n tmt+provision-virtual %_metapackage_description
 
 %package -n     tmt+provision-beaker
 Summary:        Dependencies required for tmt beaker provisioner
-Provides:       tmt-provision-beaker == %{version}-%{release}
-Obsoletes:      tmt-provision-beaker < %{version}-%{release}
 Requires:       tmt == %{version}-%{release}
 Requires:       python3-mrack-beaker
 
-%description -n tmt+provision-beaker
-This is a metapackage bringing in extra dependencies for tmt.
-It contains no code, just makes sure the dependencies are installed.
+%description -n tmt+provision-beaker %_metapackage_description
 
-# Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
 Summary:        Extra dependencies for the Test Management Tool
 Provides:       tmt-all == %{version}-%{release}
-Obsoletes:      tmt-all < %{version}-%{release}
 Requires:       tmt+test-convert == %{version}-%{release}
 Requires:       tmt+export-polarion == %{version}-%{release}
 Requires:       tmt+provision-container == %{version}-%{release}
