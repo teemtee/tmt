@@ -42,8 +42,10 @@ CONTAINER_FEDORA_39 = Container(url='registry.fedoraproject.org/fedora:39')
 CONTAINER_CENTOS_STREAM_8 = Container(url='quay.io/centos/centos:stream8')
 CONTAINER_CENTOS_7 = Container(url='quay.io/centos/centos:7')
 CONTAINER_UBUNTU_2204 = Container(url='docker.io/library/ubuntu:22.04')
-CONTAINER_FEDORA_COREOS = Container(url='quay.io/fedora/fedora-coreos:stable')
-# Local image created via `make image-alpine`, reference to local registry
+# Local image created via `make image-unit-tests-coreos`, reference to local registry
+CONTAINER_FEDORA_COREOS = Container(
+    url='containers-storage:localhost/fedora-coreos:tmt-unit-tests')
+# Local image created via `make image-unit-tests-alpine`, reference to local registry
 CONTAINER_ALPINE = Container(url='containers-storage:localhost/alpine:tmt-unit-tests')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
@@ -55,6 +57,11 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
 
 
+# Note: keep the list ordered by the most desired packag manager to the
+# least desired one. For most of the tests, the order is not important,
+# but the list is used to generate the discovery tests as well, and the
+# order is used to find out what package manager is expected to be
+# discovered.
 CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
@@ -77,6 +84,7 @@ CONTAINER_BASE_MATRIX = [
 
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_RPMOSTREE),
+    (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),
 
     # Alpine
     (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
@@ -86,6 +94,15 @@ CONTAINER_MATRIX_IDS = [
     f'{container.url} / {package_manager_class.__name__.lower()}'
     for container, package_manager_class in CONTAINER_BASE_MATRIX
     ]
+
+
+CONTAINER_DISCOVERY_MATRIX: dict[str, tuple[Container, PackageManagerClass]] = {}
+
+for container, package_manager_class in CONTAINER_BASE_MATRIX:
+    if container.url in CONTAINER_DISCOVERY_MATRIX:
+        continue
+
+    CONTAINER_DISCOVERY_MATRIX[container.url] = (container, package_manager_class)
 
 
 @pytest.fixture(name='guest')
@@ -141,12 +158,75 @@ def create_package_manager(
     guest.start()
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
-        guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+        # Note that our CoreOS image is customized and contains dnf5
+        if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
+            pass
+
+        else:
+            guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
     elif package_manager_class is tmt.package_managers.apt.Apt:
         guest.execute(ShellScript('apt update'))
 
+    # Simulate ostree environment for `rpm-ostree` package manager
+    guest.execute(ShellScript('rm -f /run/ostree-booted'))
+
+    if package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+        guest.execute(ShellScript('touch /run/ostree-booted'))
+
     return package_manager_class(guest=guest, logger=logger)
+
+
+def _parametrize_test_discovery() -> Iterator[tuple[ContainerData, PackageManagerClass]]:
+    yield from CONTAINER_DISCOVERY_MATRIX.values()
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container',
+                          'expected_package_manager'),
+                         list(_parametrize_test_discovery()),
+                         indirect=["container"],
+                         ids=[
+                             container.url
+                             for container, _
+                             in CONTAINER_DISCOVERY_MATRIX.values()
+    ])
+def test_discovery(
+        container: ContainerData,
+        guest: GuestContainer,
+        expected_package_manager: PackageManagerClass,
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+
+    def _test_discovery(expected: str) -> None:
+        guest.facts.sync(guest)
+
+        assert guest.facts.package_manager == expected
+
+    # CoreOS container needs to be tested twice, once to discover
+    # `rpm-ostree`, and once to discover `dnf5`. Simulate that by
+    # mocking `/run/ostree-booted`.
+    if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
+        # Note that our CoreOS image is customized and contains dnf5
+        _test_discovery(tmt.package_managers.dnf.Dnf5.NAME)
+
+        guest.execute(ShellScript('touch /run/ostree-booted'))
+
+        _test_discovery(expected_package_manager.NAME)
+
+    # Images in which `dnf5`` would be the best possible choice, do not
+    # come with `dnf5`` pe-installed. Therefore run the discovery first,
+    # but expect to find *dnf* instead of `dnf5`. Then install `dnf5`,
+    # re-run the discovery and expect the original outcome.
+    if expected_package_manager is tmt.package_managers.dnf.Dnf5:
+        _test_discovery(tmt.package_managers.dnf.Dnf.NAME)
+
+        guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+
+        _test_discovery(expected_package_manager.NAME)
+
+    else:
+        _test_discovery(expected_package_manager.NAME)
 
 
 def _parametrize_test_install() -> \

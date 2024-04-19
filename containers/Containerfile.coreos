@@ -1,0 +1,4 @@
+FROM quay.io/fedora/fedora-coreos:stable
+
+# Inject dnf to make things more complicated for rpm-ostree package manager implementation
+RUN rpm-ostree install dnf5

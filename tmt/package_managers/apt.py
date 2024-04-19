@@ -27,6 +27,8 @@ ReducedPackages = list[Union[Package, PackagePath]]
 
 @provides_package_manager('apt')
 class Apt(tmt.package_managers.PackageManager):
+    NAME = 'apt'
+
     probe_command = Command('apt', '--version')
 
     install_command = Command('install')

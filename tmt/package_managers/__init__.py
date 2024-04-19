@@ -144,9 +144,18 @@ class Options:
 class PackageManager(tmt.utils.Common):
     """ A base class for package manager plugins """
 
+    NAME: str
+
     #: A command to run to check whether the package manager is available on
     #: a guest.
     probe_command: Command
+
+    #: Package managers with higher value would be preferred when more
+    #: one package manager is detected on guest. For most of the time,
+    #: the default is sufficient, but some families of package managers
+    #: (looking at you, ``yum``, ``dnf``, ``dnf5``, ``rpm-ostree``!)
+    #: may be installed togethers, and therefore a priority is needed.
+    probe_priority: int = 0
 
     command: Command
     options: Command
