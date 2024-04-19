@@ -3808,7 +3808,7 @@ class Clean(tmt.utils.Common):
     def guests(self) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         # FIXME: cast() - typeless "dispatcher" method
         id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
@@ -3844,7 +3844,7 @@ class Clean(tmt.utils.Common):
     def runs(self) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         # FIXME: cast() - typeless "dispatcher" method
         id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
