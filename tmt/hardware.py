@@ -1017,7 +1017,8 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
         for constraint_name in (
             'family-name',
-            'model-name'
+            'model-name',
+            'vendor-name'
             )
         if constraint_name in spec
         ]

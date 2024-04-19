@@ -91,6 +91,12 @@ definitions:
         type: array
         items:
           type: string
+      vendor-name:
+        type: string
+      vendor:
+        anyOf:
+          - type: string
+          - type: integer
 
     additionalProperties: false
 
