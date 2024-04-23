@@ -4,7 +4,6 @@
     Releases
 ======================
 
-
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -46,6 +45,12 @@ which already utilise these commands remains unchanged (the
 overall result is determined by selecting the result with the
 value which resides highest on the hierarchy of `skip`, `pass`,
 `warn`, `fail`).
+
+Add support for ``--last``, ``--id``, and ``--skip`` params for
+the ``clean`` subcommand. Users can clean resources from last run
+or from the run with given id. Users can also skip cleaning given
+resources.
+
 
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
