@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.33
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add support --last, --id, --skip params for clean function. Users can
+clean everything from last run, or from the run with given id. Users
+could also skip clean phase(s).
+
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
