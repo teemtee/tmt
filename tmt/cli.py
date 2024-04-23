@@ -1865,9 +1865,13 @@ def status(
 #  Clean
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Supported clean phases
+STEPS: list[str] = ["guests", "runs", "images"]
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
+
+
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
 @pass_context
 @option(
@@ -1876,14 +1880,14 @@ def status(
     '-i', '--id', 'id_', metavar="ID",
     help='Run id (name or directory path) to clean everything of.')
 @option(
-    '-s', '--skip', type=str, default=None,
-    help='The clean phases to skip')
+    '-S', '--skip', choices=STEPS,
+    help='The clean phases to skip', multiple=True)
 @verbosity_options
 @dry_options
 def clean(context: Context,
           last: bool,
           id_: Optional[str],
-          skip: Optional[str],
+          skip: list[str],
           **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
@@ -1900,6 +1904,7 @@ def clean(context: Context,
     if last and id_ is not None:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
+
     context.obj.clean_logger = context.obj.logger \
         .descend(logger_name='clean', extra_shift=0) \
         .apply_verbosity_options(**kwargs)
@@ -1924,17 +1929,16 @@ def clean(context: Context,
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context))
-        skip_phases = skip.split(',') if skip else []
         if tmt.utils.WORKDIR_ROOT.exists():
-            if 'guests' not in skip_phases and not clean_obj.guests():
+            if 'guests' not in skip and not clean_obj.guests():
                 exit_code = 1
-            if 'runs' not in skip_phases and not clean_obj.runs():
+            if 'runs' not in skip and not clean_obj.runs():
                 exit_code = 1
         else:
             clean_obj.warn(
                 f"Directory '{tmt.utils.WORKDIR_ROOT}' does not exist, "
                 f"skipping guest and run cleanup.")
-        if 'images' not in skip_phases and not clean_obj.images():
+        if 'images' not in skip and not clean_obj.images():
             exit_code = 1
         raise SystemExit(exit_code)
 
