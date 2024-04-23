@@ -27,7 +27,7 @@ import urllib.parse
 from collections import Counter, OrderedDict
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
-from re import Pattern
+from re import Match, Pattern
 from threading import Thread
 from types import ModuleType
 from typing import (
@@ -6553,6 +6553,268 @@ def field(
         )
 
 
+#
+# Jinja2 template rendering
+#
+def _template_filter_basename(pathlike: str) -> str:
+    """
+    Return the last component of the given path.
+
+    .. code-block:: jinja
+
+        # "/etc/fstab" -> "fstab"
+        {{ "/etc/fstab" | basename }}
+
+        # "/var/log/" -> "log"
+        {{ "/var/log/" | basename }}
+    """
+
+    return Path(pathlike).name
+
+
+def _template_filter_match(s: str, pattern: str) -> Optional[Match[str]]:
+    """
+    Return `re.Match`__ if the string matches a given pattern.
+
+    Pattern is tested in "match" mode, i.e. it must match from the
+    beginning of the string. See :ref:`regular-expressions` description
+    for more details.
+
+    __ https://docs.python.org/3.9/library/re.html#match-objects
+
+    .. code-block:: jinja
+
+         # 'foo/bar' -> 'foo/bar'
+        {{ 'foo/bar' | match('foo/.*').group() }}
+
+        # 'foo/bar' -> ''
+        {{ 'foo/bar' | regex_match('foo/(.+?)/(.*)') }}
+
+        # 'foo/bar/baz' -> 'bar'
+        {{ 'foo/bar' | regex_match('foo/(.+?)/.*').group(1) }}
+    """
+
+    return re.match(pattern, s)
+
+
+def _template_filter_search(s: str, pattern: str) -> Optional[Match[str]]:
+    """
+    Return `re.Match`__ if the string matches a given pattern.
+
+    Pattern is tested in "search" mode, i.e. it can match anywhere
+    in the string. See :ref:`regular-expressions` description for more
+    details.
+
+    __ https://docs.python.org/3.9/library/re.html#match-objects
+
+    .. code-block:: jinja
+
+         # '  foo/bar' -> 'foo/bar'
+        {{ '  foo/bar' | match('foo/.*').group() }}
+
+        # '  foo/bar' -> ''
+        {{ '  foo/bar' | regex_match('foo/(.+?)/(.*)') }}
+
+        # '  foo/bar/baz' -> 'bar'
+        {{ '  foo/bar' | regex_match('foo/(.+?)/.*').group(1) }}
+    """
+
+    return re.search(pattern, s)
+
+
+def _template_filter_regex_findall(s: str, pattern: str) -> list[str]:
+    """
+    Return a list of all non-overlapping matches in the string.
+
+    If one or more capturing groups are present in the pattern, return
+    a list of groups; this will be a list of tuples if the pattern
+    has more than one group.
+
+    Empty matches are included in the result.
+
+    .. code-block:: jinja
+
+        # '/var/log/mail.log' => ['/', '/', '/']
+        {{ '/var/log/mail.log' | regex_findall('/') }}
+    """
+
+    return re.findall(pattern, s)
+
+
+def _template_filter_regex_match(s: str, pattern: str) -> str:
+    """
+    Return string matching a given pattern.
+
+    Pattern is tested in "match" mode, i.e. it must match from the
+    beginning of the string. See :ref:`regular-expressions` description
+    for more details.
+
+    If the string matches and pattern contains capture groups, the
+    first group is returned. If the string matches, but patterns
+    contains no capture group, the whole match is returned.
+    Otherwise, an empty string is returned.
+
+    .. code-block:: jinja
+
+        # 'foo/bar' -> 'foo/bar'
+        {{ 'foo/bar' | regex_match('foo/.*') }}
+
+        # 'foo/bar' -> ''
+        {{ 'foo/bar' | regex_match('foo/(.+?)/(.*)') }}
+
+        # 'foo/bar/baz' -> 'bar'
+        {{ 'foo/bar/baz' | regex_match('foo/(.+?)/.*') }}
+    """
+
+    match = re.match(pattern, s)
+
+    if match is None:
+        return ''
+
+    if not match.groups():
+        return match.group()
+
+    return match.group(1)
+
+
+def _template_filter_regex_search(s: str, pattern: str) -> str:
+    """
+    Return string matching a given pattern.
+
+    Pattern is tested in "search" mode, i.e. it can match anywhere
+    in the string. See :ref:`regular-expressions` description for more
+    details.
+
+    If the string matches and pattern contains capture groups, the
+    first group is returned. If the string matches, but patterns
+    contains no capture group, the whole match is returned.
+    Otherwise, an empty string is returned.
+
+    .. code-block:: jinja
+
+        # '  foo/bar' -> 'foo/bar'
+        {{ '  foo/bar' | regex_search('foo/.*') }}
+
+        # '  foo/bar' -> ''
+        {{ '  foo/bar' | regex_search('foo/(.+?)/(.*)') }}
+
+        # '  foo/bar/baz' -> 'bar'
+        {{ '  foo/bar/baz' | regex_search('foo/(.+?)/.*') }}
+    """
+
+    match = re.search(pattern, s)
+
+    if match is None:
+        return ''
+
+    if not match.groups():
+        return match.group()
+
+    return match.group(1)
+
+
+def _template_filter_regex_replace(s: str, pattern: str, repl: str) -> str:
+    """
+    Replace a substring defined by a regular expression with another string.
+
+    Return the string obtained by replacing the leftmost
+    non-overlapping occurrences of pattern in string by the replacement.
+    If the pattern isn't found, string is returned unchanged.
+
+    Backreferences in the replacement string are replaced with the
+    substring matched by a group in the pattern.
+
+    .. code-block:: jinja
+
+        # 'foo/bar' -> 'foo/baz'
+        {{ 'foo/bar' | regex_replace('(.+)/bar', '\1/baz') }}
+
+        # 'foo/bar' -> 'foo/bar'
+        {{ 'foo/bar' | regex_replace('(.+)/baz', '\1/') }}
+    """
+
+    return re.sub(pattern, repl, s)
+
+
+def _template_filter_dedent(s: str) -> str:
+    """
+    Remove any common leading whitespace from every line in the string.
+
+    .. code-block:: jinja
+
+        # "foo bar" -> "foo bar"
+        {{ "foo bar" | dedent }}
+
+        # '''
+        #    foo
+        #    bar
+        #        baz
+        # '''
+        #  ->
+        # '''
+        # foo
+        # bar
+        #    baz
+        # '''
+        {{ "\\n    foo\\n    bar\\n        baz\\n" | dedent }}
+    """
+
+    return textwrap.dedent(s)
+
+
+def _template_filter_listed(
+        items: list[Any],
+        singular: Optional[str] = None,
+        plural: Optional[str] = None,
+        max: Optional[int] = None,
+        quote: str = "",
+        join: str = "and") -> str:
+    """
+    Return a nice, human readable description of an iterable.
+
+    .. code-block:: jinja
+
+        # [0] -> "0"
+        {{ [0] | listed }}
+
+        # [0, 1] -> "0 and 1"
+        {{ [0, 1] | listed }}
+
+        # [0, 1, 2] -> "0, 1, or 2"
+        {{ [0, 1, 2] | listed(join='or') }}
+
+        # [0, 1, 2] -> '"0", "1" and "2"'
+        {{ [0, 1, 2] | listed(quote='"') }}
+
+        # [0, 1, 2, 3] -> "0, 1, 2 and 1 more"
+        {{ [0, 1, 2, 3] | listed(max=3) }}
+
+        # [0, 1, 2, 3, 4] -> "0, 1, 2 and 2 more numbers"
+        {{ [0, 1, 2, 3, 4, 5] | listed('number', max=3) }}
+
+        # [0, 1, 2, 3, 4, 5] -> "6 categories"
+        {{ [0, 1, 2, 3, 4, 5] | listed('category') }}
+
+        # [0, 1, 2, 3, 4, 5, 6] -> "7 leaves"
+        {{ [0, 1, 2, 3, 4, 5, 6] | listed("leaf", "leaves") }}
+    """
+
+    # cast: for some reason, mypy sees `listed` as `Any`
+    return cast(str, fmf.utils.listed(
+        items,
+        singular=singular,
+        plural=plural,
+        max=max,
+        quote=quote,
+        join=join))
+
+
+TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
+    _name.replace('_template_filter_', ''): _obj
+    for _name, _obj in locals().items() if callable(_obj) and _name.startswith('_template_filter_')
+    }
+
+
 def default_template_environment() -> jinja2.Environment:
     """
     Create a Jinja2 environment with default settings.
@@ -6572,16 +6834,7 @@ def default_template_environment() -> jinja2.Environment:
 
         return match.groups()
 
-    environment.filters['basename'] = lambda x: Path(x).name
-    environment.filters['dedent'] = textwrap.dedent
-    environment.filters['findall'] = lambda s, pattern: re.findall(pattern, s)
-    environment.filters['listed'] = fmf.utils.listed
-    environment.filters['strip'] = lambda x: x.strip()
-    environment.filters['search'] = lambda string, pattern: re.search(pattern, string)
-    environment.filters['match'] = lambda string, pattern: re.search(pattern, string)
-    environment.filters['regex_search'] = regex_search
-    environment.filters['regex_replace'] = lambda string, pattern, repl: re.sub(
-        pattern, repl, string)
+    environment.filters.update(TEMPLATE_FILTERS)
 
     environment.trim_blocks = True
     environment.lstrip_blocks = True
