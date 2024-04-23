@@ -19,6 +19,9 @@ by setting environment variables ``TMT_SSH_*``. This complements the
 existing way of setting guest-specific SSH options by ``ssh-options`` key
 of the guest. See :ref:`command-variables` for details.
 
+New section :ref:`review` describing benefits and various forms of
+pull request reviews has been added to the :ref:`contribute` docs.
+
 
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

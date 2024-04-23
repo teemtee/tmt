@@ -61,6 +61,7 @@ You can get some more context in the `stackoverflow`__ article.
 
 __ http://stackoverflow.com/questions/2290016/
 
+.. _develop:
 
 Develop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -296,6 +297,29 @@ squash the changes into a single commit. Use multiple commits to
 group relevant code changes if the pull request is too large for a
 single commit.
 
+If the pull request addresses an existing issue, mention it using
+one of the automatically `parsed formats`__ so that it is linked
+to it, for example:
+
+.. code-block:: markdown
+
+    Fix #1234.
+
+By default only a core set of tests is executed against a newly
+created pull request and its updates to verify basic sanity of the
+change. Once the pull request content is ready for a thorough
+testing add the ``full test`` label and make sure that the
+``discuss`` label is not present. All future changes of the pull
+request will be tested with the full test coverage. For changes
+related to documentation only the full test suite is not required.
+
+__ https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests#linking-a-pull-request-to-an-issue
+
+.. _checklist:
+
+Checklist
+------------------------------------------------------------------
+
 The following checklist template is automatically added to the
 new pull request description to easily track progress of the
 implementation and prevent forgetting about essential steps to be
@@ -324,25 +348,59 @@ whether given functionality is already available in their package:
 
     .. versionadded:: 1.23
 
-If the pull request addresses an existing issue, mention it using
-one of the automatically parsed formats so that it is linked to
-it, for example:
+.. _review:
 
-.. code-block:: markdown
+Review
+------------------------------------------------------------------
 
-    Fix #1234.
+Code review is an essential part of the workflow. It ensures good
+quality of the code and prevents introducing regressions, but it
+also brings some additional benefits: By reading code written by
+others you can learn new stuff and get inspired for your own code.
+Each completed pull request review helps you, little by little, to
+get familiar with larger part of the project code and empowers you
+to contribute more easily in the future.
 
-By default only a core set of tests is executed against a newly
-created pull request and its updates to verify basic sanity of the
-change. Once the pull request content is ready for a thorough
-testing add the ``full test`` label and make sure that the
-``discuss`` label is not present. All future changes of the pull
-request will be tested with the full test coverage. For changes
-related to documentation only the full test suite is not required.
+For instructions how to locally try a change on your laptop see
+the :ref:`develop` section. Basically just enable the development
+environment and check out the pull request branch or use the
+`github cli`__ to check out code from a fork repository:
+
+.. code-block:: shell
+
+    hatch -e dev shell         # enable the dev environment
+    git checkout the-feature   # if branch is in the tmt repo
+    gh pr checkout 1234        # check out branch from a fork
+
+It is also possible to directly install packages freshly built by
+Packit for given pull request. See the respective Packit check for
+detailed installation instructions.
+
+Note that you don't have to always read the whole change. There
+are several ways how to provide feedback on the pull request:
+
+* check how the **documentation** would be rendered in the
+  ``docs/readthedocs.org`` pull request check, look for typos,
+  identify wording which is confusing or not clear, point out that
+  documentation is completely missing for some area
+* remind a forgotten item from the :ref:`checklist`, for example
+  suggest writing a release note for a new significant feature
+  which should be highlighted to users
+* verify just the **functionality**, make sure it works as
+  expected and confirm it in a short comment, provide a simple
+  reproducer when something is broken
+* review only the newly added **test case**, verify that the test
+  works as expected and properly verifies the functionality
+
+Even partial review which happens sooner is beneficial, saves
+time. Every single comment helps to improve and move the project
+forward. No question is a dumb question. Every feedback counts!
+
+__ https://cli.github.com
 
 
 Merging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------
 
 Pull request merging is done by one of maintainers who have a good
 overview of the whole code. Maintainer who will take care of
