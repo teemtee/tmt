@@ -343,7 +343,7 @@ class Discover(tmt.steps.Step):
                 self._tests[phase.name] = []
 
                 # Prefix test name only if multiple plugins configured
-                prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
+                prefix = f'{phase.name}::' if len(self.phases()) > 1 else ''
                 # Check discovered tests, modify test name/path
                 for test in phase.tests(enabled=True):
                     test.name = f"{prefix}{test.name}"

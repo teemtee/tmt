@@ -2734,7 +2734,8 @@ class Tree(tmt.utils.Common):
                  path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
                  fmf_context: Optional[FmfContext] = None,
-                 logger: tmt.log.Logger) -> None:
+                 logger: tmt.log.Logger,
+                 phase_name: Optional[str] = None) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 
         # TODO: not calling parent __init__ on purpose?
@@ -2743,6 +2744,7 @@ class Tree(tmt.utils.Common):
         self._path = path or Path.cwd()
         self._tree = tree
         self._custom_fmf_context = fmf_context or FmfContext()
+        self.phase_name = phase_name
 
     @classmethod
     def grow(
@@ -2903,11 +2905,12 @@ class Tree(tmt.utils.Common):
 
         def name_filter(nodes: Iterable[fmf.Tree]) -> list[fmf.Tree]:
             """ Filter nodes based on names provided on the command line """
+            prefix = f'{self.phase_name}::' if self.phase_name else ''
             if not cmd_line_names:
                 return list(nodes)
             return [
                 node for node in nodes
-                if any(re.search(name, node.name) for name in cmd_line_names)]
+                if any(re.search(name, f'{prefix}{node.name}') for name in cmd_line_names)]
 
         # Append post filter to support option --enabled or --disabled
         if Test._opt('enabled'):
