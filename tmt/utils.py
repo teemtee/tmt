@@ -251,13 +251,15 @@ GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GI
 T = TypeVar('T')
 
 
-def effective_workdir_root() -> Path:
+def effective_workdir_root(workdir_root_option: Optional[str] = None) -> Path:
     """
     Find out what the actual workdir root is.
-
-    If ``TMT_WORKDIR_ROOT`` variable is set, it is used as the workdir root.
+    If ``workdir-root`` cli option is set, it is used as the workdir root.
+    Otherwise, ``TMT_WORKDIR_ROOT`` variable is used, if it is set.
     Otherwise, the default of :py:data:`WORKDIR_ROOT` is used.
     """
+    if workdir_root_option:
+        return Path(workdir_root_option)
 
     if 'TMT_WORKDIR_ROOT' in os.environ:
         return Path(os.environ['TMT_WORKDIR_ROOT'])
@@ -1514,6 +1516,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
+            workdir_root: Optional[str] = None,
             relative_indent: int = 1,
             cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             logger: tmt.log.Logger,
@@ -1538,7 +1541,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # Use lowercase class name as the default name
         self.name = name or self.__class__.__name__.lower()
         self.parent = parent
-
+        self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
 
         self.inject_logger(logger)
@@ -1561,6 +1564,18 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # the name we just set.
         if 'safe_name' in self.__dict__:
             delattr(self, 'safe_name')
+
+    @property
+    def workdir_root(self) -> str:
+        if self._workdir_root:
+            return self._workdir_root
+        if self.parent:
+            return self.parent.workdir_root
+        return effective_workdir_root()
+
+    @workdir_root.setter
+    def workdir_root(self, workdir_root: str) -> None:
+        self._workdir_root = workdir_root
 
     @cached_property
     def safe_name(self) -> str:

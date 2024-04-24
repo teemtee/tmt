@@ -29,7 +29,7 @@ import tmt.templates
 import tmt.trying
 import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Path, cached_property
+from tmt.utils import Path, cached_property, effective_workdir_root
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
@@ -1750,9 +1750,10 @@ def status(
 # inference. See Context and ContextObjects above.
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
 @pass_context
+@workdir_root_options
 @verbosity_options
 @dry_options
-def clean(context: Context, **kwargs: Any) -> None:
+def clean(context: Context, workdir_root: str, **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
 
@@ -1780,8 +1781,6 @@ def clean(context: Context, **kwargs: Any) -> None:
     if context.invoked_subcommand is None:
         assert context.obj.clean_logger is not None  # narrow type
 
-        # Set path to default
-        context.params['workdir_root'] = tmt.utils.WORKDIR_ROOT
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
@@ -1790,14 +1789,15 @@ def clean(context: Context, **kwargs: Any) -> None:
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context))
-        if tmt.utils.WORKDIR_ROOT.exists():
+        root_path = effective_workdir_root(workdir_root)
+        if root_path.exists():
             if not clean_obj.guests():
                 exit_code = 1
             if not clean_obj.runs():
                 exit_code = 1
         else:
             clean_obj.warn(
-                f"Directory '{tmt.utils.WORKDIR_ROOT}' does not exist, "
+                f"Directory '{root_path}' does not exist, "
                 f"skipping guest and run cleanup.")
         clean_obj.images()
         raise SystemExit(exit_code)
@@ -1863,6 +1863,7 @@ def clean_runs(
 
     assert context.obj.clean_logger is not None  # narrow type
 
+    tmt.utils.Common.workdir_root = workdir_root
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-runs', extra_shift=0)
@@ -1903,7 +1904,7 @@ def clean_guests(
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
-
+    tmt.utils.Common.workdir_root = workdir_root
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-guests', extra_shift=0)

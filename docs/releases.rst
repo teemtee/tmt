@@ -4,6 +4,12 @@
     Releases
 ======================
 
+tmt-1.33
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add support --workdir-root for clean function, users can specify
+the dir they want to clean things for.
+
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
