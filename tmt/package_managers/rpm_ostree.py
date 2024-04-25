@@ -104,10 +104,6 @@ class RpmOstree(tmt.package_managers.PackageManager):
             self,
             *installables: Installable,
             options: Optional[Options] = None) -> CommandOutput:
-        if len(installables) != 1:
-            raise GeneralError(
-                "rpm-ostree package manager does not support installation of multiple packages.")
-
         options = options or Options()
 
         extra_options = self._extra_options(options)

@@ -1,11 +1,14 @@
-summary: Various package installation options
-description:
-    Check basic installation of an existing and missing package.
-    Make sure that special characters are correctly escaped.
-    Verify that installation from copr works for epel7. Exercises
-    all provision methods in full mode, container only by default.
+summary: Exercise prepare/install plugin
+description: |
+    Check basic installation of required and recommended packages, both
+    valid and invalid ones.
+    Also verify special characters are correctly escaped, and copr
+    functionality.
+duration: 120m
 tag+:
   - provision-only
   - provision-container
-  - provision-local
   - provision-virtual
+
+# TODO: what test cases are safe enough to be executed against the localhost?
+#  - provision-local

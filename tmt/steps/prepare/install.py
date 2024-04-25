@@ -323,6 +323,12 @@ class InstallDnf(InstallBase, Copr):
                 *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages])
 
 
+class InstallDnf5(InstallDnf):
+    """ Install packages using dnf5 """
+
+    copr_plugin = "dnf5-command(copr)"
+
+
 class InstallYum(InstallDnf):
     """ Install packages using yum """
 
@@ -336,6 +342,25 @@ class InstallRpmOstree(InstallBase, Copr):
 
     recommended_packages: list[Union[Package, FileSystemPath]]
     required_packages: list[Union[Package, FileSystemPath]]
+
+    def enable_copr(self, repositories: list[str]) -> None:
+        """ Enable requested copr repositories """
+
+        # rpm-ostree can step outside of its zone of competence, and use
+        # another package manager to enable copr. We just need to cheat
+        # the `InstallDnf5` & swap guest's package manager for `dnf5`
+        # for a moment.
+        self.guest.facts.package_manager = 'dnf5'
+        # TODO: wouldn't it be nice if we could just call copr method
+        # without populating `dependencies` & co. with dummy values.
+        InstallDnf5(
+            parent=cast('PrepareInstall', self.parent),
+            guest=self.guest,
+            dependencies=[],
+            directories=[],
+            exclude=[],
+            logger=self._logger).enable_copr(repositories)
+        self.guest.facts.package_manager = 'rpm-ostree'
 
     def sort_packages(self) -> None:
         """ Identify required and recommended packages """
@@ -634,7 +659,16 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 exclude=self.data.exclude,
                 guest=guest)
 
-        elif guest.facts.package_manager in ('dnf', 'dnf5'):
+        elif guest.facts.package_manager == 'dnf5':
+            installer = InstallDnf5(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest)
+
+        elif guest.facts.package_manager == 'dnf':
             installer = InstallDnf(
                 logger=logger,
                 parent=self,

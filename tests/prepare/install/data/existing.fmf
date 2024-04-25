@@ -1,6 +1,12 @@
-summary: Install an existing package
+summary: Install existing packages
 prepare:
-    how: install
-    package: tree
-execute:
-    script: rpm -q tree
+  - how: install
+    package:
+      - tree
+      - diffutils
+
+adjust:
+  - when: distro == ubuntu
+    prepare+<:
+      - how: shell
+        script: apt-get update

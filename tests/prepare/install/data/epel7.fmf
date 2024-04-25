@@ -1,5 +1,3 @@
-provision+:
-    image: centos:7
 prepare:
     how: install
     copr: '@oamg/convert2rhel'
