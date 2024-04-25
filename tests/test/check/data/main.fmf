@@ -19,6 +19,7 @@
     test: |
       set -x
       systemctl status auditd || /bin/true
+      systemctl start auditd
       sudo bash -c "passwd --help &> /root/passwd.log; \
                     ls -alZ /root/passwd.log; \
                     rm -f /root/passwd.log" || /bin/true
