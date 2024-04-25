@@ -108,11 +108,20 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             'processors': {
                                 '_op': '>',
                                 '_value': '8'
-                                }
-                            }
+                                },
+                            },
                         },
-                    {'or': []},
-                    {'or': []},
+                    {
+                        'or': [],
+                        },
+                    {
+                        'cpu': {
+                            'cores': {
+                                '_op': '==',
+                                '_value': '2'
+                                },
+                            },
+                        },
                     {'or': []},
                     {'or': []},
                     {'or': []},
@@ -283,6 +292,20 @@ def test_cpu_processors(root_logger: Logger) -> None:
             'processors': {
                 '_op': '==',
                 '_value': '79'
+                }
+            }
+        }
+
+
+def test_cpu_cores(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.cores'](
+        _parse_cpu({'cores': '2'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'cores': {
+                '_op': '==',
+                '_value': '2'
                 }
             }
         }

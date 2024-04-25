@@ -52,6 +52,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'cpu.flag',
     'cpu.processors',
     'cpu.model',
+    'cpu.cores',
     'disk.size',
     'disk.model_name',
     'disk.driver',
@@ -261,6 +262,18 @@ def _transform_cpu_processors(
         children=[MrackHWBinOp('processors', beaker_operator, actual_value)])
 
 
+def _transform_cpu_cores(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
+
+
 def _transform_disk_driver(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -406,6 +419,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
     'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
+    'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
     'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
     'disk.size': _transform_disk_size,  # type: ignore[dict-item]

@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.33
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`CPU cores</spec/hardware/cpu>` HW requirement.
+
+:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+support for :ref:`Virtualization hypervisor</spec/hardware/virtualization>`
+HW requirement.
+
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
