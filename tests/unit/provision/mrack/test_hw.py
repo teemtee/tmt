@@ -108,11 +108,20 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             'processors': {
                                 '_op': '>',
                                 '_value': '8'
-                                }
-                            }
+                                },
+                            },
                         },
-                    {'or': []},
-                    {'or': []},
+                    {
+                        'or': [],
+                        },
+                    {
+                        'cpu': {
+                            'cores': {
+                                '_op': '==',
+                                '_value': '2'
+                                },
+                            },
+                        },
                     {'or': []},
                     {'or': []},
                     {'or': []},
