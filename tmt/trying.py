@@ -19,6 +19,7 @@ import tmt.steps.provision
 import tmt.templates
 import tmt.utils
 from tmt import Plan
+from tmt.base import RunData
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
@@ -234,6 +235,19 @@ class Try(tmt.utils.Common):
 
         self.print(" ".join(parts) + ".")
 
+    def save(self) -> None:
+        """ Save list of selected plans and enabled steps """
+        assert self.tree is not None  # narrow type
+        assert self._cli_context_object is not None  # narrow type
+        data = RunData(
+            root=str(self.tree.root) if self.tree.root else None,
+            plans=[plan.name for plan in self.plans] if self.plans is not None else None,
+            steps=list(self._cli_context_object.steps),
+            environment=self.environment,
+            remove=self.opt('remove')
+            )
+        self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
+
     def choose_action(self) -> Action:
         """ Print menu, get next action """
 
@@ -394,12 +408,15 @@ class Try(tmt.utils.Common):
         # Create run, prepare it for testing
         run = tmt.base.Run(tree=self.tree, logger=self._logger, parent=self)
         run.prepare_for_try(self.tree)
+        self._workdir = run.workdir
+        self.environment = run.environment
 
         # Check tree, plans and tests, welcome summary
         self.check_tree()
         self.check_plans(run=run)
         self.check_tests()
         self.welcome()
+        self.save()
 
         # Set the default verbosity level
         for plan in self.plans:
