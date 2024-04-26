@@ -1718,7 +1718,7 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
 @pass_context
 @workdir_root_options
 @option(
-    '-i', '--id', metavar="ID",
+    '-i', '--id', metavar="ID", multiple=True,
     help='Run id (name or directory path) to show status of.')
 @option(
     '--abandoned', is_flag=True, default=False,
@@ -1855,7 +1855,7 @@ def perform_clean(
 @option(
     '-l', '--last', is_flag=True, help='Clean the workdir of the last run.')
 @option(
-    '-i', '--id', 'id_', metavar="ID",
+    '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Run id (name or directory path) to clean workdir of.')
 @option(
     '-k', '--keep', type=int, default=None,
@@ -1866,7 +1866,7 @@ def clean_runs(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: Optional[str],
+        id_: tuple[str],
         keep: Optional[int],
         **kwargs: Any) -> None:
     """
@@ -1874,7 +1874,7 @@ def clean_runs(
 
     Remove all runs in '/var/tmp/tmt' by default.
     """
-    defined = [last is True, id_ is not None, keep is not None]
+    defined = [last is True, len(id_) > 0, keep is not None]
     if defined.count(True) > 1:
         raise tmt.utils.GeneralError(
             "Options --last, --id and --keep cannot be used together.")
@@ -1900,7 +1900,7 @@ def clean_runs(
 @option(
     '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
 @option(
-    '-i', '--id', 'id_', metavar="ID", default=None,
+    '-i', '--id', 'id_', metavar="ID", default=None, multiple=True,
     help='Run id (name or directory path) to stop the guest of.')
 @option(
     '-h', '--how', metavar='METHOD',
@@ -1911,14 +1911,14 @@ def clean_guests(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: Optional[int],
+        id_: tuple[str],
         **kwargs: Any) -> None:
     """
     Stop running guests of runs.
 
     Stop guests of all runs in '/var/tmp/tmt' by default.
     """
-    if last and id_ is not None:
+    if last and len(id_) > 0:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
     if not Path(workdir_root).exists():

@@ -4656,17 +4656,19 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
 def generate_runs(
         path: Path,
-        id_: Optional[str] = None) -> Iterator[Path]:
+        id_: tuple[str]) -> Iterator[Path]:
     """ Generate absolute paths to runs from path """
     # Prepare absolute workdir path if --id was used
-    if id_:
-        run_path = Path(id_)
-        if '/' not in id_:
-            run_path = path / run_path
-        if run_path.is_absolute():
-            if run_path.exists():
+    run_path = None
+    for id_name in id_:
+        if id_name:
+            run_path = Path(id_name)
+            if '/' not in id_name:
+                run_path = path / run_path
+            if run_path.is_absolute() and run_path.exists():
                 yield run_path
-            return
+    if run_path:
+        return
     if not path.exists():
         return
     for childpath in path.iterdir():
@@ -4675,7 +4677,7 @@ def generate_runs(
         # is being applied). If it is defined, it has been transformed
         # to absolute path and must be equal to abs_path for the run
         # in abs_path to be generated.
-        invalid_id = id_ and str(abs_child_path) != id_
+        invalid_id = id_ and str(abs_child_path) not in id_
         invalid_run = not abs_child_path.joinpath('run.yaml').exists()
         if not abs_child_path.is_dir() or invalid_id or invalid_run:
             continue
