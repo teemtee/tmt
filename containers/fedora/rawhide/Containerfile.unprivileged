@@ -1,0 +1,11 @@
+#
+# A custom Fedora rawhide image, with unprivieged account & password-less sudo
+#
+
+FROM quay.io/fedora/fedora:rawhide
+
+RUN    useradd fedora \
+    && usermod -aG wheel fedora \
+    && echo -e 'fedora\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
+
+USER fedora

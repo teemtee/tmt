@@ -8,7 +8,7 @@ adjust:
     - when: provisiontest == container
       provision+:
         how: container
-        image: localhost/become-container-test:latest
+        image: localhost/fedora/rawhide/unprivileged:tmt-unit-tests
 
 execute:
     how: tmt

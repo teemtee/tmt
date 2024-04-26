@@ -14,16 +14,14 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, set specific user"
-        if [ "$PROVISION_HOW" = "virtual" ]; then
-            user="fedora"
-            ids="1000"
-        else
-            user="nobody"
-            ids="65534"
+        image=""
+
+        if [ "$PROVISION_HOW" = "container" ]; then
+            image="--image localhost/fedora/rawhide/unprivileged:tmt-unit-tests"
         fi
 
-        rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW --user $user report -vvv"
-        rlAssertGrep "uid=$ids($user) gid=$ids($user) groups=$ids($user)" $rlRun_LOG
+        rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW $image --user fedora report -vvv"
+        rlAssertGrep "uid=1000(fedora) gid=1000(fedora) groups=1000(fedora)" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
