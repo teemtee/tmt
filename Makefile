@@ -83,7 +83,7 @@ images:  ## Build tmt images for podman/docker
 	podman build -t tmt --squash -f ./containers/Containerfile.mini .
 	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
-images-unit-tests: image-unit-tests-alpine image-unit-tests-coreos image-tests-fedora-become  ## Build images for unit tests
+images-unit-tests: image-unit-tests-alpine image-unit-tests-coreos image/tests/fedora/rawhide/unprivileged  ## Build images for unit tests
 
 image-unit-tests-alpine:  ## Build local alpine image for unit tests
 	podman build -t alpine:$(UNIT_TESTS_IMAGE_TAG) -f ./containers/Containerfile.alpine .
