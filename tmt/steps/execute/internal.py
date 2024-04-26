@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 import os
 import subprocess
 import textwrap
@@ -548,7 +549,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     logger.verbose(
                         f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
-                        if invocation.handle_reboot():
+                        if invocation.handle_reboot(
+                                flush_func=functools.partial(guest.pull, source=self.step.plan.data_directory)
+                        ):
                             continue
                     except tmt.utils.RebootTimeoutError:
                         for result in invocation.results:

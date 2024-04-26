@@ -319,7 +319,7 @@ class TestInvocation:
 
         return True
 
-    def handle_reboot(self) -> bool:
+    def handle_reboot(self, flush_func=None) -> bool:
         """
         Reboot the guest if the test requested it.
 
@@ -344,6 +344,7 @@ class TestInvocation:
 
         reboot_command: Optional[ShellScript] = None
         timeout: Optional[int] = None
+        flush_artifacts: bool = False
 
         if self.hard_reboot_requested:
             pass
@@ -361,6 +362,16 @@ class TestInvocation:
                 timeout = int(reboot_data.get('timeout'))
             except ValueError:
                 timeout = None
+
+            flush_artifacts = reboot_data.get('flush_artifacts', flush_artifacts)
+
+            if flush_artifacts:
+                # Pull artifacts created in the plan data directory
+                self.logger.debug("Flush artifacts requested, pull the test data directory.", level=2)
+                if flush_func:
+                    flush_func()
+                else:
+                    self.guest.pull(source=self.test_data_path)
 
             os.remove(self.reboot_request_path)
             self.guest.push(self.test_data_path)

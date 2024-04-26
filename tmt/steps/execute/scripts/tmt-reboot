@@ -13,11 +13,13 @@ PATH=/sbin:/usr/sbin:$PATH
 command=""
 timeout=""
 efi=True
-while getopts "c:t:e" flag; do
+flush_artifacts=False
+while getopts "c:t:e:f" flag; do
     case "${flag}" in
         c) command="${OPTARG}";;
         t) timeout="${OPTARG}";;
         e) efi=False;;
+        f) flush_artifacts=True;;
     esac
 done
 
@@ -37,4 +39,4 @@ if [ $efi = True ]; then
     fi
 fi
 
-flock "$TMT_TEST_PIDFILE_LOCK" tmt-reboot-core "$command" "$timeout"
+flock "$TMT_TEST_PIDFILE_LOCK" tmt-reboot-core "$command" "$timeout" "$flush_artifacts"
