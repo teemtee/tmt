@@ -681,9 +681,38 @@ def _transform_system_vendor_name(
     return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
+def _transform_boot_method(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> Union[MrackBaseHWElement, dict[str, Any]]:
+    # custom config example:
+    # boot:
+    # method: '{"or": [{"key_value": {"_key": "NETBOOT_METHOD", "_value": "%s"},},
+    # {"key_value": {"_key": "NETBOOT_METHOD", "_value": "%s"},}]}'
+
+    config = _get_custom_config().get('boot', {}).get('method')
+    if not config:
+        return _transform_unsupported(constraint, logger)
+    beaker_operator = (
+        OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ]
+        if constraint.operator is tmt.hardware.Operator.CONTAINS
+        else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
+    )
+    actual_value = str(constraint.value)
+    test = (beaker_operator, actual_value)
+
+    if test in [('==', 'bios'), ('!=', 'uefi')]:
+        # For easy format. We use or in config, so it won't hurt
+        return yaml_to_dict(config % ('pxe', 'pxe'))
+    if test in [('==', 'uefi'), ('!=', 'bios')]:
+        return yaml_to_dict(config % ('grub2', 'efigrub'))
+    # We only support uefi/bios bootloaders, for now.
+    return _transform_unsupported(constraint, logger)
+
+
 ConstraintTransformer = Callable[
     [tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement
 ]
+
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
@@ -714,6 +743,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
     'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
     'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
+    'boot.method': _transform_boot_method,  # type: ignore[dict-item]
 }
 
 
