@@ -240,8 +240,17 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 }
                             }
                         },
-                    {'or': []},
-                    {'or': []}
+                    {
+                        'or': []
+                        },
+                    {
+                        'system': {
+                            'hypervisor': {
+                                '_op': 'like',
+                                '_value': 'xen'
+                                }
+                            }
+                        }
                     ]
                 },
             {
@@ -493,6 +502,58 @@ def test_virtualization_is_virtualized(root_logger: Logger) -> None:
             'hypervisor': {
                 '_op': '==',
                 '_value': ''
+                }
+            }
+        }
+
+
+def test_virtualization_hypervisor(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
+        _parse_virtualization({"hypervisor": "~ kvm"}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'hypervisor': {
+                '_op': 'like',
+                '_value': 'kvm'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
+        _parse_virtualization({"hypervisor": "!~ kvm"}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'system': {
+                'hypervisor': {
+                    '_op': 'like',
+                    '_value': 'kvm'
+                    }
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
+        _parse_virtualization({"hypervisor": "kvm"}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'hypervisor': {
+                '_op': '==',
+                '_value': 'kvm'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['virtualization.hypervisor'](
+        _parse_virtualization({"hypervisor": "!= kvm"}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'hypervisor': {
+                '_op': '!=',
+                '_value': 'kvm'
                 }
             }
         }
