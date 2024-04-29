@@ -4,13 +4,13 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "pushd data"
         if [[ "$PROVISION_HOW" == "container" ]]; then
             # Try several times to build the container
             # https://github.com/teemtee/tmt/issues/2063
-            build="podman build -t become-container-test:latest ."
+            build="make -C ../../../ image/tests/fedora/rawhide/unprivileged"
             rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the image"
         fi
+        rlRun "pushd data"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, test with become=true"
@@ -45,8 +45,5 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
-        if [[ "$PROVISION_HOW" == "container" ]]; then
-            rlRun "podman image rm -f localhost/become-container-test:latest" 0 "Remove custom image"
-        fi
     rlPhaseEnd
 rlJournalEnd
