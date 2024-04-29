@@ -449,6 +449,21 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
+TMT_SSH_*
+    Every environment variable in this format would be treated as an SSH
+    option, and passed to the ``-o`` option of ``ssh`` command. See
+    ``man 5 ssh_config`` for the list of all options.
+
+    The environment variable name would be converted into an SSH option,
+    e.g. ``export TMT_SSH_CONNECTION_ATTEMPTS=5`` would become
+    ``-oConnectionAttempts=5``. ``export TMT_SSH_ConnectionAttempts=5``
+    would also be accepted.
+
+    SSH options provided via environment variables will be overruled by
+    guest-specific ``ssh-options`` key.
+
+    .. versionadded:: 1.33
+
 TMT_REPORT_ARTIFACTS_URL
     Link to test artifacts provided for report plugins.
 
