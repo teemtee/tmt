@@ -562,17 +562,21 @@ Release
 
 Follow the steps below to create a new major or minor release:
 
-* Use ``git log --oneline --no-decorate x.y-1..`` to generate the changelog
+
 * Update ``overview.rst`` with new contributors since the last release
 * Review the release notes in ``releases.rst``, update as needed
-* Add a ``Release tmt-x.y.0`` commit with the specfile update
 * Create a pull request with the commit, ensure tests pass, merge it
 
 Release a new package to Fedora and EPEL repositories:
 
 * Move the ``fedora`` branch to point to the new release
-* Tag the commit with ``x.y.0``, push tags ``git push --tags``
+* Tag the commit with ``x.y.z``, push tags ``git push --tags``
 * Create a new `github release`__ based on the tag above
+    * Name of the release is based on the most important changes
+    * Do not include version in the release name
+    * Use `;` as delimiter, when multiple items are being mentioned in the name
+    * Use "Generate release notes" button
+    * Prepend "See the release notes for the list of interesting changes." line with link to rtd
 * Check Fedora `pull requests`__, make sure tests pass and merge
 
 Finally, if everything went well:
