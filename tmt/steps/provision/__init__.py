@@ -230,8 +230,10 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError as exc:
             if exc.stdout and 'Please login as the user' in exc.stdout:
                 raise tmt.utils.GeneralError(f'Login to the guest failed.\n{exc.stdout}') from exc
-            if exc.stderr and 'executable file `/bin/bash` not found' in exc.stderr:
-                raise tmt.utils.GeneralError('Bash is required on the guest.') from exc
+            if exc.stderr and \
+                    f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr:
+                raise tmt.utils.GeneralError(
+                    f'{tmt.utils.DEFAULT_SHELL} is required on the guest.') from exc
 
         return None
 
