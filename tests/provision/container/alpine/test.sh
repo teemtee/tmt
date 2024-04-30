@@ -15,7 +15,7 @@ rlJournalStart
         rlRun -s "tmt run --all --id $run --verbose --scratch \
             provision --how container --image docker.io/alpine \
             execute --how tmt --script whoami" 2
-        rlAssertGrep "fail: Bash is required on the guest." $rlRun_LOG
+        rlAssertGrep "fail: /bin/bash is required on the guest." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Test alpine with bash"
