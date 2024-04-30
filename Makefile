@@ -6,7 +6,7 @@
 
 # Prepare variables
 TMP = $(CURDIR)/tmp
-TESTS_IMAGE_TAG = tmt-tests
+UNIT_TESTS_IMAGE_TAG = tmt-unit-tests
 
 # Define special targets
 .DEFAULT_GOAL := help
