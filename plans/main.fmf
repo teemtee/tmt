@@ -10,11 +10,6 @@ prepare+:
       - make
       - python3-pip
 
-  # Make sure test container images are built
-  - how: shell
-    script:
-      - make -C $TMT_TREE images-unit-tests
-
   - how: shell
     script:
       # Try to install into .local first, if that fails, try without --user.

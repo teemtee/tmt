@@ -5,6 +5,8 @@ USER="tester"
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "make -C ../../../../ image-unit-tests-alpine"
+
         # Directories
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
@@ -20,7 +22,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test alpine with bash"
         rlRun -s "tmt run -vv --all --id $run --verbose --scratch \
-            provision --how container --image localhost/alpine:tmt-tests \
+            provision --how container --image localhost/alpine:tmt-unit-tests \
             execute --how tmt --script whoami" 0
         rlAssertGrep "out: root" $rlRun_LOG
     rlPhaseEnd
