@@ -13,7 +13,7 @@ prepare+:
   # Make sure test container images are built
   - how: shell
     script:
-      - make -C $TMT_TREE images-tests
+      - make -C $TMT_TREE images-unit-tests
 
   - how: shell
     script:
