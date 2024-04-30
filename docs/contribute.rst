@@ -562,18 +562,20 @@ Release
 
 Follow the steps below to create a new major or minor release:
 
-* Use ``git log --oneline --no-decorate x.y-1..`` to generate the changelog
 * Update ``overview.rst`` with new contributors since the last release
 * Review the release notes in ``releases.rst``, update as needed
-* Add a ``Release tmt-x.y.0`` commit with the specfile update
+* Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
 * Create a pull request with the commit, ensure tests pass, merge it
-
-Release a new package to Fedora and EPEL repositories:
-
 * Move the ``fedora`` branch to point to the new release
-* Tag the commit with ``x.y.0``, push tags ``git push --tags``
-* Create a new `github release`__ based on the tag above
-* Check Fedora `pull requests`__, make sure tests pass and merge
+* Tag the commit with ``x.y.z``, push tags ``git push --tags``
+
+Create a new `github release`__ based on the tag above
+
+* Mention the most important changes in the name, do not include version
+* Use ``;`` as a delimiter, when multiple items are mentioned in the name
+* Push the "Generate release notes" button to create the content
+* Prepend the "See the `release notes`__ for the list of interesting changes." line
+* Publish the release, check Fedora `pull requests`__, make sure tests pass and merge
 
 Finally, if everything went well:
 
@@ -592,6 +594,7 @@ Handle manually what did not went well:
   in any open issue.
 
 __ https://github.com/teemtee/tmt/releases/
+__ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
 __ https://pypi.org/project/tmt/
