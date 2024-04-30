@@ -233,7 +233,7 @@ class GuestFacts(SerializableContainer):
             if exc.stderr and \
                     f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr:
                 raise tmt.utils.GeneralError(
-                    f'{tmt.utils.DEFAULT_SHELL} is required on the guest.') from exc
+                    f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.') from exc
 
         return None
 
