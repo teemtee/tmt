@@ -8,8 +8,9 @@ description:
     In order to prevent stuck tests consuming resources we define a
     maximum time for test execution. If the limit is exceeded the
     running test is killed by the test harness. Value extends the
-    format of the ``sleep`` command by allowing multiplication (``*[number]``).
+    format of the ``sleep`` command by allowing multiplication (``*[float]``).
     First all time values are sum together and only after that are multiplied.
+    Final value is then rounded up to whole number.
 
     Must be a ``string``. The default value is ``5m``
 
@@ -47,6 +48,8 @@ example:
     adjust:
         duration+: *2
         when: arch == aarch64
+        duration+: *0.9
+        when: arch == s390x
 
 
 link:

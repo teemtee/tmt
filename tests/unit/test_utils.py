@@ -333,9 +333,10 @@ def test_duration_to_seconds():
     assert duration_to_seconds('1s2s') == 3
     assert duration_to_seconds('1 m2   m') == 180
     # Allow multiply but sum first, then multiply: (60+4) * (2+3)
-    assert duration_to_seconds('1s *3') == 3
     assert duration_to_seconds('*2 1m *3 4') == 384
     assert duration_to_seconds('*2 *3 1m4') == 384
+    # Round up
+    assert duration_to_seconds('1s *3.3') == 4
 
 
 @pytest.mark.parametrize("duration", [
