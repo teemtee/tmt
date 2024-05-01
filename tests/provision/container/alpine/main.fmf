@@ -1,0 +1,10 @@
+summary: Test Alpine Linux container
+description:
+    Make sure that Alpine Linux container works as expected.
+    The vanilla alpine linux does not contain `bash` package,
+    so make sure a reasonable error is returned to the user.
+    Run a simple successful check against the Alpine Linux
+    tests image.
+tag+:
+    - provision-only
+    - provision-container

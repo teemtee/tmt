@@ -449,6 +449,53 @@ class InstallApt(InstallBase):
                 *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages])
 
 
+class InstallApk(InstallBase):
+    """ Install packages using apk """
+
+    def install_local(self) -> None:
+        """ Install packages stored in a local directory """
+
+        filelist = [PackagePath(self.package_directory / filename)
+                    for filename in self.local_packages]
+
+        self.guest.package_manager.install(
+            *self.list_installables('local packages', *filelist),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                allow_untrusted=True
+                )
+            )
+
+        summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
+        self.info('total', f"{summary} installed", 'green')
+
+    def install_from_url(self) -> None:
+        """ Install packages stored on a remote URL """
+
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" '
+            'does not support installing from a remote URL.')
+
+    def install_from_repository(self) -> None:
+        """ Install packages from a repository """
+
+        self.guest.package_manager.install(
+            *self.list_installables("package", *self.packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing
+                )
+            )
+
+    def install_debuginfo(self) -> None:
+        """ Install debuginfo packages """
+
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" does not support '
+            'installing debuginfo packages.')
+
+
 @dataclasses.dataclass
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
     package: list[tmt.base.DependencySimple] = field(
@@ -607,6 +654,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         elif guest.facts.package_manager == 'apt':
             installer = InstallApt(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest)
+
+        elif guest.facts.package_manager == 'apk':
+            installer = InstallApk(
                 logger=logger,
                 parent=self,
                 dependencies=self.data.package,

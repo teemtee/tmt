@@ -140,6 +140,9 @@ class Options:
     #: was ``release_version``.
     release_version: Optional[str] = None
 
+    #: If set, instruct package manager to install from untrusted sources.
+    allow_untrusted: bool = False
+
 
 class PackageManager(tmt.utils.Common):
     """ A base class for package manager plugins """
