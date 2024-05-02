@@ -6,7 +6,6 @@
 
 # Prepare variables
 TMP = $(CURDIR)/tmp
-UNIT_TESTS_IMAGE_TAG = tmt-unit-tests
 
 # Define special targets
 .DEFAULT_GOAL := help
@@ -83,16 +82,33 @@ images:  ## Build tmt images for podman/docker
 	podman build -t tmt --squash -f ./containers/Containerfile.mini .
 	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
-images-unit-tests: image-unit-tests-alpine image-unit-tests-coreos image/tests/fedora/rawhide/unprivileged  ## Build images for unit tests
+TMT_TEST_IMAGES := image/tests/alpine \
+                   image/tests/alpine/upstream \
+                   image/tests/fedora/coreos \
+                   image/tests/fedora/coreos/ostree \
+                   image/tests/fedora/rawhide \
+                   image/tests/fedora/rawhide/unprivileged
 
-image-unit-tests-alpine:  ## Build local alpine image for unit tests
-	podman build -t alpine:$(UNIT_TESTS_IMAGE_TAG) -f ./containers/Containerfile.alpine .
+images-tests: $(TMT_TEST_IMAGES)  ## Build customized images for tests
 
-image-unit-tests-coreos:  ## Build local CoreOS image for unit tests
-	podman build -t fedora-coreos:$(UNIT_TESTS_IMAGE_TAG) -f ./containers/Containerfile.coreos .
+image/tests/alpine:
+	podman build -t tmt/alpine:latest -f ./containers/alpine/Containerfile .
 
-image/tests/fedora/rawhide/unprivileged:  ## Build local Fedora image with unprivileged account and sudo
-	podman build -t fedora/rawhide/unprivileged:$(UNIT_TESTS_IMAGE_TAG) -f ./containers/fedora/rawhide/Containerfile.unprivileged .
+image/tests/alpine/upstream:
+	podman pull docker.io/library/alpine:3.19
+	podman tag docker.io/library/alpine:3.19 tmt/alpine/upstream:latest
+
+image/tests/fedora/coreos:
+	podman build -t tmt/fedora/coreos:stable -f ./containers/fedora/coreos/Containerfile .
+
+image/tests/fedora/coreos/ostree:
+	podman build -t tmt/fedora/coreos/ostree:stable -f ./containers/fedora/coreos/ostree/Containerfile .
+
+image/tests/fedora/rawhide:
+	podman build -t tmt/fedora/rawhide:latest -f ./containers/fedora/rawhide/Containerfile .
+
+image/tests/fedora/rawhide/unprivileged:
+	podman build -t tmt/fedora/rawhide/unprivileged:latest -f ./containers/fedora/rawhide/Containerfile.unprivileged .
 
 ##
 ## Development

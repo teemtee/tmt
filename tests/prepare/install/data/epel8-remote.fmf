@@ -1,5 +1,3 @@
-provision+:
-    image: centos:stream8
 prepare:
     how: install
     package:

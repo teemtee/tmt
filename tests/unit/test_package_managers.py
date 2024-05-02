@@ -44,9 +44,11 @@ CONTAINER_CENTOS_7 = Container(url='quay.io/centos/centos:7')
 CONTAINER_UBUNTU_2204 = Container(url='docker.io/library/ubuntu:22.04')
 # Local image created via `make image-unit-tests-coreos`, reference to local registry
 CONTAINER_FEDORA_COREOS = Container(
-    url='containers-storage:localhost/fedora-coreos:tmt-unit-tests')
-# Local image created via `make image-unit-tests-alpine`, reference to local registry
-CONTAINER_ALPINE = Container(url='containers-storage:localhost/alpine:tmt-unit-tests')
+    url='containers-storage:localhost/tmt/fedora/coreos:stable')
+CONTAINER_FEDORA_COREOS_OSTREE = Container(
+    url='containers-storage:localhost/tmt/fedora/coreos/ostree:stable')
+# Local image created via `make image-tests-alpine`, reference to local registry
+CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/alpine:latest')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
 PACKAGE_MANAGER_DNF = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf')
@@ -83,8 +85,8 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_UBUNTU_2204, PACKAGE_MANAGER_APT),
 
     # Fedora CoreOS
-    (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_RPMOSTREE),
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),
+    (CONTAINER_FEDORA_COREOS_OSTREE, PACKAGE_MANAGER_RPMOSTREE),
 
     # Alpine
     (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
@@ -158,8 +160,8 @@ def create_package_manager(
     guest.start()
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
-        # Note that our CoreOS image is customized and contains dnf5
-        if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
+        # Note that our custom images contain `dnf5` already
+        if 'tmt/' in container.image_url_or_id:
             pass
 
         else:
@@ -167,12 +169,6 @@ def create_package_manager(
 
     elif package_manager_class is tmt.package_managers.apt.Apt:
         guest.execute(ShellScript('apt update'))
-
-    # Simulate ostree environment for `rpm-ostree` package manager
-    guest.execute(ShellScript('rm -f /run/ostree-booted'))
-
-    if package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
-        guest.execute(ShellScript('touch /run/ostree-booted'))
 
     return package_manager_class(guest=guest, logger=logger)
 
@@ -203,25 +199,20 @@ def test_discovery(
 
         assert guest.facts.package_manager == expected
 
-    # CoreOS container needs to be tested twice, once to discover
-    # `rpm-ostree`, and once to discover `dnf5`. Simulate that by
-    # mocking `/run/ostree-booted`.
-    if container.image_url_or_id == CONTAINER_FEDORA_COREOS.url:
-        # Note that our CoreOS image is customized and contains dnf5
-        _test_discovery(tmt.package_managers.dnf.Dnf5.NAME)
-
-        guest.execute(ShellScript('touch /run/ostree-booted'))
-
-        _test_discovery(expected_package_manager.NAME)
-
     # Images in which `dnf5`` would be the best possible choice, do not
     # come with `dnf5`` pe-installed. Therefore run the discovery first,
     # but expect to find *dnf* instead of `dnf5`. Then install `dnf5`,
     # re-run the discovery and expect the original outcome.
+    #
+    # Except the Fedora CoreOS images: we preinstalled `dnf5` there, to
+    # complicate situation for `rpm-ostree` discovery.
     if expected_package_manager is tmt.package_managers.dnf.Dnf5:
-        _test_discovery(tmt.package_managers.dnf.Dnf.NAME)
+        if container.image_url_or_id not in (
+                CONTAINER_FEDORA_COREOS.url,
+                CONTAINER_FEDORA_COREOS_OSTREE.url):
+            _test_discovery(tmt.package_managers.dnf.Dnf.NAME)
 
-        guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+            guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
         _test_discovery(expected_package_manager.NAME)
 
@@ -1261,6 +1252,94 @@ def test_install_filesystempath(
         root_logger)
 
     output = package_manager.install(installable)
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    if expected_stdout:
+        assert output.stdout is not None
+        assert expected_stdout in output.stdout
+
+    if expected_stderr:
+        assert output.stderr is not None
+        assert expected_stderr in output.stderr
+
+
+def _parametrize_test_install_multiple() -> \
+        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Yum:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils", \
+                'Complete!', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils", \
+                'Complete!', \
+                None
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree diffutils \|\| dnf5 install -y  tree diffutils", \
+                None, \
+                None
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            yield container, \
+                package_manager_class, \
+                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils", \
+                'Setting up tree', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree diffutils \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree diffutils", \
+                'Installing: tree', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk info -e tree diffutils \|\| apk add tree diffutils", \
+                'Installing tree', \
+                None
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_multiple()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_multiple(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.install(Package('tree'), Package('diffutils'))
 
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))

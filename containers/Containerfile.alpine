@@ -1,4 +1,0 @@
-FROM docker.io/library/alpine:latest
-
-# tmt requires `bash` to be installed
-RUN apk add --no-cache bash

@@ -1,5 +1,5 @@
 #
-# A custom Fedora rawhide image, with unprivieged account & password-less sudo
+# A Fedora rawhide image tailored for tmt test suite, with unprivileged account & password-less sudo
 #
 
 FROM quay.io/fedora/fedora:rawhide

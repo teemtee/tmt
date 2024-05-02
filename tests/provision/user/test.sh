@@ -17,7 +17,7 @@ rlJournalStart
         image=""
 
         if [ "$PROVISION_HOW" = "container" ]; then
-            image="--image localhost/fedora/rawhide/unprivileged:tmt-unit-tests"
+            image="--image localhost/tmt/fedora/rawhide/unprivileged:latest"
         fi
 
         rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW $image --user fedora report -vvv"

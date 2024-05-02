@@ -1,0 +1,8 @@
+summary: Do nothing in prepare, CLI will provide inputs
+prepare: []
+
+adjust:
+  - when: distro == ubuntu
+    prepare+:
+      - how: shell
+        script: apt-get update
