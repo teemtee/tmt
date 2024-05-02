@@ -12,10 +12,10 @@ rlJournalStart
 
     rlPhaseStartTest "Run a test that requests a restart ($PROVISION_HOW)"
         if [ "$WITH_REBOOT" = "yes" ]; then
-            rlRun -s "tmt -vv run --scratch -i $run -a provision -h $PROVISION_HOW test -n /with-reboot"
+            rlRun -s "tmt -vv run --scratch -i $run -a provision -h connect --guest 10.26.28.83 test -n /with-reboot"
             rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/with-reboot-1/output.txt"
         else
-            rlRun -s "tmt -vv run --scratch -i $run -a provision -h $PROVISION_HOW test -n /basic"
+            rlRun -s "tmt -vv run --scratch -i $run -a provision -h connect --guest 10.26.28.83 test -n /basic"
             rlRun "inner_test=$run/plan/execute/data/guest/default-0/test/basic-1/output.txt"
         fi
 
@@ -53,7 +53,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        # rlRun "rm -rf tmt.output $run" 0 "Remove run directory"
+        rlRun "rm -rf tmt.output $run" 0 "Remove run directory"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

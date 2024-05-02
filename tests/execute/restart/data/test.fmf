@@ -1,4 +1,4 @@
-summary: Observe test reboot behavior
+summary: Observe test restart behavior
 test: ./test.sh
 framework: beakerlib
 
