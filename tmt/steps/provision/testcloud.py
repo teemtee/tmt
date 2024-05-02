@@ -630,7 +630,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self.hardware.and_(memory_constraint)
 
     def _combine_hw_disk_size(self) -> None:
-        """ Combine ``hardware`` with ``--memory`` option """
+        """ Combine ``hardware`` with ``--disk`` option """
 
         if not self.hardware:
             self.hardware = tmt.hardware.Hardware.from_spec({})
