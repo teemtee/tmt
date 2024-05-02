@@ -50,5 +50,8 @@ properties:
   where:
     $ref: "/schemas/common#/definitions/where"
 
+  duration:
+    $ref: "/schemas/common#/definitions/duration"
+
 required:
   - how

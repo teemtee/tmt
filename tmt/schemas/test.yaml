@@ -32,8 +32,7 @@ properties:
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#duration
   duration:
-    type: string
-    pattern: "^([0-9]+ *?[smhd]? *)+$"
+    $ref: "/schemas/common#/definitions/duration"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#enabled
   enabled:
