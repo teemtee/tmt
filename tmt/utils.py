@@ -2467,6 +2467,35 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
     yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
+def render_exception_stack(exception: BaseException) -> Iterator[str]:
+    exception_traceback = traceback.TracebackException(
+        type(exception),
+        exception,
+        exception.__traceback__,
+        capture_locals=True)
+
+    # N806: allow upper-case names to make them look like formatting
+    # tags in strings below.
+    R = functools.partial(click.style, fg='red')  # noqa: N806
+    Y = functools.partial(click.style, fg='yellow')  # noqa: N806
+    B = functools.partial(click.style, fg='blue')  # noqa: N806
+
+    yield R('Traceback (most recent call last):')
+    yield ''
+
+    for frame in exception_traceback.stack:
+        yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
+        yield f'  {B(frame.line)}'
+
+        if os.getenv('TMT_SHOW_TRACEBACK', '0').lower() == 'full' and frame.locals:
+            yield ''
+
+            for k, v in frame.locals.items():
+                yield f'  {B(k)} = {Y(v)}'
+
+            yield ''
+
+
 def render_exception(exception: BaseException) -> Iterator[str]:
     """ Render the exception and its causes for printing """
 
@@ -2486,14 +2515,8 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield from render_run_exception(exception)
 
     if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
-        formatted_exc = traceback.format_exception(
-            type(exception),
-            exception,
-            exception.__traceback__,
-            chain=False)
-
         yield ''
-        yield from _indent(formatted_exc)
+        yield from _indent(render_exception_stack(exception))
 
     # Follow the chain and render all causes
     def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
