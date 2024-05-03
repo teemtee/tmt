@@ -25,7 +25,7 @@ rlJournalStart
         rlRun "test_dir=$run/plan/execute/data/guest/default-0/watchdog/ping-1"
         rlRun "log=$run/log.txt"
         rlRun "test_log=$test_dir/output.txt"
-        rlRun "watchdog_log=$test_dir/tmt-watchdog.txt"
+        rlRun "watchdog_log=$test_dir/checks/tmt-watchdog.txt"
 
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "tmt -c provision_method=$PROVISION_HOW run --id $run --scratch -a -vv provision -h $PROVISION_HOW                     test -n /watchdog" 1
