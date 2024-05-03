@@ -275,7 +275,7 @@ class TestInvocation:
 
         .. note::
 
-            The test is not actually restarted, becase running the test
+            The test is not actually restarted, because running the test
             is managed by a plugin calling this method. Instead, the
             method performs all necessary steps before letting plugin
             know it should run the test once again.
