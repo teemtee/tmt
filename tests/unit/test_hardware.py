@@ -116,6 +116,8 @@ def test_parse_maximal_constraint() -> None:
         gpu:
             device-name: G86 [Quadro NVS 290]
         hostname: "~ .*.foo.redhat.com"
+        location:
+            lab-controller: "!= lab-1.bar.redhat.com"
         memory: 8 GiB
         network:
             - type: eth

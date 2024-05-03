@@ -1237,6 +1237,28 @@ def _parse_zcrypt(spec: Spec) -> BaseConstraint:
 
 
 @ungroupify
+def _parse_location(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``location`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    if 'lab-controller' in spec:
+        group.constraints += [
+            TextConstraint.from_specification(
+                'location.lab-controller',
+                spec['lab-controller'],
+                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+            ]
+
+    return group
+
+
+@ungroupify
 def _parse_generic_spec(spec: Spec) -> BaseConstraint:
     """
     Parse actual constraints.
@@ -1274,6 +1296,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'hostname' in spec:
         group.constraints += [_parse_hostname(spec)]
+
+    if 'location' in spec:
+        group.constraints += [_parse_location(spec)]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]

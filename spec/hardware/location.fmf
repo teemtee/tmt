@@ -1,0 +1,19 @@
+summary: |
+    Select or provision a guest from a particular location.
+
+description: |
+    .. code-block::
+
+       location:
+           # String, which labcontroller to use or to avoid.
+           # Note: this field is consumed by Beaker and Artemis plugins only.
+           lab-controller: "lab-01.foo.bar.com"
+
+    .. versionchanged:: 1.33
+       Added ``location.lab-controller`` into specification.
+
+example:
+  - |
+    # Select a system that is not managed by deprecated lab controllers
+    location:
+        lab-controller: "!~ deprecated-lab-.*.foo.bar.com"
