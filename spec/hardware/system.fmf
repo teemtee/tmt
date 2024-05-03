@@ -20,10 +20,6 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
-           # String, which labcontroller to use or to avoid.
-           # Note: this field is consumed by Beaker and Artemis plugins only.
-           lab-controller: "lab-01.foo.bar.com"
-
 example:
   - |
     # Select any system by a given vendor
@@ -35,8 +31,3 @@ example:
     system:
         vendor-name: "~ HPE"
         numa-nodes: ">= 4"
-
-  - |
-    # Select a system that is not managed by deprecated lab controllers
-    system:
-        lab-controller: "!~ deprecated-lab-%.foo.bar.com"
