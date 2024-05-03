@@ -580,34 +580,63 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         # Check the test result
         self.debug(f"tmt-report-results file '{report_result_path}' detected.")
 
-        result_list = [
-            result.get('result')
-            for result in tmt.utils.yaml_to_list(self.read(report_result_path))
-            ]
-
-        if not result_list:
-            raise tmt.utils.ExecuteError(
-                f"Test result not found in result file '{report_result_path}'.")
-        hierarchy = ['skip', 'pass', 'warn', 'fail']
-        result_indices = [hierarchy.index(line) for line in result_list]
-        result = hierarchy[max(result_indices)]
-
-        # Map the restraint result to the corresponding tmt value
-        actual_result = ResultOutcome.ERROR
+        # The worst result outcome we can find among loaded results...
+        original_outcome: Optional[ResultOutcome] = None
+        # ... and the actual outcome we decided is the best representing
+        # the results.
+        # The original one may be left unset - malformed results file,
+        # for example, provides no usable original outcome.
+        actual_outcome: ResultOutcome
         note: Optional[str] = None
 
+        results = tmt.utils.yaml_to_list(self.read(report_result_path))
+
+        if not results:
+            raise tmt.utils.ExecuteError(
+                f"Test result not found in result file '{report_result_path}'.")
+
         try:
-            actual_result = ResultOutcome(result)
-        except ValueError:
-            if result == 'skip':
-                actual_result = ResultOutcome.INFO
-            else:
-                note = f"invalid test result '{result}' in result file"
+            outcomes = [
+                ResultOutcome.from_spec(result.get('result'))
+                for result in results
+                ]
+
+        except tmt.utils.SpecificationError as exc:
+            actual_outcome = ResultOutcome.ERROR
+            note = exc.message
+
+        else:
+            hierarchy = [
+                ResultOutcome.SKIP,
+                ResultOutcome.PASS,
+                ResultOutcome.WARN,
+                ResultOutcome.FAIL]
+            outcome_indices = [hierarchy.index(outcome) for outcome in outcomes]
+            actual_outcome = original_outcome = hierarchy[max(outcome_indices)]
+
+        # Find a usable log - the first one matching our "interim" outcome.
+        # We cannot use the "actual" outcome, because that one may not even
+        # exist in the results file - tmt might have conjured it based on
+        # provided results, or set it to "error" because of errors. Only
+        # the "interim" is guaranteed to be found among the results.
+        test_logs = [invocation.relative_path / TEST_OUTPUT_FILENAME]
+
+        if original_outcome is not None:
+            for result in results:
+                if result.get('result') != original_outcome.value:
+                    continue
+
+                result_logs: list[str] = result.get('log', [])
+
+                if result_logs:
+                    test_logs.append(invocation.relative_test_data_path / result_logs[0])
+
+                break
 
         return [tmt.Result.from_test_invocation(
             invocation=invocation,
-            result=actual_result,
-            log=[invocation.relative_path / TEST_OUTPUT_FILENAME],
+            result=actual_outcome,
+            log=test_logs,
             note=note)]
 
     def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
@@ -658,6 +687,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             # but Result has to point relative to the execute workdir
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log]
+            if partial_result.name == invocation.test.name:
+                partial_result.log.append(invocation.relative_path / TEST_OUTPUT_FILENAME)
 
             # TODO: this might need more care: the test has been assigned a serial
             # number, which is now part of its data directory path. Now, the test

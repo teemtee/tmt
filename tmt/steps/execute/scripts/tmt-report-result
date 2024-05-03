@@ -1,6 +1,8 @@
 #!/bin/bash
 set -o errexit -o pipefail -o noclobber -o nounset
+
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/results.yaml"
+TMT_TEST_EXE="${TMT_TREE/tree/execute}"
 outputFile=
 help=False
 
@@ -10,6 +12,12 @@ needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 write_report_file () {
     echo "  - name: ${TESTNAME}" >> "$REPORT_RESULT_OUTPUTFILE"
     echo "    result: ${TESTRESULT}" >> "$REPORT_RESULT_OUTPUTFILE"
+    if [ -n "${outputFile}" ]; then
+        echo "    log:" >> "$REPORT_RESULT_OUTPUTFILE"
+        echo "      - ${outputFile}" >> "$REPORT_RESULT_OUTPUTFILE"
+    fi
+    echo "    end-time: \"$(date -Ins)\"" >> "$REPORT_RESULT_OUTPUTFILE"
+    echo "    data-path: ${TMT_TEST_DATA/$TMT_TEST_EXE}" >> "$REPORT_RESULT_OUTPUTFILE"
 }
 
 copy_outputfile_to_data_dir () {
@@ -17,11 +25,10 @@ copy_outputfile_to_data_dir () {
     # Replace slashes in test name with underscores.
     fileprefix=$(echo "$TESTNAME" | tr / _ | tr ' ' _)
     # Cut first char if underscore.
-    if [[ ${fileprefix:0:1} == '_' ]]; then fileprefix=$(echo "$fileprefix" | cut -c 2-); fi
+    [[ ${fileprefix:0:1} == '_' ]] && fileprefix=$(echo "$fileprefix" | cut -c 2-)
     # Copy outputfile to data dir. Prefix with underscored test name.
-    cp -f "$outputFile" "$TMT_TEST_DATA"/"$fileprefix""_""$filename"
-    # Set variable to data dir path.
-    outputFile="$TMT_TEST_DATA"/"$fileprefix"_"$filename"
+    cp -f "$outputFile" "${TMT_TEST_DATA}/${fileprefix}_${filename}"
+    outputFile="$fileprefix"_"$filename"
 }
 
 position=
@@ -69,16 +76,22 @@ if [ $# -lt 2 ] || [ $help == True ]; then
     echo "  -h, --help                      Show help options"
     echo ""
     echo "Application Options:"
-    echo "  --port=PORT                     restraintd port number (Service default: 8081)"
-    echo "  -s, --server=URL                Server to connect to"
-    echo "  -t, --message=TEXT              Short 100 characters or less message"
+    echo "  --port=PORT                     Property is ignored by tmt."
+    echo "  -s, --server=URL                Property is ignored by tmt."
+    echo "  -t, --message=TEXT              Property is ignored by tmt."
     echo "  -o, --outputfile=FILE           Log to upload with result, \$OUTPUTFILE is used by default"
-    echo "  -p, --disable-plugin=PLUGIN     don't run plugin on server side"
-    echo "  --no-plugins                    don't run any plugins on server side"
+    echo "  -p, --disable-plugin=PLUGIN     Property is ignored by tmt."
+    echo "  --no-plugins                    Property is ignored by tmt."
     echo ""
     exit 1
 fi
 TESTNAME=$1
+# If last character is a ':' then delete it.
+[[ ${TESTNAME: -1} == ':' ]] && TESTNAME=${TESTNAME::-1}
+# If the first character isn't a '/' then add it.
+[[ ${TESTNAME:0:1} != '/' ]] && TESTNAME=/$TESTNAME
+# If TESTNAME is just / then set it to the parent test name.
+[[ $TESTNAME = "/" ]] && TESTNAME=$TMT_TEST_NAME
 TESTRESULT=$(echo "$2" | tr '[:upper:]' '[:lower:]')
 
 if [[ "$0" == *"rhts-report-result"* ]]; then
@@ -87,13 +100,10 @@ if [[ "$0" == *"rhts-report-result"* ]]; then
     write_report_file
     exit 0
 fi
-
 shift 2 #$((OPTIND-1)) # remove parsed options and args from $@ list
 if [ $# -gt 0 ];then
     check_opt_args "$@"
 fi
 
-if [ -n "$outputFile" ]; then
-  copy_outputfile_to_data_dir
-fi
+[ -n "$outputFile" ] && copy_outputfile_to_data_dir
 write_report_file
