@@ -423,7 +423,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        if invocation.is_guest_alive:
+        if invocation.is_guest_healthy:
             guest.pull(
                 source=invocation.path,
                 extend_options=test.test_framework.get_pull_options(invocation, logger))
@@ -439,7 +439,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             logger=logger
             )
 
-        if invocation.is_guest_alive:
+        if invocation.is_guest_healthy:
             # Fetch #2: after-test checks might have produced remote files as well,
             # we need to fetch them too.
             guest.pull(

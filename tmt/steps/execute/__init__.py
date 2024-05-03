@@ -250,9 +250,9 @@ class TestInvocation:
         return self.return_code in self.test.restart_on_exit_code
 
     @property
-    def is_guest_alive(self) -> bool:
+    def is_guest_healthy(self) -> bool:
         """
-        Whether the guest is deemed to be alive and responsive.
+        Whether the guest is deemed to be healthy and responsive.
 
         .. note::
 

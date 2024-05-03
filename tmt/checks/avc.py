@@ -330,7 +330,7 @@ class AvcDenials(CheckPlugin[Check]):
                 name='avc',
                 result=ResultOutcome.SKIP)]
 
-        if not invocation.is_guest_alive:
+        if not invocation.is_guest_healthy:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
         assert invocation.phase.step.workdir is not None  # narrow type

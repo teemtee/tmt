@@ -199,7 +199,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        if not invocation.is_guest_alive:
+        if not invocation.is_guest_healthy:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
