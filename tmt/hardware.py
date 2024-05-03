@@ -1180,7 +1180,7 @@ def _parse_system(spec: Spec) -> BaseConstraint:
             str(spec[constraint_name]),
             allowed_operators=[
                 Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in ('model-name', 'vendor-name', 'lab-controller')
+        for constraint_name in ('model-name', 'vendor-name')
         if constraint_name in spec
         ]
 
