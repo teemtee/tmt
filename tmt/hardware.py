@@ -1165,7 +1165,7 @@ def _parse_system(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += [
-        SizeConstraint.from_specification(
+        NumberConstraint.from_specification(
             f'system.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
