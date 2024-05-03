@@ -421,16 +421,21 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         invocation.end_time = self.format_timestamp(timer.end_time)
         invocation.real_duration = self.format_duration(timer.duration)
 
+        # Save the captured output. Do not let the follow-up pulls
+        # overwrite it.
         self.write(
             invocation.path / TEST_OUTPUT_FILENAME,
             stdout or '', mode='a', level=3)
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        if not invocation.hard_reboot_requested:
+        if invocation.is_guest_healthy:
             guest.pull(
                 source=invocation.path,
-                extend_options=test.test_framework.get_pull_options(invocation, logger))
+                extend_options=[
+                    *test.test_framework.get_pull_options(invocation, logger),
+                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
+                    ])
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -443,12 +448,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             logger=logger
             )
 
-        if not invocation.hard_reboot_requested:
+        if invocation.is_guest_healthy:
             # Fetch #2: after-test checks might have produced remote files as well,
             # we need to fetch them too.
             guest.pull(
                 source=invocation.path,
-                extend_options=test.test_framework.get_pull_options(invocation, logger))
+                extend_options=[
+                    *test.test_framework.get_pull_options(invocation, logger),
+                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
+                    ])
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might
@@ -514,6 +522,25 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 assert invocation.real_duration is not None  # narrow type
                 duration = click.style(invocation.real_duration, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
+
+                # Handle test restart. May include guest reboot too.
+                if invocation.restart_requested:
+                    # Output before the restart
+                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
+
+                    try:
+                        if invocation.handle_restart():
+                            continue
+
+                    except tmt.utils.RebootTimeoutError:
+                        for result in invocation.results:
+                            result.result = ResultOutcome.ERROR
+                            result.note = 'reboot timeout'
+
+                    else:
+                        for result in invocation.results:
+                            result.result = ResultOutcome.ERROR
+                            result.note = 'crashed too many times'
 
                 # Handle reboot, abort, exit-first
                 if invocation.reboot_requested:

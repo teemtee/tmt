@@ -1,0 +1,55 @@
+summary: Handling test crashes
+
+story: |
+    As a tester I want to run tests that may trigger kernel panic or
+    cripple their guest in other ways, often on purpose. I need a way to
+    reliably continue with the testing process.
+
+description: |
+    Some tests may focus on lower levels of system functionality, and
+    perform actions that cause system crashes. And the crashes might be
+    triggered on purpose, e.g. to verify a system can recover.
+
+    tmt on its own cannot detect a kernel panic, and cannot pick from
+    all possible ways of handling such a situation, therefore offers
+    tests a way to hint tmt on how to proceed:
+
+    See :ref:`plugins/test-checks/watchdog` for a test-level check that
+    can detect frozen guests and trigger hard reboot before restarting
+    the test.
+
+    restart-on-exit-code: ``EXIT-CODES``
+        When set, it lists test exit codes that should trigger the test
+        restart.
+
+        Default: *not set*
+
+    restart-max-count: ``LIMIT``
+        How many times the test may be restarted before giving up. It
+        must be at least 1, and the upper limit is 10.
+
+        Default: ``1``
+
+    restart-with-reboot: ``true|false``
+        When set, a hard reboot would be triggered before restarting the
+        test.
+
+        Default: ``false``
+
+    .. versionadded:: 1.33
+
+example:
+  - |
+    # Enable test restart on very rare exit code
+    restart-on-exit-code: 79
+
+  - |
+    # Enable test restart on exit code the test reports when detecting
+    # kernel panic. Do not reboot the guest, the test needs to re-enter
+    # the environment as it is.
+    restart-on-exit-code: 79
+    restart-with-reboot: true
+
+link:
+  - implemented-by: /tmt/steps/execute
+  - verified-by: /tests/execute/restart

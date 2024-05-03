@@ -1,0 +1,12 @@
+summary: Observe test restart behavior
+test: ./test.sh
+framework: beakerlib
+
+restart-on-exit-code: [79]
+restart-max-count: 5
+
+/basic:
+    restart-with-reboot: false
+
+/with-reboot:
+    restart-with-reboot: true

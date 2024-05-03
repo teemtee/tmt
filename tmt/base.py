@@ -86,6 +86,9 @@ DEFAULT_TEST_DURATION_L1 = '5m'
 DEFAULT_TEST_DURATION_L2 = '1h'
 DEFAULT_ORDER = 50
 
+DEFAULT_TEST_RESTART_LIMIT = 1
+TEST_RESTART_MAX = 10
+
 # How many already existing lines should tmt run --follow show
 FOLLOW_LINES = 10
 
@@ -1067,6 +1070,16 @@ class Test(
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
         exporter=lambda value: [check.to_minimal_spec() for check in value])
 
+    restart_on_exit_code: list[int] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_integer_list
+        )
+    restart_max_count: int = field(
+        default=DEFAULT_TEST_RESTART_LIMIT,
+        # TODO: enforce upper limit, TEST_RESTART_MAX
+        )
+    restart_with_reboot: bool = False
+
     serial_number: int = field(
         default=0,
         internal=True)
@@ -1093,6 +1106,9 @@ class Test(
         'order',
         'result',
         'check',
+        'restart_on_exit_code',
+        'restart_max_count',
+        'restart_with_reboot',
 
         # Filtering attributes
         'tag',
