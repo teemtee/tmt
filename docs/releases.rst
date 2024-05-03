@@ -24,6 +24,12 @@ The :ref:`dmesg test check<plugins/test-checks/dmesg>` can be
 configured to look for custom patterns in the output of ``dmesg``
 command, by setting its ``failure-pattern`` key.
 
+Tests can now define their exit codes that would cause the test to be
+restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
+now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
+restarts of a said test. See :ref:`/spec/test/restart-test-on-exit-code`
+for details.
+
 
 tmt-1.32.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
