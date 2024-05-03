@@ -44,7 +44,9 @@ example:
     restart-test-on-exit-code: 79
 
   - |
-    # Enable test restart of exit code the test reports when detecting kernel panic. Do not reboot the guest, the test needs to re-enter the environment as it is.
+    # Enable test restart of exit code the test reports when detecting
+    # kernel panic. Do not reboot the guest, the test needs to re-enter
+    # the environment as it is.
     restart-test-on-exit-code: 79
     reboot-before-test-restart: true
 

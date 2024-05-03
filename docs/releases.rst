@@ -27,8 +27,7 @@ command, by setting its ``failure-pattern`` key.
 Tests can now define their exit codes that would cause the test to be
 restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
 now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
-restarts of a said test. See :ref:`/spec/tests/restart-test-on-exit-code`
-for details.
+restarts of a said test. See :ref:`/spec/tests/restart` for details.
 
 
 tmt-1.32.2

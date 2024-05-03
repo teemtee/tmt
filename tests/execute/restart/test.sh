@@ -53,7 +53,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -rf tmt.output $run" 0 "Remove run directory"
+        rlRun "rm -rf $run" 0 "Remove run directory"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

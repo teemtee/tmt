@@ -1107,6 +1107,8 @@ class Test(
         'result',
         'check',
         'restart_test_on_exit_code',
+        'restart_test_max_times',
+        'reboot_before_test_restart',
 
         # Filtering attributes
         'tag',

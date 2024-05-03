@@ -439,7 +439,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             logger=logger
             )
 
-        if not invocation.is_guest_alive:
+        if invocation.is_guest_alive:
             # Fetch #2: after-test checks might have produced remote files as well,
             # we need to fetch them too.
             guest.pull(
