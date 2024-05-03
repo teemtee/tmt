@@ -18,19 +18,19 @@ description: |
     can detect frozen guests and trigger hard reboot before restarting
     the test.
 
-    restart-test-on-exit-code: ``EXIT-CODES``
+    restart-on-exit-code: ``EXIT-CODES``
         When set, it lists test exit codes that should trigger the test
         restart.
 
         Default: *not set*
 
-    restart-test-max-times: ``LIMIT``
+    restart-max-count: ``LIMIT``
         How many times the test may be restarted before giving up. It
         must be at least 1, and the upper limit is 10.
 
         Default: ``1``
 
-    reboot-before-test-restart: ``true|false``
+    restart-with-reboot: ``true|false``
         When set, a hard reboot would be triggered before restarting the
         test.
 
@@ -41,14 +41,14 @@ description: |
 example:
   - |
     # Enable test restart on very rare exit code
-    restart-test-on-exit-code: 79
+    restart-on-exit-code: 79
 
   - |
-    # Enable test restart of exit code the test reports when detecting
+    # Enable test restart on exit code the test reports when detecting
     # kernel panic. Do not reboot the guest, the test needs to re-enter
     # the environment as it is.
-    restart-test-on-exit-code: 79
-    reboot-before-test-restart: true
+    restart-on-exit-code: 79
+    restart-with-reboot: true
 
 link:
   - implemented-by: /tmt/steps/execute

@@ -103,20 +103,20 @@ properties:
             - $ref: "/schemas/common#/definitions/beakerlib_library"
             - $ref: "/schemas/common#/definitions/require_file"
 
-  # https://tmt.readthedocs.io/en/stable/spec/tests.html#restart-test-on-exit-code
-  restart-test-on-exit-code:
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#restart
+  restart-on-exit-code:
     anyOf:
       - type: integer
       - type: array
         items:
           type: integer
 
-  # https://tmt.readthedocs.io/en/stable/spec/tests.html#restart-restart-test-max-times
-  restart-test-max-times:
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#restart
+  restart-max-count:
     type: integer
 
-  # https://tmt.readthedocs.io/en/stable/spec/tests.html#reboot-before-test-restart
-  reboot-before-test-restart:
+  # https://tmt.readthedocs.io/en/stable/spec/tests.html#restart
+  restart-with-reboot:
     type: boolean
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#result

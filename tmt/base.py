@@ -1070,15 +1070,15 @@ class Test(
         unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
         exporter=lambda value: [check.to_minimal_spec() for check in value])
 
-    restart_test_on_exit_code: list[int] = field(
+    restart_on_exit_code: list[int] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_integer_list
         )
-    restart_test_max_times: int = field(
+    restart_max_count: int = field(
         default=DEFAULT_TEST_RESTART_LIMIT,
         # TODO: enforce upper limit, TEST_RESTART_MAX
         )
-    reboot_before_test_restart: bool = False
+    restart_with_reboot: bool = False
 
     serial_number: int = field(
         default=0,
@@ -1106,9 +1106,9 @@ class Test(
         'order',
         'result',
         'check',
-        'restart_test_on_exit_code',
-        'restart_test_max_times',
-        'reboot_before_test_restart',
+        'restart_on_exit_code',
+        'restart_max_count',
+        'restart_with_reboot',
 
         # Filtering attributes
         'tag',

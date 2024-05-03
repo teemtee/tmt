@@ -247,7 +247,7 @@ class TestInvocation:
     def restart_requested(self) -> bool:
         """ Whether a test restart has been requested """
 
-        return self.return_code in self.test.restart_test_on_exit_code
+        return self.return_code in self.test.restart_on_exit_code
 
     @property
     def is_guest_alive(self) -> bool:
@@ -293,7 +293,7 @@ class TestInvocation:
         if not self.restart_requested:
             return False
 
-        if self._restart_count >= self.test.restart_test_max_times:
+        if self._restart_count >= self.test.restart_max_count:
             self.logger.debug(
                 f"Test restart denied during test '{self.test}'"
                 f" with reboot count {self._reboot_count}"
@@ -301,7 +301,7 @@ class TestInvocation:
 
             return False
 
-        if self.test.reboot_before_test_restart:
+        if self.test.restart_with_reboot:
             self.hard_reboot_requested = True
 
             if not self.handle_reboot():
