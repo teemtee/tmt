@@ -1,14 +1,15 @@
 #!/bin/bash
 TESTARGS=${TESTARGS:-"fail"}
 REPORT=${REPORT:-"restraint"}
-OUTPUTFILE="/tmp/output"
+TMP_DIR=`mktemp -d`
+OUTPUTFILE="$TMP_DIR/output"
 function report_result {
-	if [ $REPORT == "rhts" ]; then
-            touch $OUTPUTFILE
-	    rhts-report-result "$1" "$2" "$OUTPUTFILE" "$3"
-	else
-	    rstrnt-report-result "$1" "$2" "$3"
-	fi
+    if [ $REPORT == "rhts" ]; then
+        touch $OUTPUTFILE
+        rhts-report-result "$1" "$2" "$OUTPUTFILE" "$3"
+    else
+        rstrnt-report-result "$1" "$2" "$3"
+    fi
 }
 
 phase_test()
@@ -45,3 +46,5 @@ case "${TESTARGS}" in
     *)
         ;;
 esac
+
+rm -rf $TMP_DIR
