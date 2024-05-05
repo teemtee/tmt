@@ -467,15 +467,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
     def tests(
-        self,
-        *,
-        phase_name: Optional[str] = None,
-        enabled: Optional[bool] = None,
-    ) -> list['tmt.Test']:
+        self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
+    ) -> list[tuple[str, 'tmt.Test']]:
         if phase_name is not None and phase_name != self.name:
             return []
 
         if enabled is None:
-            return self._tests
+            return [(self.name, test) for test in self._tests]
 
-        return [test for test in self._tests if test.enabled is enabled]
+        return [(self.name, test) for test in self._tests if test.enabled is enabled]
