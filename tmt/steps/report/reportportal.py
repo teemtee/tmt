@@ -224,9 +224,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         }
 
     def handle_response(self, response: requests.Response) -> None:
-        """
-        Check the endpoint response and raise an exception if needed.
-        """
+        """ Check the endpoint response and raise an exception if needed """
 
         if not response.ok:
             raise tmt.utils.ReportError(
@@ -236,9 +234,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         self.debug("Message from the endpoint", response.text)
 
     def check_options(self) -> None:
-        """
-        Write warning if there might be caused an unexpected behaviour by the option combinations
-        """
+        """ Check options for known troublesome combinations """
         # TODO: Update restriction of forbidden option combinations based on feedback.
 
         if self.data.launch_per_plan and self.data.suite_per_plan:

@@ -141,9 +141,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             )
 
     def log_import_plan_details(self) -> None:
-        """
-        Log details about the imported plan
-        """
+        """ Log details about the imported plan """
         parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
         if parent and parent.plan._original_plan and \
                 parent.plan._original_plan._remote_plan_fmf_id:
@@ -155,9 +153,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
                 self.verbose(f'import {key}', value, 'green')
 
     def post_dist_git(self, created_content: list[Path]) -> None:
-        """
-        Discover tests after dist-git applied patches
-        """
+        """ Discover tests after dist-git applied patches """
         pass
 
 

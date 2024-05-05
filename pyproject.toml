@@ -288,6 +288,7 @@ lint.select = [
     "W",  # pycodestyle
     "I",  # isort
     "N",  # pep8-naming
+    "D",    # pydocstyle
     "UP",  # pyupgrade
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
@@ -321,10 +322,41 @@ lint.ignore = [
     "PLE1205",  # Too many arguments for `logging` format string
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013",  # PEP 484 prohibits implicit `Optional`
+
+    # pydocstyle
+    # TODO: some of these will be enabled in their own patches
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D202",  # No blank lines allowed after function docstring
+    "D203",  # 1 blank line required before class docstring
+    "D204",  # 1 blank line required after class docstring
+    "D205",  # 1 blank line required between summary line and description
+    "D210",  # No whitespaces allowed surrounding docstring text
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D301",  # Use r""" if any backslashes in a docstring
+    "D400",  # First line should end with a period
+    "D401",  # First line of docstring should be in imperative mood
+    "D415",  # First line should end with a period, question mark, or exclamation point
     ]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["tmt.utils.field"]
+
+[tool.ruff.lint.pydocstyle]
+# "The PEP 257 convention includes all D errors apart from: D203, D212,
+# D213, D214, D215, D404, D405, D406, D407, D408, D409, D410, D411, D413,
+# D415, D416, and D417."
+#
+# See https://docs.astral.sh/ruff/faq/#does-ruff-support-numpy-or-google-style-docstrings for
+# the most up-to-date info.
+convention = "pep257"
+property-decorators = ["tmt.utils.cached_property"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]

@@ -306,9 +306,8 @@ man_pages = [
 
 
 def generate_tmt_docs(app: Sphinx) -> None:
-    """
-    Run `make generate` to populate the auto-generated documentations
-    """
+    """ Run `make generate` to populate the auto-generated sources """
+
     conf_dir = Path(app.confdir)
     subprocess.run(["make", "generate"], cwd=conf_dir)
 

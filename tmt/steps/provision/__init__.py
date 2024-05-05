@@ -406,6 +406,8 @@ class GuestFacts(SerializableContainer):
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """
+        Detect whether guest uses SELinux.
+
         For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
         """
 
@@ -1090,9 +1092,7 @@ class Guest(tmt.utils.Common):
              destination: Optional[Path] = None,
              options: Optional[list[str]] = None,
              superuser: bool = False) -> None:
-        """
-        Push files to the guest
-        """
+        """ Push files to the guest """
 
         raise NotImplementedError
 
@@ -1101,9 +1101,7 @@ class Guest(tmt.utils.Common):
              destination: Optional[Path] = None,
              options: Optional[list[str]] = None,
              extend_options: Optional[list[str]] = None) -> None:
-        """
-        Pull files from the guest
-        """
+        """ Pull files from the guest """
 
         raise NotImplementedError
 

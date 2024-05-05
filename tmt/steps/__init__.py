@@ -2084,9 +2084,7 @@ class Topology(SerializableContainer):
             guest: 'Guest',
             filename_base: Optional[Path] = None,
             logger: tmt.log.Logger) -> Environment:
-        """
-        Save and push topology to a given guest.
-        """
+        """ Save and push topology to a given guest """
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 

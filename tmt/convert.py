@@ -56,9 +56,7 @@ def read_manual(
         disabled: bool,
         with_script: bool,
         logger: tmt.log.Logger) -> None:
-    """
-    Reads metadata of manual test cases from Nitrate
-    """
+    """ Reads metadata of manual test cases from Nitrate """
     import tmt.export.nitrate
     nitrate = tmt.export.nitrate.import_nitrate()
     # Turns off nitrate caching
