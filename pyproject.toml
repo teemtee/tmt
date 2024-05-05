@@ -310,6 +310,7 @@ lint.select = [
     "PLR04",
     "PLR1",
     "RUF",  # ruff
+    "D",    # pydocstyle
     ]
 lint.ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
