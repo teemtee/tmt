@@ -5,7 +5,8 @@
 .PHONY: help generate-plugins plugins/*.rst generate-stories generate-template-filters generate-autodocs clean
 
 clean:
-	rm -rf stories spec code/autodocs/*.rst code/template-filters.rst plugins/!(index).rst
+	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst
+	find plugins -name "*.rst" ! -name index.rst | xargs rm -f
 
 ##
 ## Generate documentation sources from inputs
