@@ -1153,6 +1153,40 @@ def _parse_networks(spec: Spec) -> BaseConstraint:
     return group
 
 
+@ungroupify
+def _parse_system(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``system`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    group.constraints += [
+        NumberConstraint.from_specification(
+            f'system.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in ('vendor', 'model', 'numa-nodes')
+        if constraint_name in spec
+        ]
+
+    group.constraints += [
+        TextConstraint.from_specification(
+            f'system.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+        for constraint_name in ('model-name', 'vendor-name')
+        if constraint_name in spec
+        ]
+
+    return group
+
+
 TPM_VERSION_ALLOWED_OPERATORS: list[Operator] = [
     Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE]
 
@@ -1299,6 +1333,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'location' in spec:
         group.constraints += [_parse_location(spec)]
+
+    if 'system' in spec:
+        group.constraints += [_parse_system(spec)]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]
