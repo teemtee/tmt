@@ -4,6 +4,7 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        WITH_SYSTEM_PACKAGES="${WITH_SYSTEM_PACKAGES:-no}"
         # TODO: `test` seems more natural, but creates 3 environments,
         # one per available Python installation. I need to check whether
         # to disable or take advantage of it.
