@@ -1,0 +1,6 @@
+summary: Install downloaded packages
+prepare:
+  - how: install
+    package:
+      - tree.rpm
+      - diffutils.rpm

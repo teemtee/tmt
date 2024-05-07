@@ -90,6 +90,25 @@ function is_ubi () {
     [[ "$1" =~ ^.*ubi.* ]] && return 0 || return 1
 }
 
+function fetch_downloaded_packages () {
+    if [ ! -e $package_cache/tree.rpm ]; then
+        # For some reason, this command will get stuck in rlRun...
+        container_id="$(podman run -d $1 sleep 3600)"
+
+        rlRun "podman exec $container_id bash -c \"set -x; \
+                                                    dnf install -y 'dnf-command(download)' \
+                                                    && dnf download --destdir /tmp tree diffutils \
+                                                    && mv /tmp/tree*.rpm /tmp/tree.rpm \
+                                                    && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
+        rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
+        rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
+        rlRun "podman kill $container_id"
+        rlRun "podman rm $container_id"
+    fi
+
+    rlRun "cp $package_cache/tree.rpm ./"
+    rlRun "cp $package_cache/diffutils.rpm ./"
+}
 
 rlJournalStart
     rlPhaseStartSetup
@@ -107,6 +126,7 @@ rlJournalStart
             rlRun "IMAGES="
         fi
 
+        rlRun "package_cache=\$(mktemp -d)" 0 "Create cache directory for downloaded packages"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
 
@@ -202,6 +222,28 @@ rlJournalStart
                 else
                     rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
                 fi
+            rlPhaseEnd
+        fi
+
+        if rlIsFedora 39 && is_fedora_39 "$image"; then
+            rlPhaseStartTest "$phase_prefix Install downloaded packages (plan)"
+                fetch_downloaded_packages "$image"
+
+                rlRun -s "$tmt plan --name /downloaded"
+
+                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages (CLI)"
+                fetch_downloaded_packages "$image"
+
+                rlRun -s "$tmt prepare --insert --how install --package tree*.rpm --package diffutils*.rpm plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             rlPhaseEnd
         fi
 
@@ -306,6 +348,7 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
+        rlRun "rm -r $package_cache" 0 "Remove package cache directory"
         rlRun "rm -r $run" 0 "Remove run directory"
     rlPhaseEnd
 rlJournalEnd

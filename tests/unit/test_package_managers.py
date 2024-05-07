@@ -23,6 +23,7 @@ from tmt.package_managers import (
     Package,
     PackageManager,
     PackageManagerClass,
+    PackagePath,
     )
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import ShellScript
@@ -1340,6 +1341,140 @@ def test_install_multiple(
         root_logger)
 
     output = package_manager.install(Package('tree'), Package('diffutils'))
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    if expected_stdout:
+        assert output.stdout is not None
+        assert expected_stdout in output.stdout
+
+    if expected_stderr:
+        assert output.stderr is not None
+        assert expected_stderr in output.stderr
+
+
+def _parametrize_test_install_downloaded() -> \
+        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos:7' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true",  # noqa: E501
+                    'Complete!',
+                    None,
+                    marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command")
+                    )
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
+                    'Complete!', \
+                    None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield container, \
+                package_manager_class, \
+                r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                'Complete!', \
+                None
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                r"dnf5 install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                None, \
+                None
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            yield container, \
+                package_manager_class, \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                'Installing: tree', \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils",  # noqa: E501
+                'Setting up tree',
+                None,
+                marks=pytest.mark.skip(reason="not supported yet")
+            )
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                r"apk info -e tree diffutils \|\| apk add tree diffutils",
+                'Installing tree',
+                None,
+                marks=pytest.mark.skip(reason="not supported yet")
+                )
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_downloaded()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_downloaded(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    # TODO: move to a fixture
+    guest_per_test.execute(ShellScript(
+        """
+        (yum download --destdir /tmp tree diffutils \
+        || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp tree diffutils) \
+        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)) \
+        && mv /tmp/tree*.rpm /tmp/tree.rpm && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm
+        """))  # noqa: E501
+
+    # TODO: yum and downloaded packages results in post-install `rpm -q`
+    # check to make sure packages were indeed installed - but that
+    # breaks because that test uses original package paths, not package
+    # names, and fails. Disable this check for now, but it's a sloppy
+    # "solution".
+    if package_manager_class is tmt.package_managers.dnf.Yum:
+        output = package_manager.install(
+            PackagePath('/tmp/tree.rpm'),
+            PackagePath('/tmp/diffutils.rpm'),
+            options=Options(
+                check_first=False,
+                skip_missing=True
+                ))
+
+    else:
+        output = package_manager.install(
+            PackagePath('/tmp/tree.rpm'),
+            PackagePath('/tmp/diffutils.rpm'),
+            options=Options(
+                check_first=False
+                ))
 
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))

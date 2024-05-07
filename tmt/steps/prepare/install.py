@@ -267,7 +267,8 @@ class InstallDnf(InstallBase, Copr):
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
+                check_first=False
                 )
             )
 
@@ -275,7 +276,8 @@ class InstallDnf(InstallBase, Copr):
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
+                check_first=False
                 )
             )
 
@@ -385,7 +387,11 @@ class InstallRpmOstree(InstallBase, Copr):
         for package in self.local_packages:
             try:
                 self.guest.package_manager.install(
-                    PackagePath(self.package_directory / package.name))
+                    PackagePath(self.package_directory / package.name),
+                    options=Options(
+                        check_first=False
+                        )
+                    )
                 local_packages_installed.append(package)
             except tmt.utils.RunError as error:
                 self.warn(f"Local package '{package}' not installed: {error.stderr}")
@@ -426,7 +432,8 @@ class InstallApt(InstallBase):
             *self.list_installables('local packages', *filelist),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
+                check_first=False
                 )
             )
 
@@ -488,7 +495,8 @@ class InstallApk(InstallBase):
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
-                allow_untrusted=True
+                allow_untrusted=True,
+                check_first=False
                 )
             )
 
