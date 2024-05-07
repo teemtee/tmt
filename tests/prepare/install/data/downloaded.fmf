@@ -1,12 +1,6 @@
 summary: Install downloaded packages
 prepare:
-  - how: shell
-    script: |
-        yum download --destdir /tmp tree diffutils \
-        || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp tree diffutils) \
-        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)
-
   - how: install
     package:
-      - /tmp/tree*
-      - /tmp/diffutils*
+      - tree.rpm
+      - diffutils.rpm
