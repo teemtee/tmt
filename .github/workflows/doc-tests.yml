@@ -1,0 +1,30 @@
+name: test-docs
+run-name: Documentation tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  doc-test:
+    name: Sphinx-${{ matrix.builder }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        builder: [ html ]
+        include:
+          # Run default html builder with warnings as error
+          - builder: html
+            args: -W
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run sphinx builder ${{ matrix.builder }}
+        run: |
+          pip install hatch
+          hatch run docs:${{ matrix.builder }} ${{ matrix.args }}

@@ -46,7 +46,7 @@ jobs:
     tf_extra_params:
         test:
             tmt:
-                name: /plans/(features/core|features/basic|install/docs)
+                name: /plans/features/(core|basic)
 
   # Test pull requests (full)
   # Do not run extended unit tests, that plan gets its own job because

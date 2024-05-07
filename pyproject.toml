@@ -174,7 +174,10 @@ python = ["3.9", "3.11", "3.12"]
 dependencies = ["tmt[docs]"]
 
 [tool.hatch.envs.docs.scripts]
-html = "make -C {root}/docs html"
+# Note that in RTD there are a few additional flags (from RTD's default build
+# script) e.g. -E, -d, and -D. These should not affect generated documentation
+# files below, but it may be providing additional metadata for RTD to index.
+html = "sphinx-build -b html {root}/docs {root}/docs/_build {args}"
 man = [
     "cp {root}/docs/header.txt {root}/man.rst",
     "tail -n+8 docs/overview.rst >> {root}/man.rst",
