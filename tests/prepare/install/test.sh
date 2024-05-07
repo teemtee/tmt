@@ -91,18 +91,23 @@ function is_ubi () {
 }
 
 function fetch_downloaded_packages () {
-    # For some reason, this command will get stuck in rlRun...
-    container_id="$(podman run -d $1 sleep 3600)"
+    if [ ! -e $package_cache/tree.rpm ]; then
+        # For some reason, this command will get stuck in rlRun...
+        container_id="$(podman run -d $1 sleep 3600)"
 
-    rlRun "podman exec $container_id bash -c \"set -x; \
-                                                dnf install -y 'dnf-command(download)' \
-                                                && dnf download --destdir /tmp tree diffutils \
-                                                && mv /tmp/tree*.rpm /tmp/tree.rpm \
-                                                && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
-    rlRun "podman cp $container_id:/tmp/tree.rpm ./"
-    rlRun "podman cp $container_id:/tmp/diffutils.rpm ./"
-    rlRun "podman kill $container_id"
-    rlRun "podman rm $container_id"
+        rlRun "podman exec $container_id bash -c \"set -x; \
+                                                    dnf install -y 'dnf-command(download)' \
+                                                    && dnf download --destdir /tmp tree diffutils \
+                                                    && mv /tmp/tree*.rpm /tmp/tree.rpm \
+                                                    && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
+        rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
+        rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
+        rlRun "podman kill $container_id"
+        rlRun "podman rm $container_id"
+    fi
+
+    rlRun "cp $package_cache/tree.rpm ./"
+    rlRun "cp $package_cache/diffutils.rpm ./"
 }
 
 rlJournalStart
@@ -121,6 +126,7 @@ rlJournalStart
             rlRun "IMAGES="
         fi
 
+        rlRun "package_cache=\$(mktemp -d)" 0 "Create cache directory for downloaded packages"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
 
@@ -342,6 +348,7 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
+        rlRun "rm -r $package_cache" 0 "Remove package cache directory"
         rlRun "rm -r $run" 0 "Remove run directory"
     rlPhaseEnd
 rlJournalEnd
