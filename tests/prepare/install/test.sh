@@ -205,6 +205,25 @@ rlJournalStart
             rlPhaseEnd
         fi
 
+        if (is_fedora "$image" || is_rhel "$image" || is_centos "$image") && ! is_ubi "$image" && ! is_centos_7 "$image"; then
+            rlPhaseStartTest "$phase_prefix Install downloaded packages (plan)"
+                rlRun -s "$tmt plan --name /downloaded"
+
+                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages (CLI)"
+                rlRun -s "$tmt --insert --how shell --script \"yum download --destdir /tmp tree diffutils || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp tree diffutils) || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)\" prepare --insert --how install --package '/tmp/tree*' --package '/tmp/diffutils*' plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+        fi
+
         rlPhaseStartTest "$phase_prefix Install existing and invalid packages (plan)"
             rlRun -s "$tmt plan --name /missing" 2
 

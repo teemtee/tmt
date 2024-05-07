@@ -116,7 +116,11 @@ def find_package_manager(name: 'GuestPackageManager') -> 'PackageManagerClass':
 
 def escape_installables(*installables: Installable) -> Iterator[str]:
     for installable in installables:
-        yield shlex.quote(str(installable))
+        if isinstance(installable, (FileSystemPath, PackagePath)):
+            yield str(installable)
+
+        else:
+            yield shlex.quote(str(installable))
 
 
 # TODO: find a better name, "options" is soooo overloaded...
