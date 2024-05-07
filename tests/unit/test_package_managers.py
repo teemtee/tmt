@@ -1363,7 +1363,7 @@ def _parametrize_test_install_downloaded() -> \
                 yield pytest.param(
                     container,
                     package_manager_class,
-                    r"yum install -y --skip-broken /tmp/tree\* /tmp/diffutils\* \|\| /bin/true",
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true",  # noqa: E501
                     'Complete!',
                     None,
                     marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command")
@@ -1372,28 +1372,28 @@ def _parametrize_test_install_downloaded() -> \
             else:
                 yield container, \
                     package_manager_class, \
-                    r"yum install -y --skip-broken /tmp/tree\* /tmp/diffutils\* \|\| /bin/true", \
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
                     'Complete!', \
-                    None
+                    None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
                 package_manager_class, \
-                r"dnf install -y  /tmp/tree\* /tmp/diffutils\*", \
+                r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
                 'Complete!', \
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
-                r"dnf5 install -y  /tmp/tree\* /tmp/diffutils\*", \
+                r"dnf5 install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
                 None, \
                 None
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree\* /tmp/diffutils\*", \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree.rpm /tmp/diffutils.rpm", \
                 'Installing: tree', \
                 None  # noqa: E501
 
@@ -1448,10 +1448,11 @@ def test_install_downloaded(
     # TODO: move to a fixture
     guest_per_test.execute(ShellScript(
         """
-        yum download --destdir /tmp tree diffutils \
+        (yum download --destdir /tmp tree diffutils \
         || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp tree diffutils) \
-        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)
-        """))
+        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)) \
+        && mv /tmp/tree*.rpm /tmp/tree.rpm && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm
+        """))  # noqa: E501
 
     # TODO: yum and downloaded packages results in post-install `rpm -q`
     # check to make sure packages were indeed installed - but that
@@ -1460,8 +1461,8 @@ def test_install_downloaded(
     # "solution".
     if package_manager_class is tmt.package_managers.dnf.Yum:
         output = package_manager.install(
-            PackagePath('/tmp/tree*'),
-            PackagePath('/tmp/diffutils*'),
+            PackagePath('/tmp/tree.rpm'),
+            PackagePath('/tmp/diffutils.rpm'),
             options=Options(
                 check_first=False,
                 skip_missing=True
@@ -1469,8 +1470,8 @@ def test_install_downloaded(
 
     else:
         output = package_manager.install(
-            PackagePath('/tmp/tree*'),
-            PackagePath('/tmp/diffutils*'),
+            PackagePath('/tmp/tree.rpm'),
+            PackagePath('/tmp/diffutils.rpm'),
             options=Options(
                 check_first=False
                 ))
