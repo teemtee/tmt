@@ -55,6 +55,7 @@ import urllib3
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, style, wrap_text
+from jira import JIRA
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
@@ -5946,3 +5947,75 @@ def is_url(url: str) -> bool:
     """ Check if the given string is a valid URL """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
+
+
+def jira_link(
+        nodes: list[list['tmt.base.Core']],
+        links: 'tmt.base.Links',
+        separate: Optional[bool] = False) -> None:
+    """ Link the object to Jira issue and create the URL to tmt web service """
+
+    def create_url(linking_config: dict[str, str], tmt_object: 'tmt.base.Core',
+                   append: bool = False, existing_url: Optional[str] = None) -> tuple[str, str]:
+        # Get the fmf id of the object
+        if isinstance(tmt_object, tmt.base.Test):
+            fmfid = tmt_object.fmf_id
+            tmt_type = "test"
+        elif isinstance(tmt_object, tmt.base.Plan):
+            fmfid = tmt_object.fmf_id
+            tmt_type = "plan"
+        elif isinstance(tmt_object, tmt.base.Story):
+            # TODO: not supported by the service yet
+            fmfid = tmt_object.fmf_id
+            tmt_type = "story"
+        if append and existing_url is not None:
+            url = existing_url
+            url += f'&{tmt_type}-url={fmfid.url}&{tmt_type}-name={fmfid.name}'
+        else:
+            url = f'{linking_config["service"]}?{tmt_type}-url={fmfid.url}&{tmt_type}-name={fmfid.name}'
+        if fmfid.path is not None:
+            url += f'&{tmt_type}-path={fmfid.path}'
+        if fmfid.ref is not None:
+            url += f'&{tmt_type}-ref={fmfid.ref}'
+        # Ask for HTML format (WIP, can be changed once FE web server is implemented)
+        if not append:
+            url = url + '&format=html'
+        return url, tmt_type
+
+    # Setup config tree
+    config_tree = tmt.utils.Config()
+    linking_config = config_tree.fmf_tree.find('/user/linking').data.get('linking')[0]
+    verifies = links.get('verifies')[0]
+    target = verifies.to_dict()['target']
+    # Parse the target url
+    jira_server_url = 'https://' + target.split('/')[0]
+    issue_id = target.split('/')[-1]
+    jira = JIRA(server=jira_server_url, token_auth=linking_config['token'])
+    service_url: str = ""
+    for index, node in enumerate(nodes):
+        # Single object in list of nodes = creating new object
+        # or linking multiple existing separately
+        if len(nodes) == 1 or (len(nodes) > 1 and separate):
+            service_url, obj_type = create_url(linking_config=linking_config, tmt_object=node[0])
+            link_object = {
+                "url": service_url,
+                "title": f"[tmt_web] Metadata of the {obj_type} covering this issue"
+                }
+            jira.add_simple_link(issue_id, link_object)
+        if len(nodes) > 1 and not separate:
+            if index == 0:
+                url_part, _ = create_url(linking_config=linking_config, tmt_object=node[0])
+                service_url = url_part
+            elif index == len(nodes) - 1:
+                url_part, _ = create_url(linking_config=linking_config,
+                                         tmt_object=node[0], append=True, existing_url=service_url)
+                service_url = url_part
+                link_object = {
+                    "url": service_url,
+                    "title": "[tmt_web] Metadata of the tests/plans/stories covering this issue"
+                    }
+                jira.add_simple_link(issue_id, link_object)
+            else:
+                url_part, _ = create_url(linking_config=linking_config,
+                                         tmt_object=node[0], append=True, existing_url=service_url)
+                service_url = url_part
