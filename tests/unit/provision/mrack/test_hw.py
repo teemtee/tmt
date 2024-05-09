@@ -135,7 +135,17 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                         },
                     {'or': []},
                     {'or': []},
-                    {'or': []},
+                    {
+                        'not':
+                            {
+                                'cpu': {
+                                    'model_name': {
+                                        '_op': 'like',
+                                        '_value': 'Haswell'
+                                        }
+                                    }
+                                },
+                        },
                     {
                         'and': [
                             {
