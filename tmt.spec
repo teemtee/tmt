@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.32.2
+Version:        1.33.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -144,6 +144,38 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Tue May 07 2024 Tomáš Bajer <tbajer@redhat.com> - 1.33.0
+- Fix installation of packages from files (#2914)
+- Simplify the documentation building (#2483)
+- Install dependencies of upgrade tasks
+- Improve fail message when library doesn't exist
+- Parse the `system` hardware requirement (#2795)
+- Define `location.lab-controller` hardware requirement (#2794)
+- Test restart on crash (#2870)
+- Add `codespell` pre-commit and fix revealed errors
+- Add test restart counter, similar to `TMT_REBOOT_COUNT`
+- Fix error message if no supported package manager found
+- Fix copy/paste issue for `combine_hw_disk_size()`
+- Slightly improve rendering of ReST for command like
+- Allow `duration` in the `execute` schema
+- Log hash of the beakerlib library repo
+- Fix inability of rpm-ostree to install multiple packages (#2887)
+- Fix Alpine Linux support (#2828)
+- Allow custom failure patterns in `dmesg` test check
+- Make `junit_xml` more visible to linters
+- Add support for `virtualization.hypervisor` hardware requirement (#2733)
+- Add a new section `Review` to contributor docs
+- Accept SSH options from environment variable (#2783)
+- Fix AVC denial detection on Fedora rawhide (#2881)
+- Reuse "become" image to fix sudo-related trouble in /tests/provision/user (#2892)
+- Polish prepare/ansible documentation
+- Support `cpu.cores` hardware requirement for mrack (#2728)
+- Allow pip install from git-archive
+- Add the `cpu.vendor` hardware requirement
+- Fix incorrect translation of `cpu.processors` to Beaker
+- Document custom Jinja template filters (#2769)
+- Update logger-name for clean
+
 * Fri Apr 19 2024 Lukáš Zachar <lzachar@redhat.com> - 1.32.2
 - Remove /var/tmp workdir from rpm packaging
 - Refactor package manager discovery to allow priorities

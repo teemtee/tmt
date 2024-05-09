@@ -742,7 +742,8 @@ Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
 Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
 Zhaojuan Guo, Natália Bubáková, Michal Josef Špaček, Jiří Popelka,
 Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez,
-James Molet, Cristian Le, Lili Nie and Martin Čermák.
+James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt and
+Qinghua Cheng.
 
 
 Copyright
