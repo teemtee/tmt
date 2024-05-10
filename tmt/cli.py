@@ -2249,13 +2249,12 @@ def link(context: Context,
          link: list[str],
          separate: bool,
          ) -> None:
-    nodes: list[list['tmt.base.Core']] = []
+    nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']] = []
     for name in names:
         if context.obj.tree.tests(names=[name]):
-            nodes.append(context.obj.tree.tests(names=[name]))
+            nodes.extend(context.obj.tree.tests(names=[name]))
         if context.obj.tree.plans(names=[name]):
-            nodes.append(context.obj.tree.plans(names=[name]))
+            nodes.extend(context.obj.tree.plans(names=[name]))
         if context.obj.tree.stories(names=[name]):
-            nodes.append(context.obj.tree.stories(names=[name]))
-    print(nodes)
-    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), separate)
+            nodes.extend(context.obj.tree.stories(names=[name]))
+    tmt.utils.jira_link(nodes, tmt.base.Links(data=link[0]), separate)

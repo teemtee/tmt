@@ -5950,13 +5950,13 @@ def is_url(url: str) -> bool:
 
 
 def jira_link(
-        nodes: list[list['tmt.base.Core']],
+        nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']],
         links: 'tmt.base.Links',
         separate: Optional[bool] = False) -> None:
     """ Link the object to Jira issue and create the URL to tmt web service """
 
-    def create_url(linking_config: dict[str, str], tmt_object: 'tmt.base.Core',
-                   append: bool = False, existing_url: Optional[str] = None) -> tuple[str, str]:
+    def create_url(tmt_object: 'tmt.base.Core') -> list[str]:
+        url: list[str] = []
         # Get the fmf id of the object
         if isinstance(tmt_object, tmt.base.Test):
             fmfid = tmt_object.fmf_id
@@ -5968,22 +5968,29 @@ def jira_link(
             # TODO: not supported by the service yet
             fmfid = tmt_object.fmf_id
             tmt_type = "story"
-        if append and existing_url is not None:
-            url = existing_url
-            url += f'&{tmt_type}-url={fmfid.url}&{tmt_type}-name={fmfid.name}'
-        else:
-            url = f'{linking_config["service"]}?{tmt_type}-url={fmfid.url}&{tmt_type}-name={fmfid.name}'
+        url.append(f'{tmt_type}-url={fmfid.url}')
+        url.append(f'{tmt_type}-name={fmfid.name}')
         if fmfid.path is not None:
-            url += f'&{tmt_type}-path={fmfid.path}'
+            url.append(f'{tmt_type}-path={fmfid.path}')
         if fmfid.ref is not None:
-            url += f'&{tmt_type}-ref={fmfid.ref}'
+            url.append(f'{tmt_type}-ref={fmfid.ref}')
+        return url
+
+    def construct_url_from_list(url: str, url_parts: list[str]) -> str:
+        joined_url = '&'.join(url_parts)
+        joined_url = url + joined_url
         # Ask for HTML format (WIP, can be changed once FE web server is implemented)
-        if not append:
-            url = url + '&format=html'
-        return url, tmt_type
+        joined_url += '&format=html'
+        return joined_url
 
     # Setup config tree
     config_tree = tmt.utils.Config()
+    print(config_tree.fmf_tree.find('/user/linking').data)
+    # Linking is not setup in config, therefore user does not want to use linking
+    if config_tree.fmf_tree.find('/user/linking') is None:
+        return
+    if config_tree.fmf_tree.find('/user/linking').data.get('linking') is None:
+        return
     linking_config = config_tree.fmf_tree.find('/user/linking').data.get('linking')[0]
     verifies = links.get('verifies')[0]
     target = verifies.to_dict()['target']
@@ -5991,31 +5998,29 @@ def jira_link(
     jira_server_url = 'https://' + target.split('/')[0]
     issue_id = target.split('/')[-1]
     jira = JIRA(server=jira_server_url, token_auth=linking_config['token'])
-    service_url: str = ""
-    for index, node in enumerate(nodes):
+    service_url: list[str] = []
+    link_object: dict[str, str] = {}
+    for node in nodes:
         # Single object in list of nodes = creating new object
         # or linking multiple existing separately
         if len(nodes) == 1 or (len(nodes) > 1 and separate):
-            service_url, obj_type = create_url(linking_config=linking_config, tmt_object=node[0])
+            service_url = create_url(tmt_object=node)
             link_object = {
-                "url": service_url,
-                "title": f"[tmt_web] Metadata of the {obj_type} covering this issue"
-                }
+                "url": construct_url_from_list(
+                    linking_config["service"],
+                    service_url),
+                "title": f'[tmt_web] Metadata of the {type(node).__name__.lower()}'
+                         f' covering this issue'}
             jira.add_simple_link(issue_id, link_object)
         if len(nodes) > 1 and not separate:
-            if index == 0:
-                url_part, _ = create_url(linking_config=linking_config, tmt_object=node[0])
-                service_url = url_part
-            elif index == len(nodes) - 1:
-                url_part, _ = create_url(linking_config=linking_config,
-                                         tmt_object=node[0], append=True, existing_url=service_url)
-                service_url = url_part
-                link_object = {
-                    "url": service_url,
-                    "title": "[tmt_web] Metadata of the tests/plans/stories covering this issue"
-                    }
-                jira.add_simple_link(issue_id, link_object)
-            else:
-                url_part, _ = create_url(linking_config=linking_config,
-                                         tmt_object=node[0], append=True, existing_url=service_url)
-                service_url = url_part
+            url_part = create_url(tmt_object=node)
+            service_url.extend(url_part)
+            link_object = {
+                "url": construct_url_from_list(linking_config["service"], service_url),
+                "title": f'[tmt_web] Metadata of the'
+                         f' {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
+                         f' covering this issue'
+                }
+    if len(nodes) > 1 and not separate:
+        # Send request to JIRA when len(nodes) > 1 and not separate, after all nodes were processed
+        jira.add_simple_link(issue_id, link_object)

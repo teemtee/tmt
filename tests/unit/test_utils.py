@@ -1692,3 +1692,20 @@ def test_invocation_terminate_process_not_running_anymore(
         caplog,
         message=MATCH(r'Test invocation process cannot be terminated because it is unset.'),
         levelno=logging.DEBUG)
+
+
+@unittest.mock.patch('jira.JIRA.add_simple_link')
+@unittest.mock.patch('tmt.utils.Config')
+def test_jira_link(mock_config_tree, mock_add_simple_link, root_logger: tmt.log.Logger) -> None:
+    config = tmt.utils.Config()
+    config.fmf_tree.find = MagicMock({'linking': [
+            {'type': 'jira',
+             'server': 'https://issues.redhat.com',
+             'service': 'http://localhost:8000/',
+             'token': ''}]})
+    mock_config_tree.return_value = config
+    test = tmt.Tree(logger=root_logger, path=Path(".")).tests()[0]
+    tmt.utils.jira_link([test], tmt.base.Links(data=['verifies:issues.redhat.com/browse/TT-262']))
+    result = mock_add_simple_link.call_args.args[1]
+    # assert ('test-url=https://github.com/teemtee/tmt.git&test-name=/tests/provision/virtual/'
+    #        'dependencies&test-ref=link-issues-to-jira&format=html') in result['url']
