@@ -20,6 +20,8 @@ from tmt.steps.provision.mrack import (
     operator_to_beaker_op,
     )
 
+from ...test_hardware import FULL_HARDWARE_REQUIREMENTS
+
 
 @pytest.mark.parametrize(
     ('operator', 'value', 'expected'),
@@ -42,52 +44,7 @@ def test_operator_to_beaker_op(
 
 
 def test_maximal_constraint(root_logger: Logger) -> None:
-    hw_spec = """
-        boot:
-            method: bios
-        compatible:
-            distro:
-                - rhel-7
-                - rhel-8
-        cpu:
-            sockets: "<= 1"
-            cores: 2
-            threads: ">= 8"
-            cores-per-socket: "= 2"
-            threads-per-core: "== 4"
-            processors: "> 8"
-            model: 62
-            model-name: "!~ Haswell"
-            family: "< 6"
-            family-name: Skylake
-            flag:
-              - avx
-              - "= avx2"
-              - "!= smep"
-        disk:
-            - size: 40 GiB
-              model-name: "PERC H310"
-            - size: 120 GiB
-              driver: mpt3sas
-        gpu:
-            device-name: G86 [Quadro NVS 290]
-        hostname: "~ .*.foo.redhat.com"
-        memory: 8 GiB
-        network:
-            - type: eth
-            - type: eth
-        tpm:
-            version: "2.0"
-        virtualization:
-            is-supported: true
-            is-virtualized: false
-            hypervisor: "~ xen"
-        zcrypt:
-            adapter: "CEX8C"
-            mode: "CCA"
-    """
-
-    hw = Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(hw_spec)))
+    hw = Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(FULL_HARDWARE_REQUIREMENTS)))
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
@@ -135,6 +92,8 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                         },
                     {'or': []},
                     {'or': []},
+                    {'or': []},
+                    {'or': []},
                     {
                         'not':
                             {
@@ -146,6 +105,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                     }
                                 },
                         },
+                    {'or': []},
                     {
                         'and': [
                             {
@@ -177,6 +137,15 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     ]
                 },
             {
+                'and': [
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []}
+                    ]
+                },
+            {
                 'system': {
                     'memory': {
                         '_op': '==',
@@ -199,8 +168,8 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             {
                                 'disk': {
                                     'model': {
-                                        '_op': '==',
-                                        '_value': 'PERC H310'
+                                        '_op': 'like',
+                                        '_value': 'WD 100G%'
                                         }
                                     }
                                 }
@@ -220,7 +189,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 'key_value': {
                                     '_key': 'BOOTDISK',
                                     '_op': '==',
-                                    '_value': 'mpt3sas'
+                                    '_value': 'virtblk'
                                     }
                                 }
                             ]
@@ -229,15 +198,34 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                 },
             {
                 'and': [
-                    {'or': []},
+                    {
+                        'and': [
+                            {'or': []},
+                            {'or': []},
+                            {'or': []},
+                            {'or': []},
+                            {'or': []},
+                            {'or': []}
+                            ]
+                        },
                     {'or': []}
-                    ]
+                    ],
                 },
             {
                 'hostname': {
                     '_op': 'like',
                     '_value': '%.foo.redhat.com'
                     }
+                },
+            {'or': []},
+            {
+                'and': [
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []}
+                    ]
                 },
             {'or': []},
             {
