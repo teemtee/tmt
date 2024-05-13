@@ -1266,7 +1266,7 @@ def _parse_location(spec: Spec) -> BaseConstraint:
     if 'lab-controller' in spec:
         group.constraints += [
             TextConstraint.from_specification(
-                'location.lab-controller',
+                'location.lab_controller',
                 spec['lab-controller'],
                 allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
             ]
