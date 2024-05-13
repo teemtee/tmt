@@ -69,18 +69,18 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="LAUNCH_NAME",
         default=_str_env_to_default('launch', None),
         help="""
-             Set the launch name, otherwise name of the plan is used by default.
-             Should be defined with suite-per-plan option or it will be named after the first plan.
-             """)
+           Set the launch name, otherwise name of the plan is used by default.
+           Should be defined with 'suite-per-plan' option or it will be named after the first plan.
+           """)
 
     launch_description: Optional[str] = field(
         option="--launch-description",
         metavar="DESCRIPTION",
         default=_str_env_to_default('launch_description', None),
         help="""
-             Pass the description for ReportPortal launch with '--suite-per-plan' option
+             Pass the description for ReportPortal launch with 'suite-per-plan' option
              or append the original (plan summary) with additional info.
-             Appends test description with upload-to-launch/suite options.
+             Appends test description with 'upload-to-launch/suite' options.
              """)
 
     launch_per_plan: bool = field(
@@ -95,8 +95,8 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         is_flag=True,
         help="""
              Mapping suite per plan, creating one launch and continuous uploading suites into it.
-             Recommended to use with '--launch' and '--launch-description' options.
-             Can be used with '--upload-to-launch' option to avoid creating a new launch.
+             Recommended to use with 'launch' and 'launch-description' options.
+             Can be used with 'upload-to-launch' option for an additional upload of new suites.
              """)
 
     upload_to_launch: Optional[str] = field(
@@ -104,19 +104,19 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         metavar="LAUNCH_ID",
         default=_str_env_to_default('upload_to_launch', None),
         help="""
-             Pass the launch ID for an additional test/suite upload to an existing launch.
-             ID can be found in the launch URL.
-             To upload specific info into description see also launch-description.
-             """)
+           Pass the launch ID for an additional test/suite upload to an existing launch. ID can be
+           found in the launch URL. Keep the launch structure with options 'launch/suite-per-plan'.
+           To upload specific info into description see also 'launch-description'.
+           """)
 
     upload_to_suite: Optional[str] = field(
         option="--upload-to-suite",
-        metavar="LAUNCH_SUITE",
+        metavar="SUITE_ID",
         default=_str_env_to_default('upload_to_suite', None),
         help="""
              Pass the suite ID for an additional test upload to a suite
              within an existing launch. ID can be found in the suite URL.
-             To upload specific info into description see also launch-description.
+             To upload specific info into description see also 'launch-description'.
              """)
 
     launch_rerun: bool = field(
@@ -158,7 +158,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     artifacts_url: Optional[str] = field(
         metavar="ARTIFACTS_URL",
         option="--artifacts-url",
-        default=os.getenv('TMT_REPORT_ARTIFACTS_URL'),
+        default=_str_env_to_default('artifacts_url', None),
         help="Link to test artifacts provided for report plugins.")
 
     launch_url: Optional[str] = None
@@ -211,13 +211,20 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     Other reported fmf data are summary, id, web link and contact per
     test.
 
-    There are supported two ways of mapping plans into ReportPortal
+    Two types of data structures are supported for reporting to ReportPortal:
 
-    * launch-per-plan (default) with reported structure 'launch > test',
-      resulting in one or more launches.
-    * suite-per-plan with reported structure 'launch > suite > test'
-      resulting in one launch only, and one or more suites within.
-      It is recommended to define launch name and launch description in addition.
+    * 'launch-per-plan' mapping (default) that results in launch-test structure.
+    * 'suite-per-plan' mapping that results in launch-suite-test structure.
+
+    Supported report use cases:
+
+    * Report a new run in launch-suite-test or launch-test structure
+    * Report an additional rerun with 'launch-rerun' option and same launch name (->Retry items)
+      or by reusing the run and reporting with 'again' option (->append logs)
+    * To see plan progress, discover and report an empty (IDLE) run
+      and reuse the run for execution and updating the report with 'again' option
+    * Report contents of a new run to an existing launch via the URL ID in three ways:
+      tests to launch, suites to launch and tests to suite.
     """
 
     _data_class = ReportReportPortalData
@@ -243,12 +250,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def check_options(self) -> None:
         """ Check options for known troublesome combinations """
-        # TODO: Update restriction of forbidden option combinations based on feedback.
 
         if self.data.launch_per_plan and self.data.suite_per_plan:
-            raise tmt.utils.ReportError(
+            self.warn(
                 "The options '--launch-per-plan' and '--suite-per-plan' are mutually exclusive. "
-                "Choose one of them only.")
+                "Default option '--launch-per-plan' is used.")
+            self.data.suite_per_plan = False
 
         if self.data.launch_rerun and (self.data.upload_to_launch or self.data.upload_to_suite):
             self.warn("Unexpected option combination: "
@@ -295,13 +302,20 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         defect_types = yaml_to_dict(response.text).get("subTypes")
         if not defect_types:
             return "ti001"
-        dt_tmp = [dt['locator'] for dt in defect_types['TO_INVESTIGATE']
-                  if dt['longName'].lower() == defect_type.lower()]
-        dt_locator = dt_tmp[0] if dt_tmp else None
+
+        groups_to_search = ['TO_INVESTIGATE', 'NO_DEFECT',
+                            'SYSTEM_ISSUE', 'AUTOMATION_BUG', 'PRODUCT_BUG']
+        for group_name in groups_to_search:
+            defect_types_list = defect_types[group_name]
+            dt_tmp = [dt['locator'] for dt in defect_types_list
+                      if dt['longName'].lower() == defect_type.lower()]
+            dt_locator = dt_tmp[0] if dt_tmp else None
+            if dt_locator:
+                break
         if not dt_locator:
             raise tmt.utils.ReportError(f"Defect type '{defect_type}' "
                                         "is not be defined in the project {self.data.project}")
-        self.verbose("defect_typ", defect_type, "yellow")
+        self.verbose("defect_type", defect_type, color="cyan", shift=1)
         return str(dt_locator)
 
     def get_rp_api(self, session: requests.Session, data_path: str) -> requests.Response:
@@ -380,7 +394,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         launch_rerun = self.data.launch_rerun
         envar_pattern = self.data.exclude_variables or "$^"
-        defect_type = self.data.defect_type
+        defect_type = self.data.defect_type or ""
 
         attributes = [
             {'key': key, 'value': value[0]}
@@ -579,12 +593,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.handle_response(response)
                 launch_time = test_time
 
-                # TODO: Resolve the problem with reporting original defect type (idle)
-                #           after additional report of results
-                #       Temporary solution idea:
-                #               if again_additional_tests and status failed,
-                #               get test_id, report passed and then again failed
-
             if create_suite:
                 # Finish the test suite
                 response = session.put(
@@ -596,6 +604,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.handle_response(response)
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
+            if is_the_last_plan:
+                self.data.defect_type = None
 
             if ((launch_per_plan or (suite_per_plan and is_the_last_plan))
                     and not additional_upload):
