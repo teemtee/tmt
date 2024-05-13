@@ -38,18 +38,31 @@ logger.add_console_handler()
 tmt.plugins.explore(logger)
 
 
-CONTAINER_FEDORA_RAWHIDE = Container(url='registry.fedoraproject.org/fedora:rawhide')
-CONTAINER_FEDORA_39 = Container(url='registry.fedoraproject.org/fedora:39')
-CONTAINER_CENTOS_STREAM_8 = Container(url='quay.io/centos/centos:stream8')
-CONTAINER_CENTOS_7 = Container(url='quay.io/centos/centos:7')
-CONTAINER_UBUNTU_2204 = Container(url='docker.io/library/ubuntu:22.04')
-# Local image created via `make image-unit-tests-coreos`, reference to local registry
+# Local images created via `make images-tests`, reference to local registry
+#
+# Note that we do not use `upstream` Fedora images because we have custom
+# ones, spiked with `dnf5` to make things complicated for package manager
+# implementations.
+CONTAINER_FEDORA_RAWHIDE = Container(
+    url='containers-storage:localhost/tmt/tests/fedora/rawhide/upstream:latest')
+CONTAINER_FEDORA_40 = Container(
+    url='containers-storage:localhost/tmt/tests/fedora/40/upstream:latest')
+CONTAINER_FEDORA_39 = Container(
+    url='containers-storage:localhost/tmt/tests/fedora/39/upstream:latest')
+CONTAINER_CENTOS_STREAM_9 = Container(
+    url='containers-storage:localhost/tmt/tests/centos/stream9/upstream:latest')
+CONTAINER_CENTOS_STREAM_8 = Container(
+    url='containers-storage:localhost/tmt/tests/centos/stream8/upstream:latest')
+CONTAINER_CENTOS_7 = Container(
+    url='containers-storage:localhost/tmt/tests/centos/7/upstream:latest')
+CONTAINER_UBUNTU_2204 = Container(
+    url='containers-storage:localhost/tmt/tests/ubuntu/22.04/upstream:latest')
 CONTAINER_FEDORA_COREOS = Container(
-    url='containers-storage:localhost/tmt/fedora/coreos:stable')
+    url='containers-storage:localhost/tmt/tests/fedora/coreos:stable')
 CONTAINER_FEDORA_COREOS_OSTREE = Container(
-    url='containers-storage:localhost/tmt/fedora/coreos/ostree:stable')
-# Local image created via `make image-tests-alpine`, reference to local registry
-CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/alpine:latest')
+    url='containers-storage:localhost/tmt/tests/fedora/coreos/ostree:stable')
+CONTAINER_ALPINE = Container(
+    url='containers-storage:localhost/tmt/tests/alpine:latest')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
 PACKAGE_MANAGER_DNF = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf')
@@ -98,11 +111,18 @@ CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
 
+    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF5),
+    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF),
+    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_YUM),
+
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_YUM),
 
     # CentOS Stream
+    (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
+    (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_YUM),
+
     (CONTAINER_CENTOS_STREAM_8, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_8, PACKAGE_MANAGER_YUM),
 
@@ -171,6 +191,13 @@ def fixture_guest_per_test(
     return guest
 
 
+def is_dnf5_preinstalled(container: ContainerData) -> bool:
+    return container.image_url_or_id in (
+        CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_COREOS.url,
+        CONTAINER_FEDORA_COREOS_OSTREE.url)
+
+
 def create_package_manager(
         container: ContainerData,
         guest: GuestContainer,
@@ -189,7 +216,7 @@ def create_package_manager(
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
         # Note that our custom images contain `dnf5` already
-        if 'tmt/' in container.image_url_or_id:
+        if is_dnf5_preinstalled(container):
             pass
 
         else:
@@ -235,7 +262,7 @@ def test_discovery(
             rf"^Discovered package managers: {expected_discovery}$"))
 
     # Images in which `dnf5`` would be the best possible choice, do not
-    # come with `dnf5`` pe-installed. Therefore run the discovery first,
+    # come with `dnf5`` pre-installed. Therefore run the discovery first,
     # but expect to find *dnf* instead of `dnf5`. Then install `dnf5`,
     # re-run the discovery and expect the original outcome.
     if expected_package_manager is tmt.package_managers.dnf.Dnf5:
@@ -270,24 +297,40 @@ def _parametrize_test_install() -> \
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            yield container, \
-                package_manager_class, \
-                r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
-                'Installed:\n  tree', \
-                None  # noqa: E501
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
+                    'Installing:', \
+                    None  # noqa: E501
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
+                    'Installed:\n  tree', \
+                    None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield container, \
-                package_manager_class, \
-                r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
-                'Installed:\n  tree', \
-                None
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
+                    'Installing:', \
+                    None
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
+                    'Installed:\n  tree', \
+                    None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree \|\| dnf5 install -y  tree", \
-                None, \
+                'Installing:', \
                 None
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
@@ -365,21 +408,36 @@ def _parametrize_test_install_nonexistent() -> \
                 'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield container, \
-                package_manager_class, \
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong", \
-                None, \
-                'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong", \
+                    None, \
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong", \
+                    None, \
+                    'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'fedora' in container.url:
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
+                    None, \
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
+
+            elif 'fedora' in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
                     None, \
                     'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
 
-            elif 'centos' in container.url and 'centos:7' not in container.url:
+            elif 'centos' in container.url and 'centos/7' not in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
@@ -482,7 +540,7 @@ def _parametrize_test_install_nonexistent_skip() -> \
                     'No match for argument: tree-but-spelled-wrong', \
                     None  # noqa: E501
 
-            elif 'centos' in container.url and 'centos:7' not in container.url:
+            elif 'centos' in container.url and 'centos/7' not in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
@@ -654,7 +712,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos:7' in container.url:
+            if 'centos/7' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('tar'), \
@@ -802,7 +860,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                     'no package provides tree-but-spelled-wrong', \
                     None  # noqa: E501
 
-            elif 'centos' in container.url and 'centos:7' not in container.url:
+            elif 'centos' in container.url and 'centos/7' not in container.url:
                 yield container, \
                     package_manager_class, \
                     True, \
@@ -926,7 +984,7 @@ def _generate_test_check_presence() -> Iterator[
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            if 'centos:stream8' in container.url:
+            if 'centos/stream8' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('util-linux'), \
@@ -977,7 +1035,7 @@ def _generate_test_check_presence() -> Iterator[
                     None
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos:stream8' in container.url or 'centos:7' in container.url:
+            if 'centos/stream8' in container.url or 'centos/7' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('util-linux'), \
@@ -1176,7 +1234,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos:7' in container.url:
+            if 'centos/7' in container.url:
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/dos2unix'), \
@@ -1353,7 +1411,7 @@ def _parametrize_test_install_downloaded() -> \
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos:7' in container.url:
+            if 'centos/7' in container.url:
                 yield pytest.param(
                     container,
                     package_manager_class,

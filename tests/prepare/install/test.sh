@@ -3,54 +3,71 @@
 
 # TODO: should these variables exist outside of this test, for all tests
 # to share?
-CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/fedora/rawhide:latest
-registry.fedoraproject.org/fedora:39
-quay.io/centos/centos:stream8
-quay.io/centos/centos:7
-docker.io/library/ubuntu:22.04
+CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/tests/fedora/rawhide/upstream:latest
+localhost/tmt/tests/fedora/40/upstream:latest
+localhost/tmt/tests/fedora/39/upstream:latest
+localhost/tmt/tests/centos/stream9:latest
+localhost/tmt/tests/centos/stream8:latest
+localhost/tmt/tests/centos/7:latest
+localhost/tmt/tests/ubuntu/22.04/upstream:latest
 ubi8
-localhost/tmt/alpine:latest
-localhost/tmt/fedora/coreos:stable
-localhost/tmt/fedora/coreos/ostree:stable}"
+localhost/tmt/tests/alpine:latest
+localhost/tmt/tests/fedora/coreos:stable
+localhost/tmt/tests/fedora/coreos/ostree:stable}"
 
 # TODO: enable Ubuntu
 VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide
 fedora-39
+centos-stream-9
 centos-stream-8
 centos-7
 fedora-coreos}"
 
 # A couple of "is image this?" helpers, to simplify conditions.
 function is_fedora_rawhide () {
-    [[ "$1" =~ ^.*fedora/rawhide:.* ]] && return 0
+    [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
     [[ "$1" = "fedora-rawhide" ]] && return 0
 
     return 1
 }
 
+function is_fedora_40 () {
+    [[ "$1" =~ ^.*fedora/40[:/].* ]] && return 0
+    [[ "$1" = "fedora-40" ]] && return 0
+
+    return 1
+}
+
 function is_fedora_39 () {
-    [[ "$1" =~ ^.*fedora:39 ]] && return 0
+    [[ "$1" =~ ^.*fedora/39[:/].* ]] && return 0
     [[ "$1" = "fedora-39" ]] && return 0
 
     return 1
 }
 
+function is_centos_stream_9 () {
+    [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
+    [[ "$1" = "centos-stream-9" ]] && return 0
+
+    return 1
+}
+
 function is_centos_stream_8 () {
-    [[ "$1" =~ ^.*centos:stream8 ]] && return 0
+    [[ "$1" =~ ^.*centos/stream8[:/].* ]] && return 0
     [[ "$1" = "centos-stream-8" ]] && return 0
 
     return 1
 }
 
 function is_centos_7 () {
-    [[ "$1" =~ ^.*centos:7 ]] && return 0
+    [[ "$1" =~ ^.*centos/7[:/].* ]] && return 0
     [[ "$1" = "centos-7" ]] && return 0
 
     return 1
 }
 
 function is_ubuntu () {
-    [[ "$1" =~ ^.*ubuntu:22.04 ]] && return 0
+    [[ "$1" =~ ^.*ubuntu/.* ]] && return 0
     [[ "$1" = "ubuntu" ]] && return 0
 
     return 1
@@ -149,8 +166,16 @@ rlJournalStart
                     rlRun "package_manager=dnf5"
                 fi
 
+            elif is_fedora_40 "$image"; then
+                rlRun "distro=fedora-40"
+                rlRun "package_manager=dnf"
+
             elif is_fedora_39 "$image"; then
                 rlRun "distro=fedora-39"
+                rlRun "package_manager=dnf"
+
+            elif is_centos_stream_9 "$image"; then
+                rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
 
             elif is_centos_stream_8 "$image"; then
@@ -201,7 +226,7 @@ rlJournalStart
             rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
                 rlRun -s "$tmt plan --name /existing"
 
-                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
                 if is_ubuntu "$image"; then
                     # Runs 1 extra phase, to populate local caches.
@@ -214,7 +239,7 @@ rlJournalStart
             rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
                 rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
 
-                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
                 if is_ubuntu "$image"; then
                     # Runs 1 extra phase, to populate local caches.
@@ -231,7 +256,7 @@ rlJournalStart
 
                 rlRun -s "$tmt plan --name /downloaded"
 
-                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
                 rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             rlPhaseEnd
@@ -241,7 +266,7 @@ rlJournalStart
 
                 rlRun -s "$tmt prepare --insert --how install --package tree*.rpm --package diffutils*.rpm plan --name /empty"
 
-                rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
                 rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             rlPhaseEnd
@@ -250,7 +275,7 @@ rlJournalStart
         rlPhaseStartTest "$phase_prefix Install existing and invalid packages (plan)"
             rlRun -s "$tmt plan --name /missing" 2
 
-            rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
@@ -263,6 +288,12 @@ rlJournalStart
 
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_fedora_40 "$image"; then
+                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_fedora_39 "$image"; then
+                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
@@ -278,7 +309,7 @@ rlJournalStart
         rlPhaseStartTest "$phase_prefix Install existing and invalid packages (CLI)"
             rlRun -s "$tmt --insert --how install --package tree-but-spelled-wrong --package diffutils plan --name /empty" 2
 
-            rlAssertGrep "package manager: $package_manager" $rlRun_LOG
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
@@ -291,6 +322,12 @@ rlJournalStart
 
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_fedora_40 "$image"; then
+                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_fedora_39 "$image"; then
+                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
@@ -323,6 +360,12 @@ rlJournalStart
             if is_centos_7 "$image"; then
                 rlPhaseStartTest "$phase_prefix Install from epel7 copr"
                     rlRun "$tmt execute plan --name epel7"
+                rlPhaseEnd
+            fi
+
+            if is_centos_stream_9 "$image"; then
+                rlPhaseStartTest "$phase_prefix Install remote packages"
+                    rlRun "$tmt execute plan --name epel9-remote"
                 rlPhaseEnd
             fi
 

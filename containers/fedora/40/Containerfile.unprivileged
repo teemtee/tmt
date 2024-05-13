@@ -1,0 +1,11 @@
+#
+# A Fedora 40 image tailored for tmt test suite, with unprivileged account & password-less sudo
+#
+
+FROM quay.io/fedora/fedora:40
+
+RUN    useradd fedora \
+    && usermod -aG wheel fedora \
+    && echo -e 'fedora\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
+
+USER fedora
