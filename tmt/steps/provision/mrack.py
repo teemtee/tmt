@@ -433,6 +433,24 @@ def _transform_zcrypt_mode(
         children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
 
 
+def _transform_location_lab_controller(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWBinOp('labcontroller', beaker_operator, actual_value)
+            ])
+
+    return MrackHWBinOp(
+        'labcontroller',
+        beaker_operator,
+        actual_value)
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -453,6 +471,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
         _transform_virtualization_hypervisor,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
+    'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
     }
 
 

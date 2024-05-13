@@ -280,7 +280,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             }
                         }
                     ]
-                }
+                },
+
+            {
+                'labcontroller': {
+                    '_op': '!=',
+                    '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+                    }
+                },
             ]
         }
 
