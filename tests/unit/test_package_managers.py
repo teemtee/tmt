@@ -60,6 +60,37 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
 
 
+def has_legacy_dnf(container: ContainerData) -> bool:
+    """
+    Checks whether a container provides older ``dnf`` and ``yum``.
+
+    At some point, Fedora switched to ``dnf5`` completely, and older
+    ``dnf`` and ``yum`` commands are now mere symlinks to ``dnf5``.
+    """
+
+    if 'fedora' not in container.image_url_or_id \
+            and 'centos' not in container.image_url_or_id:
+        return False
+
+    return container.image_url_or_id not in (
+        CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_COREOS.url,
+        CONTAINER_FEDORA_COREOS_OSTREE.url
+        )
+
+
+def has_dnf5_preinstalled(container: ContainerData) -> bool:
+    """
+    Checks whether a container provides ``dnf5``.
+    """
+
+    return container.image_url_or_id in (
+        CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_COREOS.url,
+        CONTAINER_FEDORA_COREOS_OSTREE.url
+        )
+
+
 # Note: keep the list ordered by the most desired package manager to the
 # least desired one. For most of the tests, the order is not important,
 # but the list is used to generate the discovery tests as well, and the
@@ -68,8 +99,6 @@ PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_
 CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
-    (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF),
-    (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_YUM),
 
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF),
@@ -195,30 +224,47 @@ def test_discovery(
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
 
-    def _test_discovery(expected: str) -> None:
+    guest.show()
+
+    def _test_discovery(expected: str, expected_discovery: str) -> None:
+        caplog.clear()
+
         guest.facts.sync(guest)
 
         assert guest.facts.package_manager == expected
+
+        assert_log(caplog, message=MATCH(
+            rf"^Discovered package managers: {expected_discovery}$"))
 
     # Images in which `dnf5`` would be the best possible choice, do not
     # come with `dnf5`` pe-installed. Therefore run the discovery first,
     # but expect to find *dnf* instead of `dnf5`. Then install `dnf5`,
     # re-run the discovery and expect the original outcome.
-    #
-    # Except the Fedora CoreOS images: we preinstalled `dnf5` there, to
-    # complicate situation for `rpm-ostree` discovery.
     if expected_package_manager is tmt.package_managers.dnf.Dnf5:
-        if container.image_url_or_id not in (
-                CONTAINER_FEDORA_COREOS.url,
-                CONTAINER_FEDORA_COREOS_OSTREE.url):
-            _test_discovery(tmt.package_managers.dnf.Dnf.NAME)
+        guest.info(f'{container.image_url_or_id=}')
+        guest.info(f'{has_legacy_dnf(container)=}')
+        guest.info(f'{has_dnf5_preinstalled(container)=}')
 
-            guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+        if has_legacy_dnf(container):
+            _test_discovery(tmt.package_managers.dnf.Dnf.NAME, 'dnf and yum')
 
-        _test_discovery(expected_package_manager.NAME)
+            if not has_dnf5_preinstalled(container):
+                guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
+
+        if has_legacy_dnf(container):
+            _test_discovery(expected_package_manager.NAME, 'dnf5, dnf and yum')
+
+        else:
+            _test_discovery(expected_package_manager.NAME, 'dnf5')
+
+    elif expected_package_manager is tmt.package_managers.dnf.Dnf:
+        _test_discovery(expected_package_manager.NAME, 'dnf and yum')
+
+    elif expected_package_manager is tmt.package_managers.rpm_ostree.RpmOstree:
+        _test_discovery(expected_package_manager.NAME, 'rpm-ostree and dnf5')
 
     else:
-        _test_discovery(expected_package_manager.NAME)
+        _test_discovery(expected_package_manager.NAME, expected_package_manager.NAME)
 
 
 def _parametrize_test_install() -> \
@@ -907,31 +953,6 @@ def _generate_test_check_presence() -> Iterator[
                     r'\s+out:\s+util-linux-', \
                     None
 
-            elif 'fedora:rawhide' in container.url:
-                yield container, \
-                    package_manager_class, \
-                    Package('coreutils'), \
-                    True, \
-                    r"rpm -q --whatprovides coreutils", \
-                    r'\s+out:\s+coreutils-', \
-                    None
-
-                yield container, \
-                    package_manager_class, \
-                    Package('tree-but-spelled-wrong'), \
-                    False, \
-                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
-
-                yield container, \
-                    package_manager_class, \
-                    FileSystemPath('/usr/bin/arch'), \
-                    True, \
-                    r"rpm -q --whatprovides /usr/bin/arch", \
-                    r'\s+out:\s+coreutils-', \
-                    None
-
             else:
                 yield container, \
                     package_manager_class, \
@@ -981,31 +1002,6 @@ def _generate_test_check_presence() -> Iterator[
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
                     r'\s+out:\s+util-linux-', \
-                    None
-
-            elif 'fedora:rawhide' in container.url:
-                yield container, \
-                    package_manager_class, \
-                    Package('coreutils'), \
-                    True, \
-                    r"rpm -q --whatprovides coreutils", \
-                    r'\s+out:\s+coreutils-', \
-                    None
-
-                yield container, \
-                    package_manager_class, \
-                    Package('tree-but-spelled-wrong'), \
-                    False, \
-                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
-
-                yield container, \
-                    package_manager_class, \
-                    FileSystemPath('/usr/bin/arch'), \
-                    True, \
-                    r"rpm -q --whatprovides /usr/bin/arch", \
-                    r'\s+out:\s+coreutils-', \
                     None
 
             else:
