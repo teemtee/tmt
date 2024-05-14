@@ -213,6 +213,7 @@ def create_package_manager(
         data=guest_data,
         name='dummy-container')
     guest.start()
+    guest.show()
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
         # Note that our custom images contain `dnf5` already
@@ -533,7 +534,14 @@ def _parametrize_test_install_nonexistent_skip() -> \
                 None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'fedora' in container.url:  # noqa: SIM114
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+                yield container, \
+                    package_manager_class, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
+                    None, \
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
+
+            elif 'fedora' in container.url:  # noqa: SIM114
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
