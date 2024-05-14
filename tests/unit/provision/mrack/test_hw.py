@@ -10,6 +10,7 @@ from tmt.hardware import (
     _parse_cpu,
     _parse_disk,
     _parse_hostname,
+    _parse_location,
     _parse_memory,
     _parse_virtualization,
     _parse_zcrypt,
@@ -225,6 +226,12 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     '_value': '%.foo.redhat.com'
                     }
                 },
+            {
+                'labcontroller': {
+                    '_op': '!=',
+                    '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+                    }
+                },
             {'or': []},
             {
                 'and': [
@@ -282,12 +289,6 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     ]
                 },
 
-            {
-                'labcontroller': {
-                    '_op': '!=',
-                    '_value': 'lab-01.rhts.eng.pek2.redhat.com'
-                    }
-                },
             ]
         }
 
@@ -680,5 +681,28 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
                     '_value': 'C%A'
                     }
                 }
+            }
+        }
+
+
+def test_location_lab_controller(root_logger: Logger) -> None:
+
+    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
+        _parse_location({"lab-controller": "lab-01.rhts.eng.pek2.redhat.com"}), root_logger)
+
+    assert result.to_mrack() == {
+        'labcontroller': {
+            '_op': '==',
+            '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
+        _parse_location({"lab-controller": "!= lab-01.rhts.eng.pek2.redhat.com"}), root_logger)
+
+    assert result.to_mrack() == {
+        'labcontroller': {
+            '_op': '!=',
+            '_value': 'lab-01.rhts.eng.pek2.redhat.com'
             }
         }
