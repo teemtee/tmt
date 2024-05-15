@@ -34,13 +34,18 @@ rlJournalStart
             rlRun "python3 -m venv $TEST_VENV --system-site-packages"
             rlRun "$TEST_VENV/bin/pip install -r requirements.txt"
 
+            rlRun "$TEST_VENV/bin/pip freeze"
+
             # Note: we're not in the root directory!
             pushd ../../
-            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml"
-            rlRun "$TEST_VENV/bin/python3 -m pyright"
+            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --version"
+            rlRun "$TEST_VENV/bin/python3 -m pyright --version"
+
+            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --verbose"
+            rlRun "$TEST_VENV/bin/python3 -m pyright --project pyproject.toml --verbose"
             popd
 
-            # rlRun "rm -rf $TEST_VENV"
+            rlRun "rm -rf $TEST_VENV"
         rlPhaseEnd
     else
         rlPhaseStartTest "Check type annotations against development packages"
