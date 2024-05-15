@@ -1292,13 +1292,13 @@ class Test(
                 logger=logger)
 
             if links.get('verifies') and dry is False:
-                test = Tree(
+                tests = Tree(
                     path=path,
                     logger=logger).tests(
                     names=[
                         directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=test, links=links)
+                tmt.utils.jira_link(nodes=tests, links=links)
 
     @property
     def manual_test_path(self) -> Path:
@@ -2028,13 +2028,13 @@ class Plan(
                 logger=logger)
 
             if links.get('verifies') and dry is False:
-                plan_list = Tree(
+                plans = Tree(
                     path=path,
                     logger=logger).plans(
                     names=[
                         directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=plan_list, links=links)
+                tmt.utils.jira_link(nodes=plans, links=links)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2751,13 +2751,13 @@ class Story(
                 logger=logger)
 
             if links.get('verifies') and dry is False:
-                story_list = Tree(
+                stories = Tree(
                     path=path,
                     logger=logger).stories(
                     names=[
                         directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=story_list, links=links)
+                tmt.utils.jira_link(nodes=stories, links=links)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -2996,7 +2996,7 @@ class Tree(tmt.utils.Common):
             unique: bool = True,
             links: Optional[list['LinkNeedle']] = None,
             excludes: Optional[list[str]] = None,
-            apply_command_line: Optional[bool] = True
+            apply_command_line: bool = True
             ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
@@ -3146,6 +3146,7 @@ class Tree(tmt.utils.Common):
 
         if not Plan._opt('shallow'):
             plans = [plan.import_plan() or plan for plan in plans]
+
         return self._filters_conditions(
             sorted(plans, key=lambda plan: plan.order),
             filters, conditions, links, excludes)
