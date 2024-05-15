@@ -14,8 +14,9 @@ description: |
 
     .. warning::
 
-        `like` operation is not supported by lab-controller, only `!=` and `==`
-        are allowed.
+       Because of Beaker limitation, ``~`` and ``!~`` operators commonly used with text-like
+       HW requirements cannot be used with ``lab-controller``. Only ``==`` and ``!=``
+       operators are supported.
 
 example:
   - |
