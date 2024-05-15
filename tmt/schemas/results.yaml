@@ -9,6 +9,82 @@
 $id: /schemas/results
 $schema: https://json-schema.org/draft-07/schema
 
+definitions:
+  duration:
+    type: string
+    pattern: "^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]$"
+
+  check_result:
+    type: object
+    properties:
+      name:
+        type: string
+
+      event:
+        type: string
+        enum:
+          - "before-test"
+          - "after-test"
+
+      result:
+        $ref: "/schemas/common#/definitions/result_outcome"
+
+      note:
+        $ref: "/schemas/common#/definitions/result_note"
+
+      log:
+        $ref: "/schemas/common#/definitions/result_log"
+
+      start-time:
+        $ref: "/schemas/common#/definitions/timestamp"
+
+      end-time:
+        $ref: "/schemas/common#/definitions/timestamp"
+
+      duration:
+        $ref: "/definitions/duration"
+
+    required:
+      - name
+      - event
+      - result
+
+  check_results:
+    type: array
+    items:
+      $ref: "/definitions/check_result"
+
+  phase_result:
+    type: object
+    properties:
+      name:
+        type: string
+
+      result:
+        $ref: "/schemas/common#/definitions/result_outcome"
+
+      note:
+        $ref: "/schemas/common#/definitions/result_note"
+
+      log:
+        $ref: "/schemas/common#/definitions/result_log"
+
+      start-time:
+        $ref: "/schemas/common#/definitions/timestamp"
+
+      end-time:
+        $ref: "/schemas/common#/definitions/timestamp"
+
+      duration:
+        $ref: "/definitions/duration"
+
+      check:
+        $ref: "/definitions/check_results"
+
+    required:
+      - name
+      - result
+
 type: array
 items:
   type: object
@@ -52,8 +128,7 @@ items:
       $ref: "/schemas/common#/definitions/timestamp"
 
     duration:
-      type: string
-      pattern: "^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]$"
+      $ref: "/definitions/duration"
 
     ids:
       type: object
@@ -65,32 +140,10 @@ items:
       $ref: "/schemas/common#/definitions/result_log"
 
     check:
-      type: array
-      items:
-        type: object
-        properties:
-          name:
-            type: string
+      $ref: "/definitions/check_results"
 
-          event:
-            type: string
-            enum:
-              - "before-test"
-              - "after-test"
-
-          result:
-            $ref: "/schemas/common#/definitions/result_outcome"
-
-          note:
-            $ref: "/schemas/common#/definitions/result_note"
-
-          log:
-            $ref: "/schemas/common#/definitions/result_log"
-
-        required:
-          - name
-          - event
-          - result
+    phase:
+      $ref: "/definitions/phase_results"
 
   required:
     - name

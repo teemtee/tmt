@@ -23,6 +23,7 @@ description: |
        # fmf ID of the test.
        fmf_id:
          url: http://some.git.host.com/project/tests.git
+         ref: main
          name: /test/one
          path: /
 
@@ -32,10 +33,10 @@ description: |
        # String, optional comment to report with the result.
        note: "Things were great."
 
-       # List of strings, paths to file logs.
+       # List of strings, paths to log files.
        log:
-         - path/to/log1
-         - path/to/log1
+         - path/to/log1.txt
+         - path/to/log2.log
            ...
 
        # Mapping, collection of various test IDs, if there are any to track.
@@ -78,16 +79,16 @@ description: |
       # key. Fields have the same meaning as fields of the "parent" test result, but
       # relate to each check alone.
       check:
-          # String, outcome of the test execution.
+          # String, outcome of the check execution.
         - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
 
-          # List of strings, paths to file logs.
+          # List of strings, paths to logs files.
           log:
-            - path/to/check/log1
-            - path/to/check/log1
+            - path/to/check/log1.txt
+            - path/to/check/log2.log
               ...
 
           # String, when the check started, in an ISO 8601 format.
@@ -105,6 +106,40 @@ description: |
 
           # String, the place in test workflow when the check was executed.
           event: "before-test"|"after-test"
+
+      # Represents results of all test phases, if reported by the test.
+      # Fields have the same meaning as fields of the "parent" test result, but
+      # relate to each phase check alone.
+      phase:
+          # String, name of the test phase.
+        - name: First test case
+
+          # String, outcome of the phase execution.
+          result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+
+          # String, optional comment to report with the result.
+          note: "Things were great."
+
+          # List of strings, paths to log files.
+          log:
+            - path/to/phase/log1.txt
+            - path/to/phase/log2.log
+              ...
+
+          # String, when the phase started, in an ISO 8601 format.
+          start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
+          # String, when the phase finished, in an ISO 8601 format.
+          end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
+
+          # String, how long did the phase run.
+          duration: hh:mm:ss
+
+          # List, results of checks performed for this test phase.
+          # It follows the same structure as the `check` key in the
+          # "parent" test result.
+          check:
+            ...
 
     The ``result`` key can have the following values:
 
@@ -139,9 +174,10 @@ description: |
         tests were run.
 
     The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
-    and ``event`` keys are required for entries under ``check`` key. Custom
-    result files may omit all other keys, although tmt plugins will strive to
-    provide as many keys as possible.
+    and ``event`` keys are required for entries under ``check`` key, and
+    ``name`` and ``result`` keys are required for entries under ``phase``
+    key. Custom result files may omit all other keys, although tmt plugins
+    will strive to provide as many keys as possible.
 
     When importing the :ref:`custom results file </spec/tests/result>`, each
     test name referenced in the file by the ``name`` key would be prefixed by
@@ -179,6 +215,9 @@ description: |
 
     .. versionchanged:: 1.30
        fmf context is now saved within results, in the ``context`` key.
+
+    .. versionchanged:: 1.34
+       phase results are now defined, under the ``phase`` key.
 
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 
