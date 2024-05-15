@@ -262,11 +262,7 @@ rlJournalStart
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_rawhide "$image"; then
-                if [ "$PROVISION_HOW" = "virtual" ]; then
-                    rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
-                else
-                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-                fi
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
@@ -294,11 +290,7 @@ rlJournalStart
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_rawhide "$image"; then
-                if [ "$PROVISION_HOW" = "virtual" ]; then
-                    rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
-                else
-                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-                fi
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG

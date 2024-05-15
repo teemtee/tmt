@@ -4,7 +4,8 @@
 
 FROM quay.io/fedora/fedora:rawhide
 
-RUN    useradd fedora \
+RUN    dnf install -y /usr/sbin/useradd \
+    && useradd fedora \
     && usermod -aG wheel fedora \
     && echo -e 'fedora\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
 
