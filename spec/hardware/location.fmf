@@ -12,8 +12,13 @@ description: |
     .. versionchanged:: 1.33
        Added ``location.lab-controller`` into specification.
 
+    .. warning::
+
+        `like` operation is not supported by lab-controller, only `!=` and `==`
+        are allowed.
+
 example:
   - |
-    # Select a system that is not managed by deprecated lab controllers
+    # Select a system that is not managed lab-01.foo.bar.com lab controller
     location:
-        lab-controller: "!~ deprecated-lab-.*.foo.bar.com"
+        lab-controller: "!= lab-01.foo.bar.com"
