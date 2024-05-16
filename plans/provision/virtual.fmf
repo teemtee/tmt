@@ -54,3 +54,19 @@ adjust+:
           - sysctl -w net.ipv6.conf.default.disable_ipv6=1
     because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
     when: trigger == commit
+
+/provision:
+    discover+:
+        test: "^/tests/provision"
+
+/prepare:
+    discover+:
+        test: "^/tests/prepare"
+
+/execute:
+    discover+:
+        test: "^/tests/execute"
+
+/the-rest:
+    discover+:
+        test: "^/tests/(?!provision|prepare|execute)"
