@@ -8,7 +8,7 @@ localhost/tmt/tests/fedora/40/upstream:latest
 localhost/tmt/tests/fedora/39/upstream:latest
 localhost/tmt/tests/centos/stream9/upstream:latest
 localhost/tmt/tests/centos/stream8/upstream:latest
-localhost/tmt/tests/centos/upstream7:latest
+localhost/tmt/tests/centos/7/upstream:latest
 localhost/tmt/tests/ubuntu/22.04/upstream:latest
 ubi8
 localhost/tmt/tests/alpine:latest
