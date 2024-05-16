@@ -94,7 +94,18 @@ def test_maximal_constraint(root_logger: Logger) -> None:
 
     assert result.to_mrack() == {
         'and': [
-            {'or': []},
+            {
+                'or': [
+                    {
+                        'key_value': {
+                            '_key': 'NETBOOT_METHOD',
+                            '_op': '==',
+                            '_value': 'pxe',
+                            },
+                        },
+                    ]
+                },
+
             {
                 'and': [
                     {'or': []},

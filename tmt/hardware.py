@@ -908,13 +908,7 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
         constraint = TextConstraint.from_specification(
             'boot.method',
             spec["method"],
-            allowed_operators=[Operator.EQ, Operator.NEQ])
-
-        if constraint.operator == Operator.EQ:
-            constraint.change_operator(Operator.CONTAINS)
-
-        elif constraint.operator == Operator.NEQ:
-            constraint.change_operator(Operator.NOTCONTAINS)
+            allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
 
         group.constraints += [constraint]
 

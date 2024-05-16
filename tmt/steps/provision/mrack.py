@@ -61,6 +61,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'virtualization.is_virtualized',
     'virtualization.hypervisor',
     'zcrypt',
+    'boot.method'
     ]
 
 
@@ -431,6 +432,25 @@ def _transform_zcrypt_mode(
         children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
 
 
+def _transform_boot_method(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+    boot_dict = {'bios': ['pxe'],
+                 'uefi': ['grub2', 'efigrub']
+                 }
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWKeyValue('NETBOOT_METHOD', beaker_operator, actual_value)
+            for actual_value in boot_dict[f'{actual_value}']])
+
+    return MrackHWOrGroup(children=[
+        MrackHWKeyValue('NETBOOT_METHOD', beaker_operator, actual_value)
+        for actual_value in boot_dict[f'{actual_value}']])
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -450,6 +470,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     _transform_virtualization_hypervisor,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
+    'boot.method': _transform_boot_method,  # type: ignore[dict-item]
     }
 
 
