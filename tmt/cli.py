@@ -2240,13 +2240,13 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
 @main.command(name='link')
 @pass_context
 @click.argument('link', nargs=1, metavar='[RELATION:]TARGET')
-@click.argument('names', nargs=-1, metavar='[NAME]...')
+@click.argument('names', nargs=-1, metavar='[TEST|PLAN|STORY]...')
 @option(
     '--separate', is_flag=True,
     help="Create linking separately for multiple passed objects.")
 def link(context: Context,
          names: list[str],
-         link: list[str],
+         link: str,
          separate: bool,
          ) -> None:
     nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']] = []
@@ -2257,4 +2257,4 @@ def link(context: Context,
             nodes.extend(context.obj.tree.plans(names=[name]))
         if context.obj.tree.stories(names=[name]):
             nodes.extend(context.obj.tree.stories(names=[name]))
-    tmt.utils.jira_link(nodes, tmt.base.Links(data=link[0]), separate)
+    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), separate)

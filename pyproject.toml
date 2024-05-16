@@ -69,6 +69,9 @@ report-polarion = [
     "tmt[report-junit]",
     "tmt[export-polarion]",
     ]
+link-jira = [
+    "jira>=3.2.0",
+    ]
 all = [
     "tmt[test-convert]",
     "tmt[export-polarion]",
@@ -77,6 +80,7 @@ all = [
     "tmt[provision-beaker]",
     "tmt[report-junit]",
     "tmt[report-polarion]",
+    "tmt[link-jira]",
     ]
 # Needed for readthedocs and man page build. Not being packaged in rpm.
 docs = [
