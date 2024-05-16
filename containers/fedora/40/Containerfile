@@ -1,9 +1,13 @@
 #
 # A Fedora 40 image tailored for tmt test suite
 #
+# tmt/tests/fedora/40:latest
+#
 
 FROM registry.fedoraproject.org/fedora:40
 
-# Inject `dnf5` to make things more complicated for `dnf` family of
-# package manager implementations
-RUN dnf install -y dnf5
+    # Populate dnf cache
+RUN    dnf makecache \
+    # Inject `dnf5` to make things more complicated for `dnf` family of
+    # package manager implementations
+    && dnf install -y dnf5

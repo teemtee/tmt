@@ -1,12 +1,16 @@
 #
 # A Fedora CoreOS image tailored for tmt test suite
 #
+# tmt/tests/fedora/coreos:latest
+#
 
 FROM quay.io/fedora/fedora-coreos:stable
 
     # Inject `dnf` to make things more complicated for `rpm-ostree` package
     # manager implementation
-RUN rpm-ostree install dnf5 \
+RUN    rpm-ostree install dnf5 \
+    # Populate dnf cache
+    && dnf5 makecache \
     # Remove diffutils as its used in many package manager tests, and tests
     # are simpler if all environments lack the same package, we don't have
     # to parametrize them even more.

@@ -1017,6 +1017,31 @@ def _generate_test_check_presence() -> Iterator[
                     r'\s+out:\s+util-linux-', \
                     None
 
+            elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('coreutils'), \
+                    True, \
+                    r"rpm -q --whatprovides coreutils", \
+                    r'\s+out:\s+coreutils-', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    Package('tree-but-spelled-wrong'), \
+                    False, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/arch'), \
+                    True, \
+                    r"rpm -q --whatprovides /usr/bin/arch", \
+                    r'\s+out:\s+coreutils-', \
+                    None
+
             else:
                 yield container, \
                     package_manager_class, \
@@ -1066,6 +1091,31 @@ def _generate_test_check_presence() -> Iterator[
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
                     r'\s+out:\s+util-linux-', \
+                    None
+
+            elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('coreutils'), \
+                    True, \
+                    r"rpm -q --whatprovides coreutils", \
+                    r'\s+out:\s+coreutils-', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    Package('tree-but-spelled-wrong'), \
+                    False, \
+                    r"rpm -q --whatprovides tree-but-spelled-wrong", \
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
+                    None
+
+                yield container, \
+                    package_manager_class, \
+                    FileSystemPath('/usr/bin/arch'), \
+                    True, \
+                    r"rpm -q --whatprovides /usr/bin/arch", \
+                    r'\s+out:\s+coreutils-', \
                     None
 
             else:

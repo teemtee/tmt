@@ -7,6 +7,10 @@
 # Prepare variables
 TMP = $(CURDIR)/tmp
 
+ccred=$(shell tput setaf 1)
+ccgreen=$(shell tput setaf 2)
+ccend=$(shell tput sgr0)
+
 # Define special targets
 .DEFAULT_GOAL := help
 .PHONY: docs
@@ -108,64 +112,66 @@ TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_IMAGES),images-tests/$(sub
 images-tests: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
 	podman images | grep 'localhost/$(TMT_TEST_IMAGE_NAME_PREFIX)/' | sort
 
+define test-image-target-to-name =
+$(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,${1})
+endef
+
+define build-test-image =
+@ echo "$(ccgreen)Building $(ccred)$(call test-image-target-to-name,$@)$(ccend) $(ccgreen)image...$(ccend)"
+podman build -t $(call test-image-target-to-name,${1}) -f ./containers/${2} .
+@ echo
+endef
+
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/alpine\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/alpine/Containerfile .
+	$(call build-test-image,$@,alpine/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
-	podman pull docker.io/library/alpine:3.19
-	podman tag docker.io/library/alpine:3.19 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,alpine/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
-	podman pull quay.io/centos/centos:7
-	podman tag quay.io/centos/centos:7 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,centos/7/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream8/upstream\:latest:
-	podman pull quay.io/centos/centos:stream8
-	podman tag quay.io/centos/centos:stream8 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,centos/stream8/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream9/upstream\:latest:
-	podman pull quay.io/centos/centos:stream9
-	podman tag quay.io/centos/centos:stream9 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,centos/stream9/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos\:stable:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/coreos/Containerfile .
+	$(call build-test-image,$@,fedora/coreos/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos/ostree\:stable:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/coreos/ostree/Containerfile .
+	$(call build-test-image,$@,fedora/coreos/ostree/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/rawhide/Containerfile .
+	$(call build-test-image,$@,fedora/rawhide/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream\:latest:
-	podman pull registry.fedoraproject.org/fedora:rawhide
-	podman tag registry.fedoraproject.org/fedora:rawhide $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,fedora/rawhide/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/rawhide/Containerfile.unprivileged .
+	$(call build-test-image,$@,fedora/rawhide/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/40/Containerfile .
+	$(call build-test-image,$@,fedora/40/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/upstream\:latest:
-	podman pull registry.fedoraproject.org/fedora:40
-	podman tag registry.fedoraproject.org/fedora:40 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,fedora/40/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/unprivileged\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/40/Containerfile.unprivileged .
+	$(call build-test-image,$@,fedora/40/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/39/Containerfile .
+	$(call build-test-image,$@,fedora/39/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/upstream\:latest:
-	podman pull registry.fedoraproject.org/fedora:39
-	podman tag registry.fedoraproject.org/fedora:39 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,fedora/39/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/unprivileged\:latest:
-	podman build -t $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@) -f ./containers/fedora/39/Containerfile.unprivileged .
+	$(call build-test-image,$@,fedora/39/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream\:latest:
-	podman pull docker.io/library/ubuntu:22.04
-	podman tag docker.io/library/ubuntu:22.04 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,$@)
+	$(call build-test-image,$@,ubuntu/22.04/Containerfile.upstream)
 
 ##
 ## Development
@@ -198,7 +204,7 @@ clean-test-images:  ## Remove all custom images built for tests
 ## Help!
 ##
 help:: ## Show this help text
-	@gawk -vG=$$(tput setaf 2) -vR=$$(tput sgr0) ' \
+	@gawk -vG="$(ccgreen)" -vR="$(ccend)" ' \
 	  match($$0, "^(([^#:]*[^ :]) *:)?([^#]*)##([^#].+|)$$",a) { \
 	    if (a[2] != "") { printf "    make %s%-18s%s %s\n", G, a[2], R, a[4]; next }\
 	    if (a[3] == "") { print a[4]; next }\

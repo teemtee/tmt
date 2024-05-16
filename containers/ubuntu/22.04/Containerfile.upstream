@@ -1,0 +1,10 @@
+#
+# An Ubuntu image tailored for tmt test suite
+#
+# tmt/tests/ubuntu/22.04/upstream:latest
+#
+
+FROM docker.io/library/ubuntu:22.04
+
+    # Populate apt cache
+RUN apt update

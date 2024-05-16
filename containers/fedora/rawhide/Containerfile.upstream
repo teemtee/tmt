@@ -1,0 +1,10 @@
+#
+# A Fedora rawhide image tailored for tmt test suite
+#
+# tmt/tests/fedora/rawhide/upstream:latest
+#
+
+FROM registry.fedoraproject.org/fedora:rawhide
+
+    # Populate dnf cache
+RUN dnf makecache

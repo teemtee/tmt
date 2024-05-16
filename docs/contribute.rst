@@ -295,9 +295,6 @@ For example, the following images can be found:
     # Latest Alpine, with added Bash to simulate proper essential setup:
     localhost/tmt/tests/alpine
 
-    # Latest Alpine, but with no changes at all:
-    localhost/tmt/tests/alpine/upstream
-
     # Various CentOS releases:
     localhost/tmt/tests/centos/7
     localhost/tmt/tests/centos/stream8
