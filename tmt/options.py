@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 @dataclasses.dataclass(frozen=True)
 class Deprecated:
     """ Version information and hint for obsolete options """
+
     since: str
     hint: Optional[str] = None
 

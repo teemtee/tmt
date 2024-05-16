@@ -732,6 +732,7 @@ class BeakerAPI:
 
 class GuestBeaker(tmt.steps.provision.GuestSsh):
     """ Beaker guest instance """
+
     _data_class = BeakerGuestData
 
     # Guest request properties
