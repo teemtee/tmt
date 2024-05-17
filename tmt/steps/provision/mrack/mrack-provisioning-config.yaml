@@ -9,6 +9,7 @@ beaker:
     distros:
         c8s: CentOS-Stream-8%
         c9s: CentOS-Stream-9%
+        c10s: CentOS-Stream-10%
         rhel-6.10: RHEL-6.10%
         rhel-7.6: RHEL-7.6%
         rhel-7.7: RHEL-7.7%
@@ -46,6 +47,11 @@ beaker:
         rhel-9.3-nightly: RHEL-9.3%
         rhel-9.4: RHEL-9.4%
         rhel-9.4-nightly: RHEL-9.4%
+        rhel-9.5: RHEL-9.5%
+        rhel-9.5-nightly: RHEL-9.5%
+        rhel-10: RHEL-10.0%
+        rhel-10.0: RHEL-10.0%
+        rhel-10-nightly: RHEL-10.0%
         fedora-30: Fedora-30%
         fedora-31: Fedora-31%
         fedora-32: Fedora-32%
@@ -56,8 +62,9 @@ beaker:
         fedora-37: Fedora-37%
         fedora-38: Fedora-38%
         fedora-39: Fedora-39%
-        fedora-latest: Fedora-39%
-        fedora: Fedora-39%
+        fedora-40: Fedora-40%
+        fedora-latest: Fedora-40%
+        fedora: Fedora-40%
         fedora-rawhide: Fedora-Rawhide-%
 
     distro_variants:
@@ -77,6 +84,7 @@ beaker:
         Fedora-37%: Server
         Fedora-38%: Server
         Fedora-39%: Server
+        Fedora-40%: Server
 
     distro_tags:
         RHEL-9.0%:
