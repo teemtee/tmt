@@ -5,7 +5,10 @@ USER="tester"
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "make -C ../../../../ image/tests/alpine image/tests/alpine/upstream"
+        # Try several times to build the container
+        # https://github.com/teemtee/tmt/issues/2063
+        build="make -C ../../../../ images-tests/tmt/tests/alpine\:latest images-tests/tmt/tests/alpine/upstream\:latest"
+        rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the images"
 
         # Directories
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"

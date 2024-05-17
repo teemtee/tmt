@@ -134,7 +134,10 @@ rlJournalStart
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$CONTAINER_IMAGES'"
 
-            rlRun "make -C ../../../ images-tests"
+            # Try several times to build the container
+            # https://github.com/teemtee/tmt/issues/2063
+            build="make -C ../../../ images-tests"
+            rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the images"
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$VIRTUAL_IMAGES'"
@@ -159,12 +162,7 @@ rlJournalStart
 
             if is_fedora_rawhide "$image"; then
                 rlRun "distro=fedora-rawhide"
-
-                if [ "$PROVISION_HOW" = "virtual" ]; then
-                    rlRun "package_manager=dnf"
-                else
-                    rlRun "package_manager=dnf5"
-                fi
+                rlRun "package_manager=dnf5"
 
             elif is_fedora_40 "$image"; then
                 rlRun "distro=fedora-40"

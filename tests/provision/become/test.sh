@@ -7,7 +7,7 @@ rlJournalStart
         if [[ "$PROVISION_HOW" == "container" ]]; then
             # Try several times to build the container
             # https://github.com/teemtee/tmt/issues/2063
-            build="make -C ../../../ image/tests/fedora/rawhide/unprivileged"
+            build="make -C ../../../ images-tests/tmt/tests/fedora/rawhide/unprivileged\:latest"
             rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the image"
         fi
         rlRun "pushd data"
