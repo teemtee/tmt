@@ -39,7 +39,7 @@ rlJournalStart
         # Try several times to build the container
         # https://github.com/teemtee/tmt/issues/2063
         build="make -C $TMT_TREE images-tests"
-        rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the images"
+        rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
     rlPhaseEnd
 
     if [ "$WITH_SYSTEM_PACKAGES" = "yes" ]; then

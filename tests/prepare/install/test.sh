@@ -137,7 +137,7 @@ rlJournalStart
             # Try several times to build the container
             # https://github.com/teemtee/tmt/issues/2063
             build="make -C ../../../ images-tests"
-            rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the images"
+            rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$VIRTUAL_IMAGES'"

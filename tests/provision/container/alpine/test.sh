@@ -8,7 +8,7 @@ rlJournalStart
         # Try several times to build the container
         # https://github.com/teemtee/tmt/issues/2063
         build="make -C ../../../../ images-tests/tmt/tests/alpine\:latest images-tests/tmt/tests/alpine/upstream\:latest"
-        rlRun "rlWaitForCmd '$build' -m 5 -d 5" || rlDie "Unable to prepare the images"
+        rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
 
         # Directories
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
