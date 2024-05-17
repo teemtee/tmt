@@ -56,6 +56,7 @@ SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
     'disk.size',
     'disk.model_name',
     'disk.driver',
+    'disk.count',
     'hostname',
     'memory',
     'virtualization.is_virtualized',
@@ -324,6 +325,16 @@ def _transform_disk_model_name(
         children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+def _transform_disk_count(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWKeyValue('NR_DISKS', beaker_operator, actual_value)
+
+
 def _transform_hostname(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -442,6 +453,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
     'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
     'disk.size': _transform_disk_size,  # type: ignore[dict-item]
+    'disk.count': _transform_disk_count,  # type: ignore[dict-item]
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
     'virtualization.is_virtualized': \
