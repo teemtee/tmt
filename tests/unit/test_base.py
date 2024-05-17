@@ -176,9 +176,7 @@ def test_pickleable_tree() -> None:
 
 
 def test_expand_node_data(monkeypatch) -> None:
-    """
-    Test :py:func:`tmt.base.expand_node_data` handles various forms of variables.
-    """
+    """ :py:func:`tmt.base.expand_node_data` handles various forms of variables """
 
     # From ``_data` and `_expected` we construct lists with items, including
     # another list and a dictionary, to verify `expand_node_data()` handles

@@ -527,9 +527,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         return invocations
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
-        """
-        Prepare additional scripts for testing
-        """
+        """ Prepare additional scripts for testing """
         # Install all scripts on guest
         for script in self.scripts:
             source = SCRIPTS_SRC_DIR / script.path.name
@@ -590,9 +588,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             note=note)]
 
     def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
-        """
-        Process custom results.yaml file created by the test itself.
-        """
+        """ Process custom results.yaml file created by the test itself """
         test, guest = invocation.test, invocation.guest
 
         custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
@@ -783,9 +779,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
 
 
 class Execute(tmt.steps.Step):
-    """
-    Run tests using the specified executor.
-    """
+    """ Run tests using the specified executor """
 
     # Internal executor is the default implementation
     DEFAULT_HOW = 'tmt'

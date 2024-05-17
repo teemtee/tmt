@@ -1994,9 +1994,7 @@ def lint(
 
 @main.group(cls=CustomGroup)
 def setup(**kwargs: Any) -> None:
-    """
-    Setup the environment for working with tmt.
-    """
+    """ Setup the environment for working with tmt """
 
 
 @setup.group(cls=CustomGroup)
@@ -2050,9 +2048,7 @@ def setup_completion(shell: str, install: bool) -> None:
          '~/.bashrc'.
          """)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
-    """
-    Setup shell completions for bash.
-    """
+    """ Setup shell completions for bash """
     setup_completion('bash', install)
 
 
@@ -2065,9 +2061,7 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
          '~/.zshrc'.
          """)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
-    """
-    Setup shell completions for zsh.
-    """
+    """ Setup shell completions for zsh """
     setup_completion('zsh', install)
 
 
@@ -2077,7 +2071,5 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
-    """
-    Setup shell completions for fish.
-    """
+    """ Setup shell completions for fish """
     setup_completion('fish', install)

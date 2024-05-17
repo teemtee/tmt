@@ -3149,9 +3149,7 @@ class SerializableContainer(DataContainer):
     #
 
     def inject_to(self, obj: Any) -> None:
-        """
-        Inject keys from this container into attributes of a given object
-        """
+        """ Inject keys from this container into attributes of a given object """
 
         for name, value in self.items():
             setattr(obj, name, value)
@@ -4194,9 +4192,7 @@ CLONABLE_GIT_URL_PATTERNS: list[tuple[str, str]] = [
 
 
 def clonable_git_url(url: str) -> str:
-    """
-    Modify the git repo url so it can be cloned
-    """
+    """ Modify the git repo url so it can be cloned """
     url = rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
     return inject_auth_git_url(url)
 
@@ -4289,9 +4285,7 @@ def fmf_id(
 
 
 class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
-    """
-    Spice up request's session with custom timeout.
-    """
+    """ Spice up request's session with custom timeout """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.timeout = kwargs.pop('timeout', None)
@@ -4354,9 +4348,8 @@ class RetryStrategy(urllib3.util.retry.Retry):
 # ignore[type-arg]: base class is a generic class, but we cannot list
 # its parameter type, because in Python 3.6 the class "is not subscriptable".
 class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
-    """
-    Context manager for requests.Session() with retries and timeout
-    """
+    """ Context manager for :py:class:`requests.Session` with retries and timeout """
+
     @staticmethod
     def create(
             retries: int = DEFAULT_RETRY_SESSION_RETRIES,
@@ -4745,8 +4738,6 @@ class StructuredField:
     these single-line items. Note that the section cannot contain both
     plain text data and key-value pairs.
 
-    Example:
-
     .. code-block:: python
 
         field = qe.StructuredField()
@@ -4813,6 +4804,7 @@ class StructuredField:
         print field.get("hardware", "hostrequire")
 
             ['hypervisor=', 'labcontroller=lab.example.com']
+
     """
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5653,9 +5645,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     import tmt.steps
 
     def _process_step(step_name: str, step: dict[Any, Any]) -> None:
-        """
-        Process a single step configuration.
-        """
+        """ Process a single step configuration """
 
         # If `how` is set, don't touch it, and there's nothing to do.
         if 'how' in step:
@@ -5686,9 +5676,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         step['how'] = step_class.DEFAULT_HOW
 
     def _process_step_collection(step_name: str, step_collection: Any) -> None:
-        """
-        Process a collection of step configurations.
-        """
+        """ Process a collection of step configurations """
 
         # Ignore anything that is not a step.
         if step_name not in tmt.steps.STEPS:
@@ -6255,8 +6243,7 @@ class NormalizeKeysMixin(_CommonBase):
         keys declared by the class itself, all following the order in which keys
         were defined in their respective classes.
 
-        Yields:
-            pairs of key name and its annotations.
+        :yields: pairs of key name and its annotations.
         """
 
         def _iter_class_annotations(klass: type) -> Iterator[tuple[str, Any]]:
@@ -6285,8 +6272,7 @@ class NormalizeKeysMixin(_CommonBase):
         keys declared by the class itself, all following the order in which keys
         were defined in their respective classes.
 
-        Yields:
-            key names.
+        :yields: key names.
         """
 
         for keyname, _ in cls._iter_key_annotations():
@@ -6300,8 +6286,7 @@ class NormalizeKeysMixin(_CommonBase):
         keys declared by the class itself, all following the order in which keys
         were defined in their respective classes.
 
-        Yields:
-            pairs of key name and its value.
+        :yields: pairs of key name and its value.
         """
         # SIM118 Use `{key} in {dict}` instead of `{key} in {dict}.keys().
         # "Type[SerializableContainerDerivedType]" has no attribute "__iter__" (not iterable)
@@ -7082,7 +7067,8 @@ def retry(
         *args: Any,
         **kwargs: Any
         ) -> T:
-    """ Retry functionality to be used elsewhere in the code.
+    """
+    Retry functionality to be used elsewhere in the code.
 
     :param func: function to be called with all unclaimed positional
         and keyword arguments.
@@ -7107,9 +7093,7 @@ def retry(
 
 
 def get_url_content(url: str) -> str:
-    """
-    Get content of a given URL as a string.
-    """
+    """ Get content of a given URL as a string """
     try:
         with retry_session() as session:
             response = session.get(url)
@@ -7124,9 +7108,7 @@ def get_url_content(url: str) -> str:
 
 
 def is_url(url: str) -> bool:
-    """
-    Check if the given string is a valid URL.
-    """
+    """ Check if the given string is a valid URL """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
 

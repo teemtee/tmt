@@ -931,9 +931,7 @@ class TestGitAdd:
 # tmt.utils.wait() & waiting for things to happen
 #
 def test_wait_bad_tick(root_logger):
-    """
-    :py:func:`wait` shall raise an exception when invalid ``tick`` is given.
-    """
+    """ :py:func:`wait` shall raise an exception when invalid ``tick`` is given """
 
     with pytest.raises(GeneralError, match='Tick must be a positive integer'):
         wait(Common(logger=root_logger), lambda: False, datetime.timedelta(seconds=1), tick=-1)

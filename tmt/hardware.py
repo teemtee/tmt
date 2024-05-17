@@ -81,9 +81,7 @@ T = TypeVar('T', bound='Constraint')  # type: ignore[type-arg]
 
 
 class Operator(enum.Enum):
-    """
-    Binary operators defined by specification.
-    """
+    """ Binary operators defined by specification """
 
     EQ = '=='
     NEQ = '!='
@@ -184,9 +182,7 @@ ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool)
 
 
 class ConstraintNameComponents(NamedTuple):
-    """
-    Components of a constraint name.
-    """
+    """ Components of a constraint name """
 
     #: ``disk`` of ``disk[1].size``
     name: str
@@ -198,9 +194,7 @@ class ConstraintNameComponents(NamedTuple):
 
 @dataclasses.dataclass
 class ConstraintComponents:
-    """
-    Components of a constraint.
-    """
+    """ Components of a constraint """
 
     name: str
     peer_index: Optional[int]
@@ -303,9 +297,7 @@ ReducerType = Callable[[Iterable[bool]], bool]
 
 
 class ParseError(tmt.utils.MetadataError):
-    """
-    Raised when HW requirement parsing fails.
-    """
+    """ Raised when HW requirement parsing fails """
 
     def __init__(self, constraint_name: str, raw_value: str,
                  message: Optional[str] = None) -> None:
@@ -329,9 +321,7 @@ class ParseError(tmt.utils.MetadataError):
 
 @dataclasses.dataclass(repr=False)
 class BaseConstraint(SpecBasedContainer[Spec, Spec]):
-    """
-    Base class for all classes representing one or more constraints.
-    """
+    """ Base class for all classes representing one or more constraints """
 
     @classmethod
     def from_spec(cls, spec: Any) -> 'BaseConstraint':
@@ -394,9 +384,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
 @dataclasses.dataclass(repr=False)
 class CompoundConstraint(BaseConstraint):
-    """
-    Base class for all *compound* constraints.
-    """
+    """ Base class for all *compound* constraints """
 
     def __init__(
             self,
@@ -467,9 +455,7 @@ class CompoundConstraint(BaseConstraint):
 
 @dataclasses.dataclass(repr=False)
 class Constraint(BaseConstraint, Generic[ConstraintValueT]):
-    """
-    A constraint imposing a particular limit to one of the guest properties.
-    """
+    """ A constraint imposing a particular limit to one of the guest properties """
 
     # Name of the constraint. Used for logging purposes, usually matches the
     # name of the system property.
@@ -744,9 +730,7 @@ class TextConstraint(Constraint[str]):
 
 @dataclasses.dataclass(repr=False)
 class And(CompoundConstraint):
-    """
-    Represents constraints that are grouped in ``and`` fashion.
-    """
+    """ Represents constraints that are grouped in ``and`` fashion """
 
     def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
@@ -802,9 +786,7 @@ class And(CompoundConstraint):
 
 @dataclasses.dataclass(repr=False)
 class Or(CompoundConstraint):
-    """
-    Represents constraints that are grouped in ``or`` fashion.
-    """
+    """ Represents constraints that are grouped in ``or`` fashion """
 
     def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
