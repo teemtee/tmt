@@ -5112,6 +5112,7 @@ class StructuredField:
 
 class DistGitHandler:
     """ Common functionality for DistGit handlers """
+
     sources_file_name = 'sources'
     uri = "/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
 
@@ -5165,6 +5166,7 @@ class DistGitHandler:
 
 class FedoraDistGit(DistGitHandler):
     """ Fedora Handler """
+
     usage_name = "fedora"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     lookaside_server = "https://src.fedoraproject.org/repo/pkgs"
@@ -5173,6 +5175,7 @@ class FedoraDistGit(DistGitHandler):
 
 class CentOSDistGit(DistGitHandler):
     """ CentOS Handler """
+
     usage_name = "centos"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     lookaside_server = "https://sources.stream.centos.org/sources"
@@ -5181,6 +5184,7 @@ class CentOSDistGit(DistGitHandler):
 
 class RedHatGitlab(DistGitHandler):
     """ Red Hat on Gitlab """
+
     usage_name = "redhatgitlab"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     # Location already public (standard-test-roles)

@@ -13,6 +13,7 @@ class TestDistGit(DistGitHandler):
     each line in MOCK_SOURCES_FILENAME contains
     filename to serve and optional (after single space a custom filename)
     """
+
     usage_name = "TESTING"
     server = f"http://localhost:{SERVER_PORT}"
 

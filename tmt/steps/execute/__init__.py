@@ -54,6 +54,7 @@ SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 @dataclass
 class Script:
     """ Represents a script provided by the internal executor """
+
     path: Path
     aliases: list[Path]
     related_variables: list[str]
@@ -62,6 +63,7 @@ class Script:
 @dataclass
 class ScriptCreatingFile(Script):
     """ Represents a script which creates a file """
+
     created_file: str
 
 
