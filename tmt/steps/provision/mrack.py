@@ -48,22 +48,6 @@ class GuestInspectType(TypedDict):
     address: Optional[str]
 
 
-SUPPORTED_HARDWARE_CONSTRAINTS: list[str] = [
-    'cpu.flag',
-    'cpu.processors',
-    'cpu.model',
-    'cpu.cores',
-    'disk.size',
-    'disk.model_name',
-    'disk.driver',
-    'hostname',
-    'memory',
-    'virtualization.is_virtualized',
-    'virtualization.hypervisor',
-    'zcrypt',
-    ]
-
-
 # Mapping of HW requirement operators to their Beaker representation.
 OPERATOR_SIGN_TO_OPERATOR = {
     tmt.hardware.Operator.EQ: '==',
@@ -1017,7 +1001,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         if data.hardware:
             data.hardware.report_support(
-                names=SUPPORTED_HARDWARE_CONSTRAINTS,
+                names=list(_CONSTRAINT_TRANSFORMERS.keys()),
                 logger=self._logger)
 
         self._guest = GuestBeaker(
