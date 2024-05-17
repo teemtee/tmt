@@ -14,7 +14,7 @@ story: 'As a user I want to comfortably work with plans'
     link:
       - implemented-by: /tmt/cli.py
       - documented-by: /docs/examples.rst#explore-plans
-      - verified-by: /tests/plans/select
+      - verified-by: /tests/plan/select
 
 /filter:
     story: 'Filter available plans'
@@ -31,7 +31,7 @@ story: 'As a user I want to comfortably work with plans'
     link:
       - implemented-by: /tmt/base.py
       - documented-by: /docs/examples.rst#explore-plans
-      - verified-by: /tests/plans/select
+      - verified-by: /tests/plan/select
 
 /lint:
     story: 'Check plan against the L2 metadata specification'
@@ -42,7 +42,7 @@ story: 'As a user I want to comfortably work with plans'
     example: tmt plan lint
     link:
       - implemented-by: /tmt/cli.py
-      - verified-by: /tests/plan/lint
+      - verified-by: /tests/lint/plan
 
 /create:
     story: 'As a developer I want to easily enable CI'

@@ -23,7 +23,7 @@ reducing their individual outcomes to one final answer for the whole set (think
 Components of each constraint - dimension, operator, value, units - are
 decoupled from the rest, and made available for inspection.
 
-[1] https://tmt.readthedocs.io/en/latest/spec/plans.html#hardware
+[1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
 import dataclasses

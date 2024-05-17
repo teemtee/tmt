@@ -1960,7 +1960,8 @@ class Topology(SerializableContainer):
         """
         Convert to a mapping.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
         """
 
         data = super().to_dict()

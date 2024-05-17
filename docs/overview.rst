@@ -693,7 +693,7 @@ Git:
 https://github.com/teemtee/tmt
 
 Docs:
-http://tmt.readthedocs.io/
+https://tmt.readthedocs.io/
 
 Stories:
 https://tmt.readthedocs.io/en/stable/stories.html
@@ -714,7 +714,7 @@ Metadata Specification:
 https://tmt.readthedocs.io/en/stable/spec.html
 
 Flexible Metadata Format:
-http://fmf.readthedocs.io/
+https://fmf.readthedocs.io/
 
 Testing Farm:
 https://docs.testing-farm.io/
