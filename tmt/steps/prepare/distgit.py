@@ -13,6 +13,8 @@ from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, field, uniq
 
 if TYPE_CHECKING:
+    import tmt.base
+    import tmt.steps.discover
     import tmt.steps.prepare.install
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
@@ -258,8 +260,8 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             # FIXME needs refactor of Prepare, tmt.base etc...
             # doing quick & dirty injection of prepareinstalls
             for guest in self.step.plan.provision.guests():
-                collected_requires = []
-                collected_recommends = []
+                collected_requires: list['tmt.base.DependencySimple'] = []
+                collected_recommends: list['tmt.base.DependencySimple'] = []
                 for test in self.step.plan.discover.tests(enabled=True):
                     if not test.enabled_on_guest(guest):
                         continue
