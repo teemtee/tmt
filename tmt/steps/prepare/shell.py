@@ -2,6 +2,7 @@ import dataclasses
 from typing import Any, Optional, cast
 
 import fmf
+import fmf.utils
 
 import tmt
 import tmt.log
