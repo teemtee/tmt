@@ -5979,7 +5979,9 @@ def jira_link(
             }
 
         if fmf_id.path is not None:
-            url_params[f'{tmt_type}-path'] = fmf_id.path.name
+            fmf_path = fmf_id.path.relative_to(fmf_id.git_root).resolve()
+            fmf_path = fmf_path.as_posix().split(fmf_id.git_root.as_posix(), 1)[1]
+            url_params[f'{tmt_type}-path'] = fmf_path
 
         if fmf_id.ref is not None:
             url_params[f'{tmt_type}-ref'] = fmf_id.ref
