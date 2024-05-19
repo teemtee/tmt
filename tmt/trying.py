@@ -3,15 +3,18 @@
 import enum
 import re
 import textwrap
-from typing import Any
+from collections.abc import Iterator
+from typing import Any, cast
 
 import click
 import fmf
-from fmf.utils import listed
+import fmf.utils
 
 import tmt
+import tmt.base
 import tmt.log
 import tmt.steps
+import tmt.steps.execute
 import tmt.steps.provision
 import tmt.templates
 import tmt.utils
@@ -130,7 +133,7 @@ class Try(tmt.utils.Common):
             self.tests = self.tree.tests(names=test_names)
             if not self.tests:
                 raise tmt.utils.GeneralError(
-                    f"No test matching '{listed(test_names)}' found.")
+                    f"No test matching '{fmf.utils.listed(test_names)}' found.")
 
         # Default to tests under the current working directory
         else:
@@ -144,7 +147,7 @@ class Try(tmt.utils.Common):
                 self.warn(f"No tests found under the '{relative_path}' directory.")
 
         # Short debug info about what was found
-        self.debug("Test name filter", listed(test_names, quote="'"))
+        self.debug("Test name filter", fmf.utils.listed(test_names, quote="'"))
         self.debug("Matching tests found\n" + tmt.utils.format_value(self.tests))
 
         # Inject the test filtering options into the Test class
@@ -160,10 +163,12 @@ class Try(tmt.utils.Common):
         try:
             config_tree = tmt.utils.Config().fmf_tree
             plan_name = re.escape(USER_PLAN_NAME)
-            user_plans = list(config_tree.prune(names=[f"^{plan_name}"]))
+            # cast: once fmf is properly annotated, cast() would not be needed.
+            # pyright isn't able to infer the type.
+            user_plans = list(cast(Iterator[fmf.Tree], config_tree.prune(names=[f"^{plan_name}"])))
             if user_plans:
                 for user_plan in user_plans:
-                    plan_dict = {user_plan.name: user_plan.data}
+                    plan_dict: dict[str, Any] = {user_plan.name: user_plan.data}
                     self.tree.tree.update(plan_dict)
                 self.debug("Use the default user plan config.")
                 return self.tree.plans(names=[f"^{plan_name}"], run=run)
@@ -183,11 +188,11 @@ class Try(tmt.utils.Common):
         # Search for matching plans if plan names provided
         plan_names = list(self.opt("plan"))
         if plan_names:
-            self.debug("Plan names filter", listed(plan_names, quote="'"))
+            self.debug("Plan names filter", fmf.utils.listed(plan_names, quote="'"))
             self.plans = self.tree.plans(names=plan_names, run=run)
             if not self.plans:
                 raise tmt.utils.GeneralError(
-                    f"No plan matching '{listed(plan_names)}' found.")
+                    f"No plan matching '{fmf.utils.listed(plan_names)}' found.")
 
         # Use default plans if no plan names requested
         else:
@@ -212,20 +217,20 @@ class Try(tmt.utils.Common):
         if self.opt("login"):
             parts += [click.style("login", fg="red")]
         elif test_names and not self.opt("ask"):
-            parts += [listed(test_names, 'test', max=3)]
+            parts += [fmf.utils.listed(test_names, 'test', max=3)]
         else:
             parts += ["something"]
         parts += ["with"]
 
         # Plan names
         plan_names = [click.style(plan, fg="magenta") for plan in self.plans]
-        parts += [listed(plan_names, 'plan', max=3)]
+        parts += [fmf.utils.listed(plan_names, 'plan', max=3)]
 
         # Image names
         if self.image_and_how:
             parts += ["on"]
             image_names = [click.style(image, fg="blue") for image in self.image_and_how]
-            parts += [listed(image_names)]
+            parts += [fmf.utils.listed(image_names)]
 
         self.print(" ".join(parts) + ".")
 
