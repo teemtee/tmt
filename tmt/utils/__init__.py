@@ -68,6 +68,8 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 import tmt.log
+from tmt._compat.importlib.metadata import entry_points
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt.log import LoggableValue, Logger
 
@@ -7180,24 +7182,86 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     return origin is not None and node.name == origin.name
 
 
+@functools.cache
+def _get_resource_files_search_path(package: Union[str, ModuleType],
+                                    logger: tmt.log.Logger) -> Traversable:
+    """
+    Helper (cached) function for :py:func:`resource_files`.
+
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: the search path for resource files
+    """
+    def accumulate_path(paths: list[Traversable],
+                        pkg_path: Traversable) -> None:
+        if isinstance(pkg_path, MultiplexedPath):
+            # The root resources.files can be a MultiplexedPath if it is a namespace
+            paths.extend(pkg_path._paths)
+        else:
+            # Otherwise it should be a normal Path, just add it as-is
+            paths.append(pkg_path)
+
+    # Accumulate the base path of the package and entry-points
+    base_paths: list[Traversable] = []
+
+    main_path = importlib.resources.files(package)
+    accumulate_path(base_paths, main_path)
+
+    # Additional resource files can be imported from entry-point
+    entry_point_name = 'tmt.resources'
+
+    entry_point_group = entry_points(group=entry_point_name)
+
+    for ep in entry_point_group:
+        try:
+            ep_module = ep.load()
+            ep_path = importlib.resources.files(ep_module)
+            accumulate_path(base_paths, ep_path)
+        except ModuleNotFoundError:
+            logger.warning(f"Failed to load plugin resources: {ep}")
+        except Exception as err:
+            # Other exceptions are rather weird
+            logger.warning(f"Unexpected failure in parsing: {ep}\n{err}")
+
+    # Extract the Path if only one was found
+    if len(base_paths) == 1:
+        return base_paths[0]
+    # Otherwise construct a MultiplexedPath
+    assert (len(base_paths) > 1)
+    # Note: ignore[no-untyped-call]: importlib_resources does not type-hint
+    # the constructor correctly
+    return MultiplexedPath(*base_paths)  # type: ignore[no-untyped-call]
+
+
 def resource_files(
     path: str,
-    package: Union[str, ModuleType] = "tmt"
+    package: Union[str, ModuleType] = "tmt",
+    logger: Optional[tmt.log.Logger] = None,
         ) -> Traversable:
     """
     Helper function to get path of package file or directory.
 
     A thin wrapper for :py:func:`importlib.resources.files`:
-    ``files()`` returns ``Traversable`` object, though in our use-case
-    it should always produce a :py:class:`pathlib.PosixPath` object.
-    Converting it to :py:class:`tmt.utils.Path` instance should be
-    safe and stick to the "``Path`` only!" rule in tmt's code base.
+    ``files()`` returns ``Traversable`` object that can be either a
+    :py:class:`pathlib.PosixPath` or a :py:class:`importlib.reader.MultiplexedPath`.
 
-    :param path: file or directory path to retrieve, relative to the ``package`` root.
-    :param package: package in which to search for the file/directory.
-    :returns: an absolute path to the requested file or directory.
+    If the final path is a file, go ahead and convert it to a regular ``Path``, otherwise
+    keep it as a traversable in order to properly support MultiplexedPaths.
+
+    Additional search paths are introduced from entry-point definitions
+
+    :param path: file or directory path to retrieve, relative to the ``package``
+      or entry-point's root.
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: a traversable path to the requested file or directory.
     """
-    return importlib.resources.files(package) / path
+
+    if not logger:
+        # Make sure there is a logger to report entry-point failures
+        logger = tmt.log.Logger.get_bootstrap_logger()
+    search_path = _get_resource_files_search_path(package, logger)
+    return search_path / path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
