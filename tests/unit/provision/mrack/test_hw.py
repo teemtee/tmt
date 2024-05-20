@@ -58,6 +58,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             processors: "> 8"
             model: 62
             model-name: "!~ Haswell"
+            vendor-name: GenuineIntel
             family: "< 6"
             family-name: Skylake
             flag:
@@ -136,6 +137,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'or': []},
                     {'or': []},
                     {'or': []},
+                    {
+                        'cpu': {
+                            'vendor': {
+                                '_op': '==',
+                                '_value': 'GenuineIntel',
+                                },
+                            },
+                        },
                     {
                         'and': [
                             {
@@ -315,6 +324,58 @@ def test_cpu_cores(root_logger: Logger) -> None:
             'cores': {
                 '_op': '==',
                 '_value': '2'
+                }
+            }
+        }
+
+
+def test_cpu_vendor_name(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+        _parse_cpu({'vendor-name': 'GenuineIntel'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'vendor': {
+                '_op': '==',
+                '_value': 'GenuineIntel'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+        _parse_cpu({'vendor-name': '!= GenuineIntel'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'vendor': {
+                '_op': '!=',
+                '_value': 'GenuineIntel'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+        _parse_cpu({'vendor-name': '~ .*Intel'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'vendor': {
+                '_op': 'like',
+                '_value': '%Intel'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['cpu.vendor_name'](
+        _parse_cpu({'vendor-name': '!~ .*Intel'}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'cpu': {
+                'vendor': {
+                    '_op': 'like',
+                    '_value': '%Intel'
+                    }
                 }
             }
         }
