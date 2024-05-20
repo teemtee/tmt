@@ -27,6 +27,7 @@ import urllib.parse
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from importlib.abc import Traversable
 from math import ceil
 from re import Pattern
 from threading import Thread
@@ -4638,6 +4639,28 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
             }
 
 
+def walk(
+    traversable: Traversable,
+        ) -> Iterator[tuple[Traversable, list[str], list[str]]]:
+    """
+    Basic equivalent of os.walk/pathlib.Path.walk for more general Traversable.
+
+    Does not cover the full interface of os.walk, e.g. top_down, follow_symlinks, etc.
+    """
+    paths = [traversable]
+    while paths:
+        path = paths.pop()
+        dirnames = []
+        filenames = []
+        for entry in path.iterdir():
+            if entry.is_dir():
+                paths.append(entry)
+                dirnames.append(entry.name)
+            else:
+                filenames.append(entry.name)
+        yield path, dirnames, filenames
+
+
 def _load_schema(schema_filepath: Path) -> Schema:
     """
     Load a JSON schema from a given filepath.
@@ -4645,11 +4668,13 @@ def _load_schema(schema_filepath: Path) -> Schema:
     A helper returning the raw loaded schema.
     """
 
+    # Broadening the allowed types to any Traversable
+    schema_file: Traversable = schema_filepath
     if not schema_filepath.is_absolute():
-        schema_filepath = resource_files('schemas') / schema_filepath
+        schema_file = resource_files('schemas') / str(schema_filepath)
 
     try:
-        with open(schema_filepath, encoding='utf-8') as f:
+        with schema_file.open(encoding='utf-8') as f:
             return cast(Schema, yaml_to_dict(f.read()))
 
     except Exception as exc:
@@ -4687,14 +4712,20 @@ def load_schema_store() -> SchemaStore:
     schema_dirpath = resource_files('schemas')
 
     try:
-        for filepath in schema_dirpath.glob('**/*ml'):
-            # Ignore all files but YAML files.
-            if filepath.suffix.lower() not in ('.yaml', '.yml'):
-                continue
+        for root, _, files in walk(schema_dirpath):
+            for file_name in files:
+                filepath = root / file_name
+                # Files are always of type pathlib.Path, we can safely narrow type it here
+                assert isinstance(filepath, pathlib.Path)  # narrow type # noqa: TID251
+                filepath = Path(filepath)
 
-            schema = _load_schema(filepath)
+                # Ignore all files but YAML files.
+                if filepath.suffix.lower() not in ('.yaml', '.yml'):
+                    continue
 
-            store[schema['$id']] = schema
+                schema = _load_schema(filepath)
+
+                store[schema['$id']] = schema
 
     except Exception as exc:
         raise FileError(f"Failed to discover schema files\n{exc}")
@@ -5885,7 +5916,10 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     return origin is not None and node.name == origin.name
 
 
-def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tmt") -> Path:
+def resource_files(
+    path: str,
+    package: Union[str, ModuleType] = "tmt"
+        ) -> Traversable:
     """
     Helper function to get path of package file or directory.
 
@@ -5899,7 +5933,7 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
     :param package: package in which to search for the file/directory.
     :returns: an absolute path to the requested file or directory.
     """
-    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+    return importlib.resources.files(package) / path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):

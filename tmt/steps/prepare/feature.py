@@ -1,4 +1,5 @@
 import dataclasses
+import pathlib
 from typing import Optional, cast
 
 import tmt
@@ -33,8 +34,9 @@ class Feature(tmt.utils.Common):
 
     def _find_playbook(self, filename: str) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
-        if filepath.exists():
-            return filepath
+        if filepath.is_file():
+            assert isinstance(filepath, pathlib.Path)  # narrow type # noqa: TID251
+            return Path(filepath)
 
         self.warn(f"Cannot find any suitable playbook for '{filename}'.")
         return None

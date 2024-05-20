@@ -7,6 +7,7 @@ custom filters.
 
 import re
 import textwrap
+from importlib.abc import Traversable
 from re import Match
 from typing import (
     Any,
@@ -333,7 +334,7 @@ def default_template_environment() -> jinja2.Environment:
 
 def render_template(
         template: str,
-        template_filepath: Optional[Path] = None,
+        template_filepath: Optional[Traversable] = None,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:
@@ -374,7 +375,7 @@ def render_template(
 
 
 def render_template_file(
-        template_filepath: Path,
+        template_filepath: Traversable,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:

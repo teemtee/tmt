@@ -1,3 +1,4 @@
+from importlib.abc import Traversable
 from typing import Any, Optional
 
 import tmt.base
@@ -15,7 +16,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     def render_template(
             cls,
             *,
-            template_filepath: Optional[Path] = None,
+            template_filepath: Optional[Traversable] = None,
             default_template_filename: str,
             keys: Optional[list[str]] = None,
             **variables: Any
