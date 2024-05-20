@@ -32,8 +32,8 @@ class Feature(tmt.utils.Common):
 
     def _find_playbook(self, filename: str) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
-        if filepath.exists():
-            return filepath
+        if filepath.is_file():
+            return Path(str(filepath))
 
         self.warn(f"Cannot find any suitable playbook for '{filename}'.")
         return None

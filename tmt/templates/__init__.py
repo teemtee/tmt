@@ -1,3 +1,4 @@
+import importlib.abc
 from typing import Any, Optional
 
 import tmt
@@ -27,18 +28,19 @@ def _combine(default: TemplatesType, custom: TemplatesType) -> TemplatesType:
     return result
 
 
-def _get_template_file_paths(path: Path) -> dict[str, Path]:
+def _get_template_file_paths(path: importlib.abc.Traversable) -> dict[str, Path]:
     """
     Get a dictionary of template names and their file paths.
     :param path: Path to the directory to search for templates.
     """
     return {
-        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file for file in path.iterdir()
-        if file.is_file() and file.suffix == TEMPLATE_FILE_SUFFIX
+        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file_path for file in path.iterdir()
+        if file.is_file() and (file_path := Path(str(file)))
+        and file_path.suffix == TEMPLATE_FILE_SUFFIX
         }
 
 
-def _get_templates(root_dir: Path) -> TemplatesType:
+def _get_templates(root_dir: importlib.abc.Traversable) -> TemplatesType:
     """
     Get all templates in given root directory.
     :param root_dir: Path to the directory to search for templates.
@@ -46,7 +48,7 @@ def _get_templates(root_dir: Path) -> TemplatesType:
     templates: TemplatesType = {}
     for template_type in TEMPLATE_TYPES:
         templates_dir = root_dir / template_type
-        if templates_dir.exists() and templates_dir.is_dir():
+        if templates_dir.is_dir():
             template_files = _get_template_file_paths(templates_dir)
             if template_files:
                 templates[template_type] = template_files
