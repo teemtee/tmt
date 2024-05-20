@@ -27,6 +27,13 @@ import urllib.parse
 from collections import Counter, OrderedDict
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+    from importlib_resources.readers import MultiplexedPath
+else:
+    from importlib.metadata import entry_points
+    from importlib.readers import MultiplexedPath
 from re import Match, Pattern
 from threading import Thread
 from types import ModuleType
@@ -7052,22 +7059,74 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
 
 def resource_files(
     path: str,
-    package: Union[str, ModuleType] = "tmt"
+    package: Union[str, ModuleType] = "tmt",
+    logger: Optional[tmt.log.Logger] = None,
         ) -> importlib.abc.Traversable:
     """
     Helper function to get path of package file or directory.
 
     A thin wrapper for :py:func:`importlib.resources.files`:
-    ``files()`` returns ``Traversable`` object, though in our use-case
-    it should always produce a :py:class:`pathlib.PosixPath` object.
-    Converting it to :py:class:`tmt.utils.Path` instance should be
-    safe and stick to the "``Path`` only!" rule in tmt's code base.
+    ``files()`` returns ``Traversable`` object that can be either a
+    :py:class:`pathlib.PosixPath` or a :py:class:`importlib.reader.MultiplexedPath`.
 
-    :param path: file or directory path to retrieve, relative to the ``package`` root.
-    :param package: package in which to search for the file/directory.
-    :returns: an absolute path to the requested file or directory.
+    If the final path is a file, go ahead and convert it to a regular ``Path``, otherwise
+    keep it as a traversable in order to properly support MultiplexedPaths.
+
+    Additional search paths are introduced from entry-point definitions
+
+    :param path: file or directory path to retrieve, relative to the ``package``
+      or entry-point's root.
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: a traversable path to the requested file or directory.
     """
-    return importlib.resources.files(package) / path
+    def accumulate_path(paths: list[pathlib.Path],
+                        pkg_path: importlib.abc.Traversable) -> None:
+        if isinstance(pkg_path, MultiplexedPath):
+            # The root resources.files can be a MultiplexedPath if it is a namespace
+            paths.extend(pkg_path._paths)
+        elif isinstance(pkg_path, pathlib.Path):
+            # Otherwise it should be a normal Path, just add it as-is
+            paths.append(pkg_path)
+        else:
+            # This should not happen
+            raise TypeError(f"Unexpected type improtlib.resources for package: {package}")
+
+    if not logger:
+        # Make sure there is a logger to report entry-point failures
+        logger = tmt.log.Logger.get_bootstrap_logger()
+
+    # Accumulate the base path of the package and entry-points
+    base_paths: list[pathlib.Path] = []
+
+    main_path = importlib.resources.files(package)
+    accumulate_path(base_paths, main_path)
+
+    # Additional resource files can be imported from entry-point
+    entry_point_name = 'tmt.resources'
+
+    entry_point_group = entry_points().select(group=entry_point_name)
+
+    for ep in entry_point_group:
+        try:
+            ep_module = ep.load()
+            ep_path = importlib.resources.files(ep_module)
+            accumulate_path(base_paths, ep_path)
+        except ModuleNotFoundError:
+            logger.warn(f"Failed to load plugin resources: {ep}")
+        except Exception as err:
+            # Other exceptions are rather weird
+            logger.warn(f"Unexpected failure in parsing: {ep}\n{err}")
+
+    # Extract the Path if only one was found
+    if len(base_paths) == 1:
+        return base_paths[0] / path
+    # Otherwise construct a MultiplexedPath
+    assert (len(base_paths) > 1)
+    # Note: ignore[no-untyped-call]: importlib_resources does not type-hint
+    # the constructor correctly
+    search_path = MultiplexedPath(*base_paths)  # type: ignore[no-untyped-call]
+    return search_path / path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
