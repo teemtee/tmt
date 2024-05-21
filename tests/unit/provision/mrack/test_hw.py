@@ -132,9 +132,17 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         '_value': 'smep'
                                         }
                                     }
-                                }
+                                },
                             ]
-                        }
+                        },
+                    {
+                        'cpu': {
+                            'hyper': {
+                                '_op': '==',
+                                '_value': 'True'
+                                }
+                            }
+                        },
                     ]
                 },
             {
