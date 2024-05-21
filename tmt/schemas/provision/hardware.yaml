@@ -97,6 +97,8 @@ definitions:
         anyOf:
           - type: string
           - type: integer
+      hyper:
+        type: boolean
 
     additionalProperties: false
 
