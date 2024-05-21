@@ -56,7 +56,7 @@ description: |
               ...
 
           # Boolean, whether the cpu supports hyper-threading.
-          hyper: true| false
+          hyper-threading: true| false
 
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
@@ -103,7 +103,7 @@ example:
   - |
     # Request a CPU supports hyper-threading.
     cpu:
-        hyper: true
+        hyper-threading: true
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
