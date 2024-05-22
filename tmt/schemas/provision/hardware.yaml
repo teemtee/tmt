@@ -154,6 +154,11 @@ definitions:
       driver:
         type: string
 
+      count:
+        anyOf:
+          - type: string
+          - type: integer
+
     additionalProperties: false
 
     # enforce at least one property - we don't care which one, but we don't want

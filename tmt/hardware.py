@@ -1066,6 +1066,16 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
         if constraint_name in spec
         ]
 
+    group.constraints += [
+        NumberConstraint.from_specification(
+            f'disk[{disk_index}].{constraint_name}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in ('count',)
+        if constraint_name in spec
+        ]
+
     return group
 
 

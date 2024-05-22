@@ -16,6 +16,9 @@ description: |
            # String, disk driver requested.
          - driver: "well-known disk driver"
 
+	 # Number or string, the count of disks
+         - count: 2|">= 2"
+
     .. versionchanged:: 1.32
        Added `driver` and `model-name` into specification.
 
@@ -42,6 +45,13 @@ example:
       - model-name: 'PERC H310'
       - driver: '~ sas.*'
 
+  - |
+    # Requested multiple disks with the requested properties
+    disk:
+      - size: '>= 2 GB'
+      - model-name: 'PERC H310'
+      - driver: '~ sas.*'
+      - count: 2
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
     note: "``size`` only"
