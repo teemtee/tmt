@@ -379,6 +379,36 @@ def _transform_virtualization_hypervisor(
         children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)])
 
 
+def _transform_virtualization_is_supported(
+        constraint: tmt.hardware.FlagConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    test = (constraint.operator, constraint.value)
+
+    if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
+        return MrackHWOrGroup(
+            children=[
+                MrackHWGroup(
+                    'cpu',
+                    children=[MrackHWBinOp('flag', '==', value)])
+                for value in ['vmx', 'svm']
+                ])
+
+    if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
+        return MrackHWAndGroup(
+            children=[
+                MrackHWGroup(
+                    'cpu',
+                    children=[MrackHWBinOp('flag', '!=', value)])
+                for value in ['vmx', 'svm']
+                ])
+
+    return _transform_unsupported(constraint, logger)
+
+
 def _transform_zcrypt_adapter(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -432,6 +462,8 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
     'virtualization.hypervisor': \
     _transform_virtualization_hypervisor,  # type: ignore[dict-item]
+    'virtualization.is_supported': \
+    _transform_virtualization_is_supported,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     }

@@ -41,6 +41,3 @@ example:
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: >-
-        ``virtualization.is-virtualized`` and
-        ``virtualization.hypervisor`` only
