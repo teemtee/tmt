@@ -9,6 +9,9 @@ tmt-1.34
 
 The :ref:`/spec/tests/duration` now supports multiplication.
 
+Added option ``--failed-only`` to the test attributes,
+enabling rerunning failed tests from previous runs.
+
 
 tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -6,7 +6,6 @@ import os
 import signal as _signal
 import subprocess
 import threading
-import shutil
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
@@ -527,6 +526,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                 invocation.path / TEST_METADATA_FILENAME,
                 tmt.utils.dict_to_yaml(test_metadata))
 
+            # If we are running again then we need to clear the previous result
+            if self.should_run_again:
+                assert self.parent is not None  # narrow type
+                assert isinstance(self.parent, tmt.steps.execute.Execute)  # narrow type
+                self.parent._results = [
+                    result for result in self.parent._results
+                    if not (
+                        test.name == result.name and test.serial_number == result.serial_number)]
+
         return invocations
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
@@ -811,29 +819,9 @@ class Execute(tmt.steps.Step):
         except tmt.utils.FileError:
             self.debug('Test results not found.', level=2)
 
-    def merge_results_rerun(self) -> None:
-        """ Merge new results with old ones for rerun """
-        assert isinstance(self.parent, tmt.base.Plan)  # narrow type
-        old_results: list[Result] = [
-            Result.from_serialized(data) for data in
-            tmt.utils.yaml_to_list(
-                self.read(self.parent.last_run_execute / 'positive_results.yaml'))]
-
-        for result in old_results:
-            # Add old results into new ones and copy log directories
-            self._results.append(result)
-            assert self.workdir is not None  # narrow type
-            assert result.data_path is not None  # narrow type
-            shutil.copytree(
-                self.parent.last_run_execute / result.data_path.parent,
-                self.workdir / result.data_path.parent,
-                dirs_exist_ok=True)
-
     def save(self) -> None:
         """ Save test results to the workdir """
         super().save()
-        if self.is_rerun and self.status() == 'done':
-            self.merge_results_rerun()
         results = [result.to_serialized() for result in self.results()]
         self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(results))
 
@@ -882,8 +870,11 @@ class Execute(tmt.steps.Step):
         super().go(force=force)
 
         # Clean up possible old results
-        if force or self.should_run_again:
+        if force:
             self._results.clear()
+
+        if self.should_run_again:
+            self.status('todo')
 
         # Nothing more to do if already done
         if self.status() == 'done':

@@ -1671,21 +1671,6 @@ class Plan(
 
         self._plan_environment = Environment()
 
-        # Set directory for last run execute data in case of a rerun
-        if self.is_rerun:
-            assert self.workdir is not None  # narrow type
-            self.last_run_execute: Path = self.workdir / 'last_run_execute'
-
-        # Store 'environment' and 'environment-file' keys content
-        self._environment = tmt.utils.environment_from_spec(
-            raw_fmf_environment_files=node.get("environment-file") or [],
-            raw_fmf_environment=node.get('environment', {}),
-            raw_cli_environment_files=self.opt('environment-file') or [],
-            raw_cli_environment=self.opt('environment'),
-            file_root=Path(node.root) if node.root else None,
-            key_address=node.name,
-            logger=self._logger)
-
         # Expand all environment and context variables in the node
         with self.environment.as_environ():
             expand_node_data(node.data, self._fmf_context)
@@ -2250,23 +2235,6 @@ class Plan(
     def wake(self) -> None:
         """ Wake up all steps """
 
-        # Additional debug info like plan environment
-        self.debug('info', color='cyan', shift=0, level=3)
-        # TODO: something better than str()?
-        self.debug('environment', format_value(self.environment), 'magenta', level=3)
-        self.debug('context', format_value(self._fmf_context), 'magenta', level=3)
-
-        # Save last run execute step if called with rerun
-        if self.is_rerun:
-            assert self.workdir is not None  # narrow type
-            if not (self.workdir / 'execute').exists():
-                raise tmt.utils.GeneralError(
-                    "Run id has to be specified and "
-                    "execute directory has to exist in order to use --rerun.")
-            self.debug(f"Saving last run execute into {self.last_run_execute}.")
-            shutil.copytree(self.workdir / 'execute', self.last_run_execute, dirs_exist_ok=True)
-
-        # Wake up all steps
         self.debug('wake', color='cyan', shift=0, level=2)
         for step in self.steps(enabled_only=False):
             self.debug(str(step), color='blue', level=2)
@@ -2337,10 +2305,9 @@ class Plan(
         try:
             for step in self.steps(skip=['finish']):
                 step.go()
-                # Finish plan if no tests found (except dry mode and rerun)
+                # Finish plan if no tests found (except dry mode)
                 if (isinstance(step, tmt.steps.discover.Discover) and not step.tests()
-                        and not self.is_dry_run and not step.extract_tests_later
-                        and not self.is_rerun):
+                        and not self.is_dry_run and not step.extract_tests_later):
                     step.info(
                         'warning', 'No tests found, finishing plan.',
                         color='yellow', shift=1)

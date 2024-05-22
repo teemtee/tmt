@@ -10,25 +10,21 @@ rlJournalStart
         rlRun "tmt init"
     rlPhaseEnd
 
-    rlPhaseStartTest "Initial run with empty run directory and rerun argument"
-        rlRun -s "tmt run --all --rerun --id $run" 2 "Rerun tests with empty directory"
-        rlAssertGrep "Run id has to be specified" $rlRun_LOG
-    rlPhaseEnd
-
-    rlPhaseStartTest "Test basic rerun scenario is working"
+    rlPhaseStartTest "Test basic run failed tests again scenario is working"
         rlRun -s "tmt run --all --scratch --id $run" 1 "Run tests, some fail"
         rlAssertGrep "total: 2 tests passed and 2 tests failed" $rlRun_LOG
 
         rlRun "sed -i 's/false/true/g' *" 0 "Fix the test"
 
-        rlRun -s "tmt run --all --rerun --id $run" 0 "Rerun failed tests"
+        rlRun -s "tmt run --all --again --id $run tests --failed-only" 0 "Rerun failed tests"
         rlAssertGrep "1 test selected" $rlRun_LOG
         rlAssertGrep "total: 4 tests passed" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Test another rerun does not execute anything"
-        rlRun -s "tmt run --all --rerun --id $run" 0 "Rerun failed tests again"
+    rlPhaseStartTest "Test another run with again does not execute anything"
+        rlRun -s "tmt run --all --again --id $run tests --failed-only" 0 "Rerun failed tests again"
         rlAssertGrep "0 tests selected" $rlRun_LOG
+        rlAssertNotGrep "1 tests selected" $rlRun_LOG
         rlAssertGrep "total: 4 tests passed" $rlRun_LOG
     rlPhaseEnd
 

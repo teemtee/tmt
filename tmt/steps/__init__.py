@@ -628,6 +628,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     def load(self) -> None:
         """ Load status and step data from the workdir """
+        if self.should_run_again and isinstance(self, tmt.steps.discover.Discover):
+            self.debug('Run discover again when reexecuting to capture changes in plans')
+            return
+
         try:
             raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
 
@@ -664,7 +668,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         """ Wake up the step (process workdir and command line) """
         # Cleanup possible old workdir if called with --force, but not
         # if running the step --again which should reuse saved step data
-        if (self.is_forced_run or self.is_rerun) and not self.should_run_again:
+        if self.is_forced_run and not self.should_run_again:
             self._workdir_cleanup()
 
         # Load stored data
