@@ -97,7 +97,7 @@ definitions:
         anyOf:
           - type: string
           - type: integer
-      hyper:
+      hyper-threading:
         type: boolean
 
     additionalProperties: false

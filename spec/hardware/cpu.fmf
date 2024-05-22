@@ -101,7 +101,7 @@ example:
         cores: ">= 4"
 
   - |
-    # Request a CPU supports hyper-threading.
+    # Request a CPU with hyper-threading enabled.
     cpu:
         hyper-threading: true
 
