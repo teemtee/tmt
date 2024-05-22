@@ -206,15 +206,51 @@ CONFIG_DIR = Path('~/.config/tmt')
 
 
 class ProcessExitCodes(enum.IntEnum):
+    #: Successful run.
+    SUCCESS = 0
+    #: Unsuccessful run.
+    FAILURE = 1
+
+    #: tmt pidfile lock operation failed.
     TEST_PIDFILE_LOCK_FAILED = 122
+    #: tmt pidfile unlock operation failed.
     TEST_PIDFILE_UNLOCK_FAILED = 123
 
+    #: Command was terminated because of a timeout.
     TIMEOUT = 124
+
+    #: Permission denied (or) unable to execute.
+    PERMISSION_DENIED = 126
+    #: Command not found, or PATH error.
+    NOT_FOUND = 127
+
+    # (128 + N) where N is a signal send to the process
+    #: Terminated by either ``Ctrl+C`` combo or ``SIGINT`` signal.
+    SIGINT = 130
+    #: Terminated by a ``SIGTERM`` signal.
+    SIGTERM = 143
 
     @classmethod
     def is_pidfile(cls, exit_code: Optional[int]) -> bool:
         return exit_code in (ProcessExitCodes.TEST_PIDFILE_LOCK_FAILED,
                              ProcessExitCodes.TEST_PIDFILE_UNLOCK_FAILED)
+
+    @classmethod
+    def format(cls, exit_code: int) -> Optional[str]:
+        """ Format a given exit code for nicer logging """
+
+        member = cls._value2member_map_.get(exit_code)
+
+        if member is None:
+            return 'unrecognized'
+
+        if member in (cls.SUCCESS, cls.FAILURE, cls.TIMEOUT):
+            return member.name.lower()
+
+        if member.name.startswith('SIG'):
+            return member.name
+
+        return member.name.lower().replace('_', ' ')
 
 
 # Default select.select(timeout) in seconds
@@ -1366,10 +1402,12 @@ class Command:
 
             stdout, stderr = stdout_logger.get_output(), stderr_logger.get_output()
 
-        # Handle the exit code, return output
-        if process.returncode != 0:
-            logger.debug(f"Command returned '{process.returncode}'.", level=3)
+        logger.debug(
+            f"Command returned '{process.returncode}' "
+            f"({ProcessExitCodes.format(process.returncode)}).", level=3)
 
+        # Handle the exit code, return output
+        if process.returncode != ProcessExitCodes.SUCCESS:
             if not stream_output:
                 if stdout is not None:
                     for line in stdout.splitlines():
