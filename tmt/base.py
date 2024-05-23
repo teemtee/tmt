@@ -241,6 +241,8 @@ class FmfId(
                 }
             if self.path:
                 node_data['path'] = str(self.path)
+            if self.url:
+                node_data['url'] = tmt.utils.clonable_git_url(self.url)
             fmf.base.Tree.node(node_data)
         except fmf.utils.GeneralError as error:
             # Map fmf errors to more user friendly alternatives
