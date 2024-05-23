@@ -259,6 +259,24 @@ def _transform_cpu_cores(
         children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
 
 
+def _transform_cpu_model_name(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup(
+                'cpu',
+                children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])])
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
+
+
 def _transform_disk_driver(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -423,6 +441,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
     'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
     'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
+    'cpu.model_name': _transform_cpu_model_name,  # type: ignore[dict-item]
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
     'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
     'disk.size': _transform_disk_size,  # type: ignore[dict-item]
