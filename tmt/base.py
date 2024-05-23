@@ -708,9 +708,10 @@ class Core(
                  tree: Optional['Tree'] = None,
                  parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger,
+                 name: Optional[str] = None,
                  **kwargs: Any) -> None:
         """ Initialize the node """
-        super().__init__(node=node, logger=logger, parent=parent, name=node.name, **kwargs)
+        super().__init__(node=node, logger=logger, parent=parent, name=name or node.name, **kwargs)
 
         self.node = node
         self.tree = tree
@@ -2257,6 +2258,51 @@ class Plan(
         if self.summary:
             self.verbose('summary', self.summary, 'green')
 
+    # TODO: move these to some place nice, like a plan-splitting plugin. A check
+    # and a splitter can easily form new family of plugins.
+    def _shall_trim_by_test_count(self, tests: list[tuple[str, Test]]) -> bool:
+        if not self.my_run:
+            return False
+
+        max_test_count = self.my_run.opt('max')
+
+        if max_test_count <= 0:
+            return False
+
+        if len(tests) <= max_test_count:
+            return False
+
+        return True
+
+    def _trim_by_test_count(
+            self,
+            tests: list[tuple[str, Test]],
+            ) -> Iterator['Plan']:
+        assert self.my_run is not None
+
+        max_test_per_batch = self.my_run.opt('max')
+        trimmed_plans: list[Plan] = []
+
+        for batch_id in itertools.count(1):
+            if not tests:
+                break
+
+            batch: dict[str, list[Test]] = {}
+
+            for _ in range(max_test_per_batch):
+                if not tests:
+                    break
+
+                phase_name, test = tests.pop(0)
+
+                if phase_name not in batch:
+                    batch[phase_name] = [test]
+
+                else:
+                    batch[phase_name].append(test)
+
+            yield self.trim_plan(batch_id, batch)
+
     def go(self) -> None:
         """ Execute the plan """
         self.header()
@@ -2303,14 +2349,23 @@ class Plan(
         try:
             for step in self.steps(skip=['finish']):
                 step.go()
-                # Finish plan if no tests found (except dry mode)
-                if (isinstance(step, tmt.steps.discover.Discover) and not step.tests()
-                        and not self.is_dry_run and not step.extract_tests_later):
-                    step.info(
-                        'warning', 'No tests found, finishing plan.',
-                        color='yellow', shift=1)
-                    abort = True
-                    return
+
+                if isinstance(step, tmt.steps.discover.Discover):
+                    tests = step.tests()
+
+                    # Finish plan if no tests found (except dry mode)
+                    if not tests and not self.is_dry_run and not step.extract_tests_later:
+                        step.info(
+                            'warning', 'No tests found, finishing plan.',
+                            color='yellow', shift=1)
+                        abort = True
+                        return
+
+                    if self.my_run and self._shall_trim_by_test_count(tests):
+                        self.my_run.swap_plans(self, *self._trim_by_test_count(tests))
+
+                        break
+
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
                     self._source_plan_environment_file()
@@ -2454,6 +2509,23 @@ class Plan(
             expand_node_data(node.data, self._fmf_context)
 
         return self._imported_plan
+
+    def trim_plan(self, batch_id: int, tests: dict[str, list[Test]]) -> 'Plan':
+        batch_plan = Plan(
+            node=self.node,
+            run=self.my_run,
+            logger=self._logger,
+            name=f'{self.name}.{batch_id}')
+
+        batch_plan.discover._tests = tests
+        batch_plan.discover.status('done')
+
+        shutil.copytree(self.discover.workdir, batch_plan.discover.workdir, dirs_exist_ok=True)
+
+        for step_name in tmt.steps.STEPS:
+            getattr(batch_plan, step_name).save()
+
+        return batch_plan
 
     def prune(self) -> None:
         """ Remove all uninteresting files from the plan workdir """
@@ -3405,6 +3477,18 @@ class Run(tmt.utils.Common):
             self._plans = self.tree.plans(run=self, filters=['enabled:true'])
         return self._plans
 
+    @tmt.utils.cached_property
+    def plan_queue(self) -> list[Plan]:
+        return self.plans[:]
+
+    def swap_plans(self, plan: Plan, *others: Plan) -> None:
+        if plan in self.plan_queue:
+            self.plan_queue.remove(plan)
+            self.plans.remove(plan)
+
+        self.plan_queue.extend(others)
+        self.plans.extend(others)
+
     def finish(self) -> None:
         """ Check overall results, return appropriate exit code """
         # We get interesting results only if execute or prepare step is enabled
@@ -3567,7 +3651,9 @@ class Run(tmt.utils.Common):
         # Iterate over plans
         crashed_plans: list[tuple[Plan, Exception]] = []
 
-        for plan in self.plans:
+        while self.plan_queue:
+            plan = self.plan_queue.pop(0)
+
             try:
                 plan.go()
 

@@ -243,7 +243,7 @@ class Prepare(tmt.steps.Step):
             # use what the step loads from its storage, `tests.yaml`. Which
             # means, there probably would be no phases to inspect from time to
             # time, therefore going after the step itself.
-            for test in self.plan.discover.tests(enabled=True):
+            for _, test in self.plan.discover.tests(enabled=True):
                 if not test.enabled_on_guest(guest):
                     continue
 

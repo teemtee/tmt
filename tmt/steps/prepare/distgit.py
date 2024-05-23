@@ -260,7 +260,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             for guest in self.step.plan.provision.guests():
                 collected_requires = []
                 collected_recommends = []
-                for test in self.step.plan.discover.tests(enabled=True):
+                for _, test in self.step.plan.discover.tests(enabled=True):
                     if not test.enabled_on_guest(guest):
                         continue
 

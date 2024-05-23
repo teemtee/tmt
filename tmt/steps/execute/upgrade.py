@@ -385,7 +385,7 @@ class ExecuteUpgrade(ExecuteInternal):
         The prefix is also set as IN_PLACE_UPGRADE environment variable.
         """
         names_backup = []
-        for test in self.discover.tests(enabled=True):
+        for _, test in self.discover.tests(enabled=True):
             names_backup.append(test.name)
             test.name = f'/{prefix}/{test.name.lstrip("/")}'
 
@@ -395,5 +395,5 @@ class ExecuteUpgrade(ExecuteInternal):
             logger=logger)
 
         tests = self.discover.tests(enabled=True)
-        for i, test in enumerate(tests):
+        for i, (_, test) in enumerate(tests):
             test.name = names_backup[i]

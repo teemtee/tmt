@@ -410,6 +410,11 @@ def main(
     help="""
          What to do when plan fails to finish. Quit by default, or continue with the next plan.
          """)
+@option(
+    '--max',
+    help='Max tests in plan',
+    type=int,
+    default=-1)
 @environment_options
 @verbosity_options
 @force_dry_options

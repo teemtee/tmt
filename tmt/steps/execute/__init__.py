@@ -515,7 +515,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         """
         invocations: list[TestInvocation] = []
 
-        for test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
+        for _, test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
             invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 

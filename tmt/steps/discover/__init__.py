@@ -317,7 +317,7 @@ class Discover(tmt.steps.Step):
         text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
         self.info('summary', text, 'green', shift=1)
         # Test list in verbose mode
-        for test in self.tests(enabled=True):
+        for _, test in self.tests(enabled=True):
             self.verbose(test.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
@@ -355,7 +355,7 @@ class Discover(tmt.steps.Step):
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
-        for test in self.tests():
+        for _, test in self.tests():
             test.serial_number = self.plan.draw_test_serial_number(test)
 
         # Show fmf identifiers for tests discovered in plan
@@ -364,7 +364,7 @@ class Discover(tmt.steps.Step):
             if self.tests(enabled=True):
                 export_fmf_ids: list[str] = []
 
-                for test in self.tests(enabled=True):
+                for _, test in self.tests(enabled=True):
                     fmf_id = test.fmf_id
 
                     if not fmf_id.url:
@@ -389,19 +389,22 @@ class Discover(tmt.steps.Step):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
-        def _iter_all_tests() -> Iterator['tmt.Test']:
-            for phase_tests in self._tests.values():
-                yield from phase_tests
+            enabled: Optional[bool] = None) -> list[tuple[str, 'tmt.Test']]:
 
-        def _iter_phase_tests() -> Iterator['tmt.Test']:
+        def _iter_all_tests() -> Iterator[tuple[str, 'tmt.Test']]:
+            for phase_name, phase_tests in self._tests.items():
+                for test in phase_tests:
+                    yield phase_name, test
+
+        def _iter_phase_tests() -> Iterator[tuple[str, 'tmt.Test']]:
             assert phase_name is not None
 
-            yield from self._tests[phase_name]
+            for test in self._tests[phase_name]:
+                yield phase_name, test
 
         iterator = _iter_all_tests if phase_name is None else _iter_phase_tests
 
         if enabled is None:
             return list(iterator())
 
-        return [test for test in iterator() if test.enabled is enabled]
+        return [(phase_name, test) for phase_name, test in iterator() if test.enabled is enabled]
