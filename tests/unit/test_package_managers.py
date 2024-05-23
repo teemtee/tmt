@@ -1480,3 +1480,279 @@ def test_install_downloaded(
     if expected_stderr:
         assert output.stderr is not None
         assert expected_stderr in output.stderr
+
+
+def _parametrize_test_install_debuginfo() -> Iterator[
+        tuple[
+            Container,
+            PackageManagerClass,
+            tuple[Package, Package],
+            str,
+            Optional[str],
+            Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                (Package('dos2unix'), Package('tree')), \
+                r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo", \
+                None, \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf \
+                or package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree')),
+                    r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    None,
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'))
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dos2unix'), Package('tree')), \
+                    r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo", \
+                    None, \
+                    None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apt.Apt \
+                or package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree \
+                or package_manager_class is tmt.package_managers.apk.Apk:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                (Package('tree'), Package('dos2unix')),
+                "",
+                None,
+                None,
+                marks=pytest.mark.skip(reason="not supported yet")
+                )
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'installables',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_debuginfo()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_debuginfo(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        installables: tuple[Package, Package],
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.install_debuginfo(*installables)
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    if expected_stdout:
+        assert output.stdout is not None
+        assert expected_stdout in output.stdout
+
+    if expected_stderr:
+        assert output.stderr is not None
+        assert expected_stderr in output.stderr
+
+
+def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
+        tuple[
+            Container,
+            PackageManagerClass,
+            tuple[Package, Package],
+            str,
+            Optional[str],
+            Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Dnf5 \
+                or package_manager_class is tmt.package_managers.dnf.Dnf \
+                or package_manager_class is tmt.package_managers.dnf.Yum:
+            yield container, \
+                package_manager_class, \
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
+                r"debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo", \
+                None, \
+                None  # noqa: E501
+
+        elif package_manager_class is tmt.package_managers.apt.Apt \
+                or package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree \
+                or package_manager_class is tmt.package_managers.apk.Apk:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                (Package('tree-but-spelled-wrong'), Package('dos2unix')),
+                "",
+                None,
+                None,
+                marks=pytest.mark.skip(reason="not supported yet")
+                )
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'installables',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_debuginfo_nonexistent()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_debuginfo_nonexistent(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        installables: tuple[Package, Package],
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    with pytest.raises(tmt.utils.RunError) as excinfo:
+        package_manager.install_debuginfo(*installables)
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    assert excinfo.type is tmt.utils.RunError
+    assert excinfo.value.returncode != 0
+
+    if expected_stdout:
+        assert excinfo.value.stdout is not None
+        assert expected_stdout in excinfo.value.stdout
+
+    if expected_stderr:
+        assert excinfo.value.stderr is not None
+        assert expected_stderr in excinfo.value.stderr
+
+
+def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
+        tuple[
+            Container,
+            PackageManagerClass,
+            tuple[Package, Package],
+            str,
+            Optional[str],
+            Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
+                r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong", \
+                None, \
+                None
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf \
+                or package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                    r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
+                    None,
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'))
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
+                    r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong", \
+                    None, \
+                    None
+
+        elif package_manager_class is tmt.package_managers.apt.Apt \
+                or package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree \
+                or package_manager_class is tmt.package_managers.apk.Apk:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                (Package('tree-but-spelled-wrong'), Package('dos2unix')),
+                "",
+                None,
+                None,
+                marks=pytest.mark.skip(reason="not supported yet")
+                )
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers()
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'installables',
+                          'expected_command',
+                          'expected_stdout',
+                          'expected_stderr'),
+                         list(_parametrize_test_install_debuginfo_nonexistent_skip()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_install_debuginfo_nonexistent_skip(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        installables: tuple[Package, Package],
+        expected_command: str,
+        expected_stdout: Optional[str],
+        expected_stderr: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.install_debuginfo(
+        *installables,
+        options=Options(skip_missing=True)
+        )
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    if expected_stdout:
+        assert output.stdout is not None
+        assert expected_stdout in output.stdout
+
+    if expected_stderr:
+        assert output.stderr is not None
+        assert expected_stderr in output.stderr

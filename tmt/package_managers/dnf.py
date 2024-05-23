@@ -6,6 +6,7 @@ from tmt.package_managers import (
     FileSystemPath,
     Installable,
     Options,
+    Package,
     escape_installables,
     provides_package_manager,
     )
@@ -26,8 +27,10 @@ class Dnf(tmt.package_managers.PackageManager):
     probe_priority = 50
 
     _base_command = Command('dnf')
+    _base_debuginfo_command = Command('debuginfo-install')
 
-    skip_missing_option = '--skip-broken'
+    skip_missing_packages_option = '--skip-broken'
+    skip_missing_debuginfo_option = skip_missing_packages_option
 
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
@@ -40,8 +43,10 @@ class Dnf(tmt.package_managers.PackageManager):
 
         return (command, options)
 
-    def _extra_dnf_options(self, options: Options) -> Command:
+    def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
         """ Collect additional options for ``yum``/``dnf`` based on given options """
+
+        command = command or self._base_command
 
         extra_options = Command()
 
@@ -49,13 +54,28 @@ class Dnf(tmt.package_managers.PackageManager):
             extra_options += Command('--exclude', package)
 
         if options.skip_missing:
-            extra_options += Command(self.skip_missing_option)
+            if str(command) == str(self._base_command):
+                extra_options += Command(self.skip_missing_packages_option)
+
+            elif str(command) == str(self._base_debuginfo_command):
+                extra_options += Command(self.skip_missing_debuginfo_option)
+
+            else:
+                raise GeneralError(f"Unhandled package manager command '{command}'.")
 
         return extra_options
 
-    def _construct_presence_script(self, *installables: Installable) -> ShellScript:
+    def _construct_presence_script(
+            self,
+            *installables: Installable,
+            what_provides: bool = True) -> ShellScript:
+        if what_provides:
+            return ShellScript(
+                f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'
+                )
+
         return ShellScript(
-            f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'
+            f'rpm -q {" ".join(escape_installables(*installables))}'
             )
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
@@ -122,6 +142,19 @@ class Dnf(tmt.package_managers.PackageManager):
 
         return script
 
+    def _construct_install_debuginfo_script(
+            self,
+            *installables: Installable,
+            options: Optional[Options] = None) -> ShellScript:
+        options = options or Options()
+
+        extra_options = self._extra_dnf_options(options, command=self._base_debuginfo_command)
+
+        return ShellScript(
+            f'{self._base_debuginfo_command.to_script()} '
+            f'{self.options.to_script()} {extra_options} '
+            f'{" ".join(escape_installables(*installables))}')
+
     def install(
             self,
             *installables: Installable,
@@ -148,12 +181,22 @@ class Dnf(tmt.package_managers.PackageManager):
 
         options = options or Options()
 
-        extra_options = self._extra_dnf_options(options)
+        script = cast(  # type: ignore[redundant-cast]
+            ShellScript,
+            self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
+                *installables,
+                options=options
+                ))
 
-        return self.guest.execute(ShellScript(
-            f'debuginfo-install -y '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}'))
+        # Extra ignore/check for yum to workaround BZ#1920176
+        if not options.skip_missing:
+            script &= cast(  # type: ignore[redundant-cast]
+                ShellScript,
+                self._construct_presence_script(  # type: ignore[reportGeneralIssues,unused-ignore]
+                    *tuple(Package(f'{installable}-debuginfo') for installable in installables),
+                    what_provides=False))
+
+        return self.guest.execute(script)
 
 
 @provides_package_manager('dnf5')
@@ -164,7 +207,7 @@ class Dnf5(Dnf):
     probe_priority = 60
 
     _base_command = Command('dnf5')
-    skip_missing_option = '--skip-unavailable'
+    skip_missing_packages_option = '--skip-unavailable'
 
 
 @provides_package_manager('yum')
