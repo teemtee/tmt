@@ -1266,7 +1266,7 @@ def _parse_location(spec: Spec) -> BaseConstraint:
     if 'lab-controller' in spec:
         group.constraints += [
             TextConstraint.from_specification(
-                'location.lab-controller',
+                'location.lab_controller',
                 spec['lab-controller'],
                 allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
             ]
@@ -1314,10 +1314,10 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
         group.constraints += [_parse_hostname(spec)]
 
     if 'location' in spec:
-        group.constraints += [_parse_location(spec)]
+        group.constraints += [_parse_location(spec['location'])]
 
     if 'system' in spec:
-        group.constraints += [_parse_system(spec)]
+        group.constraints += [_parse_system(spec['system'])]
 
     if 'tpm' in spec:
         group.constraints += [_parse_tpm(spec['tpm'])]
