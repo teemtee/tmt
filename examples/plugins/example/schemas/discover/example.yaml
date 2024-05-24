@@ -1,0 +1,22 @@
+$id: /schemas/discover/example
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+  how:
+    type: string
+    enum:
+      - example
+  path:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/path"
+
+  # Other basic discover properties
+  name:
+    type: string
+  order:
+    $ref: "/schemas/core#/definitions/order"
+
+required:
+  - how
