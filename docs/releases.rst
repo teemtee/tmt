@@ -34,6 +34,10 @@ support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
 The linting of tests, plans and stories has been extended by detecting
 duplicate ids.
 
+External plugins can inject additional resources to be used by tmt using
+the ``tmt.resources`` entry-point, e.g. to extend the schema validation
+or tmt templates.
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
