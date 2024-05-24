@@ -1,0 +1,8 @@
+summary: Check plugin schema validation
+execute:
+  how: tmt
+provision:
+  how: example
+discover:
+  how: example
+  path: some/random/path
