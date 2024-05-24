@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.38.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+External plugins can inject additional resources to be used by tmt using
+the ``tmt.resources`` entry-point, e.g. to extend the schema validation
+or tmt templates.
+
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
