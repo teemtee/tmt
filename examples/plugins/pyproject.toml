@@ -6,11 +6,13 @@ dependencies = [
     ]
 
 [tool.setuptools]
-py-modules = [
-    "discover",
-    "provision",
+packages = [
+    "example",
 ]
 
 [project.entry-points."tmt.plugin"]
-ProvisionExample = "provision:ProvisionExample"
-DiscoverExample = "discover:DiscoverExample"
+ProvisionExample = "example.provision:ProvisionExample"
+DiscoverExample = "example.discover:DiscoverExample"
+
+[project.entry-points."tmt.resources"]
+ResourcesExample = "examaple"
