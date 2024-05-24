@@ -24,6 +24,7 @@ repos:
     rev: "v1.9.0"
     hooks:
       - id: mypy
+        language_version: "3.9"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
         # information when the package is *not* installed, which is the case of tmt
@@ -68,6 +69,7 @@ repos:
     rev: v1.1.357
     hooks:
       - id: pyright
+        language_version: "3.9"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
         # information when the package is *not* installed, which is the case of tmt
