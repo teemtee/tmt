@@ -12,10 +12,12 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "discover.py",
-    "provision.py",
+    "example",
 ]
 
 [project.entry-points."tmt.plugin"]
-ProvisionExample = "provision:ProvisionExample"
-DiscoverExample = "discover:DiscoverExample"
+ProvisionExample = "example.provision:ProvisionExample"
+DiscoverExample = "example.discover:DiscoverExample"
+
+[project.entry-points."tmt.resources"]
+ResourcesExample = "example"
