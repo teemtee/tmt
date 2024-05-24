@@ -11,6 +11,10 @@ The :ref:`/plugins/test-checks/avc` check now supports
 ``ignore-pattern`` key to exclude specific AVC denials
 from being reported as failures.
 
+External plugins can inject additional resources to be used by tmt using
+the ``tmt.resources`` entry-point, e.g. to extend the schema validation
+or tmt templates.
+
 
 tmt-1.61.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
