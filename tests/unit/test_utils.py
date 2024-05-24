@@ -1028,9 +1028,9 @@ def test_import_member(root_logger):
 
 def test_import_member_no_such_module(root_logger):
     with pytest.raises(
-            SystemExit,
-            match=rf"Failed to import the 'tmt\.steps\.nope_does_not_exist'"
-                  rf" module from '{Path.cwd()}'."):
+        SystemExit,
+        match=rf"Failed to import the 'tmt\.steps\.nope_does_not_exist'"
+            rf" module from '{Path.cwd()}'."):
         tmt.plugins.import_member(
             module='tmt.steps.nope_does_not_exist',
             member='Discover',
