@@ -729,9 +729,9 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     # Guest instance
     _guest = None
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the guest """
-        super().go()
+        super().go(logger=logger)
 
         if self.data.api_version not in SUPPORTED_API_VERSIONS:
             raise ArtemisProvisionError(f"API version '{self.data.api_version}' not supported.")

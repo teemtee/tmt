@@ -1960,7 +1960,7 @@ class ProvisionStepData(tmt.steps.StepData):
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
-class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
+class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     """ Common parent of provision plugins """
 
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
@@ -2005,6 +2005,11 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
             Provision.store_cli_invocation(context)
 
         return provision
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """ Perform actions shared among plugins when beginning their tasks """
+
+        self.go_prolog(logger or self._logger)
 
     # TODO: this might be needed until https://github.com/teemtee/tmt/issues/1696 is resolved
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
@@ -2358,7 +2363,7 @@ class Provision(tmt.steps.Step):
                 tasks that failed.
             """
 
-            queue: PhaseQueue[ProvisionStepData] = PhaseQueue(
+            queue: PhaseQueue[ProvisionStepData, None] = PhaseQueue(
                 'provision.action',
                 self._logger.descend(logger_name=f'{self}.queue'))
 

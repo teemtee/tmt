@@ -1,14 +1,7 @@
 import collections
 import copy
 import dataclasses
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-    )
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -58,7 +51,7 @@ class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
     summary: str
 
 
-class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
+class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, None]):
     """ Common parent of prepare plugins """
 
     # ignore[assignment]: as a base class, PrepareStepData is not included in
@@ -99,7 +92,8 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
         """ Prepare the guest (common actions) """
-        super().go(guest=guest, environment=environment, logger=logger)
+
+        self.go_prolog(logger)
 
         # Show guest name first in multihost scenarios
         if self.step.plan.provision.is_multihost:
@@ -355,7 +349,7 @@ class Prepare(tmt.steps.Step):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
-        queue: PhaseQueue[PrepareStepData] = PhaseQueue(
+        queue: PhaseQueue[PrepareStepData, None] = PhaseQueue(
             'prepare',
             self._logger.descend(logger_name=f'{self}.queue'))
 
@@ -369,7 +363,7 @@ class Prepare(tmt.steps.Step):
                     guests=[
                         guest for guest in guest_copies if prepare_phase.enabled_on_guest(guest)])
 
-        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData, None]]] = []
 
         for outcome in queue.run():
             if not isinstance(outcome.phase, PreparePlugin):

@@ -319,9 +319,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if not keep_git_metadata:
             shutil.rmtree(testdir / '.git')
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Discover available tests """
-        super().go()
+        super().go(logger=logger)
         tests = fmf.Tree({'summary': 'tests'})
 
         assert self.workdir is not None

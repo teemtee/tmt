@@ -287,9 +287,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         assert output.stdout is not None
         return Path(output.stdout.strip("\n"))
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Discover available tests """
-        super().go()
+        super().go(logger=logger)
 
         # Check url and path, prepare test directory
         url = self.get('url')
