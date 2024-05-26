@@ -1,14 +1,12 @@
 import dataclasses
 from typing import Any, Optional, cast
 
-import fmf
-
 import tmt
 import tmt.steps
 import tmt.steps.finish
 import tmt.utils
 from tmt.result import PhaseResult
-from tmt.steps import safe_filename
+from tmt.steps.prepare.shell import go
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
 
@@ -66,36 +64,12 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Perform finishing tasks on given guest """
-        results = super().go(guest=guest, environment=environment, logger=logger)
 
-        # Give a short summary
-        overview = fmf.utils.listed(self.data.script, 'script')
-        self.info('overview', f'{overview} found', 'green')
-
-        workdir = self.step.plan.worktree
-        assert workdir is not None  # narrow type
-
-        finish_wrapper_filename = safe_filename(FINISH_WRAPPER_FILENAME, self, guest)
-        finish_wrapper_path = workdir / finish_wrapper_filename
-
-        logger.debug('finish wrapper', finish_wrapper_path, level=3)
-
-        # Execute each script on the guest
-        for script in self.data.script:
-            self.verbose('script', script, 'green')
-            script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
-            self.write(finish_wrapper_path, str(script_with_options), 'w')
-            if not self.is_dry_run:
-                finish_wrapper_path.chmod(0o755)
-            guest.push(
-                source=finish_wrapper_path,
-                destination=finish_wrapper_path,
-                options=["-s", "-p", "--chmod=755"])
-            command: ShellScript
-            if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(f'sudo -E {finish_wrapper_path}')
-            else:
-                command = tmt.utils.ShellScript(f'{finish_wrapper_path}')
-            guest.execute(command, cwd=workdir)
-
-        return results
+        return [
+            *super().go(guest=guest, environment=environment, logger=logger),
+            *go(
+                self,
+                guest=guest,
+                environment=environment,
+                wrapper_basename=FINISH_WRAPPER_FILENAME,
+                logger=logger)]
