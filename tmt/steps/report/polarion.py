@@ -197,9 +197,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated xunit report """
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Go through executed tests and report into Polarion """
-        super().go()
+        super().go(logger=logger)
 
         from tmt.export.polarion import find_polarion_case_ids, import_polarion
         import_polarion()

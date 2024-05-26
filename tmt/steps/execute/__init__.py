@@ -430,7 +430,7 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
-class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
+class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     """ Common parent of execute plugins """
 
     # ignore[assignment]: as a base class, ExecuteStepData is not included in
@@ -491,7 +491,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
-        super().go(guest=guest, environment=environment, logger=logger)
+        self.go_prolog(logger)
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
@@ -896,7 +896,7 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        queue: PhaseQueue[ExecuteStepData] = PhaseQueue(
+        queue: PhaseQueue[ExecuteStepData, None] = PhaseQueue(
             'execute',
             self._logger.descend(logger_name=f'{self}.queue'))
 
@@ -930,7 +930,7 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
 
         for outcome in queue.run():
             if outcome.exc:
