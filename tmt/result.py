@@ -136,6 +136,11 @@ class CheckResult(BaseResult):
 
 
 @dataclasses.dataclass
+class PhaseResult(BaseResult):
+    """ Describes what tmt knows about a single phase result """
+
+
+@dataclasses.dataclass
 class Result(BaseResult):
     """ Describes what tmt knows about a single test result """
 
