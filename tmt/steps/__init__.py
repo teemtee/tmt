@@ -2179,7 +2179,8 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
 
 @dataclasses.dataclass
-class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT, PluginReturnValueT]):
+class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
+                 Generic[StepDataT, PluginReturnValueT]):
     """ A task to run a phase on a given set of guests """
 
     phase: Plugin[StepDataT, PluginReturnValueT]

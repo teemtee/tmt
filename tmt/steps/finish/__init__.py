@@ -166,7 +166,8 @@ class Finish(tmt.steps.Step):
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                     )
 
-        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData, None]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData, PhaseResult]]] = []
+        results: list[PhaseResult] = []
 
         for outcome in queue.run():
             if not isinstance(outcome.phase, FinishPlugin):
@@ -177,6 +178,10 @@ class Finish(tmt.steps.Step):
 
                 failed_tasks.append(outcome)
                 continue
+
+            results += outcome.result
+
+        self._save_results(results)
 
         if failed_tasks:
             raise tmt.utils.GeneralError(
