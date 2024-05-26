@@ -347,7 +347,7 @@ class Prepare(tmt.steps.Step):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
-        queue: PhaseQueue[PrepareStepData, None] = PhaseQueue(
+        queue: PhaseQueue[PrepareStepData, list[PhaseResult]] = PhaseQueue(
             'prepare',
             self._logger.descend(logger_name=f'{self}.queue'))
 
@@ -361,7 +361,8 @@ class Prepare(tmt.steps.Step):
                     guests=[
                         guest for guest in guest_copies if prepare_phase.enabled_on_guest(guest)])
 
-        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData, None]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData, list[PhaseResult]]]] = []
+        results: list[PhaseResult] = []
 
         for outcome in queue.run():
             if not isinstance(outcome.phase, PreparePlugin):
@@ -373,7 +374,12 @@ class Prepare(tmt.steps.Step):
                 failed_tasks.append(outcome)
                 continue
 
+            if outcome.result:
+                results += outcome.result
+
             self.preparations_applied += 1
+
+        self._save_results(results)
 
         if failed_tasks:
             # TODO: needs a better message...
