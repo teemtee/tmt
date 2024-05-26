@@ -14,6 +14,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
+from tmt.result import PhaseResult
 from tmt.steps import (
     Action,
     ActionTask,
@@ -44,7 +45,7 @@ class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps.RawWhereableStepData
     pass
 
 
-class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, None]):
+class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
     """ Common parent of prepare plugins """
 
     # ignore[assignment]: as a base class, PrepareStepData is not included in
@@ -83,7 +84,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, None]):
             *,
             guest: 'tmt.steps.provision.Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Prepare the guest (common actions) """
 
         self.go_prolog(logger)
@@ -95,6 +96,8 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, None]):
         # Show requested role if defined
         if self.data.where:
             logger.info('where', fmf.utils.listed(self.data.where), 'green')
+
+        return []
 
 
 class Prepare(tmt.steps.Step):
