@@ -18,7 +18,7 @@ import tmt.steps.provision.testcloud
 import tmt.utils
 from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
-from tmt.utils import Path, field, render_run_exception_streams
+from tmt.utils import Path, field, format_timestamp, render_run_exception_streams
 
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
@@ -68,8 +68,7 @@ def report_progress(
         ``report`` lines are written into it.
     """
 
-    timestamp = tmt.steps.execute.ExecutePlugin.format_timestamp(
-        datetime.datetime.now(datetime.timezone.utc))
+    timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
     with open(log, mode='a') as f:
         f.write(f'# {check_name} reported at {timestamp}\n')
