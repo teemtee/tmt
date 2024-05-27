@@ -46,6 +46,9 @@ tmt.1
 .mypy_cache
 .pytest_cache
 *.tgz
+# Created by pytest-html reporting plugin
+/assets/style.css
+/report.html
 
 # Virtual environment
 .env
