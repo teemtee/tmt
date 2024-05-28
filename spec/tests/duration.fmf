@@ -4,15 +4,18 @@ story:
     As a test harness I need to know after how long time I should
     kill test if it is still running to prevent resource wasting.
 
-description:
-    In order to prevent stuck tests consuming resources we define a
-    maximum time for test execution. If the limit is exceeded the
+description: |
+    In order to prevent stuck tests from consuming resources, we define a
+    maximum time for test execution. If the limit is exceeded, the
     running test is killed by the test harness. Value extends the
     format of the ``sleep`` command by allowing multiplication (``*[float]``).
-    First all time values are sum together and only after that are multiplied.
-    Final value is then rounded up to whole number.
+    First, all time values are summed together, and only then are they multiplied.
+    The final value is then rounded up to the whole number.
 
-    Must be a ``string``. The default value is ``5m``
+    Must be a ``string``. The default value is ``5m``.
+
+    .. versionadded:: 1.34
+        Multiplication
 
 example:
   - |

@@ -3378,7 +3378,7 @@ def duration_to_seconds(duration: str) -> int:
     re_validate = re.compile(r'''
         ^(  # Match beginning, opening of input group
         ''' + raw_groups + r'''
-        \s*  # Optional spaces in the case of multiple inputs
+        \s* # Optional spaces in the case of multiple inputs
         )+$ # Inputs can repeat
         ''', re.VERBOSE)
     re_split = re.compile(raw_groups, re.VERBOSE)

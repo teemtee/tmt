@@ -317,7 +317,7 @@ def test_workdir_root_race(tmppath, monkeypatch, root_logger):
 
 
 def test_duration_to_seconds():
-    """ Check conversion from  extended sleep time format to seconds """
+    """ Check conversion from extended sleep time format to seconds """
     assert duration_to_seconds(5) == 5
     assert duration_to_seconds('5') == 5
     assert duration_to_seconds('5s') == 5
