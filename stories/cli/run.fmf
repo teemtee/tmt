@@ -197,7 +197,7 @@ story: 'As a user I want to execute tests easily'
         or investigate what happened after the test is finished.
 
     link:
-      - implemented-by: /tmt/step
+      - implemented-by: /tmt/steps
       - verified-by: /tests/login
       - documented-by: /docs/examples.rst#guest-login
 

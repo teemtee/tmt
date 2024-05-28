@@ -2984,7 +2984,8 @@ class DataContainer:
         """
         Convert to a mapping.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
         """
 
         return dict(self.items())
@@ -2993,7 +2994,8 @@ class DataContainer:
         """
         Convert to a mapping with unset keys omitted.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
         """
 
         return {
@@ -3101,7 +3103,8 @@ class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
         """
         Convert from a specification file or from a CLI option
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`to_spec` for its counterpart.
         """
@@ -3112,7 +3115,8 @@ class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
         """
         Convert to a form suitable for saving in a specification file
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`from_spec` for its counterpart.
         """
@@ -3123,7 +3127,8 @@ class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
         """
         Convert to specification, skip default values
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`from_spec` for its counterpart.
         """
@@ -3178,7 +3183,8 @@ class SerializableContainer(DataContainer):
         """
         Convert to a form suitable for saving in a file.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`from_serialized` for its counterpart.
         """
@@ -3210,7 +3216,8 @@ class SerializableContainer(DataContainer):
         """
         Convert from a serialized form loaded from a file.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`to_serialized` for its counterpart.
         """
@@ -3264,7 +3271,8 @@ class SerializableContainer(DataContainer):
         Restoring such containers requires inspection of serialized data
         and dynamic imports of modules as needed.
 
-        See https://tmt.readthedocs.io/en/stable/classes.html#class-conversions for more details.
+        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
+        for more details.
 
         See :py:meth:`to_serialized` for its counterpart.
         """

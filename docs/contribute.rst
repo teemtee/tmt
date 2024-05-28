@@ -59,7 +59,7 @@ Why should I care?
 
 You can get some more context in the `stackoverflow`__ article.
 
-__ http://stackoverflow.com/questions/2290016/
+__ https://stackoverflow.com/questions/2290016/
 
 .. _develop:
 

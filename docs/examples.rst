@@ -1315,7 +1315,7 @@ steps for example. This is currently used in the Testing Farm's
 
     tmt run --last login < script.sh
 
-__ https://docs.testing-farm.io/general/0.1/test-results.html#_tmt_reproducer
+__ https://docs.testing-farm.io/Testing%20Farm/0.1/test-results.html#_tmt_reproducer
 
 Have you heard already that using command abbreviation is possible
 as well? It might save you some typing:

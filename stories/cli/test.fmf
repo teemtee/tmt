@@ -48,7 +48,7 @@ story: 'As a user I want to comfortably work with tests'
     example: tmt test import
     link:
       - implemented-by: /tmt/convert.py
-      - verified-by: /tests/test_convert
+      - verified-by: /tests/unit/test_convert.py
       - documented-by: /docs/examples.rst#convert-tests
 
 /export:

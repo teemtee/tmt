@@ -21,4 +21,4 @@ example: |
 link:
   - implemented-by: /tmt/base.py
   - verified-by: /tests/execute/basic
-  - http://fmf.readthedocs.io/en/latest/features.html#virtual
+  - https://fmf.readthedocs.io/en/latest/features.html#virtual

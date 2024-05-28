@@ -460,4 +460,4 @@ If you were using ``provision.fmf`` with Testing Farm, check out
 the `Testing Farm docs`__ on this HW requirement for more details
 and how Testing Farm works with tmt metadata.
 
-__ https://docs.testing-farm.io/general/0.1/test-request.html
+__ https://docs.testing-farm.io/Testing%20Farm/0.1/test-request.html

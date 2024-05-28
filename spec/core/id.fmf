@@ -25,5 +25,5 @@ example: |
     id: af994876-1c68-49a7-90e8-c8d2b189189d
 
 link:
-  - implemented-by: /tmt/id.py
+  - implemented-by: /tmt/identifier.py
   - verified-by: /tests/unit

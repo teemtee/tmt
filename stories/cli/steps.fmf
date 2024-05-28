@@ -34,7 +34,7 @@
         story: 'Use localhost for testing'
         example: tmt run provision --how=local
         link:
-          - implemented-by: /tmt/steps/provision/localhost.py
+          - implemented-by: /tmt/steps/provision/local.py
           - documented-by: /docs/examples.rst#provision-options
           - verified-by: /tests/init/base
 
@@ -58,7 +58,7 @@
             Do not provision a new system. Instead, use provided
             authentication data to connect to a running machine.
         link:
-          - implemented-by: /tmt/steps/provision/vagrant.py
+          - implemented-by: /tmt/steps/provision/connect.py
           - documented-by: /docs/examples.rst#provision-options
         example:
             - tmt run provision --how=connect --guest=name-or-ip --user=login --password=secret
