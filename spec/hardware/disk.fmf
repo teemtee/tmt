@@ -27,7 +27,7 @@ description: |
     .. versionchanged:: 1.32
        Added `driver` and `model-name` into specification.
 
-    .. versionchanged:: 1.33
+    .. versionchanged:: 1.34
        Added ``block-device`` into specification.
 
 example:
