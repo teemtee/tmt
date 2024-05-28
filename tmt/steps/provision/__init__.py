@@ -498,15 +498,29 @@ def normalize_hardware(
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
 
+            if components.name not in tmt.hardware.CHILDLESS_CONSTRAINTS \
+                    and components.child_name is None:
+                raise tmt.utils.SpecificationError(
+                    f"Hardware requirement '{raw_datum}' lacks "
+                    f"child property ({components.name}[N].M).")
+
+            if components.name in tmt.hardware.INDEXABLE_CONSTRAINTS \
+                    and components.peer_index is None:
+                raise tmt.utils.SpecificationError(
+                    f"Hardware requirement '{raw_datum}' lacks "
+                    f"entry index ({components.name}[N]).")
+
             if components.peer_index is not None:
-                if components.child_name is None:
-                    raise tmt.utils.SpecificationError(
-                        f"Hardware requirement '{raw_datum}' lacks child property.")
+                # This should not happen, the test above already ruled
+                # out `child_name` being `None`, but mypy does not know
+                # everything is fine.
+                assert components.child_name is not None  # narrow type
 
                 if components.name not in merged:
                     merged[components.name] = []
 
-                # Fill in empty spots between the existing ones and the one we're adding.
+                # Fill in empty spots between the existing ones and the
+                # one we're adding with placeholders.
                 if len(merged[components.name]) <= components.peer_index:
                     merged[components.name] += [
                         {} for _ in range(components.peer_index - len(merged[components.name]) + 1)
@@ -528,7 +542,27 @@ def normalize_hardware(
             else:
                 merged[components.name] = f'{components.operator} {components.value}'
 
-        return tmt.hardware.Hardware.from_spec(dict(merged))
+        # Very crude, we will need something better to handle `and` and
+        # `or` and nesting.
+        def _drop_placeholders(data: dict[str, Any]) -> dict[str, Any]:
+            new_data: dict[str, Any] = {}
+
+            for key, value in data.items():
+                if isinstance(value, list):
+                    new_data[key] = []
+
+                    for item in value:
+                        if isinstance(item, dict) and not item:
+                            continue
+
+                        new_data[key].append(item)
+
+                else:
+                    new_data[key] = value
+
+            return new_data
+
+        return tmt.hardware.Hardware.from_spec(_drop_placeholders(merged))
 
     # From fmf
     return tmt.hardware.Hardware.from_spec(raw_hardware)
