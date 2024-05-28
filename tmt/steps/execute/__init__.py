@@ -532,7 +532,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
         """ Prepare additional scripts for testing """
         # Install all scripts on guest
         for script in self.scripts:
-            source = SCRIPTS_SRC_DIR / script.path.name
+            source = Path(str(SCRIPTS_SRC_DIR / script.path.name))
 
             for dest in [script.path, *script.aliases]:
                 guest.push(

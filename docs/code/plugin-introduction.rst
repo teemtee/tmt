@@ -11,6 +11,10 @@ standard location under ``tmt/steps`` , from all directories
 provided in the ``TMT_PLUGINS`` environment variable and from
 ``tmt.plugin`` entry point.
 
+.. versionadded:: 1.34
+   You can use ``tmt.resources`` entry point to inject resource
+   files to be used for tmt, e.g. schemas or templates.
+
 
 Inheritance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,0 +1,18 @@
+[project]
+name = "demo-plugins"
+version = "0.0.1"
+dependencies = [
+    "tmt",
+    ]
+
+[tool.setuptools]
+packages = [
+    "example",
+]
+
+[project.entry-points."tmt.plugin"]
+ProvisionExample = "example.provision:ProvisionExample"
+DiscoverExample = "example.discover:DiscoverExample"
+
+[project.entry-points."tmt.resources"]
+ResourcesExample = "examaple"
