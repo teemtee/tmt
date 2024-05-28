@@ -11,11 +11,13 @@ description: |
 
     commit
         Project source code has changed. This can be either a
-        pull/merge request or a new commit pushed to a branch.
+        pull/merge request creation or update, new branch created
+        or a new commit pushed to an existing branch.
 
     build
-        There has been a new package built in koji or brew and is
-        available for testing.
+        There has been a new official package built in koji or
+        brew. It can be a non-scratch build created directly or a
+        `draft build`__ which has been promoted to non-draft.
 
     update
         A new bodhi update or errata advisory with one or more
@@ -26,6 +28,8 @@ description: |
 
     This context dimension will usually be provided from the
     command line.
+
+    __ https://docs.pagure.org/koji/draft_builds/
 
 example: |
     summary: Full test coverage (takes three days)
