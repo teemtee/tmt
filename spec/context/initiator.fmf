@@ -31,6 +31,10 @@ description: |
         Errata Workflow Automation jobs.
         To be implemented.
 
+    konflux
+        Application builder.
+        To be implemented.
+
     Each service, pipeline or tool is responsible to set the value
     to its name. For manual testing ``--context initiator=human``
     is expected on the command line.
