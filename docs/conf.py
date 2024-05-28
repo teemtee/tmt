@@ -306,7 +306,7 @@ man_pages = [
 
 # -- Options for linkcheck builder ----------------------------------------
 linkcheck_ignore = [
-    # Githup "source code line" anchors are apparently too dynamic for linkcheck
+    # Github "source code line" anchors are apparently too dynamic for linkcheck
     # to detect correctly. The link exists, a browser can open it, but linkcheck
     # reports a broken link.
     r'https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10'
