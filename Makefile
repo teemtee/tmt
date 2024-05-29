@@ -86,92 +86,92 @@ images:  ## Build tmt images for podman/docker
 	podman build -t tmt --squash -f ./containers/Containerfile.mini .
 	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
-TMT_TEST_IMAGE_NAME_PREFIX = tmt/tests
 TMT_TEST_IMAGE_TARGET_PREFIX = images-tests
+TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/tests/container
 
-TMT_TEST_IMAGES := $(TMT_TEST_IMAGE_NAME_PREFIX)/alpine:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/alpine/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/centos/7/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream8/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream9/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos:stable \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos/ostree:stable \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/unprivileged:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/upstream:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/unprivileged:latest \
-                   $(TMT_TEST_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest
+TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream8/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos:stable \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos/ostree:stable \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40/unprivileged:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/unprivileged:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest
 
-TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_IMAGES),images-tests/$(subst :,\:,$(image)))
+TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images-tests/$(subst :,\:,$(image)))
 
 images-tests: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
-	podman images | grep 'localhost/$(TMT_TEST_IMAGE_NAME_PREFIX)/' | sort
+	podman images | grep 'localhost/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/' | sort
 
-define test-image-target-to-name =
+define test-container-image-target-to-name =
 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,${1})
 endef
 
-define build-test-image =
-@ echo "$(ccgreen)Building $(ccred)$(call test-image-target-to-name,$@)$(ccend) $(ccgreen)image...$(ccend)"
-podman build -t $(call test-image-target-to-name,${1}) -f ./containers/${2} .
+define build-test-container-image =
+@ echo "$(ccgreen)Building $(ccred)$(call test-container-image-target-to-name,$@)$(ccend) $(ccgreen)image...$(ccend)"
+podman build -t $(call test-container-image-target-to-name,${1}) -f ./containers/${2} .
 @ echo
 endef
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/alpine\:latest:
-	$(call build-test-image,$@,alpine/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine\:latest:
+	$(call build-test-container-image,$@,alpine/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
-	$(call build-test-image,$@,alpine/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
+	$(call build-test-container-image,$@,alpine/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
-	$(call build-test-image,$@,centos/7/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
+	$(call build-test-container-image,$@,centos/7/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream8/upstream\:latest:
-	$(call build-test-image,$@,centos/stream8/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream8/upstream\:latest:
+	$(call build-test-container-image,$@,centos/stream8/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/centos/stream9/upstream\:latest:
-	$(call build-test-image,$@,centos/stream9/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9/upstream\:latest:
+	$(call build-test-container-image,$@,centos/stream9/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos\:stable:
-	$(call build-test-image,$@,fedora/coreos/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos\:stable:
+	$(call build-test-container-image,$@,fedora/coreos/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/coreos/ostree\:stable:
-	$(call build-test-image,$@,fedora/coreos/ostree/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos/ostree\:stable:
+	$(call build-test-container-image,$@,fedora/coreos/ostree/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide\:latest:
-	$(call build-test-image,$@,fedora/rawhide/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide\:latest:
+	$(call build-test-container-image,$@,fedora/rawhide/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream\:latest:
-	$(call build-test-image,$@,fedora/rawhide/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/rawhide/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged\:latest:
-	$(call build-test-image,$@,fedora/rawhide/Containerfile.unprivileged)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/rawhide/Containerfile.unprivileged)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40\:latest:
-	$(call build-test-image,$@,fedora/40/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40\:latest:
+	$(call build-test-container-image,$@,fedora/40/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/upstream\:latest:
-	$(call build-test-image,$@,fedora/40/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/40/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/40/unprivileged\:latest:
-	$(call build-test-image,$@,fedora/40/Containerfile.unprivileged)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/40/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/40/Containerfile.unprivileged)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39\:latest:
-	$(call build-test-image,$@,fedora/39/Containerfile)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39\:latest:
+	$(call build-test-container-image,$@,fedora/39/Containerfile)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/upstream\:latest:
-	$(call build-test-image,$@,fedora/39/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/39/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/fedora/39/unprivileged\:latest:
-	$(call build-test-image,$@,fedora/39/Containerfile.unprivileged)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/39/Containerfile.unprivileged)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream\:latest:
-	$(call build-test-image,$@,ubuntu/22.04/Containerfile.upstream)
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream\:latest:
+	$(call build-test-container-image,$@,ubuntu/22.04/Containerfile.upstream)
 
 ##
 ## Development
@@ -196,7 +196,7 @@ clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -f tests/full/repo_copy.tgz
 
 clean-test-images:  ## Remove all custom images built for tests
-	for image in $(TMT_TEST_IMAGES); do \
+	for image in $(TMT_TEST_CONTAINER_IMAGES); do \
 	    podman rmi -i "$$image"; \
 	done
 

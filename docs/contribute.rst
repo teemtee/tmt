@@ -254,11 +254,17 @@ Naming scheme
 
 All our test images follow a simple naming pattern:
 
-    ``localhost/tmt/tests/DISTRIBUTION/RELEASE/EXTRAS:TAG``
+    ``localhost/tmt/tests/BACKEND/DISTRIBUTION/RELEASE/EXTRAS:TAG``
 
 ``localhost/tmt/tests``
     To make it clear the image was built locally, it is owned by tmt,
     and it is not packaging tmt but serves for testing purposes only.
+
+``BACKEND``
+    There are various kinds of "images", the most well-known ones would
+    be Docker/Podman images, their names would contain ``container``
+    flag, and QCOW2 images for VMs which would be labeled with
+    ``virtual``.
 
 ``DISTRIBUTION``
     A lower-cased name of the Linux distribution hosted in the image:
@@ -293,18 +299,18 @@ For example, the following images can be found:
 .. code-block::
 
     # Latest Alpine, with added Bash to simulate proper essential setup:
-    localhost/tmt/tests/alpine
+    localhost/tmt/tests/container/alpine
 
     # Various CentOS releases:
-    localhost/tmt/tests/centos/7
-    localhost/tmt/tests/centos/stream8
-    localhost/tmt/tests/centos/stream9
+    localhost/tmt/tests/container/centos/7
+    localhost/tmt/tests/container/centos/stream8
+    localhost/tmt/tests/container/centos/stream9
 
     # Fedora rawhide, with dnf5 pre-installed:
-    localhost/tmt/tests/fedora/rawhide
+    localhost/tmt/tests/container/fedora/rawhide
 
     # Same, but with password-less sudo set up:
-    localhost/tmt/tests/fedora/rawhide/unprivileged
+    localhost/tmt/tests/container/fedora/rawhide/unprivileged
 
 __ https://ostreedev.github.io/ostree/
 
@@ -316,7 +322,7 @@ To build these images, run the following:
     make images-tests
 
     # ... or just a single one:
-    make images-tests/tmt/tests/fedora/rawhide:latest
+    make images-tests/tmt/tests/container/fedora/rawhide:latest
 
 Tests that need to use various container images should trigger this
 command before running the actual test cases:
@@ -325,7 +331,7 @@ command before running the actual test cases:
 
     rlRun "make -C images-tests"
 
-To list built images, run the following:
+To list built container images, run the following:
 
 .. code-block:: shell
 

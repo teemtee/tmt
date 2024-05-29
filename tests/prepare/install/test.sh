@@ -3,17 +3,17 @@
 
 # TODO: should these variables exist outside of this test, for all tests
 # to share?
-CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/tests/fedora/rawhide/upstream:latest
-localhost/tmt/tests/fedora/40/upstream:latest
-localhost/tmt/tests/fedora/39/upstream:latest
-localhost/tmt/tests/centos/stream9/upstream:latest
-localhost/tmt/tests/centos/stream8/upstream:latest
-localhost/tmt/tests/centos/7/upstream:latest
-localhost/tmt/tests/ubuntu/22.04/upstream:latest
+CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/tests/container/fedora/rawhide/upstream:latest
+localhost/tmt/tests/container/fedora/40/upstream:latest
+localhost/tmt/tests/container/fedora/39/upstream:latest
+localhost/tmt/tests/container/centos/stream9/upstream:latest
+localhost/tmt/tests/container/centos/stream8/upstream:latest
+localhost/tmt/tests/container/centos/7/upstream:latest
+localhost/tmt/tests/container/ubuntu/22.04/upstream:latest
 ubi8
-localhost/tmt/tests/alpine:latest
-localhost/tmt/tests/fedora/coreos:stable
-localhost/tmt/tests/fedora/coreos/ostree:stable}"
+localhost/tmt/tests/container/alpine:latest
+localhost/tmt/tests/container/fedora/coreos:stable
+localhost/tmt/tests/container/fedora/coreos/ostree:stable}"
 
 # TODO: enable Ubuntu
 VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide

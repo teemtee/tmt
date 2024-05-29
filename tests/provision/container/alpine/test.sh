@@ -18,14 +18,14 @@ rlJournalStart
 
     rlPhaseStartTest "Test vanilla alpine without bash"
         rlRun -s "tmt run --all --id $run --verbose --scratch \
-            provision --how container --image localhost/tmt/tests/alpine/upstream:latest \
+            provision --how container --image localhost/tmt/tests/container/alpine/upstream:latest \
             execute --how tmt --script whoami" 2
         rlAssertGrep "fail: /bin/bash is required on the guest." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Test alpine with bash"
         rlRun -s "tmt run -vv --all --id $run --verbose --scratch \
-            provision --how container --image localhost/tmt/tests/alpine:latest \
+            provision --how container --image localhost/tmt/tests/container/alpine:latest \
             execute --how tmt --script whoami" 0
         rlAssertGrep "out: root" $rlRun_LOG
     rlPhaseEnd
