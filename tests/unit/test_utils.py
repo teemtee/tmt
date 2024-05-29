@@ -317,7 +317,7 @@ def test_workdir_root_race(tmppath, monkeypatch, root_logger):
 
 
 def test_duration_to_seconds():
-    """ Check conversion from sleep time format to seconds """
+    """ Check conversion from extended sleep time format to seconds """
     assert duration_to_seconds(5) == 5
     assert duration_to_seconds('5') == 5
     assert duration_to_seconds('5s') == 5
@@ -332,10 +332,27 @@ def test_duration_to_seconds():
     # Divergence from 'sleep' as that expects space separated arguments
     assert duration_to_seconds('1s2s') == 3
     assert duration_to_seconds('1 m2   m') == 180
+    # Allow multiply but sum first, then multiply: (60+4) * (2+3)
+    assert duration_to_seconds('*2 1m *3 4') == 384
+    assert duration_to_seconds('*2 *3 1m4') == 384
+    # Round up
+    assert duration_to_seconds('1s *3.3') == 4
+
+
+@pytest.mark.parametrize("duration", [
+    '*10m',
+    '**10',
+    '10w',
+    '1sm',
+    '*10m 3',
+    '3 *10m',
+    '1 1ss 5',
+    'bad',
+    ])
+def test_duration_to_seconds_invalid(duration):
+    """ Catch invalid input duration string """
     with pytest.raises(tmt.utils.SpecificationError):
-        duration_to_seconds('bad')
-    with pytest.raises(tmt.utils.SpecificationError):
-        duration_to_seconds('1sm')
+        duration_to_seconds(duration)
 
 
 class TestStructuredField(unittest.TestCase):

@@ -162,7 +162,7 @@ definitions:
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#script
   duration:
     type: string
-    pattern: "^[0-9]+[smhd]?$"
+    pattern: "^([0-9*. ]+[smhd]? *)+$"
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#environment
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#environment

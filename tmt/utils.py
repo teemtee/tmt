@@ -27,6 +27,7 @@ import urllib.parse
 from collections import Counter, OrderedDict
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from math import ceil
 from re import Match, Pattern
 from threading import Thread
 from types import ModuleType
@@ -3346,19 +3347,52 @@ def shell_variables(
 
 
 def duration_to_seconds(duration: str) -> int:
-    """ Convert sleep time format into seconds """
+    """ Convert extended sleep time format into seconds """
     units = {
         's': 1,
         'm': 60,
         'h': 60 * 60,
         'd': 60 * 60 * 24,
         }
-    if re.match(r'^(\d+ *?[smhd]? *)+$', str(duration)) is None:
+    # Couldn't create working validation regexp to accept '2 1m 4'
+    # thus fixing the string so \b can be used as word boundary
+    fixed_duration = re.sub(r'([smhd])(\d)', r'\1 \2', str(duration))
+    fixed_duration = re.sub(r'\s\s+', ' ', fixed_duration)
+    raw_groups = r'''
+            (   # Group all possibilities
+                (  # Multiply by float number
+                    (?P<asterisk>\*) # "*" character
+                                \s*
+                    (?P<float>\d+(\.\d+)?(?![smhd])) # float part
+                                \s*
+                )
+                |   # Or
+                ( # Time pattern
+                    (?P<digit>\d+)  # digits
+                    \s*
+                    (?P<suffix>[smhd])? # suffix
+                    \s*
+                )
+            )\b # Needs to end with word boundary to avoid splitting
+        '''
+    re_validate = re.compile(r'''
+        ^(  # Match beginning, opening of input group
+        ''' + raw_groups + r'''
+        \s* # Optional spaces in the case of multiple inputs
+        )+$ # Inputs can repeat
+        ''', re.VERBOSE)
+    re_split = re.compile(raw_groups, re.VERBOSE)
+    if re_validate.match(fixed_duration) is None:
         raise SpecificationError(f"Invalid duration '{duration}'.")
     total_time = 0
-    for number, suffix in re.findall(r'(\d+) *([smhd]?)', str(duration)):
-        total_time += int(number) * units.get(suffix, 1)
-    return total_time
+    multiply_by = 1.0
+    for match in re_split.finditer(fixed_duration):
+        if match['asterisk'] == '*':
+            multiply_by *= float(match['float'])
+        else:
+            total_time += int(match['digit']) * units.get(match['suffix'], 1)
+    # Multiply in the end and round up
+    return ceil(total_time * multiply_by)
 
 
 @overload
