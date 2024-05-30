@@ -38,6 +38,7 @@ class DmesgCheck(Check):
              output. If any of patterns is found, ``dmesg`` check will
              report ``fail`` result.
              """,
+        metavar='PATTERN',
         normalize=tmt.utils.normalize_pattern_list,
         exporter=lambda patterns: [pattern.pattern for pattern in patterns],
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],

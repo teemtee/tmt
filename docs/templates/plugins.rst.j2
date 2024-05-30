@@ -58,7 +58,7 @@ Configuration
             {% if not actual_default %}
     Default: *not set*
             {% else %}
-    Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}`` {% endfor %}
+    Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor %}
             {% endif %}
         {% else %}
             {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, PLUGIN_ID, field_name, actual_default)) %}
