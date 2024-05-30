@@ -49,9 +49,9 @@ example:
     # Use context adjust to scale duration for given arch
     duration: 5m
     adjust:
-        duration+: *2
+      - duration+: *2
         when: arch == aarch64
-        duration+: *0.9
+      - duration+: *0.9
         when: arch == s390x
 
 
