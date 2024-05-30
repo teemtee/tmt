@@ -2468,6 +2468,8 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
 
 
 def render_exception_stack(exception: BaseException) -> Iterator[str]:
+    """ Render traceback of the given exception """
+
     exception_traceback = traceback.TracebackException(
         type(exception),
         exception,
