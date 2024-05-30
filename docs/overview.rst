@@ -398,6 +398,8 @@ TMT_SHOW_TRACEBACK
     By default, when tmt reports an error, the corresponding
     traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
     set to any string except ``0``, traceback would be printed out.
+    When set to ``full``, traceback would list also local variables
+    in each stack frame.
 
 TMT_OUTPUT_WIDTH
     By default, the output width of commands like ``tmt * show`` is constrained
