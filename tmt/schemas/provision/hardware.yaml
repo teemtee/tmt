@@ -154,6 +154,15 @@ definitions:
       driver:
         type: string
 
+      logical-sector-size:
+        anyOf:
+          - type: string
+          - type: integer
+
+      physical-sector-size:
+        anyOf:
+          - type: string
+          - type: integer
     additionalProperties: false
 
     # enforce at least one property - we don't care which one, but we don't want
