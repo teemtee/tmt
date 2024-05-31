@@ -50,7 +50,7 @@ REPORT_FILENAME = 'tmt-watchdog.txt'
 def render_report_path(invocation: 'TestInvocation') -> Path:
     """ Render path to a watchdog report file from necessary components """
 
-    return invocation.path / REPORT_FILENAME
+    return invocation.check_files_path / REPORT_FILENAME
 
 
 def report_progress(
@@ -479,9 +479,10 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
 
             guest_context.thread = None
 
+        assert invocation.phase.step.workdir is not None  # narrow type
+
         return [
             CheckResult(
                 name='watchdog',
                 result=ResultOutcome.PASS,
-                log=[render_report_path(invocation)]
-                )]
+                log=[render_report_path(invocation).relative_to(invocation.phase.step.workdir)])]
