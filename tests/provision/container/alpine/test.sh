@@ -7,7 +7,7 @@ rlJournalStart
     rlPhaseStartSetup
         # Try several times to build the container
         # https://github.com/teemtee/tmt/issues/2063
-        build="make -C ../../../../ images-tests/tmt/tests/alpine\:latest images-tests/tmt/tests/alpine/upstream\:latest"
+        build="make -C ../../../../ images-tests/tmt/tests/container/alpine\:latest images-tests/tmt/tests/container/alpine/upstream\:latest"
         rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
 
         # Directories
