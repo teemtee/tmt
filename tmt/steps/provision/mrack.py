@@ -338,6 +338,32 @@ def _transform_disk_model_name(
         children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+def _transform_disk_physical_sector_size(
+        constraint: tmt.hardware.SizeConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value)
+        )
+
+    return MrackHWGroup(
+        'disk',
+        children=[MrackHWBinOp('phys_sector_size', beaker_operator, actual_value)])
+
+
+def _transform_disk_logical_sector_size(
+        constraint: tmt.hardware.SizeConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value)
+        )
+
+    return MrackHWGroup(
+        'disk',
+        children=[MrackHWBinOp('sector_size', beaker_operator, actual_value)])
+
+
 def _transform_hostname(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -501,6 +527,8 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
     'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
     'disk.size': _transform_disk_size,  # type: ignore[dict-item]
+    'disk.physical_sector_size': _transform_disk_physical_sector_size,  # type: ignore[dict-item]
+    'disk.logical_sector_size': _transform_disk_logical_sector_size,  # type: ignore[dict-item]
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]

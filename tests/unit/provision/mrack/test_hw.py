@@ -184,7 +184,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
-                            {'or': []},
+                            {
+                                'disk': {
+                                    'phys_sector_size': {
+                                        '_op': '==',
+                                        '_value': '4096 B'
+                                        }
+                                    }
+                                },
                             {
                                 'disk': {
                                     'model': {
@@ -205,7 +212,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
-                            {'or': []},
+                            {
+                                'disk': {
+                                    'sector_size': {
+                                        '_op': '==',
+                                        '_value': '512 B'
+                                        }
+                                    }
+                                },
                             {
                                 'key_value': {
                                     '_key': 'BOOTDISK',
