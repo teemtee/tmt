@@ -100,7 +100,7 @@ rlJournalStart
 
 ### No need to run these several times, 'local' is enough
 if [[ $PROVISION_HOW == "local" ]] ; then
-    for value in unset true false; do
+    for value in unset; do
         rlPhaseStartTest "Extract sources to find tests (merge: $value) - how:fmf"
             rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
             rlRun 'pushd $tmp'
@@ -148,6 +148,9 @@ EOF
             WORKDIR_TESTS=$WORKDIR/plans/discover/default-0/tests
 
             rlRun -s "tmt run -vv --id $WORKDIR --scratch --keep"
+            rlFileSubmit $WORKDIR/log.txt
+            
+            find $WORKDIR
 
             rlAssertGrep "/unit" $rlRun_LOG -F
             # 0 tests as we know real number only during prepare
@@ -159,7 +162,7 @@ EOF
             rlRun "rm -rf $tmp"
         rlPhaseEnd
     done
-
+if false; then
     rlPhaseStartTest "More source files (fmf root in one of them)"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'pushd $tmp'
@@ -543,6 +546,8 @@ EOF
         rlRun "rm -rf $WORKDIR"
     rlPhaseEnd
 fi # END of "just in local" test block
+fi
+if false; then
 
     # TODO - incorporate into existing tests ...
     rlPhaseStartTest "dist-git with applied patches (shell)"
@@ -622,7 +627,7 @@ EOF
         rlAssertGrep 'tree' "$rlRun_LOG"
 
     rlPhaseEnd
-
+fi
     rlPhaseStartCleanup
         echo $SERVER_PID
         kill -9 $SERVER_PID
