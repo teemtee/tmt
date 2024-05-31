@@ -936,7 +936,7 @@ def _parse_size_constraints(
 
     return [
         SizeConstraint.from_specification(
-            f'{prefix}.{constraint_name}',
+            f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
                 Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
@@ -1169,7 +1169,11 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_size_constraints(spec, f'disk[{disk_index}]', ('size',))
+    group.constraints += _parse_size_constraints(spec,
+                                                 f'disk[{disk_index}]',
+                                                 ('size',
+                                                  'physical-sector-size',
+                                                  'logical-sector-size'))
     group.constraints += _parse_text_constraints(spec,
                                                  f'disk[{disk_index}]', ('model-name', 'driver'))
 

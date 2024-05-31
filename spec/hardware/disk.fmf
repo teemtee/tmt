@@ -16,6 +16,12 @@ description: |
            # String, disk driver requested.
          - driver: "well-known disk driver"
 
+           # Number or String, logical sector size
+         - logical-sector-size: 512|">= 512"
+
+           # Number or String, physical sector size
+         - physical-sector-size: 4096|">= 4096"
+
     The :ref:`/spec/plans/guest-topology` may include the following
     fields in its description of the actual guest hardware:
 
