@@ -3,7 +3,7 @@
 import sys
 import textwrap
 
-from tmt.utils import TEMPLATE_FILTERS, Path, render_template_file
+from tmt.utils.templates import TEMPLATE_FILTERS, Path, render_template_file
 
 HELP = textwrap.dedent("""
 Usage: generate-template-filters.py <TEMPLATE-PATH> <OUTPUT-PATH>
