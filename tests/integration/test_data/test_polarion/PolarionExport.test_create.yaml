@@ -2,7 +2,7 @@ _requre:
   DataTypes: 1
   key_strategy: StorageKeysInspectSimple
   version_storage_file: 3
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

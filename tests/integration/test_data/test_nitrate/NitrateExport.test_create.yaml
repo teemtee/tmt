@@ -474,7 +474,7 @@ nitrate.xmlrpc_driver:
         summary: tmt /new_testcase - This is new testcase inside nitrate
         tag:
         - 10700
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

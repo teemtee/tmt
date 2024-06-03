@@ -7,6 +7,7 @@ from requre.helpers.guess_object import Guess
 from requre.helpers.requests_response import RequestResponseHandling
 
 import tmt.utils
+import tmt.utils.git
 
 nitrate.set_cache_level(nitrate.CACHE_NONE)
 
@@ -23,7 +24,7 @@ sessions.Session.send = RequestResponseHandling.decorator(
     item_list=[1])(
         sessions.Session.send)
 
-tmt.utils.check_git_url = Guess.decorator_plain()(tmt.utils.check_git_url)
+tmt.utils.git.check_git_url = Guess.decorator_plain()(tmt.utils.git.check_git_url)
 
 
 # use storage simple strategy to avoid use full stack info for keys
