@@ -4,7 +4,7 @@
 # tmt/tests/fedora/40/upstream:latest
 #
 
-FROM registry.fedoraproject.org/fedora:40
+FROM quay.io/fedora/fedora:40
 
     # Populate dnf cache
 RUN dnf makecache

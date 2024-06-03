@@ -4,7 +4,7 @@
 # tmt/tests/fedora/rawhide:latest
 #
 
-FROM registry.fedoraproject.org/fedora:rawhide
+FROM quay.io/fedora/fedora:rawhide
 
     # Populate dnf cache
 RUN    dnf makecache \

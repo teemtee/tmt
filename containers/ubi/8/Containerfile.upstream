@@ -1,0 +1,10 @@
+#
+# A UBI8 image tailored for tmt test suite
+#
+# tmt/tests/ubi/8/upstream:latest
+#
+
+FROM registry.access.redhat.com/ubi8:latest
+
+    # Populate yum cache
+RUN dnf makecache

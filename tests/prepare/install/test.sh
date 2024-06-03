@@ -7,10 +7,9 @@ CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/tests/container/fedora/rawhi
 localhost/tmt/tests/container/fedora/40/upstream:latest
 localhost/tmt/tests/container/fedora/39/upstream:latest
 localhost/tmt/tests/container/centos/stream9/upstream:latest
-localhost/tmt/tests/container/centos/stream8/upstream:latest
 localhost/tmt/tests/container/centos/7/upstream:latest
+localhost/tmt/tests/container/ubi/8/upstream:latest
 localhost/tmt/tests/container/ubuntu/22.04/upstream:latest
-ubi8
 localhost/tmt/tests/container/alpine:latest
 localhost/tmt/tests/container/fedora/coreos:stable
 localhost/tmt/tests/container/fedora/coreos/ostree:stable}"
@@ -48,13 +47,6 @@ function is_fedora_39 () {
 function is_centos_stream_9 () {
     [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
     [[ "$1" = "centos-stream-9" ]] && return 0
-
-    return 1
-}
-
-function is_centos_stream_8 () {
-    [[ "$1" =~ ^.*centos/stream8[:/].* ]] && return 0
-    [[ "$1" = "centos-stream-8" ]] && return 0
 
     return 1
 }
@@ -105,6 +97,10 @@ function is_alpine () {
 
 function is_ubi () {
     [[ "$1" =~ ^.*ubi.* ]] && return 0 || return 1
+}
+
+function is_ubi_8 () {
+    [[ "$1" =~ ^.*ubi/8.* ]] && return 0 || return 1
 }
 
 function fetch_downloaded_packages () {
@@ -176,10 +172,6 @@ rlJournalStart
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
 
-            elif is_centos_stream_8 "$image"; then
-                rlRun "distro=centos-stream-8"
-                rlRun "package_manager=dnf"
-
             elif is_centos_7 "$image"; then
                 rlRun "distro=centos-7"
                 rlRun "package_manager=yum"
@@ -202,7 +194,7 @@ rlJournalStart
 
                 fi
 
-            elif is_ubi "$image"; then
+            elif is_ubi_8 "$image"; then
                 rlRun "distro=rhel-8"
                 rlRun "package_manager=dnf"
 
@@ -220,33 +212,35 @@ rlJournalStart
         # TODO: find out whether all those exceptions can be simplified and parametrized...
 
         # TODO: cannot *successfully* install on ubi without subscribing first?
-        if ! is_ubi "$image"; then
-            rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
-                rlRun -s "$tmt plan --name /existing"
+        rlPhaseStartTest "$phase_prefix Install existing packages (plan)"
+            rlRun -s "$tmt plan --name /existing"
 
-                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-                if is_ubuntu "$image"; then
-                    # Runs 1 extra phase, to populate local caches.
-                    rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-                else
-                    rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-                fi
-            rlPhaseEnd
+            if is_ubuntu "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
 
-            rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
+        rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
+            if is_ubi "$image"; then
+                rlRun -s "$tmt --insert --how install --package dconf --package libpng plan --name /empty"
+            else
                 rlRun -s "$tmt --insert --how install --package tree --package diffutils plan --name /empty"
+            fi
 
-                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+            rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-                if is_ubuntu "$image"; then
-                    # Runs 1 extra phase, to populate local caches.
-                    rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
-                else
-                    rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
-                fi
-            rlPhaseEnd
-        fi
+            if is_ubuntu "$image"; then
+                # Runs 1 extra phase, to populate local caches.
+                rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
+            else
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            fi
+        rlPhaseEnd
 
         if rlIsFedora 39 && is_fedora_39 "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages (plan)"
@@ -367,7 +361,7 @@ rlJournalStart
                 rlPhaseEnd
             fi
 
-            if is_centos_stream_8 "$image"; then
+            if is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Install remote packages"
                     rlRun "$tmt execute plan --name epel8-remote"
                 rlPhaseEnd

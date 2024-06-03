@@ -1,12 +1,24 @@
 summary: Install existing packages
-prepare:
-  - how: install
-    package:
-      - tree
-      - diffutils
+prepare: []
 
 adjust:
   - when: distro == ubuntu
     prepare+<:
       - how: shell
         script: apt-get update
+
+    # Applies to every distro...
+  - when: distro != rhel-8
+    prepare+:
+      how: install
+      package:
+        - tree
+        - diffutils
+
+    # ... except UBI8 which is a RHEL-8.
+  - when: distro == rhel-8
+    prepare+:
+      how: install
+      package:
+        - dconf
+        - libpng

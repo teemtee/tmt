@@ -37,12 +37,7 @@ logger.add_console_handler()
 # Explore available plugins
 tmt.plugins.explore(logger)
 
-
 # Local images created via `make images-tests`, reference to local registry
-#
-# Note that we do not use `upstream` Fedora images because we have custom
-# ones, spiked with `dnf5` to make things complicated for package manager
-# implementations.
 CONTAINER_FEDORA_RAWHIDE = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/rawhide/upstream:latest')
 CONTAINER_FEDORA_40 = Container(
@@ -51,10 +46,10 @@ CONTAINER_FEDORA_39 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/39/upstream:latest')
 CONTAINER_CENTOS_STREAM_9 = Container(
     url='containers-storage:localhost/tmt/tests/container/centos/stream9/upstream:latest')
-CONTAINER_CENTOS_STREAM_8 = Container(
-    url='containers-storage:localhost/tmt/tests/container/centos/stream8/upstream:latest')
 CONTAINER_CENTOS_7 = Container(
     url='containers-storage:localhost/tmt/tests/container/centos/7/upstream:latest')
+CONTAINER_UBI_8 = Container(
+    url='containers-storage:localhost/tmt/tests/container/ubi/8/upstream:latest')
 CONTAINER_UBUNTU_2204 = Container(
     url='containers-storage:localhost/tmt/tests/container/ubuntu/22.04/upstream:latest')
 CONTAINER_FEDORA_COREOS = Container(
@@ -123,11 +118,12 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_YUM),
 
-    (CONTAINER_CENTOS_STREAM_8, PACKAGE_MANAGER_DNF),
-    (CONTAINER_CENTOS_STREAM_8, PACKAGE_MANAGER_YUM),
-
     # CentOS
     (CONTAINER_CENTOS_7, PACKAGE_MANAGER_YUM),
+
+    # UBI
+    (CONTAINER_UBI_8, PACKAGE_MANAGER_DNF),
+    (CONTAINER_UBI_8, PACKAGE_MANAGER_YUM),
 
     # Ubuntu
     (CONTAINER_UBUNTU_2204, PACKAGE_MANAGER_APT),
@@ -294,20 +290,36 @@ def test_discovery(
 
 
 def _parametrize_test_install() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            Package,
+            str,
+            Optional[str],
+            Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
             if container.url == CONTAINER_FEDORA_RAWHIDE.url:
                 yield container, \
                     package_manager_class, \
+                    Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
                     'Installing:', \
+                    None  # noqa: E501
+
+            elif 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('dconf'), \
+                    r"rpm -q --whatprovides dconf \|\| yum install -y  dconf && rpm -q --whatprovides dconf", \
+                    'Installed:\n  dconf', \
                     None  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
+                    Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
                     'Installed:\n  tree', \
                     None  # noqa: E501
@@ -316,13 +328,23 @@ def _parametrize_test_install() -> \
             if container.url == CONTAINER_FEDORA_RAWHIDE.url:
                 yield container, \
                     package_manager_class, \
+                    Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
                     'Installing:', \
+                    None
+
+            elif 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('dconf'), \
+                    r"rpm -q --whatprovides dconf \|\| dnf install -y  dconf", \
+                    'Installed:\n  dconf', \
                     None
 
             else:
                 yield container, \
                     package_manager_class, \
+                    Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
                     'Installed:\n  tree', \
                     None
@@ -330,6 +352,7 @@ def _parametrize_test_install() -> \
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"rpm -q --whatprovides tree \|\| dnf5 install -y  tree", \
                 'Installing:', \
                 None
@@ -337,6 +360,7 @@ def _parametrize_test_install() -> \
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree \|\| apt install -y  tree", \
                 'Setting up tree', \
                 None  # noqa: E501
@@ -344,6 +368,7 @@ def _parametrize_test_install() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
                 'Installing: tree', \
                 None  # noqa: E501
@@ -351,6 +376,7 @@ def _parametrize_test_install() -> \
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"apk info -e tree \|\| apk add tree", \
                 'Installing tree', \
                 None
@@ -362,6 +388,7 @@ def _parametrize_test_install() -> \
 @pytest.mark.containers()
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
+                          'package',
                           'expected_command',
                           'expected_stdout',
                           'expected_stderr'),
@@ -372,6 +399,7 @@ def test_install(
         container_per_test: ContainerData,
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
+        package: Package,
         expected_command: str,
         expected_stdout: Optional[str],
         expected_stderr: Optional[str],
@@ -383,7 +411,7 @@ def test_install(
         package_manager_class,
         root_logger)
 
-    output = package_manager.install(Package('tree'))
+    output = package_manager.install(package)
 
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
@@ -438,7 +466,8 @@ def _parametrize_test_install_nonexistent() -> \
                     None, \
                     'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
 
-            elif 'centos' in container.url and 'centos/7' not in container.url:
+            elif ('centos' in container.url and 'centos/7' not in container.url) \
+                    or 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
@@ -548,7 +577,8 @@ def _parametrize_test_install_nonexistent_skip() -> \
                     'No match for argument: tree-but-spelled-wrong', \
                     None  # noqa: E501
 
-            elif 'centos' in container.url and 'centos/7' not in container.url:
+            elif ('centos' in container.url and 'centos/7' not in container.url) \
+                    or 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
@@ -625,33 +655,60 @@ def test_install_nonexistent_skip(
 
 
 def _parametrize_test_install_dont_check_first() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            Package,
+            str,
+            Optional[str],
+            Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"dnf5 install -y  tree", \
                 None, \
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield container, \
-                package_manager_class, \
-                r"dnf install -y  tree", \
-                'Installed:\n  tree', \
-                None
+            if 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('dconf'), \
+                    r"dnf install -y  dconf", \
+                    'Installed:\n  dconf', \
+                    None
+            else:
+                yield container, \
+                    package_manager_class, \
+                    Package('tree'), \
+                    r"dnf install -y  tree", \
+                    'Installed:\n  tree', \
+                    None
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            yield container, \
-                package_manager_class, \
-                r"yum install -y  tree && rpm -q --whatprovides tree", \
-                'Installed:\n  tree', \
-                None
+            if 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    Package('dconf'), \
+                    r"yum install -y  dconf && rpm -q --whatprovides dconf", \
+                    'Installed:\n  dconf', \
+                    None
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    Package('tree'), \
+                    r"yum install -y  tree && rpm -q --whatprovides tree", \
+                    'Installed:\n  tree', \
+                    None
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"export DEBIAN_FRONTEND=noninteractive; apt install -y  tree", \
                 'Setting up tree', \
                 None
@@ -659,6 +716,7 @@ def _parametrize_test_install_dont_check_first() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
                 'Installing: tree', \
                 None
@@ -666,6 +724,7 @@ def _parametrize_test_install_dont_check_first() -> \
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
+                Package('tree'), \
                 r"apk add tree", \
                 'Installing tree', \
                 None
@@ -677,6 +736,7 @@ def _parametrize_test_install_dont_check_first() -> \
 @pytest.mark.containers()
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
+                          'package',
                           'expected_command',
                           'expected_stdout',
                           'expected_stderr'),
@@ -687,6 +747,7 @@ def test_install_dont_check_first(
         container_per_test: ContainerData,
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
+        package: Package,
         expected_command: str,
         expected_stdout: Optional[str],
         expected_stderr: Optional[str],
@@ -699,7 +760,7 @@ def test_install_dont_check_first(
         root_logger)
 
     output = package_manager.install(
-        Package('tree'),
+        package,
         options=Options(check_first=False)
         )
 
@@ -992,7 +1053,7 @@ def _generate_test_check_presence() -> Iterator[
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            if 'centos/stream8' in container.url:
+            if 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('util-linux'), \
@@ -1068,7 +1129,7 @@ def _generate_test_check_presence() -> Iterator[
                     None
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if 'centos/stream8' in container.url or 'centos/7' in container.url:
+            if 'centos/7' in container.url or 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('util-linux'), \
@@ -1377,26 +1438,53 @@ def test_install_filesystempath(
 
 
 def _parametrize_test_install_multiple() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            tuple[Package, Package],
+            str,
+            Optional[str],
+            Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            yield container, \
-                package_manager_class, \
-                r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils", \
-                'Complete!', \
-                None  # noqa: E501
+            if 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dconf'), Package('libpng')), \
+                    r"rpm -q --whatprovides dconf libpng \|\| yum install -y  dconf libpng && rpm -q --whatprovides dconf libpng", \
+                    'Complete!', \
+                    None  # noqa: E501
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
+                    r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils", \
+                    'Complete!', \
+                    None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield container, \
-                package_manager_class, \
-                r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils", \
-                'Complete!', \
-                None
+            if 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dconf'), Package('libpng')), \
+                    r"rpm -q --whatprovides dconf libpng \|\| dnf install -y  dconf libpng", \
+                    'Complete!', \
+                    None
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
+                    r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils", \
+                    'Complete!', \
+                    None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"rpm -q --whatprovides tree diffutils \|\| dnf5 install -y  tree diffutils", \
                 None, \
                 None
@@ -1404,6 +1492,7 @@ def _parametrize_test_install_multiple() -> \
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils", \
                 'Setting up tree', \
                 None  # noqa: E501
@@ -1411,6 +1500,7 @@ def _parametrize_test_install_multiple() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"rpm -q --whatprovides tree diffutils \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree diffutils", \
                 'Installing: tree', \
                 None  # noqa: E501
@@ -1418,6 +1508,7 @@ def _parametrize_test_install_multiple() -> \
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"apk info -e tree diffutils \|\| apk add tree diffutils", \
                 'Installing tree', \
                 None
@@ -1429,6 +1520,7 @@ def _parametrize_test_install_multiple() -> \
 @pytest.mark.containers()
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
+                          'packages',
                           'expected_command',
                           'expected_stdout',
                           'expected_stderr'),
@@ -1439,6 +1531,7 @@ def test_install_multiple(
         container_per_test: ContainerData,
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
+        packages: tuple[Package, Package],
         expected_command: str,
         expected_stdout: Optional[str],
         expected_stderr: Optional[str],
@@ -1450,7 +1543,7 @@ def test_install_multiple(
         package_manager_class,
         root_logger)
 
-    output = package_manager.install(Package('tree'), Package('diffutils'))
+    output = package_manager.install(*packages)
 
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
@@ -1465,7 +1558,13 @@ def test_install_multiple(
 
 
 def _parametrize_test_install_downloaded() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            tuple[Package, Package],
+            str,
+            Optional[str],
+            Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -1473,29 +1572,50 @@ def _parametrize_test_install_downloaded() -> \
                 yield pytest.param(
                     container,
                     package_manager_class,
+                    (Package('tree'), Package('diffutils')),
                     r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true",  # noqa: E501
                     'Complete!',
                     None,
                     marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command")
                     )
 
+            elif 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dconf'), Package('libpng')), \
+                    r"yum install -y --skip-broken /tmp/dconf.rpm /tmp/libpng.rpm \|\| /bin/true", \
+                    'Complete!', \
+                    None  # noqa: E501
+
             else:
                 yield container, \
                     package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
                     r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
                     'Complete!', \
                     None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            yield container, \
-                package_manager_class, \
-                r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
-                'Complete!', \
-                None
+            if 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dconf'), Package('libpng')), \
+                    r"dnf install -y  /tmp/dconf.rpm /tmp/libpng.rpm", \
+                    'Complete!', \
+                    None
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
+                    r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                    'Complete!', \
+                    None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"dnf5 install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
                 None, \
                 None
@@ -1503,6 +1623,7 @@ def _parametrize_test_install_downloaded() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
+                (Package('tree'), Package('diffutils')), \
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree.rpm /tmp/diffutils.rpm", \
                 'Installing: tree', \
                 None  # noqa: E501
@@ -1511,6 +1632,7 @@ def _parametrize_test_install_downloaded() -> \
             yield pytest.param(
                 container,
                 package_manager_class,
+                (Package('tree'), Package('diffutils')),
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils",  # noqa: E501
                 'Setting up tree',
                 None,
@@ -1521,6 +1643,7 @@ def _parametrize_test_install_downloaded() -> \
             yield pytest.param(
                 container,
                 package_manager_class,
+                (Package('tree'), Package('diffutils')),
                 r"apk info -e tree diffutils \|\| apk add tree diffutils",
                 'Installing tree',
                 None,
@@ -1534,6 +1657,7 @@ def _parametrize_test_install_downloaded() -> \
 @pytest.mark.containers()
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
+                          'packages',
                           'expected_command',
                           'expected_stdout',
                           'expected_stderr'),
@@ -1544,6 +1668,7 @@ def test_install_downloaded(
         container_per_test: ContainerData,
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
+        packages: tuple[Package, Package],
         expected_command: str,
         expected_stdout: Optional[str],
         expected_stderr: Optional[str],
@@ -1555,13 +1680,15 @@ def test_install_downloaded(
         package_manager_class,
         root_logger)
 
+    installables = tuple(PackagePath(f'/tmp/{package}.rpm') for package in packages)
+
     # TODO: move to a fixture
     guest_per_test.execute(ShellScript(
-        """
-        (yum download --destdir /tmp tree diffutils \
-        || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp tree diffutils) \
-        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp tree diffutils)) \
-        && mv /tmp/tree*.rpm /tmp/tree.rpm && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm
+        f"""
+        (yum download --destdir /tmp {packages[0]} {packages[1]} \
+        || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp {packages[0]} {packages[1]}) \
+        || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp {packages[0]} {packages[1]})) \
+        && mv /tmp/{packages[0]}*.x86_64.rpm /tmp/{packages[0]}.rpm && mv /tmp/{packages[1]}*.x86_64.rpm /tmp/{packages[1]}.rpm
         """))  # noqa: E501
 
     # TODO: yum and downloaded packages results in post-install `rpm -q`
@@ -1571,8 +1698,7 @@ def test_install_downloaded(
     # "solution".
     if package_manager_class is tmt.package_managers.dnf.Yum:
         output = package_manager.install(
-            PackagePath('/tmp/tree.rpm'),
-            PackagePath('/tmp/diffutils.rpm'),
+            *installables,
             options=Options(
                 check_first=False,
                 skip_missing=True
@@ -1580,8 +1706,7 @@ def test_install_downloaded(
 
     else:
         output = package_manager.install(
-            PackagePath('/tmp/tree.rpm'),
-            PackagePath('/tmp/diffutils.rpm'),
+            *installables,
             options=Options(
                 check_first=False
                 ))
@@ -1628,6 +1753,14 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     None,
                     marks=pytest.mark.skip(
                         reason='centos comes without debuginfo repos, we do not enable them yet'))
+
+            elif 'ubi/8' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('dconf'), Package('libpng')), \
+                    r"debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo", \
+                    None, \
+                    None  # noqa: E501
 
             else:
                 yield container, \

@@ -303,7 +303,6 @@ For example, the following images can be found:
 
     # Various CentOS releases:
     localhost/tmt/tests/container/centos/7
-    localhost/tmt/tests/container/centos/stream8
     localhost/tmt/tests/container/centos/stream9
 
     # Fedora rawhide, with dnf5 pre-installed:

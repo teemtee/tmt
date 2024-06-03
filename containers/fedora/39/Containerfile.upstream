@@ -4,7 +4,7 @@
 # tmt/tests/fedora/39/upstream:latest
 #
 
-FROM registry.fedoraproject.org/fedora:39
+FROM quay.io/fedora/fedora:39
 
     # Populate dnf cache
 RUN dnf makecache

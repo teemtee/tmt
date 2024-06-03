@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    images="centos:stream9 centos:stream8 ubi9 ubi8"
+    images="centos:stream9 localhost/tmt/tests/container/ubi/8/upstream:latest ubi9 ubi8"
 
     # EPEL
     for image in $images; do

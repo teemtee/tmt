@@ -14,7 +14,7 @@ rlJournalStart
             # For container provision try centos images as well
             if [[ $PROVISION_HOW == container ]]; then
                 rlRun "tmt run -arv provision -h $PROVISION_HOW -i centos:7 plan -n /$plan"
-                rlRun "tmt run -arv provision -h $PROVISION_HOW -i centos:stream8 plan -n /$plan"
+                rlRun "tmt run -arv provision -h $PROVISION_HOW -i localhost/tmt/tests/container/ubi/8/upstream:latest plan -n /$plan"
             fi
 
             # After the local provision remove the test file

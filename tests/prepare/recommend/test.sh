@@ -18,7 +18,7 @@ rlJournalStart
 
     # Check CentOS images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in centos:7 centos:stream8; do
+        for image in centos:7 localhost/tmt/tests/container/ubi/8/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
                 rlRun "$tmt --image $image $basic"
             rlPhaseEnd
