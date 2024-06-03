@@ -3,10 +3,15 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        . ../../images.sh || exit 1
+
+        build_container_image "centos/stream9/upstream\:latest"
+        build_container_image "ubi/8/upstream\:latest"
+
         rlRun "pushd data"
     rlPhaseEnd
 
-    images="centos:stream9 localhost/tmt/tests/container/ubi/8/upstream:latest ubi9 ubi8"
+    images="$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9"
 
     # EPEL
     for image in $images; do

@@ -10,15 +10,15 @@ adjust:
     # Applies to every distro...
   - when: distro != rhel-8
     prepare+:
-      how: install
-      package:
-        - tree
-        - diffutils
+      - how: install
+        package:
+          - tree
+          - diffutils
 
     # ... except UBI8 which is a RHEL-8.
   - when: distro == rhel-8
     prepare+:
-      how: install
-      package:
-        - dconf
-        - libpng
+      - how: install
+        package:
+          - dconf
+          - libpng

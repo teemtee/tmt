@@ -6,15 +6,19 @@ rlJournalStart
         rlRun "output=\$(mktemp)" 0 "Create output file"
         rlRun "pushd data"
         rlRun "set -o pipefail"
+
+        . ../../../images.sh || exit 1
+        build_container_image "centos/7/upstream\:latest"
+        build_container_image "ubi/8/upstream\:latest"
     rlPhaseEnd
 
     for plan in without defined; do
         for test in without defined; do
             # Skip when both/none define required packages
             [[ $plan == $test ]] && continue
-            for image in localhost/tmt/tests/container/centos/7/upstream:latest localhost/tmt/tests/container/ubi/8/upstream:latest; do
+            for image in $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
                 rlPhaseStartTest "Test: Plan $plan, test $test, image $distro"
-                    if [ "$image" = "localhost/tmt/tests/container/centos/7/upstream:latest" ]; then
+                    if [ "$image" = "$TEST_IMAGE_PREFIX/centos/7/upstream:latest" ]; then
                         distro="centos-7"
                     else
                         distro="centos-stream-8"
@@ -25,7 +29,7 @@ rlJournalStart
                     cmd+="2>&1 | tee $output"
                     rlRun "$cmd"
                     rlAssertGrep 'out: Smoke test for yaml' $output
-                    if [[ $image == "localhost/tmt/tests/container/ubi/8/upstream:latest" ]]; then
+                    if [[ $image == "$TEST_IMAGE_PREFIX/ubi/8/upstream:latest" ]]; then
                         rlAssertGrep 'python3-yaml' $output
                         rlAssertNotGrep 'PyYAML' $output
                     else

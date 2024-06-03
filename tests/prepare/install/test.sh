@@ -130,10 +130,8 @@ rlJournalStart
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$CONTAINER_IMAGES'"
 
-            # Try several times to build the container
-            # https://github.com/teemtee/tmt/issues/2063
-            build="make -C ../../../ images-tests"
-            rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
+            . ../../images.sh || exit 1
+            build_container_images
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$VIRTUAL_IMAGES'"

@@ -5,10 +5,9 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         if [[ "$PROVISION_HOW" == "container" ]]; then
-            # Try several times to build the container
-            # https://github.com/teemtee/tmt/issues/2063
-            build="make -C ../../../ images-tests/tmt/tests/container/fedora/rawhide/unprivileged\:latest"
-            rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the image"
+            . ../../images.sh || exit 1
+
+            build_container_image "fedora/rawhide/unprivileged\:latest"
         fi
         rlRun "pushd data"
     rlPhaseEnd

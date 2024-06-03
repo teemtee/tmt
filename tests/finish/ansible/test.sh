@@ -4,6 +4,14 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
+
+        if [ "$PROVISION_HOW" = "container" ]; then
+            . ../../images.sh || exit 1
+
+            build_container_image "ubi/8/upstream\:latest"
+            build_container_image "centos/7/upstream\:latest"
+        fi
+
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
     rlPhaseEnd
@@ -19,8 +27,8 @@ rlJournalStart
 
         # For container provision try centos images as well
         if [[ $PROVISION_HOW == container ]]; then
-            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i centos:7"
-            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i localhost/tmt/tests/container/ubi/8/upstream:latest"
+            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/centos/7/upstream:latest"
+            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/ubi/8/upstream:latest"
         fi
 
         # After the local provision remove the test file
