@@ -30,7 +30,7 @@ function build_container_image () {
 
 
 function build_container_images () {
-    if [ "$PROVISION_HOW" != "container" ]; then
+    if [ "$PROVISION_HOW" != "container" ] && [ "$1" != "--force" ]; then
         rlLogInfo "Skipping the build of container images because of PROVISION_HOW=$PROVISION_HOW"
         return
     fi

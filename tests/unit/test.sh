@@ -37,7 +37,7 @@ rlJournalStart
         rlLogInfo "hatch is $(which hatch), $(hatch --version)"
 
         . ../images.sh || exit 1
-        build_container_images
+        build_container_images --force
     rlPhaseEnd
 
     if [ "$WITH_SYSTEM_PACKAGES" = "yes" ]; then
