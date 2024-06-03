@@ -1,18 +1,19 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 # TODO: should these variables exist outside of this test, for all tests
 # to share?
-CONTAINER_IMAGES="${CONTAINER_IMAGES:-localhost/tmt/tests/container/fedora/rawhide/upstream:latest
-localhost/tmt/tests/container/fedora/40/upstream:latest
-localhost/tmt/tests/container/fedora/39/upstream:latest
-localhost/tmt/tests/container/centos/stream9/upstream:latest
-localhost/tmt/tests/container/centos/7/upstream:latest
-localhost/tmt/tests/container/ubi/8/upstream:latest
-localhost/tmt/tests/container/ubuntu/22.04/upstream:latest
-localhost/tmt/tests/container/alpine:latest
-localhost/tmt/tests/container/fedora/coreos:stable
-localhost/tmt/tests/container/fedora/coreos/ostree:stable}"
+CONTAINER_IMAGES="${CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/40/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/39/upstream:latest
+$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
+$TEST_IMAGE_PREFIX/centos/7/upstream:latest
+$TEST_IMAGE_PREFIX/ubi/8/upstream:latest
+$TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
+$TEST_IMAGE_PREFIX/alpine:latest
+$TEST_IMAGE_PREFIX/fedora/coreos:stable
+$TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable}"
 
 # TODO: enable Ubuntu
 VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide
@@ -130,7 +131,6 @@ rlJournalStart
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$CONTAINER_IMAGES'"
 
-            . ../../images.sh || exit 1
             build_container_images
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then

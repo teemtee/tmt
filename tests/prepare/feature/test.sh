@@ -1,9 +1,9 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
-        . ../../images.sh || exit 1
 
         build_container_image "centos/stream9/upstream\:latest"
         build_container_image "ubi/8/upstream\:latest"

@@ -1,16 +1,13 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
-            . ../../images.sh || exit 1
-
-            build_container_image "ubi/8/upstream\:latest"
-            build_container_image "centos/7/upstream\:latest"
-        fi
+        build_container_image "ubi/8/upstream\:latest"
+        build_container_image "centos/7/upstream\:latest"
 
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"

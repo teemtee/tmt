@@ -1,18 +1,15 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
-            . ../../../images.sh || exit 1
-
-            build_container_image "ubi/8/upstream\:latest"
-            build_container_image "centos/7/upstream\:latest"
-            build_container_image "fedora/rawhide/upstream\:latest"
-        fi
+        build_container_image "ubi/8/upstream\:latest"
+        build_container_image "centos/7/upstream\:latest"
+        build_container_image "fedora/rawhide/upstream\:latest"
     rlPhaseEnd
 
     tmt="tmt run --all --remove provision --how $PROVISION_HOW"

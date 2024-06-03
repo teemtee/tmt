@@ -1,10 +1,14 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
+
+        build_container_image "centos/7/upstream\:latest"
+        build_container_image "ubi/8/upstream\:latest"
     rlPhaseEnd
 
     for plan in "local" "remote"; do
@@ -13,8 +17,8 @@ rlJournalStart
 
             # For container provision try centos images as well
             if [[ $PROVISION_HOW == container ]]; then
-                rlRun "tmt run -arv provision -h $PROVISION_HOW -i centos:7 plan -n /$plan"
-                rlRun "tmt run -arv provision -h $PROVISION_HOW -i localhost/tmt/tests/container/ubi/8/upstream:latest plan -n /$plan"
+                rlRun "tmt run -arv provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/centos/7/upstream:latest plan -n /$plan"
+                rlRun "tmt run -arv provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/ubi/8/upstream:latest plan -n /$plan"
             fi
 
             # After the local provision remove the test file
