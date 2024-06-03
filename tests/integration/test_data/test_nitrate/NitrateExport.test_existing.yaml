@@ -462,7 +462,7 @@ nitrate.xmlrpc_driver:
         description: ''
         id: 253268
         summary: ''
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

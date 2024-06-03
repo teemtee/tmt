@@ -326,7 +326,7 @@ nitrate.xmlrpc_driver:
         summary: tmt /validation
         tag:
         - 10700
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

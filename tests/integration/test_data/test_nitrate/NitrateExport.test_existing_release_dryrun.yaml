@@ -331,7 +331,7 @@ nitrate.xmlrpc_driver:
       - single_request_with_cookies
     output:
     - []
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

@@ -16,7 +16,8 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
 import tmt.utils
-from tmt.utils import ContainerClass, Path, render_template_file
+from tmt.utils import ContainerClass, Path
+from tmt.utils.templates import render_template_file
 
 REVIEWED_PLUGINS: tuple[str, ...] = (
     'prepare/ansible',

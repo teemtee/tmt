@@ -12,6 +12,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.git
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
@@ -285,7 +286,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
         # Clone first - it might clone dist git
         self.info('url', url, 'green')
-        tmt.utils.git_clone(
+        tmt.utils.git.git_clone(
             url=url,
             destination=testdir,
             shallow=ref is None,
@@ -309,7 +310,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             self.run(Command('git', 'checkout', '-f', ref), cwd=testdir)
 
         # Log where HEAD leads to
-        self.debug('hash', tmt.utils.git_hash(
+        self.debug('hash', tmt.utils.git.git_hash(
             directory=testdir,
             logger=self._logger
             ))
@@ -353,7 +354,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 # Copy .git which is excluded when worktree is initialized
                 tree_root = Path(self.step.plan.node.root)
                 # If exists, git_root can be only the same or parent of fmf_root
-                git_root = tmt.utils.git_root(fmf_root=tree_root, logger=self._logger)
+                git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
                 if git_root:
                     if git_root != tree_root:
                         raise tmt.utils.DiscoverError(

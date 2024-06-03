@@ -84,7 +84,7 @@ endef
 
 code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py \
                            $(TEMPLATESDIR)/template-filters.rst.j2 \
-                           $(TMTDIR)/utils/__init__.py
+                           $(TMTDIR)/utils/templates.py
 	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
 
 plugins/discover.rst: $(call plugins-dependencies)

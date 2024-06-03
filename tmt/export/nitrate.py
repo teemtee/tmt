@@ -19,6 +19,7 @@ from click import echo, style
 import tmt.export
 import tmt.identifier
 import tmt.utils
+import tmt.utils.git
 from tmt.utils import ConvertError, Path
 
 if TYPE_CHECKING:
@@ -396,7 +397,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         general = True
 
     # Check git is already correct
-    valid, error_msg = tmt.utils.validate_git_status(test)
+    valid, error_msg = tmt.utils.git.validate_git_status(test)
     if not valid:
         if ignore_git_validation:
             echo(style(f"Exporting regardless '{error_msg}'.", fg='red'))
@@ -445,7 +446,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         raise ConvertError(error)
 
     # Check if URL is accessible, to be able to reach from nitrate
-    tmt.utils.check_git_url(test.fmf_id.url)
+    tmt.utils.git.check_git_url(test.fmf_id.url, test._logger)
 
     # Summary
     try:
