@@ -11,6 +11,7 @@ rlJournalStart
 
             build_container_image "ubi/8/upstream\:latest"
             build_container_image "centos/7/upstream\:latest"
+            build_container_image "fedora/rawhide/upstream\:latest"
         fi
     rlPhaseEnd
 
@@ -25,7 +26,7 @@ rlJournalStart
 
     # Check CentOS images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in localhost/tmt/tests/container/centos/7/upstream:latest localhost/tmt/tests/container/ubi/8/upstream:latest; do
+        for image in $TEST_IMAGE_PREFIX/centos/7/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
                 rlRun "$tmt --image $image $basic"
             rlPhaseEnd
@@ -35,7 +36,7 @@ rlJournalStart
     # Check debuginfo install (only for supported distros)
     # https://bugzilla.redhat.com/show_bug.cgi?id=1964505
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in fedora centos:7; do
+        for image in $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW) [debuginfo]"
                 rlRun "$tmt --image $image $debuginfo"
             rlPhaseEnd
