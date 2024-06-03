@@ -5,6 +5,13 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
+
+        if [ "$PROVISION_HOW" = "container" ]; then
+            . ../../../images.sh || exit 1
+
+            build_container_image "ubi/8/upstream\:latest"
+            build_container_image "centos/7/upstream\:latest"
+        fi
     rlPhaseEnd
 
     tmt="tmt run --all --remove provision --how $PROVISION_HOW"
@@ -18,7 +25,7 @@ rlJournalStart
 
     # Check CentOS images for container provision
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in centos:7 localhost/tmt/tests/container/ubi/8/upstream:latest; do
+        for image in localhost/tmt/tests/container/centos/7/upstream:latest localhost/tmt/tests/container/ubi/8/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW)"
                 rlRun "$tmt --image $image $basic"
             rlPhaseEnd
