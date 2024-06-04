@@ -8,7 +8,8 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.package_managers import Package
-from tmt.steps.prepare import PreparePlugin, _RawPrepareStepData
+from tmt.steps.prepare import PreparePlugin
+from tmt.steps.prepare.install import _RawPrepareInstallStepData
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript, field, uniq
 
@@ -53,7 +54,7 @@ def insert_to_prepare_step(
     prepare_step = discover_plugin.step.plan.prepare
     where = cast(tmt.steps.discover.DiscoverStepData, discover_plugin.data).where
     # Future install require
-    data_require: _RawPrepareStepData = {
+    data_require: _RawPrepareInstallStepData = {
         'how': 'install',
         'name': 'requires (dist-git)',
                 'summary': 'Install required packages of tests detected by dist-git',
@@ -66,7 +67,7 @@ def insert_to_prepare_step(
     prepare_step._phases.append(future_requires)
 
     # Future install recommend
-    data_recommend: _RawPrepareStepData = {
+    data_recommend: _RawPrepareInstallStepData = {
         'how': 'install',
         'name': 'recommends (dist-git)',
                 'summary': 'Install recommended packages of tests detected by dist-git',

@@ -1,4 +1,3 @@
-import collections
 import copy
 import dataclasses
 from typing import (
@@ -48,14 +47,8 @@ class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 PrepareStepDataT = TypeVar('PrepareStepDataT', bound=PrepareStepData)
 
 
-class _RawPrepareStepData(tmt.steps._RawStepData, total=False):
-    where: Optional[list[str]]
-    package: list[str]
-    missing: str
-    roles: collections.defaultdict[str, list[str]]
-    hosts: dict[str, str]
-    order: int
-    summary: str
+class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps._RawWhereableStepData, total=False):
+    pass
 
 
 class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT]):
@@ -277,6 +270,8 @@ class Prepare(tmt.steps.Step):
         #
         # 1. make the list of requirements unique,
         # 2. group guests with same requirements.
+        from tmt.steps.prepare.install import _RawPrepareInstallStepData
+
         pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
         pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
 
@@ -302,7 +297,7 @@ class Prepare(tmt.steps.Step):
             if not collection.dependencies:
                 continue
 
-            data: _RawPrepareStepData = {
+            data: _RawPrepareInstallStepData = {
                 'how': 'install',
                 'name': 'requires',
                 'summary': 'Install required packages',

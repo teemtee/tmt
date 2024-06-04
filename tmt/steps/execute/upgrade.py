@@ -15,7 +15,8 @@ from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
-from tmt.steps.prepare import PreparePlugin, _RawPrepareStepData
+from tmt.steps.prepare import PreparePlugin
+from tmt.steps.prepare.install import _RawPrepareInstallStepData
 from tmt.utils import Environment, EnvVarValue, Path, field
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
@@ -266,7 +267,7 @@ class ExecuteUpgrade(ExecuteInternal):
             recommends: bool = False) -> None:
         """ Install packages required/recommended for upgrade """
         phase_name = 'recommended' if recommends else 'required'
-        data: _RawPrepareStepData = {
+        data: _RawPrepareInstallStepData = {
             'how': 'install',
             'name': f'{phase_name}-packages-upgrade',
             'summary': f'Install packages {phase_name} by the upgrade',
