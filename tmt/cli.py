@@ -1750,6 +1750,9 @@ def init(
     "-l", "--login", is_flag=True, default=False,
     help="Log into the guest only, do not run any tests.")
 @option(
+    "--epel", is_flag=True, default=False,
+    help="Enable epel repository.")
+@option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")
 @verbosity_options
