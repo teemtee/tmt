@@ -1,3 +1,5 @@
 summary: Common feature to enable/disable EPEL
 description:
     Make sure enable/disable EPEL works.
+tag+:
+  - provision-container

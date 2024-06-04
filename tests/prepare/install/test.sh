@@ -19,7 +19,6 @@ $TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable}"
 VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide
 fedora-39
 centos-stream-9
-centos-stream-8
 centos-7
 fedora-coreos}"
 

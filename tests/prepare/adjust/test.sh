@@ -4,6 +4,8 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+
         rlRun "output=\$(mktemp)" 0 "Create output file"
         rlRun "pushd data"
         rlRun "set -o pipefail"

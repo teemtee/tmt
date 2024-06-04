@@ -4,6 +4,7 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
 
         build_container_image "centos/stream9/upstream\:latest"
         build_container_image "ubi/8/upstream\:latest"
