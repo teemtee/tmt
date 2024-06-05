@@ -628,10 +628,6 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     def load(self) -> None:
         """ Load status and step data from the workdir """
-        if self.should_run_again and isinstance(self, tmt.steps.discover.Discover):
-            self.debug('Run discover again when reexecuting to capture changes in plans')
-            return
-
         try:
             raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
 

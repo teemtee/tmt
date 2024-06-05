@@ -181,7 +181,11 @@ class Discover(tmt.steps.Step):
 
     def load(self) -> None:
         """ Load step data from the workdir """
-        super().load()
+        if self.should_run_again:
+            self.debug('Run discover again when reexecuting to capture changes in plans')
+        else:
+            super().load()
+
         try:
             raw_test_data = tmt.utils.yaml_to_list(self.read(Path('tests.yaml')))
 
