@@ -956,11 +956,9 @@ class Guest(tmt.utils.Common):
         self.debug(f"Applying playbook '{playbook}' on guest '{self.primary_address}'.")
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
-        assert parent.plan.my_run is not None  # narrow type
-        assert parent.plan.my_run.tree is not None  # narrow type
-        assert parent.plan.my_run.tree.root is not None  # narrow type
+        assert parent.plan.fmf_root is not None  # narrow type
         # Playbook paths should be relative to the metadata tree root
-        playbook = parent.plan.my_run.tree.root / playbook.unrooted()
+        playbook = parent.plan.fmf_root / playbook.unrooted()
         self.debug(f"Playbook full path: '{playbook}'", level=2)
         return playbook
 
