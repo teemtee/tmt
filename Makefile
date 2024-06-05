@@ -114,7 +114,7 @@ image/tests/fedora/rawhide/unprivileged:
 ## Development
 ##
 develop: _deps  ## Install development requirements
-	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah
+	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
 
 # Git vim tags and cleanup
 tags:
