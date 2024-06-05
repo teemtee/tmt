@@ -380,19 +380,17 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         launch_attributes = self.construct_launch_attributes(suite_per_plan, attributes)
 
         if suite_per_plan:
-            launch_description = self.data.launch_description
-            suite_description = self.step.plan.summary or ""
-            if (self.data.upload_to_launch and suite_per_plan):
-                suite_description = self.append_description(suite_description)
+            launch_description = self.data.launch_description or ""
+            suite_description = self.append_description(self.step.plan.summary or "")
         else:
             launch_description = self.step.plan.summary or ""
             launch_description = self.append_description(launch_description)
+            suite_description = ""
 
         # Check whether artifacts URL has been provided
-        if not launch_description:
-            launch_description = self.data.artifacts_url
-        elif self.data.artifacts_url:
-            launch_description = f"{launch_description}, {self.data.artifacts_url}"
+        if self.data.artifacts_url:
+            launch_description += f"<br>{self.data.artifacts_url}"
+            suite_description += f"<br>{self.data.artifacts_url}"
 
         # Communication with RP instance
         with tmt.utils.retry_session() as session:
