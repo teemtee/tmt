@@ -484,7 +484,10 @@ def run_plans(context: Context, **kwargs: Any) -> None:
          """)
 @option(
     '--failed-only', is_flag=True, default=False,
-    help="Filter failed tests from a previous run. Used when rerunning existing runs.")
+    help="""
+         Select only failed tests from a previous run.
+         Used when rerunning existing runs and requires either --id or --last option.
+         """)
 @verbosity_options
 def run_tests(context: Context, **kwargs: Any) -> None:
     """

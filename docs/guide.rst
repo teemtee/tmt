@@ -923,10 +923,10 @@ to keep all the data for full report.
 
 .. code-block:: shell
 
-    $ tmt run --all
+    $ tmt run
     # Some tests fail, some pass
 
-    $ tmt run --last discover tests --failed-only
+    $ tmt run --last --again discover tests --failed-only
     # Discover tests to rerun
 
     $ tmt run --all --last --again tests --failed-only
