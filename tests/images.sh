@@ -25,7 +25,7 @@ function build_container_image () {
     # Try several times to build the container
     # https://github.com/teemtee/tmt/issues/2063
     build="make -C $_MAKEFILE_DIR images-tests/tmt/tests/container/$1"
-    rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the image"
+    rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the image"
 }
 
 
@@ -38,5 +38,5 @@ function build_container_images () {
     # Try several times to build the container
     # https://github.com/teemtee/tmt/issues/2063
     build="make -C $_MAKEFILE_DIR images-tests"
-    rlRun "rlWaitForCmd '$build' -m 5 -d 5 -t 3600" || rlDie "Unable to prepare the images"
+    rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the images"
 }
