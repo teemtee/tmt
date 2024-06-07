@@ -49,6 +49,7 @@ from tmt.utils import (
     field,
     key_to_option,
     option_to_key,
+    render_template,
     )
 
 if TYPE_CHECKING:
@@ -1227,7 +1228,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         slash characters, ``/``.
         """
 
-        return tmt.utils.sanitize_name(self.name, allow_slash=False)
+        return self.pathless_safe_name
 
     @classmethod
     def base_command(
@@ -2290,11 +2291,11 @@ def sync_with_guests(
             from failed_actions[0].exc
 
 
-def safe_filename(basename: str, phase: Phase, guest: 'Guest') -> Path:
+def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any) -> Path:
     """
     Construct a non-conflicting filename safe for parallel tasks.
 
-    Function adds enough uniqueness to the starting base name by adding a phase
+    Function adds enough uniqueness to a given template by adding a phase
     name and a guest name that the eventual filename would be safe against
     conflicting access from a phase running on multiple guests, and against
     reuse when created by the same plugin in different phases.
@@ -2318,6 +2319,20 @@ def safe_filename(basename: str, phase: Phase, guest: 'Guest') -> Path:
        re-used by different plugin executions. Adding the phase name should
        lower confusion: it would be immediately clear which phase used which
        filename, or whether a filename was or was not created by given phase.
+
+    :param template: filename template. It is enhanced with ``phase``
+        and ``guest`` safe name, but may use other variables provided
+        in ``variables``.
+    :param phase: a phase owning the resulting filename.
+    :param guest: a guest on which the filename would be used.
+    :param variables: additional variables ``template`` need when
+        rendering the filename.
     """
 
-    return Path(f'{basename}-{phase.safe_name}-{guest.safe_name}')
+    template += '-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
+
+    return Path(render_template(
+        template,
+        PHASE=phase,
+        GUEST=guest,
+        **variables))
