@@ -237,6 +237,112 @@ __ https://github.com/beakerlib/beakerlib
 __ https://requre.readthedocs.io/en/latest/
 
 
+Images
+------------------------------------------------------------------
+
+Tests which exercise the :ref:`/spec/plans/provision/container`
+provisioning plugin with various guest environments should use the
+custom-built set of container images rather than using the upstream ones
+directly. We built custom images to have better control over the initial
+environment setup, especially when it comes to essential requirements
+and assumption tmt makes about the guest setup. The naming scheme also
+provides better information about content of these images when compared
+to very varied upstream locations.
+
+Naming scheme
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All our test images follow a simple naming pattern:
+
+    ``localhost/tmt/tests/BACKEND/DISTRIBUTION/RELEASE/EXTRAS:TAG``
+
+``localhost/tmt/tests``
+    To make it clear the image was built locally, it is owned by tmt,
+    and it is not packaging tmt but serves for testing purposes only.
+
+``BACKEND``
+    There are various kinds of "images", the most well-known ones would
+    be Docker/Podman images, their names would contain ``container``
+    flag, and QCOW2 images for VMs which would be labeled with
+    ``virtual``.
+
+``DISTRIBUTION``
+    A lower-cased name of the Linux distribution hosted in the image:
+    ``fedora``, ``ubuntu``, ``alpine``, etc.
+
+``RELEASE``
+    A release of the ``DISTRIBUTION``: ``7`` for CentOS 7, ``stream9``
+    for CentOS Stream 9, or ``40``, ``rawhide`` and even ``coreos`` for
+    Fedora.
+
+``EXTRAS``
+    Additional flags describing a "flavor" of the image:
+
+    * ``upstream`` images are identical to an upstream image, adding no
+      special setup on top of the upstream.
+    * ``unprivileged`` images come with password-less ``sudo`` setup and
+      may be used when unprivileged access is part of the test.
+    * ``ostree`` images are Fedora CoreOS that simulate being deployed
+      by `ostree`__.
+
+``TAG``
+    Usually ``latest`` as in "the latest image for this distro, release
+    and extra flags".
+
+    .. note::
+        So far we do not have much use for other tags besides
+        ``latest``. ``stable`` used for Fedora CoreOS images will
+        probably go away in favor of ``latest``.
+
+For example, the following images can be found:
+
+.. code-block::
+
+    # Latest Alpine, with added Bash to simulate proper essential setup:
+    localhost/tmt/tests/container/alpine
+
+    # Various CentOS releases:
+    localhost/tmt/tests/container/centos/7
+    localhost/tmt/tests/container/centos/stream9
+
+    # Fedora rawhide, with dnf5 pre-installed:
+    localhost/tmt/tests/container/fedora/rawhide
+
+    # Same, but with password-less sudo set up:
+    localhost/tmt/tests/container/fedora/rawhide/unprivileged
+
+__ https://ostreedev.github.io/ostree/
+
+To build these images, run the following:
+
+.. code-block:: shell
+
+    # Build all images...
+    make images-tests
+
+    # ... or just a single one:
+    make images-tests/tmt/tests/container/fedora/rawhide:latest
+
+Tests that need to use various container images should trigger this
+command before running the actual test cases:
+
+.. code-block:: bash
+
+    rlRun "make -C images-tests"
+
+To list built container images, run the following:
+
+.. code-block:: shell
+
+    podman images | grep 'localhost/tmt/tests/' | sort
+
+To remove these images from your local system, run the following:
+
+.. code-block:: shell
+
+    make clean-test-images
+
+
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

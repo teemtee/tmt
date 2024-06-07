@@ -1,0 +1,10 @@
+#
+# A CentOS Stream 9 image tailored for tmt test suite
+#
+# tmt/tests/centos/stream9/upstream:latest
+#
+
+FROM quay.io/centos/centos:stream9
+
+    # Populate dnf cache
+RUN dnf makecache

@@ -1,10 +1,10 @@
 #
-# A Fedora rawhide image tailored for tmt test suite
+# A Fedora 39 image tailored for tmt test suite
 #
-# tmt/tests/fedora/rawhide:latest
+# tmt/tests/fedora/39:latest
 #
 
-FROM quay.io/fedora/fedora:rawhide
+FROM quay.io/fedora/fedora:39
 
     # Populate dnf cache
 RUN    dnf makecache \

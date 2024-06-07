@@ -1,12 +1,18 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+
+        build_container_image "centos/stream9/upstream\:latest"
+        build_container_image "ubi/8/upstream\:latest"
+
         rlRun "pushd data"
     rlPhaseEnd
 
-    images="centos:stream9 centos:stream8 ubi9 ubi8"
+    images="$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest $TEST_IMAGE_PREFIX/ubi/8/upstream:latest ubi9"
 
     # EPEL
     for image in $images; do

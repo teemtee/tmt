@@ -1,6 +1,6 @@
 /mixed:
-    test: rpm -q tree
-    recommend: [tree, forest]
+    test: rpm -q dconf
+    recommend: [dconf, forest]
 
 /debuginfo:
     test: rpm -q grep-debuginfo

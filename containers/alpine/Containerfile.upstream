@@ -1,0 +1,10 @@
+#
+# An Alpine image tailored for tmt test suite
+#
+# tmt/tests/alpine/upstream:latest
+#
+
+FROM docker.io/library/alpine:3.19
+
+    # Populate apk cache
+RUN apk update
