@@ -259,7 +259,8 @@ description: |
 
         Patches are applied by ``rpm-build -bp`` command which
         runs in ``prepare`` step on the provisioned guest, with
-        order ``60``.
+        order ``60``. All created files and directories by this command
+        are directly in ``TMT_SOURCE_DIR``.
 
         .. versionadded:: 1.32
 
