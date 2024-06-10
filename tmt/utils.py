@@ -1570,9 +1570,22 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         Spaces and other special characters are removed to prevent problems with
         tools which do not expect them (e.g. in directory names).
+
+        Unlike :py:meth:`pathless_safe_name`, this property preserves
+        slashes, ``/``.
         """
 
         return sanitize_name(self.name)
+
+    @cached_property
+    def pathless_safe_name(self) -> str:
+        """
+        A safe variant of the name which does not contain any special characters.
+
+        Unlike :py:attr:`safe_name`, this property removes even slashes, ``/``.
+        """
+
+        return sanitize_name(self.name, allow_slash=False)
 
     def __str__(self) -> str:
         """ Name is the default string representation """

@@ -49,7 +49,16 @@ def effective_pidfile_root() -> Path:
     return TEST_PIDFILE_ROOT
 
 
-TEST_WRAPPER_FILENAME = 'tmt-test-wrapper.sh'
+#: A template for the shell wrapper in which the test script is
+#: saved.
+#:
+#: It is passed to :py:func:`tmt.utils.safe_filename`, but
+#: includes also test name and serial number to make it unique
+#: even among all test wrappers. See https://github.com/teemtee/tmt/issues/2997
+#: for issue motivating the inclusion, it seems to be a good idea
+#: to prevent accidental reuse in general.
+TEST_WRAPPER_FILENAME_TEMPLATE = \
+    'tmt-test-wrapper.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
 
 # tmt test wrapper is getting complex. Besides honoring the timeout
 # and interactivity request, it also must play nicely with reboots
@@ -307,7 +316,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # the same `discover` phase for different guests at the same time, and
         # must keep them isolated. The wrapper script, while being prepared, is
         # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = safe_filename(TEST_WRAPPER_FILENAME, self, guest)
+        test_wrapper_filename = safe_filename(
+            TEST_WRAPPER_FILENAME_TEMPLATE, self, guest, INVOCATION=invocation)
         test_wrapper_filepath = workdir / test_wrapper_filename
 
         logger.debug('test wrapper', test_wrapper_filepath)
