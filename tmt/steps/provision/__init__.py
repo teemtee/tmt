@@ -519,12 +519,13 @@ def normalize_hardware(
                 if components.name not in merged:
                     merged[components.name] = []
 
+                # Calculate the number of placeholders needed.
+                placeholders = components.peer_index - len(merged[components.name]) + 1
+                
                 # Fill in empty spots between the existing ones and the
                 # one we're adding with placeholders.
-                if len(merged[components.name]) <= components.peer_index:
-                    merged[components.name] += [
-                        {} for _ in range(components.peer_index - len(merged[components.name]) + 1)
-                        ]
+                if placeholders > 0:
+                    merged[components.name].extend([{} for _ in range(placeholders)])
 
                 merged[components.name][components.peer_index][components.child_name] = \
                     f'{components.operator} {components.value}'
