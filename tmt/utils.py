@@ -4355,7 +4355,10 @@ def fmf_id(
         except RunError:
             # We are not on a tag, just use the first available reference
             curr_ref = all_refs.splitlines()[0]
-            fmf_id.ref = curr_ref
+            # Point the ref to the commit
+            commit = run(Command("git", "rev-parse", curr_ref))
+            logger.debug(f"Using commit: {commit}")
+            fmf_id.ref = commit
 
     logger.debug(f"curr_ref used: {curr_ref}")
     remote_name = run(
