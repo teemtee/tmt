@@ -21,6 +21,7 @@ import jinja2
 import jinja2.exceptions
 
 from tmt.utils import GeneralError, Path
+from tmt.utils.git import web_git_url
 
 
 def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -281,6 +282,21 @@ def _template_filter_listed(  # type: ignore[reportUnusedFunction,unused-ignore]
         max=max,
         quote=quote,
         join=join))
+
+
+def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ignore]
+        path_str: str,
+        url: str,
+        ref: str) -> str:
+    """
+    Sanitize git url using :py:meth:`tmt.utils.web_git_url`
+
+    .. code-block:: jinja
+
+        {{ "/"|web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref) }}
+    """
+    path = Path(path_str) if path_str else None
+    return web_git_url(url, ref, path)
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
