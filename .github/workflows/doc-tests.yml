@@ -28,3 +28,9 @@ jobs:
         run: |
           pip install hatch
           hatch run docs:${{ matrix.builder }} ${{ matrix.args }}
+      - name: Debug artifacts
+        uses: actions/upload-artifact@v4
+        with:
+         name: sphinx-${{matrix.builder}}
+         path: docs
+        if: always()
