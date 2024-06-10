@@ -4090,56 +4090,28 @@ def fmf_id(
         *,
         name: str,
         fmf_root: Path,
-        always_get_ref: bool = False,
         logger: tmt.log.Logger) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
-    def run(command: Command) -> str:
-        """ Run command, return output """
-        try:
-            result = command.run(cwd=fmf_root, logger=logger)
-            if result.stdout is None:
-                return ""
-            return result.stdout.strip()
-        except RunError:
-            # Always return an empty string in case 'git' command is run in a non-git repo
-            return ""
-
     from tmt.base import FmfId
+    from tmt.utils.git import GitInfo
 
     fmf_id = FmfId(fmf_root=fmf_root, name=name)
+    git_info = GitInfo.from_fmf_root(fmf_root=fmf_root, logger=logger)
 
-    # Prepare url (for now handle just the most common schemas)
-    branch = run(Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"))
-    try:
-        remote_name = branch[:branch.index('/')]
-    except ValueError:
-        remote_name = 'origin'
-    remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
+    # If we couldn't resolve the git metadata, keep the git metadata empty
+    if not git_info:
+        return fmf_id
 
-    from tmt.utils.git import default_branch, git_root, public_git_url
-    fmf_id.url = public_git_url(remote) if remote else None
-
+    # Populate the git metadata from GitInfo
+    # TODO: Save GitInfo inside FmfId as-is
+    fmf_id.git_root = git_info.git_root
     # Construct path (if different from git root)
-    fmf_id.git_root = git_root(fmf_root=fmf_root, logger=logger)
-
-    if fmf_id.git_root:
-        if fmf_id.git_root.resolve() != fmf_root.resolve():
-            fmf_id.path = Path('/') / fmf_root.relative_to(fmf_id.git_root)
-
-        # Get the ref (skip for the default)
-        fmf_id.default_branch = default_branch(repository=fmf_id.git_root, logger=logger)
-        if fmf_id.default_branch is None:
-            fmf_id.ref = None
-        else:
-            ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
-            if ref != fmf_id.default_branch or always_get_ref:
-                fmf_id.ref = ref
-            else:
-                # Note that it is a valid configuration without having a default
-                # branch here. Consumers of returned fmf_id object should check
-                # the fmf_id contains everything they need.
-                fmf_id.ref = None
+    if fmf_id.git_root.resolve() != fmf_root.resolve():
+        fmf_id.path = Path('/') / fmf_root.relative_to(fmf_id.git_root)
+    fmf_id.ref = git_info.ref
+    fmf_id.url = git_info.url
+    fmf_id.default_branch = git_info.default_branch
 
     return fmf_id
 

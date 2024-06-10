@@ -795,7 +795,6 @@ class Core(
         return tmt.utils.fmf_id(
             name=self.name,
             fmf_root=self.fmf_root,
-            always_get_ref=True,
             logger=self._logger)
 
     @functools.cached_property
