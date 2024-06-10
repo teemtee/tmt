@@ -161,7 +161,7 @@ INDEXABLE_CONSTRAINTS: tuple[str, ...] = (
     'network'
     )
 
-#: A list oc constraint names that do not have child properties.
+#: A list of constraint names that do not have child properties.
 CHILDLESS_CONSTRAINTS: tuple[str, ...] = (
     'arch',
     'memory',
