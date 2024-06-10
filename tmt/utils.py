@@ -4343,7 +4343,7 @@ def fmf_id(
     else:
         # Not on a branch, check if we are on a tag or just a refs
         try:
-            tags = run(Command("git", "describe", "--tags"))
+            tags = run(Command("git", "describe", "--exact-match", "--tags"))
             logger.debug(f"git tags: {tags}")
             # Is it possible to find which tag was used to checkout?
             # Now we just assume the first tag is the one we want
