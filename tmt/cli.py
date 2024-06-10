@@ -1160,6 +1160,9 @@ _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join
 @option(
     '--finish', metavar='YAML', multiple=True,
     help='Finish phase content in yaml format.')
+@option(
+    '--link', metavar='[RELATION:]TARGET', multiple=True,
+    help='Link to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def plans_create(
@@ -1345,6 +1348,9 @@ _story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], jo
     '-t', '--template', metavar='TEMPLATE',
     prompt=f'Template ({_story_templates})',
     help=f'Story template ({_story_templates}).')
+@option(
+    '--link', metavar='[RELATION:]TARGET', multiple=True,
+    help='Link to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def stories_create(
@@ -2073,3 +2079,26 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for fish """
     setup_completion('fish', install)
+
+
+@main.command(name='link')
+@pass_context
+@click.argument('link', nargs=1, metavar='[RELATION:]TARGET')
+@click.argument('names', nargs=-1, metavar='[TEST|PLAN|STORY]...')
+@option(
+    '--separate', is_flag=True,
+    help="Create linking separately for multiple passed objects.")
+def link(context: Context,
+         names: list[str],
+         link: str,
+         separate: bool,
+         ) -> None:
+    nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']] = []
+    for name in names:
+        if context.obj.tree.tests(names=[name]):
+            nodes.extend(context.obj.tree.tests(names=[name]))
+        if context.obj.tree.plans(names=[name]):
+            nodes.extend(context.obj.tree.plans(names=[name]))
+        if context.obj.tree.stories(names=[name]):
+            nodes.extend(context.obj.tree.stories(names=[name]))
+    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), separate)

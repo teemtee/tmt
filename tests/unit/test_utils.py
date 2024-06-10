@@ -1650,3 +1650,45 @@ def test_invocation_terminate_process_not_running_anymore(
         caplog,
         message=MATCH(r'Test invocation process cannot be terminated because it is unset.'),
         levelno=logging.DEBUG)
+
+
+class TestJiraLink(unittest.TestCase):
+    def setUp(self):
+        self.tree = fmf.Tree(data={'fmf_id': 'root'})
+        self.tree.child(name='user', data={})
+        self.tree.find('/user').child(data={'linking': [
+            {'type': 'jira',
+             'server': 'https://issues.redhat.com',
+             'service': 'http://localhost:8000/',
+             'token': ''}]}, name='linking')
+        self.logger = tmt.log.Logger(actual_logger=logging.getLogger('tmt'))
+
+    @unittest.mock.patch('jira.JIRA.add_simple_link')
+    @unittest.mock.patch('tmt.utils.Config')
+    def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
+        mock_config_tree.return_value.fmf_tree = self.tree
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests()[0]
+        tmt.utils.jira_link(
+            [test], tmt.base.Links(
+                data=['verifies:issues.redhat.com/browse/TT-262']))
+        result = mock_add_simple_link.call_args.args[1]
+        assert (
+            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name='
+            '%2Ftests%2Fprovision%2Fvirtual%2Fdependencies&test-ref=link-issues-to-jira') in result['url']
+
+    @unittest.mock.patch('jira.JIRA.add_simple_link')
+    @unittest.mock.patch('tmt.utils.Config')
+    def test_jira_link_test_plan_story(self, mock_config_tree, mock_add_simple_link) -> None:
+        mock_config_tree.return_value.fmf_tree = self.tree
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests()[0]
+        plan = tmt.Tree(logger=self.logger, path=Path(".")).plans()[0]
+        story = tmt.Tree(logger=self.logger, path=Path(".")).stories()[0]
+        tmt.utils.jira_link([test, plan, story], tmt.base.Links(
+            data=['verifies:issues.redhat.com/browse/TT-262']))
+        result = mock_add_simple_link.call_args.args[1]
+        assert (
+            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name='
+            '%2Ftests%2Fprovision%2Fvirtual%2Fdependencies&test-ref=link-issues-to-jira&plan-url='
+            'https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&plan-name=%2Fplans%2Ffeatures%2Fadvanced&'
+            'plan-ref=link-issues-to-jira&story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&story-name='
+            '%2Fspec%2Fcontext%2Fdimension&story-ref=link-issues-to-jira') in result['url']

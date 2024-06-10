@@ -1279,6 +1279,15 @@ class Test(
                 force=force,
                 logger=logger)
 
+            if links.get('verifies') and dry is False:
+                tests = Tree(
+                    path=path,
+                    logger=logger).tests(
+                    names=[
+                        directory_path.name],
+                    apply_command_line=False)
+                tmt.utils.jira_link(nodes=tests, links=links)
+
     @property
     def manual_test_path(self) -> Path:
         assert self.manual, 'Test is not manual yet path to manual instructions was requested'
@@ -1917,6 +1926,13 @@ class Plan(
         # Override template with data provided on command line
         plan_content = Plan.edit_template(plan_content)
 
+        # Append link with appropriate relation
+        links = Links(data=list(cast(list[_RawLink], Plan._opt('link', []))))
+        if links:  # Output 'links' if and only if it is not empty
+            plan_content += dict_to_yaml({
+                'link': links.to_spec()
+                })
+
         for name in names:
             (directory, plan) = os.path.split(name)
             directory_path = path / directory.lstrip('/')
@@ -1937,6 +1953,15 @@ class Plan(
                 dry=dry,
                 force=force,
                 logger=logger)
+
+            if links.get('verifies') and dry is False:
+                plans = Tree(
+                    path=path,
+                    logger=logger).plans(
+                    names=[
+                        directory_path.name],
+                    apply_command_line=False)
+                tmt.utils.jira_link(nodes=plans, links=links)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2624,6 +2649,13 @@ class Story(
             except KeyError:
                 raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
+        # Append link with appropriate relation
+        links = Links(data=list(cast(list[_RawLink], Story._opt('link', []))))
+        if links:  # Output 'links' if and only if it is not empty
+            story_content += dict_to_yaml({
+                'link': links.to_spec()
+                })
+
         for name in names:
             # Prepare paths
             (directory, story) = os.path.split(name)
@@ -2645,6 +2677,15 @@ class Story(
                 dry=dry,
                 force=force,
                 logger=logger)
+
+            if links.get('verifies') and dry is False:
+                stories = Tree(
+                    path=path,
+                    logger=logger).stories(
+                    names=[
+                        directory_path.name],
+                    apply_command_line=False)
+                tmt.utils.jira_link(nodes=stories, links=links)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -2880,23 +2921,30 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             unique: bool = True,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: bool = True
             ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['test']
         names = names or []
-        filters = (filters or []) + list(Test._opt('filters', []))
-        conditions = (conditions or []) + list(Test._opt('conditions', []))
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Test._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Test._opt('exclude', []))
+        excludes = (excludes or [])
         # Used in: tmt run test --name NAME, tmt test ls NAME...
-        cmd_line_names: list[str] = list(Test._opt('names', []))
+        cmd_line_names: list[str] = []
+
+        if apply_command_line:
+            filters += list(Test._opt('filters', []))
+            conditions += list(Test._opt('conditions', []))
+            excludes += list(Test._opt('exclude', []))
+            cmd_line_names = list(Test._opt('names', []))
 
         # Sanitize test names to make sure no name includes control character
         cmd_line_names = self.sanitize_cli_names(cmd_line_names)
@@ -2961,22 +3009,29 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             run: Optional['Run'] = None,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: Optional[bool] = True
             ) -> list[Plan]:
         """ Search available plans """
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
         local_plan_keys = (keys or []) + ['execute']
         remote_plan_keys = (keys or []) + ['plan']
-        names = (names or []) + list(Plan._opt('names', []))
-        filters = (filters or []) + list(Plan._opt('filters', []))
-        conditions = (conditions or []) + list(Plan._opt('conditions', []))
+        names = (names or [])
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Plan._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Plan._opt('exclude', []))
+        excludes = (excludes or [])
+
+        if apply_command_line:
+            names += list(Plan._opt('names', []))
+            filters += list(Plan._opt('filters', []))
+            conditions += list(Plan._opt('conditions', []))
+            excludes += list(Plan._opt('exclude', []))
 
         # Sanitize plan names to make sure no name includes control character
         names = self.sanitize_cli_names(names)
@@ -3032,21 +3087,28 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             whole: bool = False,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: Optional[bool] = True
             ) -> list[Story]:
         """ Search available stories """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['story']
-        names = (names or []) + list(Story._opt('names', []))
-        filters = (filters or []) + list(Story._opt('filters', []))
-        conditions = (conditions or []) + list(Story._opt('conditions', []))
+        names = (names or [])
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Story._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Story._opt('exclude', []))
+        excludes = (excludes or [])
+
+        if apply_command_line:
+            names += list(Story._opt('names', []))
+            filters += list(Story._opt('filters', []))
+            conditions += list(Story._opt('conditions', []))
+            excludes += list(Story._opt('exclude', []))
 
         # Sanitize story names to make sure no name includes control character
         names = self.sanitize_cli_names(names)

@@ -398,6 +398,41 @@ Sometimes you forget something, or just things may go wrong and
 you need another try. In such case add ``-f`` or ``--force`` to
 quickly overwrite existing files with the right content.
 
+.. _linking_tmt_objects:
+
+Linking tmt objects
+------------------------------------------------------------------
+If you create a Jira issue for a bug or a feature, you can link it
+to the test or plan that covers it. This can be either done automatically
+on creation of a new test or plan, or later on using the ``tmt link`` command.
+
+.. code-block:: shell
+
+    tmt link verifies:issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
+
+For this feature to be enabled, you have to create a configuration node in a
+configuration tree. Once the configuration is present, it automatically enables
+the linking on its own, no further actions needed.
+The configuration has a reserved keywork ``linking`` and should
+have following structure:
+
+.. code-block:: yaml
+
+    linking:
+      - type: jira
+        server: https://issues.redhat.com
+        service: http://localhost:8000/
+        token: <YOUR_PERSONAL_JIRA_TOKEN>
+
+The ``type`` key specifies the type of the issue tracking service
+you want to link to (so far only Jira is supported).
+The ``server`` is the URL of said service. The ``service`` is the URL of the
+service that presents a tmt metadata in a human-readable form.
+The ``token`` is a personal token that is used to authenticate the user.
+How to obtain this token is described `here
+<https://support.atlassian.com/atlassian-account/docs/
+manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
+(please note that this can vary if you use custom Jira instance).
 
 .. _custom_templates:
 

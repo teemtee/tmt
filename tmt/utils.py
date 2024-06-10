@@ -86,6 +86,8 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
+JIRA: Any = None
+
 
 class Path(pathlib.PosixPath):
     # Apparently, `pathlib`` does not offer `relpath` transition between
@@ -7434,3 +7436,84 @@ def render_rst(text: str, logger: Logger) -> str:
     document.walkabout(visitor)
 
     return visitor.rendered
+
+
+def import_jira() -> None:
+    """ Import polarion Python Jira library """
+    try:
+        global JIRA
+        from jira import JIRA
+    except ImportError:
+        raise GeneralError(
+            "Install 'tmt+link-jira' to use the Jira linking")
+
+
+def jira_link(
+        nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']],
+        links: 'tmt.base.Links',
+        separate: bool = False) -> None:
+    """ Link the object to Jira issue and create the URL to tmt web service """
+    import_jira()
+
+    def create_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
+        tmt_type = tmt_object.__class__.__name__.lower()
+        fmf_id = tmt_object.fmf_id
+
+        url_params: dict[str, str] = {
+            'format': 'html',
+            f'{tmt_type}-url': fmf_id.url,
+            f'{tmt_type}-name': fmf_id.name
+            }
+
+        if fmf_id.path is not None:
+            fmf_path = fmf_id.path.relative_to(fmf_id.git_root).resolve()
+            fmf_path = fmf_path.as_posix().split(fmf_id.git_root.as_posix(), 1)[1]
+            url_params[f'{tmt_type}-path'] = fmf_path
+
+        if fmf_id.ref is not None:
+            url_params[f'{tmt_type}-ref'] = fmf_id.ref
+
+        return url_params
+
+    def create_url(baseurl: str, url_params: dict[str, str]) -> str:
+        return urllib.parse.urljoin(baseurl, '?' + urllib.parse.urlencode(url_params))
+
+    # Setup config tree
+    config_tree = tmt.utils.Config()
+    # Linking is not setup in config, therefore user does not want to use linking
+    if config_tree.fmf_tree.find('/user/linking') is None:
+        return
+    if config_tree.fmf_tree.find('/user/linking').data.get('linking') is None:
+        return
+    linking_config = config_tree.fmf_tree.find('/user/linking').data.get('linking')[0]
+    verifies = links.get('verifies')[0]
+    target = verifies.to_dict()['target']
+    # Parse the target url
+    issue_id = target.split('/')[-1]
+    jira = JIRA(server=linking_config['server'], token_auth=linking_config['token'])
+    link_object: dict[str, str] = {}
+    service_url: dict[str, str] = {}
+    for node in nodes:
+        # Single object in list of nodes = creating new object
+        # or linking multiple existing separately
+        if len(nodes) == 1 or (len(nodes) > 1 and separate):
+            service_url = create_url_params(tmt_object=node)
+            link_object = {
+                "url": create_url(
+                    linking_config["service"],
+                    service_url),
+                "title": f'[tmt_web] Metadata of the {type(node).__name__.lower()}'
+                         f' covering this issue'}
+            jira.add_simple_link(issue_id, link_object)
+        if len(nodes) > 1 and not separate:
+            url_part = create_url_params(tmt_object=node)
+            service_url.update(url_part)
+            link_object = {
+                "url": create_url(linking_config["service"], service_url),
+                "title": f'[tmt_web] Metadata of the'
+                         f' {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
+                         f' covering this issue'
+                }
+    if len(nodes) > 1 and not separate:
+        # Send request to JIRA when len(nodes) > 1 and not separate, after all nodes were processed
+        jira.add_simple_link(issue_id, link_object)
