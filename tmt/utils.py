@@ -6978,6 +6978,18 @@ def _template_filter_listed(
         join=join))
 
 
+def _template_filter_web_git_url(path_str: str, url: str, ref: str) -> str:
+    """
+    Sanitize git url using :py:meth:`tmt.utils.web_git_url`
+
+    .. code-block:: jinja
+
+        {{ "/"|web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref) }}
+    """
+    path = Path(path_str) if path_str else None
+    return web_git_url(url, ref, path)
+
+
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
     _name.replace('_template_filter_', ''): _obj
     for _name, _obj in locals().items() if callable(_obj) and _name.startswith('_template_filter_')
