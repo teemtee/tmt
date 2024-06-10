@@ -32,6 +32,12 @@ jobs:
           git rev-parse --abbrev-ref --symbolic-full-name @{u} || true
           echo '[run] git rev-parse --abbrev-ref HEAD'
           git rev-parse --abbrev-ref HEAD || true
+          echo '[run] git log'
+          git log || true
+          echo '[run] git log -1 --format="%D"'
+          git log -1 --format="%D" || true
+          echo '[run] git for-each-ref --format="%(refname)" --points-at HEAD'
+          git for-each-ref --format="%(refname)" --points-at HEAD || true
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
