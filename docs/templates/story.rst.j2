@@ -95,6 +95,9 @@
     :param tmt.base.Link link: link to render.
 #}
 {% macro emit_tmt_object_links(link) %}
+..
+    [Debug] emit_tmt_object_links(link) = {{ link }}
+
 {% if link.target.startswith('/tests') %}
   {% set objects = STORY.tree.tests(names=["^" + link.target + "(/|$)"]) %}
 {% elif link.target.startswith('/plans') %}
@@ -104,6 +107,9 @@
   {% set objects = [] %}
 {% endif %}
 {% for object in objects %}
+..
+    [Debug] emit_tmt_object_links(link).object = {{ object }}
+
 {{ _emit_remote_link(link, object.name, object.web_link()) }}
 {% endfor %}
 {% endmacro %}
