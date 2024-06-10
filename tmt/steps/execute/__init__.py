@@ -526,6 +526,22 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
                 invocation.path / TEST_METADATA_FILENAME,
                 tmt.utils.dict_to_yaml(test_metadata))
 
+            # When running again then we only keep results for tests that won't be executed again
+            if self.should_run_again:
+                assert self.parent is not None  # narrow type
+                assert isinstance(self.parent, Execute)  # narrow type
+                self.parent._results = [
+                    result for result in self.parent._results
+                    if not (
+                        test.name == result.name and test.serial_number == result.serial_number)]
+
+        # Keep old results in another variable to have numbers only for actually executed tests
+        if self.should_run_again:
+            assert self.parent is not None  # narrow type
+            assert isinstance(self.parent, Execute)  # narrow type
+            self.parent._old_results = self.parent._results[:]
+            self.parent._results.clear()
+
         return invocations
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
@@ -800,6 +816,7 @@ class Execute(tmt.steps.Step):
         super().__init__(plan=plan, data=data, logger=logger)
         # List of Result() objects representing test results
         self._results: list[tmt.Result] = []
+        self._old_results: list[tmt.Result] = []
 
     def load(self) -> None:
         """ Load test results """
@@ -861,8 +878,11 @@ class Execute(tmt.steps.Step):
         super().go(force=force)
 
         # Clean up possible old results
-        if force or self.should_run_again:
+        if force:
             self._results.clear()
+
+        if self.should_run_again:
+            self.status('todo')
 
         # Nothing more to do if already done
         if self.status() == 'done':
@@ -944,6 +964,11 @@ class Execute(tmt.steps.Step):
         # Give a summary, update status and save
         self.summary()
         self.status('done')
+
+        # Merge old results back to get all results in report step
+        if self.should_run_again:
+            self._results += self._old_results
+
         self.save()
 
     def results(self) -> list["tmt.result.Result"]:

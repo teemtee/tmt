@@ -482,6 +482,12 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     help="""
          Filter by linked objects (regular expressions are supported for both relation and target).
          """)
+@option(
+    '--failed-only', is_flag=True, default=False,
+    help="""
+         Select only failed tests from a previous run.
+         Used when rerunning existing runs and requires either --id or --last option.
+         """)
 @verbosity_options
 def run_tests(context: Context, **kwargs: Any) -> None:
     """

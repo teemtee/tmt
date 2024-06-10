@@ -3224,9 +3224,12 @@ class Run(tmt.utils.Common):
                 if id_ is None:
                     raise tmt.utils.GeneralError(
                         "No last run id found. Have you executed any run?")
-            if cli_invocation.options.get('follow') and id_ is None:
-                raise tmt.utils.GeneralError(
-                    "Run id has to be specified in order to use --follow.")
+            if id_ is None:
+                id_required_options = ('follow', 'again')
+                for option in id_required_options:
+                    if cli_invocation.options.get(option):
+                        raise tmt.utils.GeneralError(
+                            f"Run id has to be specified in order to use --{option}.")
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.

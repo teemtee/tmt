@@ -174,13 +174,18 @@ class Discover(tmt.steps.Step):
 
         # Collection of discovered tests
         self._tests: dict[str, list[tmt.Test]] = {}
+        self._failed_tests: dict[str, list[tmt.Test]] = {}
 
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
 
     def load(self) -> None:
         """ Load step data from the workdir """
-        super().load()
+        if self.should_run_again:
+            self.debug('Run discover again when reexecuting to capture changes in plans')
+        else:
+            super().load()
+
         try:
             raw_test_data = tmt.utils.yaml_to_list(self.read(Path('tests.yaml')))
 
@@ -380,6 +385,28 @@ class Discover(tmt.steps.Step):
                 click.echo(''.join(export_fmf_ids), nl=False)
             return
 
+        if self.should_run_again and tmt.base.Test._opt('failed_only'):
+            failed_results: list[tmt.base.Result] = []
+            assert self.parent is not None  # narrow type
+            assert isinstance(self.parent, tmt.base.Plan)  # narrow type
+
+            # Get failed results from previous run execute
+            for result in self.parent.execute._results:
+                if (
+                        result.result is not tmt.result.ResultOutcome.PASS and
+                        result.result is not tmt.result.ResultOutcome.INFO):
+                    failed_results.append(result)
+
+            # Filter existing tests into another variable which is then used by tests() method
+            for test_phase in self._tests:
+                self._failed_tests[test_phase] = []
+                for test in self._tests[test_phase]:
+                    for result in failed_results:
+                        if (
+                                test.name == result.name and
+                                test.serial_number == result.serial_number):
+                            self._failed_tests[test_phase].append(test)
+
         # Give a summary, update status and save
         self.summary()
         self.status('done')
@@ -391,13 +418,15 @@ class Discover(tmt.steps.Step):
             phase_name: Optional[str] = None,
             enabled: Optional[bool] = None) -> list['tmt.Test']:
         def _iter_all_tests() -> Iterator['tmt.Test']:
-            for phase_tests in self._tests.values():
+            tests = self._failed_tests if self._failed_tests else self._tests
+            for phase_tests in tests.values():
                 yield from phase_tests
 
         def _iter_phase_tests() -> Iterator['tmt.Test']:
             assert phase_name is not None
+            tests = self._failed_tests if self._failed_tests else self._tests
 
-            yield from self._tests[phase_name]
+            yield from tests[phase_name]
 
         iterator = _iter_all_tests if phase_name is None else _iter_phase_tests
 

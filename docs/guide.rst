@@ -909,6 +909,31 @@ test result.
 
 __ https://github.com/teemtee/tmt/tree/main/tests/multihost/complete/data
 
+Rerunning failed tests of previously executed runs
+------------------------------------------------------------------
+
+Executing failed tests again after fixing them is now possible
+with `tmt run --all --again tests --failed-only`.
+
+This is only possible when you have the run directory available
+and `--id` argument provided (or use `--last`) as it needs the data from execute step
+to select only failed test cases. After new execute step, tmt will
+again merge the results from the previous run with the new ones
+to keep all the data for full report.
+
+.. code-block:: shell
+
+    $ tmt run
+    # Some tests fail, some pass
+
+    $ tmt run --last --again discover tests --failed-only
+    # Discover tests to rerun
+
+    $ tmt run --all --last --again tests --failed-only
+    # Run all failed tests again
+
+.. versionadded:: 1.34
+
 
 Synchronization Libraries
 ------------------------------------------------------------------
