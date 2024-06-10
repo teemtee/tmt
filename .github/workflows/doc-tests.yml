@@ -26,8 +26,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run sphinx builder ${{ matrix.builder }}
         run: |
-          pip install hatch
-          hatch run docs:${{ matrix.builder }} ${{ matrix.args }}
+          pip install -e .[docs]
+          python3 -m sphinx -b ${{ matrix.builder }} docs docs/_build ${{ matrix.args }}
       - name: Debug artifacts
         uses: actions/upload-artifact@v4
         with:
