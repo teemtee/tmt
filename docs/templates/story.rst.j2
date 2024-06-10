@@ -109,8 +109,7 @@
 {% for object in objects %}
 ..
     [Debug] emit_tmt_object_links(link).object = {{ object }} [{{ object.__class__.__name__ }}]
-    fmf_id.url = {{ object.fmf_id.url }}
-    fmf_id.ref = {{ object.fmf_id.ref }}
+    fmf_id = {{ object.fmf_id.to_dict() }}
 
 {{ _emit_remote_link(link, object.name, object.web_link()) }}
 {% endfor %}
