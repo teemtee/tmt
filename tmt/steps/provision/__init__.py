@@ -521,7 +521,7 @@ def normalize_hardware(
 
                 # Calculate the number of placeholders needed.
                 placeholders = components.peer_index - len(merged[components.name]) + 1
-                
+
                 # Fill in empty spots between the existing ones and the
                 # one we're adding with placeholders.
                 if placeholders > 0:
