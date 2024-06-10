@@ -54,7 +54,7 @@
     :param tmt.base.Link link: link to render.
 #}
 {% macro emit_tmt_repo_link(link) %}
-{{ _emit_remote_link(link, link.target, "https://github.com/teemtee/tmt/tree/main/" + link.target.lstrip('/')) }}
+{{ _emit_remote_link(link, link.target, "https://github.com/teemtee/tmt/tree/" + (STORY.fmf_id.ref or 'main') + "/" + link.target.lstrip('/')) }}
 {% endmacro %}
 
 {#
@@ -78,7 +78,7 @@
 {% elif plugin_name == "provision/testcloud" %}
     {% set plugin_name = "provision/virtual" %}
 {% endif %}
-{{ _emit_remote_link(link, plugin_name, "https://github.com/teemtee/tmt/tree/main/" + link.target) }}
+{{ _emit_remote_link(link, plugin_name, "https://github.com/teemtee/tmt/tree/" + (STORY.fmf_id.ref or 'main') + "/" + link.target) }}
 {% endmacro %}
 
 {#
