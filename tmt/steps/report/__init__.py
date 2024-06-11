@@ -9,6 +9,7 @@ import tmt.steps
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
+from tmt.utils import field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -16,7 +17,12 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class ReportStepData(tmt.steps.StepData):
-    pass
+    output_log: bool = field(
+        default=True,
+        option=('--output-log / --no-output-log'),
+        is_flag=True,
+        show_default=True,
+        help='Show full output in resulting xml file.')
 
 
 ReportStepDataT = TypeVar('ReportStepDataT', bound=ReportStepData)

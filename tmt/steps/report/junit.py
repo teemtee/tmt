@@ -71,8 +71,11 @@ def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSu
         case = junit_xml.TestCase(
             result.name,
             classname=None,
-            elapsed_sec=duration_to_seconds(result.duration),
-            stdout=main_log)
+            elapsed_sec=duration_to_seconds(result.duration))
+
+        if report.data.output_log:
+            case.stdout = main_log
+
         # Map tmt OUTCOME to JUnit states
         if result.result == tmt.result.ResultOutcome.ERROR:
             case.add_error_info(result.result.value, output=result.failures(main_log))

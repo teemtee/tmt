@@ -25,5 +25,8 @@ properties:
   file:
     type: string
 
+  output-log:
+    type: boolean
+
 required:
   - how
