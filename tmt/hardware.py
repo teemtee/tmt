@@ -50,7 +50,7 @@ import pint
 
 import tmt.log
 import tmt.utils
-from tmt.utils import SpecBasedContainer
+from tmt.utils import SpecBasedContainer, SpecificationError
 
 if TYPE_CHECKING:
     from pint import Quantity
@@ -698,11 +698,26 @@ class NumberConstraint(Constraint[int]):
             original_constraint: Optional['Constraint[Any]'] = None,
             allowed_operators: Optional[list[Operator]] = None
             ) -> T:
+
+        def _cast_number(raw_value: Any) -> int:
+            if isinstance(raw_value, int):
+                return raw_value
+
+            if isinstance(raw_value, str):
+                raw_value = raw_value.strip()
+
+                if raw_value.startswith('0x'):
+                    return int(raw_value, base=16)
+
+                return int(raw_value)
+
+            raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
+
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=False,
-            as_cast=int,
+            as_cast=_cast_number,
             original_constraint=original_constraint,
             allowed_operators=allowed_operators
             )
@@ -875,6 +890,106 @@ def ungroupify_indexed(
     return wrapper
 
 
+def _parse_number_constraints(
+        spec: Spec,
+        prefix: str,
+        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+    """ Parse number-like constraints defined by a given set of keys """
+
+    return [
+        NumberConstraint.from_specification(
+            f'{prefix}.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in constraint_keys
+        if constraint_name in spec
+        ]
+
+
+def _parse_size_constraints(
+        spec: Spec,
+        prefix: str,
+        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+    """ Parse size-like constraints defined by a given set of keys """
+
+    return [
+        SizeConstraint.from_specification(
+            f'{prefix}.{constraint_name}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in constraint_keys
+        if constraint_name in spec
+        ]
+
+
+def _parse_text_constraints(
+        spec: Spec,
+        prefix: str,
+        constraint_keys: tuple[str, ...],
+        allowed_operators: Optional[tuple[Operator, ...]] = None) -> list[BaseConstraint]:
+    """ Parse text-like constraints defined by a given set of keys """
+
+    allowed_operators = allowed_operators or (
+        Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH)
+
+    return [
+        TextConstraint.from_specification(
+            f'{prefix}.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=list(allowed_operators))
+        for constraint_name in constraint_keys
+        if constraint_name in spec
+        ]
+
+
+def _parse_flag_constraints(
+        spec: Spec,
+        prefix: str,
+        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+    """ Parse flag-like constraints defined by a given set of keys """
+
+    return [
+        FlagConstraint.from_specification(
+            f'{prefix}.{constraint_name.replace("-", "_")}',
+            spec[constraint_name],
+            allowed_operators=[Operator.EQ, Operator.NEQ])
+        for constraint_name in constraint_keys
+        if constraint_name in spec
+        ]
+
+
+def _parse_device_core(
+        spec: Spec,
+        device_prefix: str = 'device',
+        include_driver: bool = True,
+        include_device: bool = True) -> And:
+    """
+    Parse constraints shared across device classes.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    number_constraints: tuple[str, ...] = ('vendor',)
+    text_constraints: tuple[str, ...] = ('vendor-name',)
+
+    if include_device:
+        number_constraints = (*number_constraints, 'device')
+        text_constraints = (*text_constraints, 'device-name')
+
+    if include_driver:
+        text_constraints = (*text_constraints, 'driver')
+
+    group.constraints += _parse_number_constraints(spec, device_prefix, number_constraints)
+    group.constraints += _parse_text_constraints(spec, device_prefix, text_constraints)
+
+    return group
+
+
 @ungroupify
 def _parse_boot(spec: Spec) -> BaseConstraint:
     """
@@ -914,29 +1029,11 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    if 'is-virtualized' in spec:
-        group.constraints += [
-            FlagConstraint.from_specification(
-                'virtualization.is_virtualized',
-                spec['is-virtualized'],
-                allowed_operators=[Operator.EQ, Operator.NEQ])
-            ]
-
-    if 'is-supported' in spec:
-        group.constraints += [
-            FlagConstraint.from_specification(
-                'virtualization.is_supported',
-                spec['is-supported'],
-                allowed_operators=[Operator.EQ, Operator.NEQ])
-            ]
-
-    if 'hypervisor' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'virtualization.hypervisor',
-                spec['hypervisor'],
-                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-            ]
+    group.constraints += _parse_flag_constraints(spec,
+                                                 'virtualization',
+                                                 ('is-virtualized',
+                                                  'is-supported'))
+    group.constraints += _parse_text_constraints(spec, 'virtualization', ('hypervisor',))
 
     return group
 
@@ -973,13 +1070,10 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += [
-        NumberConstraint.from_specification(
-            f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
-        for constraint_name in (
+    group.constraints += _parse_number_constraints(
+        spec,
+        'cpu',
+        (
             'processors',
             'sockets',
             'cores',
@@ -987,23 +1081,21 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             'cores-per-socket',
             'threads-per-core',
             'model',
-            'family'
+            'family',
+            'vendor',
+            'stepping'
             )
-        if constraint_name in spec
-        ]
+        )
 
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'cpu.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in (
+    group.constraints += _parse_text_constraints(
+        spec,
+        'cpu',
+        (
             'family-name',
             'model-name',
             'vendor-name'
             )
-        if constraint_name in spec
-        ]
+        )
 
     if 'flag' in spec:
         flag_group = And()
@@ -1024,6 +1116,18 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
     return group
 
 
+@ungroupify
+def _parse_device(spec: Spec) -> BaseConstraint:
+    """
+    Parse a device-related constraints.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    return _parse_device_core(spec)
+
+
 @ungroupify_indexed
 def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
     """
@@ -1036,35 +1140,9 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += [
-        SizeConstraint.from_specification(
-            f'disk[{disk_index}].{constraint_name}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
-        for constraint_name in ('size',)
-        if constraint_name in spec
-        ]
-
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'disk[{disk_index}].{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in ('model-name',)
-        if constraint_name in spec
-        ]
-
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'disk[{disk_index}].{constraint_name}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in ('driver',)
-        if constraint_name in spec
-        ]
+    group.constraints += _parse_size_constraints(spec, f'disk[{disk_index}]', ('size',))
+    group.constraints += _parse_text_constraints(spec,
+                                                 f'disk[{disk_index}]', ('model-name', 'driver'))
 
     return group
 
@@ -1092,6 +1170,18 @@ def _parse_disks(spec: Spec) -> BaseConstraint:
     return group
 
 
+@ungroupify
+def _parse_gpu(spec: Spec) -> BaseConstraint:
+    """
+    Parse a gpu-related constraints.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    return _parse_device_core(spec, device_prefix='gpu')
+
+
 @ungroupify_indexed
 def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
     """
@@ -1102,16 +1192,8 @@ def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
     :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
     """
 
-    group = And()
-
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'network[{network_index}].{constraint_name}',
-            str(spec[constraint_name]),
-            allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in ('type',)
-        if constraint_name in spec
-        ]
+    group = _parse_device_core(spec, f'network[{network_index}]')
+    group.constraints += _parse_text_constraints(spec, f'network[{network_index}]', ('type',))
 
     return group
 
@@ -1144,33 +1226,20 @@ def _parse_system(spec: Spec) -> BaseConstraint:
     :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
     """
 
-    group = And()
+    group = _parse_device_core(
+        spec,
+        device_prefix='system',
+        include_driver=False,
+        include_device=False)
 
-    group.constraints += [
-        NumberConstraint.from_specification(
-            f'system.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
-        for constraint_name in ('vendor', 'model', 'numa-nodes')
-        if constraint_name in spec
-        ]
-
-    group.constraints += [
-        TextConstraint.from_specification(
-            f'system.{constraint_name.replace("-", "_")}',
-            str(spec[constraint_name]),
-            allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-        for constraint_name in ('model-name', 'vendor-name')
-        if constraint_name in spec
-        ]
+    group.constraints += _parse_number_constraints(spec, 'system', ('model', 'numa-nodes'))
+    group.constraints += _parse_text_constraints(spec, 'system', ('model-name',))
 
     return group
 
 
-TPM_VERSION_ALLOWED_OPERATORS: list[Operator] = [
-    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE]
+TPM_VERSION_ALLOWED_OPERATORS: tuple[Operator, ...] = (
+    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE)
 
 
 @ungroupify
@@ -1184,13 +1253,11 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    if 'version' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'tpm.version',
-                spec['version'],
-                allowed_operators=TPM_VERSION_ALLOWED_OPERATORS)
-            ]
+    group.constraints += _parse_text_constraints(spec,
+                                                 'tpm',
+                                                 ('version',
+                                                  ),
+                                                 allowed_operators=TPM_VERSION_ALLOWED_OPERATORS)
 
     return group
 
@@ -1235,19 +1302,7 @@ def _parse_zcrypt(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    if 'adapter' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'zcrypt.adapter',
-                spec['adapter'],
-                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])]
-
-    if 'mode' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'zcrypt.mode',
-                spec['mode'],
-                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])]
+    group.constraints += _parse_text_constraints(spec, 'zcrypt', ('adapter', 'mode'))
 
     return group
 
@@ -1263,13 +1318,7 @@ def _parse_location(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    if 'lab-controller' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'location.lab_controller',
-                spec['lab-controller'],
-                allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
-            ]
+    group.constraints += _parse_text_constraints(spec, 'location', ('lab-controller',))
 
     return group
 
@@ -1300,6 +1349,12 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'cpu' in spec:
         group.constraints += [_parse_cpu(spec['cpu'])]
+
+    if 'device' in spec:
+        group.constraints += [_parse_device(spec['device'])]
+
+    if 'gpu' in spec:
+        group.constraints += [_parse_gpu(spec['gpu'])]
 
     if 'memory' in spec:
         group.constraints += [_parse_memory(spec)]

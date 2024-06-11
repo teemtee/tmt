@@ -87,59 +87,144 @@ def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) ->
     assert match.groups() == expected
 
 
+FULL_HARDWARE_REQUIREMENTS = """
+    boot:
+        method: bios
+    compatible:
+        distro:
+            - rhel-7
+            - rhel-8
+    cpu:
+        sockets: "<= 1"
+        cores: 2
+        threads: ">= 8"
+        cores-per-socket: "= 2"
+        threads-per-core: "== 4"
+        processors: "> 8"
+        model: 62
+        model-name: "!~ Haswell"
+        family: "< 6"
+        family-name: Skylake
+        vendor-name: "~ Intel.*"
+        vendor: == 0x8086
+        stepping: "!= 10"
+        flag:
+            - avx
+            - "= avx2"
+            - "!= smep"
+    disk:
+        - size: 40 GiB
+          model-name: "~ WD 100G.*"
+        - size: 120 GiB
+          driver: virtblk
+    gpu:
+        device-name: G86 [Quadro NVS 290]
+        device: "97"
+        vendor-name: 'Nvidia'
+        vendor: 0x10de
+        driver: "~radeon"
+    hostname: "~ .*.foo.redhat.com"
+    location:
+        lab-controller: "!= lab-1.bar.redhat.com"
+    memory: 8 GiB
+    network:
+        - type: eth
+          vendor: "!= 0x79"
+          vendor-name: ~ ^Broadcom
+          device-name: ~ ^NetXtreme II BCM
+          device: 1657
+          driver: iwlwifi
+        - type: eth
+    system:
+        vendor: 0x413C
+        vendor-name: "~ Dell.*"
+        model: 79
+        model-name: "~ PowerEdge R750"
+        numa-nodes: "< 4"
+    tpm:
+        version: "2.0"
+    virtualization:
+        is-supported: true
+        is-virtualized: false
+        hypervisor: "~ xen"
+    zcrypt:
+        adapter: "CEX8C"
+        mode: "CCA"
+"""
+
+
 def test_parse_maximal_constraint() -> None:
-    hw_spec = """
-        boot:
-            method: bios
-        compatible:
-            distro:
-                - rhel-7
-                - rhel-8
-        cpu:
-            sockets: "<= 1"
-            cores: 2
-            threads: ">= 8"
-            cores-per-socket: "= 2"
-            threads-per-core: "== 4"
-            processors: "> 8"
-            model: 62
-            model-name: "!~ Haswell"
-            family: "< 6"
-            family-name: Skylake
-            flag:
-              - avx
-              - "= avx2"
-              - "!= smep"
-        disk:
-            - size: 40 GiB
-            - size: 120 GiB
-        gpu:
-            device-name: G86 [Quadro NVS 290]
-        hostname: "~ .*.foo.redhat.com"
-        location:
-            lab-controller: "!= lab-1.bar.redhat.com"
-        memory: 8 GiB
-        network:
-            - type: eth
-            - type: eth
-        system:
-            vendor: 0x413C
-            vendor-name: "~ Dell.*"
-            model: 79
-            model-name: "~ PowerEdge R750"
-            numa-nodes: "< 4"
-        tpm:
-            version: "2.0"
-        virtualization:
-            is-supported: true
-            is-virtualized: false
-            hypervisor: "~ xen"
+    hw_spec_out = """
+        and:
+          - boot.method: contains bios
+          - and:
+              - compatible.distro: contains rhel-7
+              - compatible.distro: contains rhel-8
+          - and:
+              - cpu.processors: '> 8'
+              - cpu.sockets: <= 1
+              - cpu.cores: == 2
+              - cpu.threads: '>= 8'
+              - cpu.cores-per-socket: == 2
+              - cpu.threads-per-core: == 4
+              - cpu.model: == 62
+              - cpu.family: < 6
+              - cpu.vendor: == 32902
+              - cpu.stepping: '!= 10'
+              - cpu.family-name: == Skylake
+              - cpu.model-name: '!~ Haswell'
+              - cpu.vendor-name: ~ Intel.*
+              - and:
+                  - cpu.flag: contains avx
+                  - cpu.flag: contains avx2
+                  - cpu.flag: not contains smep
+          - and:
+              - gpu.vendor: == 4318
+              - gpu.device: == 97
+              - gpu.vendor-name: == Nvidia
+              - gpu.device-name: == G86 [Quadro NVS 290]
+              - gpu.driver: ~ radeon
+          - memory: == 8 GiB
+          - and:
+              - and:
+                  - disk[0].size: == 40 GiB
+                  - disk[0].model-name: ~ WD 100G.*
+              - and:
+                  - disk[1].size: == 120 GiB
+                  - disk[1].driver: == virtblk
+          - and:
+              - and:
+                  - network[0].vendor: '!= 121'
+                  - network[0].device: == 1657
+                  - network[0].vendor-name: ~ ^Broadcom
+                  - network[0].device-name: ~ ^NetXtreme II BCM
+                  - network[0].driver: == iwlwifi
+                  - network[0].type: == eth
+              - network[1].type: == eth
+          - hostname: ~ .*.foo.redhat.com
+          - location.lab-controller: '!= lab-1.bar.redhat.com'
+          - and:
+              - system.vendor: == 16700
+              - system.vendor-name: ~ Dell.*
+              - system.model: == 79
+              - system.numa-nodes: < 4
+              - system.model-name: ~ PowerEdge R750
+          - tpm.version: == 2.0
+          - and:
+              - virtualization.is-virtualized: == False
+              - virtualization.is-supported: == True
+              - virtualization.hypervisor: ~ xen
+          - and:
+              - zcrypt.adapter: == CEX8C
+              - zcrypt.mode: == CCA
     """
 
-    hw = parse_hw(hw_spec)
+    hw = parse_hw(FULL_HARDWARE_REQUIREMENTS)
 
     assert hw.constraint is not None
 
+    print(hw.to_spec())
     print(tmt.utils.dict_to_yaml(hw.constraint.to_spec()))
+    print(textwrap.dedent(hw_spec_out))
 
-    assert hw.to_spec() == tmt.utils.yaml_to_dict(hw_spec)
+    assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
