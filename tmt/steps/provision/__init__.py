@@ -563,7 +563,14 @@ def normalize_hardware(
 
             return new_data
 
-        return tmt.hardware.Hardware.from_spec(_drop_placeholders(merged))
+        # TODO: if the index matters - and it does, because `disk[0]` is
+        # often a "root disk" - we need sparse list. Cannot prune
+        # placeholders now, because it would turn `disk[1]` into `disk[0]`,
+        # overriding whatever was set for the root disk.
+        # https://github.com/teemtee/tmt/issues/3004 for tracking.
+        # merged = _drop_placeholders(merged)
+
+        return tmt.hardware.Hardware.from_spec(merged)
 
     # From fmf
     return tmt.hardware.Hardware.from_spec(raw_hardware)
