@@ -100,8 +100,17 @@
 {% elif link.target.startswith('/plans') %}
   {% set objects = STORY.tree.plans(names=["^" + link.target + "(/|$)"]) %}
 {% else %}
+  {#
+    TODO: capture `emit_tmt_object_links` beign called for anything but
+    plans and tests.
+  #}
   {{ 0/0 }}
-  {% set objects = [] %}
+{% endif %}
+{% if not objects %}
+  {#
+    TODO: capture pointing to a test/plan that cannot be found.
+  #}
+  {{ 0/0 }}
 {% endif %}
 {% for object in objects %}
 {{ _emit_remote_link(link, object.name, object.web_link()) }}
@@ -210,7 +219,7 @@
 
 {# Links pointing to websites #}
 {% elif link.target | match('^https?://') %}
-* {{ printable_relation(link) }} `{{ link.target}} <{{ link.target }}>`__
+* {{ printable_relation(link) }} `{{ link.target}} <{{ link.target }}>`_
 
 {# Links pointing to anything else #}
 {% else %}

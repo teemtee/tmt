@@ -26,4 +26,4 @@ example: |
 
 link:
   - implemented-by: /tmt/identifier.py
-  - verified-by: /tests/unit
+  - verified-by: /tests/unit/.*/basic
