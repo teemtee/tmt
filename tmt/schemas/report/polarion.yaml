@@ -73,6 +73,9 @@ properties:
   fips:
     type: boolean
 
+  output-log:
+    type: boolean
+
 required:
   - how
   - project-id
