@@ -12,6 +12,9 @@ The :ref:`/spec/tests/duration` now supports multiplication.
 Added option ``--failed-only`` to the test attributes,
 enabling rerunning failed tests from previous runs.
 
+Reportportal plugin copies launch description also into the suite
+description when ``--suite-per-plan`` option is used.
+
 
 tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
