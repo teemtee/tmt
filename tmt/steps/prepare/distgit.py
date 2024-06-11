@@ -253,6 +253,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             "rpmbuild",
             "-bc",
             "--short-circuit",
+            "--nodeps",
             "--define",
             '__spec_build_pre echo XYZbuilddir=%{_builddir}; exit 0',
             spec_name,
