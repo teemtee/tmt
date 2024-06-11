@@ -17,14 +17,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        builder: [ html ]
+        builder: [ html, linkcheck ]
         include:
           # Run default html builder with warnings as error
           - builder: html
             args: -W
     steps:
       - uses: actions/checkout@v4
+      - name: Show me your git
+        run: |
+          echo '[run] git config -l'
+          git config -l || true
+          echo '[run] git rev-parse --abbrev-ref --symbolic-full-name @{u}'
+          git rev-parse --abbrev-ref --symbolic-full-name @{u} || true
+          echo '[run] git rev-parse --abbrev-ref HEAD'
+          git rev-parse --abbrev-ref HEAD || true
+          echo '[run] git log'
+          git log || true
+          echo '[run] git log -1 --format="%D"'
+          git log -1 --format="%D" || true
+          echo '[run] git for-each-ref --format="%(refname)" --points-at HEAD'
+          git for-each-ref --format="%(refname)" --points-at HEAD || true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
       - name: Run sphinx builder ${{ matrix.builder }}
         run: |
-          pip install hatch
-          hatch run docs:${{ matrix.builder }} ${{ matrix.args }}
+          pip install -e .[docs]
+          python3 -m sphinx -b ${{ matrix.builder }} docs docs/_build ${{ matrix.args }}
+      - name: Debug artifacts
+        uses: actions/upload-artifact@v4
+        with:
+         name: sphinx-${{matrix.builder}}
+         path: docs
+        if: always()
