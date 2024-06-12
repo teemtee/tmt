@@ -25,7 +25,7 @@ properties:
   file:
     type: string
 
-  output-log:
+  include-output-log:
     type: boolean
 
 required:

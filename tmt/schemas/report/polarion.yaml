@@ -73,7 +73,7 @@ properties:
   fips:
     type: boolean
 
-  output-log:
+  include-output-log:
     type: boolean
 
 required:
