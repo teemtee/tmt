@@ -18,6 +18,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
+from tmt.base import _RawAdjustRule
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, Environment, EnvVarValue, Path, field
 
@@ -158,10 +159,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="Copy only immediate directories of executed tests and their required files.")
 
     # Edit discovered tests
-    adjust_tests: list[Any] = field(
-        multiple=True,
-        default_factory=list
-        )
+    adjust_tests: Optional[list[_RawAdjustRule]] = field(
+        default_factory=list,
+        normalize=lambda key_address, raw_value, logger: [] if raw_value is None
+        else ([raw_value] if not isinstance(raw_value, list) else raw_value))
 
     # Upgrade plan path so the plan is not pruned
     upgrade_path: Optional[str] = None
@@ -571,7 +572,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             logger=self._logger,
             path=tree_path,
             fmf_context=self.step.plan._fmf_context,
-            additional_rules=self.get('adjust-tests'))
+            additional_rules=self.data.adjust_tests)
         self._tests = tree.tests(
             filters=filters,
             names=names,
