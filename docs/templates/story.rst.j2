@@ -100,17 +100,10 @@
 {% elif link.target.startswith('/plans') %}
   {% set objects = STORY.tree.plans(names=["^" + link.target + "(/|$)"]) %}
 {% else %}
-  {#
-    TODO: capture `emit_tmt_object_links` being called for anything but
-    plans and tests.
-  #}
-  {{ 0/0 }}
+  {{ raise_error("Cannot use emit_tmt_object_links for target '" + link.target + "'.") }}
 {% endif %}
 {% if not objects %}
-  {#
-    TODO: capture pointing to a test/plan that cannot be found.
-  #}
-  {{ 0/0 }}
+  {{ raise_error("No test or plan was found for target '" + link.target + "'.") }}
 {% endif %}
 {% for object in objects %}
 {{ _emit_remote_link(link, object.name, object.web_link()) }}
