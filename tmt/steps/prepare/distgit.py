@@ -255,11 +255,11 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             "--short-circuit",
             "--nodeps",
             "--define",
-            '__spec_build_pre echo XYZbuilddir=%{_builddir}; exit 0',
+            '__spec_build_pre echo tmt-get-builddir=%{_builddir}; exit 0',
             spec_name,
             *dir_defines)
         outcome = guest.execute(command=cmd, cwd=source_dir).stdout or ''
-        match = re.search(r'XYZbuilddir=(.+)', outcome)
+        match = re.search(r'tmt-get-builddir=(.+)', outcome)
         builddir = Path(match.group(1)) if match else None
 
         # But if the %build is missing in spec (e.g. in our test) the previous output was empty
@@ -267,7 +267,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             guest.execute(command=ShellScript(
                 "shopt -s dotglob; if test -e */SPECPARTS; then mv ./*-build/* .; else true; fi"),
                 cwd=source_dir)
-        elif builddir != source_dir:
+        elif builddir.resolve() != source_dir.resolve():
             guest.execute(command=ShellScript(f"shopt -s dotglob; mv {builddir}/* {source_dir}"))
         else:
             self.debug("Builddir matches source_dir, no need to copy anything.")
