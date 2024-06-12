@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class ReportStepData(tmt.steps.StepData):
-    output_log: bool = field(
+    include_output_log: bool = field(
         default=True,
-        option=('--output-log / --no-output-log'),
+        option=('--include-output-log / --no-include-output-log'),
         is_flag=True,
         show_default=True,
-        help='Show full output in resulting xml file.')
+        help='Include full standard output in resulting xml file.')
 
 
 ReportStepDataT = TypeVar('ReportStepDataT', bound=ReportStepData)

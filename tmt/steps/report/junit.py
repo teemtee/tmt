@@ -73,7 +73,7 @@ def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSu
             classname=None,
             elapsed_sec=duration_to_seconds(result.duration))
 
-        if report.data.output_log:
+        if report.data.include_output_log:
             case.stdout = main_log
 
         # Map tmt OUTCOME to JUnit states
