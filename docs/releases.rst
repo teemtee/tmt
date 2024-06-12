@@ -12,9 +12,14 @@ The :ref:`/spec/tests/duration` now supports multiplication.
 Added option ``--failed-only`` to the test attributes,
 enabling rerunning failed tests from previous runs.
 
-The :ref:`reportportal<plugins/report/reportportal>` plugin copies
+The :ref:`plugins/report/reportportal` plugin copies
 launch description also into the suite description when the
 ``--suite-per-plan`` option is used.
+
+The :ref:`virtual<plugins/provision/virtual.testcloud>` provision
+plugin gains support for adding multiple disks to guests, by adding
+the corresponding ``disk[N].size``
+:ref:`HW requirements</spec/hardware/disk>`.
 
 
 tmt-1.33
