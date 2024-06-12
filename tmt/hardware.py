@@ -154,6 +154,21 @@ CONSTRAINT_COMPONENTS_PATTERN = re.compile(rf"""
     $                                   # must match the whole string
     """, re.VERBOSE)
 
+
+#: A list of constraint names that operate over sequence of entities.
+INDEXABLE_CONSTRAINTS: tuple[str, ...] = (
+    'disk',
+    'network'
+    )
+
+#: A list of constraint names that do not have child properties.
+CHILDLESS_CONSTRAINTS: tuple[str, ...] = (
+    'arch',
+    'memory',
+    'hostname'
+    )
+
+
 # Type of the operator callable. The operators accept two arguments, and return
 # a boolean evaluation of relationship of their two inputs.
 OperatorHandlerType = Callable[[Any, Any], bool]
@@ -595,7 +610,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
         names: list[str] = []
 
-        if components.peer_index:
+        if components.peer_index is not None:
             names.append(f'{components.name.replace("_", "-")}[{components.peer_index}]')
 
         else:

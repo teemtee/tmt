@@ -4,6 +4,8 @@ from typing import Any
 import pytest
 
 import tmt.hardware
+import tmt.steps
+import tmt.steps.provision
 import tmt.utils
 from tmt.hardware import Hardware
 
@@ -85,6 +87,47 @@ def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) ->
 
     assert match is not None
     assert match.groups() == expected
+
+
+@pytest.mark.parametrize(
+    ('spec', 'expected_exc', 'expected_message'),
+    [
+        (
+            ('disk[1].size=15GB', 'disk.size=20GB'),
+            tmt.utils.SpecificationError,
+            r"^Hardware requirement 'disk\.size=20GB' lacks entry index \(disk\[N\]\)\.$"
+            ),
+        (
+            ('network[1].type=eth', 'network.type=eth'),
+            tmt.utils.SpecificationError,
+            r"^Hardware requirement 'network\.type=eth' lacks entry index \(network\[N\]\)\.$"
+            ),
+        (
+            ('disk=20GB',),
+            tmt.utils.SpecificationError,
+            r"^Hardware requirement 'disk=20GB' lacks child property \(disk\[N\].M\)\.$"
+            ),
+        (
+            ('network=eth',),
+            tmt.utils.SpecificationError,
+            r"^Hardware requirement 'network=eth' lacks child property \(network\[N\].M\)\.$"
+            ),
+        ],
+    ids=[
+        'disk.size lacks index',
+        'network.size lacks index',
+        'disk lacks child property',
+        'network lacks child property',
+        ]
+    )
+def test_normalize_invalid_hardware(
+        spec: tmt.hardware.Spec,
+        expected_exc: type[Exception],
+        expected_message: str,
+        root_logger
+        ) -> None:
+    with pytest.raises(expected_exc, match=expected_message):
+        tmt.steps.provision.normalize_hardware('', spec, root_logger)
 
 
 FULL_HARDWARE_REQUIREMENTS = """
