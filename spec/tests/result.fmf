@@ -37,4 +37,4 @@ example:
 link:
   - implemented-by: /tmt/base.py
   - verified-by: /tests/execute/result
-  - verified-by: /tests/execute/results-custom
+  - verified-by: /tests/execute/result/custom

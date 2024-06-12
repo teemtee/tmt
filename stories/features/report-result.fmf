@@ -29,4 +29,4 @@ example: |
 
 link:
   - implemented-by: /tmt/steps/execute/internal.py
-  - verified-by: /tests/execute/restraint/report_result
+  - verified-by: /tests/execute/restraint/report-result
