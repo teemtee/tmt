@@ -1,5 +1,4 @@
 import ast
-import collections
 import dataclasses
 import datetime
 import enum
@@ -493,7 +492,7 @@ def normalize_hardware(
 
     # From command line
     if isinstance(raw_hardware, (list, tuple)):
-        merged: collections.defaultdict[str, Any] = collections.defaultdict(dict)
+        merged: dict[str, Any] = {}
 
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
@@ -531,16 +530,25 @@ def normalize_hardware(
                     f'{components.operator} {components.value}'
 
             elif components.name == 'cpu' and components.child_name == 'flag':
+                if components.name not in merged:
+                    merged[components.name] = []
+
                 if 'flag' not in merged['cpu']:
                     merged['cpu']['flag'] = []
 
                 merged['cpu']['flag'].append(f'{components.operator} {components.value}')
 
             elif components.child_name:
+                if components.name not in merged:
+                    merged[components.name] = []
+
                 merged[components.name][components.child_name] = \
                     f'{components.operator} {components.value}'
 
             else:
+                if components.name not in merged:
+                    merged[components.name] = []
+
                 merged[components.name] = f'{components.operator} {components.value}'
 
         # Very crude, we will need something better to handle `and` and
