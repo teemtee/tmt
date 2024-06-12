@@ -10,7 +10,7 @@ import tmt.utils
 from tmt.package_managers import Package
 from tmt.steps.prepare import PreparePlugin, _RawPrepareStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Command, Path, field, uniq
+from tmt.utils import Command, Path, ShellScript, field, uniq
 
 if TYPE_CHECKING:
     import tmt.base
@@ -148,8 +148,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
     Step is responsible:
     1. Install required packages for the rpmbuild itself
     2. Detect and install build requires
-    3. Patch sources
-    3. Call function of discover plugin to discover tests from patched sources
+    3. Patch sources (rpmbuild -bp)
+    4. Move patched sources from buildroot into TMT_SOURCE_DIR
+    5. Call function of discover plugin to discover tests from TMT_SOURCE_DIR
     """
 
     _data_class = DistGitData
@@ -245,6 +246,31 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                           )
         except tmt.utils.RunError as error:
             raise tmt.utils.PrepareError("Unable to 'rpmbuild -bp'.", causes=[error])
+
+        # Workaround around new rpm behavior, https://github.com/teemtee/tmt/issues/2987
+        # No hardcoded name, should keep working in the future
+        cmd = Command(
+            "rpmbuild",
+            "-bc",
+            "--short-circuit",
+            "--nodeps",
+            "--define",
+            '__spec_build_pre echo tmt-get-builddir=%{_builddir}; exit 0',
+            spec_name,
+            *dir_defines)
+        outcome = guest.execute(command=cmd, cwd=source_dir).stdout or ''
+        match = re.search(r'tmt-get-builddir=(.+)', outcome)
+        builddir = Path(match.group(1)) if match else None
+
+        # But if the %build is missing in spec (e.g. in our test) the previous output was empty
+        if builddir is None:
+            guest.execute(command=ShellScript(
+                "shopt -s dotglob; if test -e */SPECPARTS; then mv ./*-build/* .; else true; fi"),
+                cwd=source_dir)
+        elif builddir.resolve() != source_dir.resolve():
+            guest.execute(command=ShellScript(f"shopt -s dotglob; mv {builddir}/* {source_dir}"))
+        else:
+            self.debug("Builddir matches source_dir, no need to copy anything.")
 
         # Make sure to pull back sources ...
         # FIXME -- Do we need to? Can be lot of data...

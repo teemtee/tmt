@@ -454,19 +454,27 @@ EOF
 
     ### discover -h shell ###
 
-    rlPhaseStartTest "Shell always merges the plan's git"
-        rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
-        rlRun 'pushd $tmp'
+    for build_phase in 'no' 'has'; do
+        rlPhaseStartTest "Shell always merges the plan's git ($build_phase %build phase in spec)"
+            rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
+            rlRun 'pushd $tmp'
 
-        rlRun "git init"
-        echo no-tmt-2.tgz > $MOCK_SOURCES_FILENAME
-        sed -e '/^BuildArch:/aSource0: no-tmt-2.tgz' $TEST_DIR/data/demo.spec > demo.spec
-        sed -e 's/package-src/no-tmt-2/' -i demo.spec
+            rlRun "git init"
+            echo no-tmt-2.tgz > $MOCK_SOURCES_FILENAME
+            sed -e '/^BuildArch:/aSource0: no-tmt-2.tgz' $TEST_DIR/data/demo.spec > demo.spec
+            sed -e 's/package-src/no-tmt-2/' -i demo.spec
 
-        rlRun "tmt init"
-        # TODO try again with cd \$TMT_SOURCE_DIR/no-tmt-*
-        # Fails after the rename
-        cat <<EOF > plans.fmf
+            if [ "$build_phase" == "no" ]; then
+                sed -e '/%build/d' -i demo.spec
+                rlAssertNotGrep '%build' demo.spec
+            else
+                rlAssertGrep '%build' demo.spec
+            fi
+
+            rlRun "tmt init"
+            # TODO try again with cd \$TMT_SOURCE_DIR/no-tmt-*
+            # Fails after the rename
+            cat <<EOF > plans.fmf
 discover:
     how: shell
     tests:
@@ -488,19 +496,19 @@ execute:
     how: tmt
 EOF
 
-        WORKDIR=/var/tmp/tmt/XXX
-        WORKDIR_SOURCE=$WORKDIR/plans/discover/default-0/source
+            WORKDIR=/var/tmp/tmt/XXX
+            WORKDIR_SOURCE=$WORKDIR/plans/discover/default-0/source
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch -vvv"
+            rlRun -s "tmt run --keep --id $WORKDIR --scratch -vvv"
 
-        # Source dir has everything available
-        rlAssertExists $WORKDIR_SOURCE/no-tmt-2/all_in_one
-        rlAssertExists $WORKDIR_SOURCE/no-tmt-2.tgz
+            # Source dir has everything available
+            rlAssertExists $WORKDIR_SOURCE/no-tmt-2/all_in_one
+            rlAssertExists $WORKDIR_SOURCE/no-tmt-2.tgz
 
-        rlRun "popd"
-        rlRun "rm -rf $tmp"
-    rlPhaseEnd
-
+            rlRun "popd"
+            rlRun "rm -rf $tmp"
+        rlPhaseEnd
+    done
 rlPhaseStartTest "shell with download-only"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'pushd $tmp'

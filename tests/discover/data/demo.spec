@@ -11,6 +11,8 @@ Some tests are being added by patches, lets discover them correctly
 %prep
 %autosetup -n package-src
 
+%build
+
 %install
 
 %changelog
