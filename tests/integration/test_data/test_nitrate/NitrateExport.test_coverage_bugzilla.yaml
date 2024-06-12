@@ -720,7 +720,7 @@ requests.sessions:
           raw: !!binary ""
           reason: OK
           status_code: 200
-tmt.utils:
+tmt.utils.git:
   check_git_url:
   - metadata:
       guess_type: Simple

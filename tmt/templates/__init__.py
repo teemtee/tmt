@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 import tmt
 import tmt.utils
+import tmt.utils.templates
 from tmt.utils import Path, cached_property
 
 DEFAULT_CUSTOM_TEMPLATES_PATH = tmt.utils.Config().path / 'templates'
@@ -68,7 +69,7 @@ class TemplateManager:
     def __init__(self, custom_template_path: Optional[Path] = None):
         self.custom_template_path = custom_template_path or DEFAULT_CUSTOM_TEMPLATES_PATH
         self._init_custom_templates_folder()
-        self._environment = tmt.utils.default_template_environment()
+        self._environment = tmt.utils.templates.default_template_environment()
 
     @cached_property
     def templates(self) -> TemplatesType:
@@ -105,7 +106,7 @@ class TemplateManager:
         :param variables: variables to be passed to the template.
         """
         template = tmt.utils.get_url_content(url)
-        template = tmt.utils.render_template(
+        template = tmt.utils.templates.render_template(
             template, None, self._environment, **variables)
         return _append_newline_if_missing(template)
 
@@ -115,7 +116,7 @@ class TemplateManager:
         :param path: path to the template file.
         :param variables: variables to be passed to the template.
         """
-        template = tmt.utils.render_template_file(path, self._environment, **variables)
+        template = tmt.utils.templates.render_template_file(path, self._environment, **variables)
         return _append_newline_if_missing(template)
 
     def _init_custom_templates_folder(self) -> None:

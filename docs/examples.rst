@@ -1633,7 +1633,7 @@ it and enabling more detailed logging to console is simple:
     # Add a console handler to show debugging output on the terminal
     logger.add_console_handler()
 
-    tmt.utils.git_clone(
+    tmt.utils.git.git_clone(
         url="https://github.com/teemtee/tmt/",
         destination="/tmp/something",
         logger=logger)

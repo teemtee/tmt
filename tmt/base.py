@@ -51,6 +51,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+import tmt.utils.git
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result
@@ -68,7 +69,6 @@ from tmt.utils import (
     container_field,
     dict_to_yaml,
     field,
-    git_clone,
     normalize_shell_script,
     verdict,
     )
@@ -242,7 +242,7 @@ class FmfId(
             if self.path:
                 node_data['path'] = str(self.path)
             if self.url:
-                node_data['url'] = tmt.utils.clonable_git_url(self.url)
+                node_data['url'] = tmt.utils.git.clonable_git_url(self.url)
             fmf.base.Tree.node(node_data)
         except fmf.utils.GeneralError as error:
             # Map fmf errors to more user friendly alternatives
@@ -774,7 +774,7 @@ class Core(
 
     @property
     def git_root(self) -> Optional[Path]:
-        return tmt.utils.git_root(fmf_root=self.fmf_root, logger=self._logger)
+        return tmt.utils.git.git_root(fmf_root=self.fmf_root, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
     # and constructing a workaround would be hard because of support of
@@ -813,7 +813,7 @@ class Core(
         if self.fmf_id.path:
             relative_path = self.fmf_id.path / relative_path.relative_to('/')
 
-        return tmt.utils.web_git_url(self.fmf_id.url, self.fmf_id.ref, relative_path)
+        return tmt.utils.git.web_git_url(self.fmf_id.url, self.fmf_id.ref, relative_path)
 
     @classmethod
     def store_cli_invocation(
@@ -2373,7 +2373,7 @@ class Plan(
             if destination.exists():
                 self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
             else:
-                tmt.utils.git_clone(
+                tmt.utils.git.git_clone(
                     url=plan_id.url,
                     destination=destination,
                     logger=self._logger)
@@ -2404,7 +2404,7 @@ class Plan(
                 self.debug(f"Not enough data to evaluate dynamic ref '{plan_id.ref}', "
                            "going to clone the repository to read dynamic ref definition.")
                 with tempfile.TemporaryDirectory() as tmpdirname:
-                    git_clone(
+                    tmt.utils.git.git_clone(
                         url=str(plan_id.url),
                         destination=Path(tmpdirname),
                         shallow=True,
@@ -3117,13 +3117,13 @@ class Tree(tmt.utils.Common):
                 echo(f"Tree '{tree.root}' initialized.")
 
         # Add .fmf directory to the git index if possible
-        if tmt.utils.git_root(fmf_root=path, logger=logger):
+        if tmt.utils.git.git_root(fmf_root=path, logger=logger):
             fmf_dir = path / '.fmf'
             if dry:
                 echo(f"Path '{fmf_dir}' would be added to git index.")
             else:
                 try:
-                    tmt.utils.git_add(path=fmf_dir, logger=logger)
+                    tmt.utils.git.git_add(path=fmf_dir, logger=logger)
                     echo(f"Path '{fmf_dir}' added to git index.")
                 except tmt.utils.GeneralError as error:
                     message = error.message

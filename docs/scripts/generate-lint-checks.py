@@ -5,7 +5,8 @@ import textwrap
 
 from tmt.base import Plan, Story, Test
 from tmt.lint import Linter
-from tmt.utils import Path, render_template_file
+from tmt.utils import Path
+from tmt.utils.templates import render_template_file
 
 HELP = textwrap.dedent("""
 Usage: generate-lint-checks.py <TEMPLATE-PATH> <OUTPUT-PATH>

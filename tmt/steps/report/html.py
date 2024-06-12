@@ -7,6 +7,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+import tmt.utils.templates
 from tmt.utils import Path, field
 
 HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
@@ -64,7 +65,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         super().go()
 
         # Prepare the template
-        environment = tmt.utils.default_template_environment()
+        environment = tmt.utils.templates.default_template_environment()
 
         if self.data.absolute_paths:
             def _linkable_path(path: str) -> str:
@@ -99,7 +100,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         self.write(
             filename,
-            data=tmt.utils.render_template_file(
+            data=tmt.utils.templates.render_template_file(
                 HTML_TEMPLATE_PATH,
                 environment,
                 results=self.step.plan.execute.results(),
