@@ -241,7 +241,7 @@ class Try(tmt.utils.Common):
         assert self._cli_context_object is not None  # narrow type
         data = RunData(
             root=str(self.tree.root) if self.tree.root else None,
-            plans=[plan.name for plan in self.plans] if self.plans is not None else None,
+            plans=[plan.name for plan in self.plans],
             steps=list(self._cli_context_object.steps),
             environment=self.environment,
             remove=self.opt('remove')
