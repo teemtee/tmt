@@ -89,6 +89,20 @@ def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) ->
     assert match.groups() == expected
 
 
+def test_normalize_hardware(root_logger) -> None:
+    # All major classes of requirements:
+    spec = (
+        # Simple name.child_name=value
+        'cpu.processors=1',
+        # The same but with cpu.flags which have special handling
+        'cpu.flag!=avc',
+        # name[peer_index].child_name=value
+        'disk[1].size=1'
+        )
+
+    tmt.steps.provision.normalize_hardware('', spec, root_logger)
+
+
 @pytest.mark.parametrize(
     ('spec', 'expected_exc', 'expected_message'),
     [
