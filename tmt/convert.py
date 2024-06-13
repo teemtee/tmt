@@ -922,6 +922,8 @@ def read_polarion_case(
     if polarion_case.tags:
         if not current_data.get('tag'):
             current_data['tag'] = []
+        # Space is the default separator, but let's try to autodetect couple different options
+        # as Polarion tag field is free text so it can have anything
         separator = ' '
         if ',' in polarion_case.tags:
             separator = ','
