@@ -29,6 +29,7 @@ from tmt.utils import (
     ShellScript,
     cached_property,
     configure_constant,
+    effective_workdir_root,
     field,
     retry_session,
     )
@@ -94,12 +95,6 @@ def import_testcloud() -> None:
     global TPM_CONFIG_ALLOWS_VERSIONS
     TPM_CONFIG_ALLOWS_VERSIONS = hasattr(TPMConfiguration(), 'version')
 
-
-# Testcloud cache to our tmt's workdir root
-TESTCLOUD_DATA = (
-    Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
-    ) / 'testcloud'
-TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 # Userdata for cloud-init
 USER_DATA = """#cloud-config
@@ -295,6 +290,17 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> 
         return True
 
     return False
+
+
+def get_workdir_root(workdir_root_option: Optional[str]) -> Path:
+
+    if workdir_root_option:
+        testcloud_data = effective_workdir_root(workdir_root_option) / 'testcloud'
+    elif effective_workdir_root():
+        testcloud_data = effective_workdir_root() / 'testcloud'
+    else:
+        testcloud_data = WORKDIR_ROOT / 'testcloud'
+    return testcloud_data
 
 
 @dataclasses.dataclass
@@ -651,10 +657,12 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def wake(self) -> None:
         """ Wake up the guest """
+
         self.debug(
             f"Waking up testcloud instance '{self.instance_name}'.",
             level=2, shift=0)
         self.prepare_config()
+
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         if self.instance_name is None:
@@ -711,9 +719,11 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
+        testcloud_data = get_workdir_root(self.opt('workdir-root'))
+
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = TESTCLOUD_DATA
-        self.config.STORE_DIR = TESTCLOUD_IMAGES
+        self.config.DATA_DIR = testcloud_data
+        self.config.STORE_DIR = testcloud_data / 'images'
 
     def _combine_hw_memory(self) -> None:
         """ Combine ``hardware`` with ``--memory`` option """
@@ -818,12 +828,12 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Start provisioned guest """
         if self.is_dry_run:
             return
-        # Make sure required directories exist
-        os.makedirs(TESTCLOUD_DATA, exist_ok=True)
-        os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
-
         # Prepare config
         self.prepare_config()
+
+        # Make sure required directories exist
+        os.makedirs(self.config.DATA_DIR, exist_ok=True)
+        os.makedirs(self.config.STORE_DIR, exist_ok=True)
 
         # Kick off image URL with the given image
         self.image_url = self.image
@@ -848,7 +858,7 @@ class GuestTestcloud(tmt.GuestSsh):
         except (testcloud.exceptions.TestcloudPermissionsError,
                 PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
+                f"Failed to prepare the image. Check the '{self.config.STORE_DIR}' "
                 f"directory permissions.") from error
         except KeyError as error:
             raise ProvisionError(
@@ -917,7 +927,6 @@ class GuestTestcloud(tmt.GuestSsh):
             image=self._image,
             connection=f"qemu:///{self.connection}",
             domain_configuration=self._domain)
-
         self.verbose('name', self.instance_name, 'green')
 
         # Decide if we want to multiply timeouts when emulating an architecture
@@ -1064,6 +1073,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
+    @property
+    def testcloud_images(self) -> Path:
+        return get_workdir_root(self.opt('workdir-root')) / 'images'
+
     def go(self) -> None:
         """ Provision the testcloud instance """
         super().go()
@@ -1127,20 +1140,21 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     def _print_local_images(self) -> None:
         """ Print images which are already cached """
         self.info("Locally available images")
-        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+        for filename in sorted(self.testcloud_images.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
-            click.echo(f"{TESTCLOUD_IMAGES / filename}")
+            click.echo(f"{self.testcloud_images / filename}")
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
+    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
         """ Remove the testcloud images """
+        testcloud_images = workdir_root / 'testcloud/images'
         clean.info('testcloud', shift=1, color='green')
-        if not TESTCLOUD_IMAGES.exists():
+        if not testcloud_images.exists():
             clean.warn(
-                f"Directory '{TESTCLOUD_IMAGES}' does not exist.", shift=2)
+                f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
-        for image in TESTCLOUD_IMAGES.iterdir():
+        for image in testcloud_images.iterdir():
             if dry:
                 clean.verbose(f"Would remove '{image}'.", shift=2)
             else:
