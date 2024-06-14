@@ -281,6 +281,16 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> 
                                     tmt.hardware.Operator.LTE):
         return True
 
+    if components.name == 'cpu' \
+        and components.child_name == 'processors' \
+        and constraint.operator in (tmt.hardware.Operator.EQ,
+                                    tmt.hardware.Operator.LTE,
+                                    tmt.hardware.Operator.GTE,
+                                    tmt.hardware.Operator.NEQ,
+                                    tmt.hardware.Operator.LT,
+                                    tmt.hardware.Operator.GT):
+        return True
+
     if components.name == 'disk' \
         and components.child_name == 'size' \
         and constraint.operator in (tmt.hardware.Operator.EQ,
@@ -529,6 +539,79 @@ def _apply_hw_disk_size(
                 str(next(disk_filepath_generator)),
                 int(final_size.to('GB').magnitude))
             )
+
+
+def _apply_cpu_processors(
+        hardware: Optional[tmt.hardware.Hardware],
+        domain: 'DomainConfiguration',
+        logger: tmt.log.Logger) -> None:
+    """ Apply ``tpm`` constraint to given VM domain """
+
+    domain.cpu_count = DEFAULT_CPU_COUNT
+
+    if not hardware or not hardware.constraint:
+        logger.debug(
+            'cpu.processors',
+            "not included because of no constraints",
+            level=4)
+
+        return
+
+    variant = hardware.constraint.variant()
+
+    cpu_processors_constraints = [
+        constraint
+        for constraint in variant
+        if isinstance(constraint, tmt.hardware.NumberConstraint)
+        and constraint.expand_name().name == 'cpu'
+        and constraint.expand_name().child_name == 'processors']
+
+    if not cpu_processors_constraints:
+        logger.debug(
+            'cpu.processors',
+            "not included because of no 'cpu.processors' constraints",
+            level=4)
+
+        return
+
+    for constraint in cpu_processors_constraints:
+        if constraint.operator in (
+                tmt.hardware.Operator.EQ,
+                tmt.hardware.Operator.LTE,
+                tmt.hardware.Operator.GTE):
+            logger.debug(
+                'cpu.processors',
+                f"set to '{constraint.value}' because of '{constraint}'",
+                level=4)
+
+            domain.cpu_count = constraint.value
+
+        elif constraint.operator is tmt.hardware.Operator.NEQ \
+                and domain.cpu_count != constraint.value:
+            logger.debug(
+                'cpu.processors',
+                f"kept at '{constraint.value}' because of '{constraint}'",
+                level=4)
+
+        elif constraint.operator is tmt.hardware.Operator.LT:
+            logger.debug(
+                'cpu.processors',
+                f"set to '{constraint.value - 1}' because of '{constraint}'",
+                level=4)
+
+            domain.cpu_count = constraint.value - 1
+
+        elif constraint.operator is tmt.hardware.Operator.GT:
+            logger.debug(
+                'cpu.processors',
+                f"set to '{constraint.value + 1}' because of '{constraint}'",
+                level=4)
+
+            domain.cpu_count = constraint.value + 1
+
+        else:
+            raise ProvisionError(
+                f"Cannot apply hardware requirement '{constraint}', operator not supported.")
 
 
 class GuestTestcloud(tmt.GuestSsh):
@@ -879,6 +962,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 self._logger.debug('effective hardware', line, level=4)
 
         self._apply_hw_memory(self._domain)
+        _apply_cpu_processors(self.hardware, self._domain, self._logger)
         _apply_hw_disk_size(self.hardware, self._domain, self._logger)
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
