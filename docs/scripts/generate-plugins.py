@@ -148,41 +148,43 @@ def main() -> None:
     # ... explore available plugins...
     tmt.plugins.explore(logger)
 
+    # Prepare the parent class
     if step_name == 'discover':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.discover.DiscoverPlugin._supported_methods)
+        parent_class = tmt.steps.discover.DiscoverPlugin
 
     elif step_name == 'execute':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.execute.ExecutePlugin._supported_methods)
+        parent_class = tmt.steps.execute.ExecutePlugin
 
     elif step_name == 'finish':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.finish.FinishPlugin._supported_methods)
+        parent_class = tmt.steps.finish.FinishPlugin
 
     elif step_name == 'prepare':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.prepare.PreparePlugin._supported_methods)
+        parent_class = tmt.steps.prepare.PreparePlugin
 
     elif step_name == 'provision':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.provision.ProvisionPlugin._supported_methods)
+        parent_class = tmt.steps.provision.ProvisionPlugin
 
     elif step_name == 'report':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.report.ReportPlugin._supported_methods)
+        parent_class = tmt.steps.report.ReportPlugin
 
     elif step_name == 'test-checks':
-        plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
+        parent_class = tmt.checks.CheckPlugin
 
     else:
         raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
+
+    # Prepare the plugin generator
+    if step_name == 'test-checks':
+        plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
+    else:
+        plugin_generator = _create_step_plugin_iterator(parent_class._supported_methods)
 
     # ... and render the template.
     output_filepath.write_text(render_template_file(
         template_filepath,
         LOGGER=logger,
         STEP=step_name,
+        PARENT=parent_class,
         PLUGINS=plugin_generator,
         REVIEWED_PLUGINS=REVIEWED_PLUGINS,
         container_fields=tmt.utils.container_fields,

@@ -1961,7 +1961,23 @@ ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
 class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
-    """ Common parent of provision plugins """
+    """
+    Plugins which take care of provisioning guests for testing.
+
+    There are several provision plugins supporting multiple ways to
+    provision the environment for testing, for example
+    :ref:`plugins/provision/virtual.testcloud`,
+    :ref:`plugins/provision/container`,
+    :ref:`plugins/provision/connect`,
+    :ref:`plugins/provision/local` or
+    :ref:`plugins/provision/artemis`.
+    See the individual plugin documentation for details about supported
+    options.
+
+    As part of the provision step it is also possible to specify
+    detailed hardware requirements for the testing environment. See the
+    :ref:`/spec/hardware` specification section for details.
+    """
 
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
     # ProvisionStepDataT.

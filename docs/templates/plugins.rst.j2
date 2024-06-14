@@ -5,6 +5,10 @@
 {{ STEP | replace('-', ' ') | capitalize }} Plugins
 {{ '~' * (8 + (STEP | length)) }}
 
+{% if PARENT.__doc__ and not PARENT.__doc__ | regex_search("Common parent of .* plugins") %}
+{{ PARENT.__doc__ | dedent | strip }}
+{% endif %}
+
 {% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
 .. _plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
