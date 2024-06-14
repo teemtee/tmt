@@ -521,6 +521,38 @@ def finito(
         click_context.obj.run.go()
 
 
+def _apply_linters(lintable: Union[tmt.lint.Lintable[tmt.base.Test],
+                                   tmt.lint.Lintable[tmt.base.Plan],
+                                   tmt.lint.Lintable[tmt.base.Story],
+                                   tmt.lint.Lintable[tmt.base.LintableCollection]],
+                   linters: list[tmt.lint.Linter],
+                   failed_only: bool,
+                   enforce_checks: list[str],
+                   outcomes: list[tmt.lint.LinterOutcome]) -> tuple[bool,
+                                                                    Optional[list[tmt.lint.LinterRuling]]]:
+    """Apply linters on a lintable and filter out disallowed outcomes."""
+
+    valid, rulings = lintable.lint(
+        linters=linters,
+        enforce_checks=enforce_checks or None)
+
+    # If the object pass the checks, and we're asked to show only the failed
+    # ones, display nothing.
+    if valid and failed_only:
+        return valid, None
+
+    # Find out what rulings were allowed by user. By default, it's all, but
+    # user might be interested in "warn" only, for example. Reduce the list
+    # of rulings, and if we end up with an empty list *and* user constrained
+    # us to just a subset of rulings, display nothing.
+    allowed_rulings = list(tmt.lint.filter_allowed_checks(rulings, outcomes=outcomes))
+
+    if not allowed_rulings and outcomes:
+        return valid, None
+
+    return valid, allowed_rulings
+
+
 def _lint_class(
         context: Context,
         klass: Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]],
@@ -543,22 +575,9 @@ def _lint_class(
         disable_checks=disable_checks or None)
 
     for lintable in klass.from_tree(context.obj.tree):
-        valid, rulings = lintable.lint(
-            linters=linters,
-            enforce_checks=enforce_checks or None)
-
-        # If the object pass the checks, and we're asked to show only the failed
-        # ones, display nothing.
-        if valid and failed_only:
-            continue
-
-        # Find out what rulings were allowed by user. By default, it's all, but
-        # user might be interested in "warn" only, for example. Reduce the list
-        # of rulings, and if we end up with an empty list *and* user constrained
-        # us to just a subset of rulings, display nothing.
-        allowed_rulings = list(tmt.lint.filter_allowed_checks(rulings, outcomes=outcomes))
-
-        if not allowed_rulings and outcomes:
+        valid, allowed_rulings = _apply_linters(
+            lintable, linters, failed_only, enforce_checks, outcomes)
+        if allowed_rulings is None:
             continue
 
         lintable.ls()
@@ -569,6 +588,52 @@ def _lint_class(
             exit_code = 1
 
         echo()
+
+    return exit_code
+
+
+def _lint_collection(
+        context: Context,
+        klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
+        failed_only: bool,
+        enable_checks: list[str],
+        disable_checks: list[str],
+        enforce_checks: list[str],
+        outcomes: list[tmt.lint.LinterOutcome],
+        **kwargs: Any) -> int:
+    """ Lint a collection of objects """
+
+    # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
+    context.params.update(**kwargs)
+
+    exit_code = 0
+
+    linters = tmt.base.LintableCollection.resolve_enabled_linters(
+        enable_checks=enable_checks or None,
+        disable_checks=disable_checks or None)
+
+    objs: list[tmt.base.Core] = [
+        obj for cls in klasses
+        for obj in cls.from_tree(context.obj.tree)]
+    lintable = tmt.base.LintableCollection(objs)
+
+    valid, allowed_rulings = _apply_linters(
+        lintable,
+        linters,
+        failed_only,
+        enforce_checks,
+        outcomes)
+    if allowed_rulings is None:
+        return exit_code
+
+    lintable.print_header()
+
+    echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+
+    if not valid:
+        exit_code = 1
+
+    echo()
 
     return exit_code
 
@@ -594,18 +659,28 @@ def do_lint(
 
         return 0
 
-    return max(
-        _lint_class(
-            context,
-            klass,
-            failed_only,
-            enable_checks,
-            disable_checks,
-            enforce_checks,
-            outcomes,
-            **kwargs)
-        for klass in klasses
-        )
+    res_single = max(_lint_class(
+        context,
+        klass,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        outcomes,
+        **kwargs)
+        for klass in klasses)
+
+    res_collection = _lint_collection(
+        context,
+        klasses,
+        failed_only,
+        enable_checks,
+        disable_checks,
+        enforce_checks,
+        outcomes,
+        **kwargs)
+
+    return max(res_single, res_collection)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
