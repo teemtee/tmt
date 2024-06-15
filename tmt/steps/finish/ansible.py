@@ -42,3 +42,7 @@ class FinishAnsible(
     # Also, assigning class methods seems to cause trouble to mypy
     # See https://github.com/python/mypy/issues/6700
     base_command = tmt.steps.finish.FinishPlugin.base_command  # type: ignore[assignment]
+
+    # `FinishPlugin` plugin would win the inheritance battle and provide
+    # its no-op `go()`. Force the one from `PrepareAnsible`.
+    go = PrepareAnsible.go
