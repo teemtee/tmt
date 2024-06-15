@@ -60,8 +60,8 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
-    from tmt.steps.provision import Guest
     from tmt.result import BaseResult
+    from tmt.steps.provision import Guest
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
