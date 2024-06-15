@@ -34,7 +34,6 @@ import tmt.options
 import tmt.queue
 import tmt.utils
 from tmt.options import option, show_step_method_hints
-from tmt.result import BaseResult
 from tmt.utils import (
     DEFAULT_NAME,
     Environment,
@@ -62,6 +61,7 @@ if TYPE_CHECKING:
     import tmt.steps.execute
     from tmt.base import Plan
     from tmt.steps.provision import Guest
+    from tmt.result import BaseResult
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
@@ -233,7 +233,7 @@ StepDataT = TypeVar('StepDataT', bound='StepData')
 PluginReturnValueT = TypeVar('PluginReturnValueT')
 
 #: A type variable representing a result type.
-ResultT = TypeVar('ResultT', bound=BaseResult)
+ResultT = TypeVar('ResultT', bound='BaseResult')
 
 
 @dataclasses.dataclass
@@ -691,7 +691,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         except Exception as exc:
             raise GeneralError('Cannot load step results.') from exc
 
-    def _save_results(self, results: Sequence[BaseResult]) -> None:
+    def _save_results(self, results: Sequence['BaseResult']) -> None:
         """ Save results of this step to the workdir """
 
         try:
