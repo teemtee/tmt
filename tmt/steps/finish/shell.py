@@ -7,6 +7,7 @@ import tmt
 import tmt.steps
 import tmt.steps.finish
 import tmt.utils
+from tmt.result import PhaseResult
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript, field
@@ -63,9 +64,9 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Perform finishing tasks on given guest """
-        super().go(guest=guest, environment=environment, logger=logger)
+        results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
@@ -96,3 +97,5 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             else:
                 command = tmt.utils.ShellScript(f'{finish_wrapper_path}')
             guest.execute(command, cwd=workdir)
+
+        return results

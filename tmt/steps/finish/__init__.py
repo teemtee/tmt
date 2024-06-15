@@ -9,6 +9,7 @@ import tmt
 import tmt.steps
 from tmt.options import option
 from tmt.plugins import PluginRegistry
+from tmt.result import PhaseResult
 from tmt.steps import (
     Action,
     ActionTask,
@@ -32,7 +33,7 @@ class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 FinishStepDataT = TypeVar('FinishStepDataT', bound=FinishStepData)
 
 
-class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, None]):
+class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
     """ Common parent of finish plugins """
 
     # ignore[assignment]: as a base class, FinishStepData is not included in
@@ -71,8 +72,10 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, None]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         self.go_prolog(logger)
+
+        return []
 
 
 class Finish(tmt.steps.Step):
