@@ -1,6 +1,5 @@
 import copy
 import dataclasses
-import datetime
 import json
 import os
 import signal as _signal
@@ -25,7 +24,15 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
+from tmt.utils import (
+    Path,
+    ShellScript,
+    Stopwatch,
+    cached_property,
+    field,
+    format_duration,
+    format_timestamp,
+    )
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -708,24 +715,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """
         return (invocation.test_data_path / TMT_ABORT_SCRIPT.created_file).exists()
 
-    @staticmethod
-    def format_timestamp(timestamp: datetime.datetime) -> str:
-        """ Convert timestamp to a human readable format """
-
-        return timestamp.isoformat()
-
-    @staticmethod
-    def format_duration(duration: datetime.timedelta) -> str:
-        """ Convert duration to a human readable format """
-
-        # A helper variable to hold the duration while we cut away days, hours and seconds.
-        counter = int(duration.total_seconds())
-
-        hours, counter = divmod(counter, 3600)
-        minutes, seconds = divmod(counter, 60)
-
-        return f'{hours:02}:{minutes:02}:{seconds:02}'
-
     def timeout_hint(self, invocation: TestInvocation) -> None:
         """ Append a duration increase hint to the test output """
         output = invocation.path / TEST_OUTPUT_FILENAME
@@ -761,9 +750,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             for result in check_results:
                 result.event = event
 
-                result.start_time = self.format_timestamp(timer.start_time)
-                result.end_time = self.format_timestamp(timer.end_time)
-                result.duration = self.format_duration(timer.duration)
+                result.start_time = format_timestamp(timer.start_time)
+                result.end_time = format_timestamp(timer.end_time)
+                result.duration = format_duration(timer.duration)
 
             results += check_results
 

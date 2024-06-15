@@ -7142,6 +7142,24 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
         return self.end_time - self.start_time
 
 
+def format_timestamp(timestamp: datetime.datetime) -> str:
+    """ Convert timestamp to a human readable format """
+
+    return timestamp.isoformat()
+
+
+def format_duration(duration: datetime.timedelta) -> str:
+    """ Convert duration to a human readable format """
+
+    # A helper variable to hold the duration while we cut away days, hours and seconds.
+    counter = int(duration.total_seconds())
+
+    hours, counter = divmod(counter, 3600)
+    minutes, seconds = divmod(counter, 60)
+
+    return f'{hours:02}:{minutes:02}:{seconds:02}'
+
+
 def retry(
         func: Callable[..., T],
         attempts: int,

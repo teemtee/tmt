@@ -26,6 +26,8 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
     field,
+    format_duration,
+    format_timestamp,
     )
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
@@ -387,7 +389,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Execute the test, save the output and return code
         with Stopwatch() as timer:
-            invocation.start_time = self.format_timestamp(timer.start_time)
+            invocation.start_time = format_timestamp(timer.start_time)
 
             timeout: Optional[int]
 
@@ -428,8 +430,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         with invocation.process_lock:
             invocation.process = None
 
-        invocation.end_time = self.format_timestamp(timer.end_time)
-        invocation.real_duration = self.format_duration(timer.duration)
+        invocation.end_time = format_timestamp(timer.end_time)
+        invocation.real_duration = format_duration(timer.duration)
 
         # Save the captured output. Do not let the follow-up pulls
         # overwrite it.

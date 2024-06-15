@@ -8,7 +8,13 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
-from tmt.utils import CommandOutput, Path, ShellScript, render_run_exception_streams
+from tmt.utils import (
+    CommandOutput,
+    Path,
+    ShellScript,
+    format_timestamp,
+    render_run_exception_streams,
+    )
 
 if TYPE_CHECKING:
     import tmt.base
@@ -48,12 +54,10 @@ def _save_report(
     :returns: path to the report file.
     """
 
-    from tmt.steps.execute import ExecutePlugin
-
     report_filepath = invocation.check_files_path / TEST_POST_AVC_FILENAME
 
     report = [
-        f'# Reported at {ExecutePlugin.format_timestamp(timestamp)}',
+        f'# Reported at {format_timestamp(timestamp)}',
         *report
         ]
 
