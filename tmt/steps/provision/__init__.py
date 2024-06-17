@@ -531,7 +531,7 @@ def normalize_hardware(
 
             elif components.name == 'cpu' and components.child_name == 'flag':
                 if components.name not in merged:
-                    merged[components.name] = []
+                    merged[components.name] = {}
 
                 if 'flag' not in merged['cpu']:
                     merged['cpu']['flag'] = []
@@ -540,15 +540,12 @@ def normalize_hardware(
 
             elif components.child_name:
                 if components.name not in merged:
-                    merged[components.name] = []
+                    merged[components.name] = {}
 
                 merged[components.name][components.child_name] = \
                     f'{components.operator} {components.value}'
 
             else:
-                if components.name not in merged:
-                    merged[components.name] = []
-
                 merged[components.name] = f'{components.operator} {components.value}'
 
         # Very crude, we will need something better to handle `and` and
