@@ -12,6 +12,7 @@ from tmt.hardware import (
     _parse_hostname,
     _parse_location,
     _parse_memory,
+    _parse_system,
     _parse_virtualization,
     _parse_zcrypt,
     )
@@ -710,5 +711,19 @@ def test_location_lab_controller(root_logger: Logger) -> None:
         'labcontroller': {
             '_op': '!=',
             '_value': 'lab-01.bar.redhat.com'
+            }
+        }
+
+
+def test_system_numa_nodes(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['system.numa_nodes'](
+        _parse_system({'numa-nodes': '2'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'numanodes': {
+                '_op': '==',
+                '_value': '2'
+                }
             }
         }
