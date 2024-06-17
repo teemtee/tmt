@@ -56,7 +56,7 @@ description: |
               ...
 
           # Boolean, whether the cpu supports hyper-threading.
-          hyper-threading: true| false
+          hyper-threading: true|false
 
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
