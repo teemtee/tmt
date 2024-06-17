@@ -436,6 +436,9 @@ def _transform_zcrypt_mode(
 def _transform_location_lab_controller(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
+    if constraint.operator not in [tmt.hardware.Operator.EQ, tmt.hardware.Operator.NEQ]:
+        raise ProvisionError(
+            f"Cannot apply hardware requirement '{constraint}', operator not supported.")
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator,
         constraint.value)

@@ -229,10 +229,9 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             {
                 'labcontroller': {
                     '_op': '!=',
-                    '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+                    '_value': 'lab-1.bar.redhat.com'
                     }
                 },
-            {'or': []},
             {
                 'and': [
                     {'or': []},
@@ -688,21 +687,21 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
 def test_location_lab_controller(root_logger: Logger) -> None:
 
     result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
-        _parse_location({"lab-controller": "lab-01.rhts.eng.pek2.redhat.com"}), root_logger)
+        _parse_location({"lab-controller": "lab-01.bar.redhat.com"}), root_logger)
 
     assert result.to_mrack() == {
         'labcontroller': {
             '_op': '==',
-            '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+            '_value': 'lab-01.bar.redhat.com'
             }
         }
 
     result = _CONSTRAINT_TRANSFORMERS['location.lab_controller'](
-        _parse_location({"lab-controller": "!= lab-01.rhts.eng.pek2.redhat.com"}), root_logger)
+        _parse_location({"lab-controller": "!= lab-01.bar.redhat.com"}), root_logger)
 
     assert result.to_mrack() == {
         'labcontroller': {
             '_op': '!=',
-            '_value': 'lab-01.rhts.eng.pek2.redhat.com'
+            '_value': 'lab-01.bar.redhat.com'
             }
         }

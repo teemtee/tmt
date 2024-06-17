@@ -12,14 +12,12 @@ description: |
     .. versionchanged:: 1.33
        Added ``location.lab-controller`` into specification.
 
-    .. warning::
-
-       Because of Beaker limitation, ``~`` and ``!~`` operators commonly used with text-like
-       HW requirements cannot be used with ``lab-controller``. Only ``==`` and ``!=``
-       operators are supported.
-
 example:
   - |
     # Select a system that is not managed lab-01.foo.bar.com lab controller
     location:
         lab-controller: "!= lab-01.foo.bar.com"
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``==`` and ``!=`` operators only"
