@@ -229,6 +229,9 @@ html_favicon = '_static/tmt-small.png'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# Include custom style.
+html_style = 'custom.css'
+
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
