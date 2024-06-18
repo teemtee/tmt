@@ -16,7 +16,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
@@ -222,7 +222,7 @@ html_theme = HTML_THEME
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = None
+html_favicon = '_static/tmt-transparent.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -313,7 +313,7 @@ linkcheck_ignore = [
     ]
 
 
-def generate_tmt_docs(app: Sphinx) -> None:
+def generate_tmt_docs(app: Sphinx, config: Any) -> None:
     """ Run `make generate` to populate the auto-generated sources """
 
     conf_dir = Path(app.confdir)
@@ -321,4 +321,7 @@ def generate_tmt_docs(app: Sphinx) -> None:
 
 
 def setup(app: Sphinx) -> None:
-    app.connect("builder-inited", generate_tmt_docs)
+    # Generate sources after loading configuration. That should build
+    # everything, including the logo, before Sphinx starts checking
+    # whether all input files exist.
+    app.connect("config-inited", generate_tmt_docs)

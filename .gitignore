@@ -13,6 +13,7 @@ docs/plugins/test-checks.rst
 docs/_build
 docs/spec
 docs/stories
+docs/_static/tmt-transparent.png
 
 # Python
 

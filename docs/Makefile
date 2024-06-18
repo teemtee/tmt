@@ -4,8 +4,11 @@
 .DEFAULT_GOAL := help
 .PHONY: help generate-plugins plugins/*.rst generate-stories generate-template-filters generate-autodocs clean
 
+LOGO_SRC = https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-transparent.png
+LOGO_DST = _static/tmt-transparent.png
+
 clean:
-	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst
+	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst $(LOGO_DST)
 	find plugins -name "*.rst" ! -name index.rst | xargs rm -f
 
 ##
@@ -18,7 +21,12 @@ TEMPLATESDIR  = templates
 
 PLUGINS_TEMPLATE := $(TEMPLATESDIR)/plugins.rst.j2
 
-generate: spec stories generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) spec stories generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+
+# We can ignore the error: later, during the build, if the logo is
+# missing, Sphinx will complain.
+$(LOGO_DST):
+	-curl -f $(LOGO_SRC) -o $(LOGO_DST)
 
 spec:
 	mkdir -p spec
