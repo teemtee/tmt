@@ -5,7 +5,7 @@
       when: ansible_distribution in ["RedHat", "CentOS"] and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'yum-utils'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: yum-utils
             state: present
 

@@ -5,13 +5,13 @@
       when: ansible_distribution == "RedHat" and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
             disable_gpg_check: true
             state: present
 
         - name: Install package 'yum-utils'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: yum-utils
             state: present
 
@@ -24,13 +24,13 @@
       when: ansible_distribution == "RedHat" and ansible_distribution_major_version | int >= 8
       block:
         - name: Install package 'epel-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
             disable_gpg_check: true
             state: present
 
         - name: Install package 'epel-next-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
             disable_gpg_check: true
             state: present
@@ -54,12 +54,12 @@
       when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: epel-release
             state: present
 
         - name: Install package 'yum-utils'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: yum-utils
             state: present
 
@@ -72,12 +72,12 @@
       when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int >= 8
       block:
         - name: Install package 'epel-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: epel-release
             state: present
 
         - name: Install package 'epel-next-release'
-          ansible.builtin.yum:
+          ansible.builtin.dnf:
             name: epel-next-release
             state: present
 

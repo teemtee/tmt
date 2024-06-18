@@ -286,8 +286,8 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             # FIXME needs refactor of Prepare, tmt.base etc...
             # doing quick & dirty injection of prepareinstalls
             for guest in self.step.plan.provision.guests():
-                collected_requires: list['tmt.base.DependencySimple'] = []
-                collected_recommends: list['tmt.base.DependencySimple'] = []
+                collected_requires: list[tmt.base.DependencySimple] = []
+                collected_recommends: list[tmt.base.DependencySimple] = []
                 for test in self.step.plan.discover.tests(enabled=True):
                     if not test.enabled_on_guest(guest):
                         continue

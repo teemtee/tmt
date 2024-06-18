@@ -229,7 +229,7 @@ class MultiGuestTask(Task[TaskResultT]):
         old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: dict[Future[None], 'Guest'] = {}
+            futures: dict[Future[None], Guest] = {}
 
             for guest in self.guests:
                 # Swap guest's logger for the one we prepared, with labels

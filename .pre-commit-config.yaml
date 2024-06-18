@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.1.0'
+    rev: 'v2.3.0'
     hooks:
       - id: autopep8
 
@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.9.0"
+    rev: "v1.10.0"
     hooks:
       - id: mypy
         language_version: "3.9"
@@ -66,7 +66,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.357
+    rev: v1.1.367
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -108,7 +108,7 @@ repos:
           - "types-docutils"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.28.1"
+    rev: "0.28.5"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -121,7 +121,7 @@ repos:
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v24.2.1
+    rev: v24.6.0
     hooks:
       - id: ansible-lint
         args:
@@ -137,7 +137,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.3.5
+    rev: v0.4.9
     hooks:
       - id: ruff
         args:
@@ -145,7 +145,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.32.1
+    rev: 1.33.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
@@ -156,7 +156,7 @@ repos:
         # There is *a lot* of them, and hatch might fetch many of them.
         - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         additional_dependencies:
