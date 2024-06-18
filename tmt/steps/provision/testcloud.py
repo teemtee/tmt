@@ -541,11 +541,11 @@ def _apply_hw_disk_size(
             )
 
 
-def _apply_cpu_processors(
+def _apply_hw_cpu_processors(
         hardware: Optional[tmt.hardware.Hardware],
         domain: 'DomainConfiguration',
         logger: tmt.log.Logger) -> None:
-    """ Apply ``tpm`` constraint to given VM domain """
+    """ Apply ``cpu.processors`` constraint to given VM domain """
 
     domain.cpu_count = DEFAULT_CPU_COUNT
 
@@ -962,7 +962,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 self._logger.debug('effective hardware', line, level=4)
 
         self._apply_hw_memory(self._domain)
-        _apply_cpu_processors(self.hardware, self._domain, self._logger)
+        _apply_hw_cpu_processors(self.hardware, self._domain, self._logger)
         _apply_hw_disk_size(self.hardware, self._domain, self._logger)
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
