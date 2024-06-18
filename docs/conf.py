@@ -230,7 +230,7 @@ html_theme = HTML_THEME
 html_static_path = ['_static']
 
 # Include custom style.
-html_style = 'custom.css'
+html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'custom.css')
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
