@@ -357,6 +357,16 @@ def _transform_memory(
         children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
 
 
+def _transform_tpm_version(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    return MrackHWKeyValue('TPM', beaker_operator, actual_value)
+
+
 def _transform_virtualization_is_virtualized(
         constraint: tmt.hardware.FlagConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -469,6 +479,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
+    'tpm.version': _transform_tpm_version,  # type: ignore[dict-item]
     'virtualization.is_virtualized':
         _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
     'virtualization.hypervisor':
