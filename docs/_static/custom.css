@@ -1,0 +1,5 @@
+@import 'css/theme.css';
+
+/* Used for HW requirement support matrix */
+.supported   { color: green; }
+.unsupported { color: red; }

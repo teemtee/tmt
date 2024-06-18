@@ -226,3 +226,8 @@
 * {{ printable_relation(link) }} ``{{ link.target }}``
 {% endif %}
 {% endfor %}
+
+{# Include HW requirement matrix when generating the main HW story #}
+{% if STORY.name == '/spec/hardware'%}
+.. include:: hardware-matrix.rst
+{% endif %}

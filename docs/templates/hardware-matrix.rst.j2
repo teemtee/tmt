@@ -1,0 +1,42 @@
+{#
+    A Jinja2 template for rendering HW requirement support matrix in tmt's own docs.
+#}
+
+Support matrix
+^^^^^^^^^^^^^^
+
+Below you can find a matrix documenting which hardware requirement are
+supported by plugins bundled with tmt.
+
+.. role:: supported
+
+.. role:: unsupported
+
+.. list-table::
+   :header-rows: 1
+
+   * - Requirement
+    {% for plugin in MATRIX['memory'].keys() %}
+        {% if plugin == 'virtual.testcloud' %}
+     - ``virtual``
+         {% else %}
+     - ``{{ plugin }}``
+         {% endif %}
+    {% endfor %}
+
+{% for requirement, plugins in MATRIX.items() %}
+   * - :ref:`{{ requirement }}</spec/hardware/{{ requirement }}>`
+    {% for plugin, (enabled, note_id) in plugins.items() %}
+        {% if enabled %}
+     - :supported:`yes`{% if note_id %} [{{ note_id }}]_{% endif %}
+
+        {% else %}
+     - :unsupported:`no`
+
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+{% for note in NOTES %}
+.. [{{ loop.index}}] {{ note }}
+{% endfor %}
