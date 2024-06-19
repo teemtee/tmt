@@ -5,8 +5,6 @@ import collections
 import dataclasses
 import enum
 import re
-import subprocess
-import sys
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
@@ -29,7 +27,7 @@ import tmt.templates
 import tmt.trying
 import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Path, cached_property
+from tmt.utils import Command, Path, cached_property
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
@@ -2019,7 +2017,7 @@ COMPLETE_VARIABLE = '_TMT_COMPLETE'
 COMPLETE_SCRIPT = 'tmt-complete'
 
 
-def setup_completion(shell: str, install: bool) -> None:
+def setup_completion(shell: str, install: bool, context: Context) -> None:
     """ Setup completion based on the shell """
     config = tmt.utils.Config()
     # Fish gets installed into its special location where it is automatically
@@ -2030,11 +2028,20 @@ def setup_completion(shell: str, install: bool) -> None:
     else:
         script = Path(config.path) / f'{COMPLETE_SCRIPT}.{shell}'
 
-    command = f'{COMPLETE_VARIABLE}={shell}_source tmt'
+    env_var = {COMPLETE_VARIABLE: f'{shell}_source'}
+
+    logger = context.obj.logger
+
+    completions = Command('tmt').run(env=tmt.utils.Environment.from_dict(env_var),
+                                     cwd=None,
+                                     logger=context.obj.logger
+                                     ).stdout
+    if not completions:
+        logger.warning("Unable to generate shell completion")
+        return
 
     if install:
-        with open(script, 'w') as f:
-            subprocess.run(command, stdout=f, check=False)
+        Path(script).write_text(completions)
         # If requested, modify .bashrc or .zshrc
         if shell != 'fish':
             config_path = Path(f'~/.{shell}rc').expanduser()
@@ -2043,7 +2050,7 @@ def setup_completion(shell: str, install: bool) -> None:
                 shell_config.write(f'source {script}')
 
     else:
-        subprocess.run(command, stdout=sys.stdout, check=False)
+        logger.info(completions)
 
 
 @completion.command(name='bash')
@@ -2056,7 +2063,7 @@ def setup_completion(shell: str, install: bool) -> None:
          """)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for bash """
-    setup_completion('bash', install)
+    setup_completion('bash', install, context)
 
 
 @completion.command(name='zsh')
@@ -2069,7 +2076,7 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
          """)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for zsh """
-    setup_completion('zsh', install)
+    setup_completion('zsh', install, context)
 
 
 @completion.command(name='fish')
@@ -2079,4 +2086,4 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for fish """
-    setup_completion('fish', install)
+    setup_completion('fish', install, context)
