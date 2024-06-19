@@ -1,0 +1,3 @@
+id: 5cf92c54-e073-475c-970f-b8e090ec4da2
+summary: Concise summary describing what the test does
+test: ./test.sh
