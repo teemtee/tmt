@@ -9,7 +9,7 @@ tmt-1.34
 
 The :ref:`/spec/tests/duration` now supports multiplication.
 
-Added option ``--failed-only`` to the test attributes,
+Added option ``--failed-only`` to the ``tmt run tests`` subcommand,
 enabling rerunning failed tests from previous runs.
 
 The :ref:`plugins/report/reportportal` plugin copies
