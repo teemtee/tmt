@@ -239,8 +239,25 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             }
                         },
                     {
-                        'or': []
+                        'or': [{
+                            'cpu': {
+                                'flag': {
+                                    '_op': '==',
+                                    '_value': 'vmx'
+                                    }
+                                }
+                            },
+                            {
+                            'cpu': {
+                                'flag': {
+                                    '_op': '==',
+                                    '_value': 'svm'
+                                    }
+                                }
+                            },
+                            ]
                         },
+
                     {
                         'system': {
                             'hypervisor': {
