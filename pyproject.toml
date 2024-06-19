@@ -332,7 +332,6 @@ lint.ignore = [
     "RUF013",  # PEP 484 prohibits implicit `Optional`
     # flake8-bandit (S) https://docs.astral.sh/ruff/rules/#flake8-bandit-s
     "S101",  # Use of `assert` detected
-    "S602",  # `subprocess` call with `shell=True` identified
     "S603",  # `subprocess` call: check for execution of untrusted input
     "S607",  # Starting a process with a partial executable path
     "S105",  # Possible hardcoded password assigned to: "PASS"
