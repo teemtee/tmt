@@ -10,6 +10,7 @@ from tmt.hardware import (
     _parse_disk,
     _parse_hostname,
     _parse_memory,
+    _parse_tpm,
     _parse_virtualization,
     _parse_zcrypt,
     )
@@ -227,7 +228,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'or': []}
                     ]
                 },
-            {'or': []},
+            {
+                'key_value': {
+                    '_key': 'TPM',
+                    '_op': '==',
+                    '_value': '2.0',
+                    },
+                },
+
             {
                 'and': [
                     {
@@ -665,5 +673,29 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
                     '_value': 'C%A'
                     }
                 }
+            }
+        }
+
+
+def test_tpm_version(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['tpm.version'](
+        _parse_tpm({'version': '2.0'}), root_logger)
+
+    assert result.to_mrack() == {
+        'key_value': {
+            '_key': 'TPM',
+            '_op': '==',
+            '_value': '2.0'
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['tpm.version'](
+        _parse_tpm({'version': '!= 2.0'}), root_logger)
+
+    assert result.to_mrack() == {
+        'key_value': {
+            '_key': 'TPM',
+            '_op': '!=',
+            '_value': '2.0'
             }
         }

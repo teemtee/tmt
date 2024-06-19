@@ -19,5 +19,6 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/steps/provision/mrack.py
   - implemented-by: /tmt/steps/provision/testcloud.py
     note: "``version: 2.0`` only"
