@@ -1,6 +1,21 @@
-summary: Install downloaded packages
-prepare:
-  - how: install
-    package:
-      - tree.rpm
-      - diffutils.rpm
+/in-cwd:
+  summary: Install downloaded packages
+  prepare:
+    - how: install
+      package:
+        - tree.rpm
+        - diffutils.rpm
+
+/in-subdirectory:
+  summary: Install downloaded packages from a subdirectory
+  prepare:
+    - how: install
+      package:
+        - downloaded-rpms/tree.rpm
+        - downloaded-rpms/diffutils.rpm
+
+/as-directory:
+  summary: Install downloaded packages from a subdirectory
+  prepare:
+    - how: install
+      directory: downloaded-rpms
