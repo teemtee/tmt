@@ -7,6 +7,7 @@ rlJournalStart
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun "cp -a data $tmp"
         rlRun "cp -a data_sources $tmp"
+        rlRun "cp -a data_duplicate_ids $tmp"
         rlRun "pushd $tmp/data"
         rlRun "set -o pipefail"
     rlPhaseEnd
@@ -140,6 +141,22 @@ rlJournalStart
         # From data_sources/foobar
         rlRun "popd"
         # From data_sources
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Lint of duplicate ids"
+        rlRun "pushd $tmp/data_duplicate_ids"
+
+        lint_cmd="tmt test lint"
+
+        rlRun -s "$lint_cmd /no_duplicates"
+        rlAssertGrep "pass G001 no duplicate ids detected" "$rlRun_LOG"
+
+        rlRun -s "$lint_cmd /duplicates" 1
+        rlAssertGrep "fail G001 duplicate id \"c258fc68-3706-44ce-9974-c0abaad5b251\" in \"/duplicates/duplicate_one\"" "$rlRun_LOG"
+        rlAssertGrep "fail G001 duplicate id \"c258fc68-3706-44ce-9974-c0abaad5b251\" in \"/duplicates/duplicate_two\"" "$rlRun_LOG"
+
+        # From data_duplicate_ids
         rlRun "popd"
     rlPhaseEnd
 

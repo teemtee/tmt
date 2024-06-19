@@ -85,6 +85,25 @@ rlJournalStart
         rlAssertGrep "pass P007 finish phase 'default-2' shall run on role 'server'" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Lint of duplicate ids"
+        if [ "$EXPLICIT_ROOT" = "yes" ]; then
+            tmt="tmt --root data_duplicate_ids"
+        else
+            # From data
+            rlRun "popd"
+            rlRun "pushd data_duplicate_ids"
+        fi
+
+        lint_cmd="$tmt plan lint"
+
+        rlRun -s "$lint_cmd /no_duplicates"
+        rlAssertGrep "pass G001 no duplicate ids detected" "$rlRun_LOG"
+
+        rlRun -s "$lint_cmd /duplicates" 1
+        rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/duplicate_one\"" "$rlRun_LOG"
+        rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/duplicate_two\"" "$rlRun_LOG"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         if [ "$EXPLICIT_ROOT" != "yes" ]; then
             rlRun "popd"

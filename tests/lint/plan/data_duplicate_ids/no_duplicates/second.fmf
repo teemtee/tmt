@@ -1,0 +1,4 @@
+summary: Basic lint duplicate id test
+execute:
+    script: tmt --help
+id: abd22012-dc0c-4230-b623-2fe76fa67f76
