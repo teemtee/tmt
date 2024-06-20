@@ -277,8 +277,8 @@ class Prepare(tmt.steps.Step):
         #
         # 1. make the list of requirements unique,
         # 2. group guests with same requirements.
-        pruned_requires: dict[frozenset['tmt.base.DependencySimple'], DependencyCollection] = {}
-        pruned_recommends: dict[frozenset['tmt.base.DependencySimple'], DependencyCollection] = {}
+        pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
+        pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
 
         for guest, collection in collected_requires.items():
             collection.dependencies = uniq(collection.dependencies)

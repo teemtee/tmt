@@ -1469,7 +1469,7 @@ class _CommonMeta(type):
         # of the assignment below. That's incomplete, and leads to mypy warning
         # about assignments of `CliInvocation` instances to this attribute.
         # Repeating the annotation silences mypy, giving it better picture.
-        cls.cli_invocation: Optional['tmt.cli.CliInvocation'] = None
+        cls.cli_invocation: Optional[tmt.cli.CliInvocation] = None
 
 
 class Common(_CommonBase, metaclass=_CommonMeta):
@@ -2197,7 +2197,7 @@ class _MultiInvokableCommonMeta(_CommonMeta):
     def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
         super().__init__(*args, **kwargs)
 
-        cls.cli_invocations: list['tmt.cli.CliInvocation'] = []
+        cls.cli_invocations: list[tmt.cli.CliInvocation] = []
 
 
 class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):

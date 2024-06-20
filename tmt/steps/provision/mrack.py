@@ -447,10 +447,10 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'disk.size': _transform_disk_size,  # type: ignore[dict-item]
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
-    'virtualization.is_virtualized': \
-    _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
-    'virtualization.hypervisor': \
-    _transform_virtualization_hypervisor,  # type: ignore[dict-item]
+    'virtualization.is_virtualized':
+        _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
+    'virtualization.hypervisor':
+        _transform_virtualization_hypervisor,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     }

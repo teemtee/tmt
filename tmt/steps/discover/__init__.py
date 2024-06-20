@@ -227,7 +227,7 @@ class Discover(tmt.steps.Step):
         super().save()
 
         # Create tests.yaml with the full test data
-        raw_test_data: list['tmt.export._RawExportedInstance'] = []
+        raw_test_data: list[tmt.export._RawExportedInstance] = []
 
         for phase_name, phase_tests in self._tests.items():
             for test in phase_tests:

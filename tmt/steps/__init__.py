@@ -369,7 +369,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
 
         # Initialize data
-        self.plan: 'Plan' = plan
+        self.plan: Plan = plan
         self._status: Optional[str] = None
         self._phases: list[Phase] = []
 
@@ -761,7 +761,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # compatible, `--update` without `--name` should result in all phases being converted into
         # what the `--update` brings in. In this list, we will collect "postponed" CLI invocations,
         # and we will get back to them once we're done with those we can apply immediately.
-        postponed_invocations: list['tmt.cli.CliInvocation'] = []
+        postponed_invocations: list[tmt.cli.CliInvocation] = []
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
@@ -1937,7 +1937,7 @@ class Topology(SerializableContainer):
     roles: dict[str, list[str]]
 
     def __init__(self, guests: list['Guest']) -> None:
-        roles: collections.defaultdict[str, list['Guest']] = collections.defaultdict(list)
+        roles: collections.defaultdict[str, list[Guest]] = collections.defaultdict(list)
 
         self.guest = None
         self.guest_names: list[str] = []
