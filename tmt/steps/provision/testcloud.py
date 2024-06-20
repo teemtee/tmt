@@ -10,6 +10,7 @@ import re
 import threading
 import types
 from collections.abc import Iterator
+from string import Template
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import click
@@ -43,6 +44,7 @@ testcloud: Optional[types.ModuleType] = None
 
 # To silence mypy
 DomainConfiguration: Any
+Workarounds: Any
 X86_64ArchitectureConfiguration: Any
 AArch64ArchitectureConfiguration: Any
 S390xArchitectureConfiguration: Any
@@ -58,6 +60,7 @@ def import_testcloud() -> None:
     """ Import testcloud module only when needed """
     global testcloud
     global libvirt
+    global Workarounds
     global DomainConfiguration
     global X86_64ArchitectureConfiguration
     global AArch64ArchitectureConfiguration
@@ -85,6 +88,7 @@ def import_testcloud() -> None:
             UserNetworkConfiguration,
             X86_64ArchitectureConfiguration,
             )
+        from testcloud.workarounds import Workarounds
     except ImportError as error:
         raise ProvisionError(
             "Install 'tmt+provision-virtual' to provision using this method.") from error
@@ -101,47 +105,33 @@ TESTCLOUD_DATA = (
     ) / 'testcloud'
 TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
+TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
+
 # Userdata for cloud-init
+# TODO: Explore migration to jinja from string.Template
 USER_DATA = """#cloud-config
 chpasswd:
   list: |
-    {user_name}:%s
+    ${user_name}:${password}
   expire: false
 users:
   - default
-  - name: {user_name}
+  - name: ${user_name}
 ssh_authorized_keys:
-  - {public_key}
+  - ${public_key}
 ssh_pwauth: true
 disable_root: false
 runcmd:
-  - sed -i -e '/^.*PermitRootLogin/s/^.*$/PermitRootLogin yes/'
-    -e '/^.*UseDNS/s/^.*$/UseDNS no/'
-    -e '/^.*GSSAPIAuthentication/s/^.*$/GSSAPIAuthentication no/'
-    /etc/ssh/sshd_config
-  - systemctl reload sshd
-  - [sh, -c, 'if [ ! -f /etc/systemd/network/20-tc-usernet.network ] &&
-  systemctl status systemd-networkd | grep -q "enabled;\\svendor\\spreset:\\senabled";
-  then mkdir -p /etc/systemd/network/ &&
-  echo "[Match]" >> /etc/systemd/network/20-tc-usernet.network &&
-  echo "Name=en*" >> /etc/systemd/network/20-tc-usernet.network &&
-  echo "[Network]" >> /etc/systemd/network/20-tc-usernet.network &&
-  echo "DHCP=yes" >> /etc/systemd/network/20-tc-usernet.network; fi']
-  - [sh, -c, 'if systemctl status systemd-networkd |
-  grep -q "enabled;\\svendor\\spreset:\\senabled"; then
-  systemctl restart systemd-networkd; fi']
-  - [sh, -c, 'if cat /etc/os-release |
-  grep -q platform:el8; then systemctl restart sshd; fi']
-  - [sh, -c, 'dhclient || :']
+${runcommands}
 """
 
 COREOS_DATA = """variant: fcos
 version: 1.4.0
 passwd:
   users:
-    - name: {user_name}
+    - name: ${user_name}
       ssh_authorized_keys:
-        - {public_key}
+        - ${public_key}
 systemd:
   units:
     - name: ssh_root_login.service
@@ -774,9 +764,9 @@ class GuestTestcloud(tmt.GuestSsh):
                 public_key = pubkey_file.read()
 
         # Place public key content into the machine configuration
-        self.config.USER_DATA = USER_DATA.format(
+        self.config.USER_DATA = Template(USER_DATA).safe_substitute(
             user_name=self.user, public_key=public_key)
-        self.config.COREOS_DATA = COREOS_DATA.format(
+        self.config.COREOS_DATA = Template(COREOS_DATA).safe_substitute(
             user_name=self.user, public_key=public_key)
 
     def prepare_config(self) -> None:
@@ -946,6 +936,11 @@ class GuestTestcloud(tmt.GuestSsh):
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
 
+        # Prepare Workarounds object
+        self._workarounds = Workarounds(defaults=True)
+        for cmd in TESTCLOUD_WORKAROUNDS:
+            self._workarounds.add(cmd)
+
         # Process hardware and find a suitable HW properties
         self._domain.cpu_count = DEFAULT_CPU_COUNT
 
@@ -1000,7 +995,8 @@ class GuestTestcloud(tmt.GuestSsh):
             hostname=hostname,
             image=self._image,
             connection=f"qemu:///{self.connection}",
-            domain_configuration=self._domain)
+            domain_configuration=self._domain,
+            workarounds=self._workarounds)
 
         self.verbose('name', self.instance_name, 'green')
 
