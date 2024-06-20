@@ -249,7 +249,7 @@ ignore = [
     "tmt/convert.py",
     "tmt/lint.py",
     "tmt/queue.py",
-    "tmt/utils.py"
+    "tmt/utils/__init__.py"
 ]
 
 pythonVersion = "3.9"
