@@ -8,6 +8,7 @@ import itertools
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -1806,7 +1807,14 @@ class Plan(
 
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
-        self.run(Command("rsync", "-ar", "--exclude", ".git", f"{tree_root}/", self.worktree))
+        excludes_tempfile = tempfile.NamedTemporaryFile()
+        # If we're in a git repository, honor .gitignore; xref
+        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
+        if os.path.isdir(f"{tree_root}/.git"):
+            subprocess.check_call(["git", "ls-files", "--exclude-standard", "-oi", "--directory"], stdout=excludes_tempfile)
+        # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
+        # use e.g. `cp` but filtering out the above.
+        self.run(Command("rsync", "-ar", "--exclude", ".git", "--exclude-from", excludes_tempfile.name, f"{tree_root}/", self.worktree))
 
     def _initialize_data_directory(self) -> None:
         """
