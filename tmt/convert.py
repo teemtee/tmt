@@ -922,7 +922,14 @@ def read_polarion_case(
     if polarion_case.tags:
         if not current_data.get('tag'):
             current_data['tag'] = []
-        for tag in polarion_case.tags.split():
+        # Space is the default separator, but let's try to autodetect couple different options
+        # as Polarion tag field is free text so it can have anything
+        separator = ' '
+        if ',' in polarion_case.tags:
+            separator = ','
+        elif ';' in polarion_case.tags:
+            separator = ';'
+        for tag in polarion_case.tags.split(separator):
             current_data['tag'].append(tag)
             read_tier(tag, current_data)
         current_data['tag'] = sorted(set(current_data['tag']))
