@@ -31,6 +31,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -809,6 +810,14 @@ class Logger:
                 color='yellow',
                 shift=shift)
             )
+
+    def warn(
+            self,
+            message: str,
+            shift: int
+            ) -> None:
+        warnings.warn("Use `warning` instead", DeprecationWarning, stacklevel=1)
+        return self.warning(message, shift)
 
     def fail(
             self,
