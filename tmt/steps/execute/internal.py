@@ -571,11 +571,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
                             result.note = 'reboot timeout'
-                abort = self.check_abort_file(invocation)
-                if abort:
+
+                if invocation.abort_requested:
                     for result in invocation.results:
                         # In case of aborted all results in list will be aborted
                         result.note = 'aborted'
+
                 self._results.extend(invocation.results)
 
                 # If test duration information is missing, print 8 spaces to keep indentation
@@ -597,11 +598,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             f'({check_result.event.value} check)',
                             shift=shift)
 
-                if (abort or self.data.exit_first and
-                        result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)):
+                if invocation.abort_requested or (
+                    self.data.exit_first and any(
+                        result.result not in (
+                            ResultOutcome.PASS,
+                            ResultOutcome.INFO) for result in invocation.results)):
                     # Clear the progress bar before outputting
                     progress_bar.clear()
-                    what_happened = "aborted" if abort else "failed"
+                    what_happened = "aborted" if invocation.abort_requested else "failed"
                     self.warn(
                         f'Test {test.name} {what_happened}, stopping execution.')
                     break
