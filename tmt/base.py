@@ -3098,9 +3098,10 @@ class Tree(tmt.utils.Common):
             tree = None
 
         # Create a new tree
+        fmf_dir = path / '.fmf'
         if tree is None:
             if dry:
-                echo(f"Tree '{path}' would be initialized.")
+                echo(f"Will create '{fmf_dir}'.")
             else:
                 try:
                     fmf.Tree.init(path)
@@ -3109,12 +3110,12 @@ class Tree(tmt.utils.Common):
                     path = tree.root
                 except fmf.utils.GeneralError as error:
                     raise tmt.utils.GeneralError(
-                        f"Failed to initialize tree in '{path}': {error}")
-                echo(f"Tree '{tree.root}' initialized.")
+                        f"Failed to create '{fmf_dir}': {error}")
+                echo(f"Initialized metadata dir '{fmf_dir}'")
+                echo(f"Add tests with `create test` or `init --template`")
 
         # Add .fmf directory to the git index if possible
         if tmt.utils.git_root(fmf_root=path, logger=logger):
-            fmf_dir = path / '.fmf'
             if dry:
                 echo(f"Path '{fmf_dir}' would be added to git index.")
             else:
