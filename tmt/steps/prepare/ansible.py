@@ -53,9 +53,13 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
 
         # Perform `playbook` normalization here, so we could merge `playbooks` to it.
         playbook = raw_data.pop('playbook', [])
-        raw_data['playbook'] = [playbook] if isinstance(playbook, str) else playbook
+        if isinstance(playbook, str):
+            playbook = [playbook]
+        elif isinstance(playbook, tuple):
+            playbook = list(playbook)
+        assert isinstance(playbook, list)
+        raw_data['playbook'] = playbook
 
-        assert isinstance(raw_data['playbook'], list)
         raw_data['playbook'] += raw_data.pop('playbooks', [])
 
 
