@@ -3112,7 +3112,7 @@ class Tree(tmt.utils.Common):
                     raise tmt.utils.GeneralError(
                         f"Failed to create '{fmf_dir}'") from error
                 echo(f"Initialized metadata dir '{fmf_dir}'")
-                echo("Add tests with `tmt create test` or `tmt init --template`")
+                echo("Add tests with `tmt test create` or `tmt init --template`")
 
         # Add .fmf directory to the git index if possible
         if tmt.utils.git_root(fmf_root=path, logger=logger):
