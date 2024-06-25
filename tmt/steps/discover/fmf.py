@@ -562,7 +562,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
-            fmf_context=self.step.plan._fmf_context)
+            fmf_context=self.step.plan._fmf_context,
+            phase_name=self.name)
         self._tests = tree.tests(
             filters=filters,
             names=names,

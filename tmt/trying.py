@@ -151,7 +151,7 @@ class Try(tmt.utils.Common):
         self.debug("Matching tests found\n" + tmt.utils.format_value(self.tests))
 
         # Inject the test filtering options into the Test class
-        options = {"names": [f"^{re.escape(test.name)}$" for test in self.tests]}
+        options = {"names": [f"^.*::{re.escape(test.name)}$" for test in self.tests]}
         tmt.Test.store_cli_invocation(context=None, options=options)
 
     def get_default_plans(self, run: tmt.base.Run) -> list[Plan]:
