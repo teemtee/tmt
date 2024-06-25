@@ -4,8 +4,8 @@
 .DEFAULT_GOAL := help
 .PHONY: help generate-plugins plugins/*.rst generate-stories generate-template-filters generate-autodocs clean
 
-LOGO_SRC = https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-transparent.png
-LOGO_DST = _static/tmt-transparent.png
+LOGO_SRC = https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-small.png
+LOGO_DST = _static/tmt-small.png
 
 clean:
 	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst $(LOGO_DST)
