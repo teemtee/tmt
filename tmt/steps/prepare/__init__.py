@@ -272,8 +272,8 @@ class Prepare(tmt.steps.Step):
         # 2. group guests with same requirements.
         from tmt.steps.prepare.install import _RawPrepareInstallStepData
 
-        pruned_requires: dict[frozenset['tmt.base.DependencySimple'], DependencyCollection] = {}
-        pruned_recommends: dict[frozenset['tmt.base.DependencySimple'], DependencyCollection] = {}
+        pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
+        pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
 
         for guest, collection in collected_requires.items():
             collection.dependencies = uniq(collection.dependencies)
