@@ -14,4 +14,14 @@ RUN    rpm-ostree install dnf5 \
     # Remove diffutils as its used in many package manager tests, and tests
     # are simpler if all environments lack the same package, we don't have
     # to parametrize them even more.
-    && dnf5 remove -y diffutils
+    # Do *NOT* use dnf5 to remove this package - it might create conflicts
+    # in /var/lib/dnf should the next command called be `debuginfo-install`
+    # or any other dnf4-ish command.
+    && rpm-ostree uninstall diffutils \
+                            # Removing diffutils, these need to be removed too.
+                            containers-common-extra \
+                            passt \
+                            passt-selinux \
+                            podman \
+                            policycoreutils \
+                            toolbox
