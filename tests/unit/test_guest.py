@@ -39,7 +39,7 @@ def test_multihost_name(root_logger: Logger) -> None:
         ),
     (
         # shared-connection-closed
-        os.linesep + 'some-line' + os.linesep + 'Shared connection to 127.0.0.1 closed.' \
+        os.linesep + 'some-line' + os.linesep + 'Shared connection to 127.0.0.1 closed.'
         + os.linesep,
         os.linesep + 'some-line' + os.linesep
         )

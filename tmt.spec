@@ -1,5 +1,5 @@
 Name:           tmt
-Version:        1.33.0
+Version:        1.34.0
 Release:        %autorelease
 Summary:        Test Management Tool
 
@@ -144,6 +144,45 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Mon Jun 17 2024 Martin Hoyer <mhoyer@redhat.com> - 1.34.0
+- Fix normalization of `hardware` key/option (#3015)
+- Keep patched sources directly in TMT_SOURCE_DIR (#2999)
+- Copy launch description to suite description (#2992)
+- Add support for multiple disks to testcloud plugin (#2767)
+- Improve rendering of story links in our docs (#3001)
+- Simplify parsing of HW requirements and add missing ones (#2928)
+- Make test shell wrapper filename even more unique (#2998)
+- Add support for basic rerun of tests (#2521)
+- Split provision/virtual plans to subgroups per step (#2938)
+- Document custom container images built for tmt tests (#2930)
+- Require python3.9 in 'develop' target
+- Fix multiple rules `adjust` example in `duration` spec (#2971)
+- Fix "skip missing" behavior when installig debuginfo packages with dnf (#2956)
+- Extend results schema to allow test phases (#2933)
+- Fix path to watchdog log (#2901)
+- Display locals in traceback when requested (#2900)
+- Polish test-check/dmesg documentation (#2897)
+- docs: tweak docs to include how to see details about test failures (#2541)
+- Allow multiplication in duration input value (#2845)
+- Fix validation of fmf id URL, it must be cloneable first (#2957)
+- Cover `tmt.trying` with `pyright` check (#2942)
+- Clarify the `trigger` context dimension values (#2961)
+- Add konflux as possible initiator (#2947)
+- Fix some invalid links in documentation (#2940)
+- Define "block-device" key for guest topology HW exposition
+- Cover tmt.steps.prepare.shell with pyright checks
+- Ignore report files created by pytest-html
+- Fix pre-commit typing python version (#2959)
+- Cover tmt.steps.prepare.distgit with pyright
+- Pass correct spec to _parse_system and _parse_location (#2924)
+- Support `cpu.model-name` hardware requirement for mrack (#2921)
+- Enforce "one blank line after class docstring" rule (#2934)
+- Enable pydocstyle checks in ruff (#2906)
+- Update distros in the `mrack` provisioning config (#2932)
+- Drop duplicate list of supported HW requirements in beaker plugin (#2902)
+- Update interaction with Fedora rawhide (#2931)
+- Run the `no-commit-to-branch` check only locally
+
 * Tue May 07 2024 Tomáš Bajer <tbajer@redhat.com> - 1.33.0
 - Fix installation of packages from files (#2914)
 - Simplify the documentation building (#2483)

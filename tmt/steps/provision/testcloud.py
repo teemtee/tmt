@@ -440,7 +440,7 @@ def _apply_hw_disk_size(
         logger: tmt.log.Logger) -> None:
     """ Apply ``disk`` constraint to given VM domain """
 
-    final_size: 'Size' = DEFAULT_DISK
+    final_size: Size = DEFAULT_DISK
 
     def _generate_disk_filepaths() -> Iterator[Path]:
         """ Generate paths to use for files representing VM storage """
