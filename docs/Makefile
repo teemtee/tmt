@@ -1,69 +1,124 @@
+#
 # Makefile to generate additional sphinx sources
 #
 
-.DEFAULT_GOAL := help
-.PHONY: help generate-plugins plugins/*.rst generate-stories generate-template-filters generate-autodocs clean
+# Path to repository root
+REPODIR = ..
 
-clean:
-	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst
-	find plugins -name "*.rst" ! -name index.rst | xargs rm -f
+# Path to tmt source directory
+TMTDIR = $(REPODIR)/tmt
+
+# Path to directory with scripts generating documentation sources
+SCRIPTSDIR = scripts
+
+# Path to directory with templates to use for generating documentation sources
+TEMPLATESDIR = templates
+
+# Path to a template for rendering plugin documentation sources
+PLUGINS_TEMPLATE = $(TEMPLATESDIR)/plugins.rst.j2
+
+# A list of directories that are completely generated
+GENERATED_DIRECTORIES = spec stories
+
+# A list of tmt step names
+STEPS = discover provision prepare execute finish report
+
+# A list of `plugins/*.rst` files to generate
+PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/test-checks.rst
+
+.DEFAULT_GOAL := help
+
+.PHONY: help \
+        $(GENERATED_DIRECTORIES) \
+        generate-plugins \
+        $(PLUGIN_TARGETS) \
+        generate-stories \
+        generate-template-filters \
+        generate-autodocs clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-REPODIR       = ..
-TMTDIR        = $(REPODIR)/tmt
-SCRIPTSDIR    = scripts
-TEMPLATESDIR  = templates
+generate: generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
-PLUGINS_TEMPLATE := $(TEMPLATESDIR)/plugins.rst.j2
+#
+# Targets creating directories for generated documentation sources
+#
+$(GENERATED_DIRECTORIES): %:
+	mkdir -p $@
 
-generate: spec stories generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+#
+# Various targets for generating documentation source files from templates
+#
 
-spec:
-	mkdir -p spec
+# Extract $step from a `plugins/$step.rst` target
+define plugins-to-step =
+$(subst plugins/,,$(subst .rst,,${1}))
+endef
 
-stories:
-	mkdir -p stories
+# Render a list of dependencies of a `plugins/$step.rst` target
+define plugins-dependencies =
+$(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/steps/$(call plugins-to-step,$@)/*.py
+endef
 
-spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $(TMTDIR)/base.py
-	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
+# Render a list of dependencies of a `plugins/test-checks.rst` target
+define plugins-checks-dependencies =
+$(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/checks/*.py
+endef
 
-code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $(TMTDIR)/utils.py
+# Generate plugin documentation sources for a given step
+define build-plugins =
+$(SCRIPTSDIR)/generate-plugins.py $(call plugins-to-step,$@) $(PLUGINS_TEMPLATE) $@
+endef
+
+code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py \
+                           $(TEMPLATESDIR)/template-filters.rst.j2 \
+                           $(TMTDIR)/utils.py
 	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
 
-plugins/discover.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/discover/*.py
-	$(SCRIPTSDIR)/generate-plugins.py discover $(PLUGINS_TEMPLATE) $@
+plugins/discover.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/execute.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/execute/*.py
-	$(SCRIPTSDIR)/generate-plugins.py execute $(PLUGINS_TEMPLATE) $@
+plugins/execute.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/finish.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/finish/*.py
-	$(SCRIPTSDIR)/generate-plugins.py finish $(PLUGINS_TEMPLATE) $@
+plugins/finish.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/prepare.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/prepare/*.py
-	$(SCRIPTSDIR)/generate-plugins.py prepare $(PLUGINS_TEMPLATE) $@
+plugins/prepare.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/provision.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/provision/*.py
-	$(SCRIPTSDIR)/generate-plugins.py provision $(PLUGINS_TEMPLATE) $@
+plugins/provision.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/report.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/report/*.py
-	$(SCRIPTSDIR)/generate-plugins.py report $(PLUGINS_TEMPLATE) $@
+plugins/report.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
-plugins/test-checks.rst: $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/checks/*.py
-	$(SCRIPTSDIR)/generate-plugins.py test-checks $(PLUGINS_TEMPLATE) $@
+plugins/test-checks.rst: $(call plugins-checks-dependencies)
+	$(call build-plugins)
+
+spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
+               $(TEMPLATESDIR)/lint-checks.rst.j2 \
+               $(TMTDIR)/base.py
+	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
+
+#
+# Top-level targets to generate documentation sources
+#
+generate-autodocs:  ## Generate autodocs from source docstrings
+	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
-generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
+generate-plugins: $(PLUGIN_TARGETS)  ## Generate documentation sources for plugins
 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-plugins: plugins/discover.rst plugins/execute.rst plugins/finish.rst plugins/prepare.rst plugins/provision.rst plugins/report.rst plugins/test-checks.rst  ## Generate documentation sources for plugins
+generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
-generate-autodocs:  ## Generate autodocs from source docstrings
-	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt
+clean:  ## Remove all generated content
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst $(PLUGIN_TARGETS)
 
 ##
 ## Help!
@@ -71,7 +126,7 @@ generate-autodocs:  ## Generate autodocs from source docstrings
 help:: ## Show this help text
 	@gawk -vG=$$(tput setaf 2) -vR=$$(tput sgr0) ' \
 	  match($$0, "^(([^#:]*[^ :]) *:)?([^#]*)##([^#].+|)$$",a) { \
-	    if (a[2] != "") { printf "    make %s%-22s%s %s\n", G, a[2], R, a[4]; next }\
+	    if (a[2] != "") { printf "    make %s%-26s%s %s\n", G, a[2], R, a[4]; next }\
 	    if (a[3] == "") { print a[4]; next }\
 	    printf "\n%-36s %s\n","",a[4]\
 	  }' $(MAKEFILE_LIST)
