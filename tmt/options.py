@@ -79,6 +79,7 @@ def option(
         metavar: Optional[str] = None,
         prompt: Optional[str] = None,
         envvar: Optional[str] = None,
+        hidden: bool = False,
         # Following parameters are our additions.
         choices: Optional[Sequence[str]] = None,
         deprecated: Optional[Deprecated] = None) -> ClickOptionDecoratorType:
