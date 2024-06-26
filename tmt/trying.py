@@ -402,10 +402,9 @@ class Try(tmt.utils.Common):
     def handle_options(self, plan: Plan) -> None:
         """Choose requested cli option"""
 
-        option = [o for o in self.cli_options if self.opt(o)]
-        if not option:
-            return
-        getattr(self, f"handle_{option[0]}")(plan)
+        for o in self.cli_options:
+            if self.opt(o):
+                getattr(self, f"handle_{o}")(plan)
 
     def handle_epel(self, plan: Plan) -> None:
         """ Enable EPEL repository"""
