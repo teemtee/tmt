@@ -165,4 +165,18 @@ repos:
   - repo: https://github.com/djlint/djLint
     rev: v1.34.1
     hooks:
-      - id: djlint-jinja
+      - id: djlint
+        files: "\\.j2"
+        types_or: ['jinja']
+
+  - repo: https://github.com/aristanetworks/j2lint.git
+    rev: v1.1.0
+    hooks:
+      - id: j2lint
+        args:
+          # j2lint does not consume pyproject.toml
+          - "--ignore"
+          - jinja-statements-indentation
+          - jinja-variable-lower-case
+          - single-statement-per-line
+          - "--"
