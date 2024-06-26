@@ -219,7 +219,7 @@
 
 {# Links pointing to websites #}
 {% elif link.target | match('^https?://') %}
-* {{ printable_relation(link) }} `{{ link.target}} <{{ link.target }}>`_
+* {{ printable_relation(link) }} `{{ link.target }} <{{ link.target }}>`_
 
 {# Links pointing to anything else #}
 {% else %}
