@@ -169,6 +169,12 @@ FULL_HARDWARE_REQUIREMENTS = """
             - avx
             - "= avx2"
             - "!= smep"
+    device:
+      device-name: '~ .*Thunderbolt.*'
+      device: 79
+      vendor-name: '!= Intel'
+      vendor: "> 97"
+      driver: mc
     disk:
         - size: 40 GiB
           model-name: "~ WD 100G.*"
@@ -235,6 +241,12 @@ def test_parse_maximal_constraint() -> None:
                   - cpu.flag: contains avx
                   - cpu.flag: contains avx2
                   - cpu.flag: not contains smep
+          - and:
+              - device.vendor: '> 97'
+              - device.device: == 79
+              - device.vendor-name: '!= Intel'
+              - device.device-name: ~ .*Thunderbolt.*
+              - device.driver: == mc
           - and:
               - gpu.vendor: == 4318
               - gpu.device: == 97

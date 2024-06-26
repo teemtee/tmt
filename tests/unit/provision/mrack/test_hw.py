@@ -145,6 +145,15 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     ]
                 },
             {
+                'and': [
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []},
+                    {'or': []}
+                    ]
+                },
+            {
                 'system': {
                     'memory': {
                         '_op': '==',
