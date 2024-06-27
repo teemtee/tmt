@@ -6158,7 +6158,22 @@ def normalize_string_list(
     if value is None:
         return []
 
-    return [value] if isinstance(value, str) else value
+    if isinstance(value, str):
+        return [value]
+
+    if isinstance(value, (list, tuple)):
+        normalized_value: list[str] = []
+
+        for i, raw_item in enumerate(value):
+            if isinstance(raw_item, str):
+                normalized_value.append(raw_item)
+                continue
+
+            raise NormalizationError(f'{key_address}[{i}]', raw_item, 'a string')
+
+        return normalized_value
+
+    raise NormalizationError(key_address, value, 'a string or a list of strings')
 
 
 def normalize_pattern_list(
