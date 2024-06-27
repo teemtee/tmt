@@ -47,7 +47,7 @@ class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 PrepareStepDataT = TypeVar('PrepareStepDataT', bound=PrepareStepData)
 
 
-class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps._RawWhereableStepData, total=False):
+class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps.RawWhereableStepData, total=False):
     pass
 
 

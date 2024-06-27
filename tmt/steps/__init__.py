@@ -305,7 +305,7 @@ class StepData(
         return data
 
 
-class _RawWhereableStepData(TypedDict, total=False):
+class RawWhereableStepData(TypedDict, total=False):
     where: Union[str, list[str]]
 
 
