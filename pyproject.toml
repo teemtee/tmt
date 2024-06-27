@@ -220,6 +220,7 @@ module = [
     "pylero.*",
     "testcloud.*",
     "mrack.*",
+    "pint.*",
     ]
 ignore_missing_imports = true
 

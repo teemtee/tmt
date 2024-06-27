@@ -1,5 +1,6 @@
 import dataclasses
 import webbrowser
+from typing import Any, cast
 
 import tmt
 import tmt.log
@@ -69,7 +70,9 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             def _linkable_path(path: str) -> str:
                 return str(Path(path).absolute())
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            cast(dict[str, Any], environment.filters)["linkable_path"] = _linkable_path
+
         else:
             # Links used in html should be relative to a workdir
             def _linkable_path(path: str) -> str:
@@ -77,7 +80,8 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
                 return str(Path(path).relative_to(self.workdir))
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            cast(dict[str, Any], environment.filters)["linkable_path"] = _linkable_path
 
         if self.data.display_guest == 'always':
             display_guest = True
