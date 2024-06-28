@@ -1,8 +1,9 @@
+import functools
 from typing import Any, Optional
 
 import tmt
 import tmt.utils
-from tmt.utils import Path, cached_property
+from tmt.utils import Path
 
 DEFAULT_CUSTOM_TEMPLATES_PATH = tmt.utils.Config().path / 'templates'
 DEFAULT_PLAN_NAME = "/default/plan"
@@ -70,12 +71,12 @@ class TemplateManager:
         self._init_custom_templates_folder()
         self._environment = tmt.utils.default_template_environment()
 
-    @cached_property
+    @functools.cached_property
     def templates(self) -> TemplatesType:
         """ Return all available templates (default and optional). """
         return _combine(self.default_templates, self.custom_templates)
 
-    @cached_property
+    @functools.cached_property
     def default_templates(self) -> TemplatesType:
         """ Return all default templates. """
         templates_dir = tmt.utils.resource_files('templates/')
@@ -84,7 +85,7 @@ class TemplateManager:
             raise tmt.utils.GeneralError(f"Could not find default templates in '{templates_dir}'.")
         return templates
 
-    @cached_property
+    @functools.cached_property
     def custom_templates(self) -> TemplatesType:
         """ Return all custom templates. """
         return _get_templates(self.custom_template_path)

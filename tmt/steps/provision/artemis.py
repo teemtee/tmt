@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import functools
 from typing import Any, Optional, TypedDict, cast
 
 import requests
@@ -14,7 +15,6 @@ import tmt.utils
 from tmt.utils import (
     ProvisionError,
     UpdatableMessage,
-    cached_property,
     dict_to_yaml,
     field,
     retry_session,
@@ -486,7 +486,7 @@ class GuestArtemis(tmt.GuestSsh):
     watchdog_dispatch_delay: Optional[int]
     watchdog_period_delay: Optional[int]
 
-    @cached_property
+    @functools.cached_property
     def api(self) -> ArtemisAPI:
         return ArtemisAPI(self)
 
