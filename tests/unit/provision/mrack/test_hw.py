@@ -173,6 +173,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
+                            {'or': []},
                             {
                                 'disk': {
                                     'model': {
@@ -193,6 +194,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
+                            {'or': []},
                             {
                                 'key_value': {
                                     '_key': 'BOOTDISK',
