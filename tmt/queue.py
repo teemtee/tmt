@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 from tmt.log import Logger
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-
+    from tmt._compat.typing import Self
     from tmt.steps.provision import Guest
 
 
