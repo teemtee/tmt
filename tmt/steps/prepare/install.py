@@ -525,6 +525,14 @@ class InstallApk(InstallBase):
             'installing debuginfo packages.')
 
 
+class _RawPrepareInstallStepData(tmt.steps.prepare._RawPrepareStepData, total=False):
+    package: Union[str, list[str]]
+    directory: Union[str, list[str]]
+    copr: Union[str, list[str]]
+    exclude: Union[str, list[str]]
+    missing: str
+
+
 @dataclasses.dataclass
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
     package: list[tmt.base.DependencySimple] = field(

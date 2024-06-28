@@ -222,6 +222,9 @@ class _RawStepData(TypedDict, total=False):
     how: Optional[str]
     name: Optional[str]
 
+    summary: Optional[str]
+    order: Optional[int]
+
 
 RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
 
@@ -300,6 +303,10 @@ class StepData(
         data.post_normalization(raw_data, logger)
 
         return data
+
+
+class RawWhereableStepData(TypedDict, total=False):
+    where: Union[str, list[str]]
 
 
 @dataclasses.dataclass
