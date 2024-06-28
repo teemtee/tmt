@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import datetime
+import functools
 import json
 import os
 import signal as _signal
@@ -25,7 +26,7 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
+from tmt.utils import Path, ShellScript, Stopwatch, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -179,7 +180,7 @@ class TestInvocation:
     #: Number of times the guest has been rebooted.
     _reboot_count: int = 0
 
-    @cached_property
+    @functools.cached_property
     def path(self) -> Path:
         """ Absolute path to invocation directory """
 
@@ -200,7 +201,7 @@ class TestInvocation:
 
         return path
 
-    @cached_property
+    @functools.cached_property
     def relative_path(self) -> Path:
         """ Invocation directory path relative to step workdir """
 
@@ -208,25 +209,25 @@ class TestInvocation:
 
         return self.path.relative_to(self.phase.step.workdir)
 
-    @cached_property
+    @functools.cached_property
     def test_data_path(self) -> Path:
         """ Absolute path to test data directory """
 
         return self.path / TEST_DATA
 
-    @cached_property
+    @functools.cached_property
     def relative_test_data_path(self) -> Path:
         """ Test data path relative to step workdir """
 
         return self.relative_path / TEST_DATA
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def check_files_path(self) -> Path:
         """ Construct a directory path for check files needed by tmt """
 
         return self.path / CHECK_DATA
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def reboot_request_path(self) -> Path:
         """ A path to the reboot request file """
         return self.test_data_path / TMT_REBOOT_SCRIPT.created_file

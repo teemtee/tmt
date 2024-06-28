@@ -43,7 +43,6 @@ from tmt.utils import (
     RunError,
     SerializableContainer,
     SpecBasedContainer,
-    cached_property,
     container_field,
     container_keys,
     field,
@@ -544,7 +543,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         return self.name in self.plan.my_run._cli_context_object.steps
 
-    @cached_property
+    @functools.cached_property
     def allowed_methods_pattern(self) -> Pattern[str]:
         """ Return a pattern allowed methods must match """
 
@@ -1227,7 +1226,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         self.data = data
         self.step = step
 
-    @cached_property
+    @functools.cached_property
     def safe_name(self) -> str:
         """
         A safe variant of the name which does not contain special characters.
