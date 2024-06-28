@@ -72,13 +72,12 @@ from tmt.log import LoggableValue, Logger
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
-    from typing_extensions import Self
 
     import tmt.base
     import tmt.cli
     import tmt.options
     import tmt.steps
-    from tmt._compat.typing import TypeAlias
+    from tmt._compat.typing import Self, TypeAlias
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
