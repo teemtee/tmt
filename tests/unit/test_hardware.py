@@ -279,9 +279,11 @@ def test_parse_maximal_constraint() -> None:
           - and:
               - and:
                   - disk[0].size: == 40 GiB
+                  - disk[0].physical-sector-size: == 4096 dimensionless
                   - disk[0].model-name: ~ WD 100G.*
               - and:
                   - disk[1].size: == 120 GiB
+                  - disk[1].logical-sector-size: == 512 dimensionless
                   - disk[1].driver: == virtblk
           - and:
               - and:
