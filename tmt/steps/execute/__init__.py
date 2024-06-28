@@ -712,14 +712,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         return invocation.test.test_framework.extract_results(invocation, logger)
 
-    def check_abort_file(self, invocation: TestInvocation) -> bool:
-        """
-        Check for an abort file created by tmt-abort
-
-        Returns whether an abort file is present (i.e. abort occurred).
-        """
-        return (invocation.test_data_path / TMT_ABORT_SCRIPT.created_file).exists()
-
     @staticmethod
     def format_timestamp(timestamp: datetime.datetime) -> str:
         """ Convert timestamp to a human readable format """
