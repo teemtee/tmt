@@ -393,6 +393,8 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
+"pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
+"pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]
