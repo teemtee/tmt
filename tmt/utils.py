@@ -77,14 +77,7 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.options
     import tmt.steps
-
-    # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
-    # to avoid the necessity of requiring the package in runtime. This way,
-    # we can deal with it in build time and when running tests.
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
+    from tmt._compat.typing import TypeAlias
 
 
 class Path(pathlib.PosixPath):
