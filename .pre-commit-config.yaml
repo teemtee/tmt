@@ -46,7 +46,7 @@ repos:
           # report-junit
           - "junit_xml>=1.9"
 
-          - "typing-extensions>=4.4.0; python_version < '3.10'" # TypeAlias introduced in 3.10, Self in 3.11
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
           - "pytest"
           - "requre"
           # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -92,7 +92,7 @@ repos:
           # report-junit
           - "junit_xml>=1.9"
 
-          - "typing-extensions>=4.4.0; python_version < '3.10'" # TypeAlias introduced in 3.10, Self in 3.11
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
           - "pytest"
           - "requre"
           # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -158,6 +158,7 @@ repos:
         # Help installation by reducing the set of inspected botocore release.
         # There is *a lot* of them, and hatch might fetch many of them.
         - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+        - "typing-extensions>=4.9.0; python_version < '3.13'"
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

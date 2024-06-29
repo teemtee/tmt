@@ -11,6 +11,13 @@ tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
 file does not follow the :ref:`result specification</spec/plans/results>`.
 
 
+tmt-1.36
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have started to use ``warnings.deprecated`` to advertise upcoming
+API deprecations.
+
+
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

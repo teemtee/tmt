@@ -40,6 +40,7 @@ dependencies = [              # F39 / PyPI
     "requests>=2.25.1",       # 2.28.2 / 2.31.0
     "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
     "urllib3>=1.26.5, <3.0",  # 1.26.16 / 2.0.4
+    "typing-extensions>=4.9.0; python_version < '3.13'",
     ]
 
 [project.optional-dependencies]
@@ -115,7 +116,6 @@ platforms = ["linux"]
 [tool.hatch.envs.dev]
 description = "Development environment"
 dependencies = [
-    "typing-extensions>=4.4.0; python_version < '3.10'", # TypeAlias introduced in 3.10, Self in 3.11
     "autopep8",
     "ruff",
     "mypy",
@@ -403,6 +403,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
+"warnings.deprecated".msg = "Use tmt._compat.warnings.deprecated instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]
