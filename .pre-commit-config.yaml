@@ -45,7 +45,7 @@ repos:
           # report-junit
           - "junit_xml>=1.9"
 
-          - "typing-extensions>=4.4.0; python_version < '3.10'" # TypeAlias introduced in 3.10, Self in 3.11
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
           - "pytest"
           - "requre"
           # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -90,7 +90,7 @@ repos:
           # report-junit
           - "junit_xml>=1.9"
 
-          - "typing-extensions>=4.4.0; python_version < '3.10'" # TypeAlias introduced in 3.10, Self in 3.11
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
           - "pytest"
           - "requre"
           # Do not install *types-click* - it's not recommended with Click 8 & newer,
@@ -167,6 +167,7 @@ repos:
           - "requests>=2.25.1"
           - "ruamel.yaml>=0.16.6"
           - "urllib3>=1.26.5, <3.0"
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
