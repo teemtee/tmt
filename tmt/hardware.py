@@ -32,7 +32,6 @@ import functools
 import itertools
 import operator
 import re
-import sys
 from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
@@ -55,13 +54,7 @@ from tmt.utils import SpecBasedContainer, SpecificationError
 if TYPE_CHECKING:
     from pint import Quantity
 
-    # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
-    # to avoid the necessity of requiring the package in runtime. This way,
-    # we can deal with it in build time and when running tests.
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
+    from tmt._compat.typing import TypeAlias
 
     #: A type of values describing sizes of things like storage or RAM.
     # Note: type-hinting is a bit wonky with pyright

@@ -59,7 +59,7 @@ try:
         return TempPathFactory(tmp_path_factory)
 
     @pytest.fixture()
-    def tmppath(tmp_path: pathlib.Path) -> Path:
+    def tmppath(tmp_path: pathlib.Path) -> Path:  # noqa: TID251
         return Path(str(tmp_path))
 
 except ImportError:
