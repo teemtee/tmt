@@ -141,6 +141,8 @@ description: |
           check:
             ...
 
+    .. _/spec/plans/results/outcomes:
+
     The ``result`` key can have the following values:
 
     pass
