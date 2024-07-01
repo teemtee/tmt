@@ -25,7 +25,7 @@ __ https://jinja.palletsprojects.com/en/3.1.x/templates/#filters
     {% set filter_callable = TEMPLATES[filter_name] %}
 
 {{ filter_name }}
-{{ '-' * (filter_name | length)}}
+{{ '-' * (filter_name | length) }}
 
 {% if filter_callable.__doc__ %}
 {{ filter_callable.__doc__ | dedent | trim }}

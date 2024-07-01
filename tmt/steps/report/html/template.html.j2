@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html>
 <head>
     <title>Test results of {{ plan.name }}</title>
     <style>
@@ -226,8 +227,8 @@ Context:
     </thead>
     {% for result in results %}
     <tr class="result">
-        <td class="result {{ result.result.value|e }}">{{ result.result.value|e }}</td>
-        <td class="name">{{ result.name|e }}</td>
+        <td class="result {{ result.result.value | e }}">{{ result.result.value | e }}</td>
+        <td class="name">{{ result.name | e }}</td>
 {% if display_guest %}
         <td class="guest">{{ emit_guest(result.guest) | trim | e }}</td>
 {% endif %}
@@ -238,7 +239,7 @@ Context:
         </td>
         <td class="data"><a href="{{ base_dir | linkable_path | urlencode }}/{{ result.data_path | urlencode }}">data</a></td>
         {% if result.note %}
-        <td class="note">{{ result.note|e }}</td>
+        <td class="note">{{ result.note | e }}</td>
         {% endif %}
     </tr>
     {% if result.check %}

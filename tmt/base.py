@@ -940,9 +940,8 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    yield LinterOutcome.WARN, \
-                        f'key "{bad_property}" not recognized by schema,' \
-                        f' and does not match "{match.group(2)}" pattern'
+                    yield LinterOutcome.WARN, (f'key "{bad_property}" not recognized by schema, '
+                                               f'and does not match "{match.group(2)}" pattern')
 
             # A key value is not recognized. This is often a case with keys whose values are
             # limited by an enum, like `how`. Unfortunately, validator will record every mismatch
@@ -1513,9 +1512,8 @@ class Test(
 
         if not tmt.utils.is_key_origin(self.node, 'require') \
                 and all(dependency in metadata.get('require', []) for dependency in missing_type):
-            yield LinterOutcome.FAIL, \
-                'some library/file requirement are missing type, but inherited from test parent,' \
-                ' please, fix manually'
+            yield LinterOutcome.FAIL, ('some library/file requirement are missing type, '
+                                       'but inherited from test parent, please, fix manually')
             return
 
         for dependency in metadata.get('require', []):
@@ -2213,20 +2211,19 @@ class Plan(
                         continue
 
                     if guest_names and guest_roles:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"guests {names_formatted} " \
-                            f"and roles {roles_formatted} were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role '{where}',"
+                               f" guests {names_formatted} and roles {roles_formatted} were found")
 
                     elif guest_names:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"guests {names_formatted} and no roles were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role "
+                               f"'{where}', guests {names_formatted} and no roles were found")
 
                     else:
-                        yield LinterOutcome.FAIL, \
-                            f"{step} phase '{phase.get('name')}' needs guest or role '{where}', " \
-                            f"roles {roles_formatted} and no guests were found"
+                        yield (LinterOutcome.FAIL,
+                               f"{step} phase '{phase.get('name')}' needs guest or role "
+                               f"'{where}', roles {roles_formatted} and no guests were found")
 
         yield from _lint_step('prepare')
         yield from _lint_step('execute')
@@ -2824,8 +2821,9 @@ class Tree(tmt.utils.Common):
                 # Links are in OR relation
                 if links and all(not node.has_link(needle) for needle in links):
                     continue
-            except BaseException:
+            except Exception as exc:
                 # Handle broken link as not matching
+                self.debug(f'Invalid link ignored, exception was {exc}')
                 continue
             # Exclude
             if any(node for expr in excludes if re.search(expr, node.name)):
@@ -2920,24 +2918,12 @@ class Tree(tmt.utils.Common):
                 Test(node=test, logger=self._logger.descend()) for test in self.tree.prune(
                     keys=keys, sources=cmd_line_names)]
 
-        else:
+        elif not unique and names:
             # First let's build the list of test objects based on keys & names.
             # If duplicate test names are allowed, match test name/regexp
             # one-by-one and preserve the order of tests within a plan.
-            if not unique and names:
-                tests = []
-                for name in names:
-                    selected_tests = [
-                        Test(
-                            node=test,
-                            tree=self,
-                            logger=logger.descend(
-                                logger_name=test.get('name', None)
-                                )  # .apply_verbosity_options(**self._options),
-                            ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
-                    tests.extend(sorted(selected_tests, key=lambda test: test.order))
-            # Otherwise just perform a regular key/name filtering
-            else:
+            tests = []
+            for name in names:
                 selected_tests = [
                     Test(
                         node=test,
@@ -2945,8 +2931,19 @@ class Tree(tmt.utils.Common):
                         logger=logger.descend(
                             logger_name=test.get('name', None)
                             )  # .apply_verbosity_options(**self._options),
-                        ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
-                tests = sorted(selected_tests, key=lambda test: test.order)
+                        ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
+                tests.extend(sorted(selected_tests, key=lambda test: test.order))
+        # Otherwise just perform a regular key/name filtering
+        else:
+            selected_tests = [
+                Test(
+                    node=test,
+                    tree=self,
+                    logger=logger.descend(
+                        logger_name=test.get('name', None)
+                        )  # .apply_verbosity_options(**self._options),
+                    ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
+            tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
         return self._filters_conditions(

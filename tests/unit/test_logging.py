@@ -40,7 +40,7 @@ def _exercise_logger(
     logger.debug('this is a debug message')
     logger.verbose('this is a verbose message')
     logger.info('this is just an info')
-    logger.warn('this is a warning')
+    logger.warning('this is a warning')
     logger.fail('this is a failure')
 
     captured = capsys.readouterr()
@@ -76,7 +76,7 @@ def _exercise_logger(
         details_key='warn',
         details_value='this is a warning',
         details_logger_labels=labels,
-        levelno=logging.WARN)
+        levelno=logging.WARNING)
     assert_log(
         caplog,
         message=f'{prefix}fail: this is a failure',
@@ -97,7 +97,7 @@ def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger
     logger = Logger.create()
     assert logger._logger.name == 'tmt'
 
-    actual_logger = logging.Logger('3rd-party-app-logger')
+    actual_logger = logging.Logger('3rd-party-app-logger')  # noqa: LOG001
     logger = Logger.create(actual_logger)
     assert logger._logger is actual_logger
 

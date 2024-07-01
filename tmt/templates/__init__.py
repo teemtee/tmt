@@ -53,9 +53,9 @@ def _get_templates(root_dir: Path) -> TemplatesType:
     return templates
 
 
-def _append_newline_if_missing(input: str) -> str:
+def _append_newline_if_missing(input_string: str) -> str:
     """ Append newline to the input if it doesn't end with one. """
-    return input if input.endswith('\n') else input + '\n'
+    return input_string if input_string.endswith('\n') else input_string + '\n'
 
 
 class TemplateManager:

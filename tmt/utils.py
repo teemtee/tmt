@@ -174,7 +174,7 @@ log = fmf.utils.Logging('tmt').logger
 
 
 # Default workdir root and max
-WORKDIR_ROOT = Path('/var/tmp/tmt')
+WORKDIR_ROOT = Path('/var/tmp/tmt')  # noqa: S108 insecure usage of temporary dir
 WORKDIR_MAX = 1000
 
 # Maximum number of lines of stdout/stderr to show upon errors
@@ -532,7 +532,7 @@ class Environment(dict[str, EnvVarValue]):
                     environment = cls.from_yaml_file(filepath, logger)
 
                     if not environment:
-                        logger.warn(f"Empty environment file '{filepath}'.")
+                        logger.warning(f"Empty environment file '{filepath}'.")
 
                     result.update(environment)
 
@@ -627,7 +627,7 @@ class Environment(dict[str, EnvVarValue]):
             environment = cls.from_dotenv(content)
 
         if not environment:
-            logger.warn(f"Empty environment file '{filename}'.")
+            logger.warning(f"Empty environment file '{filename}'.")
 
             return Environment()
 
@@ -1949,7 +1949,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     def warn(self, message: str, shift: int = 0) -> None:
         """ Show a yellow warning message on info level, send to stderr """
-        self._logger.warn(message, shift=shift)
+        self._logger.warning(message, shift=shift)
 
     def fail(self, message: str, shift: int = 0) -> None:
         """ Show a red failure message on info level, send to stderr """
@@ -2605,7 +2605,7 @@ def quote(string: str) -> str:
     return f'"{string}"'
 
 
-def ascii(text: Any) -> bytes:
+def pure_ascii(text: Any) -> bytes:
     """ Transliterate special unicode characters into pure ascii """
     if not isinstance(text, str):
         text = str(text)
@@ -2632,7 +2632,7 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
     Returns list of matching paths.
     """
     all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
-    alldirs = [str(dir) for dir in all_paths if dir.is_dir()]
+    alldirs = [str(d) for d in all_paths if d.is_dir()]
     allfiles = [str(file) for file in all_paths if not file.is_dir()]
     found_paths: list[str] = []
 
@@ -3657,12 +3657,11 @@ def _format_str(
                 if is_multiline:
                     yield ''
 
-    else:
-        if not value.rstrip():
-            yield ''
+    elif not value.rstrip():
+        yield ''
 
-        else:
-            yield from value.rstrip().split('\n')
+    else:
+        yield from value.rstrip().split('\n')
 
 
 def _format_dict(
@@ -3920,7 +3919,7 @@ def format_value(
 
 def format(
         key: str,
-        value: Union[None, int, float, bool, str, list[Any], dict[Any, Any]] = None,
+        value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
         indent: int = 24,
         window_size: int = OUTPUT_WIDTH,
         wrap: FormatWrap = 'auto',
@@ -4493,7 +4492,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             status_forcelist=self.status_forcelist,
             timeout=self.timeout)
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         pass
 
 
@@ -5129,7 +5128,7 @@ class StructuredField:
             content = self._sections[section]
         except KeyError:
             raise StructuredFieldError(
-                f"Section [{ascii(section)!r}] not found")
+                f"Section [{pure_ascii(section)!r}] not found")
         # Return the whole section content
         if item is None:
             return content
@@ -5138,7 +5137,7 @@ class StructuredField:
             return self._read_section(content)[item]
         except KeyError:
             raise StructuredFieldError(
-                f"Unable to read '{ascii(item)!r}' from section '{ascii(section)!r}'")
+                f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'")
 
     def set(self, section: str, content: Any,
             item: Optional[str] = None) -> None:
@@ -5178,7 +5177,7 @@ class StructuredField:
                 del self._order[self._order.index(section)]
             except KeyError:
                 raise StructuredFieldError(
-                    f"Section [{ascii(section)!r}] not found")
+                    f"Section [{pure_ascii(section)!r}] not found")
         # Remove only selected item from the section
         else:
             try:
@@ -5186,7 +5185,9 @@ class StructuredField:
                 del (dictionary[item])
             except KeyError:
                 raise StructuredFieldError(
-                    f"Unable to remove '{ascii(item)!r}' from section '{ascii(section)!r}'")
+                    f"Unable to remove '{pure_ascii(item)!r}' "
+                    f"from section '{pure_ascii(section)!r}'"
+                    )
             self._sections[section] = self._write_section(dictionary)
 
 
@@ -5460,7 +5461,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
     def __enter__(self: 'Self') -> 'Self':
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         if self.clear_on_exit:
             self.clear()
 
@@ -5945,7 +5946,7 @@ class ValidateFmfMixin(_CommonBase):
                     validation_errors=errors)
 
             for _, error_message in errors:
-                logger.warn(error_message, shift=1)
+                logger.warning(error_message, shift=1)
 
     def __init__(
             self,
@@ -6980,7 +6981,12 @@ def default_template_environment() -> jinja2.Environment:
     Adds common filters, and enables block trimming and left strip.
     """
 
-    environment = jinja2.Environment()
+    # S701: `autoescape=False` is dangerous and can lead to XSS.
+    # As there can be many different template file formats, used to render various formats,
+    # we need to explicitly set autoescape=False, as default might change in the future.
+    # Potential improvements are being tracked in /teemtee/tmt/issues/2873
+
+    environment = jinja2.Environment(autoescape=False)  # noqa: S701
 
     def regex_search(
             string: str,
@@ -7134,7 +7140,7 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.end_time = datetime.datetime.now(datetime.timezone.utc)
 
     @property

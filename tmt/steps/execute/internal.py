@@ -32,7 +32,7 @@ TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
 #: The default directory for storing test pid file.
-TEST_PIDFILE_ROOT = Path('/var/tmp')
+TEST_PIDFILE_ROOT = Path('/var/tmp')  # noqa: S108 insecure usage of temporary dir
 
 
 def effective_pidfile_root() -> Path:
@@ -393,7 +393,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
             if self.data.interactive:
                 if test.duration:
-                    logger.warn('Ignoring requested duration, not supported in interactive mode.')
+                    logger.warning(
+                        'Ignoring requested duration, not supported in interactive mode.')
 
                 timeout = None
 
@@ -423,7 +424,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     logger.debug(f"Test duration '{test.duration}' exceeded.")
 
                 elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                    logger.warn('Test failed to manage its pidfile.')
+                    logger.warning('Test failed to manage its pidfile.')
 
         with invocation.process_lock:
             invocation.process = None

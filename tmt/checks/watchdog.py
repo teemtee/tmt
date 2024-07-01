@@ -420,12 +420,12 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
         guest_context: GuestContext = invocation.check_data[check.how]
 
         if check.ping and not isinstance(invocation.guest, PINGABLE_GUEST_CLASSES):
-            watchdog_logger.warn('Ping against this guest is not supported, disabling.')
+            watchdog_logger.warning('Ping against this guest is not supported, disabling.')
 
             check.ping = False
 
         if check.ssh_ping and not isinstance(invocation.guest, SSH_PINGABLE_GUEST_CLASSES):
-            watchdog_logger.warn('SSH ping against this guest is not supported, disabling.')
+            watchdog_logger.warning('SSH ping against this guest is not supported, disabling.')
 
             check.ssh_ping = False
 

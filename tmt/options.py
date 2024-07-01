@@ -71,7 +71,7 @@ def option(
         is_flag: bool = False,
         multiple: bool = False,
         count: bool = False,
-        type: Optional[Union[click.Choice, Any]] = None,
+        type: Optional[Union[click.Choice, Any]] = None,  # noqa: A002  `type` is shadowing a Python builtin
         help: Optional[str] = None,
         required: bool = False,
         default: Optional[Any] = None,
@@ -108,7 +108,7 @@ def option(
             help = deprecated.rendered
 
     if choices is not None:
-        type = click.Choice(choices)
+        type = click.Choice(choices)  # noqa: A001  `type` is shadowing a Python builtin
 
     # Add a metavar listing choices unless an explicit metavar has been provided
     if isinstance(type, click.Choice) and metavar is None:

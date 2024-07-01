@@ -189,7 +189,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated xunit report """
-        pass
 
     def go(self) -> None:
         """ Go through executed tests and report into Polarion """
@@ -219,8 +218,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             'sample_image', 'logs', 'compose_id', 'fips']
 
         junit_suite = make_junit_xml(self)
-        xml_tree = ElementTree.fromstring(junit_suite.to_xml_string([junit_suite]))
-
+        # S314: Any potential xml parser vulnerability mitigation would require defusedxml package
+        xml_tree = ElementTree.fromstring(junit_suite.to_xml_string([junit_suite]))  # noqa: S314
         properties = {
             'polarion-project-id': project_id,
             'polarion-user-id': PolarionWorkItem._session.user_id,
@@ -297,7 +296,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
             response = post(
                 polarion_import_url, auth=auth,
-                files={'file': ('xunit.xml', ElementTree.tostring(xml_tree))})
+                files={'file': ('xunit.xml', ElementTree.tostring(xml_tree))}, timeout=10
+                )
             self.info(
                 f'Response code is {response.status_code} with text: {response.text}')
         else:

@@ -6,6 +6,7 @@ import _pytest.logging
 import pytest
 from testcloud.domain_configuration import DomainConfiguration, TPMConfiguration
 
+from tests.unit import MATCH, assert_log
 from tmt.hardware import TPM_VERSION_ALLOWED_OPERATORS, Hardware, Operator
 from tmt.log import Logger
 from tmt.steps.provision.testcloud import (
@@ -15,8 +16,6 @@ from tmt.steps.provision.testcloud import (
     _apply_hw_tpm,
     import_testcloud,
     )
-
-from ... import MATCH, assert_log
 
 import_testcloud()
 
@@ -154,8 +153,9 @@ def test_tpm_unsupported_version(
 
     assert_log(
         caplog,
-        message=MATCH(r"warn: Cannot apply hardware requirement 'tpm\.version: == 0\.0\.0', TPM version not supported."),  # noqa: E501
-        levelno=logging.WARN)
+        message=MATCH(r"warn: Cannot apply hardware requirement 'tpm\.version: == 0\.0\.0', "
+                      r"TPM version not supported."),
+        levelno=logging.WARNING)
 
 
 @pytest.mark.parametrize(
@@ -181,4 +181,4 @@ def test_tpm_unsupported_operator(
     assert_log(
         caplog,
         message=MATCH(rf"warn: Cannot apply hardware requirement 'tpm\.version: {op} 2\.0', operator not supported."),  # noqa: E501
-        levelno=logging.WARN)
+        levelno=logging.WARNING)

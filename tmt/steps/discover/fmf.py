@@ -278,11 +278,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             return True
         return super().is_in_standalone_mode
 
-    def get_git_root(self, dir: Path) -> Path:
+    def get_git_root(self, directory: Path) -> Path:
         """ Find git root of the path """
         output = self.run(
             Command("git", "rev-parse", "--show-toplevel"),
-            cwd=dir,
+            cwd=directory,
             ignore_dry=True)
         assert output.stdout is not None
         return Path(output.stdout.strip("\n"))
