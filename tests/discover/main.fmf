@@ -68,3 +68,7 @@ tier: 3
 /pruning:
     summary: Test pruning was done for tests
     test: ./prune.sh
+
+/exception:
+    summary: Verify no color when throwing an exception if '--no-color' is specified
+    test: ./exception.sh

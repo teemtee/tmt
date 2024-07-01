@@ -38,6 +38,7 @@ from typing import (
     Callable,
     Optional,
     Protocol,
+    TextIO,
     Union,
     cast,
     )
@@ -722,14 +723,15 @@ class Logger:
 
         self._logger._log(level, message, (), extra={'details': details})
 
-    def print(
+    def print_format(
             self,
             text: str,
             color: Optional[str] = None,
             shift: int = 0,
-            ) -> None:
+            ) -> str:
+        """ Format the given text in a way suitable for :py:meth:`print` """
 
-        message = indent(
+        text = indent(
             text,
             # Always apply colors - message can be decolorized later.
             color=color,
@@ -737,9 +739,18 @@ class Logger:
             labels=self.labels,
             labels_padding=self.labels_padding)
 
-        message = self._decolorize_output(message)
+        return self._decolorize_output(text)
 
-        print(message)
+    def print(
+            self,
+            text: str,
+            color: Optional[str] = None,
+            shift: int = 0,
+            file: Optional[TextIO] = None
+            ) -> None:
+        file = file or sys.stdout
+
+        print(self.print_format(text, color=color, shift=shift))
 
     def info(
             self,
