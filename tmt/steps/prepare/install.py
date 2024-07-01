@@ -256,7 +256,7 @@ class InstallDnf(InstallBase, Copr):
 
         # Use both dnf install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemented.
-        filelist = [PackagePath(self.package_directory / filename)
+        filelist = [PackagePath(self.package_directory / filename.name)
                     for filename in self.local_packages]
 
         self.guest.package_manager.install(

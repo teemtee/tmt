@@ -104,6 +104,8 @@ function is_ubi_8 () {
 }
 
 function fetch_downloaded_packages () {
+    in_subdirectory="$2"
+
     if [ ! -e $package_cache/tree.rpm ]; then
         # For some reason, this command will get stuck in rlRun...
         container_id="$(podman run -d $1 sleep 3600)"
@@ -119,8 +121,14 @@ function fetch_downloaded_packages () {
         rlRun "podman rm $container_id"
     fi
 
-    rlRun "cp $package_cache/tree.rpm ./"
-    rlRun "cp $package_cache/diffutils.rpm ./"
+    if [ -z "$in_subdirectory" ]; then
+        rlRun "cp $package_cache/tree.rpm ./"
+        rlRun "cp $package_cache/diffutils.rpm ./"
+    else
+        rlRun "mkdir -p ./downloaded-rpms"
+        rlRun "cp $package_cache/tree.rpm ./downloaded-rpms"
+        rlRun "cp $package_cache/diffutils.rpm ./downloaded-rpms"
+    fi
 }
 
 rlJournalStart
@@ -240,20 +248,60 @@ rlJournalStart
         rlPhaseEnd
 
         if rlIsFedora 39 && is_fedora_39 "$image"; then
-            rlPhaseStartTest "$phase_prefix Install downloaded packages (plan)"
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
-                rlRun -s "$tmt plan --name /downloaded"
+                rlRun -s "$tmt plan --name /downloaded/in-cwd"
 
                 rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
                 rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             rlPhaseEnd
 
-            rlPhaseStartTest "$phase_prefix Install downloaded packages (CLI)"
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (CLI)"
                 fetch_downloaded_packages "$image"
 
                 rlRun -s "$tmt prepare --insert --how install --package tree*.rpm --package diffutils*.rpm plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (plan)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt plan --name /downloaded/in-subdirectory"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded packages from subdirectory (CLI)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt prepare --insert --how install --package downloaded-rpms/tree.rpm --package downloaded-rpms/diffutils.rpm plan --name /empty"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded directory (plan)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt plan --name /downloaded/as-directory"
+
+                rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
+
+                rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "$phase_prefix Install downloaded directory (CLI)"
+                fetch_downloaded_packages "$image" "yes"
+
+                rlRun -s "$tmt prepare --insert --how install --directory downloaded-rpms plan --name /empty"
 
                 rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
