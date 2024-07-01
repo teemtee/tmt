@@ -15,6 +15,7 @@ import tmt.utils
 from tmt.utils import (
     ProvisionError,
     UpdatableMessage,
+    _normalize_user_data,
     dict_to_yaml,
     field,
     retry_session,
@@ -84,34 +85,6 @@ DEFAULT_API_TIMEOUT = 10
 DEFAULT_API_RETRIES = 10
 # Should lead to delays of 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256 seconds
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
-
-
-def _normalize_user_data(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> dict[str, str]:
-    if isinstance(raw_value, dict):
-        return {
-            str(key).strip(): str(value).strip() for key, value in raw_value.items()
-            }
-
-    if isinstance(raw_value, (list, tuple)):
-        user_data = {}
-
-        for datum in raw_value:
-            try:
-                key, value = datum.split('=', 1)
-
-            except ValueError as exc:
-                raise tmt.utils.NormalizationError(
-                    key_address, datum, 'a KEY=VALUE string') from exc
-
-            user_data[key.strip()] = value.strip()
-
-        return user_data
-
-    raise tmt.utils.NormalizationError(
-        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
 
 
 def _normalize_log_type(

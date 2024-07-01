@@ -15,7 +15,14 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, ProvisionError, ShellScript, UpdatableMessage, field
+from tmt.utils import (
+    Command,
+    ProvisionError,
+    ShellScript,
+    UpdatableMessage,
+    _normalize_user_data,
+    field,
+    )
 
 mrack: Any
 providers: Any
@@ -678,6 +685,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             hardware = cast(Optional[tmt.hardware.Hardware], host.get('hardware'))
             if hardware and hardware.constraint:
                 host.update({"beaker": self._translate_tmt_hw(hardware)})
+            host["beaker"]["ks_append"] = host.get('kickstart')
             req: dict[str, Any] = super().create_host_requirement(host)
             whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
             req.update({"whiteboard": whiteboard})
@@ -754,6 +762,13 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              {DEFAULT_API_SESSION_REFRESH} seconds by default.
              """,
         normalize=tmt.utils.normalize_int)
+    kickstart: dict[str, str] = field(
+        default_factory=dict,
+        option='--kickstart',
+        metavar='KEY=VALUE',
+        help='Optional Beaker kickstart to use when provisioning the guest.',
+        multiple=True,
+        normalize=_normalize_user_data)
 
 
 @dataclasses.dataclass
@@ -879,6 +894,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
+    kickstart: dict[str, str]
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -952,6 +968,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             'name': f'{self.image}-{self.arch}',
             'os': self.image,
             'group': 'linux',
+            'kickstart': self.kickstart,
             }
 
         if self.whiteboard is not None:
