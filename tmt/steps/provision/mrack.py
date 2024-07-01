@@ -15,7 +15,15 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, Path, ProvisionError, ShellScript, UpdatableMessage, field
+from tmt.utils import (
+    Command,
+    Path,
+    ProvisionError,
+    ShellScript,
+    UpdatableMessage,
+    _normalize_user_data,
+    field,
+    )
 
 mrack: Any
 providers: Any
@@ -692,6 +700,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
 
+            host["beaker"]["ks_append"] = host.get('kickstart')
             req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
 
             if host.hardware and host.hardware.constraint:
@@ -779,6 +788,13 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              {DEFAULT_API_SESSION_REFRESH} seconds by default.
              """,
         normalize=tmt.utils.normalize_int)
+    kickstart: dict[str, str] = field(
+        default_factory=dict,
+        option='--kickstart',
+        metavar='KEY=VALUE',
+        help='Optional Beaker kickstart to use when provisioning the guest.',
+        multiple=True,
+        normalize=_normalize_user_data)
 
     beaker_job_owner: Optional[str] = field(
         default=None,
@@ -923,6 +939,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
+    kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
 
@@ -999,7 +1016,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             os=self.image,
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner)
+            beaker_job_owner=self.beaker_job_owner,
+            kickstart=self.kickstart)
 
         try:
             response = self.api.create(data)
