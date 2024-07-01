@@ -11,6 +11,11 @@ standard location under ``tmt/steps`` , from all directories
 provided in the ``TMT_PLUGINS`` environment variable and from
 ``tmt.plugin`` entry point.
 
+.. versionchanged:: 1.35
+   ``warnings.deprecated`` is used to advertise deprecated APIs.
+   Consider adding a static type checker (e.g. ``mypy``) in your
+   plugin's CI using the ``main`` branch of ``tmt``.
+
 
 Inheritance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -4,6 +4,9 @@
     Releases
 ======================
 
+We have started to use ``warnings.deprecated`` to advertise upcoming
+API deprecations.
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
