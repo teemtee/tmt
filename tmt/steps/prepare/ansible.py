@@ -11,7 +11,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.steps.provision import Guest
-from tmt.utils import Path, PrepareError, field, retry_session
+from tmt.utils import Path, PrepareError, field, normalize_string_list, retry_session
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -52,11 +52,10 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         super().pre_normalization(raw_data, logger)
 
         # Perform `playbook` normalization here, so we could merge `playbooks` to it.
-        playbook = raw_data.pop('playbook', [])
-        raw_data['playbook'] = [playbook] if isinstance(playbook, str) else playbook
+        playbook = normalize_string_list('playbook', raw_data.pop('playbook', []), logger)
+        playbooks = normalize_string_list('playbook', raw_data.pop('playbooks', []), logger)
 
-        assert isinstance(raw_data['playbook'], list)
-        raw_data['playbook'] += raw_data.pop('playbooks', [])
+        raw_data['playbook'] = [*playbook, *playbooks]
 
 
 @tmt.steps.provides_method('ansible')
