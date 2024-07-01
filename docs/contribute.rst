@@ -351,6 +351,25 @@ good to include respective documentation. You can add or update
 the :ref:`specification`, extend the :ref:`examples` or write a
 new chapter for the user :ref:`guide`.
 
+tmt documentation is written with `reStructuredText`__ and built
+with `Sphinx`__. Various features of both reST and Sphinx are used
+widely in tmt documentation, from inline markup to references, feel
+free them as well to link new or updated documentation to relevant
+parts, to highlight important points, or to provide helpful examples.
+
+A couple of best practices when updating documentation:
+
+* when referring to a plugin, its options or documentation, prefer
+  reference to ``plugin/STEP/PLUGIN`` rather than to
+  ``/spec/plans/STEP/PLUGIN``. ``:ref:`plugin/prepare/ansible``` is
+  better than ``:ref:`/spec/plans/prepare/ansible```.
+
+__ https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
+__ https://www.sphinx-doc.org/en/master/
+
+Examples
+------------------------------------------------------------------
+
 By default, examples provided in the specification stories are
 rendered as ``yaml``. In order to select a different syntax
 highlighting schema add ``# syntax: <format>``, for example:
@@ -367,6 +386,9 @@ Building documentation is then quite straightforward:
 
 Find the resulting html pages under the ``docs/_build/html``
 folder.
+
+Visual themes
+------------------------------------------------------------------
 
 Use the ``TMT_DOCS_THEME`` variable to easily pick custom theme.
 If specified, ``make docs`` would use this theme for documentation
