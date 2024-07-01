@@ -139,7 +139,7 @@ LinterCallback = Callable[['Lintable'], LinterReturn]  # type: ignore[type-arg]
 
 _LINTER_DESCRIPTION_PATTERN = re.compile(r"""
     ^                      # must match the whole string
-    (?P<id>[CTPS]\d\d\d):  # check ID, the class initials & a three-digit number
+    (?P<id>[CTPSG]\d\d\d): # check ID, the class initials & a three-digit number
     \s*                    # optional white space
     (?P<short>.+)          # check description
     $                      # must match the whole string

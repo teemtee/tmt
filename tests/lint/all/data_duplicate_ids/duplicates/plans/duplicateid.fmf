@@ -1,0 +1,10 @@
+id: 5cf92c54-e073-475c-970f-b8e090ec4da2
+summary: This is just a plan
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tmt
+prepare:
+    how: ansible
+    playbook: ansible/packages.yml
+execute:
+    how: tmt

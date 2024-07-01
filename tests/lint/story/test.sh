@@ -31,6 +31,21 @@ rlJournalStart
         rlAssertGrep "fail S002 story is required" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Lint of duplicate ids"
+        # From data
+        rlRun "popd"
+        rlRun "pushd data_duplicate_ids"
+
+        lint_cmd="tmt stories lint"
+
+        rlRun -s "$lint_cmd /no_duplicates"
+        rlAssertGrep "pass G001 no duplicate ids detected" "$rlRun_LOG"
+
+        rlRun -s "$lint_cmd /duplicates" 1
+        rlAssertGrep "fail G001 duplicate id \"5645dcdf-acaa-4a04-8c0d-d478c8a6f2a3\" in \"/duplicates/duplicate_one\"" "$rlRun_LOG"
+        rlAssertGrep "fail G001 duplicate id \"5645dcdf-acaa-4a04-8c0d-d478c8a6f2a3\" in \"/duplicates/duplicate_two\"" "$rlRun_LOG"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
