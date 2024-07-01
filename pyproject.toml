@@ -400,3 +400,7 @@ markers = [
 ignore-words = "docs/codespell.dic"
 exclude-file = "docs/codespell.ignore"
 skip = "tests/execute/weird/data/weird.txt,tests/lint/plan/data/invalid_attr.fmf,tests/lint/plan/test.sh"
+
+[tool.djlint]
+use_gitignore=true
+ignore="H005,H030,H031"
