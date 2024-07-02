@@ -565,6 +565,7 @@ Follow the steps below to create a new major or minor release:
 
 * Update ``overview.rst`` with new contributors since the last release
 * Review the release notes in ``releases.rst``, update as needed
+* Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
 * Create a pull request with the commit, ensure tests pass, merge it
 
 Release a new package to Fedora and EPEL repositories:
