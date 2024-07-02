@@ -50,7 +50,13 @@ def test_maximal_constraint(root_logger: Logger) -> None:
 
     assert result.to_mrack() == {
         'and': [
+            {'pool': {
+                '_op': '!=',
+                '_value': 'foo.*',
+                },
+             },
             {'or': []},
+
             {
                 'and': [
                     {'or': []},
