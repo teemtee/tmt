@@ -9,6 +9,9 @@ description: |
            # Note: this field is consumed by Beaker and Artemis plugins only.
            lab-controller: "lab-01.foo.bar.com"
 
+    .. versionchanged:: 1.35
+       ``beaker`` plugin supports ``location.lab-controller``
+
     .. versionchanged:: 1.33
        Added ``location.lab-controller`` into specification.
 

@@ -107,5 +107,6 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+    note: "``cpu.vendor``, ``cpu.vendor-name`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name`` only"

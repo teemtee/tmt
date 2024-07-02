@@ -68,7 +68,8 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``size`` only"
+    note: "``size`` ``model-name`` only"
   - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``block-device`` not implemented yet"
   - implemented-by: /tmt/steps/provision/testcloud.py
     note: "``size`` only with ``=``, ``>=`` and ``<=`` operators only"
