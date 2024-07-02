@@ -7,6 +7,7 @@
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option.
+``tmt try`` now supports :ref:`/stories/cli/try/option/package` option.
 
 
 tmt-1.34

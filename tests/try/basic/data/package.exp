@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+# Try package
+
+set timeout 180
+spawn tmt try fedora@container --package tree -p /plans/basic
+expect "What do we do next?"
+send -- "q\r"
+expect eof
