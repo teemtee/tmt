@@ -88,6 +88,10 @@ _FEATURES: dict[str, type[Feature]] = {
     }
 
 
+class _RawPrepareFeatureStepData(tmt.steps.prepare._RawPrepareStepData, total=False):
+    epel: str
+
+
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     epel: Optional[str] = field(
