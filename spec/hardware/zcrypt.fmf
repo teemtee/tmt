@@ -24,3 +24,4 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
+  - implemented-by: /tmt/steps/provision/artemis.py
