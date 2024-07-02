@@ -823,6 +823,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                f"""
+                arch: {self.arch}
+                """
+                )
+            )
+
     def _create(self, tmt_name: str) -> None:
         """ Create beaker job xml request and submit it to Beaker hub """
 

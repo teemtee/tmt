@@ -5,6 +5,7 @@ from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
+import tmt.hardware
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
@@ -113,6 +114,16 @@ class GuestContainer(tmt.Guest):
             self.container
             ))
         return str(cmd_output.stdout).strip() == 'true'
+
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                f"""
+                arch: {self.facts.arch}
+                """
+                )
+            )
 
     def wake(self) -> None:
         """ Wake up the guest """
