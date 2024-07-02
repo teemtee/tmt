@@ -146,3 +146,17 @@ link:
         link:
           - implemented-by: /tmt/trying.py
           - implemented-by: /tmt/steps/prepare/feature.py
+
+    /package:
+        story:
+            As a user I want an easy way to install local rpm package on the guest.
+        description: |
+            Install local rpm package on the guest.
+
+            .. versionadded:: 1.35
+
+        example:
+            - tmt try fedora@virtual --package tree
+
+        link:
+          - implemented-by: /tmt/trying.py
