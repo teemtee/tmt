@@ -7023,6 +7023,14 @@ def render_template(
 
     environment = environment or default_template_environment()
 
+    def raise_error(message: str) -> None:
+        """ An in-template helper for raising exceptions """
+
+        raise Exception(message)
+
+    if 'raise_error' not in variables:
+        variables['raise_error'] = raise_error
+
     try:
         return environment.from_string(template).render(**variables).strip()
 
