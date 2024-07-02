@@ -5,7 +5,11 @@
 #
 
 FROM quay.io/centos/centos:7
-RUN cd /etc/yum.repos.d/ && sed '/mirrorlist/d' -i *repo && sed 's|#baseurl=http://mirror.centos.org/centos/$releasever|baseurl=https://vault.centos.org/7.9.2009|' -i *repo
+
+# Use latest vault repos, mirrors are gone after centos EOL
+RUN cd /etc/yum.repos.d/ \
+    && sed '/mirrorlist/d' -i *repo \
+    && sed 's|#baseurl=http://mirror.centos.org/centos/$releasever|baseurl=https://vault.centos.org/7.9.2009|' -i *repo
 
     # Populate yum cache
 RUN yum makecache
