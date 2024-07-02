@@ -10,6 +10,14 @@ description: |
     requirements. For example one consistent way how to specify
     `at least 2 GB of RAM` for all supported provisioners.
 
+    .. code-block:: yaml
+
+        provision:
+            how: virtual
+            image: fedora
+            hardware:
+                memory: ">2 GB"
+
     Introduction
     ^^^^^^^^^^^^
 
