@@ -36,6 +36,12 @@ description: |
 
         Default: ``false``
 
+        .. warning::
+
+            Be aware that this feature may be limited depending on how
+            the guest was provisioned. See
+            :ref:`plugins/provision/hard-reboot`.
+
     .. versionadded:: 1.33
 
 example:
