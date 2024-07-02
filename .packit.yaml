@@ -22,6 +22,7 @@ jobs:
     targets:
       - fedora-all
       - epel-9
+      - centos-stream-10
     enable_net: False
     actions:
         create-archive:
@@ -43,6 +44,7 @@ jobs:
     targets:
       - fedora-latest-stable
       - epel-9
+      - centos-stream-10
     tf_extra_params:
         test:
             tmt:
@@ -57,6 +59,7 @@ jobs:
     targets:
       - fedora-all
       - epel-9
+      - centos-stream-10
     require:
         label:
           present:
@@ -157,6 +160,7 @@ jobs:
     targets:
       - fedora-all
       - epel-9
+      - centos-stream-10
     enable_net: False
     list_on_homepage: True
     preserve_project: True
@@ -179,6 +183,7 @@ jobs:
     targets:
       - fedora-all
       - epel-9
+      - centos-stream-10
     enable_net: False
     list_on_homepage: True
     preserve_project: True
