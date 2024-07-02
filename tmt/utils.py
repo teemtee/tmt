@@ -244,9 +244,6 @@ class ProcessExitCodes(enum.IntEnum):
         if member is None:
             return 'unrecognized'
 
-        if member in (cls.SUCCESS, cls.FAILURE, cls.TIMEOUT):
-            return member.name.lower()
-
         if member.name.startswith('SIG'):
             return member.name
 
