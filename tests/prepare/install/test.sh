@@ -16,10 +16,10 @@ $TEST_IMAGE_PREFIX/fedora/coreos:stable
 $TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable}"
 
 # TODO: enable Ubuntu
+# TODO: enable centos-7 again with modified repo files)
 VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide
 fedora-39
 centos-stream-9
-centos-7
 fedora-coreos}"
 
 # A couple of "is image this?" helpers, to simplify conditions.
