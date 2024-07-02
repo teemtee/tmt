@@ -1011,9 +1011,9 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 logger=self._logger,
                 )
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the guest """
-        super().go()
+        super().go(logger=logger)
 
         data = BeakerGuestData.from_plugin(self)
 

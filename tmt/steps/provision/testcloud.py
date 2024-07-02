@@ -1064,9 +1064,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the testcloud instance """
-        super().go()
+        super().go(logger=logger)
 
         if self.data.list_local_images:
             self._print_local_images()

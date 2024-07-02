@@ -1,6 +1,8 @@
 import dataclasses
+from typing import Optional
 
 import tmt
+import tmt.log
 import tmt.steps
 import tmt.steps.report
 from tmt.result import BaseResult, CheckResult, Result
@@ -131,9 +133,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
             elif verbosity > 1:
                 display_log_info(check_result)
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Discover available tests """
-        super().go()
+        super().go(logger=logger)
         # Show individual test results only in verbose mode
         if not self.verbosity_level:
             return

@@ -197,9 +197,9 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     # Guest instance
     _guest = None
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Prepare the connection """
-        super().go()
+        super().go(logger=logger)
 
         # Check guest and auth info
         if not self.data.guest:

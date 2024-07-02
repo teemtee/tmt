@@ -75,7 +75,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
 
 
-class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
+class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     """ Common parent of discover plugins """
 
     # ignore[assignment]: as a base class, DiscoverStepData is not included in
@@ -108,6 +108,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
             Discover.store_cli_invocation(context)
 
         return discover
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """ Perform actions shared among plugins when beginning their tasks """
+
+        self.go_prolog(logger or self._logger)
 
     def tests(
             self,

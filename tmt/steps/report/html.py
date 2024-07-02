@@ -1,5 +1,6 @@
 import dataclasses
 import webbrowser
+from typing import Optional
 
 import tmt
 import tmt.log
@@ -58,9 +59,9 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated html report """
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Process results """
-        super().go()
+        super().go(logger=logger)
 
         # Prepare the template
         environment = tmt.utils.default_template_environment()

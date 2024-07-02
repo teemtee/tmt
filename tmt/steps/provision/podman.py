@@ -449,9 +449,9 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         return super().default(option, default=default)
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the container """
-        super().go()
+        super().go(logger=logger)
 
         # Prepare data for the guest instance
         data = PodmanGuestData.from_plugin(self)
