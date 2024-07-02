@@ -37,6 +37,5 @@ example:
     gpu:
         vendor-name: NVIDIA
 
-# NOTE: not yet supported
-# link:
-#   - implemented-by: /tmt/steps/provision/artemis.py
+link:
+  - implemented-by: /tmt/steps/provision/artemis.py
