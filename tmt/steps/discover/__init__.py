@@ -154,7 +154,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT]):
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """ Discover tests after dist-git applied patches """
-        pass
 
 
 class Discover(tmt.steps.Step):

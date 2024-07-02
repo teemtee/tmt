@@ -152,19 +152,15 @@ class InstallBase(tmt.utils.Common):
 
     def install_from_repository(self) -> None:
         """ Default base install method for packages from repositories """
-        pass
 
     def install_local(self) -> None:
         """ Default base install method for local packages """
-        pass
 
     def install_from_url(self) -> None:
         """ Default base install method for packages which are from URL """
-        pass
 
     def install_debuginfo(self) -> None:
         """ Default base install method for debuginfo packages """
-        pass
 
     def install(self) -> None:
         """ Perform the actual installation """
@@ -527,6 +523,14 @@ class InstallApk(InstallBase):
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" does not support '
             'installing debuginfo packages.')
+
+
+class _RawPrepareInstallStepData(tmt.steps.prepare._RawPrepareStepData, total=False):
+    package: Union[str, list[str]]
+    directory: Union[str, list[str]]
+    copr: Union[str, list[str]]
+    exclude: Union[str, list[str]]
+    missing: str
 
 
 @dataclasses.dataclass

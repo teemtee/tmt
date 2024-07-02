@@ -222,6 +222,9 @@ class _RawStepData(TypedDict, total=False):
     how: Optional[str]
     name: Optional[str]
 
+    summary: Optional[str]
+    order: Optional[int]
+
 
 RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
 
@@ -279,8 +282,6 @@ class StepData(
     def post_normalization(self, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """ Called after normalization, useful for tweaking normalized data """
 
-        pass
-
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
@@ -302,6 +303,10 @@ class StepData(
         data.post_normalization(raw_data, logger)
 
         return data
+
+
+class RawWhereableStepData(TypedDict, total=False):
+    where: Union[str, list[str]]
 
 
 @dataclasses.dataclass
@@ -1016,7 +1021,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         """
 
         if classes is None:
-            _classes: tuple[Union[type[Phase], type[PhaseT]], ...] = (Phase,)
+            _classes: tuple[type[Union[Phase, PhaseT]], ...] = (Phase,)
 
         elif not isinstance(classes, tuple):
             _classes = (classes,)
@@ -1077,7 +1082,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     shutil.rmtree(member)
             except OSError as error:
-                logger.warn(f"Unable to remove '{member}': {error}")
+                logger.warning(f"Unable to remove '{member}': {error}")
 
 
 class Method:
@@ -1389,9 +1394,8 @@ class BasePlugin(Phase, Generic[StepDataT]):
 
                 assert data is not None
                 assert data.__class__ is plugin_data_class, \
-                    f'Data package is instance of {data.__class__.__name__}, ' \
-                    f'plugin {plugin_class.__name__} ' \
-                    f'expects {plugin_data_class.__name__}'
+                    (f'Data package is instance of {data.__class__.__name__}, '
+                     f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}')
 
                 plugin = plugin_class(
                     logger=step._logger.descend(logger_name=None),
@@ -1551,9 +1555,8 @@ class BasePlugin(Phase, Generic[StepDataT]):
         """
 
         assert self.data.__class__ is self._data_class, \
-            f'Plugin {self.__class__.__name__} woken with incompatible ' \
-            f'data {self.data}, ' \
-            f'expects {self._data_class.__name__}'
+            (f'Plugin {self.__class__.__name__} woken with incompatible '
+             f'data {self.data}, expects {self._data_class.__name__}')
 
         if self.step.status() == 'done':
             self.debug('step is done, not overwriting plugin data')
@@ -1618,7 +1621,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         try:
             shutil.rmtree(self.workdir)
         except OSError as error:
-            logger.warn(f"Unable to remove '{self.workdir}': {error}")
+            logger.warning(f"Unable to remove '{self.workdir}': {error}")
 
 
 class GuestlessPlugin(BasePlugin[StepDataT]):
@@ -2167,8 +2170,7 @@ class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
 
     @property
     def name(self) -> str:
-        return f'{self.phase_name} ' \
-            f'on {fmf.utils.listed(self.guest_ids)}'
+        return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
     def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         self.phase.go(guest=guest, logger=logger)

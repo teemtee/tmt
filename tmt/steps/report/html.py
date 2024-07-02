@@ -57,7 +57,6 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated html report """
-        pass
 
     def go(self) -> None:
         """ Process results """

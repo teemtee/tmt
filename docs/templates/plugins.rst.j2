@@ -10,7 +10,7 @@
 .. _plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
 
 {{ PLUGIN_ID }}
-{{ '-' * (PLUGIN_ID | length)}}
+{{ '-' * (PLUGIN_ID | length) }}
 
 {# Emit the warning only for plugins that have not been reviewed yet. #}
 {% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
@@ -65,7 +65,7 @@ Configuration
     Default: *could not render default value correctly*
         {% endif %}
     {% endif %}
-{%endmacro %}
+{% endmacro %}
 
 {% set ignored_fields = container_ignored_fields(PLUGIN_DATA_CLASS) %}
 {% set inherited_fields = container_inherited_fields(PLUGIN_DATA_CLASS) | sort %}

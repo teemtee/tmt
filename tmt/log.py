@@ -31,6 +31,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -305,12 +306,11 @@ class _Formatter(logging.Formatter):
             pass
 
         # Otherwise render the message.
-        else:
-            if record.msg and record.args:
-                record.message = record.msg % record.args
+        elif record.msg and record.args:
+            record.message = record.msg % record.args
 
-            else:
-                record.message = record.msg
+        else:
+            record.message = record.msg
 
         # Original code from Formatter.format() - hard to inherit when overriding
         # Formatter.format()...
@@ -485,15 +485,15 @@ class Logger:
         self._decolorize_output = create_decolorizer(apply_colors_output)
 
     def __repr__(self) -> str:
-        return '<Logger:' \
-            f' name={self._logger.name}' \
-            f' verbosity={self.verbosity_level}' \
-            f' debug={self.debug_level}' \
-            f' quiet={self.quiet}' \
-            f' topics={self.topics}' \
-            f' apply_colors_output={self.apply_colors_output}' \
-            f' apply_colors_logging={self.apply_colors_logging}' \
-            '>'
+        return (f'<Logger:'
+                f' name={self._logger.name}'
+                f' verbosity={self.verbosity_level}'
+                f' debug={self.debug_level}'
+                f' quiet={self.quiet}'
+                f' topics={self.topics}'
+                f' apply_colors_output={self.apply_colors_output}'
+                f' apply_colors_logging={self.apply_colors_logging}'
+                f'>')
 
     @property
     def labels_span(self) -> int:
@@ -797,19 +797,27 @@ class Logger:
                 message_topic=topic)
             )
 
-    def warn(
+    def warning(
             self,
             message: str,
             shift: int = 0
             ) -> None:
         self._log(
-            logging.WARN,
+            logging.WARNING,
             LogRecordDetails(
                 key='warn',
                 value=message,
                 color='yellow',
                 shift=shift)
             )
+
+    def warn(
+            self,
+            message: str,
+            shift: int
+            ) -> None:
+        warnings.warn("Use `warning` instead", DeprecationWarning, stacklevel=1)
+        return self.warning(message, shift)
 
     def fail(
             self,

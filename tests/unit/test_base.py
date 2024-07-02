@@ -8,10 +8,9 @@ import pytest
 
 import tmt
 import tmt.cli
+from tests import CliRunner
 from tmt.base import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
-
-from .. import CliRunner
 
 runner = CliRunner()
 

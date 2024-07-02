@@ -11,8 +11,8 @@ TEST_DIR = Path(__file__).parent
 
 class NitrateExportAutomated(TestCase):
     def setUp(self):
-        self.tmp_dir = Path(tempfile.mktemp(prefix=str(TEST_DIR)))
-        shutil.copytree(TEST_DIR, self.tmp_dir)
+        self.tmp_dir = Path(tempfile.mkdtemp(prefix=str(TEST_DIR)))
+        shutil.copytree(TEST_DIR, self.tmp_dir, dirs_exist_ok=True)
         self.cwd = os.getcwd()
         self.dir_name = 'manual_test'
 

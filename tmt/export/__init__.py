@@ -407,16 +407,13 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     count_html_headings(sections_headings['Setup'][0])
     count_html_headings(sections_headings['Cleanup'][0])
 
-    warn_outside_test_section = 'Heading "{}" from the section "{}" is '\
-                                'used \noutside of Test sections.'
-    warn_headings_not_in_pairs = 'The number of headings from the section' \
-                                 ' "Step" - {}\ndoesn\'t equal to the ' \
-                                 'number of headings from the section \n' \
-                                 '"Expect" - {} in the test section "{}"'
-    warn_required_section_is_absent = '"{}" section doesn\'t exist in ' \
-                                      'the Markdown file'
-    warn_unexpected_headings = 'Headings "{}" aren\'t expected in the ' \
-                               'section "{}"'
+    warn_outside_test_section = \
+        'Heading "{}" from the section "{}" is used \noutside of Test sections.'
+    warn_headings_not_in_pairs = \
+        ('The number of headings from the section "Step" - {}\ndoesn\'t equal to the '
+         'number of headings from the section \n"Expect" - {} in the test section "{}"')
+    warn_required_section_is_absent = '"{}" section doesn\'t exist in the Markdown file'
+    warn_unexpected_headings = 'Headings "{}" aren\'t expected in the section "{}"'
 
     def required_section_exists(
             section: list[str],

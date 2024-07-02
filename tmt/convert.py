@@ -86,11 +86,10 @@ def read_manual(
     for case_id in case_ids:
         testcase = nitrate.TestCase(case_id)
         if testcase.status.name != 'CONFIRMED' and not disabled:
-            log.debug(
-                testcase.identifier + ' skipped (testcase is not CONFIRMED).')
+            log.debug(f'{testcase.identifier} skipped (testcase is not CONFIRMED).')
             continue
         if testcase.script is not None and not with_script:
-            log.debug(testcase.identifier + ' skipped (script is not empty).')
+            log.debug(f'{testcase.identifier} skipped (script is not empty).')
             continue
 
         # Filename sanitization
@@ -612,8 +611,8 @@ def read(
                 if parent.get(key) == test[key]:
                     test.pop(key)
 
-    log.debug('Common metadata:\n' + format_value(common_data))
-    log.debug('Individual metadata:\n' + format_value(individual_data))
+    log.debug(f'Common metadata:\n{format_value(common_data)}')
+    log.debug(f'Individual metadata:\n{format_value(individual_data)}')
     return common_data, individual_data
 
 
@@ -1007,16 +1006,15 @@ def read_nitrate_case(
         # Full 'Name Surname <example@email.com>' form
         if testcase.tester.name is not None:
             data['contact'] = f'{testcase.tester.name} <{testcase.tester.email}>'
+        elif makefile_data is None or 'contact' not in makefile_data:
+            # Otherwise use just the email address
+            data['contact'] = testcase.tester.email
+        # Use contact from Makefile if it's there and email matches
+        elif re.search(testcase.tester.email, makefile_data['contact']):
+            data['contact'] = makefile_data['contact']
         else:
-            if makefile_data is None or 'contact' not in makefile_data:
-                # Otherwise use just the email address
-                data['contact'] = testcase.tester.email
-            # Use contact from Makefile if it's there and email matches
-            elif re.search(testcase.tester.email, makefile_data['contact']):
-                data['contact'] = makefile_data['contact']
-            else:
-                # Otherwise use just the email address
-                data['contact'] = testcase.tester.email
+            # Otherwise use just the email address
+            data['contact'] = testcase.tester.email
         echo(style('contact: ', fg='green') + data['contact'])
     # Environment
     if testcase.arguments:
