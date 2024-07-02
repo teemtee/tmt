@@ -1171,7 +1171,7 @@ def provides_method(
     return _method
 
 
-class BasePlugin(Phase, Generic[StepDataT]):
+class BasePlugin(Generic[StepDataT], Phase):
     """ Common parent of all step plugins """
 
     # Deprecated, use @provides_method(...) instead. left for backward
@@ -2140,7 +2140,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
 
 @dataclasses.dataclass
-class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
+class PluginTask(Generic[StepDataT], tmt.queue.MultiGuestTask[None]):
     """ A task to run a phase on a given set of guests """
 
     phase: Plugin[StepDataT]
