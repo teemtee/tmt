@@ -15,6 +15,19 @@ definitions:
   # arch:
   #   type: string
 
+  # HW requirements: single `beaker` item
+  beaker:
+    type: object
+
+    properties:
+      pool:
+        type: string
+
+    additionalProperties: false
+
+    # enforce at least one property
+    minProperties: 1
+
   # HW requirements: `boot` block
   boot:
     type: object

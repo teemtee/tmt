@@ -1,0 +1,24 @@
+summary: |
+    Select or provision a guest with Beaker-specific parameters.
+
+description: |
+    .. code-block::
+
+       beaker:
+           # String, name of the Beaker pool to use for provisioning.
+           pool: "some-pool"
+
+
+    .. note::
+
+        The requirements are consumed by Beaker-aware ``provision``
+        plugins only, and cannot be enforced in any other
+        infrastructure.
+
+    .. versionadded:: 1.35
+
+example:
+  - |
+    # Select any system, as long as it is not from the given Beaker pool
+    beaker:
+        pool: "!= very-rare-machines"
