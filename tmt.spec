@@ -14,6 +14,8 @@ Requires:       git-core rsync sshpass
 
 Recommends:     bash-completion
 
+%py_provides    python3-tmt
+
 %global _metapackage_description %{expand:
 This is a metapackage bringing in extra dependencies for tmt.
 It contains no code, just makes sure the dependencies are installed.}
