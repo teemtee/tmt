@@ -19,7 +19,7 @@ rlJournalStart
         # Prepare the tmt command and expected error message
         tmt="tmt run -avr provision -h $PROVISION_HOW -i $image"
         if [[ $image =~ fedora ]]; then
-            error='Unable to find a match: forest'
+            error='No match for argument: forest'
         else
             error='No package forest available'
         fi
