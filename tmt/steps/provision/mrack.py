@@ -433,6 +433,18 @@ def _transform_zcrypt_mode(
         children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
 
 
+def _transform_system_numa_nodes(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'system',
+        children=[MrackHWBinOp('numanodes', beaker_operator, actual_value)])
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -453,6 +465,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
         _transform_virtualization_hypervisor,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
+    'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
     }
 
 
