@@ -1,9 +1,9 @@
 import dataclasses
+import functools
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
-import tmt.utils
 from tmt.log import Logger
 
 if TYPE_CHECKING:
@@ -193,7 +193,7 @@ class MultiGuestTask(Task[TaskResultT]):
 
         self.guests = guests
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def guest_ids(self) -> list[str]:
         return sorted([guest.multihost_name for guest in self.guests])
 

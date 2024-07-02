@@ -201,10 +201,6 @@ class GuestContainer(tmt.Guest):
 
         additional_args = []
 
-        # FIXME: Workaround for BZ#1900021 (f34 container on centos-8)
-        workaround = ['--security-opt', 'seccomp=unconfined']
-        additional_args.extend(workaround)
-
         additional_args.extend(self._setup_network())
 
         # Run the container

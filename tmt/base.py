@@ -64,7 +64,6 @@ from tmt.utils import (
     ShellScript,
     SpecBasedContainer,
     WorkdirArgumentType,
-    cached_property,
     container_field,
     dict_to_yaml,
     field,
@@ -796,7 +795,7 @@ class Core(
             always_get_ref=True,
             logger=self._logger)
 
-    @cached_property
+    @functools.cached_property
     def fmf_sources(self) -> list[Path]:
         return [Path(source) for source in self.node.sources]
 
@@ -1810,7 +1809,7 @@ class Plan(
             f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def plan_environment_file(self) -> Path:
         assert self.data_directory is not None  # narrow type
 
@@ -3239,7 +3238,7 @@ class Run(tmt.utils.Common):
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
         import tmt.steps.provision.local
 
