@@ -3101,7 +3101,7 @@ class Tree(tmt.utils.Common):
         fmf_dir = path / '.fmf'
         if tree is None:
             if dry:
-                echo(f"Will create '{fmf_dir}'.")
+                echo(f"Would create '{fmf_dir}'.")
             else:
                 try:
                     fmf.Tree.init(path)
