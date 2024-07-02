@@ -17,6 +17,7 @@ from tmt.hardware import (
 from tmt.log import Logger
 from tmt.steps.provision.mrack import (
     _CONSTRAINT_TRANSFORMERS,
+    _translate_constraint_by_config,
     constraint_to_beaker_filter,
     operator_to_beaker_op,
     )
@@ -672,6 +673,21 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
                     '_op': 'like',
                     '_value': 'C%A'
                     }
+                }
+            }
+        }
+
+
+def test_constraint_by_config(root_logger: Logger) -> None:
+
+    constraint = _parse_disk({'model-name': 'PERC H310'}, 1)
+    translates_fit = [{'operator': '==', 'value': 'PERC H310',
+                       'element': {'disk': {'model': {'_op': '==', '_value': 'PERC H310'}}}}]
+    assert _translate_constraint_by_config(constraint, translates_fit) == {
+        'disk': {
+            'model': {
+                '_op': '==',
+                '_value': 'PERC H310'
                 }
             }
         }

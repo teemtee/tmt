@@ -3,9 +3,11 @@ import dataclasses
 import datetime
 import logging
 import os
+import re
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Optional, TypedDict, Union, cast
 
 import tmt
@@ -37,6 +39,11 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: How often Beaker session should be refreshed to pick up up-to-date
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
+
+TMT_MRACK_HW_FILTERS_FILE = Path(
+    os.environ.get(
+        'TMT_MRACK_HW_FILTERS_FILE',
+        'mrack-hw-filters.yaml'))
 
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
@@ -172,8 +179,10 @@ class MrackHWGroup(MrackBaseHWElement):
                 }
 
         return {
-            self.name: [child.to_mrack() for child in self.children]
-            }
+            self.name: [
+                child if isinstance(
+                    child,
+                    dict) else child.to_mrack() for child in self.children]}
 
 
 @dataclasses.dataclass
@@ -195,6 +204,34 @@ class MrackHWNotGroup(MrackHWGroup):
     """ Represents ``<not/>`` element """
 
     name: str = 'not'
+
+
+def _get_custom_config() -> dict[str, Any]:
+    if TMT_MRACK_HW_FILTERS_FILE.is_absolute():
+        config_content = TMT_MRACK_HW_FILTERS_FILE.read_text()
+    else:
+        config_content = (tmt.utils.Config().path / TMT_MRACK_HW_FILTERS_FILE).read_text()
+    return tmt.utils.yaml_to_dict(config_content)
+
+
+def _translate_constraint_by_config(
+        constraint: tmt.hardware.Constraint[Any],
+        translations: list[Any]
+        ) -> dict[str, Any]:
+    for translation in translations:
+        if translation['operator'] != constraint.operator.value:
+            continue
+
+        if isinstance(translation['value'], str):
+            if not re.match(translation['value'], str(constraint.value)):
+                continue
+
+        elif translation['value'] != constraint.value:
+            continue
+
+        return translation['element']
+
+    return ProvisionError('constraint not supported by driver')
 
 
 def _transform_unsupported(
