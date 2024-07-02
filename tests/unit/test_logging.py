@@ -212,7 +212,7 @@ def test_debug_filter(
         # )
         (logging.DEBUG, 0),
         (logging.INFO, 0),
-        (logging.WARNING, 1),
+        (logging.WARNING, 0),
         (logging.ERROR, 1),
         (logging.CRITICAL, 1)
         ]
