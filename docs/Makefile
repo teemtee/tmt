@@ -9,7 +9,7 @@ LOGO_DST = _static/tmt-small.png
 
 clean:
 	rm -rf _build stories spec code/autodocs/*.rst code/template-filters.rst $(LOGO_DST)
-	find plugins -name "*.rst" ! -name index.rst | xargs rm -f
+	find plugins -name "*.rst" ! -name index.rst ! -name '*-header.inc.rst' | xargs -t rm -f
 
 ##
 ## Generate documentation sources from inputs
