@@ -277,6 +277,18 @@ def _transform_cpu_model_name(
         children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
 
 
+def _transform_cpu_hyper_threading(
+        constraint: tmt.hardware.FlagConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('hyper', beaker_operator, actual_value)])
+
+
 def _transform_disk_driver(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -438,6 +450,7 @@ ConstraintTransformer = Callable[[
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
+    'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
     'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
     'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
