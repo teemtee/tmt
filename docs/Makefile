@@ -37,6 +37,9 @@ stories:
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $(TMTDIR)/base.py
 	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
 
+spec/hardware-matrix.rst: spec $(TEMPLATESDIR)/hardware-matrix.rst.j2
+	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
+
 code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $(TMTDIR)/utils.py
 	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
 
@@ -65,7 +68,9 @@ generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for 
 
 generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
-generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
+generate-hardware-matrix: spec/hardware-matrix.rst  ## Generate HW requirement support matrix
+
+generate-stories: stories $(TEMPLATESDIR)/story.rst.j2 generate-hardware-matrix  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
 generate-plugins: plugins/discover.rst plugins/execute.rst plugins/finish.rst plugins/prepare.rst plugins/provision.rst plugins/report.rst plugins/test-checks.rst  ## Generate documentation sources for plugins
