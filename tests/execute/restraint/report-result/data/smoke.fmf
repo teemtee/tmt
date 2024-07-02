@@ -17,13 +17,13 @@ description:
     test: rstrnt-report-result report WARN
 
 /rhts-good:
-    test: rhts-report-result rhts PASS /tmp/rhts-test
+    test: touch /tmp/rhts-test; rhts-report-result rhts PASS /tmp/rhts-test
 
 /rhts-bad:
-    test: rhts-report-result rhts FAIL /tmp/rhts-test 1
+    test: touch /tmp/rhts-test; rhts-report-result rhts FAIL /tmp/rhts-test 1
 
 /rhts-skip:
-    test: rhts-report-result rhts SKIP /tmp/rhts-test 1
+    test: touch /tmp/rhts-test; rhts-report-result rhts SKIP /tmp/rhts-test 1
 
 /rhts-warn:
-    test: rhts-report-result rhts WARN /tmp/rhts-test 1
+    test: touch /tmp/rhts-test; rhts-report-result rhts WARN /tmp/rhts-test 1
