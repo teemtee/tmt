@@ -317,7 +317,7 @@ def generate_tmt_docs(app: Sphinx, config: Any) -> None:
     """ Run `make generate` to populate the auto-generated sources """
 
     conf_dir = Path(app.confdir)
-    subprocess.run(["make", "generate"], cwd=conf_dir)
+    subprocess.run(["make", "generate"], cwd=conf_dir, check=True)
 
 
 def setup(app: Sphinx) -> None:
