@@ -1705,11 +1705,8 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
             options = {"image": image_and_how}
 
         # For 'connect' rename 'image' to 'guest'
-        try:
-            if options['how'] == 'connect':
-                options['guest'] = options.pop('image')
-        except KeyError:
-            pass
+        if options.get('how') == 'connect':
+            options['guest'] = options.pop('image')
 
         tmt.steps.provision.Provision.store_cli_invocation(context=None, options=options)
 
