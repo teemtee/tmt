@@ -334,6 +334,9 @@ definitions:
       model-name:
         type: string
 
+      type:
+        type: string
+
       numa-nodes:
         anyOf:
           - type: string
