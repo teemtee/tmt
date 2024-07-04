@@ -24,6 +24,8 @@ can now be used in the :ref:`/plugins/report/junit` and
 failures or the full standard output should be included in the
 generated report.
 
+Change of Polarion field to store tmt id. Now using 'tmt UUID' field,
+specifically created for this purpose instead of 'Test Case ID' field.
 
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
