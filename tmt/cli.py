@@ -307,6 +307,10 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
     '--force-color', is_flag=True, default=False,
     help='Forces tmt to use colors in the output and logging.'
     )
+@option(
+    '--pre-check', is_flag=True, default=False, hidden=True,
+    help='Run pre-checks on the git root. (Used by pre-commit wrapper).'
+    )
 def main(
         click_contex: Context,
         root: str,
@@ -314,6 +318,7 @@ def main(
         no_color: bool,
         force_color: bool,
         show_time: bool,
+        pre_check: bool,
         **kwargs: Any) -> None:
     """ Test Management Tool """
 
@@ -338,6 +343,18 @@ def main(
 
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
+
+    # Run pre-checks
+    if pre_check:
+        git_command = tmt.utils.Command('git', 'rev-parse', '--show-toplevel')
+        git_root = git_command.run(cwd=None, logger=logger).stdout
+        if not git_root:
+            raise tmt.utils.RunError("git rev-parse did not produce a path", git_command, 0)
+        git_root = git_root.strip()
+        git_command = tmt.utils.Command(
+            'git', 'ls-files', '--error-unmatch', f"{git_root}/{root}/.fmf/version"
+            )
+        git_command.run(cwd=None, logger=logger)
 
     # Initialize metadata tree (from given path or current directory)
     tree = tmt.Tree(logger=logger, path=Path(root))

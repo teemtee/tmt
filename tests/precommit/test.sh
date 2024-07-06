@@ -94,6 +94,27 @@ EOF
         rlAssertNotGrep '/good' $rlRun_LOG
         rlAssertGrep '/wrong' $rlRun_LOG
 
+        # Check it works in different fmf_root
+        rlRun "mkdir tmt_root"
+        rlRun -s "git mv .fmf/ tmt_root/.fmf/"
+        # Should fail because fmf_root is in different location
+        # (Also tests that pre-commit runs when .fmf/version is changed)
+        rlRun -s "git commit -m 'wrong_fmf_root'" "1"
+        rlAssertGrep "$expected_command.*Failed" $rlRun_LOG
+        # Add the correct root
+cat <<EOF > .pre-commit-config.yaml
+repos:
+  - repo: $REPO
+    rev: "$REV"
+    hooks:
+    - id: "$hook"
+      args: [ --root, tmt_root ]
+EOF
+        rlRun -s "git add .pre-commit-config.yaml"
+        rlRun -s "git mv main.fmf tmt_root"
+        rlRun -s "git commit -m 'pass different root'"
+        rlAssertGrep "$expected_command.*Passed" $rlRun_LOG
+
         rlRun "popd"
         rlRun "rm -rf $tmp" 0 "Removing tmp directory"
     rlPhaseEnd
