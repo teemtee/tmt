@@ -353,8 +353,8 @@ new chapter for the user :ref:`guide`.
 
 tmt documentation is written with `reStructuredText`__ and built
 with `Sphinx`__. Various features of both reST and Sphinx are used
-widely in tmt documentation, from inline markup to references, feel
-free them as well to link new or updated documentation to relevant
+widely in tmt documentation, from inline markup to references. Feel
+free to use them as well to link new or updated documentation to relevant
 parts, to highlight important points, or to provide helpful examples.
 
 A couple of best practices when updating documentation:
