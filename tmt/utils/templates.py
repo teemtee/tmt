@@ -296,7 +296,12 @@ def default_template_environment() -> jinja2.Environment:
     Adds common filters, and enables block trimming and left strip.
     """
 
-    environment = jinja2.Environment()
+    # S701: `autoescape=False` is dangerous and can lead to XSS.
+    # As there can be many different template file formats, used to render various formats,
+    # we need to explicitly set autoescape=False, as default might change in the future.
+    # Potential improvements are being tracked in /teemtee/tmt/issues/2873
+
+    environment = jinja2.Environment()  # noqa: S701
 
     environment.filters.update(TEMPLATE_FILTERS)
 
