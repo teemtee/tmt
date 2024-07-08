@@ -1250,7 +1250,9 @@ def _parse_system(spec: Spec) -> BaseConstraint:
         include_device=False)
 
     group.constraints += _parse_number_constraints(spec, 'system', ('model', 'numa-nodes'))
-    group.constraints += _parse_text_constraints(spec, 'system', ('model-name',))
+    group.constraints += _parse_text_constraints(spec, 'system', ('model-name', ''))
+    group.constraints += _parse_text_constraints(spec, 'system', ('type', ''),
+                                                 allowed_operators=[Operator.EQ, Operator.NEQ])
 
     return group
 

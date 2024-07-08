@@ -282,6 +282,9 @@ definitions:
           - type: string
           - type: integer
 
+      type:
+        type: string
+
     additionalProperties: false
 
     # enforce at least one property
