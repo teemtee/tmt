@@ -211,17 +211,17 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     if not uuid:
         uuid = test.node.get(ID_KEY)
     if not dry_mode:
-        polarion_case.tmtuuid = uuid
+        polarion_case.tmtid = uuid
         polarion_case.update()  # upload the ID first so the case can be found in case of errors
         # Check if it was really uploaded
-        polarion_case.tmtuuid = ''
+        polarion_case.tmtid = ''
         polarion_case.reload()
-        if not polarion_case.tmtuuid:
+        if not polarion_case.tmtid:
             echo(style(
                 f"Can't add ID because {polarion_case.project_id} project "
-                "doesn't have tmtuuid field defined",
+                "doesn't have tmtid field defined",
                 fg='yellow'))
-    if dry_mode or polarion_case.tmtuuid:
+    if dry_mode or polarion_case.tmtid:
         echo(style(f"Append the ID {uuid}.", fg='green'))
 
     # Description
