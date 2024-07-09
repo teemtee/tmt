@@ -219,7 +219,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         if not polarion_case.tmtid:
             echo(style(
                 f"Can't add ID because {polarion_case.project_id} project "
-                "doesn't have tmtid field defined",
+                "doesn't have the 'tmtid' field defined.",
                 fg='yellow'))
     if dry_mode or polarion_case.tmtid:
         echo(style(f"Append the ID {uuid}.", fg='green'))

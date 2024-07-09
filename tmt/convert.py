@@ -914,7 +914,7 @@ def read_polarion_case(
                 if not polarion_case.tmtid:
                     echo(style(
                         f"Can't add ID because {polarion_case.project_id} project "
-                        "doesn't have tmtid field defined",
+                        "doesn't have the 'tmtid' field defined.",
                         fg='yellow'))
     current_data[tmt.identifier.ID_KEY] = uuid
     echo(style('ID: ', fg='green') + uuid)
