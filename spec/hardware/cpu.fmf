@@ -55,7 +55,7 @@ description: |
             - "!= flag4"
               ...
 
-          # Boolean, whether the cpu supports hyper-threading.
+          # Request a CPU with hyper-threading enabled.
           hyper-threading: true|false
 
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
