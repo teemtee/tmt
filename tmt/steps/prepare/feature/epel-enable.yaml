@@ -34,6 +34,8 @@
             name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
             disable_gpg_check: true
             state: present
+          # EPEL Next is available for CentOS Stream 9 and newer only
+          when: ansible_distribution_major_version | int >= 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -49,6 +51,8 @@
           ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
+          # EPEL Next is available for CentOS Stream 9 and newer only
+          when: ansible_distribution_major_version | int >= 9
 
     - name: Enable EPEL repos on CentOS 7
       when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int == 7
@@ -80,6 +84,8 @@
           ansible.builtin.dnf:
             name: epel-next-release
             state: present
+          # EPEL Next is available for CentOS Stream 9 and newer only
+          when: ansible_distribution_major_version | int >= 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -95,3 +101,5 @@
           ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
+          # EPEL Next is available for CentOS Stream 9 and newer only
+          when: ansible_distribution_major_version | int >= 9
