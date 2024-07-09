@@ -1486,7 +1486,7 @@ Clean guests
 
 The subcommand ``clean guests`` aims to stop all running guests.
 By default, runs are taken from ``/var/tmp/tmt``, this can be
-changed using ``--workdir-root`` to the subcommand:
+changed using ``--workdir-root`` option of the subcommand:
 
 .. code-block:: shell
 
@@ -1539,7 +1539,7 @@ Clean workdirs
 
 The goal of ``clean runs`` is to remove workdirs of past runs.
 Similarly to above, ``/var/tmp/tmt`` is used by default as run
-location and this can be changed using ``--workdir-root``:
+location and this can be changed using ``--workdir-root`` option:
 
 .. code-block:: shell
 
