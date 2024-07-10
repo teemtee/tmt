@@ -6133,7 +6133,7 @@ def normalize_storage_size(
 
 def normalize_string_list(
         key_address: str,
-        value: Union[None, str, list[str]],
+        value: Any,
         logger: tmt.log.Logger) -> list[str]:
     """
     Normalize a string-or-list-of-strings input value.
@@ -6178,7 +6178,7 @@ def normalize_string_list(
 
 def normalize_pattern_list(
         key_address: str,
-        value: Union[None, str, list[str]],
+        value: Any,
         logger: tmt.log.Logger) -> list[Pattern[str]]:
     """
     Normalize a pattern-or-list-of-patterns input value.
@@ -6192,18 +6192,40 @@ def normalize_pattern_list(
          - '(?i)BaZ+'
     """
 
-    normalized_value = normalize_string_list(key_address, value, logger)
+    def _normalize(raw_patterns: list[Any]) -> list[Pattern[str]]:
+        patterns: list[Pattern[str]] = []
 
-    patterns: list[Pattern[str]] = []
+        for i, raw_pattern in enumerate(raw_patterns):
+            if isinstance(raw_pattern, str):
+                try:
+                    patterns.append(re.compile(raw_pattern))
 
-    for i, raw_pattern in enumerate(normalized_value):
-        try:
-            patterns.append(re.compile(raw_pattern))
+                except Exception:
+                    raise NormalizationError(
+                        f'{key_address}[{i}]', raw_pattern, 'a regular expression')
 
-        except Exception:
-            raise NormalizationError(f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+            elif isinstance(raw_pattern, re.Pattern):
+                patterns.append(raw_pattern)
 
-    return patterns
+            else:
+                raise NormalizationError(
+                    f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+
+        return patterns
+
+    if value is None:
+        return []
+
+    if isinstance(value, str):
+        return _normalize([value])
+
+    if isinstance(value, (list, tuple)):
+        return _normalize(list(value))
+
+    raise NormalizationError(
+        key_address,
+        value,
+        'a regular expression or a list of regular expressions')
 
 
 def normalize_integer_list(
