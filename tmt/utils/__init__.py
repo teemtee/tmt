@@ -4656,7 +4656,7 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
 def generate_runs(
         path: Path,
-        id_: tuple[str]) -> Iterator[Path]:
+        id_: tuple[str, ...]) -> Iterator[Path]:
     """ Generate absolute paths to runs from path """
     # Prepare absolute workdir path if --id was used
     run_path = None
@@ -4667,6 +4667,8 @@ def generate_runs(
                 run_path = path / run_path
             if run_path.is_absolute() and run_path.exists():
                 yield run_path
+        else:
+            raise tmt.utils.GeneralError("id can not be empty.")
     if run_path:
         return
     if not path.exists():

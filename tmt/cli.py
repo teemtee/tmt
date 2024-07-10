@@ -1866,7 +1866,7 @@ def clean_runs(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: tuple[str],
+        id_: tuple[str, ...],
         keep: Optional[int],
         **kwargs: Any) -> None:
     """
@@ -1874,7 +1874,7 @@ def clean_runs(
 
     Remove all runs in '/var/tmp/tmt' by default.
     """
-    defined = [last is True, len(id_) > 0, keep is not None]
+    defined = [last is True, bool(id_), keep is not None]
     if defined.count(True) > 1:
         raise tmt.utils.GeneralError(
             "Options --last, --id and --keep cannot be used together.")
@@ -1911,14 +1911,14 @@ def clean_guests(
         context: Context,
         workdir_root: str,
         last: bool,
-        id_: tuple[str],
+        id_: tuple[str, ...],
         **kwargs: Any) -> None:
     """
     Stop running guests of runs.
 
     Stop guests of all runs in '/var/tmp/tmt' by default.
     """
-    if last and len(id_) > 0:
+    if last and bool(id_):
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
     if not Path(workdir_root).exists():
