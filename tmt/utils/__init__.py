@@ -4668,7 +4668,7 @@ def generate_runs(
             if run_path.is_absolute() and run_path.exists():
                 yield run_path
         else:
-            raise tmt.utils.GeneralError("id can not be empty.")
+            raise tmt.utils.GeneralError("Value of '--id' option cannot be an empty string.")
     if run_path:
         return
     if not path.exists():
