@@ -67,6 +67,26 @@ def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
     assert match.groups() == expected
 
 
+_size_constraint_pattern_input = [
+    ({'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
+     'num_with_default: == 10 gibibyte'),
+    ({'name': 'num_without_default', 'raw_value': '1024'}, 'num_without_default: == 1024 byte'),
+    ({'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'GiB'},
+     'num_with_unit: == 10 GiB'),
+    ]
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    _size_constraint_pattern_input,
+    )
+def test_constraint_default_unit(value: dict, expected: tuple[Any, Any]) -> None:
+    constraint_out = tmt.hardware.SizeConstraint.from_specification(**value)
+
+    assert constraint_out is not None
+    assert str(constraint_out) == expected
+
+
 _constraint_components_pattern_input = [
     ('memory 10 GiB', ('memory', None, None, None, '10 GiB')),
     ('cpu.processors != 4 ', ('cpu', None, 'processors', '!=', '4')),

@@ -493,7 +493,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     raw_value: str
 
     # If set, it is a raw unit specified by the constraint.
-    unit: Optional[str] = None
+    default_unit: Optional[str] = None
 
     # If set, it is a "bigger" constraint, to which this constraint logically
     # belongs as one of its aspects.
@@ -508,7 +508,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
             original_constraint: Optional['Constraint[Any]'] = None,
             allowed_operators: Optional[list[Operator]] = None,
-            unit: Optional[Any] = "bytes"
+            default_unit: Optional[Any] = "bytes"
             ) -> T:
         """
         Parse raw constraint specification into our internal representation.
@@ -561,7 +561,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             if not isinstance(
                     value,
                     pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
-                value = pint.Quantity(value, unit)
+                value = pint.Quantity(value, default_unit)
 
         elif as_cast is not None:
             value = as_cast(raw_value)
@@ -674,7 +674,7 @@ class SizeConstraint(Constraint['Size']):
             raw_value: str,
             original_constraint: Optional['Constraint[Any]'] = None,
             allowed_operators: Optional[list[Operator]] = None,
-            unit: Optional[Any] = 'bytes'
+            default_unit: Optional[Any] = 'bytes'
             ) -> T:
         return cls._from_specification(
             name,
@@ -682,7 +682,7 @@ class SizeConstraint(Constraint['Size']):
             as_quantity=True,
             original_constraint=original_constraint,
             allowed_operators=allowed_operators,
-            unit=unit
+            default_unit=default_unit
             )
 
 
