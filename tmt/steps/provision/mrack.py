@@ -454,6 +454,19 @@ def _transform_location_lab_controller(
         actual_value)
 
 
+def _transform_system_type(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    return MrackHWBinOp(
+        'system_type',
+        beaker_operator,
+        actual_value)
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -469,6 +482,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'hostname': _transform_hostname,  # type: ignore[dict-item]
     'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
+    'system.type': _transform_system_type,  # type: ignore[dict-item]
     'virtualization.is_virtualized':
         _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
     'virtualization.hypervisor':

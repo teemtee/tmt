@@ -238,7 +238,13 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'or': []},
                     {'or': []},
                     {'or': []},
-                    {'or': []}
+                    {'or': []},
+                    {
+                        'system_type': {
+                            '_op': '!=',
+                            '_value': 'Machine',
+                            },
+                        },
                     ]
                 },
             {'or': []},
