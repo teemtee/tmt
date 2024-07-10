@@ -65,6 +65,7 @@ from tmt.utils import (
     SpecBasedContainer,
     WorkdirArgumentType,
     container_field,
+    container_fields,
     dict_to_yaml,
     field,
     git_clone,
@@ -896,7 +897,19 @@ class Core(
 
     def _lint_keys(self, additional_keys: list[str]) -> list[str]:
         """ Return list of invalid keys used, empty when all good """
-        known_keys = additional_keys + self._keys()
+
+        known_keys: list[str] = []
+
+        for field_ in container_fields(self):
+            _, key, _, _, metadata = container_field(self, field_.name)
+
+            if metadata.internal:
+                continue
+
+            known_keys.append(key)
+
+        known_keys.extend(additional_keys)
+
         return [key for key in self.node.get() if key not in known_keys]
 
     def lint_validate(self) -> LinterReturn:
