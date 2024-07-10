@@ -15,7 +15,8 @@ from tmt.utils import Path, field
 if TYPE_CHECKING:
     import junit_xml
 
-    from tmt.steps.report import ReportPlugin, ReportStepDataT
+    from tmt.steps.report import ReportPlugin
+    from tmt.steps.report.polarion import ReportPolarionData
 
 DEFAULT_NAME = "junit.xml"
 
@@ -57,7 +58,9 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
             f"Malformed duration '{duration}' ({error}).")
 
 
-def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSuite':
+def make_junit_xml(
+        report: 'ReportPlugin[ReportJUnitData]|ReportPlugin[ReportPolarionData]'
+        ) -> 'junit_xml.TestSuite':
     """ Create junit xml object """
     junit_xml = import_junit_xml()
 
@@ -99,6 +102,13 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
         metavar='PATH',
         help='Path to the file to store JUnit to.',
         normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
+
+    include_output_log: bool = field(
+        default=True,
+        option=('--include-output-log / --no-include-output-log'),
+        is_flag=True,
+        show_default=True,
+        help='Include full standard output in resulting xml file.')
 
 
 @tmt.steps.provides_method('junit')
