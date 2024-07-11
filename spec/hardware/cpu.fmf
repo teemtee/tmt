@@ -55,6 +55,9 @@ description: |
             - "!= flag4"
               ...
 
+          # Request a CPU with hyper-threading enabled.
+          hyper-threading: true|false
+
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
 
@@ -96,6 +99,11 @@ example:
     # Request a CPU with more than 4 cores.
     cpu:
         cores: ">= 4"
+
+  - |
+    # Request a CPU with hyper-threading enabled.
+    cpu:
+        hyper-threading: true
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py

@@ -1130,6 +1130,14 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
 
         group.constraints += [flag_group]
 
+    if 'hyper-threading' in spec:
+        group.constraints += [
+            FlagConstraint.from_specification(
+                'cpu.hyper_threading',
+                spec['hyper-threading'],
+                allowed_operators=[Operator.EQ, Operator.NEQ])
+            ]
+
     return group
 
 
