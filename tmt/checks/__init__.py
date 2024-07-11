@@ -161,7 +161,7 @@ class Check(
         raise tmt.utils.GeneralError(f"Unsupported test check event '{event}'.")
 
 
-class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
+class CheckPlugin(Generic[CheckT], tmt.utils._CommonBase):
     """ Base class for plugins providing extra checks before, during and after tests """
 
     _check_class: type[CheckT]

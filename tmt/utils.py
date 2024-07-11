@@ -1486,28 +1486,7 @@ class _CommonBase:
             super().__init__(**kwargs)
 
 
-class _CommonMeta(type):
-    """
-    A meta class for all :py:class:`Common` classes.
-
-    Takes care of properly resetting :py:attr:`Common.cli_invocation` attribute
-    that cannot be shared among classes.
-    """
-
-    def __init__(cls, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
-        # TODO: repeat type annotation from `Common` - IIUIC, `cls` should be
-        # the class being created, in our case that would be a subclass of
-        # `Common`. For some reason, mypy is uncapable of detecting annotation
-        # of this attribute in `Common`, and infers its type is `None` because
-        # of the assignment below. That's incomplete, and leads to mypy warning
-        # about assignments of `CliInvocation` instances to this attribute.
-        # Repeating the annotation silences mypy, giving it better picture.
-        cls.cli_invocation: Optional[tmt.cli.CliInvocation] = None
-
-
-class Common(_CommonBase, metaclass=_CommonMeta):
+class Common(_CommonBase):
     """
     Common shared stuff
 
@@ -1642,6 +1621,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     # The "later use" means the context is often used when looking for options
     # like --how or --dry, may affect step data from fmf or even spawn new phases.
     cli_invocation: Optional['tmt.cli.CliInvocation'] = None
+
+    def __init_subclass__(cls) -> None:
+        """
+        Take care of properly resetting :py:attr:`Common.cli_invocation` attribute
+        that cannot be shared among classes.
+        """
+        cls.cli_invocation = None
 
     @classmethod
     def store_cli_invocation(
@@ -2220,26 +2206,15 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._clone_dirpath
 
 
-class _MultiInvokableCommonMeta(_CommonMeta):
-    """
-    A meta class for all :py:class:`Common` classes.
-
-    Takes care of properly resetting :py:attr:`Common.cli_invocation` attribute
-    that cannot be shared among classes.
-    """
-
-    # N805: ruff does not recognize this as a metaclass, `cls` is correct
-    def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
-        super().__init__(*args, **kwargs)
-
-        cls.cli_invocations: list[tmt.cli.CliInvocation] = []
-
-
-class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
+class MultiInvokableCommon(Common):
     cli_invocations: list['tmt.cli.CliInvocation']
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        cls.cli_invocations = []
 
     @classmethod
     def store_cli_invocation(
