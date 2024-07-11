@@ -34,8 +34,8 @@ rlJournalStart
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Package"
-        rlRun -s "./package.exp"
+    rlPhaseStartTest "Install"
+        rlRun -s "./install.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
         rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf install -y  tree" $rlRun_LOG
         rlAssertGrep "out: Installed:" $rlRun_LOG
