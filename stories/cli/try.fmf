@@ -147,7 +147,7 @@ link:
           - implemented-by: /tmt/trying.py
           - implemented-by: /tmt/steps/prepare/feature.py
 
-    /package:
+    /install:
         story:
             As a user I want an easy way to install local rpm package on the guest.
         description: |
@@ -156,7 +156,7 @@ link:
             .. versionadded:: 1.35
 
         example:
-            - tmt try fedora@virtual --package tree
+            - tmt try fedora@virtual --install tree
 
         link:
           - implemented-by: /tmt/trying.py
