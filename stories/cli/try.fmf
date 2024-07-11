@@ -160,3 +160,4 @@ link:
 
         link:
           - implemented-by: /tmt/trying.py
+          - implemented-by: /tmt/steps/prepare/install.py
