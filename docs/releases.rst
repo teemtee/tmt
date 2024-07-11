@@ -132,8 +132,7 @@ the ``clean`` subcommand. Users can clean resources from the last
 run or from a run with a given id. Users can also choose to skip
 cleaning ``guests``, ``runs`` or ``images``.
 
-``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option.
-``tmt try`` now supports :ref:`/stories/cli/try/option/install` option.
+``tmt try`` now supports :ref:`/stories/cli/try/option/install` option backed by :ref:`prepare/feature<plugins/prepare/install>` plugin
 
 
 tmt-1.34.0
