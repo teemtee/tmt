@@ -12,6 +12,7 @@ issue_repository: https://github.com/teemtee/tmt
 srpm_build_deps:
   - hatch
   - python3-hatch-vcs
+  - make
 
 jobs:
 
