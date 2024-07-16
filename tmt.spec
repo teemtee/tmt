@@ -42,6 +42,7 @@ metadata specification (L1 and L2) and allows easy test execution.
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
+Provides:       tmt-test-convert == %{version}-%{release}
 %if 0%{?fedora} < 40
 Obsoletes:      tmt-test-convert < %{version}-%{release}
 %endif
@@ -68,6 +69,7 @@ Requires:       (ansible or ansible-collection-containers-podman)
 
 %package -n     tmt+provision-virtual
 Summary:        Dependencies required for tmt virtual machine provisioner
+Provides:       tmt-provision-virtual == %{version}-%{release}
 %if 0%{?fedora} < 40
 Obsoletes:      tmt-provision-virtual < %{version}-%{release}
 %endif
