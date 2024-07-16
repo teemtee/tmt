@@ -284,7 +284,7 @@ class AvcDenials(CheckPlugin[Check]):
 
     .. note::
 
-        To work correctly, check requires SELinux to be enabled on the
+        To work correctly, the check requires SELinux to be enabled on the
         guest, and ``auditd`` must be running. Without SELinux, the
         check will turn into no-op, reporting
         :ref:`skip</spec/plans/results/outcomes>` result, and
