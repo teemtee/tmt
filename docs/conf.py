@@ -24,10 +24,8 @@ if TYPE_CHECKING:
 import tmt.utils
 
 _POSSIBLE_THEMES: list[tuple[Optional[str], str]] = [
-    # Use renku as the default theme
-    ('renku_sphinx_theme', 'renku'),
-    # Fall back to sphinx_rtd_theme if available
-    ('sphinx_rtd_theme', 'sphinx_rtd_theme'),
+    # Use furo as the default theme
+    ('furo', 'furo'),
     # The default theme
     (None, 'default')
     ]
@@ -108,7 +106,6 @@ sys.path.insert(0, os.path.abspath('../'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
-    'sphinx_rtd_theme',
     ]
 
 # Add any paths that contain templates here, relative to this directory.
