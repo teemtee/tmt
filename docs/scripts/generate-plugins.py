@@ -20,6 +20,7 @@ from tmt.utils import ContainerClass, Path, render_template_file
 
 REVIEWED_PLUGINS: tuple[str, ...] = (
     'prepare/ansible',
+    'test-checks/avc',
     'test-checks/dmesg'
     )
 
