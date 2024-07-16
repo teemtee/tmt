@@ -359,10 +359,21 @@ parts, to highlight important points, or to provide helpful examples.
 
 A couple of best practices when updating documentation:
 
-* when referring to a plugin, its options or documentation, prefer
-  reference to ``plugin/STEP/PLUGIN`` rather than to
-  ``/spec/plans/STEP/PLUGIN``. ``:ref:`plugin/prepare/ansible``` is
-  better than ``:ref:`/spec/plans/prepare/ansible```.
+* When referring to a plugin, its options or documentation, prefer
+  reference to ``plugins/STEP/PLUGIN`` rather than to older
+  ``/spec/plans/STEP/PLUGIN``:
+
+  .. code-block:: rest
+
+    # This is good:
+    :ref:`plugin/prepare/ansible`
+
+    # If the user-facing plugin name differs from the Python one,
+    # or if you need capitalize the first letter:
+    :ref:`Beaker<plugins/provision/beaker>`
+
+    # This should be avoided:
+    :ref:`/spec/plans/prepare/ansible`
 
 __ https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
 __ https://www.sphinx-doc.org/en/master/
