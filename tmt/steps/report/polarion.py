@@ -180,6 +180,13 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         help='FIPS mode enabled or disabled for this run.'
         )
 
+    include_output_log: bool = field(
+        default=True,
+        option=('--include-output-log / --no-include-output-log'),
+        is_flag=True,
+        show_default=True,
+        help='Include full standard output in resulting xml file.')
+
 
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
