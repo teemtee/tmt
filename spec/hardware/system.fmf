@@ -31,3 +31,7 @@ example:
     system:
         vendor-name: "~ HPE"
         numa-nodes: ">= 4"
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``system.numa-nodes`` only"
