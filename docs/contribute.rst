@@ -374,6 +374,53 @@ A couple of best practices when updating documentation:
 
     # This should be avoided:
     :ref:`/spec/plans/prepare/ansible`
+* Design the plugin docstrings and help texts as if they are to be
+  rendered by Sphinx, i.e. make use of ReST goodies: literals for
+  literals - metavars, values, names of environment variables, commands,
+  keys, etc., ``code-block`` for blocks of code or examples. It leads to
+  better HTML docs and tmt has a nice CLI renderer as well, therefore
+  there is no need to compromise for the sake of CLI.
+* Use full sentences, i.e. capital letters at the beginning & a full
+  stop at the end.
+* Use Python multiline strings rather than joining multiple strings over
+  several lines. It often leads to leading and/or trailing whitespace
+  characters that are easy to miss.
+* Plugin docstring provides the bulk of its CLI help and HTML
+  documentation. It should describe what the plugin does.
+* Other than trivial use cases and keys deserve an example or two.
+* Unless there's an important difference, describe the plugin's
+  configuration in terms of fmf rather than CLI. It is easy to map fmf
+  to CLI options, and fmf makes a better example for someone writing fmf
+  files.
+* When referring to plugin configuration in user-facing docs, speak
+  about "keys": "``playbook`` key of ``prepare/ansible`` plugin". Keys
+  are mapped 1:1 to CLI options, let's make sure we avoid polluting docs
+  with "fields", "settings" and other synonyms.
+* A metavar should represent the semantic of the expected value, i.e.
+  ``--file PATH`` is better than ``--file FILE``,
+  ``--playbook PATH|URL`` is better than ``--playbook PLAYBOOK``.
+* If there is a default value, it belongs to the ``default=`` parameter
+  of :py:func:`tmt.utils.field`, and the help text should not mention it
+  because the "Default is ..." sentence can be easily added
+  automatically and rendered correctly with ```show_default=True``.
+* When showing an example of plugin configuration, include also an
+  example for the command line:
+
+  .. code-block:: rest
+
+     Run a single playbook on the guest:
+
+     .. code-block:: yaml
+
+        prepare:
+            how: ansible
+            playbook: ansible/packages.yml
+
+     .. code-block:: shell
+
+        prepare --how ansible --playbook ansible/packages.yml
+* Do not use ``:caption:`` directive of ``code-block``, it is understod
+  by Sphinx only and ``docutils`` package cannot handle it.
 
 __ https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
 __ https://www.sphinx-doc.org/en/master/
