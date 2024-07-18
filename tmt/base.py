@@ -3087,10 +3087,10 @@ class Tree(tmt.utils.Common):
             # Are we creating a new tree under the existing one?
             assert tree is not None  # narrow type
             if path == tree.root:
-                echo(f"Tree '{tree.root}' already exists.")
+                echo(f"The fmf tree root '{tree.root}/.fmf' already exists.")
             else:
                 # Are we creating a nested tree?
-                echo(f"Path '{path}' already has a parent tree root '{tree.root}'.")
+                echo(f"Path '{path}' already has a parent fmf tree root '{tree.root}/.fmf'.")
                 if not force and not confirm("Do you really want to initialize a nested tree?"):
                     return
                 tree = None
@@ -3101,7 +3101,7 @@ class Tree(tmt.utils.Common):
         fmf_dir = path / '.fmf'
         if tree is None:
             if dry:
-                echo(f"Would create '{fmf_dir}'.")
+                echo(f"Would initialize the fmf tree root '{fmf_dir}'.")
             else:
                 try:
                     fmf.Tree.init(path)
@@ -3110,9 +3110,8 @@ class Tree(tmt.utils.Common):
                     path = tree.root
                 except fmf.utils.GeneralError as error:
                     raise tmt.utils.GeneralError(
-                        f"Failed to create '{fmf_dir}'") from error
-                echo(f"Initialized metadata dir '{fmf_dir}'")
-                echo("Add tests with `tmt test create` or `tmt init --template`")
+                        f"Failed to initialize the fmf tree root '{fmf_dir}'.") from error
+                echo(f"Initialized the fmf tree root '{fmf_dir}'.")
 
         # Add .fmf directory to the git index if possible
         if tmt.utils.git_root(fmf_root=path, logger=logger):
@@ -3130,10 +3129,10 @@ class Tree(tmt.utils.Common):
 
         # Populate the tree with example objects if requested
         if template == 'empty':
-            choices = listed(tmt.templates.INIT_TEMPLATES, join='or')
-            echo(
-                f"To populate it with example content, "
-                f"use --template with {choices}.")
+            choices = listed(tmt.templates.INIT_TEMPLATES, join='or', quote="'")
+            echo(f"Use 'tmt init --template' with {choices} to create example content.")
+            echo("Add tests, plans and stories with 'tmt test create', "
+                 "'tmt plan create' or 'tmt story create'.")
         else:
             echo(f"Applying template '{template}'.")
 
