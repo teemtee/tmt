@@ -311,7 +311,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Report test results to the endpoint
 
@@ -319,7 +319,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         fill it with all parts needed and report the logs.
         """
 
-        super().go()
+        super().go(logger=logger)
 
         if not self.data.url:
             raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
