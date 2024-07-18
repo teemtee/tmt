@@ -3131,7 +3131,7 @@ class Tree(tmt.utils.Common):
         if template == 'empty':
             choices = listed(tmt.templates.INIT_TEMPLATES, join='or', quote="'")
             echo(f"Use 'tmt init --template' with {choices} to create example content.")
-            echo("Add tests, plans and stories with 'tmt test create', "
+            echo("Add tests, plans or stories with 'tmt test create', "
                  "'tmt plan create' or 'tmt story create'.")
         else:
             echo(f"Applying template '{template}'.")
