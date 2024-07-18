@@ -521,6 +521,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         :param original_constraint: when specified, new constraint logically belongs to
             ``original_constraint``, possibly representing one of its aspects.
         :param allowed_operators: if specified, only operators on this list are accepted.
+        :param default_unit: if raw_value contains no unit, this unit will be appended.
         :raises ParseError: when parsing fails, or the operator is now allowed.
         :returns: a :py:class:`Constraint` representing the given specification.
         """

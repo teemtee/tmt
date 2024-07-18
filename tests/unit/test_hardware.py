@@ -71,7 +71,7 @@ _size_constraint_pattern_input = [
     ({'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
      'num_with_default: == 10 gibibyte'),
     ({'name': 'num_without_default', 'raw_value': '1024'}, 'num_without_default: == 1024 byte'),
-    ({'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'GiB'},
+    ({'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'MiB'},
      'num_with_unit: == 10 GiB'),
     ]
 
