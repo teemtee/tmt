@@ -19,7 +19,7 @@ rlJournalStart
 
     rlPhaseStartTest "Create"
         rlRun -s "tmt init -t base"
-        rlAssertGrep "Tree .* initialized." "${rlRun_LOG}"
+        rlAssertGrep "Initialized the fmf tree root" "${rlRun_LOG}"
         rlAssertGrep "Applying template 'base'." "${rlRun_LOG}"
         rlAssertGrep "Test directory .* created." "${rlRun_LOG}"
         rlAssertExists "plans/example.fmf"
