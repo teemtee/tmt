@@ -1,0 +1,91 @@
+  - name: /test/subresults
+    result: pass
+    note:
+    log:
+      - data/guest/default-0/test/subresults-1/output.txt
+    start-time: '2024-08-26T12:12:08.923924+00:00'
+    end-time: '2024-08-26T12:12:08.942201+00:00'
+    duration: 00:00:00
+    serial-number: 1
+    fmf-id:
+        name: /test/subresults
+    context: {}
+    ids:
+        id:
+        extra-nitrate:
+        extra-task:
+    guest:
+        name: default-0
+        role:
+        __class__:
+            module: tmt.result
+            name: ResultGuestData
+    subresult:
+      - name: /test/subresults/good
+        result: pass
+        end-time: "2024-07-17T14:16:28.735039+00:00"
+        __class__:
+            module: tmt.result
+            name: SubResult
+      - name: /test/subresults/fail
+        result: fail
+        end-time: "2024-07-17T14:16:28.739501+00:00"
+        __class__:
+            module: tmt.result
+            name: SubResult
+      - name: /test/subresults/weird
+        result: warn
+        end-time: "2024-07-17T14:16:28.743959+00:00"
+        __class__:
+            module: tmt.result
+            name: SubResult
+        check:
+          - name: dmesg
+            result: skip
+            note:
+            log: []
+            start-time: '2024-07-22T10:34:41.135249+00:00'
+            end-time: '2024-07-22T10:34:41.135279+00:00'
+            duration: 00:00:00
+            event: before-test
+            __class__:
+                module: tmt.result
+                name: CheckSubResult
+          - name: dmesg
+            result: skip
+            note:
+            log: []
+            start-time: '2024-07-22T10:34:41.393797+00:00'
+            end-time: '2024-07-22T10:34:41.393819+00:00'
+            duration: 00:00:00
+            event: after-test
+            __class__:
+                module: tmt.result
+                name: CheckSubResult
+    check:
+      - name: avc
+        result: skip
+        note:
+        log: []
+        start-time: '2024-07-22T10:34:41.135249+00:00'
+        end-time: '2024-07-22T10:34:41.135279+00:00'
+        duration: 00:00:00
+        event: before-test
+        __class__:
+            module: tmt.result
+            name: CheckSubResult
+      - name: avc
+        result: skip
+        note:
+        log: []
+        start-time: '2024-07-22T10:34:41.393797+00:00'
+        end-time: '2024-07-22T10:34:41.393819+00:00'
+        duration: 00:00:00
+        event: after-test
+        __class__:
+            module: tmt.result
+            name: CheckSubResult
+    data-path: data/guest/default-0/test/subresults-1/data
+    __class__:
+        module: tmt.result
+        name: Result

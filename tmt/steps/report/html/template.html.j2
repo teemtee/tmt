@@ -45,6 +45,13 @@
             margin: 30px 7px 0px 7px;
         }
 
+        #results table.check,
+        #results table.subresult-check,
+        #results table.subresult {
+            width: 100%;
+            background: #dadada;
+        }
+
         #results, #filters {
             border-spacing: 7px;
         }
@@ -89,15 +96,22 @@
             color: #c00;
         }
 
-        #results tr.check {
+        #results tr.check,
+        /* #results tr.subresult-check, // Do not hide subresult checks by default */
+        #results tr.subresult {
             font-size: 90%;
+            display: none;
         }
 
-        #results tr.check td.result {
+        #results tr.check td.result,
+        #results tr.subresult-check td.result,
+        #results tr.subresult td.result {
             width: 5ex;
         }
 
-        #results tr.check td.name {
+        #results tr.check td.name,
+        #results tr.subresult-check td.name,
+        #results tr.subresult td.name {
             color: #888;
             padding-left: 5ex;
             width: 22ex;
@@ -171,6 +185,18 @@
             filter_values["note"] = e.value;
             update_rows();
         }
+
+        // toggle the visibility of a given table row
+        function toggle_row_visibility(button, e) {
+            const element = document.getElementById(e);
+            if (element.style.display === 'none' || element.style.display === '') {
+                element.style.display = 'table-row';
+                button.textContent = button.textContent.replace('+', '-');
+            } else {
+                element.style.display = 'none';
+                button.textContent = button.textContent.replace('-', '+');
+            }
+        }
     </script>
 </head>
 
@@ -218,11 +244,13 @@ Context:
         <tr>
             <th>Result</th>
             <th>Test</th>
-{% if display_guest %}
+            {% if display_guest %}
             <th>Guest</th>
-{% endif %}
+            {% endif %}
             <th>Logs</th>
             <th>Data</th>
+            <th>Note</th>
+            <th>Actions</th>
         </tr>
     </thead>
     {% for result in results %}
@@ -238,14 +266,28 @@ Context:
         {% endfor %}
         </td>
         <td class="data"><a href="{{ base_dir | linkable_path | urlencode }}/{{ result.data_path | urlencode }}">data</a></td>
-        {% if result.note %}
-        <td class="note">{{ result.note | e }}</td>
-        {% endif %}
+        <td class="note">{% if result.note %}{{ result.note | e }}{% else %}-{% endif %}</td>
+        <td class="action">
+            {% if result.check %}
+            <button onclick="toggle_row_visibility(this, 'check-{{ loop.index }}')" title="Show / hide checks">checks&nbsp;[+]</button>
+            {% endif %}
+            {% if result.subresult %}
+            <button onclick="toggle_row_visibility(this, 'subresult-{{ loop.index }}')" title="Show / hide subresults">subresults&nbsp;[+]</button>
+            {% endif %}
+        </td>
     </tr>
     {% if result.check %}
-    <tr class="check">
-        <td colspan="4">
-            <table>
+    <tr class="check" id="check-{{ loop.index }}">
+        <td colspan="{% if display_guest %}7{% else %}6{% endif %}">
+            <h3>Checks</h3>
+            <table class="check">
+                <thead>
+                    <tr>
+                        <th>Result</th>
+                        <th>Name</th>
+                        <th>Logs</th>
+                    </tr>
+                </thead>
                 {% for check in result.check %}
                 <tr>
                     <td class="result {{ check.result.value | e }}">{{ check.result.value | e }}</td>
@@ -253,9 +295,69 @@ Context:
                     <td class="log">
                         {% for log in check.log %}
                         <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
+                        {% else %}
+                        -
                         {% endfor %}
                     </td>
                 </tr>
+                {% endfor %}
+            </table>
+        </td>
+    </tr>
+    {% endif %}
+    {% if result.subresult %}
+    <tr class="subresult" id="subresult-{{ loop.index }}">
+        <td colspan="{% if display_guest %}7{% else %}6{% endif %}">
+            <h3>Subresults</h3>
+            <table class="subresult">
+                <thead>
+                    <tr>
+                        <th>Result</th>
+                        <th>Name</th>
+                        <th>Logs</th>
+                    </tr>
+                </thead>
+                {% for subresult in result.subresult %}
+                <tr>
+                    <td class="result {{ subresult.result.value | e }}">{{ subresult.result.value | e }}</td>
+                    <td class="name">{{ subresult.name | e }}</td>
+                    <td class="log">
+                        {% for log in subresult.log %}
+                        <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
+                        {% else %}
+                        -
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% if subresult.check %}
+                <tr class="subresult-check" id="subresult-check-{{ loop.index }}">
+                    <td colspan="3">
+                        <h3>Subresult checks</h3>
+                        <table class="check">
+                            <thead>
+                                <tr>
+                                    <th>Result</th>
+                                    <th>Name</th>
+                                    <th>Logs</th>
+                                </tr>
+                            </thead>
+                            {% for check in subresult.check %}
+                            <tr>
+                                <td class="result {{ check.result.value | e }}">{{ check.result.value | e }}</td>
+                                <td class="name">{{ check.name | e }} ({{ check.event.value }})</td>
+                                <td class="log">
+                                    {% for log in check.log %}
+                                    <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
+                                    {% else %}
+                                    -
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+                {% endif %}
                 {% endfor %}
             </table>
         </td>

@@ -14,7 +14,7 @@ rlJournalStart
     for option in "" "--absolute-paths"; do
         rlPhaseStartTest "Check status (${option:-relative paths})"
             rlRun -s "tmt run -av --scratch --id $run_dir report -h html $option 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "summary: 2 tests passed, 1 test failed and 2 errors" $rlRun_LOG -F
+            rlAssertGrep "summary: 3 tests passed, 1 test failed and 2 errors" $rlRun_LOG -F
 
             # Path of the generated file should be shown and the page should exist
             rlAssertGrep "output: .*/index.html" $rlRun_LOG
@@ -89,7 +89,29 @@ rlJournalStart
         rlAssertNotGrep "<td class=\"guest\">default-0</td>" "$tmp/plan/report/default-0/index.html"
     rlPhaseEnd
 
+
+    # Subresults phase with faked results.yaml data
+    rlPhaseStartTest "Check the subresults and their checks"
+        rlRun -s "tmt run -av --scratch --id $tmp plan -n plan test -n subresults report -h html"
+        rlRun "cp -r faked-subresults-results.yaml $tmp/plan/execute/results.yaml" 0 "Faking the execute/results.yaml with subresult data"
+        rlRun -s "tmt run --last --id $tmp plan -n plan test -n subresult report -h html -v"
+
+        # Subresults and their checks
+        rlAssertGrep '<td class="name">/test/subresults</td>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep 'subresults&nbsp;\[[+]\]</button>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<h3>Subresults</h3>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<td class="name">/test/subresults/good</td>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<td class="name">/test/subresults/fail</td>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<tr class="subresult-check" id="subresult-check-3">' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<td class="name">dmesg (before-test)</td>' "$tmp/plan/report/default-0/index.html"
+
+        # Global result checks
+        rlAssertGrep 'checks&nbsp;\[[+]\]</button>' "$tmp/plan/report/default-0/index.html"
+        rlAssertGrep '<td class="name">avc (before-test)</td>' "$tmp/plan/report/default-0/index.html"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
+        rlRun "rm output"
         rlRun "popd"
         rlRun "rm -rf $tmp"
     rlPhaseEnd
