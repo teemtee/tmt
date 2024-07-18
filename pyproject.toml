@@ -383,7 +383,6 @@ extend-immutable-calls = ["tmt.utils.field"]
 # See https://docs.astral.sh/ruff/faq/#does-ruff-support-numpy-or-google-style-docstrings for
 # the most up-to-date info.
 convention = "pep257"
-property-decorators = ["tmt.utils.cached_property"]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
