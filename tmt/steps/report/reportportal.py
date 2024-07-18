@@ -226,12 +226,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     def handle_response(self, response: requests.Response) -> None:
         """ Check the endpoint response and raise an exception if needed """
 
-        if not response.ok:
-            raise tmt.utils.ReportError(
-                f"Received non-ok status code from ReportPortal: {response.text}")
-
         self.debug("Response code from the endpoint", response.status_code)
         self.debug("Message from the endpoint", response.text)
+
+        if not response.ok:
+            raise tmt.utils.ReportError(
+                f"Received non-ok status code {response.status_code} from ReportPortal: {response.text}")
 
     def check_options(self) -> None:
         """ Check options for known troublesome combinations """
@@ -393,7 +393,13 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             suite_description += f"<br>{self.data.artifacts_url}"
 
         # Communication with RP instance
-        with tmt.utils.retry_session() as session:
+        with tmt.utils.retry_session(status_forcelist=(
+                429,   # Too Many Requests
+                500,   # Internal Server Error
+                502,   # Bad Gateway
+                503,   # Service Unavailable
+                504,   # Gateway Timeout
+                )) as session:
 
             if create_launch:
 
