@@ -4,6 +4,18 @@
     Releases
 ======================
 
+
+tmt-1.35
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The new key ``include-output-log`` and corresponding command line
+options ``--include-output-log`` and ``--no-include-output-log``
+can now be used in the :ref:`plugins/report/junit` and
+:ref:`plugins/report/polarion` plugins to select whether only
+failures or the full standard output should be included in the
+generated report.
+
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
