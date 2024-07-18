@@ -10,13 +10,13 @@ rlJournalStart
 
     rlPhaseStartTest "Dry"
         rlRun -s "tmt init -t base --dry"
-        rlAssertGrep "Tree .* would be initialized." "${rlRun_LOG}"
+        rlAssertGrep "Would initialize the fmf tree root" "${rlRun_LOG}"
         rlAssertGrep "Path .* would be added to git index." "${rlRun_LOG}"
     rlPhaseEnd
 
     rlPhaseStartTest "Create"
         rlRun -s "tmt init -t base"
-        rlAssertGrep "Tree .* initialized." "${rlRun_LOG}"
+        rlAssertGrep "Initialized the fmf tree root" "${rlRun_LOG}"
         rlAssertGrep "Path .* added to git index." "${rlRun_LOG}"
     rlPhaseEnd
 

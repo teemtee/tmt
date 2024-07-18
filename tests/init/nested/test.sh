@@ -14,27 +14,27 @@ rlJournalStart
     rlPhaseStartTest "Test option --dry"
         rlRun -s "tmt init --dry --force"
         rlAssertNotExists "$tmp/foo/.fmf/version"
-        rlAssertGrep "Path '$tmp/foo' already has a parent tree root '$tmp'" "$rlRun_LOG"
-        rlAssertGrep "Tree '$tmp/foo' would be initialized." "$rlRun_LOG"
+        rlAssertGrep "Path '$tmp/foo' already has a parent fmf tree root '$tmp/.fmf'" "$rlRun_LOG"
+        rlAssertGrep "Would initialize the fmf tree root '$tmp/foo/.fmf'." "$rlRun_LOG"
 
         rlRun -s "tmt init --dry <<< no"
         rlAssertNotExists "$tmp/foo/.fmf/version"
-        rlAssertGrep "Path '$tmp/foo' already has a parent tree root '$tmp'" "$rlRun_LOG"
+        rlAssertGrep "Path '$tmp/foo' already has a parent fmf tree root '$tmp/.fmf'" "$rlRun_LOG"
         rlAssertGrep "Do you really want to initialize a nested tree?" "$rlRun_LOG"
-        rlAssertNotGrep "Tree '$tmp/foo' would be initialized." "$rlRun_LOG"
+        rlAssertNotGrep "Would initialize the fmf tree root '$tmp/foo/.fmf'." "$rlRun_LOG"
 
         rlRun -s "tmt init --dry <<< yes"
         rlAssertNotExists "$tmp/foo/.fmf/version"
-        rlAssertGrep "Path '$tmp/foo' already has a parent tree root '$tmp'" "$rlRun_LOG"
+        rlAssertGrep "Path '$tmp/foo' already has a parent fmf tree root '$tmp/.fmf'" "$rlRun_LOG"
         rlAssertGrep "Do you really want to initialize a nested tree?" "$rlRun_LOG"
-        rlAssertGrep "Tree '$tmp/foo' would be initialized." "$rlRun_LOG"
+        rlAssertGrep "Would initialize the fmf tree root '$tmp/foo/.fmf'." "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Test option --force"
         rlRun -s "tmt init --force"
         rlAssertExists "$tmp/foo/.fmf/version"
-        rlAssertGrep "Path '$tmp/foo' already has a parent tree root '$tmp'" "$rlRun_LOG"
-        rlAssertGrep "Tree '$tmp/foo' initialized." "$rlRun_LOG"
+        rlAssertGrep "Path '$tmp/foo' already has a parent fmf tree root '$tmp/.fmf'" "$rlRun_LOG"
+        rlAssertGrep "Initialized the fmf tree root '$tmp/foo/.fmf'." "$rlRun_LOG"
         rlRun "rm -rf $tmp/foo/.fmf"
     rlPhaseEnd
 
