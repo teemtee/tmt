@@ -42,7 +42,7 @@ def test_init():
     original_directory = os.getcwd()
     os.chdir(tmp)
     result = runner.invoke(tmt.cli.main, ['init'])
-    assert 'initialized' in result.output
+    assert 'Initialized the fmf tree root' in result.output
     result = runner.invoke(tmt.cli.main, ['init'])
     assert 'already exists' in result.output
     result = runner.invoke(tmt.cli.main, ['init', '--template', 'mini'])
