@@ -1480,6 +1480,26 @@ def parse_hw_requirements(spec: Spec) -> BaseConstraint:
     return _parse_block(spec)
 
 
+def simplify_actual_hardware(hardware: BaseConstraint) -> Spec:
+    as_spec: Spec = {}
+
+    def _simplify_constraint(constraint: BaseConstraint) -> Spec:
+        constraint_spec = constraint.to_spec()
+
+        assert isinstance(constraint_spec, dict)
+
+        return cast(dict[str, str], constraint_spec)
+
+    if isinstance(hardware, And):
+        for constraint in hardware.constraints:
+            as_spec.update(_simplify_constraint(constraint))
+
+    else:
+        as_spec.update(_simplify_constraint(hardware))
+
+    return as_spec
+
+
 @dataclasses.dataclass
 class Hardware(SpecBasedContainer[Spec, Spec]):
     constraint: Optional[BaseConstraint]

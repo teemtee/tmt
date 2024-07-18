@@ -25,7 +25,7 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
+from tmt.utils import Environment, Path, ShellScript, Stopwatch, cached_property, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -270,6 +270,22 @@ class TestInvocation:
             return False
 
         return True
+
+    def inject_topology(self, environment: Environment) -> tmt.steps.Topology:
+        """
+        Collect and install the guest topology and make it visible to test.
+
+        :param environment: environment to update with topology variables.
+        :returns: instantiated topology container.
+        """
+
+        return tmt.steps.Topology.inject(
+            environment=environment,
+            guests=self.phase.step.plan.provision.guests(),
+            guest=self.guest,
+            dirpath=self.path,
+            logger=self.logger
+            )
 
     def handle_restart(self) -> bool:
         """

@@ -498,6 +498,16 @@ class GuestArtemis(tmt.GuestSsh):
         #        return True if self.guest is not None
         return self.primary_address is not None
 
+    @property
+    def actual_hardware(self) -> tmt.hardware.BaseConstraint:
+        return tmt.hardware.parse_hw_requirements(
+            tmt.utils.yaml_to_dict(
+                f"""
+                arch: {self.arch}
+                """
+                )
+            )
+
     def _create(self) -> None:
         environment: dict[str, Any] = {
             'hw': {
