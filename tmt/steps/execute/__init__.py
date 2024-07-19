@@ -957,7 +957,8 @@ class Execute(tmt.steps.Step):
 
         # Give a summary, update status and save
         self.summary()
-        self.status('done')
+        if not failed_tasks:
+            self.status('done')
 
         # Merge old results back to get all results in report step
         if self.should_run_again:
