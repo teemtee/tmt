@@ -54,6 +54,7 @@ rlJournalStart
         done
         rlRun -s "tmt test lint bad-attribute" 1
         rlAssertGrep "fail T001 unknown key \"requires\" is used" $rlRun_LOG
+        rlAssertGrep "fail T001 unknown key \"serial_number\" is used" $rlRun_LOG
         rlRun -s "tmt test lint coverage" 1
         rlAssertGrep "fail T006 the 'coverage' field has been obsoleted by 'link'" $rlRun_LOG
     rlPhaseEnd
