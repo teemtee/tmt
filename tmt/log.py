@@ -379,7 +379,7 @@ class DebugLevelFilter(logging.Filter):
 
 class QuietnessFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        if record.levelno not in (logging.DEBUG, logging.INFO, logging.WARN, logging.WARNING):
+        if record.levelno not in (logging.DEBUG, logging.INFO, logging.WARNING):
             return True
 
         details: Optional[LogRecordDetails] = getattr(record, 'details', None)
