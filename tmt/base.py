@@ -933,7 +933,7 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    if '$id' in error.schema:
+                    if isinstance(error.schema, dict) and '$id' in error.schema:
                         yield LinterOutcome.WARN, \
                             f'key "{bad_property}" not recognized by schema {error.schema["$id"]}'
                     else:
