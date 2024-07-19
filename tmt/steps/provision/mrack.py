@@ -512,6 +512,21 @@ def _transform_zcrypt_mode(
         children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
 
 
+def _transform_iommu_is_supported(
+        constraint: tmt.hardware.FlagConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+
+    test = (constraint.operator, constraint.value)
+
+    if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
+        return MrackHWKeyValue('VIRT_IOMMU', '==', '1')
+
+    if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
+        return MrackHWKeyValue('VIRT_IOMMU', '==', '0')
+
+    return _transform_unsupported(constraint, logger)
+
+
 def _transform_location_lab_controller(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -573,6 +588,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
+    'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
     }
 
 

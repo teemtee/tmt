@@ -10,6 +10,7 @@ from tmt.hardware import (
     _parse_cpu,
     _parse_disk,
     _parse_hostname,
+    _parse_iommu,
     _parse_location,
     _parse_memory,
     _parse_system,
@@ -783,6 +784,35 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
                     '_op': 'like',
                     '_value': 'C%A'
                     }
+                }
+            }
+        }
+
+
+def test_iommu_is_supported(root_logger: Logger) -> None:
+
+    result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
+        _parse_iommu({"is-supported": True}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'VIRT_IOMMU',
+                '_op': '==',
+                '_value': '1'
+                }
+            }
+        }
+
+    result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
+        _parse_iommu({"is-supported": False}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'key_value': {
+                '_key': 'VIRT_IOMMU',
+                '_op': '==',
+                '_value': '0'
                 }
             }
         }
