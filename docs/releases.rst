@@ -27,6 +27,10 @@ generated report.
 Change of Polarion field to store tmt id. Now using 'tmt ID' field,
 specifically created for this purpose instead of 'Test Case ID' field.
 
+Add the specification key :ref:`/spec/hardware/iommu` to select or
+provision a guest with `Input–output memory management unit`
+
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

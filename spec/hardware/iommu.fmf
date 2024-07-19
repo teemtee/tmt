@@ -1,0 +1,25 @@
+summary: |
+    Select or provision a guest with the `Input–output memory management unit`.
+
+description: |
+    .. code-block::
+
+       iommu:
+           # Boolean, whether the guest supports IOMMU
+           is-supported: true|false
+           # String, the model name for IOMMU
+           model: "virtio"|"intel"|"smmuv3"|...
+
+    .. versionadded:: 1.35
+
+example:
+  - |
+    # Require a guest that supports IOMMU
+    iommu:
+        is-supported: true
+
+  - |
+    # Require a guest with the IOMMU of virtio model
+    iommu:
+        is-supported: true
+        model: virtio
