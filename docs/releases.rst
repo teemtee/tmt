@@ -8,6 +8,10 @@
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New best practices in the :ref:`docs` section now provide many
+useful hints how to write good documentation when contributing
+code.
+
 The new key ``include-output-log`` and corresponding command line
 options ``--include-output-log`` and ``--no-include-output-log``
 can now be used in the :ref:`plugins/report/junit` and

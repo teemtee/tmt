@@ -343,6 +343,8 @@ To remove these images from your local system, run the following:
     make clean-test-images
 
 
+.. _docs:
+
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
