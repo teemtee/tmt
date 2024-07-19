@@ -366,7 +366,7 @@ A couple of best practices when updating documentation:
   .. code-block:: rest
 
     # This is good:
-    :ref:`plugin/prepare/ansible`
+    :ref:`plugins/prepare/ansible`
 
     # If the user-facing plugin name differs from the Python one,
     # or if you need capitalize the first letter:
