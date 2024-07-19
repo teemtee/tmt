@@ -8,6 +8,10 @@
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New best practices in the :ref:`docs` section now provide many
+useful hints how to write good documentation when contributing
+code.
+
 The new key ``include-output-log`` and corresponding command line
 options ``--include-output-log`` and ``--no-include-output-log``
 can now be used in the :ref:`plugins/report/junit` and
@@ -37,7 +41,7 @@ the corresponding ``disk[N].size``
 tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/spec/plans/provision/beaker` provision plugin gains
+The :ref:`plugins/provision/beaker` provision plugin gains
 support for :ref:`cpu.cores</spec/hardware/cpu>` and
 :ref:`virtualization.hypervisor</spec/hardware/virtualization>`
 hardware requirements.
@@ -59,7 +63,7 @@ restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
 now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
 restarts of a said test. See :ref:`/spec/tests/restart` for details.
 
-Requirements of the :ref:`/spec/plans/execute/upgrade` execute
+Requirements of the :ref:`plugins/execute/upgrade` execute
 plugin tasks are now correctly installed before the upgrade is
 performed on the guest.
 
@@ -79,12 +83,12 @@ tmt-1.32
 The hardware specification for :ref:`/spec/hardware/disk` has been
 extended with the new keys ``driver`` and ``model-name``. Users
 can provision Beaker guests with a given disk model or driver using
-the :ref:`/spec/plans/provision/beaker` provision plugin.
+the :ref:`plugins/provision/beaker` provision plugin.
 
-The :ref:`/spec/plans/provision/virtual` provision plugin gains support
-for :ref:`TPM hardware requirement</spec/hardware/tpm>`. It is limited
-to TPM 2.0 for now, the future release of `testcloud`__, the
-library behind ``virtual`` plugin, will extend the support to more
+The :ref:`virtual<plugins/provision/virtual.testcloud>` provision plugin
+gains support for :ref:`TPM hardware requirement</spec/hardware/tpm>`.
+It is limited to TPM 2.0 for now, the future release of `testcloud`__,
+the library behind ``virtual`` plugin, will extend the support to more
 versions.
 
 A new :ref:`watchdog test check<plugins/test-checks/watchdog>` has been
@@ -110,7 +114,7 @@ New environment variable ``TMT_REPORT_ARTIFACTS_URL`` has been added
 to :ref:`command-variables`. It can be used to provide a link for
 detailed test artifacts for report plugins to pick.
 
-:ref:`Beaker</spec/plans/provision/beaker>` provision plugin gains
+:ref:`Beaker<plugins/provision/beaker>` provision plugin gains
 support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
 HW requirement.
 
@@ -133,12 +137,12 @@ considerably shorten the time needed for guest provisioning in
 multihost plans. However, whether the parallel provisioning would
 take place depends on what provision plugins were involved,
 because not all plugins are compatible with this feature yet. As
-of now, only :ref:`/spec/plans/provision/artemis`,
-:ref:`/spec/plans/provision/connect`,
-:ref:`/spec/plans/provision/container`,
-:ref:`/spec/plans/provision/local`, and
-:ref:`/spec/plans/provision/virtual` are supported. All other
-plugins would gracefully fall back to the pre-1.31 behavior,
+of now, only :ref:`plugins/provision/artemis`,
+:ref:`plugins/provision/connect`,
+:ref:`plugins/provision/container`,
+:ref:`plugins/provision/local`, and
+:ref:`virtual<plugins/provision/virtual.testcloud>` are supported. All
+other plugins would gracefully fall back to the pre-1.31 behavior,
 provisioning in sequence.
 
 The :ref:`/spec/plans/prepare` step now installs test requirements
@@ -164,7 +168,7 @@ New hardware specification key :ref:`/spec/hardware/zcrypt` has
 been defined. It will be used for selecting guests with the given
 `System z cryptographic adapter`.
 
-A prepare step plugin :ref:`/spec/plans/prepare/feature` has been
+A prepare step plugin :ref:`plugins/prepare/feature` has been
 implemented. As the first supported feature, ``epel`` repositories
 can now be enabled using a concise configuration.
 
@@ -204,7 +208,7 @@ The :ref:`/spec/core/contact` key has been moved from the
 :ref:`/spec/tests` specification to the :ref:`/spec/core`
 attributes so now it can be used with plans and stories as well.
 
-The :ref:`/spec/plans/provision/container` provision plugin
+The :ref:`plugins/provision/container` provision plugin
 enables a network accessible to all containers in the plan. So for
 faster :ref:`multihost-testing` it's now possible to use
 containers as well.
@@ -237,7 +241,7 @@ tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test directories can be pruned with the ``prune`` option usable in
-the :ref:`/spec/plans/discover/fmf` plugin. When enabled, only
+the :ref:`plugins/discover/fmf` plugin. When enabled, only
 test's path and required files will be kept.
 
 The :ref:`/spec/plans/discover/dist-git-source` option
