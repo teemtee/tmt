@@ -8,6 +8,11 @@
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If during test execution guest freezes in the middle of reboot,
+test results are now correctly stored, all test artifacts from
+the ``TMT_TEST_DATA`` and ``TMT_PLAN_DATA`` directories should be
+fetched and available for investigation in the report.
+
 New best practices in the :ref:`docs` section now provide many
 useful hints how to write good documentation when contributing
 code.
