@@ -681,7 +681,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Status 'todo' means the step has not finished successfully.
         # Probably interrupted in the middle. Clean up the work
         # directory to give it another chance with a fresh start.
-        if self.status() == 'todo':
+        #
+        # However, the cleanup is desired only if the step is enabled.
+        # Otherwise we would for example remove all test logs from an
+        # interrupted execute step even when only checking for results
+        # using `tmt run --last report`.
+        if self.status() == 'todo' and self.enabled:
             self.debug("Step has not finished. Let's try once more!", level=2)
             self._workdir_cleanup()
 

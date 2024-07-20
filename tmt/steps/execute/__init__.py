@@ -952,25 +952,26 @@ class Execute(tmt.steps.Step):
         # access all collected `_results`.
         self._results += execute_phases[0].results()
 
-        if failed_tasks:
-            # TODO: needs a better message...
-            raise tmt.utils.GeneralError(
-                'execute step failed',
-                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
-                )
-
         # To separate "execute" from the follow-up logging visually
         self.info('')
 
         # Give a summary, update status and save
         self.summary()
-        self.status('done')
+        if not failed_tasks:
+            self.status('done')
 
         # Merge old results back to get all results in report step
         if self.should_run_again:
             self._results += self._old_results
 
         self.save()
+
+        if failed_tasks:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError(
+                'execute step failed',
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
+                )
 
     def results(self) -> list["tmt.result.Result"]:
         """

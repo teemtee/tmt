@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: virtual
+    execute:
+        how: tmt
+
+/tests:
+    /one:
+        test: |
+            echo foo > $TMT_TEST_DATA/one.txt
+            echo foo > $TMT_PLAN_DATA/one.txt
+    /two:
+        test: |
+            echo bar > $TMT_TEST_DATA/two.txt
+            echo bar > $TMT_PLAN_DATA/two.txt
+            tmt-reboot -c poweroff

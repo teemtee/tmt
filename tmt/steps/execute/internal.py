@@ -447,6 +447,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     *test.test_framework.get_pull_options(invocation, logger),
                     '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
                     ])
+            # Fetch plan data content as well in order to prevent
+            # losing logs if the guest becomes later unresponsive.
+            guest.pull(source=self.step.plan.data_directory)
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -468,6 +471,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     *test.test_framework.get_pull_options(invocation, logger),
                     '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
                     ])
+            # Fetch plan data content as well in order to prevent
+            # losing logs if the guest becomes later unresponsive.
+            guest.pull(source=self.step.plan.data_directory)
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might
