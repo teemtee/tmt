@@ -41,8 +41,8 @@ rlJournalStart
             rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --version"
             rlRun "$TEST_VENV/bin/python3 -m pyright --version"
 
-            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml --verbose"
-            rlRun "$TEST_VENV/bin/python3 -m pyright --project pyproject.toml --verbose"
+            rlRun "$TEST_VENV/bin/python3 -m mypy --config-file=pyproject.toml"
+            rlRun "$TEST_VENV/bin/python3 -m pyright --project pyproject.toml"
             popd
 
             rlRun "rm -rf $TEST_VENV"
