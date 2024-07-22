@@ -198,10 +198,10 @@ FULL_HARDWARE_REQUIREMENTS = """
     disk:
         - size: 40 GiB
           model-name: "~ WD 100G.*"
-          physical-sector-size: "4096"
+          physical-sector-size: "4096 byte"
         - size: 120 GiB
           driver: virtblk
-          logical-sector-size: "512"
+          logical-sector-size: "512 byte"
     gpu:
         device-name: G86 [Quadro NVS 290]
         device: "97"

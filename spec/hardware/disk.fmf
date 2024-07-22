@@ -68,11 +68,13 @@ example:
         model-name: PERC H310
         driver: megaraid_sas
         block-device: /dev/sda
+	logical-sector-size: "512 byte"
 
       - size: 21474836480
         model-name: PERC H310
         driver: megaraid_sas
         block-device: /dev/sdb
+        physical-sector-size: "4096 byte"
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
