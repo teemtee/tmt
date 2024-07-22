@@ -46,6 +46,7 @@
         }
 
         #results table.check,
+        #results table.phase-check,
         #results table.phase {
             width: 100%;
             background: #dadada;
@@ -96,17 +97,20 @@
         }
 
         #results tr.check,
+        /* #results tr.phase-check, // Do not hide phase checks by default */
         #results tr.phase {
             font-size: 90%;
             display: none;
         }
 
         #results tr.check td.result,
+        #results tr.phase-check td.result,
         #results tr.phase td.result {
             width: 5ex;
         }
 
         #results tr.check td.name,
+        #results tr.phase-check td.name,
         #results tr.phase td.name {
             color: #888;
             padding-left: 5ex;
@@ -331,6 +335,35 @@ Context:
                         {% endfor %}
                     </td>
                 </tr>
+                {% if phase.check %}
+                <tr class="phase-check" id="phase-check-{{ loop.index }}">
+                    <td colspan="3">
+                        <h3>Phase checks</h3>
+                        <table class="check">
+                            <thead>
+                                <tr>
+                                    <th>Result</th>
+                                    <th>Name</th>
+                                    <th>Logs</th>
+                                </tr>
+                            </thead>
+                            {% for check in phase.check %}
+                            <tr>
+                                <td class="result {{ check.result.value | e }}">{{ check.result.value | e }}</td>
+                                <td class="name">{{ check.name | e }} ({{ check.event.value }})</td>
+                                <td class="log">
+                                    {% for log in check.log %}
+                                    <a href="{{ base_dir | linkable_path | urlencode }}/{{ log | urlencode }}">{{ log | basename }}</a>
+                                    {% else %}
+                                    -
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+                {% endif %}
                 {% endfor %}
             </table>
         </td>
