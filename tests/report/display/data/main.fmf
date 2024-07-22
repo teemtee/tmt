@@ -20,3 +20,11 @@
           how: container
     execute:
         how: tmt
+
+/subresults:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
