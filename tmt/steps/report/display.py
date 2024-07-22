@@ -1,11 +1,12 @@
 import dataclasses
+from collections.abc import Sequence
 from typing import Optional
 
 import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.report
-from tmt.result import BaseResult, CheckResult, Result
+from tmt.result import BaseResult, CheckResult, PhaseCheckResult, PhaseResult, Result
 from tmt.steps.execute import TEST_OUTPUT_FILENAME
 from tmt.utils import Path, field
 
@@ -14,6 +15,7 @@ from tmt.utils import Path, field
 # yet another level.
 TEST_SHIFT = 1
 CHECK_SHIFT = 2
+PHASE_SHIFT = CHECK_SHIFT
 
 
 @dataclasses.dataclass
@@ -80,10 +82,18 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         def display_outcome(result: BaseResult) -> None:
             """ Display a single result outcome """
 
-            if isinstance(result, CheckResult):
+            if isinstance(result, PhaseCheckResult):
+                self.verbose(
+                    f'{result.show()} ({result.event.value} check)',
+                    shift=PHASE_SHIFT + 1)
+
+            elif isinstance(result, CheckResult):
                 self.verbose(
                     f'{result.show()} ({result.event.value} check)',
                     shift=CHECK_SHIFT)
+
+            elif isinstance(result, PhaseResult):
+                self.verbose(f'{result.show()}', shift=PHASE_SHIFT)
 
             elif isinstance(result, Result):
                 self.verbose(result.show(display_guest=display_guest), shift=TEST_SHIFT)
@@ -113,6 +123,22 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 if log.name == TEST_OUTPUT_FILENAME:
                     _display_log_content(log, shift)
 
+        def display_subresults(results: Sequence[BaseResult]) -> None:
+            """ Display subresults, checks and subresult checks """
+
+            for subresult in results:
+                display_outcome(subresult)
+
+                if verbosity > 2:
+                    display_log_content(subresult)
+
+                elif verbosity > 1:
+                    display_log_info(subresult)
+
+                # Recursively show also all the results of phase checks
+                if isinstance(subresult, PhaseResult):
+                    display_subresults(subresult.check)
+
         # Always show the result outcome
         display_outcome(result)
 
@@ -124,14 +150,8 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         elif verbosity > 1:
             display_log_info(result)
 
-        for check_result in result.check:
-            display_outcome(check_result)
-
-            if verbosity > 2:
-                display_log_content(check_result)
-
-            elif verbosity > 1:
-                display_log_info(check_result)
+        display_subresults(result.check)
+        display_subresults(result.phase)
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Discover available tests """
