@@ -206,6 +206,25 @@ class Phase(tmt.utils.Common):
         """
         return False
 
+    def assert_feeling_safe(self, deprecated_in_version: str, subject: str) -> bool:
+        """
+        True if feeling-safe option is set, warns when feeling-safe will be required
+        in future version or fails when feeling-safe is required, but missing.
+
+        :param deprecated_in_version: Version from which feeling-safe is required, e.g. '1.38'.
+        :param subject: Subject requiring feeling-safe, e.g. 'Local provision plugin'.
+        """
+        if self.is_feeling_safe:
+            return True
+
+        if tmt.__version__ < deprecated_in_version:
+            self.warn(f"{subject} will require '--feeling-safe' option "
+                      f"from version {deprecated_in_version}.")
+            return True
+
+        self.fail(f"{subject} requires '--feeling-safe' option")
+        return False
+
 
 # A variable used to describe a generic type for all classes derived from Phase
 PhaseT = TypeVar('PhaseT', bound=Phase)
@@ -1264,7 +1283,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             ] + (
                 tmt.options.VERBOSITY_OPTIONS +
                 tmt.options.FORCE_DRY_OPTIONS +
-                tmt.options.AGAIN_OPTION
+                tmt.options.AGAIN_OPTION +
+                tmt.options.FEELING_SAFE_OPTION
                 )
 
     @classmethod

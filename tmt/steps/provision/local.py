@@ -149,9 +149,13 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
     .. warning::
 
-        In general it is not recommended to run tests on your local machine
+        In general, it is not recommended to run tests on your local machine
         as there might be security risks. Run only those tests which you
         know are safe so that you don't destroy your laptop ;-)
+
+        From tmt version 1.38, ``--feeling-safe`` option or
+        ``TMT_FEELING_SAFE=True`` environment variable will
+        be required in order to use local provision plugin.
 
     Example config:
 
@@ -182,6 +186,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         data.primary_address = 'localhost'
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
+
+        self.assert_feeling_safe("1.38", "Local provision plugin")
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")

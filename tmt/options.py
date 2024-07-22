@@ -144,7 +144,7 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         help='If specified, --debug and --verbose would emit logs also for these topics.')
     ]
 
-# Force, dry and run again actions
+# Force, dry, feeling-safe and run again actions
 DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-n', '--dry', is_flag=True, default=False,
@@ -161,6 +161,19 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     option(
         '--again', is_flag=True,
         help='Run again, even if already done before.'),
+    ]
+
+FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
+    option(
+        '--feeling-safe', metavar='FEELING_SAFE', envvar='TMT_FEELING_SAFE',
+        is_flag=True, default=False,
+        help="""
+             WARNING: with this option, tmt would be allowed to make
+             potentially dangerous actions. For example, some metadata
+             keys may cause scripts being executed on the runner.
+             Do not use this option unless you trust metadata consumed
+             by tmt, or unless you know what you are doing.
+             """)
     ]
 
 # Fix action
