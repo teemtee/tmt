@@ -19,8 +19,8 @@ code.
 
 The new key ``include-output-log`` and corresponding command line
 options ``--include-output-log`` and ``--no-include-output-log``
-can now be used in the :ref:`plugins/report/junit` and
-:ref:`plugins/report/polarion` plugins to select whether only
+can now be used in the :ref:`/plugins/report/junit` and
+:ref:`/plugins/report/polarion` plugins to select whether only
 failures or the full standard output should be included in the
 generated report.
 
@@ -33,11 +33,11 @@ The :ref:`/spec/tests/duration` now supports multiplication.
 Added option ``--failed-only`` to the ``tmt run tests`` subcommand,
 enabling rerunning failed tests from previous runs.
 
-The :ref:`plugins/report/reportportal` plugin copies
+The :ref:`/plugins/report/reportportal` plugin copies
 launch description also into the suite description when the
 ``--suite-per-plan`` option is used.
 
-The :ref:`virtual<plugins/provision/virtual.testcloud>` provision
+The :ref:`virtual</plugins/provision/virtual.testcloud>` provision
 plugin gains support for adding multiple disks to guests, by adding
 the corresponding ``disk[N].size``
 :ref:`HW requirements</spec/hardware/disk>`.
@@ -46,7 +46,7 @@ the corresponding ``disk[N].size``
 tmt-1.33
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`plugins/provision/beaker` provision plugin gains
+The :ref:`/plugins/provision/beaker` provision plugin gains
 support for :ref:`cpu.cores</spec/hardware/cpu>` and
 :ref:`virtualization.hypervisor</spec/hardware/virtualization>`
 hardware requirements.
@@ -59,7 +59,7 @@ of the guest. See :ref:`command-variables` for details.
 New section :ref:`review` describing benefits and various forms of
 pull request reviews has been added to the :ref:`contribute` docs.
 
-The :ref:`dmesg test check<plugins/test-checks/dmesg>` can be
+The :ref:`dmesg test check</plugins/test-checks/dmesg>` can be
 configured to look for custom patterns in the output of ``dmesg``
 command, by setting its ``failure-pattern`` key.
 
@@ -68,7 +68,7 @@ restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
 now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
 restarts of a said test. See :ref:`/spec/tests/restart` for details.
 
-Requirements of the :ref:`plugins/execute/upgrade` execute
+Requirements of the :ref:`/plugins/execute/upgrade` execute
 plugin tasks are now correctly installed before the upgrade is
 performed on the guest.
 
@@ -88,15 +88,15 @@ tmt-1.32
 The hardware specification for :ref:`/spec/hardware/disk` has been
 extended with the new keys ``driver`` and ``model-name``. Users
 can provision Beaker guests with a given disk model or driver using
-the :ref:`plugins/provision/beaker` provision plugin.
+the :ref:`/plugins/provision/beaker` provision plugin.
 
-The :ref:`virtual<plugins/provision/virtual.testcloud>` provision plugin
+The :ref:`virtual</plugins/provision/virtual.testcloud>` provision plugin
 gains support for :ref:`TPM hardware requirement</spec/hardware/tpm>`.
 It is limited to TPM 2.0 for now, the future release of `testcloud`__,
 the library behind ``virtual`` plugin, will extend the support to more
 versions.
 
-A new :ref:`watchdog test check<plugins/test-checks/watchdog>` has been
+A new :ref:`watchdog test check</plugins/test-checks/watchdog>` has been
 added. It monitors a guest running the test with either ping or SSH
 connections, and may force reboot of the guest when it becomes
 unresponsive. This is the first step towards helping tests handle kernel
@@ -119,7 +119,7 @@ New environment variable ``TMT_REPORT_ARTIFACTS_URL`` has been added
 to :ref:`command-variables`. It can be used to provide a link for
 detailed test artifacts for report plugins to pick.
 
-:ref:`Beaker<plugins/provision/beaker>` provision plugin gains
+:ref:`Beaker</plugins/provision/beaker>` provision plugin gains
 support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
 HW requirement.
 
@@ -142,11 +142,11 @@ considerably shorten the time needed for guest provisioning in
 multihost plans. However, whether the parallel provisioning would
 take place depends on what provision plugins were involved,
 because not all plugins are compatible with this feature yet. As
-of now, only :ref:`plugins/provision/artemis`,
-:ref:`plugins/provision/connect`,
-:ref:`plugins/provision/container`,
-:ref:`plugins/provision/local`, and
-:ref:`virtual<plugins/provision/virtual.testcloud>` are supported. All
+of now, only :ref:`/plugins/provision/artemis`,
+:ref:`/plugins/provision/connect`,
+:ref:`/plugins/provision/container`,
+:ref:`/plugins/provision/local`, and
+:ref:`virtual</plugins/provision/virtual.testcloud>` are supported. All
 other plugins would gracefully fall back to the pre-1.31 behavior,
 provisioning in sequence.
 
@@ -173,7 +173,7 @@ New hardware specification key :ref:`/spec/hardware/zcrypt` has
 been defined. It will be used for selecting guests with the given
 `System z cryptographic adapter`.
 
-A prepare step plugin :ref:`plugins/prepare/feature` has been
+A prepare step plugin :ref:`/plugins/prepare/feature` has been
 implemented. As the first supported feature, ``epel`` repositories
 can now be enabled using a concise configuration.
 
@@ -213,7 +213,7 @@ The :ref:`/spec/core/contact` key has been moved from the
 :ref:`/spec/tests` specification to the :ref:`/spec/core`
 attributes so now it can be used with plans and stories as well.
 
-The :ref:`plugins/provision/container` provision plugin
+The :ref:`/plugins/provision/container` provision plugin
 enables a network accessible to all containers in the plan. So for
 faster :ref:`multihost-testing` it's now possible to use
 containers as well.
@@ -246,7 +246,7 @@ tmt-1.29
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test directories can be pruned with the ``prune`` option usable in
-the :ref:`plugins/discover/fmf` plugin. When enabled, only
+the :ref:`/plugins/discover/fmf` plugin. When enabled, only
 test's path and required files will be kept.
 
 The :ref:`/spec/plans/discover/dist-git-source` option

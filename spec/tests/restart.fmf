@@ -14,7 +14,7 @@ description: |
     all possible ways of handling such a situation, therefore offers
     tests a way to hint tmt on how to proceed:
 
-    See :ref:`plugins/test-checks/watchdog` for a test-level check that
+    See :ref:`/plugins/test-checks/watchdog` for a test-level check that
     can detect frozen guests and trigger hard reboot before restarting
     the test.
 
