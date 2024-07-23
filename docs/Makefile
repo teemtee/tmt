@@ -108,7 +108,7 @@ plugins/report.rst: $(call plugins-dependencies)
 plugins/test-checks.rst: $(call plugins-checks-dependencies)
 	$(call build-plugins)
 
-spec/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
+plugins/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
                           $(TEMPLATESDIR)/hardware-matrix.rst.j2 \
                           $(shell find $(REPODIR)/spec/hardware -name '*.fmf')
 	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
@@ -126,17 +126,17 @@ generate-autodocs:  ## Generate autodocs from source docstrings
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
-generate-plugins: $(PLUGIN_TARGETS)  ## Generate documentation sources for plugins
+generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate documentation sources for plugins
 
-generate-hardware-matrix: spec/hardware-matrix.rst  ## Generate HW requirement support matrix
+generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requirement support matrix
 
-generate-stories: stories $(TEMPLATESDIR)/story.rst.j2 generate-hardware-matrix  ## Generate documentation sources for stories
+generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
 generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
 
 ##
 ## Help!
