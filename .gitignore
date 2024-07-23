@@ -10,6 +10,7 @@ docs/plugins/prepare.rst
 docs/plugins/provision.rst
 docs/plugins/report.rst
 docs/plugins/test-checks.rst
+docs/plugins/hardware-matrix.rst
 docs/_build
 docs/spec
 docs/stories
