@@ -107,10 +107,10 @@ description: |
           # String, the place in test workflow when the check was executed.
           event: "before-test"|"after-test"
 
-      # Represents results of all test phases, if reported by the test.
-      # Fields have the same meaning as fields of the "parent" test result, but
-      # relate to each phase check alone.
-      phase:
+      # Represents results of all subtests, if reported by the test. Fields
+      # have the same meaning as fields of the "parent" test result, but relate
+      # to each test alone.
+      subresult:
           # String, name of the test phase.
         - name: First test case
 
@@ -122,20 +122,20 @@ description: |
 
           # List of strings, paths to log files.
           log:
-            - path/to/phase/log1.txt
-            - path/to/phase/log2.log
+            - path/to/subresult/log1.txt
+            - path/to/subresult/log2.log
               ...
 
-          # String, when the phase started, in an ISO 8601 format.
+          # String, when the subtest started, in an ISO 8601 format.
           start-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-          # String, when the phase finished, in an ISO 8601 format.
+          # String, when the subtest finished, in an ISO 8601 format.
           end-time: "yyyy-mm-ddThh:mm:ss.mmmmm+ZZ:ZZ"
 
-          # String, how long did the phase run.
+          # String, how long did the subtest run.
           duration: hh:mm:ss
 
-          # List, results of checks performed for this test phase.
+          # List, results of checks performed for this subtest.
           # It follows the same structure as the `check` key in the
           # "parent" test result.
           check:
@@ -177,7 +177,7 @@ description: |
 
     The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
     and ``event`` keys are required for entries under ``check`` key, and
-    ``name`` and ``result`` keys are required for entries under ``phase``
+    ``name`` and ``result`` keys are required for entries under ``subresult``
     key. Custom result files may omit all other keys, although tmt plugins
     will strive to provide as many keys as possible.
 
@@ -220,6 +220,9 @@ description: |
 
     .. versionchanged:: 1.34
        phase results are now defined, under the ``phase`` key.
+
+    .. versionchanged:: 1.36
+       phase results are now renamed to the ``subresult`` key.
 
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 

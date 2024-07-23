@@ -54,7 +54,7 @@ definitions:
     items:
       $ref: "/definitions/check_result"
 
-  phase_result:
+  subresult:
     type: object
     properties:
       name:
@@ -142,8 +142,8 @@ items:
     check:
       $ref: "/definitions/check_results"
 
-    phase:
-      $ref: "/definitions/phase_results"
+    subresult:
+      $ref: "/definitions/subresult"
 
   required:
     - name
