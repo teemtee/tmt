@@ -25,6 +25,7 @@ ReducedPackages = list[Union[Package, PackagePath]]
 PACKAGE_PATH: dict[FileSystemPath, str] = {
     FileSystemPath('/usr/bin/arch'): 'busybox',
     FileSystemPath('/usr/bin/flock'): 'flock',
+    FileSystemPath('/usr/bin/python3'): 'python3',
     # Note: not used for anything serious, serves for unit tests as
     # an installable path.
     FileSystemPath('/usr/bin/dos2unix'): 'dos2unix'

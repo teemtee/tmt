@@ -1,22 +1,37 @@
-discover:
-    how: fmf
-environment:
-    SIMPLE: word
-    SPACES: several words with spaces
 provision:
     how: container
 execute:
     how: tmt
+    script: echo fake
+
+environment:
+    SIMPLE: word
+    SPACES: several words with spaces
+
+prepare:
+  - name: State before is valid (no file)
+    order: 80
+    how: shell
+    script: bash -xc "! [ -f /tmp/prepared ]"
+
+  - name: State after is as expected (file created)
+    order: 90
+    how: shell
+    script: bash -xc "[ -f /tmp/prepared ]"
 
 /local:
-    prepare:
+    prepare+:
+      - name: Ansible we want to test
+        order: 85
         how: ansible
         playbook: playbook.yml
-        extra-args: '-vvv'
+        extra-args: '-vvv -e ansible_remote_tmp=/tmp'
 
 /remote:
-    prepare:
+    prepare+:
+      - name: Ansible we want to test
+        order: 85
         how: ansible
         # This is the very same playbook as the local one, just living in tmt's repository.
         playbook: https://raw.githubusercontent.com/teemtee/tmt/main/tests/prepare/ansible/data/playbook.yml
-        extra-args: '-vvv'
+        extra-args: '-vvv -e ansible_remote_tmp=/tmp'

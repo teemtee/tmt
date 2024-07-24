@@ -2,107 +2,6 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../images.sh || exit 1
 
-# TODO: should these variables exist outside of this test, for all tests
-# to share?
-CONTAINER_IMAGES="${CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/40/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/39/upstream:latest
-$TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
-$TEST_IMAGE_PREFIX/centos/7/upstream:latest
-$TEST_IMAGE_PREFIX/ubi/8/upstream:latest
-$TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
-$TEST_IMAGE_PREFIX/alpine:latest
-$TEST_IMAGE_PREFIX/fedora/coreos:stable
-$TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable}"
-
-# TODO: enable Ubuntu
-# TODO: enable centos-7 again with modified repo files)
-VIRTUAL_IMAGES="${VIRTUAL_IMAGES:-fedora-rawhide
-fedora-39
-centos-stream-9
-fedora-coreos}"
-
-# A couple of "is image this?" helpers, to simplify conditions.
-function is_fedora_rawhide () {
-    [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
-    [[ "$1" = "fedora-rawhide" ]] && return 0
-
-    return 1
-}
-
-function is_fedora_40 () {
-    [[ "$1" =~ ^.*fedora/40[:/].* ]] && return 0
-    [[ "$1" = "fedora-40" ]] && return 0
-
-    return 1
-}
-
-function is_fedora_39 () {
-    [[ "$1" =~ ^.*fedora/39[:/].* ]] && return 0
-    [[ "$1" = "fedora-39" ]] && return 0
-
-    return 1
-}
-
-function is_centos_stream_9 () {
-    [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
-    [[ "$1" = "centos-stream-9" ]] && return 0
-
-    return 1
-}
-
-function is_centos_7 () {
-    [[ "$1" =~ ^.*centos/7[:/].* ]] && return 0
-    [[ "$1" = "centos-7" ]] && return 0
-
-    return 1
-}
-
-function is_ubuntu () {
-    [[ "$1" =~ ^.*ubuntu/.* ]] && return 0
-    [[ "$1" = "ubuntu" ]] && return 0
-
-    return 1
-}
-
-function is_ostree () {
-    [[ "$1" =~ ^.*fedora/coreos/ostree:stable ]] && return 0
-    [[ "$1" = "fedora-coreos" && "$PROVISION_HOW" = "virtual" ]] && return 0
-
-    return 1
-}
-
-function is_fedora_coreos () {
-    [[ "$1" =~ ^.*fedora/coreos(/ostree)?:stable ]] && return 0
-    [[ "$1" = "fedora-coreos" ]] && return 0
-
-    return 1
-}
-
-function is_fedora () {
-    [[ "$1" =~ ^.*fedora.* ]] && return 0 || return 1
-}
-
-function is_centos () {
-    [[ "$1" =~ ^.*centos.* ]] && return 0 || return 1
-}
-
-function is_rhel () {
-    is_ubi "$1" && return 0 || return 1
-}
-
-function is_alpine () {
-    [[ "$1" =~ ^.*alpine.* ]] && return 0 || return 1
-}
-
-function is_ubi () {
-    [[ "$1" =~ ^.*ubi.* ]] && return 0 || return 1
-}
-
-function is_ubi_8 () {
-    [[ "$1" =~ ^.*ubi/8.* ]] && return 0 || return 1
-}
-
 function fetch_downloaded_packages () {
     in_subdirectory="$2"
 
@@ -136,12 +35,12 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
 
         if [ "$PROVISION_HOW" = "container" ]; then
-            rlRun "IMAGES='$CONTAINER_IMAGES'"
+            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
 
             build_container_images
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
-            rlRun "IMAGES='$VIRTUAL_IMAGES'"
+            rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
 
         else
             rlRun "IMAGES="
@@ -156,7 +55,7 @@ rlJournalStart
     rlPhaseEnd
 
     while IFS= read -r image; do
-        phase_prefix="[$PROVISION_HOW / $image]"
+        phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Prepare runtime"
             [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
