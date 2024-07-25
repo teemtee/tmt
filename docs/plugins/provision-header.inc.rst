@@ -16,3 +16,5 @@ Following plugins fully implement hard reboot:
 * :ref:`/plugins/provision/beaker`
 * :ref:`/plugins/provision/container`
 * :ref:`virtual</plugins/provision/virtual.testcloud>`
+
+.. include:: hardware-matrix.rst

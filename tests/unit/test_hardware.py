@@ -189,6 +189,7 @@ FULL_HARDWARE_REQUIREMENTS = """
             - avx
             - "= avx2"
             - "!= smep"
+        hyper-threading: true
     device:
       device-name: '~ .*Thunderbolt.*'
       device: 79
@@ -263,6 +264,7 @@ def test_parse_maximal_constraint() -> None:
                   - cpu.flag: contains avx
                   - cpu.flag: contains avx2
                   - cpu.flag: not contains smep
+              - cpu.hyper-threading: == True
           - and:
               - device.vendor: '> 97'
               - device.device: == 79

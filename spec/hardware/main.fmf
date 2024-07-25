@@ -10,6 +10,10 @@ description: |
     requirements. For example one consistent way how to specify
     `at least 2 GB of RAM` for all supported provisioners.
 
+    The current state of support of HW requirements among plugins
+    bundled with tmt is available at
+    :ref:`/plugins/provision/hardware-requirement-support-matrix`.
+
     Introduction
     ^^^^^^^^^^^^
 
