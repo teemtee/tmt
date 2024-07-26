@@ -591,7 +591,7 @@ the following test metadata are common:
     framework: beakerlib
     require: [tmt]
 
-Instead of repating this information again and again for each test
+Instead of repeating this information again and again for each test
 we place a ``main.fmf`` file at the top of the ``tests`` tree:
 
 .. code-block::
