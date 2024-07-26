@@ -170,6 +170,11 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         option='--keyname',
         metavar='NAME',
         help='SSH key name.')
+    ownername: str = field(
+        default=DEFAULT_KEYNAME,
+        option='--ownername',
+        metavar='NAME',
+        help='SSH key owner name.')
     user_data: dict[str, str] = field(
         default_factory=dict,
         option='--user-data',
@@ -468,6 +473,7 @@ class GuestArtemis(tmt.GuestSsh):
     pool: Optional[str]
     priority_group: str
     keyname: str
+    ownername: str
     user_data: dict[str, str]
     kickstart: dict[str, str]
     log_type: list[str]
@@ -518,6 +524,7 @@ class GuestArtemis(tmt.GuestSsh):
         data: dict[str, Any] = {
             'environment': environment,
             'keyname': self.keyname,
+            'ownername': self.ownername,
             'priority_group': self.priority_group,
             'user_data': self.user_data
             }
@@ -573,7 +580,8 @@ class GuestArtemis(tmt.GuestSsh):
 
         if self.log_type:
             data['log_types'] = list({tuple(log.split('/', 1)) for log in self.log_type})
-
+        print('ddddate')
+        print(data)
         response = self.api.create('/guests/', data)
 
         if response.status_code == 201:
@@ -708,6 +716,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
             # Provisioning process control (optional)
             priority-group: custom-priority-group
             keyname: custom-SSH-key-name
+            ownername: custom-SSH-key-owner-name
 
             # Labels to be attached to guest request (optional)
             user-data:
