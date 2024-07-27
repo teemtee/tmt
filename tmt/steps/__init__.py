@@ -206,24 +206,22 @@ class Phase(tmt.utils.Common):
         """
         return False
 
-    def assert_feeling_safe(self, deprecated_in_version: str, subject: str) -> bool:
+    def assert_feeling_safe(self, deprecated_in_version: str, subject: str) -> None:
         """
-        True if feeling-safe option is set, warns when feeling-safe will be required
-        in future version or fails when feeling-safe is required, but missing.
-
+        Raises a tmt.utils.ProvisionError if feeling-safe is required, but not set.
+        Warns when feeling-safe will be required in a future version.
         :param deprecated_in_version: Version from which feeling-safe is required, e.g. '1.38'.
         :param subject: Subject requiring feeling-safe, e.g. 'Local provision plugin'.
         """
         if self.is_feeling_safe:
-            return True
+            return
 
         if tmt.__version__ < deprecated_in_version:
             self.warn(f"{subject} will require '--feeling-safe' option "
                       f"from version {deprecated_in_version}.")
-            return True
 
-        self.fail(f"{subject} requires '--feeling-safe' option")
-        return False
+        else:
+            raise tmt.utils.ProvisionError(f"{subject} requires '--feeling-safe' option")
 
 
 # A variable used to describe a generic type for all classes derived from Phase
