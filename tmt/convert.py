@@ -897,13 +897,25 @@ def read_polarion_case(
 
     # Set tmt id if available in Polarion, otherwise generate
     try:
-        UUID(polarion_case.test_case_id)
-        uuid = str(polarion_case.test_case_id)
-    except (ValueError, TypeError):
-        uuid = str(uuid4())
-        if not dry_run:
-            polarion_case.test_case_id = uuid
-            polarion_case.update()
+        UUID(polarion_case.tmtid)
+        uuid = str(polarion_case.tmtid)
+    except (AttributeError, TypeError, ValueError):
+        try:
+            UUID(polarion_case.test_case_id)
+            uuid = str(polarion_case.test_case_id)
+        except (TypeError, ValueError):
+            uuid = str(uuid4())
+            if not dry_run:
+                polarion_case.tmtid = uuid
+                polarion_case.update()
+                # Check if it was really uploaded
+                polarion_case.tmtid = ''
+                polarion_case.reload()
+                if not polarion_case.tmtid:
+                    echo(style(
+                        f"Can't add ID because {polarion_case.project_id} project "
+                        "doesn't have the 'tmtid' field defined.",
+                        fg='yellow'))
     current_data[tmt.identifier.ID_KEY] = uuid
     echo(style('ID: ', fg='green') + uuid)
 
