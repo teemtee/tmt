@@ -362,6 +362,7 @@ lint.ignore = [
     ]
 
 lint.logger-objects = ["tmt.log.Logger"]
+lint.typing-modules = ["tmt._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests
@@ -371,6 +372,9 @@ lint.logger-objects = ["tmt.log.Logger"]
     "S318",  # Using xml to parse untrusted data is known to be vulnerable to XML attacks
     "S108",  # Probable insecure usage of temporary file or directory: "{}"
     ]
+# The purpose of tmt/_compat is to be used with TID251 (banned imports)
+"tmt/_compat/**.py" = ["TID251"]
+"docs/conf.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["tmt.utils.field"]
@@ -386,6 +390,14 @@ convention = "pep257"
 
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"typing.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
+"typing_extensions.TypeAlias".msg = "Use tmt._compat.typing.TypeAlias instead."
+"typing.Self".msg = "Use tmt._compat.typing.Self instead."
+"typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
+"pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
+"pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]

@@ -31,14 +31,13 @@ from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path
 
 if TYPE_CHECKING:
-    from typing_extensions import Concatenate, ParamSpec
-
     import tmt.steps.discover
     import tmt.steps.execute
     import tmt.steps.finish
     import tmt.steps.prepare
     import tmt.steps.provision
     import tmt.steps.report
+    from tmt._compat.typing import Concatenate, ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R')
