@@ -1,12 +1,5 @@
 :tocdepth: 0
 
-.. _/plugins/{{ STEP }}:
-
-{{ STEP | replace('-', ' ') | capitalize }} Plugins
-{{ '~' * (8 + (STEP | length)) }}
-
-.. include:: {{ STEP }}-header.inc.rst
-
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
     {% set _, option, _, metadata = container_field(plugin_data_class, field_name) %}
 
