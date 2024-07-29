@@ -15,7 +15,8 @@ from tmt.utils import Path, field
 if TYPE_CHECKING:
     import junit_xml
 
-    from tmt.steps.report import ReportPlugin, ReportStepDataT
+    from tmt.steps.report import ReportPlugin
+    from tmt.steps.report.polarion import ReportPolarionData
 
 DEFAULT_NAME = "junit.xml"
 
@@ -57,7 +58,9 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
             f"Malformed duration '{duration}' ({error}).")
 
 
-def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSuite':
+def make_junit_xml(
+        report: 'ReportPlugin[ReportJUnitData]|ReportPlugin[ReportPolarionData]'
+        ) -> 'junit_xml.TestSuite':
     """ Create junit xml object """
     junit_xml = import_junit_xml()
 
@@ -71,8 +74,11 @@ def make_junit_xml(report: 'ReportPlugin[ReportStepDataT]') -> 'junit_xml.TestSu
         case = junit_xml.TestCase(
             result.name,
             classname=None,
-            elapsed_sec=duration_to_seconds(result.duration),
-            stdout=main_log)
+            elapsed_sec=duration_to_seconds(result.duration))
+
+        if report.data.include_output_log:
+            case.stdout = main_log
+
         # Map tmt OUTCOME to JUnit states
         if result.result == tmt.result.ResultOutcome.ERROR:
             case.add_error_info(result.result.value, output=result.failures(main_log))
@@ -97,6 +103,13 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
         help='Path to the file to store JUnit to.',
         normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
 
+    include_output_log: bool = field(
+        default=True,
+        option=('--include-output-log / --no-include-output-log'),
+        is_flag=True,
+        show_default=True,
+        help='Include full standard output in resulting xml file.')
+
 
 @tmt.steps.provides_method('junit')
 class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
@@ -112,9 +125,9 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated junit report """
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Read executed tests and write junit """
-        super().go()
+        super().go(logger=logger)
 
         junit_xml = import_junit_xml()
         suite = make_junit_xml(self)

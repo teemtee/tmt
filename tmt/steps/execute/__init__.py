@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import datetime
+import functools
 import json
 import os
 import signal as _signal
@@ -25,7 +26,7 @@ from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript, Stopwatch, cached_property, field
+from tmt.utils import Path, ShellScript, Stopwatch, field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -179,7 +180,7 @@ class TestInvocation:
     #: Number of times the guest has been rebooted.
     _reboot_count: int = 0
 
-    @cached_property
+    @functools.cached_property
     def path(self) -> Path:
         """ Absolute path to invocation directory """
 
@@ -200,7 +201,7 @@ class TestInvocation:
 
         return path
 
-    @cached_property
+    @functools.cached_property
     def relative_path(self) -> Path:
         """ Invocation directory path relative to step workdir """
 
@@ -208,25 +209,25 @@ class TestInvocation:
 
         return self.path.relative_to(self.phase.step.workdir)
 
-    @cached_property
+    @functools.cached_property
     def test_data_path(self) -> Path:
         """ Absolute path to test data directory """
 
         return self.path / TEST_DATA
 
-    @cached_property
+    @functools.cached_property
     def relative_test_data_path(self) -> Path:
         """ Test data path relative to step workdir """
 
         return self.relative_path / TEST_DATA
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def check_files_path(self) -> Path:
         """ Construct a directory path for check files needed by tmt """
 
         return self.path / CHECK_DATA
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def reboot_request_path(self) -> Path:
         """ A path to the reboot request file """
         return self.test_data_path / TMT_REBOOT_SCRIPT.created_file
@@ -430,7 +431,7 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
-class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
+class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     """ Common parent of execute plugins """
 
     # ignore[assignment]: as a base class, ExecuteStepData is not included in
@@ -491,7 +492,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
-        super().go(guest=guest, environment=environment, logger=logger)
+        self.go_prolog(logger)
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
@@ -896,7 +897,7 @@ class Execute(tmt.steps.Step):
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
-        queue: PhaseQueue[ExecuteStepData] = PhaseQueue(
+        queue: PhaseQueue[ExecuteStepData, None] = PhaseQueue(
             'execute',
             self._logger.descend(logger_name=f'{self}.queue'))
 
@@ -930,7 +931,7 @@ class Execute(tmt.steps.Step):
                             if discover.enabled_on_guest(guest)
                             ])
 
-        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
 
         for outcome in queue.run():
             if outcome.exc:
@@ -951,25 +952,26 @@ class Execute(tmt.steps.Step):
         # access all collected `_results`.
         self._results += execute_phases[0].results()
 
-        if failed_tasks:
-            # TODO: needs a better message...
-            raise tmt.utils.GeneralError(
-                'execute step failed',
-                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
-                )
-
         # To separate "execute" from the follow-up logging visually
         self.info('')
 
         # Give a summary, update status and save
         self.summary()
-        self.status('done')
+        if not failed_tasks:
+            self.status('done')
 
         # Merge old results back to get all results in report step
         if self.should_run_again:
             self._results += self._old_results
 
         self.save()
+
+        if failed_tasks:
+            # TODO: needs a better message...
+            raise tmt.utils.GeneralError(
+                'execute step failed',
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
+                )
 
     def results(self) -> list["tmt.result.Result"]:
         """

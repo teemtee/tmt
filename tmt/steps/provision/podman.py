@@ -201,10 +201,6 @@ class GuestContainer(tmt.Guest):
 
         additional_args = []
 
-        # FIXME: Workaround for BZ#1900021 (f34 container on centos-8)
-        workaround = ['--security-opt', 'seccomp=unconfined']
-        additional_args.extend(workaround)
-
         additional_args.extend(self._setup_network())
 
         # Run the container
@@ -449,9 +445,9 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         return super().default(option, default=default)
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the container """
-        super().go()
+        super().go(logger=logger)
 
         # Prepare data for the guest instance
         data = PodmanGuestData.from_plugin(self)

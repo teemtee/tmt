@@ -1,5 +1,6 @@
 import dataclasses
 import enum
+import functools
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
@@ -10,7 +11,6 @@ from tmt.utils import (
     NormalizeKeysMixin,
     SerializableContainer,
     SpecBasedContainer,
-    cached_property,
     field,
     )
 
@@ -101,7 +101,7 @@ class Check(
         is_flag=True,
         help='Whether the check is enabled or not.')
 
-    @cached_property
+    @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
         return find_plugin(self.how)
 

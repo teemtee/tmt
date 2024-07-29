@@ -5,9 +5,11 @@
 {{ STEP | replace('-', ' ') | capitalize }} Plugins
 {{ '~' * (8 + (STEP | length)) }}
 
+.. include:: {{ STEP }}-header.inc.rst
+
 {% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
-.. _plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
+.. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
 
 {{ PLUGIN_ID }}
 {{ '-' * (PLUGIN_ID | length) }}

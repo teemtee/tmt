@@ -173,9 +173,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     # Guest instance
     _guest = None
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the container """
-        super().go()
+        super().go(logger=logger)
 
         # Create a GuestLocal instance
         data = tmt.steps.provision.GuestData.from_plugin(self)

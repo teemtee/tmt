@@ -32,7 +32,7 @@ class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 FinishStepDataT = TypeVar('FinishStepDataT', bound=FinishStepData)
 
 
-class FinishPlugin(tmt.steps.Plugin[FinishStepDataT]):
+class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, None]):
     """ Common parent of finish plugins """
 
     # ignore[assignment]: as a base class, FinishStepData is not included in
@@ -65,6 +65,14 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT]):
             Finish.store_cli_invocation(context)
 
         return finish
+
+    def go(
+            self,
+            *,
+            guest: 'Guest',
+            environment: Optional[tmt.utils.Environment] = None,
+            logger: tmt.log.Logger) -> None:
+        self.go_prolog(logger)
 
 
 class Finish(tmt.steps.Step):
@@ -141,7 +149,7 @@ class Finish(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
-        queue: PhaseQueue[FinishStepData] = PhaseQueue(
+        queue: PhaseQueue[FinishStepData, None] = PhaseQueue(
             'finish',
             self._logger.descend(logger_name=f'{self}.queue'))
 
@@ -155,7 +163,7 @@ class Finish(tmt.steps.Step):
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
                     )
 
-        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData]]] = []
+        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData, None]]] = []
 
         for outcome in queue.run():
             if not isinstance(outcome.phase, FinishPlugin):

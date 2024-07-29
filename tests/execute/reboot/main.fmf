@@ -20,6 +20,15 @@ tier: 4
     test: ./efi.sh
     enabled: false
 
+/freeze:
+    summary: Ensure that logs are fetched when guest freezes
+    test: ./freeze.sh
+    tag+:
+      - provision-only
+      - provision-virtual
+    link:
+      - verifies: https://issues.redhat.com/browse/TFT-2720
+
 /multi-part:
     summary: Verify reboot during multiple consecutive tests
     test: ./multi-part.sh

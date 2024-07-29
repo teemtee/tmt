@@ -2,6 +2,7 @@ import ast
 import dataclasses
 import datetime
 import enum
+import functools
 import os
 import re
 import secrets
@@ -49,7 +50,6 @@ from tmt.utils import (
     Path,
     SerializableContainer,
     ShellScript,
-    cached_property,
     configure_constant,
     effective_workdir_root,
     field,
@@ -792,7 +792,7 @@ class Guest(tmt.utils.Common):
         run_id = parent.plan.my_run.workdir.name
         return self._random_name(prefix=f"tmt-{run_id[-3:]}-")
 
-    @cached_property
+    @functools.cached_property
     def multihost_name(self) -> str:
         """ Return guest's multihost name, i.e. name and its role """
 
@@ -804,7 +804,7 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
-    @cached_property
+    @functools.cached_property
     def package_manager(self) -> 'tmt.package_managers.PackageManager':
         if not self.facts.package_manager:
             raise tmt.utils.GeneralError(
@@ -1380,12 +1380,12 @@ class GuestSsh(Guest):
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def _ssh_guest(self) -> str:
         """ Return user@guest """
         return f'{self.user}@{self.primary_address}'
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
@@ -1954,7 +1954,7 @@ class ProvisionStepData(tmt.steps.StepData):
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
-class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
+class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     """ Common parent of provision plugins """
 
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
@@ -1999,6 +1999,11 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT]):
             Provision.store_cli_invocation(context)
 
         return provision
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """ Perform actions shared among plugins when beginning their tasks """
+
+        self.go_prolog(logger or self._logger)
 
     # TODO: this might be needed until https://github.com/teemtee/tmt/issues/1696 is resolved
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
@@ -2352,7 +2357,7 @@ class Provision(tmt.steps.Step):
                 tasks that failed.
             """
 
-            queue: PhaseQueue[ProvisionStepData] = PhaseQueue(
+            queue: PhaseQueue[ProvisionStepData, None] = PhaseQueue(
                 'provision.action',
                 self._logger.descend(logger_name=f'{self}.queue'))
 

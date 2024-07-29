@@ -22,7 +22,7 @@ class ReportStepData(tmt.steps.StepData):
 ReportStepDataT = TypeVar('ReportStepDataT', bound=ReportStepData)
 
 
-class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT]):
+class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
     """ Common parent of report plugins """
 
     # ignore[assignment]: as a base class, ReportStepData is not included in
@@ -58,6 +58,11 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT]):
             Report.store_cli_invocation(context)
 
         return report
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """ Perform actions shared among plugins when beginning their tasks """
+
+        self.go_prolog(logger or self._logger)
 
 
 class Report(tmt.steps.Step):

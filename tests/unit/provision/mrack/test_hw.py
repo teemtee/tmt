@@ -12,6 +12,7 @@ from tmt.hardware import (
     _parse_hostname,
     _parse_location,
     _parse_memory,
+    _parse_system,
     _parse_tpm,
     _parse_virtualization,
     _parse_zcrypt,
@@ -132,9 +133,17 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         '_value': 'smep'
                                         }
                                     }
-                                }
+                                },
                             ]
-                        }
+                        },
+                    {
+                        'cpu': {
+                            'hyper': {
+                                '_op': '==',
+                                '_value': 'True'
+                                }
+                            }
+                        },
                     ]
                 },
             {
@@ -175,6 +184,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
+                            {'or': []},
                             {
                                 'disk': {
                                     'model': {
@@ -195,6 +205,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                         }
                                     }
                                 },
+                            {'or': []},
                             {
                                 'key_value': {
                                     '_key': 'BOOTDISK',
@@ -238,8 +249,15 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'or': []},
                     {'or': []},
                     {'or': []},
+                    {
+                        'system': {
+                            'numanodes': {
+                                '_op': '<',
+                                '_value': '4',
+                                },
+                            },
+                        },
                     {'or': []},
-                    {'or': []}
                     ]
                 },
             {
@@ -735,5 +753,19 @@ def test_tpm_version(root_logger: Logger) -> None:
             '_key': 'TPM',
             '_op': '!=',
             '_value': '2.0'
+            }
+        }
+
+
+def test_system_numa_nodes(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['system.numa_nodes'](
+        _parse_system({'numa-nodes': '2'}), root_logger)
+
+    assert result.to_mrack() == {
+        'system': {
+            'numanodes': {
+                '_op': '==',
+                '_value': '2'
+                }
             }
         }

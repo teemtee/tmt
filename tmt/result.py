@@ -136,6 +136,29 @@ class CheckResult(BaseResult):
 
 
 @dataclasses.dataclass
+class PhaseCheckResult(CheckResult):
+    """
+    Describes what tmt knows about a single phase test check result.
+
+    It does not contain any additional fields; it simply defines a type to
+    easily differentiate between a :py:class:`tmt.result.CheckResult` and a
+    ``CheckResult`` located within a result phase.
+    """
+
+
+@dataclasses.dataclass
+class PhaseResult(BaseResult):
+    """ Describes what tmt knows about a single test phase result (sub-result) """
+
+    check: list[PhaseCheckResult] = field(
+        default_factory=cast(Callable[[], list[PhaseCheckResult]], list),
+        serialize=lambda results: [result.to_serialized() for result in results],
+        unserialize=lambda serialized: [
+            PhaseCheckResult.from_serialized(check) for check in serialized]
+        )
+
+
+@dataclasses.dataclass
 class Result(BaseResult):
     """ Describes what tmt knows about a single test result """
 
@@ -157,6 +180,13 @@ class Result(BaseResult):
         default_factory=ResultGuestData,
         serialize=lambda value: value.to_serialized(),
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
+        )
+
+    phase: list[PhaseResult] = field(
+        default_factory=cast(Callable[[], list[PhaseResult]], list),
+        serialize=lambda results: [result.to_serialized() for result in results],
+        unserialize=lambda serialized: [
+            PhaseResult.from_serialized(phase) for phase in serialized]
         )
 
     check: list[CheckResult] = field(

@@ -4,6 +4,7 @@
 import collections
 import dataclasses
 import enum
+import functools
 import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
@@ -27,7 +28,7 @@ import tmt.templates
 import tmt.trying
 import tmt.utils
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Command, Path, cached_property
+from tmt.utils import Command, Path
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
@@ -181,7 +182,7 @@ class CliInvocation:
             }
         return invocation
 
-    @cached_property
+    @functools.cached_property
     def option_sources(self) -> dict[str, click.core.ParameterSource]:
         if not self.context:
             return {}

@@ -67,6 +67,26 @@ def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
     assert match.groups() == expected
 
 
+_size_constraint_pattern_input = [
+    ({'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
+     'num_with_default: == 10 gibibyte'),
+    ({'name': 'num_without_default', 'raw_value': '1024'}, 'num_without_default: == 1024 byte'),
+    ({'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'MiB'},
+     'num_with_unit: == 10 GiB'),
+    ]
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    _size_constraint_pattern_input,
+    )
+def test_constraint_default_unit(value: dict, expected: tuple[Any, Any]) -> None:
+    constraint_out = tmt.hardware.SizeConstraint.from_specification(**value)
+
+    assert constraint_out is not None
+    assert str(constraint_out) == expected
+
+
 _constraint_components_pattern_input = [
     ('memory 10 GiB', ('memory', None, None, None, '10 GiB')),
     ('cpu.processors != 4 ', ('cpu', None, 'processors', '!=', '4')),
@@ -169,6 +189,7 @@ FULL_HARDWARE_REQUIREMENTS = """
             - avx
             - "= avx2"
             - "!= smep"
+        hyper-threading: true
     device:
       device-name: '~ .*Thunderbolt.*'
       device: 79
@@ -178,8 +199,10 @@ FULL_HARDWARE_REQUIREMENTS = """
     disk:
         - size: 40 GiB
           model-name: "~ WD 100G.*"
+          physical-sector-size: "4096 byte"
         - size: 120 GiB
           driver: virtblk
+          logical-sector-size: "512 byte"
     gpu:
         device-name: G86 [Quadro NVS 290]
         device: "97"
@@ -241,6 +264,7 @@ def test_parse_maximal_constraint() -> None:
                   - cpu.flag: contains avx
                   - cpu.flag: contains avx2
                   - cpu.flag: not contains smep
+              - cpu.hyper-threading: == True
           - and:
               - device.vendor: '> 97'
               - device.device: == 79
@@ -257,9 +281,11 @@ def test_parse_maximal_constraint() -> None:
           - and:
               - and:
                   - disk[0].size: == 40 GiB
+                  - disk[0].physical-sector-size: == 4096 B
                   - disk[0].model-name: ~ WD 100G.*
               - and:
                   - disk[1].size: == 120 GiB
+                  - disk[1].logical-sector-size: == 512 B
                   - disk[1].driver: == virtblk
           - and:
               - and:

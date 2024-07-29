@@ -55,6 +55,9 @@ description: |
             - "!= flag4"
               ...
 
+          # Request a CPU with hyper-threading enabled.
+          hyper-threading: true|false
+
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
 
@@ -97,7 +100,13 @@ example:
     cpu:
         cores: ">= 4"
 
+  - |
+    # Request a CPU with hyper-threading enabled.
+    cpu:
+        hyper-threading: true
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+    note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name`` only"
+    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name`` and ``cpu.hyper-threading`` only"

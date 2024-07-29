@@ -343,6 +343,8 @@ To remove these images from your local system, run the following:
     make clean-test-images
 
 
+.. _docs:
+
 Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -350,6 +352,83 @@ When submitting a change affecting user experience it's always
 good to include respective documentation. You can add or update
 the :ref:`specification`, extend the :ref:`examples` or write a
 new chapter for the user :ref:`guide`.
+
+tmt documentation is written with `reStructuredText`__ and built
+with `Sphinx`__. Various features of both reST and Sphinx are used
+widely in tmt documentation, from inline markup to references. Feel
+free to use them as well to link new or updated documentation to relevant
+parts, to highlight important points, or to provide helpful examples.
+
+A couple of best practices when updating documentation:
+
+* When referring to a plugin, its options or documentation, prefer
+  reference to ``/plugins/STEP/PLUGIN`` rather than to older
+  ``/spec/plans/STEP/PLUGIN``:
+
+  .. code-block:: rest
+
+    # This is good:
+    :ref:`/plugins/prepare/ansible`
+
+    # If the user-facing plugin name differs from the Python one,
+    # or if you need capitalize the first letter:
+    :ref:`Beaker</plugins/provision/beaker>`
+
+    # This should be avoided:
+    :ref:`/spec/plans/prepare/ansible`
+* Design the plugin docstrings and help texts as if they are to be
+  rendered by Sphinx, i.e. make use of ReST goodies: literals for
+  literals - metavars, values, names of environment variables, commands,
+  keys, etc., ``code-block`` for blocks of code or examples. It leads to
+  better HTML docs and tmt has a nice CLI renderer as well, therefore
+  there is no need to compromise for the sake of CLI.
+* Use full sentences, i.e. capital letters at the beginning & a full
+  stop at the end.
+* Use Python multiline strings rather than joining multiple strings over
+  several lines. It often leads to leading and/or trailing whitespace
+  characters that are easy to miss.
+* Plugin docstring provides the bulk of its CLI help and HTML
+  documentation. It should describe what the plugin does.
+* Other than trivial use cases and keys deserve an example or two.
+* Unless there's an important difference, describe the plugin's
+  configuration in terms of fmf rather than CLI. It is easy to map fmf
+  to CLI options, and fmf makes a better example for someone writing fmf
+  files.
+* When referring to plugin configuration in user-facing docs, speak
+  about "keys": "``playbook`` key of ``prepare/ansible`` plugin". Keys
+  are mapped 1:1 to CLI options, let's make sure we avoid polluting docs
+  with "fields", "settings" and other synonyms.
+* A metavar should represent the semantic of the expected value, i.e.
+  ``--file PATH`` is better than ``--file FILE``,
+  ``--playbook PATH|URL`` is better than ``--playbook PLAYBOOK``.
+* If there is a default value, it belongs to the ``default=`` parameter
+  of :py:func:`tmt.utils.field`, and the help text should not mention it
+  because the "Default is ..." sentence can be easily added
+  automatically and rendered correctly with ```show_default=True``.
+* When showing an example of plugin configuration, include also an
+  example for the command line:
+
+  .. code-block:: rest
+
+     Run a single playbook on the guest:
+
+     .. code-block:: yaml
+
+        prepare:
+            how: ansible
+            playbook: ansible/packages.yml
+
+     .. code-block:: shell
+
+        prepare --how ansible --playbook ansible/packages.yml
+* Do not use ``:caption:`` directive of ``code-block``, it is understod
+  by Sphinx only and ``docutils`` package cannot handle it.
+
+__ https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
+__ https://www.sphinx-doc.org/en/master/
+
+Examples
+------------------------------------------------------------------
 
 By default, examples provided in the specification stories are
 rendered as ``yaml``. In order to select a different syntax
@@ -368,6 +447,9 @@ Building documentation is then quite straightforward:
 Find the resulting html pages under the ``docs/_build/html``
 folder.
 
+Visual themes
+------------------------------------------------------------------
+
 Use the ``TMT_DOCS_THEME`` variable to easily pick custom theme.
 If specified, ``make docs`` would use this theme for documentation
 rendering by Sphinx. The theme must be installed manually, ``make
@@ -382,6 +464,26 @@ a colon (``:``): theme package name, and theme name.
     # Renku theme, renku-sphinx-theme - note that package name
     # and theme name are *not* the same string:
     TMT_DOCS_THEME="renku_sphinx_theme:renku" make docs
+
+By default, ``docs/_static/custom.css`` provides additional tweaks to
+the documentation theme. Use the ``TMT_DOCS_CUSTOM_HTML_STYLE`` variable
+to include additional file:
+
+.. code-block:: shell
+
+    $ cat docs/_static/custom.local.css
+    /* Make content wider on my wider screen */
+    .wy-nav-content {
+        max-width: 1200px !important;
+    }
+
+    TMT_DOCS_CUSTOM_HTML_STYLE=custom.local.css make docs
+
+.. note::
+
+    The custom CSS file specified by ``TMT_DOCS_CUSTOM_HTML_STYLE``
+    is included **before** the built-in ``custom.css``, therefore to
+    override theme CSS, it is recommended to add ``!important`` flag.
 
 
 Pull Requests
@@ -562,18 +664,20 @@ Release
 
 Follow the steps below to create a new major or minor release:
 
-* Use ``git log --oneline --no-decorate x.y-1..`` to generate the changelog
 * Update ``overview.rst`` with new contributors since the last release
 * Review the release notes in ``releases.rst``, update as needed
-* Add a ``Release tmt-x.y.0`` commit with the specfile update
+* Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
 * Create a pull request with the commit, ensure tests pass, merge it
-
-Release a new package to Fedora and EPEL repositories:
-
 * Move the ``fedora`` branch to point to the new release
-* Tag the commit with ``x.y.0``, push tags ``git push --tags``
-* Create a new `github release`__ based on the tag above
-* Check Fedora `pull requests`__, make sure tests pass and merge
+* Tag the commit with ``x.y.z``, push tags ``git push --tags``
+
+Create a new `github release`__ based on the tag above
+
+* Mention the most important changes in the name, do not include version
+* Use ``;`` as a delimiter, when multiple items are mentioned in the name
+* Push the "Generate release notes" button to create the content
+* Prepend the "See the `release notes`__ for the list of interesting changes." line
+* Publish the release, check Fedora `pull requests`__, make sure tests pass and merge
 
 Finally, if everything went well:
 
@@ -592,6 +696,7 @@ Handle manually what did not went well:
   in any open issue.
 
 __ https://github.com/teemtee/tmt/releases/
+__ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
 __ https://pypi.org/project/tmt/

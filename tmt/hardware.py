@@ -493,7 +493,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     raw_value: str
 
     # If set, it is a raw unit specified by the constraint.
-    unit: Optional[str] = None
+    default_unit: Optional[str] = None
 
     # If set, it is a "bigger" constraint, to which this constraint logically
     # belongs as one of its aspects.
@@ -507,7 +507,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             as_quantity: bool = True,
             as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
             original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None
+            allowed_operators: Optional[list[Operator]] = None,
+            default_unit: Optional[Any] = "bytes"
             ) -> T:
         """
         Parse raw constraint specification into our internal representation.
@@ -520,6 +521,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         :param original_constraint: when specified, new constraint logically belongs to
             ``original_constraint``, possibly representing one of its aspects.
         :param allowed_operators: if specified, only operators on this list are accepted.
+        :param default_unit: if raw_value contains no unit, this unit will be appended.
         :raises ParseError: when parsing fails, or the operator is now allowed.
         :returns: a :py:class:`Constraint` representing the given specification.
         """
@@ -560,7 +562,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             if not isinstance(
                     value,
                     pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
-                value = pint.Quantity(value)
+                value = pint.Quantity(value, default_unit)
 
         elif as_cast is not None:
             value = as_cast(raw_value)
@@ -672,14 +674,16 @@ class SizeConstraint(Constraint['Size']):
             name: str,
             raw_value: str,
             original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None
+            allowed_operators: Optional[list[Operator]] = None,
+            default_unit: Optional[Any] = 'bytes'
             ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=True,
             original_constraint=original_constraint,
-            allowed_operators=allowed_operators
+            allowed_operators=allowed_operators,
+            default_unit=default_unit
             )
 
 
@@ -932,7 +936,7 @@ def _parse_size_constraints(
 
     return [
         SizeConstraint.from_specification(
-            f'{prefix}.{constraint_name}',
+            f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
                 Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
@@ -1130,6 +1134,14 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
 
         group.constraints += [flag_group]
 
+    if 'hyper-threading' in spec:
+        group.constraints += [
+            FlagConstraint.from_specification(
+                'cpu.hyper_threading',
+                spec['hyper-threading'],
+                allowed_operators=[Operator.EQ, Operator.NEQ])
+            ]
+
     return group
 
 
@@ -1157,7 +1169,11 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_size_constraints(spec, f'disk[{disk_index}]', ('size',))
+    group.constraints += _parse_size_constraints(spec,
+                                                 f'disk[{disk_index}]',
+                                                 ('size',
+                                                  'physical-sector-size',
+                                                  'logical-sector-size'))
     group.constraints += _parse_text_constraints(spec,
                                                  f'disk[{disk_index}]', ('model-name', 'driver'))
 

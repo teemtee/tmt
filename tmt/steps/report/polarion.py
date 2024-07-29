@@ -180,6 +180,13 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         help='FIPS mode enabled or disabled for this run.'
         )
 
+    include_output_log: bool = field(
+        default=True,
+        option=('--include-output-log / --no-include-output-log'),
+        is_flag=True,
+        show_default=True,
+        help='Include full standard output in resulting xml file.')
+
 
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
@@ -190,9 +197,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     def prune(self, logger: tmt.log.Logger) -> None:
         """ Do not prune generated xunit report """
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Go through executed tests and report into Polarion """
-        super().go()
+        super().go(logger=logger)
 
         from tmt.export.polarion import find_polarion_case_ids, import_polarion
         import_polarion()

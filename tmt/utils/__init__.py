@@ -299,28 +299,6 @@ def effective_workdir_root() -> Path:
     return WORKDIR_ROOT
 
 
-# TODO: yes, cached_property is available since Python 3.8, but 1. we still need
-# to support Python 3.6, and 2. the type annotations are not perfect, depending
-# on what's in typing_extensions available in RPMs. Therefore adding a simplified
-# cached_property we would remove with Python 3.6 support.
-class cached_property(Generic[T]):  # noqa: N801
-    def __init__(self, fn: Callable[[Any], T]) -> None:
-        self.__doc__ = fn.__doc__
-        self.fn = fn
-
-    def __get__(self, obj: Any, cls: Any) -> T:
-        if obj is None:
-            # ignore[return-value]: special case, when `obj` is unset, operates
-            # as a class-level property, but that is not supported by cached
-            # property from stdlib.
-            return self  # type: ignore[return-value]
-
-        value = self.fn(obj)
-        obj.__dict__[self.fn.__name__] = value
-
-        return value
-
-
 class FmfContext(dict[str, list[str]]):
     """
     Represents an fmf context.
@@ -967,7 +945,7 @@ class Config:
             raise GeneralError(
                 f"Unable to save last run '{self.path}'.\n{error}")
 
-    @cached_property
+    @functools.cached_property
     def fmf_tree(self) -> fmf.Tree:
         """ Return the configuration tree """
         try:
@@ -1598,7 +1576,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         if 'safe_name' in self.__dict__:
             delattr(self, 'safe_name')
 
-    @cached_property
+    @functools.cached_property
     def safe_name(self) -> str:
         """
         A safe variant of the name which does not contain special characters.
@@ -1612,7 +1590,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         return sanitize_name(self.name)
 
-    @cached_property
+    @functools.cached_property
     def pathless_safe_name(self) -> str:
         """
         A safe variant of the name which does not contain any special characters.
@@ -2900,7 +2878,7 @@ class FieldMetadata(Generic[T]):
     #: A :py:func:`click.option` decorator defining a corresponding CLI option.
     _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
 
-    @cached_property
+    @functools.cached_property
     def choices(self) -> Optional[Sequence[str]]:
         """ A list of allowed values the field can take """
 
@@ -2912,7 +2890,7 @@ class FieldMetadata(Generic[T]):
 
         return None
 
-    @cached_property
+    @functools.cached_property
     def metavar(self) -> Optional[str]:
         """ Placeholder for field's value in documentation and help """
 
@@ -6133,7 +6111,7 @@ def normalize_storage_size(
 
 def normalize_string_list(
         key_address: str,
-        value: Union[None, str, list[str]],
+        value: Any,
         logger: tmt.log.Logger) -> list[str]:
     """
     Normalize a string-or-list-of-strings input value.
@@ -6178,7 +6156,7 @@ def normalize_string_list(
 
 def normalize_pattern_list(
         key_address: str,
-        value: Union[None, str, list[str]],
+        value: Any,
         logger: tmt.log.Logger) -> list[Pattern[str]]:
     """
     Normalize a pattern-or-list-of-patterns input value.
@@ -6192,18 +6170,40 @@ def normalize_pattern_list(
          - '(?i)BaZ+'
     """
 
-    normalized_value = normalize_string_list(key_address, value, logger)
+    def _normalize(raw_patterns: list[Any]) -> list[Pattern[str]]:
+        patterns: list[Pattern[str]] = []
 
-    patterns: list[Pattern[str]] = []
+        for i, raw_pattern in enumerate(raw_patterns):
+            if isinstance(raw_pattern, str):
+                try:
+                    patterns.append(re.compile(raw_pattern))
 
-    for i, raw_pattern in enumerate(normalized_value):
-        try:
-            patterns.append(re.compile(raw_pattern))
+                except Exception:
+                    raise NormalizationError(
+                        f'{key_address}[{i}]', raw_pattern, 'a regular expression')
 
-        except Exception:
-            raise NormalizationError(f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+            elif isinstance(raw_pattern, re.Pattern):
+                patterns.append(raw_pattern)
 
-    return patterns
+            else:
+                raise NormalizationError(
+                    f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+
+        return patterns
+
+    if value is None:
+        return []
+
+    if isinstance(value, str):
+        return _normalize([value])
+
+    if isinstance(value, (list, tuple)):
+        return _normalize(list(value))
+
+    raise NormalizationError(
+        key_address,
+        value,
+        'a regular expression or a list of regular expressions')
 
 
 def normalize_integer_list(

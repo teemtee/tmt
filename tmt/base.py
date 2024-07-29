@@ -64,8 +64,8 @@ from tmt.utils import (
     ShellScript,
     SpecBasedContainer,
     WorkdirArgumentType,
-    cached_property,
     container_field,
+    container_fields,
     dict_to_yaml,
     field,
     git_clone,
@@ -796,7 +796,7 @@ class Core(
             always_get_ref=True,
             logger=self._logger)
 
-    @cached_property
+    @functools.cached_property
     def fmf_sources(self) -> list[Path]:
         return [Path(source) for source in self.node.sources]
 
@@ -897,7 +897,19 @@ class Core(
 
     def _lint_keys(self, additional_keys: list[str]) -> list[str]:
         """ Return list of invalid keys used, empty when all good """
-        known_keys = additional_keys + self._keys()
+
+        known_keys: list[str] = []
+
+        for field_ in container_fields(self):
+            _, key, _, _, metadata = container_field(self, field_.name)
+
+            if metadata.internal:
+                continue
+
+            known_keys.append(key)
+
+        known_keys.extend(additional_keys)
+
         return [key for key in self.node.get() if key not in known_keys]
 
     def lint_validate(self) -> LinterReturn:
@@ -921,7 +933,7 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    if '$id' in error.schema:
+                    if isinstance(error.schema, dict) and '$id' in error.schema:
                         yield LinterOutcome.WARN, \
                             f'key "{bad_property}" not recognized by schema {error.schema["$id"]}'
                     else:
@@ -1810,7 +1822,7 @@ class Plan(
             f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def plan_environment_file(self) -> Path:
         assert self.data_directory is not None  # narrow type
 
@@ -3088,10 +3100,10 @@ class Tree(tmt.utils.Common):
             # Are we creating a new tree under the existing one?
             assert tree is not None  # narrow type
             if path == tree.root:
-                echo(f"Tree '{tree.root}' already exists.")
+                echo(f"The fmf tree root '{tree.root}/.fmf' already exists.")
             else:
                 # Are we creating a nested tree?
-                echo(f"Path '{path}' already has a parent tree root '{tree.root}'.")
+                echo(f"Path '{path}' already has a parent fmf tree root '{tree.root}/.fmf'.")
                 if not force and not confirm("Do you really want to initialize a nested tree?"):
                     return
                 tree = None
@@ -3099,9 +3111,10 @@ class Tree(tmt.utils.Common):
             tree = None
 
         # Create a new tree
+        fmf_dir = path / '.fmf'
         if tree is None:
             if dry:
-                echo(f"Tree '{path}' would be initialized.")
+                echo(f"Would initialize the fmf tree root '{fmf_dir}'.")
             else:
                 try:
                     fmf.Tree.init(path)
@@ -3110,12 +3123,11 @@ class Tree(tmt.utils.Common):
                     path = tree.root
                 except fmf.utils.GeneralError as error:
                     raise tmt.utils.GeneralError(
-                        f"Failed to initialize tree in '{path}': {error}")
-                echo(f"Tree '{tree.root}' initialized.")
+                        f"Failed to initialize the fmf tree root '{fmf_dir}'.") from error
+                echo(f"Initialized the fmf tree root '{fmf_dir}'.")
 
         # Add .fmf directory to the git index if possible
         if tmt.utils.git_root(fmf_root=path, logger=logger):
-            fmf_dir = path / '.fmf'
             if dry:
                 echo(f"Path '{fmf_dir}' would be added to git index.")
             else:
@@ -3130,10 +3142,10 @@ class Tree(tmt.utils.Common):
 
         # Populate the tree with example objects if requested
         if template == 'empty':
-            choices = listed(tmt.templates.INIT_TEMPLATES, join='or')
-            echo(
-                f"To populate it with example content, "
-                f"use --template with {choices}.")
+            choices = listed(tmt.templates.INIT_TEMPLATES, join='or', quote="'")
+            echo(f"Use 'tmt init --template' with {choices} to create example content.")
+            echo("Add tests, plans or stories with 'tmt test create', "
+                 "'tmt plan create' or 'tmt story create'.")
         else:
             echo(f"Applying template '{template}'.")
 
@@ -3239,7 +3251,7 @@ class Run(tmt.utils.Common):
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
         import tmt.steps.provision.local
 

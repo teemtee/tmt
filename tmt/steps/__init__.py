@@ -43,7 +43,6 @@ from tmt.utils import (
     RunError,
     SerializableContainer,
     SpecBasedContainer,
-    cached_property,
     container_field,
     container_keys,
     field,
@@ -230,6 +229,9 @@ RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
 
 
 StepDataT = TypeVar('StepDataT', bound='StepData')
+
+#: A type variable representing a return value of plugin's ``go()`` method.
+PluginReturnValueT = TypeVar('PluginReturnValueT')
 
 
 @dataclasses.dataclass
@@ -541,7 +543,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         return self.name in self.plan.my_run._cli_context_object.steps
 
-    @cached_property
+    @functools.cached_property
     def allowed_methods_pattern(self) -> Pattern[str]:
         """ Return a pattern allowed methods must match """
 
@@ -679,7 +681,12 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Status 'todo' means the step has not finished successfully.
         # Probably interrupted in the middle. Clean up the work
         # directory to give it another chance with a fresh start.
-        if self.status() == 'todo':
+        #
+        # However, the cleanup is desired only if the step is enabled.
+        # Otherwise we would for example remove all test logs from an
+        # interrupted execute step even when only checking for results
+        # using `tmt run --last report`.
+        if self.status() == 'todo' and self.enabled:
             self.debug("Step has not finished. Let's try once more!", level=2)
             self._workdir_cleanup()
 
@@ -1160,7 +1167,7 @@ def provides_method(
         # unable to introduce the type var into annotations. Apparently, `cls`
         # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
         # space for type var. But it's still something to fix later.
-        cast('BasePlugin[Any]', cls.__bases__[0])._supported_methods \
+        cast('BasePlugin[Any, Any]', cls.__bases__[0])._supported_methods \
             .register_plugin(
                 plugin_id=name,
                 plugin=plugin_method,
@@ -1171,7 +1178,7 @@ def provides_method(
     return _method
 
 
-class BasePlugin(Phase, Generic[StepDataT]):
+class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     """ Common parent of all step plugins """
 
     # Deprecated, use @provides_method(...) instead. left for backward
@@ -1224,7 +1231,7 @@ class BasePlugin(Phase, Generic[StepDataT]):
         self.data = data
         self.step = step
 
-    @cached_property
+    @functools.cached_property
     def safe_name(self) -> str:
         """
         A safe variant of the name which does not contain special characters.
@@ -1340,7 +1347,8 @@ class BasePlugin(Phase, Generic[StepDataT]):
             cls,
             step: Step,
             data: Optional[StepDataT] = None,
-            raw_data: Optional[_RawStepData] = None) -> 'BasePlugin[StepDataT]':
+            raw_data: Optional[_RawStepData] = None
+            ) -> 'BasePlugin[StepDataT, PluginReturnValueT]':
         """
         Return plugin instance implementing the data['how'] method
 
@@ -1624,16 +1632,16 @@ class BasePlugin(Phase, Generic[StepDataT]):
             logger.warning(f"Unable to remove '{self.workdir}': {error}")
 
 
-class GuestlessPlugin(BasePlugin[StepDataT]):
+class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
     """ Common parent of all step plugins that do not work against a particular guest """
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> PluginReturnValueT:
         """ Perform actions shared among plugins when beginning their tasks """
 
-        self.go_prolog(self._logger)
+        raise NotImplementedError
 
 
-class Plugin(BasePlugin[StepDataT]):
+class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
     """ Common parent of all step plugins that do work against a particular guest """
 
     def go(
@@ -1641,10 +1649,10 @@ class Plugin(BasePlugin[StepDataT]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> PluginReturnValueT:
         """ Perform actions shared among plugins when beginning their tasks """
 
-        self.go_prolog(logger)
+        raise NotImplementedError
 
 
 class Action(Phase, tmt.utils.MultiInvokableCommon):
@@ -2140,17 +2148,17 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
 
 @dataclasses.dataclass
-class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
+class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT, PluginReturnValueT]):
     """ A task to run a phase on a given set of guests """
 
-    phase: Plugin[StepDataT]
+    phase: Plugin[StepDataT, PluginReturnValueT]
 
     # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
     def __init__(
             self,
             logger: tmt.log.Logger,
             guests: list['Guest'],
-            phase: Plugin[StepDataT],
+            phase: Plugin[StepDataT, PluginReturnValueT],
             **kwargs: Any) -> None:
         super().__init__(logger, guests, **kwargs)
 
@@ -2176,7 +2184,7 @@ class PluginTask(tmt.queue.MultiGuestTask[None], Generic[StepDataT]):
         self.phase.go(guest=guest, logger=logger)
 
 
-class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT]]]):
+class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
     """ Queue class for running phases on guests """
 
     def enqueue_action(
@@ -2191,7 +2199,7 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT]]]):
     def enqueue_plugin(
             self,
             *,
-            phase: Plugin[StepDataT],
+            phase: Plugin[StepDataT, PluginReturnValueT],
             guests: list['Guest']) -> None:
         if not guests:
             raise tmt.utils.MetadataError(

@@ -367,6 +367,11 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
     * "SSH ping" tries to establish SSH connection,
     * "reboot" action issues a hard reboot of the guest.
 
+    .. warning::
+
+        Be aware that this feature may be limited depending on how the
+        guest was provisioned. See :ref:`/plugins/provision/hard-reboot`.
+
     Each probe has a "budget" of allowed failures, and when it runs out,
     the action is taken. A successful probe replenishes its budget to
     the original level.

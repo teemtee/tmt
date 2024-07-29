@@ -15,7 +15,7 @@ rlJournalStart
         rlAssertNotExists "tests/example/main.fmf"
         rlAssertNotExists "tests/example/test.sh"
         rlRun -s "tmt init -t full"
-        rlAssertGrep "Tree .* initialized." "${rlRun_LOG}"
+        rlAssertGrep "Initialized the fmf tree root" "${rlRun_LOG}"
         rlAssertGrep "Applying template 'full'." "${rlRun_LOG}"
         rlAssertGrep "Test directory .* created." "${rlRun_LOG}"
         rlAssertExists "stories/example.fmf"

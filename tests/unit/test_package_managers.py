@@ -1733,7 +1733,19 @@ def _parametrize_test_install_debuginfo() -> Iterator[
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
-        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+        # Skip testing debuginfo install on coreos images
+        if 'coreos' in container.url:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                (Package('tree'), Package('dos2unix')),
+                "",
+                None,
+                None,
+                marks=pytest.mark.skip(reason="debuginfo install not supported yet on coreos")
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 (Package('dos2unix'), Package('tree')), \
@@ -1807,6 +1819,7 @@ def test_install_debuginfo(
         expected_stderr: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
+
     package_manager = create_package_manager(
         container_per_test,
         guest_per_test,
@@ -1918,7 +1931,19 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
-        if package_manager_class is tmt.package_managers.dnf.Dnf5:
+        # Skip testing debuginfo install on coreos images
+        if 'coreos' in container.url:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                (Package('tree'), Package('dos2unix')),
+                "",
+                None,
+                None,
+                marks=pytest.mark.skip(reason="debuginfo install not supported yet on coreos")
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')), \

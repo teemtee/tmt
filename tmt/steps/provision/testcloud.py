@@ -2,6 +2,7 @@
 import collections
 import dataclasses
 import datetime
+import functools
 import itertools
 import os
 import platform
@@ -27,7 +28,6 @@ from tmt.utils import (
     Path,
     ProvisionError,
     ShellScript,
-    cached_property,
     configure_constant,
     field,
     retry_session,
@@ -585,12 +585,12 @@ class GuestTestcloud(tmt.GuestSsh):
         except libvirt.libvirtError:
             return False
 
-    @cached_property
+    @functools.cached_property
     def is_kvm(self) -> bool:
         # Is the combination of host-requested architecture kvm capable?
         return bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
 
-    @cached_property
+    @functools.cached_property
     def is_legacy_os(self) -> bool:
         assert testcloud is not None  # narrow post-import type
         assert self._image is not None  # narrow type
@@ -598,7 +598,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # Is this el <= 7?
         return cast(bool, testcloud.util.needs_legacy_net(self._image.name))
 
-    @cached_property
+    @functools.cached_property
     def is_coreos(self) -> bool:
         # Is this a CoreOS?
         return bool(re.search('coreos|rhcos', self.image.lower()))
@@ -1064,9 +1064,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
-    def go(self) -> None:
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """ Provision the testcloud instance """
-        super().go()
+        super().go(logger=logger)
 
         if self.data.list_local_images:
             self._print_local_images()

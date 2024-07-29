@@ -76,9 +76,10 @@ all = [
     ]
 # Needed for readthedocs and man page build. Not being packaged in rpm.
 docs = [
-    "renku-sphinx-theme==0.3.0",
+    "renku-sphinx-theme==0.4.0",
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
+    "Sphinx==7.3.7",
     "fmf>=1.3.0",
     ]
 
@@ -249,7 +250,7 @@ ignore = [
     "tmt/convert.py",
     "tmt/lint.py",
     "tmt/queue.py",
-    "tmt/utils.py",
+    "tmt/utils/__init__.py",
     "tmt/hardware.py",  # pyright does not pick up pint's _typing.py or something :/
 ]
 
@@ -382,7 +383,6 @@ extend-immutable-calls = ["tmt.utils.field"]
 # See https://docs.astral.sh/ruff/faq/#does-ruff-support-numpy-or-google-style-docstrings for
 # the most up-to-date info.
 convention = "pep257"
-property-decorators = ["tmt.utils.cached_property"]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]

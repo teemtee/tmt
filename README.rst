@@ -11,8 +11,8 @@ config.
 
 The python module and command-line tool implement the Metadata
 Specification which allows storing all needed test execution data
-directly within a git repository. Together with possibility to
-reference remote repositories it makes it easy to share test
+directly within a git repository. Together with the possibility to
+reference remote repositories, it makes it easy to share test
 coverage across projects and distros.
 
 The Flexible Metadata Format ``fmf`` is used to store data in both
