@@ -1,4 +1,5 @@
 @import 'css/theme.css';
+@import 'custom.css';
 
 /* Used for HW requirement support matrix */
 .supported   { color: green; }
