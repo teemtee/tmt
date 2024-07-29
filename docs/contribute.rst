@@ -362,17 +362,17 @@ parts, to highlight important points, or to provide helpful examples.
 A couple of best practices when updating documentation:
 
 * When referring to a plugin, its options or documentation, prefer
-  reference to ``plugins/STEP/PLUGIN`` rather than to older
+  reference to ``/plugins/STEP/PLUGIN`` rather than to older
   ``/spec/plans/STEP/PLUGIN``:
 
   .. code-block:: rest
 
     # This is good:
-    :ref:`plugins/prepare/ansible`
+    :ref:`/plugins/prepare/ansible`
 
     # If the user-facing plugin name differs from the Python one,
     # or if you need capitalize the first letter:
-    :ref:`Beaker<plugins/provision/beaker>`
+    :ref:`Beaker</plugins/provision/beaker>`
 
     # This should be avoided:
     :ref:`/spec/plans/prepare/ansible`

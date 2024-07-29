@@ -1,4 +1,4 @@
-.. _plugins/provision/hard-reboot:
+.. _/plugins/provision/hard-reboot:
 
 Hard reboot
 -----------
