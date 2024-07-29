@@ -7,10 +7,6 @@
 
 .. include:: {{ STEP }}-header.inc.rst
 
-{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
-
-.. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
-
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
     {% set _, option, _, metadata = container_field(plugin_data_class, field_name) %}
 
@@ -68,14 +64,11 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 {{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
         {% endfor %}
     {% endif %}
-{% endfor %}
-
-{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
 
 .. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
 
 {{ PLUGIN_ID }}
-{{ '-' * (PLUGIN_ID | length)}}
+{{ '-' * (PLUGIN_ID | length) }}
 
 {# Emit the warning only for plugins that have not been reviewed yet. #}
 {% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
@@ -98,7 +91,7 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 Configuration
 ^^^^^^^^^^^^^
 
-See also :ref:`Common keys<plugins/{{ STEP }}/common-keys>` accepted by the plugin.
+See also :ref:`Common keys{# djlint:off H025 #}</plugins/{{ STEP }}/common-keys>{# djlint:on H025 #}` accepted by the plugin.
 
 {% for field_name in intrinsic_fields %}
 {{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
