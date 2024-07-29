@@ -203,7 +203,16 @@ html_theme = HTML_THEME
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-# html_theme_options = {}
+
+# Dark by default
+html_theme_options = {
+    "light_css_variables": {
+        "color-scheme": "dark",
+        },
+    "dark_css_variables": {
+        "color-scheme": "dark",
+        },
+    }
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -227,7 +236,7 @@ html_favicon = 'https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-fav
 html_static_path = ['_static']
 
 # Include custom style.
-html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'tmt-custom.css')
+# html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'tmt-custom.css') TODO missing @include?
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -288,6 +297,10 @@ html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'tmt-custom.css')
 # The name of a javascript file (relative to the configuration directory) that
 # implements a search results scorer. If empty, the default will be used.
 # html_search_scorer = 'scorer.js'
+
+html_js_files = [
+    'tmt-custom.js',
+    ]
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'doc'
