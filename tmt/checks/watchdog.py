@@ -370,7 +370,7 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
     .. warning::
 
         Be aware that this feature may be limited depending on how the
-        guest was provisioned. See :ref:`plugins/provision/hard-reboot`.
+        guest was provisioned. See :ref:`/plugins/provision/hard-reboot`.
 
     Each probe has a "budget" of allowed failures, and when it runs out,
     the action is taken. A successful probe replenishes its budget to
