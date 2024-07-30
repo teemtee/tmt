@@ -30,10 +30,10 @@ supported by plugins bundled with tmt.
    * - :ref:`{{ requirement }}{# djlint:off #}</spec/hardware/{# djlint:on H025 #}{{ requirement }}>`
     {% for plugin, (enabled, note_id) in plugins.items() %}
         {% if enabled %}
-     - :supported:`yes`{% if note_id %} [{{ note_id }}]_{% endif %}
+     - ✅{% if note_id %} [{{ note_id }}]_{% endif %}
 
         {% else %}
-     - :unsupported:`no`
+     - ❌
 
         {% endif %}
     {% endfor %}
