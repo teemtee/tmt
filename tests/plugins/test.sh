@@ -40,9 +40,6 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Using TMT_PLUGINS"
-        # setup.py is not a plugin and cannot be loaded
-        rlRun "mv ./plugins/setup.py ./plugins/setup.XXX"
-
         # Plugins are not available before
         rlRun -s "$tmt run discover -h example --help" "2"
         rlAssertGrep "Unsupported discover method" "$rlRun_LOG"
@@ -53,9 +50,6 @@ rlJournalStart
         rlRun "export TMT_PLUGINS=./plugins"
         rlRun "$tmt run discover -h example --help"
         rlRun "$tmt run provision -h example --help"
-
-        rlRun "unset TMT_PLUGINS"
-        rlRun "mv ./plugins/setup.XXX ./plugins/setup.py"
     rlPhaseEnd
 
     rlPhaseStartCleanup

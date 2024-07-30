@@ -165,6 +165,8 @@ def test_normalize_invalid_hardware(
 
 
 FULL_HARDWARE_REQUIREMENTS = """
+    beaker:
+        pool: "!= foo.*"
     boot:
         method: bios
     compatible:
@@ -242,6 +244,7 @@ FULL_HARDWARE_REQUIREMENTS = """
 def test_parse_maximal_constraint() -> None:
     hw_spec_out = """
         and:
+          - beaker.pool: '!= foo.*'
           - boot.method: contains bios
           - and:
               - compatible.distro: contains rhel-7

@@ -67,66 +67,17 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 import tmt.log
+from tmt._compat.pathlib import Path
 from tmt.log import LoggableValue, Logger
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
-    from typing_extensions import Self
 
     import tmt.base
     import tmt.cli
     import tmt.options
     import tmt.steps
-
-    # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
-    # to avoid the necessity of requiring the package in runtime. This way,
-    # we can deal with it in build time and when running tests.
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
-
-
-class Path(pathlib.PosixPath):
-    # Apparently, `pathlib`` does not offer `relpath` transition between
-    # parallel trees, instead, a `ValueError`` is raised when `self` does not
-    # lie under `other`. Overriding the original implementation with one based
-    # on `os.path.relpath()`, which is more suited to tmt code base needs.
-    #
-    # ignore[override]: does not match the signature on purpose, our use is
-    # slightly less generic that what pathlib supports, to be usable with
-    # os.path.relpath.
-    def relative_to(self, other: Union[str, 'Path']) -> 'Path':  # type: ignore[override]
-        return Path(os.path.relpath(self, other))
-
-    # * `Path.is_relative_to()`` has been added in 3.9
-    # https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.is_relative_to
-    #
-    # * The original implementation calls `relative_to()`, which we just made
-    # to return a relative path for all possible inputs, even those the original
-    # implementation considers to not be relative to each other. Therefore, we
-    # need to override `is_relative_to()` even for other Python versions, to not
-    # depend on `ValueError` raised by the original `relative_to()`.
-    def is_relative_to(self, other: 'Path') -> bool:  # type: ignore[override]
-        # NOTE: the following is not perfect, but it should be enough for
-        # what tmt needs to know about its paths.
-
-        # Acquire the relative path from the one we're given and the other...
-        relpath = os.path.relpath(str(self), str(other))
-
-        # ... and if the relative path starts with `..`, it means we had to
-        # walk *up* from `other` and descend to `path`, therefore `path` cannot
-        # be a subtree of `other`.
-
-        return not relpath.startswith('..')
-
-    def unrooted(self) -> 'Path':
-        """ Return the path as if it was not starting in file system root """
-
-        if self.is_absolute():
-            return self.relative_to('/')
-
-        return self
+    from tmt._compat.typing import Self, TypeAlias
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -2693,8 +2644,8 @@ def dict_to_yaml(
     def _represent_path(representer: Representer, data: Path) -> Any:
         return representer.represent_scalar('tag:yaml.org,2002:str', str(data))
 
-    yaml.representer.add_representer(pathlib.Path, _represent_path)
-    yaml.representer.add_representer(pathlib.PosixPath, _represent_path)
+    yaml.representer.add_representer(pathlib.Path, _represent_path)  # noqa: TID251
+    yaml.representer.add_representer(pathlib.PosixPath, _represent_path)  # noqa: TID251
     yaml.representer.add_representer(Path, _represent_path)
 
     def _represent_environment(representer: Representer, data: Environment) -> Any:

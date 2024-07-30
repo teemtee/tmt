@@ -1,6 +1,5 @@
 import dataclasses
 import shlex
-import sys
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
@@ -11,15 +10,8 @@ import tmt.utils
 from tmt.utils import Command, CommandOutput, Path
 
 if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
     from tmt.steps.provision import Guest
-
-    # Using TypeAlias and typing-extensions under the guard of TYPE_CHECKING,
-    # to avoid the necessity of requiring the package in runtime. This way,
-    # we can deal with it in build time and when running tests.
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str

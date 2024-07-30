@@ -1,0 +1,21 @@
+[build-system]
+# Using hatchling as build backend because EPEL9 setuptools (53.0.0) does not build with PEP517 properly
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "demo-plugins"
+version = "0.0.1"
+dependencies = [
+    "tmt",
+    ]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "discover.py",
+    "provision.py",
+]
+
+[project.entry-points."tmt.plugin"]
+ProvisionExample = "provision:ProvisionExample"
+DiscoverExample = "discover:DiscoverExample"
