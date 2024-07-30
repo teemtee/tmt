@@ -36,6 +36,13 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
+def _filter_invalid_chars(data: str) -> str:
+    return re.sub(
+        '[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+',
+        '',
+        data)
+
+
 @dataclasses.dataclass
 class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
@@ -231,7 +238,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         if not response.ok:
             raise tmt.utils.ReportError(
-                f"Received non-ok status code {response.status_code} from ReportPortal: {response.text}")
+                f"Received non-ok status code {response.status_code} "
+                f"from ReportPortal: {response.text}")
 
     def check_options(self) -> None:
         """ Check options for known troublesome combinations """
@@ -534,7 +542,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         response = session.post(
                             url=f"{self.get_url()}/log/entry",
                             headers=self.get_headers(),
-                            json={"message": log,
+                            json={"message": _filter_invalid_chars(log),
                                   "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
                                   "level": level,
@@ -543,7 +551,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                         # Write out failures
                         if index == 0 and status == "FAILED":
-                            message = result.failures(log)
+                            message = _filter_invalid_chars(result.failures(log))
                             response = session.post(
                                 url=f"{self.get_url()}/log/entry",
                                 headers=self.get_headers(),
