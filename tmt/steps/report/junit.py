@@ -14,6 +14,7 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt.plugins import ModuleImporter
 from tmt.result import ResultOutcome
 from tmt.utils import Path, field
@@ -198,6 +199,12 @@ def make_junit_xml(
 
     # Use a FileSystemLoader for a non-custom flavor
     if flavor != CUSTOM_FLAVOR_NAME:
+        # TODO: Check if PackageLoader would work instead
+        # Note: the issue here is that jinja passes the paths through `os.fspath` which breaks the
+        # MultiplexedPath. This can be resolved by using `as_files` to create a context and copy
+        # all files to a real data folder, or jinja could learn to support generic Traversable
+        if isinstance(DEFAULT_TEMPLATE_DIR, MultiplexedPath):
+            phase.warn("Jinja template extension for report/junit/templates is not supported yet.")
         environment.loader = FileSystemLoader(
             searchpath=str(DEFAULT_TEMPLATE_DIR))
 
