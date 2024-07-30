@@ -1681,6 +1681,11 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
     \b
         tmt try fedora@container
         tmt try centos-stream-9@virtual
+
+    Or connect to the running guest by specifying FQDN or IP address:
+
+    \b
+        tmt try 192.168.12.23@connect
     """
 
     tmt.trying.Try.store_cli_invocation(context)
@@ -1698,6 +1703,10 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
             options = {"image": matched.group(1), "how": matched.group(2)}
         else:
             options = {"image": image_and_how}
+
+        # For 'connect' rename 'image' to 'guest'
+        if options.get('how') == 'connect':
+            options['guest'] = options.pop('image')
 
         tmt.steps.provision.Provision.store_cli_invocation(context=None, options=options)
 
