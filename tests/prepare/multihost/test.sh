@@ -17,6 +17,16 @@ rlJournalStart
         rlFileSubmit "$run/log.txt"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test with $PROVISION_HOW provisioning - session connection"
+        rlRun "tmt -vv run --id $run --all provision --update --how $PROVISION_HOW --connection session"
+        rlFileSubmit "$run/log.txt"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test with $PROVISION_HOW provisioning - system connection"
+        rlRun "tmt -vv run --id $run --all provision --update --how $PROVISION_HOW --connection system"
+        rlFileSubmit "$run/log.txt"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
