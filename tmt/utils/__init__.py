@@ -9,7 +9,6 @@ import dataclasses
 import datetime
 import enum
 import functools
-import importlib.resources
 import io
 import json
 import os
@@ -69,6 +68,7 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
+from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec
@@ -5907,7 +5907,7 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
     :returns: an absolute path to the requested file or directory.
     """
 
-    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+    return Path(importlib.resources.files(package)) / path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
