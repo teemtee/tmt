@@ -465,9 +465,9 @@ a colon (``:``): theme package name, and theme name.
     # and theme name are *not* the same string:
     TMT_DOCS_THEME="renku_sphinx_theme:renku" make docs
 
-By default, ``docs/_static/custom.css`` provides additional tweaks to
-the documentation theme. Use the ``TMT_DOCS_CUSTOM_HTML_STYLE`` variable
-to include additional file:
+By default, ``docs/_static/tmt-custom.css`` provides additional tweaks
+to the documentation theme. Use the ``TMT_DOCS_CUSTOM_HTML_STYLE``
+variable to include additional file:
 
 .. code-block:: shell
 
@@ -482,7 +482,7 @@ to include additional file:
 .. note::
 
     The custom CSS file specified by ``TMT_DOCS_CUSTOM_HTML_STYLE``
-    is included **before** the built-in ``custom.css``, therefore to
+    is included **before** the built-in ``tmt-custom.css``, therefore to
     override theme CSS, it is recommended to add ``!important`` flag.
 
 

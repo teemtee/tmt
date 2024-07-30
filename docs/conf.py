@@ -230,7 +230,7 @@ html_favicon = 'https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-fav
 html_static_path = ['_static']
 
 # Include custom style.
-html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'custom.css')
+html_style = os.getenv('TMT_DOCS_CUSTOM_HTML_STYLE', 'tmt-custom.css')
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
