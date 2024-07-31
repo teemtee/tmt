@@ -1719,7 +1719,7 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
 @workdir_root_options
 @option(
     '-i', '--id', metavar="ID", multiple=True,
-    help='Run id (name or directory path) to show status of.')
+    help='Run id(name or directory path) to show status of. Can be specified multiple times.')
 @option(
     '--abandoned', is_flag=True, default=False,
     help='List runs which have provision step completed but finish step not yet done.')
@@ -1856,7 +1856,7 @@ def perform_clean(
     '-l', '--last', is_flag=True, help='Clean the workdir of the last run.')
 @option(
     '-i', '--id', 'id_', metavar="ID", multiple=True,
-    help='Run id (name or directory path) to clean workdir of.')
+    help='Run id(name or directory path) to clean workdir of. Can be specified multiple times.')
 @option(
     '-k', '--keep', type=int, default=None,
     help='The number of latest workdirs to keep, clean the rest.')
@@ -1901,7 +1901,7 @@ def clean_runs(
     '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
 @option(
     '-i', '--id', 'id_', metavar="ID", default=None, multiple=True,
-    help='Run id (name or directory path) to stop the guest of.')
+    help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.')
 @option(
     '-h', '--how', metavar='METHOD',
     help='Stop guests of the specified provision method.')
