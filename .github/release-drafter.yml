@@ -1,0 +1,30 @@
+name-template: '$RESOLVED_VERSION'
+tag-template: '$RESOLVED_VERSION'
+categories:
+  - title: '🚀 Highlights'
+    labels:
+      - 'release note'
+  - title: '🔧 Other changes'
+    labels:
+      - '*'
+exclude-labels:
+  - 'ignore-for-release'
+change-template: '- $TITLE by @$AUTHOR (#$NUMBER)'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  [TODO: Update the version number in the URL below. (usually `x.y.z` -> `x-y-z`)]
+  See the [release notes](https://tmt.readthedocs.io/en/stable/releases.html#tmt-$RESOLVED_VERSION) for the list of interesting changes.
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
