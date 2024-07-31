@@ -1,39 +1,7 @@
 :tocdepth: 0
 
-.. _/plugins/{{ STEP }}:
-
-{{ STEP | replace('-', ' ') | capitalize }} Plugins
-{{ '~' * (8 + (STEP | length)) }}
-
-.. include:: {{ STEP }}-header.inc.rst
-
-{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
-
-.. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
-
-{{ PLUGIN_ID }}
-{{ '-' * (PLUGIN_ID | length) }}
-
-{# Emit the warning only for plugins that have not been reviewed yet. #}
-{% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
-{% if plugin_full_id not in REVIEWED_PLUGINS %}
-.. warning::
-
-    Please, be aware that the documentation below is a work in progress. We are
-    working on fixing it, adding missing bits and generally making it better.
-    Also, it was originally used for command line help only, therefore the
-    formatting is often suboptional.
-{% endif %}
-
-{% if PLUGIN.__doc__ %}
-{{ PLUGIN.__doc__ | dedent | trim }}
-{% endif %}
-
-Configuration
-^^^^^^^^^^^^^
-
-{% macro render_field(field_name) %}
-    {% set _, option, _, metadata = container_field(PLUGIN_DATA_CLASS, field_name) %}
+{% macro render_field(plugin_id, plugin_data_class, field_name) %}
+    {% set _, option, _, metadata = container_field(plugin_data_class, field_name) %}
 
     {% if metadata.metavar %}
 {{ option }}: ``{{ metadata.metavar }}``
@@ -63,30 +31,67 @@ Configuration
     Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor %}
             {% endif %}
         {% else %}
-            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, PLUGIN_ID, field_name, actual_default)) %}
+            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default)) %}
     Default: *could not render default value correctly*
         {% endif %}
     {% endif %}
 {% endmacro %}
 
-{% set ignored_fields = container_ignored_fields(PLUGIN_DATA_CLASS) %}
-{% set inherited_fields = container_inherited_fields(PLUGIN_DATA_CLASS) | sort %}
+.. _/plugins/{{ STEP }}:
+
+{{ STEP | replace('-', ' ') | capitalize }} Plugins
+{{ '~' * (8 + (STEP | length)) }}
+
+.. include:: {{ STEP }}-header.inc.rst
+
+{% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
+    {% if loop.first %}
+.. _/plugins/{{ STEP }}/common-keys:
+
+Common Keys
+-----------
+
+The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
+
+        {% for field_name in container_inherited_fields(PLUGIN_DATA_CLASS) | sort %}
+{{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
+        {% endfor %}
+    {% endif %}
+
+.. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
+
+{{ PLUGIN_ID }}
+{{ '-' * (PLUGIN_ID | length) }}
+
+{# Emit the warning only for plugins that have not been reviewed yet. #}
+{% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
+{% if plugin_full_id not in REVIEWED_PLUGINS %}
+.. warning::
+
+    Please, be aware that the documentation below is a work in progress. We are
+    working on fixing it, adding missing bits and generally making it better.
+    Also, it was originally used for command line help only, therefore the
+    formatting is often suboptional.
+{% endif %}
+
+{% if PLUGIN.__doc__ %}
+{{ PLUGIN.__doc__ | dedent | trim }}
+{% endif %}
+
 {% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
 
+{% if intrinsic_fields %}
+Configuration
+^^^^^^^^^^^^^
+
+See also :ref:`Common Keys{# djlint:off H025 #}</plugins/{{ STEP }}/common-keys>{# djlint:on H025 #}` accepted by the plugin.
+
 {% for field_name in intrinsic_fields %}
-{{ render_field(field_name) }}
+{{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
 {% endfor %}
-
-{% if inherited_fields %}
-Common Keys
-"""""""""""
-
-{% for field_name in inherited_fields %}
-{{ render_field(field_name) }}
-{% endfor %}
-{% endif %}
 
 {% if not loop.last %}
 ----
+{% endif %}
 {% endif %}
 {% endfor %}
