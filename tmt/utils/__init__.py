@@ -4524,6 +4524,31 @@ def git_add(*, path: Path, logger: tmt.log.Logger) -> None:
         raise GeneralError(f"Failed to add path '{path}' to git index.") from error
 
 
+def git_ignore(*, root: Path, logger: tmt.log.Logger) -> list[Path]:
+    """
+    Collect effective paths ignored by git.
+
+    :param root: path to the root of git repository.
+    :param logger: used for logging.
+    :returns: list of actual paths tah would be ignored by git based on
+        its ``.gitignore`` files. If a whole directory is to be ignored,
+        its listed as a directory path, not listing its content.
+    """
+
+    output = Command(
+        'git',
+        'ls-files',
+        # Consider standard git exclusion files
+        '--exclude-standard',
+        # List untracked files matching exclusion patterns
+        '-oi',
+        # If a whole directory is to be ignored, list only its name with a trailing slash
+        '--directory') \
+        .run(cwd=root, logger=logger)
+
+    return [Path(line.strip()) for line in output.stdout.splitlines()] if output.stdout else []
+
+
 def default_branch(
         *,
         repository: Path,

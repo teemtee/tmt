@@ -8,7 +8,6 @@ import itertools
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
@@ -1797,7 +1796,7 @@ class Plan(
         # Prepare worktree path and detect the source tree root
         assert self.workdir is not None  # narrow type
         self.worktree = self.workdir / 'tree'
-        tree_root = self.node.root
+        tree_root = Path(self.node.root) if self.node.root else None
 
         # Create an empty directory if there's no metadata tree
         if not tree_root:
@@ -1807,14 +1806,37 @@ class Plan(
 
         # Sync metadata root to the worktree
         self.debug(f"Sync the worktree to '{self.worktree}'.", level=2)
-        excludes_tempfile = tempfile.NamedTemporaryFile()
+
+        ignore: list[Path] = [
+            Path('.git')
+            ]
+
         # If we're in a git repository, honor .gitignore; xref
-        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c
-        if os.path.isdir(f"{tree_root}/.git"):
-            subprocess.check_call(["git", "ls-files", "--exclude-standard", "-oi", "--directory"], stdout=excludes_tempfile)
-        # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
-        # use e.g. `cp` but filtering out the above.
-        self.run(Command("rsync", "-ar", "--exclude", ".git", "--exclude-from", excludes_tempfile.name, f"{tree_root}/", self.worktree))
+        # https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c  # noqa: E501
+        git_root = tmt.utils.git_root(fmf_root=tree_root, logger=self._logger)
+        if git_root:
+            ignore.extend(tmt.utils.git_ignore(root=git_root, logger=self._logger))
+
+        self.debug(
+            "Ignoring the following paths during worktree sync",
+            tmt.utils.format_value(ignore),
+            level=4)
+
+        with tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile:
+            excludes_tempfile.write('\n'.join(str(path) for path in ignore))
+
+            # Make sure ignored paths are saved before telling rsync to use them.
+            # With Python 3.12, we could use `delete_on_false=False` and call `close()`.
+            excludes_tempfile.flush()
+            os.fsync(excludes_tempfile.fileno())
+
+            # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
+            # use e.g. `cp` but filtering out the above.
+            self.run(Command(
+                "rsync",
+                "-ar",
+                "--exclude-from", excludes_tempfile.name,
+                f"{tree_root}/", self.worktree))
 
     def _initialize_data_directory(self) -> None:
         """
