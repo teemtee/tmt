@@ -65,6 +65,9 @@ description: |
     model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
     are also useful resources.
 
+    .. versionchanged:: 1.35
+       ``beaker`` plugins supports ``vendor-name``
+
     .. versionchanged:: 1.33
        ``beaker`` plugin supports ``cpu.cores``
 
@@ -109,4 +112,4 @@ link:
   - implemented-by: /tmt/steps/provision/artemis.py
     note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name`` and ``cpu.hyper-threading`` only"
+    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name``, ``cpu.hyper-threading`` and ``cpu.vendor-name`` only"
