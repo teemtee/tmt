@@ -1828,7 +1828,6 @@ class Plan(
             # Make sure ignored paths are saved before telling rsync to use them.
             # With Python 3.12, we could use `delete_on_false=False` and call `close()`.
             excludes_tempfile.flush()
-            os.fsync(excludes_tempfile.fileno())
 
             # Note: rsync doesn't use reflinks right now, so in the future it'd be even better to
             # use e.g. `cp` but filtering out the above.

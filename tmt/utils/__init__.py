@@ -4530,9 +4530,9 @@ def git_ignore(*, root: Path, logger: tmt.log.Logger) -> list[Path]:
 
     :param root: path to the root of git repository.
     :param logger: used for logging.
-    :returns: list of actual paths tah would be ignored by git based on
+    :returns: list of actual paths that would be ignored by git based on
         its ``.gitignore`` files. If a whole directory is to be ignored,
-        its listed as a directory path, not listing its content.
+        it is listed as a directory path, not listing its content.
     """
 
     output = Command(
