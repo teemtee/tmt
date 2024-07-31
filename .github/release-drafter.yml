@@ -21,8 +21,10 @@ version-resolver:
     labels:
       - 'patch'
   default: patch
+replacers:
+  - search: '/releases\.html#tmt-(\d+)\.(\d+)\.(\d+)/'
+    replace: 'releases.html#tmt-$1-$2-$3'
 template: |
-  [TODO: Update the version number in the URL below. (usually `x.y.z` -> `x-y-z`)]
   See the [release notes](https://tmt.readthedocs.io/en/stable/releases.html#tmt-$RESOLVED_VERSION) for the list of interesting changes.
 
   $CHANGES
