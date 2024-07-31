@@ -4,7 +4,7 @@ import pytest
 
 import tmt
 from tmt.steps import Phase
-from tmt.utils import ProvisionError
+from tmt.utils import GeneralError
 
 
 class TestPhaseAssertFeelingSafe:
@@ -29,7 +29,7 @@ class TestPhaseAssertFeelingSafe:
             tmt.__version__ = tmt_version
 
             if expect_exception:
-                with pytest.raises(ProvisionError):
+                with pytest.raises(GeneralError):
                     self.phase.assert_feeling_safe(deprecated_version, 'Local provision plugin')
             else:
                 self.phase.assert_feeling_safe(deprecated_version, 'Local provision plugin')
