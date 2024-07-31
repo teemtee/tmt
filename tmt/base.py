@@ -3491,6 +3491,7 @@ class Run(tmt.utils.Common):
     def prepare_for_try(self, tree: Tree) -> None:
         """ Prepare the run for the try command """
         self.tree = tree
+        self._save_tree(self.tree)
         self._workdir_load(self._workdir_path)
         self.config.last_run = self.workdir
         self.info(str(self.workdir), color='magenta')
