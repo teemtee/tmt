@@ -27,6 +27,9 @@ generated report.
 Change of Polarion field to store tmt id. Now using 'tmt ID' field,
 specifically created for this purpose instead of 'Test Case ID' field.
 
+We have started to use ``warnings.deprecated`` to advertise upcoming
+API deprecations.
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
