@@ -28,8 +28,8 @@ Change of Polarion field to store tmt id. Now using 'tmt ID' field,
 specifically created for this purpose instead of 'Test Case ID' field.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`cpu.vendor-name</spec/hardware/cpu>` hardware
-requirement.
+support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
+:ref:`beaker.pool</spec/hardware/beaker>` hardware requirements.
 
 
 tmt-1.34
