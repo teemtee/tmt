@@ -10,6 +10,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Path, PrepareError, field, normalize_string_list, retry_session
 
@@ -122,9 +123,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Prepare the guests """
-        super().go(guest=guest, environment=environment, logger=logger)
+        results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
         for playbook in self.data.playbook:
@@ -165,3 +166,5 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 logger.info('playbook-path', playbook_path, 'green')
 
             guest.ansible(playbook_path, extra_args=self.data.extra_args)
+
+        return results

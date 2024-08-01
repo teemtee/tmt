@@ -8,6 +8,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.package_managers import Package
+from tmt.result import PhaseResult
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import _RawPrepareInstallStepData
 from tmt.steps.provision import Guest
@@ -173,10 +174,10 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Prepare the guests for building rpm sources """
 
-        super().go(guest=guest, environment=environment, logger=logger)
+        results = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()
 
@@ -318,3 +319,5 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 # Inject additional install plugins - recommend
                 if collected_recommends and self.future_recommends:
                     self.future_recommends.data.package = uniq(collected_recommends)
+
+        return results

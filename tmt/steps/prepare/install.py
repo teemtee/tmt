@@ -23,6 +23,7 @@ from tmt.package_managers import (
     PackagePath,
     PackageUrl,
     )
+from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript, field
 
@@ -648,13 +649,13 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             *,
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger) -> list[PhaseResult]:
         """ Perform preparation for the guests """
-        super().go(guest=guest, environment=environment, logger=logger)
+        results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
         if self.is_dry_run:
-            return
+            return results
 
         # Pick the right implementation
         # TODO: it'd be nice to use a "plugin registry" and make the
@@ -730,3 +731,5 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         # ... and install packages.
         installer.install()
+
+        return results
