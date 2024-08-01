@@ -255,6 +255,7 @@ dry_options = create_options_decorator(tmt.options.DRY_OPTIONS)
 force_dry_options = create_options_decorator(tmt.options.FORCE_DRY_OPTIONS)
 again_option = create_options_decorator(tmt.options.AGAIN_OPTION)
 fix_options = create_options_decorator(tmt.options.FIX_OPTIONS)
+feeling_safe_option = create_options_decorator(tmt.options.FEELING_SAFE_OPTION)
 workdir_root_options = create_options_decorator(tmt.options.WORKDIR_ROOT_OPTIONS)
 filtering_options = create_options_decorator(tmt.options.FILTERING_OPTIONS)
 filtering_options_long = create_options_decorator(tmt.options.FILTERING_OPTIONS_LONG)
@@ -281,17 +282,8 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
          dimensions or the @FILE notation to load data from provided yaml file. Can be specified
          multiple times.
          """)
-@option(
-    '--feeling-safe',
-    is_flag=True,
-    help="""
-         WARNING: with this option, tmt would be allowed to make
-         potentially dangerous actions. For example, some metadata
-         keys may cause scripts being executed on the runner.
-         Do not use this option unless you trust metadata consumed
-         by tmt, or unless you know what you are doing.
-         """)
 @verbosity_options
+@feeling_safe_option
 @option(
     '--show-time',
     is_flag=True,
