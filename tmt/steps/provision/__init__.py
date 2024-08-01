@@ -952,14 +952,17 @@ class Guest(tmt.utils.Common):
                 tasks = fmf.utils.listed(matched.group(1), 'task')
                 self.verbose(key, tasks, 'green')
 
-    def _ansible_playbook_path(self, playbook: Path) -> Path:
+    def _ansible_playbook_path(self, playbook: Path, playbook_root: Path) -> Path:
         """ Prepare full ansible playbook path """
-        self.debug(f"Applying playbook '{playbook}' on guest '{self.primary_address}'.")
+        # self.debug(f"Applying playbook '{playbook}' on guest '{self.primary_address}'.")
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
-        assert parent.plan.fmf_root is not None  # narrow type
+        # parent = cast(Provision, self.parent)
+        # assert parent.plan.fmf_root is not None  # narrow type
         # Playbook paths should be relative to the metadata tree root
-        playbook = parent.plan.fmf_root / playbook.unrooted()
+        playbook = playbook_root / playbook.unrooted()
+        if not playbook.exists() or not playbook.is_relative_to(playbook_root):
+            raise tmt.utils.GeneralError(f"{playbook} is not relative to the metadata tree root.")
+
         self.debug(f"Playbook full path: '{playbook}'", level=2)
         return playbook
 
@@ -1041,6 +1044,7 @@ class Guest(tmt.utils.Common):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -1067,6 +1071,7 @@ class Guest(tmt.utils.Common):
     def ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -1078,6 +1083,7 @@ class Guest(tmt.utils.Common):
         the playbook while this method makes sure our logging is consistent.
 
         :param playbook: path to the playbook to run.
+        :param playbook_root: TODO fill doc
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -1090,6 +1096,7 @@ class Guest(tmt.utils.Common):
 
         output = self._run_ansible(
             playbook,
+            playbook_root=playbook_root,
             extra_args=extra_args,
             friendly_command=friendly_command,
             log=log if log else self._command_verbose_logger,
@@ -1521,6 +1528,7 @@ class GuestSsh(Guest):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -1541,7 +1549,8 @@ class GuestSsh(Guest):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-        playbook = self._ansible_playbook_path(playbook)
+        if playbook_root:
+            playbook = self._ansible_playbook_path(playbook, playbook_root)
 
         ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
 

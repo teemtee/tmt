@@ -234,6 +234,7 @@ class GuestContainer(tmt.Guest):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -254,7 +255,8 @@ class GuestContainer(tmt.Guest):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-        playbook = self._ansible_playbook_path(playbook)
+        if playbook_root:
+            playbook = self._ansible_playbook_path(playbook, playbook_root)
 
         # As non-root we must run with podman unshare
         podman_command = Command()
