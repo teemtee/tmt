@@ -209,6 +209,19 @@ def _transform_unsupported(
     return MrackHWOrGroup()
 
 
+def _transform_beaker_pool(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        constraint.value)
+
+    return MrackHWBinOp(
+        'pool',
+        beaker_operator,
+        actual_value)
+
+
 def _transform_cpu_flag(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -536,6 +549,7 @@ ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
+    'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
     'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]

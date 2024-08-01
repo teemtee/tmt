@@ -22,3 +22,6 @@ example:
     # Select any system, as long as it is not from the given Beaker pool
     beaker:
         pool: "!= very-rare-machines"
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py
