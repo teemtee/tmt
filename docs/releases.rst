@@ -31,6 +31,8 @@ The :ref:`/plugins/provision/beaker` provision plugin gains
 support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
 :ref:`beaker.pool</spec/hardware/beaker>` hardware requirements.
 
+The linting of tests, plans and stories has been extended by detecting
+duplicate ids.
 
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
