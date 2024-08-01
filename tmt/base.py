@@ -3734,7 +3734,6 @@ class Status(tmt.utils.Common):
     def show(self) -> None:
         """ Display the current status """
         # Prepare absolute workdir path if --id was used
-        # FIXME: cast() - typeless "dispatcher" method
         root_path = Path(self.opt('workdir-root'))
         self.print_header()
         assert self._cli_context_object is not None  # narrow type
@@ -3839,7 +3838,6 @@ class Clean(tmt.utils.Common):
         """ Clean guests of runs """
         self.info('guests', color='blue')
         root_path = Path(self.opt('workdir-root'))
-        # FIXME: cast() - typeless "dispatcher" method
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3874,7 +3872,6 @@ class Clean(tmt.utils.Common):
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
         root_path = Path(self.opt('workdir-root'))
-        # FIXME: cast() - typeless "dispatcher" method
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
