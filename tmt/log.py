@@ -750,7 +750,7 @@ class Logger:
             ) -> None:
         file = file or sys.stdout
 
-        print(self.print_format(text, color=color, shift=shift))
+        print(self.print_format(text, color=color, shift=shift), file=file)
 
     def info(
             self,
