@@ -74,7 +74,7 @@ Provides:       tmt-provision-virtual == %{version}-%{release}
 Obsoletes:      tmt-provision-virtual < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
-Requires:       python3-testcloud >= 0.9.10
+Requires:       python3-testcloud >= 0.9.13
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
 Requires:       (ansible or ansible-core)
