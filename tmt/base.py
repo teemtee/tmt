@@ -3734,13 +3734,11 @@ class Status(tmt.utils.Common):
     def show(self) -> None:
         """ Display the current status """
         # Prepare absolute workdir path if --id was used
-        # FIXME: cast() - typeless "dispatcher" method
-        id_ = cast(str, self.opt('id'))
         root_path = Path(self.opt('workdir-root'))
         self.print_header()
         assert self._cli_context_object is not None  # narrow type
         assert self._cli_context_object.tree is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(root_path, id_):
+        for abs_path in tmt.utils.generate_runs(root_path, self.opt('id')):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
@@ -3840,8 +3838,6 @@ class Clean(tmt.utils.Common):
         """ Clean guests of runs """
         self.info('guests', color='blue')
         root_path = Path(self.opt('workdir-root'))
-        # FIXME: cast() - typeless "dispatcher" method
-        id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3849,7 +3845,7 @@ class Clean(tmt.utils.Common):
                 Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(root_path, id_):
+        for abs_path in tmt.utils.generate_runs(root_path, self.opt('id_')):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
@@ -3876,8 +3872,6 @@ class Clean(tmt.utils.Common):
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
         root_path = Path(self.opt('workdir-root'))
-        # FIXME: cast() - typeless "dispatcher" method
-        id_ = cast(str, self.opt('id_'))
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3885,7 +3879,7 @@ class Clean(tmt.utils.Common):
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
-        all_workdirs = list(tmt.utils.generate_runs(root_path, id_))
+        all_workdirs = list(tmt.utils.generate_runs(root_path, self.opt('id_')))
         keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
