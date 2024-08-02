@@ -31,6 +31,9 @@ The :ref:`/plugins/provision/beaker` provision plugin gains
 support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
 :ref:`beaker.pool</spec/hardware/beaker>` hardware requirements.
 
+``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option
+backed by :ref:`prepare/feature</plugins/prepare/feature>` plugin.
+
 
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
