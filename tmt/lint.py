@@ -19,9 +19,9 @@ following examples:
    def lint_path_exists(self) -> LinterReturn:
        # A linter must have a docstring which is then used to generate documentation,
        # e.g. when ``lint --list-checks`` is called. The docstring must begin with
-       # a linter *id*. The id should match ``[CTPS]\\d\\d\\d`` regular expression:
-       # ``C``ommon, ``T``est, ``P``lan, ``S``tory, plus a three-digit serial number
-       # of the check among its peers.
+       # a linter *id*. The id should match ``[CTPSG]\\d\\d\\d`` regular expression:
+       # ``C``ommon, ``T``est, ``P``lan, ``S``tory, ``G``roup, plus a three-digit
+       # serial number of the check among its peers.
        ''' T004: test directory path must exist '''
 
        # Linter implements a generator (see :py:member:`LinterReturn`) yielding
