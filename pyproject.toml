@@ -56,7 +56,7 @@ provision-beaker = [
     "mrack>=1.15.1",
     ]
 provision-virtual = [
-    "testcloud>=0.9.10",
+    "testcloud>=0.9.13",
     ]
 provision-container = []
 report-junit = [
