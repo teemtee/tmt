@@ -9,3 +9,4 @@ tag+:
   - provision-container
   - provision-local
   - provision-virtual
+duration: 30m

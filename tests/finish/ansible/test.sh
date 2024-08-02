@@ -6,33 +6,52 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
 
-        build_container_image "ubi/8/upstream\:latest"
-        build_container_image "centos/7/upstream\:latest"
+        if [ "$PROVISION_HOW" = "container" ]; then
+            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+
+            build_container_images
+
+        elif [ "$PROVISION_HOW" = "virtual" ]; then
+            rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
+
+        else
+            rlRun "IMAGES="
+        fi
 
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test ($PROVISION_HOW)"
-        # Prepare common options, run given method
-        tmt="tmt run -i $run --scratch"
-        rlRun "$tmt -av provision -h $PROVISION_HOW"
+    while IFS= read -r image; do
+        phase_prefix="$(test_phase_prefix $image)"
 
-        # Check that created file is synced back
-        rlRun "ls -l $run/plan/data"
-        rlAssertExists "$run/plan/data/my_file.txt"
+        rlPhaseStartTest "$phase_prefix Test Ansible playbook"
+            if is_fedora_coreos "$image"; then
+                    rlLogInfo "Skipping because of https://github.com/teemtee/tmt/issues/2884: tmt cannot run tests on Fedora CoreOS containers"
+                rlPhaseEnd
 
-        # For container provision try centos images as well
-        if [[ $PROVISION_HOW == container ]]; then
-            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/centos/7/upstream:latest"
-            rlRun "$tmt -av finish provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/ubi/8/upstream:latest"
-        fi
+                continue
+            fi
 
-        # After the local provision remove the test file
-        if [[ $PROVISION_HOW == local ]]; then
-            rlRun "sudo rm -f /tmp/finished"
-        fi
-    rlPhaseEnd
+            [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
+
+            # Run given method
+            if [ "$PROVISION_HOW" = "local" ]; then
+                rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW"
+            else
+                rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW -i $image"
+            fi
+
+            # Check that created file is synced back
+            rlRun "ls -l $run/plan/data"
+            rlAssertExists "$run/plan/data/my_file.txt"
+
+            # After the local provision remove the test file
+            if [[ $PROVISION_HOW == local ]]; then
+                rlRun "sudo rm -f /tmp/finished"
+            fi
+        rlPhaseEnd
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
         rlRun "rm -r $run" 0 "Removing run directory"

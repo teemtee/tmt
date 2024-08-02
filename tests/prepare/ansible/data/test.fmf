@@ -1,2 +1,0 @@
-summary: Verify that the test file was prepared
-test: grep pass /tmp/prepared

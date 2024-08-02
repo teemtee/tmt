@@ -5,6 +5,7 @@ from typing import Optional, Union
 import requests
 
 import tmt
+import tmt.base
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -168,3 +169,17 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             guest.ansible(playbook_path, extra_args=self.data.extra_args)
 
         return results
+
+    def essential_requires(self) -> list[tmt.base.Dependency]:
+        """
+        Collect all essential requirements of the plugin.
+
+        Essential requirements of a plugin are necessary for the plugin to
+        perform its basic functionality.
+
+        :returns: a list of requirements.
+        """
+
+        return [
+            tmt.base.DependencySimple('/usr/bin/python3')
+            ]

@@ -4,38 +4,58 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "pushd data"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
 
-        build_container_image "centos/7/upstream\:latest"
-        build_container_image "ubi/8/upstream\:latest"
+        if [ "$PROVISION_HOW" = "container" ]; then
+            rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+
+            build_container_images
+
+        elif [ "$PROVISION_HOW" = "virtual" ]; then
+            rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
+
+        else
+            rlRun "IMAGES="
+        fi
+
+        rlRun "pushd data"
+        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
     rlPhaseEnd
 
-    for plan in "local" "remote"; do
-        rlPhaseStartTest "Test $plan playbook ($PROVISION_HOW)"
-            rlRun "tmt run -arv provision -h $PROVISION_HOW plan -n /$plan"
+    while IFS= read -r image; do
+        for plan in "local" "remote"; do
+            phase_prefix="$(test_phase_prefix $image) [/$plan]"
 
-            # For container provision try centos images as well
-            if [[ $PROVISION_HOW == container ]]; then
-                rlRun "tmt run -arv provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/centos/7/upstream:latest plan -n /$plan"
-                rlRun "tmt run -arv provision -h $PROVISION_HOW -i $TEST_IMAGE_PREFIX/ubi/8/upstream:latest plan -n /$plan"
-            fi
+            rlPhaseStartTest "$phase_prefix Test Ansible playbook"
+                if is_fedora_coreos "$image"; then
+                        rlLogInfo "Skipping because of https://github.com/teemtee/tmt/issues/2884: tmt cannot run tests on Fedora CoreOS containers"
+                    rlPhaseEnd
 
-            # After the local provision remove the test file
-            if [[ $PROVISION_HOW == local ]]; then
-                rlRun "sudo rm -f /tmp/prepared"
-            fi
-        rlPhaseEnd
+                    continue
+                fi
 
-        rlPhaseStartTest "Ansible ($PROVISION_HOW) - check extra-args attribute"
-            rlRun "tmt run -rddd discover provision -h $PROVISION_HOW prepare finish plan -n /$plan 2>&1 >/dev/null \
-                | grep \"ansible-playbook\"\
-                | tee output"
-            rlAssertGrep "-vvv" output
-        rlPhaseEnd
-    done
+                [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
+
+                # Run given method
+                if [ "$PROVISION_HOW" = "local" ]; then
+                    rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW           plan -n /$plan"
+                else
+                    rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW -i $image plan -n /$plan"
+                fi
+
+                # Verify extra-args were delivered
+                rlAssertGrep "ansible-playbook -vvv" "$run/log.txt"
+
+                # After the local provision remove the test file
+                if [[ $PROVISION_HOW == local ]]; then
+                    rlRun "sudo rm -f /tmp/prepared"
+                fi
+            rlPhaseEnd
+        done
+    done <<< "$IMAGES"
 
     rlPhaseStartCleanup
+        rlRun "rm -rf $run" 0 "Removing run directory"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
