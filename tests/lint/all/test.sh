@@ -70,6 +70,22 @@ rlJournalStart
         rlRun -s "tmt lint empty" 0 "Empty file should be ok"
     rlPhaseEnd
 
+    rlPhaseStartTest "Lint of duplicate ids"
+        # From data
+        rlRun "popd"
+        rlRun "pushd data_duplicate_ids"
+
+        lint_cmd="tmt lint"
+
+        rlRun -s "$lint_cmd /no_duplicates"
+        rlAssertGrep "pass G001 no duplicate ids detected" "$rlRun_LOG"
+
+        rlRun -s "$lint_cmd /duplicates" 1
+        rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
+        rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
+        rlAssertGrep "fail G001 duplicate id \"5cf92c54-e073-475c-970f-b8e090ec4da2\" in \"/duplicates/tests/duplicateid\"" "$rlRun_LOG"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
 rlJournalEnd

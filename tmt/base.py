@@ -1,5 +1,6 @@
 """ Base Metadata Classes """
 
+import collections
 import copy
 import dataclasses
 import enum
@@ -33,6 +34,7 @@ from click import confirm, echo, style
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
+import tmt.base
 import tmt.checks
 import tmt.convert
 import tmt.export
@@ -1539,6 +1541,39 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
+@dataclasses.dataclass(repr=False)
+class LintableCollection(tmt.lint.Lintable['LintableCollection']):
+    """ Linting rules applied to a collection of Tests, Plans or Stories """
+
+    def __init__(self, objs: list["tmt.base.Core"], *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.objs = objs
+
+    def lint_no_duplicate_ids(self) -> LinterReturn:
+        """ G001: no duplicate ids """
+        ids: collections.defaultdict[str, list[str]] = collections.defaultdict(list)
+        for obj in self.objs:
+            if obj.id is None:
+                continue
+            ids[obj.id].append(obj.name)
+
+        duplicates = {
+            obj_id: obj_names for obj_id, obj_names in ids.items() if len(obj_names) > 1
+            }
+
+        for obj_id, obj_names in duplicates.items():
+            for name in obj_names:
+                yield LinterOutcome.FAIL, f'duplicate id "{obj_id}" in "{name}"'
+
+        if duplicates:
+            return
+
+        yield LinterOutcome.PASS, 'no duplicate ids detected'
+
+    def print_header(self) -> None:
+        echo(style("Lint checks on all", fg='red'))
+
+
 def expand_node_data(data: T, fmf_context: FmfContext) -> T:
     """ Recursively expand variables in node data """
     if isinstance(data, str):
@@ -2762,6 +2797,7 @@ class Story(
 Test.discover_linters()
 Plan.discover_linters()
 Story.discover_linters()
+LintableCollection.discover_linters()
 
 
 class Tree(tmt.utils.Common):
