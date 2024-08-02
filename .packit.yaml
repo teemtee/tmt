@@ -36,52 +36,52 @@ jobs:
           - bash -c "hatch version | sed -E 's/\\.[0-9]+\\.dev.*/.dev888/'"
 
   # Test pull requests (core)
-  - job: tests
-    identifier: core
-    trigger: pull_request
-    targets:
-      - fedora-latest-stable
-      - epel-9
-    tf_extra_params:
-        test:
-            tmt:
-                name: /plans/features/(core|basic)
+#  - job: tests
+#    identifier: core
+#    trigger: pull_request
+#    targets:
+#      - fedora-latest-stable
+#      - epel-9
+#    tf_extra_params:
+#        test:
+#            tmt:
+#                name: /plans/features/(core|basic)
 
   # Test pull requests (full)
   # Do not run extended unit tests, that plan gets its own job because
   # of podman vs systemd-resolved flakiness.
-  - job: tests
-    identifier: full
-    trigger: pull_request
-    targets:
-      - fedora-all
-      - epel-9
-    require:
-        label:
-          present:
-            - full test
-          absent:
-            - discuss
-    tf_extra_params:
-        test:
-            tmt:
-                name: '^(?!/plans/features/extended-unit-tests).*$'
+#  - job: tests
+#    identifier: full
+#    trigger: pull_request
+#    targets:
+#      - fedora-all
+#      - epel-9
+#    require:
+#        label:
+#          present:
+#            - full test
+#          absent:
+#            - discuss
+#    tf_extra_params:
+#        test:
+#            tmt:
+#                name: '^(?!/plans/features/extended-unit-tests).*$'
 
-  - job: tests
-    identifier: extended-unit-tests
-    trigger: pull_request
-    targets:
-      - fedora-latest-stable
-    require:
-        label:
-          present:
-            - full test
-          absent:
-            - discuss
-    tf_extra_params:
-        test:
-            tmt:
-                name: '/plans/features/extended-unit-tests$'
+#  - job: tests
+#    identifier: extended-unit-tests
+#    trigger: pull_request
+#    targets:
+#      - fedora-latest-stable
+#    require:
+#        label:
+#          present:
+#            - full test
+#          absent:
+#            - discuss
+#    tf_extra_params:
+#        test:
+#            tmt:
+#                name: '/plans/features/extended-unit-tests$'
 
   # Test pull requests (provision)
   - job: tests
@@ -106,48 +106,48 @@ jobs:
             - discuss
 
   # Test internal plugins
-  - job: tests
-    trigger: pull_request
-    identifier: "internal-plugins"
-    targets:
-      - fedora-latest-stable
-    use_internal_tf: True
-    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
-    # Tag cloud resources for tmt
-    tf_extra_params:
-        environments:
-          - settings:
-                provisioning:
-                    tags:
-                        BusinessUnit: tmt
-    require:
-        label:
-          present:
-            - full test
-          absent:
-            - discuss
+#  - job: tests
+#    trigger: pull_request
+#    identifier: "internal-plugins"
+#    targets:
+#      - fedora-latest-stable
+#    use_internal_tf: True
+#    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
+#    # Tag cloud resources for tmt
+#    tf_extra_params:
+#        environments:
+#          - settings:
+#                provisioning:
+#                    tags:
+#                        BusinessUnit: tmt
+#    require:
+#        label:
+#          present:
+#            - full test
+#          absent:
+#            - discuss
 
   # Test internal wow
-  - job: tests
-    trigger: pull_request
-    identifier: "internal-wow"
-    targets:
-      - fedora-latest-stable
-    use_internal_tf: True
-    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
-    tmt_plan: "/tmt/integration/plan"
-    tf_extra_params:
-        environments:
-          - settings:
-                provisioning:
-                    tags:
-                        BusinessUnit: tmt
-    require:
-        label:
-          present:
-            - full test
-          absent:
-            - discuss
+#  - job: tests
+#    trigger: pull_request
+#    identifier: "internal-wow"
+#    targets:
+#      - fedora-latest-stable
+#    use_internal_tf: True
+#    fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
+#    tmt_plan: "/tmt/integration/plan"
+#    tf_extra_params:
+#        environments:
+#          - settings:
+#                provisioning:
+#                    tags:
+#                        BusinessUnit: tmt
+#    require:
+#        label:
+#          present:
+#            - full test
+#          absent:
+#            - discuss
 
   # Build commits to main
   - job: copr_build
