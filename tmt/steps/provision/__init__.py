@@ -1392,7 +1392,7 @@ class GuestSsh(Guest):
         # Use '/run/user/uid' if it exists, 'temp dir' otherwise.
         run_dir = Path(f"/run/user/{os.getuid()}")
         socket_dir = run_dir if run_dir.is_dir() else Path(tempfile.mkdtemp())
-        return socket_dir / "tmt"
+        return socket_dir / f'tmt-{self.pathless_safe_name}'
 
     @property
     def _ssh_options(self) -> Command:
