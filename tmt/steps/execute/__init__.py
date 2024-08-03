@@ -232,6 +232,11 @@ class TestInvocation:
         """ A path to the reboot request file """
         return self.test_data_path / TMT_REBOOT_SCRIPT.created_file
 
+    @functools.cached_property
+    def abort_request_path(self) -> Path:
+        """ A path to the abort request file """
+        return self.test_data_path / TMT_ABORT_SCRIPT.created_file
+
     @property
     def soft_reboot_requested(self) -> bool:
         """ If set, test requested a reboot """
@@ -251,6 +256,12 @@ class TestInvocation:
         """ Whether a test restart has been requested """
 
         return self.return_code in self.test.restart_on_exit_code
+
+    @property
+    def abort_requested(self) -> bool:
+        """ Whether a testing abort was requested """
+
+        return self.abort_request_path.exists()
 
     @property
     def is_guest_healthy(self) -> bool:
@@ -700,14 +711,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             return self.load_tmt_report_results(invocation)
 
         return invocation.test.test_framework.extract_results(invocation, logger)
-
-    def check_abort_file(self, invocation: TestInvocation) -> bool:
-        """
-        Check for an abort file created by tmt-abort
-
-        Returns whether an abort file is present (i.e. abort occurred).
-        """
-        return (invocation.test_data_path / TMT_ABORT_SCRIPT.created_file).exists()
 
     @staticmethod
     def format_timestamp(timestamp: datetime.datetime) -> str:
