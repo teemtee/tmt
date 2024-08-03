@@ -232,7 +232,7 @@ class TestInvocation:
         """ A path to the reboot request file """
         return self.test_data_path / TMT_REBOOT_SCRIPT.created_file
 
-    @tmt.utils.cached_property
+    @functools.cached_property
     def abort_request_path(self) -> Path:
         """ A path to the abort request file """
         return self.test_data_path / TMT_ABORT_SCRIPT.created_file
