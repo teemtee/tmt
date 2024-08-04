@@ -149,7 +149,7 @@ repos:
       # Duplicate tmt-lint from .pre-commit-hooks.yaml
       - id: tmt-lint
         name: tmt lint
-        entry: python tmt/_pre_commit/__main__.py --pre-check lint --failed-only --source
+        entry: PYTHONPATH=. python -m tmt._pre_commit --pre-check lint --failed-only --source
         files: '(?:.*\.fmf|.*/\.fmf/version)$'
         verbose: false
         pass_filenames: true
