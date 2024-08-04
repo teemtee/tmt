@@ -149,13 +149,14 @@ repos:
       # Duplicate tmt-lint from .pre-commit-hooks.yaml
       - id: tmt-lint
         name: tmt lint
-        entry: PYTHONPATH=. python -m tmt._pre_commit --pre-check lint --failed-only --source
+        entry: python -m tmt._pre_commit --pre-check lint --failed-only --source
         files: '(?:.*\.fmf|.*/\.fmf/version)$'
         verbose: false
         pass_filenames: true
         language: python
         language_version: python3
         additional_dependencies:
+          - "."
           # Need to duplicate dependencies here because of reasons :/
           # https://github.com/pre-commit/pre-commit/issues/3243
           - "click>=8.0.3,!=8.1.4"
