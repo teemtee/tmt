@@ -37,9 +37,6 @@ duplicate ids.
 Test directories pruning now works correctly for nested fmf trees
 and there is also a test for it.
 
-tmt-1.34
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The ``tmt-report-result`` command has been updated to generate a
 ``results.yaml`` file with content which differ from the
 previously generated ``restraint-result`` file.
