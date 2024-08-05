@@ -1,0 +1,38 @@
+summary: Machines via Beaker
+
+description: |
+    Verify functionality of the Beaker provision plugin. Run
+    tests which exercise various features of the Beaker plugin
+    even if not directly related to the provision implementation.
+
+    Each test should set the `provision-beaker` tag to
+    get picked by the plan, consume the `PROVISION_HOW`
+    variable and use `provision --how beaker` on their own.
+
+discover:
+    how: fmf
+    filter: 'tag:provision-beaker'
+
+environment:
+    PROVISION_HOW: beaker
+
+adjust+:
+  - enabled: true
+    when: how == provision
+
+  - provision:
+        hardware:
+            memory: ">= 4 GB"
+    when: trigger == commit
+
+  - prepare+:
+      - name: Disable IPv6
+        how: shell
+        script:
+          - sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          - sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
+    when: trigger == commit
+
+# Once more tests start supporting Beaker, we may need to split plan to per-step subplans.
+# See `/plans/provision/virtual` for inspiration/
