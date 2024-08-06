@@ -8,7 +8,7 @@ import requests
 
 import tmt.log
 import tmt.steps.report
-from tmt.result import ResultOutcome
+from tmt.result import Result, ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
 
@@ -495,12 +495,13 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             for test in self.step.plan.discover.tests():
 
                 test_time = self.time()
-                results = [None]
 
+                results: list[Optional[Result]] = [None]
                 if executed:
                     results = [result for result in self.step.plan.execute.results()
                                if test.serial_number == result.serial_number]
 
+                # process even tests not having test results
                 for result in results:
 
                     # TODO: for happz, connect Test to Result if possible
