@@ -25,6 +25,7 @@ from typing import (
 
 import click
 import fmf.utils
+import packaging.version
 from click import echo
 from click.core import ParameterSource
 
@@ -216,7 +217,8 @@ class Phase(tmt.utils.Common):
         if self.is_feeling_safe:
             return
 
-        if tmt.__version__ < deprecated_in_version:
+        if packaging.version.Version(tmt.__version__) \
+                < packaging.version.Version(deprecated_in_version):
             self.warn(f"{subject} will require '--feeling-safe' option "
                       f"from version {deprecated_in_version}.")
 
