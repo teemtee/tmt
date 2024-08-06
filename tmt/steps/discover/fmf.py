@@ -574,7 +574,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if prune:
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
-            for path in tmt.utils.filter_paths(tree_path, ['.fmf']):
+            for path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
                 shutil.copytree(
                     path,
                     clonedir / path.relative_to(tree_path),

@@ -34,6 +34,9 @@ support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
 The linting of tests, plans and stories has been extended by detecting
 duplicate ids.
 
+Test directories pruning now works correctly for nested fmf trees
+and there is also a test for it.
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
