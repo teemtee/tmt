@@ -52,6 +52,19 @@ if TYPE_CHECKING:
 #:    honoring relevant options, this logger should not be used anymore.
 _BOOTSTRAP_LOGGER = tmt.log.Logger.get_bootstrap_logger()
 
+#: A logger to use for exception logging.
+#:
+#: .. warning::
+#:
+#:    This logger should be used with utmost care for logging exceptions
+#:    only, no other traffic should be allowed. On top of that, the
+#:    exception logging is handled by a dedicated function,
+#:    :py:func:`tmt.utils.show_exception` - if you find yourself in need
+#:    of logging an exception somewhere in the code, and you think about
+#:    using this logger or calling ``show_exception()`` explicitly,
+#:    it is highly likely you are not on the right track.
+EXCEPTION_LOGGER: tmt.log.Logger = _BOOTSTRAP_LOGGER
+
 
 # Explore available plugins (need to detect all supported methods first)
 tmt.plugins.explore(_BOOTSTRAP_LOGGER)
@@ -332,6 +345,16 @@ def main(
 
     # Propagate color setting to Click as well.
     click_contex.color = apply_colors_output
+
+    # ignore[reportConstantRedefinition]: it looks like a constant, but
+    # this redefinition is expected and on purpose. `EXCEPTION_LOGGER`
+    # starts with the bootstrap logger, but now we constructed a better
+    # one, and we need to switch.
+    #
+    # ignore[unused-ignore]: mypy does not report this issue, and the
+    # ignore fools mypy into reporting the waiver as unused.
+    global EXCEPTION_LOGGER
+    EXCEPTION_LOGGER = logger  # type: ignore[reportConstantRedefinition,unused-ignore]
 
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)

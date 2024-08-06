@@ -8,4 +8,5 @@ import pty
 import sys
 
 os.environ["TERM"] = "vt100"
-pty.spawn(("/bin/bash", "-c", " ".join(sys.argv[1:])))
+exit_status = pty.spawn(("/bin/bash", "-c", " ".join(sys.argv[1:])))
+sys.exit(os.waitstatus_to_exitcode(exit_status))

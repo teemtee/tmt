@@ -2526,8 +2526,10 @@ def render_exception(exception: BaseException) -> Iterator[str]:
 def show_exception(exception: BaseException) -> None:
     """ Display the exception and its causes """
 
-    print('', file=sys.stderr)
-    print('\n'.join(render_exception(exception)), file=sys.stderr)
+    from tmt.cli import EXCEPTION_LOGGER
+
+    EXCEPTION_LOGGER.print('', file=sys.stderr)
+    EXCEPTION_LOGGER.print('\n'.join(render_exception(exception)), file=sys.stderr)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
