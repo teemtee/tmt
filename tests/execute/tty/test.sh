@@ -43,7 +43,7 @@ rlJournalStart
     # NOTE: Our local provisioner cannot execute commands with a pty allocated
     if [ "$PROVISION_HOW" != "local" ]; then
             rlPhaseStartTest "With $PROVISION_HOW provision method (tty:true)"
-                rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt -c tty=true run -avvvvddd provision -h $PROVISION_HOW"
+                rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt -c tty=true run -avvvvddd provision -h $PROVISION_HOW" 1
 
                 rlAssertGrep "out: prepare: stdin: False" $rlRun_LOG
                 rlAssertGrep "out: prepare: stdout: False" $rlRun_LOG
@@ -72,7 +72,7 @@ rlJournalStart
     fi
 
     rlPhaseStartTest "With $PROVISION_HOW provision method, interactive tests"
-        rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt run -avvvvddd provision -h $PROVISION_HOW execute -h tmt --interactive"
+        rlRun -s "NO_COLOR=1 ../ptty-wrapper tmt run -avvvvddd provision -h $PROVISION_HOW execute -h tmt --interactive" 1
 
         rlAssertGrep "out: prepare: stdin: False" $rlRun_LOG
         rlAssertGrep "out: prepare: stdout: False" $rlRun_LOG
