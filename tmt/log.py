@@ -108,21 +108,6 @@ def create_decolorizer(apply_colors: bool) -> Callable[[str], str]:
     return tmt.utils.remove_color
 
 
-def _debug_level_from_global_envvar() -> int:
-    import tmt.utils
-
-    raw_value = os.getenv('TMT_DEBUG', None)
-
-    if raw_value is None:
-        return 0
-
-    try:
-        return int(raw_value)
-
-    except ValueError:
-        raise tmt.utils.GeneralError(f"Invalid debug level '{raw_value}', use an integer.")
-
-
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
     """
     Decide whether the output and logging should be colorized.
@@ -626,19 +611,13 @@ class Logger:
         else:
             self.verbosity_level = verbosity_level
 
-        debug_level_from_global_envvar = _debug_level_from_global_envvar()
+        debug_level_from_option = cast(Optional[int], actual_kwargs.get('debug', None))
 
-        if debug_level_from_global_envvar not in (None, 0):
-            self.debug_level = debug_level_from_global_envvar
+        if debug_level_from_option is None or debug_level_from_option == 0:
+            pass
 
         else:
-            debug_level_from_option = cast(Optional[int], actual_kwargs.get('debug', None))
-
-            if debug_level_from_option is None or debug_level_from_option == 0:
-                pass
-
-            else:
-                self.debug_level = debug_level_from_option
+            self.debug_level = debug_level_from_option
 
         quietness_level = actual_kwargs.get('quiet', False)
 
@@ -868,7 +847,14 @@ class Logger:
             # Stay away of our future main logger
             actual_logger = Logger._normalize_logger(logging.getLogger('_tmt_bootstrap'))
 
-            cls._bootstrap_logger = Logger.create(actual_logger=actual_logger)
+            # The environment variables are usually handled at the click cli stage
+            # Here we enable safe parsing of those variables.
+            try:
+                debug = int(os.getenv('TMT_DEBUG', 0))
+            except ValueError:
+                debug = None
+
+            cls._bootstrap_logger = Logger.create(actual_logger=actual_logger, debug=debug)
             cls._bootstrap_logger.add_console_handler()
 
         return cls._bootstrap_logger
