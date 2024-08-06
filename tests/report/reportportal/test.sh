@@ -71,7 +71,7 @@ function identify_tests(){
 }
 
 
-## 
+##
 # Proceed GET request via ReportPortal REST API and verify the response
 #
 # ARGUMENT:
