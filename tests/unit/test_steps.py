@@ -14,11 +14,20 @@ class TestPhaseAssertFeelingSafe:
         self.phase = Phase(logger=self.mock_logger)
 
     @pytest.mark.parametrize(
-        ("tmt_version", "deprecated_version", "expect_warn", "expect_exception"), [
+        ("tmt_version", "deprecated_version", "expect_warn", "expect_exception"),
+        [
             ('1.30', '1.38', True, False),  # warn for older version
+            ('1.4.0.dev1595+ga35d7140.d20240806', '1.38', True, False),  # warn for older version
             ('1.40', '1.38', False, True),  # raise exception for newer version
-            ('1.38', '1.38', False, True)  # raise exception for same version
-            ])
+            ('1.38', '1.38', False, True),  # raise exception for same version
+            ],
+        ids=(
+            'warn for older version',
+            'warn for older version with commit ID',
+            'raise exception for newer version',
+            'raise exception for same version',
+            )
+        )
     def test_assert_feeling_safe(
             self,
             tmt_version,
