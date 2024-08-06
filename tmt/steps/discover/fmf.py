@@ -574,10 +574,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if prune:
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
-            for path in tmt.utils.filter_paths(self.testdir, ['.fmf']):
+            for path in tmt.utils.filter_paths(tree_path, ['.fmf']):
                 shutil.copytree(
                     path,
-                    clonedir / path.relative_to(self.testdir),
+                    clonedir / path.relative_to(tree_path),
                     dirs_exist_ok=True)
 
             # Save upgrade plan
@@ -585,8 +585,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if upgrade_path:
                 upgrade_path = f"{upgrade_path.lstrip('/')}.fmf"
                 (clonedir / upgrade_path).parent.mkdir()
-                shutil.copyfile(self.testdir / upgrade_path, clonedir / upgrade_path)
-                shutil.copymode(self.testdir / upgrade_path, clonedir / upgrade_path)
+                shutil.copyfile(tree_path / upgrade_path, clonedir / upgrade_path)
+                shutil.copymode(tree_path / upgrade_path, clonedir / upgrade_path)
 
         # Prefix tests and handle library requires
         for test in self._tests:
@@ -598,7 +598,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 assert test.path is not None  # narrow type
                 relative_test_path = test.path.unrooted()
                 shutil.copytree(
-                    self.testdir / relative_test_path,
+                    tree_path / relative_test_path,
                     clonedir / relative_test_path,
                     dirs_exist_ok=True)
 
@@ -606,9 +606,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 parent_dir = relative_test_path
                 while parent_dir.resolve() != Path.cwd().resolve():
                     parent_dir = parent_dir.parent
-                    if (self.testdir / parent_dir / 'main.fmf').exists():
+                    if (tree_path / parent_dir / 'main.fmf').exists():
                         shutil.copyfile(
-                            self.testdir / parent_dir / 'main.fmf',
+                            tree_path / parent_dir / 'main.fmf',
                             clonedir / parent_dir / 'main.fmf')
 
             # Prefix test path with 'tests' and possible 'path' prefix

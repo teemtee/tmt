@@ -1,0 +1,8 @@
+discover:
+    how: fmf
+    path: nested
+    prune: true
+provision:
+    how: local
+execute:
+    how: tmt
