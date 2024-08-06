@@ -4,6 +4,7 @@ import datetime
 import functools
 import json
 import os
+import pathlib
 import signal as _signal
 import subprocess
 import threading
@@ -561,6 +562,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         # Install all scripts on guest
         for script in self.scripts:
             source = SCRIPTS_SRC_DIR / script.path.name
+            if not source.is_file():
+                self.warn(f"Script is not a file, skipping: {script.path}")
+                continue
+            assert isinstance(source, pathlib.Path)  # narrow type # noqa: TID251
+            source = Path(source)
 
             for dest in [script.path, *script.aliases]:
                 guest.push(

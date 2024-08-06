@@ -5,12 +5,12 @@ import os
 import pkgutil
 import sys
 from collections.abc import Iterator
-from importlib.metadata import entry_points
 from types import ModuleType
 from typing import Any, Generic, Optional, TypeVar, cast
 
 import tmt
 import tmt.utils
+from tmt._compat.importlib.metadata import entry_points
 from tmt.log import Logger
 from tmt.utils import Path
 
@@ -125,11 +125,7 @@ def _explore_entry_point(entry_point: str, logger: Logger) -> None:
     logger = logger.descend()
 
     try:
-        eps = entry_points()
-        if hasattr(eps, "select"):
-            entry_point_group = eps.select(group=entry_point)
-        else:
-            entry_point_group = eps[entry_point]
+        entry_point_group = entry_points(group=entry_point)
 
         for found in entry_point_group:
             logger.debug(f"Loading plugin '{found.name}' ({found.value}).")

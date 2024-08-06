@@ -27,6 +27,7 @@ import urllib.parse
 from collections import Counter, OrderedDict
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from importlib.abc import Traversable
 from math import ceil
 from re import Match, Pattern
 from threading import Thread
@@ -67,6 +68,8 @@ from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
 
 import tmt.log
+from tmt._compat.importlib.metadata import entry_points
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt.log import LoggableValue, Logger
 
@@ -5602,6 +5605,28 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
             }
 
 
+def walk(
+    traversable: Traversable,
+        ) -> Iterator[tuple[Traversable, list[str], list[str]]]:
+    """
+    Basic equivalent of os.walk/pathlib.Path.walk for more general Traversable.
+
+    Does not cover the full interface of os.walk, e.g. top_down, follow_symlinks, etc.
+    """
+    paths = [traversable]
+    while paths:
+        path = paths.pop()
+        dirnames = []
+        filenames = []
+        for entry in path.iterdir():
+            if entry.is_dir():
+                paths.append(entry)
+                dirnames.append(entry.name)
+            else:
+                filenames.append(entry.name)
+        yield path, dirnames, filenames
+
+
 def _load_schema(schema_filepath: Path) -> Schema:
     """
     Load a JSON schema from a given filepath.
@@ -5609,11 +5634,13 @@ def _load_schema(schema_filepath: Path) -> Schema:
     A helper returning the raw loaded schema.
     """
 
+    # Broadening the allowed types to any Traversable
+    schema_file: Traversable = schema_filepath
     if not schema_filepath.is_absolute():
-        schema_filepath = resource_files('schemas') / schema_filepath
+        schema_file = resource_files('schemas') / str(schema_filepath)
 
     try:
-        with open(schema_filepath, encoding='utf-8') as f:
+        with schema_file.open(encoding='utf-8') as f:
             return cast(Schema, yaml_to_dict(f.read()))
 
     except Exception as exc:
@@ -5651,14 +5678,20 @@ def load_schema_store() -> SchemaStore:
     schema_dirpath = resource_files('schemas')
 
     try:
-        for filepath in schema_dirpath.glob('**/*ml'):
-            # Ignore all files but YAML files.
-            if filepath.suffix.lower() not in ('.yaml', '.yml'):
-                continue
+        for root, _, files in walk(schema_dirpath):
+            for file_name in files:
+                filepath = root / file_name
+                # Files are always of type pathlib.Path, we can safely narrow type it here
+                assert isinstance(filepath, pathlib.Path)  # narrow type # noqa: TID251
+                filepath = Path(filepath)
 
-            schema = _load_schema(filepath)
+                # Ignore all files but YAML files.
+                if filepath.suffix.lower() not in ('.yaml', '.yml'):
+                    continue
 
-            store[schema['$id']] = schema
+                schema = _load_schema(filepath)
+
+                store[schema['$id']] = schema
 
     except Exception as exc:
         raise FileError(f"Failed to discover schema files\n{exc}")
@@ -7040,7 +7073,7 @@ def default_template_environment() -> jinja2.Environment:
 
 def render_template(
         template: str,
-        template_filepath: Optional[Path] = None,
+        template_filepath: Optional[Traversable] = None,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:
@@ -7081,7 +7114,7 @@ def render_template(
 
 
 def render_template_file(
-        template_filepath: Path,
+        template_filepath: Traversable,
         environment: Optional[jinja2.Environment] = None,
         **variables: Any
         ) -> str:
@@ -7151,21 +7184,86 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     return origin is not None and node.name == origin.name
 
 
-def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tmt") -> Path:
+@functools.cache
+def _get_resource_files_search_path(package: Union[str, ModuleType],
+                                    logger: tmt.log.Logger) -> Traversable:
+    """
+    Helper (cached) function for :py:func:`resource_files`.
+
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: the search path for resource files
+    """
+    def accumulate_path(paths: list[Traversable],
+                        pkg_path: Traversable) -> None:
+        if isinstance(pkg_path, MultiplexedPath):
+            # The root resources.files can be a MultiplexedPath if it is a namespace
+            paths.extend(pkg_path._paths)
+        else:
+            # Otherwise it should be a normal Path, just add it as-is
+            paths.append(pkg_path)
+
+    # Accumulate the base path of the package and entry-points
+    base_paths: list[Traversable] = []
+
+    main_path = importlib.resources.files(package)
+    accumulate_path(base_paths, main_path)
+
+    # Additional resource files can be imported from entry-point
+    entry_point_name = 'tmt.resources'
+
+    entry_point_group = entry_points(group=entry_point_name)
+
+    for ep in entry_point_group:
+        try:
+            ep_module = ep.load()
+            ep_path = importlib.resources.files(ep_module)
+            accumulate_path(base_paths, ep_path)
+        except ModuleNotFoundError:
+            logger.warning(f"Failed to load plugin resources: {ep}")
+        except Exception as err:
+            # Other exceptions are rather weird
+            logger.warning(f"Unexpected failure in parsing: {ep}\n{err}")
+
+    # Extract the Path if only one was found
+    if len(base_paths) == 1:
+        return base_paths[0]
+    # Otherwise construct a MultiplexedPath
+    assert (len(base_paths) > 1)
+    # Note: ignore[no-untyped-call]: importlib_resources does not type-hint
+    # the constructor correctly
+    return MultiplexedPath(*base_paths)  # type: ignore[no-untyped-call]
+
+
+def resource_files(
+    path: str,
+    package: Union[str, ModuleType] = "tmt",
+    logger: Optional[tmt.log.Logger] = None,
+        ) -> Traversable:
     """
     Helper function to get path of package file or directory.
 
     A thin wrapper for :py:func:`importlib.resources.files`:
-    ``files()`` returns ``Traversable`` object, though in our use-case
-    it should always produce a :py:class:`pathlib.PosixPath` object.
-    Converting it to :py:class:`tmt.utils.Path` instance should be
-    safe and stick to the "``Path`` only!" rule in tmt's code base.
+    ``files()`` returns ``Traversable`` object that can be either a
+    :py:class:`pathlib.PosixPath` or a :py:class:`importlib.reader.MultiplexedPath`.
 
-    :param path: file or directory path to retrieve, relative to the ``package`` root.
-    :param package: package in which to search for the file/directory.
-    :returns: an absolute path to the requested file or directory.
+    If the final path is a file, go ahead and convert it to a regular ``Path``, otherwise
+    keep it as a traversable in order to properly support MultiplexedPaths.
+
+    Additional search paths are introduced from entry-point definitions
+
+    :param path: file or directory path to retrieve, relative to the ``package``
+      or entry-point's root.
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: a traversable path to the requested file or directory.
     """
-    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+
+    if not logger:
+        # Make sure there is a logger to report entry-point failures
+        logger = tmt.log.Logger.get_bootstrap_logger()
+    search_path = _get_resource_files_search_path(package, logger)
+    return search_path / path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):

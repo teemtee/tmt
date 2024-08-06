@@ -12,7 +12,7 @@ rlJournalStart
         rlRun -s "TMT_DEBUG=3 tmt plan show"
         rlAssertGrep "Using the 'DiscoverFmf' plugin" $rlRun_LOG
         rlRun -s "TMT_DEBUG=weird tmt plan show" 2
-        rlAssertGrep "Invalid debug level" $rlRun_LOG
+        rlAssertGrep "Invalid value.*'weird' is not a valid integer" $rlRun_LOG -E
     rlPhaseEnd
 
     for execute in 'tmt'; do
