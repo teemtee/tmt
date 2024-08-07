@@ -1,0 +1,9 @@
+summary: Just debugging linkcheck
+title: Random new plan
+
+description: |
+    Just some random text
+
+link:
+  - verified-by: /tests/usability
+  - implemented-by: /tmt/random_new_file.py

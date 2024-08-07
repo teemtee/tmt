@@ -1,0 +1,4 @@
+summary: Ignore me
+test: /usr/bin/true
+tier: 0
+duration: 1m
