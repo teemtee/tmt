@@ -2,16 +2,16 @@ import dataclasses
 import datetime
 import os
 from typing import Optional
-from xml.etree import ElementTree as ET
 
 from requests import post
 
 import tmt
 import tmt.steps
 import tmt.steps.report
+import tmt.utils
 from tmt.utils import Path, field
 
-from .junit import make_junit_xml
+from .junit import ResultsContext, make_junit_xml
 
 DEFAULT_NAME = 'xunit.xml'
 
@@ -23,14 +23,17 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         option='--file',
         metavar='FILE',
         help='Path to the file to store xUnit in.',
-        normalize=lambda key_address, raw_value, logger: Path(raw_value) if raw_value else None)
+        normalize=tmt.utils.normalize_path)
 
     upload: bool = field(
         default=True,
         option=('--upload / --no-upload'),
         is_flag=True,
         show_default=True,
-        help="Whether to upload results to Polarion."
+        help="""
+            Whether to upload results to Polarion,
+            also uses environment variable TMT_PLUGIN_REPORT_POLARION_UPLOAD.
+            """
         )
 
     project_id: Optional[str] = field(
@@ -39,7 +42,9 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         metavar='ID',
         help="""
              Use specific Polarion project ID,
-             also uses environment variable TMT_PLUGIN_REPORT_POLARION_PROJECT_ID.
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_PROJECT_ID. If no project ID
+             is found, the project ID is taken from pylero configuration default project setting as
+             a last resort.
              """
         )
 
@@ -78,7 +83,10 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         option=('--use-facts / --no-use-facts'),
         is_flag=True,
         show_default=True,
-        help='Use hostname and arch from guest facts.'
+        help="""
+            Use hostname and arch from guest facts,
+            also uses environment variable TMT_PLUGIN_REPORT_POLARION_USE_FACTS.
+            """
         )
 
     planned_in: Optional[str] = field(
@@ -180,6 +188,13 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         help='FIPS mode enabled or disabled for this run.'
         )
 
+    prettify: bool = field(
+        default=True,
+        option=('--prettify / --no-prettify'),
+        is_flag=True,
+        show_default=True,
+        help="Enable the XML pretty print for generated XUnit file.")
+
     include_output_log: bool = field(
         default=True,
         option=('--include-output-log / --no-include-output-log'),
@@ -204,7 +219,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         from tmt.export.polarion import find_polarion_case_ids, import_polarion
         import_polarion()
         from tmt.export.polarion import PolarionWorkItem
-        assert PolarionWorkItem
 
         title = self.data.title
         if not title:
@@ -213,112 +227,142 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 self.step.plan.name.rsplit('/', 1)[1] + '_' +
                 # Polarion server running with UTC timezone
                 datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"))
+
         title = title.replace('-', '_')
-        project_id = self.data.project_id or os.getenv('TMT_PLUGIN_REPORT_POLARION_PROJECT_ID')
         template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')
+        project_id = self.data.project_id or os.getenv(
+            'TMT_PLUGIN_REPORT_POLARION_PROJECT_ID',
+            PolarionWorkItem._session.default_project)
+
+        # The project_id is required
+        if not project_id:
+            raise tmt.utils.ReportError(
+                "The Polarion project ID could not be determined. Consider setting it using "
+                "'--project-id' argument or by setting 'TMT_PLUGIN_REPORT_POLARION_PROJECT_ID' "
+                "environment variable.")
+
         # TODO: try use self.data instead - but these fields are not optional, they do have
         # default values, do envvars even have any effect at all??
         upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
+
         other_testrun_fields = [
-            'description', 'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build',
-            'sample_image', 'logs', 'compose_id', 'fips']
+            'arch',
+            'assignee',
+            'build',
+            'compose_id',
+            'description',
+            'fips',
+            'logs',
+            'planned_in',
+            'platform',
+            'pool_team',
+            'sample_image']
 
-        xml_data = make_junit_xml(
-            phase=self,
+        testsuites_properties: dict[str, Optional[str]] = {}
 
-            # TODO: Explicitly use 'default' flavor until the 'polarion' flavor
-            # gets implemented in junit report plugin.
-            # flavor='polarion',
-            flavor='default',
-
-            include_output_log=self.data.include_output_log)
-
-        # S314: Any potential xml parser vulnerability mitigation would require defusedxml package
-        xml_tree = ET.fromstring(xml_data)  # noqa: S314
-        properties = {
-            'polarion-project-id': project_id,
-            'polarion-user-id': PolarionWorkItem._session.user_id,
-            'polarion-testrun-title': title,
-            'polarion-project-span-ids': project_id}
         for tr_field in other_testrun_fields:
             param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
             # TODO: remove the os.getenv when envvars in click work with steps in plans as well
             # as with steps on cmdline
             if param:
-                properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
+                testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
+
         if use_facts:
-            properties['polarion-custom-hostname'] = \
-                self.step.plan.provision.guests()[0].primary_address
-            properties['polarion-custom-arch'] = self.step.plan.provision.guests()[0].facts.arch
+            guests = self.step.plan.provision.guests()
+            try:
+                testsuites_properties['polarion-custom-hostname'] = guests[0].primary_address
+                testsuites_properties['polarion-custom-arch'] = guests[0].facts.arch
+            except IndexError as error:
+                raise tmt.utils.ReportError('Failed to retrieve facts from the guest environment. '
+                                            'You can use a `--no-use-facts` argument to disable '
+                                            'this behavior.') from error
+
         if template:
-            properties['polarion-testrun-template-id'] = template
+            testsuites_properties['polarion-testrun-template-id'] = template
+
         logs = os.getenv('TMT_REPORT_ARTIFACTS_URL')
-        if logs and 'polarion-custom-logs' not in properties:
-            properties['polarion-custom-logs'] = logs
-        testsuites_properties = ET.SubElement(xml_tree, 'properties')
-        for name, value in properties.items():
-            ET.SubElement(testsuites_properties, 'property', attrib={
-                'name': name, 'value': str(value)})
+        if logs and 'polarion-custom-logs' not in testsuites_properties:
+            testsuites_properties['polarion-custom-logs'] = logs
 
-        testsuite = xml_tree.find('testsuite')
-        project_span_ids = xml_tree.find(
-            '*property[@name="polarion-project-span-ids"]')
+        project_span_ids: list[str] = []
 
-        for result in self.step.plan.execute.results():
+        results_context = ResultsContext(self.step.plan.execute.results())
+
+        for result in results_context:
             if not result.ids or not any(result.ids.values()):
                 self.warn(
                     f"Test Case '{result.name}' is not exported to Polarion, "
                     "please run 'tmt tests export --how polarion' on it.")
                 continue
+
             work_item_id, test_project_id = find_polarion_case_ids(result.ids)
 
-            if test_project_id is None:
+            if work_item_id is None or test_project_id is None:
                 self.warn(f"Test case '{result.name}' missing or not found in Polarion.")
                 continue
 
-            assert work_item_id is not None
-            assert project_span_ids is not None
+            if test_project_id not in project_span_ids:
+                project_span_ids.append(test_project_id)
 
-            if test_project_id not in project_span_ids.attrib['value']:
-                project_span_ids.attrib['value'] += f',{test_project_id}'
-
-            test_properties = {
+            testcase_properties = {
                 'polarion-testcase-id': work_item_id,
-                'polarion-testcase-project-id': test_project_id}
+                'polarion-testcase-project-id': test_project_id,
+                }
 
-            assert testsuite is not None
-            test_case = testsuite.find(f"*[@name='{result.name}']")
-            assert test_case is not None
-            properties_elem = ET.SubElement(test_case, 'properties')
-            for name, value in test_properties.items():
-                ET.SubElement(properties_elem, 'property', attrib={
-                    'name': name, 'value': value})
+            # ignore[assignment]: mypy does not support different types for property getter and
+            # setter. The assignment is correct, but mypy cannot tell.
+            # See https://github.com/python/mypy/issues/3004 for getter/setter discussions
+            result.properties = testcase_properties  # type: ignore[assignment]
 
         assert self.workdir is not None
 
+        testsuites_properties.update({
+            'polarion-project-id': project_id,
+            'polarion-user-id': PolarionWorkItem._session.user_id,
+            'polarion-testrun-title': title,
+            'polarion-project-span-ids': ','.join([project_id, *project_span_ids])})
+
+        # ignore[assignment]: mypy does not support different types for property getter
+        # and setter. The assignment is correct, but mypy cannot tell.
+        # See https://github.com/python/mypy/issues/3004 for getter/setter discussions
+        results_context.properties = testsuites_properties  # type: ignore[assignment]
+
+        xml_data = make_junit_xml(
+            phase=self,
+            flavor='polarion',
+            prettify=self.data.prettify,
+            include_output_log=self.data.include_output_log,
+            results_context=results_context,
+            )
+
         f_path = self.data.file or self.workdir / DEFAULT_NAME
-        with open(f_path, 'wb') as fw:
-            ET.ElementTree(xml_tree).write(fw, xml_declaration=True, encoding='utf-8')
+
+        try:
+            f_path.write_text(xml_data)
+        except Exception as error:
+            raise tmt.utils.ReportError(f"Failed to write the output '{f_path}'.") from error
 
         if upload:
             server_url = str(PolarionWorkItem._session._server.url)
             polarion_import_url = (
-                f'{server_url}{"" if server_url.endswith("/") else "/"}'
-                'import/xunit')
+                f'{server_url}{"" if server_url.endswith("/") else "/"}import/xunit')
             auth = (
                 PolarionWorkItem._session.user_id,
                 PolarionWorkItem._session.password)
 
             response = post(
-                polarion_import_url, auth=auth,
-                files={'file': ('xunit.xml', ET.tostring(xml_tree))}, timeout=10
-                )
+                polarion_import_url,
+                auth=auth,
+                files={
+                    'file': ('xunit.xml', xml_data),
+                    },
+                timeout=10)
             self.info(
                 f'Response code is {response.status_code} with text: {response.text}')
         else:
-            self.info("Polarion upload can be done manually using command:")
+            self.info('Polarion upload can be done manually using command:')
             self.info(
-                "curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> "
-                "<POLARION_URL>/polarion/import/xunit")
+                'curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> '
+                '<POLARION_URL>/polarion/import/xunit')
         self.info('xUnit file saved at', f_path, 'yellow')

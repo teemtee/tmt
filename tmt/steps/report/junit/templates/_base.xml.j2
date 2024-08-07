@@ -21,10 +21,24 @@
                     {% if INCLUDE_OUTPUT_LOG and main_log %}
                         <system-out>{{ main_log | e }}</system-out>
                     {% endif %}
+
+                    {# Optionally add the result properties #}
+                    {% if result.properties is defined %}
+                        {% with properties=result.properties %}
+                            {% include "includes/_properties.xml.j2" %}
+                        {% endwith %}
+                    {% endif %}
                 </testcase>
             {% endfor %}
         {% endblock %}
     </testsuite>
     {% endblock %}
+
+    {# Optionally include the properties section in testsuites tag #}
+    {% if RESULTS.properties is defined %}
+        {% with properties=RESULTS.properties %}
+            {% include "includes/_properties.xml.j2" %}
+        {% endwith %}
+    {% endif %}
 </testsuites>
 {% endblock %}

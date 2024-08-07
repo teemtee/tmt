@@ -7,6 +7,11 @@
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The :ref:`/plugins/report/polarion` report plugin now uses Jinja template to
+generate the XUnit file. It doesn't do any extra modifications to the XML tree
+using an ``ElementTree`` anymore. Also the schema is now validated against the
+XSD.
+
 The :ref:`/plugins/report/junit` report plugin now validates all the XML
 flavors against their respective XSD schemas and tries to prettify the final
 XML output. These functionalities are always disabled for ``custom`` flavors.
