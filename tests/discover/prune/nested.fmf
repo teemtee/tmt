@@ -1,0 +1,9 @@
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tests
+    path: nested
+    prune: true
+provision:
+    how: local
+execute:
+    how: tmt
