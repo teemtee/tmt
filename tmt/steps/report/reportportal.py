@@ -333,6 +333,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         self.handle_response(response)
         return response
 
+    def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
+        response = session.put(url=f"{self.get_url()}/{path}",
+                                headers=self.get_headers(),
+                                json=json)
+        self.handle_response(response)
+        return response
 
     def append_description(self, curr_description: str) -> str:
         """ Extend text with the launch description (if provided) """
@@ -600,15 +606,26 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                         test_time = result.end_time or self.time()
 
+                    # Finish the test item
+                    response = self.rp_api_put(
+                        session=session,
+                        path=f"item/{item_uuid}",
+                        json={
+                            "launchUuid": launch_uuid,
+                            "endTime": test_time,
+                            "status": status,
+                            "issue": {
+                                "issueType": self.get_defect_type_locator(session, defect_type)}})
+                    launch_time = test_time
+
             if create_suite:
                 # Finish the test suite
-                response = session.put(
-                    url=f"{self.get_url()}/item{f'/{suite_uuid}' if suite_uuid else ''}",
-                    headers=self.get_headers(),
+                response = self.rp_api_put(
+                    session=session,
+                    path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
                     json={
                         "launchUuid": launch_uuid,
                         "endTime": launch_time})
-                self.handle_response(response)
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
             if is_the_last_plan:
@@ -617,11 +634,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             if ((launch_per_plan or (suite_per_plan and is_the_last_plan))
                     and not additional_upload):
                 # Finish the launch
-                response = session.put(
-                    url=f"{self.get_url()}/launch/{launch_uuid}/finish",
-                    headers=self.get_headers(),
+                response = self.rp_api_put(
+                    session=session,
+                    path=f"launch/{launch_uuid}/finish",
                     json={"endTime": launch_time})
-                self.handle_response(response)
                 launch_url = str(yaml_to_dict(response.text).get("link"))
 
             assert launch_url is not None
