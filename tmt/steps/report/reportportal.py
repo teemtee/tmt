@@ -2,7 +2,8 @@ import dataclasses
 import os
 import re
 from time import time
-from typing import Optional, overload
+from typing import Any, Optional, overload
+from typing_extensions import TypeAlias
 
 import requests
 
@@ -11,6 +12,7 @@ import tmt.steps.report
 from tmt.result import Result, ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
+JSON: TypeAlias = Any
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
     env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
@@ -298,7 +300,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         if not defect_type:
             return "ti001"
 
-        response = self.get_rp_api(session, "settings")
+        response = self.rp_api_get(session, "settings")
         defect_types = yaml_to_dict(response.text).get("subTypes")
         if not defect_types:
             return "ti001"
@@ -318,11 +320,19 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         self.verbose("defect_type", defect_type, color="cyan", shift=1)
         return str(dt_locator)
 
-    def get_rp_api(self, session: requests.Session, data_path: str) -> requests.Response:
-        response = session.get(url=f"{self.get_url()}/{data_path}",
+    def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
+        response = session.get(url=f"{self.get_url()}/{path}",
                                headers=self.get_headers())
         self.handle_response(response)
         return response
+
+    def rp_api_post(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
+        response = session.post(url=f"{self.get_url()}/{path}",
+                                headers=self.get_headers(),
+                                json=json)
+        self.handle_response(response)
+        return response
+
 
     def append_description(self, curr_description: str) -> str:
         """ Extend text with the launch description (if provided) """
@@ -427,31 +437,30 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                 # Create a launch
                 self.info("launch", launch_name, color="cyan")
-                response = session.post(
-                    url=f"{self.get_url()}/launch",
-                    headers=self.get_headers(),
+                response = self.rp_api_post(
+                    session=session,
+                    path="launch",
                     json={"name": launch_name,
                           "description": launch_description,
                           "attributes": launch_attributes,
                           "startTime": launch_time,
                           "rerun": launch_rerun})
-                self.handle_response(response)
                 launch_uuid = yaml_to_dict(response.text).get("id")
 
             else:
                 # Get the launch_uuid or info to log
                 if suite_id:
-                    response = self.get_rp_api(session, f"item/{suite_id}")
+                    response = self.rp_api_get(session, f"item/{suite_id}")
                     suite_uuid = yaml_to_dict(response.text).get("uuid")
                     suite_name = str(yaml_to_dict(response.text).get("name"))
                     launch_id = yaml_to_dict(response.text).get("launchId")
 
                 if launch_id:
-                    response = self.get_rp_api(session, f"launch/{launch_id}")
+                    response = self.rp_api_get(session, f"launch/{launch_id}")
                     launch_uuid = yaml_to_dict(response.text).get("uuid")
 
             if launch_uuid and not launch_id:
-                response = self.get_rp_api(session, f"launch/uuid/{launch_uuid}")
+                response = self.rp_api_get(session, f"launch/uuid/{launch_uuid}")
                 launch_id = yaml_to_dict(response.text).get("id")
 
             # Print the launch info
@@ -470,16 +479,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 # Create a suite
                 suite_name = self.step.plan.name
                 self.info("suite", suite_name, color="cyan")
-                response = session.post(
-                    url=f"{self.get_url()}/item",
-                    headers=self.get_headers(),
+                response = self.rp_api_post(
+                    session=session,
+                    path="item",
                     json={"name": suite_name,
                           "description": suite_description,
                           "attributes": attributes,
                           "startTime": launch_time,
                           "launchUuid": launch_uuid,
                           "type": "suite"})
-                self.handle_response(response)
                 suite_uuid = yaml_to_dict(response.text).get("id")
                 assert suite_uuid is not None
 
@@ -534,9 +542,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                         # Create a test item
                         self.info("test", test.name, color="cyan")
-                        response = session.post(
-                            url=f"{self.get_url()}/item{f'/{suite_uuid}' if suite_uuid else ''}",
-                            headers=self.get_headers(),
+                        response = self.rp_api_post(
+                            session=session,
+                            path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
                             json={"name": test.name,
                                   "description": test_description,
                                   "attributes": item_attributes,
@@ -546,7 +554,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                   "type": "step",
                                   "testCaseId": test.id or None,
                                   "startTime": test_time})
-                        self.handle_response(response)
                         item_uuid = yaml_to_dict(response.text).get("id")
                         assert item_uuid is not None
                         self.verbose("uuid", item_uuid, "yellow", shift=1)
@@ -568,28 +575,26 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
                             # Upload log
-                            response = session.post(
-                                url=f"{self.get_url()}/log/entry",
-                                headers=self.get_headers(),
+                            response = self.rp_api_post(
+                                session=session,
+                                path="log/entry",
                                 json={"message": _filter_invalid_chars(log),
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": level,
                                       "time": result.end_time})
-                            self.handle_response(response)
 
                             # Write out failures
                             if index == 0 and status == "FAILED":
                                 message = _filter_invalid_chars(result.failures(log))
-                                response = session.post(
-                                    url=f"{self.get_url()}/log/entry",
-                                    headers=self.get_headers(),
+                                response = self.rp_api_post(
+                                    session=session,
+                                    path="log/entry",
                                     json={"message": message,
                                           "itemUuid": item_uuid,
                                           "launchUuid": launch_uuid,
                                           "level": "ERROR",
                                           "time": result.end_time})
-                                self.handle_response(response)
 
                         # TODO: Add tmt files as attachments
 
