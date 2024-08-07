@@ -95,6 +95,11 @@ jobs:
         - tmt:
             context:
               how: provision
+        - &tmt-cloud-resources
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: tmt
 
   # Test internal plugins
   - <<: *tests
@@ -106,11 +111,7 @@ jobs:
     # Tag cloud resources for tmt
     tf_extra_params:
       environments:
-        - &tmt-cloud-resources
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: tmt
+        - *tmt-cloud-resources
 
   # Test internal wow
   - <<: *tests
@@ -147,6 +148,7 @@ jobs:
     preserve_project: True
     owner: "@teemtee"
     project: tmt
+    actions: *base-actions
 
   # Fedora releases
   - job: propose_downstream
