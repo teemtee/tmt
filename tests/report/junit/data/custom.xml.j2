@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<tests>
+    {% for result in RESULTS %}
+        <test name="{{ result.name | e }}" value="{{ result.result.value | e }}"/>
+    {% endfor %}
+</tests>

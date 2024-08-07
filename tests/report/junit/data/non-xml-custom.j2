@@ -1,0 +1,3 @@
+{% for result in RESULTS %}
+name='{{ result.name | e }}',value='{{ result.result.value | e }}'
+{% endfor %}

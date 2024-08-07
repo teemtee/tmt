@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+    This schema supports only a subset of the features provided by the
+    `xml-junit` library. Additionally, many attributes are explicitly set as
+    required. This is intentional to limit the currently supported features of
+    the tmt JUnit report plugin.
+
+    For example, tmt always creates only one `testsuite` within a `testsuites`,
+    and this schema enforces that constraint. Also the properties tags in
+    testsuites and testcases are explicitly disallowed in a `default` flavor.
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="failure">
+        <xs:complexType mixed="true">
+            <xs:attribute name="type" type="xs:string" use="required"/>
+            <xs:attribute name="message" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="error">
+        <xs:complexType mixed="true">
+            <xs:attribute name="type" type="xs:string" use="required"/>
+            <xs:attribute name="message" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="skipped">
+        <xs:complexType mixed="true">
+            <xs:attribute name="type" type="xs:string" use="required"/>
+            <xs:attribute name="message" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="system-err" type="xs:string"/>
+    <xs:element name="system-out" type="xs:string"/>
+
+    <xs:element name="testcase">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="skipped" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="error" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="failure" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="system-out" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="system-err" minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="time" type="xs:float" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="testsuite">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="testcase" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tests" type="xs:string" use="required"/>
+            <xs:attribute name="failures" type="xs:string" use="required"/>
+            <xs:attribute name="errors" type="xs:string" use="required"/>
+            <xs:attribute name="disabled" type="xs:string" use="required"/>
+            <xs:attribute name="skipped" type="xs:string" use="required"/>
+            <xs:attribute name="time" type="xs:float" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="testsuites">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="testsuite" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="time" type="xs:float" use="required"/>
+            <xs:attribute name="tests" type="xs:string" use="optional"/>
+            <xs:attribute name="failures" type="xs:string" use="optional"/>
+            <xs:attribute name="disabled" type="xs:string" use="optional"/>
+            <xs:attribute name="errors" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

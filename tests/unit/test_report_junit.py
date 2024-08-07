@@ -19,7 +19,7 @@ def report_fix(tmppath: Path, root_logger):
     type(plan_mock).name = name_property
     type(step_mock).plan = plan_mock
 
-    out_file_path = str(tmppath / "out.xml")
+    out_file_path = Path(tmppath / "out.xml")
 
     report = ReportJUnit(
         logger=root_logger,
@@ -120,11 +120,14 @@ class TestStateMapping:
 
         report.go()
 
-        assert_xml(out_file_path, """<?xml version="1.0" ?>
+        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="0" tests="1" time="0.0">
-    <testsuite disabled="0" errors="0" failures="0" name="name" skipped="0" tests="1" time="0">
-        <testcase name="/pass"/>
-    </testsuite>
+  <testsuite name="name" disabled="0" errors="0" failures="0" skipped="0" tests="1" time="0.0">
+    <testcase name="/pass">
+
+
+                </testcase>
+  </testsuite>
 </testsuites>
 """)
 
@@ -133,13 +136,13 @@ class TestStateMapping:
         results.append(Result(result=ResultOutcome.INFO, name="/info", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version="1.0" ?>
+        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="0" tests="1" time="0.0">
-    <testsuite disabled="0" errors="0" failures="0" name="name" skipped="1" tests="1" time="0">
-        <testcase name="/info">
-            <skipped type="skipped" message="info"/>
-        </testcase>
-    </testsuite>
+  <testsuite name="name" disabled="0" errors="0" failures="0" skipped="1" tests="1" time="0.0">
+    <testcase name="/info">
+      <skipped type="skipped" message="info"/>
+    </testcase>
+  </testsuite>
 </testsuites>
 """)
 
@@ -148,13 +151,13 @@ class TestStateMapping:
         results.append(Result(result=ResultOutcome.WARN, name="/warn", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version="1.0" ?>
+        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="1" failures="0" tests="1" time="0.0">
-    <testsuite disabled="0" errors="1" failures="0" name="name" skipped="0" tests="1" time="0">
-        <testcase name="/warn">
-            <error type="error" message="warn"/>
-        </testcase>
-    </testsuite>
+  <testsuite name="name" disabled="0" errors="1" failures="0" skipped="0" tests="1" time="0.0">
+    <testcase name="/warn">
+      <error type="error" message="warn"/>
+    </testcase>
+  </testsuite>
 </testsuites>
 """)
 
@@ -163,13 +166,13 @@ class TestStateMapping:
         results.append(Result(result=ResultOutcome.ERROR, name="/error", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version="1.0" ?>
+        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="1" failures="0" tests="1" time="0.0">
-    <testsuite disabled="0" errors="1" failures="0" name="name" skipped="0" tests="1" time="0">
-        <testcase name="/error">
-            <error type="error" message="error"/>
-        </testcase>
-    </testsuite>
+  <testsuite name="name" disabled="0" errors="1" failures="0" skipped="0" tests="1" time="0.0">
+    <testcase name="/error">
+      <error type="error" message="error"/>
+    </testcase>
+  </testsuite>
 </testsuites>
 """)
 
@@ -178,12 +181,12 @@ class TestStateMapping:
         results.append(Result(result=ResultOutcome.FAIL, name="/fail", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version="1.0" ?>
+        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="1" tests="1" time="0.0">
-    <testsuite disabled="0" errors="0" failures="1" name="name" skipped="0" tests="1" time="0">
-        <testcase name="/fail">
-            <failure type="failure" message="fail"/>
-        </testcase>
-    </testsuite>
+  <testsuite name="name" disabled="0" errors="0" failures="1" skipped="0" tests="1" time="0.0">
+    <testcase name="/fail">
+      <failure type="failure" message="fail"/>
+    </testcase>
+  </testsuite>
 </testsuites>
 """)
