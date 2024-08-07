@@ -2,8 +2,7 @@ import dataclasses
 import os
 import re
 from time import time
-from typing import Any, Optional, overload
-from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
 
@@ -12,7 +11,11 @@ import tmt.steps.report
 from tmt.result import Result, ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
-JSON: TypeAlias = Any
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+
+JSON: 'TypeAlias' = Any
+
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
     env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
@@ -335,8 +338,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
         response = session.put(url=f"{self.get_url()}/{path}",
-                                headers=self.get_headers(),
-                                json=json)
+                               headers=self.get_headers(),
+                               json=json)
         self.handle_response(response)
         return response
 
