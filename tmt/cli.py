@@ -1875,7 +1875,7 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
     '-l', '--last', is_flag=True,
     help='Clean resources related to the last run.')
 @option(
-    '-i', '--id', 'id_', metavar="ID",
+    '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Identifier (name or directory path) of the run to be cleaned.')
 @option(
     '-s', '--skip', choices=CLEAN_RESOURCES,
@@ -1884,7 +1884,7 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 @dry_options
 def clean(context: Context,
           last: bool,
-          id_: Optional[str],
+          id_: tuple[str, ...],
           skip: list[str],
           **kwargs: Any) -> None:
     """
@@ -1899,7 +1899,7 @@ def clean(context: Context,
     the same, irrespective of the order on the command line. First, all
     the guests are cleaned, followed by runs and images.
     """
-    if last and id_ is not None:
+    if last and id_:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
 
