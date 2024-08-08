@@ -1475,7 +1475,8 @@ to see what would actually happen using ``--dry`` mode:
             testcloud
                 warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
 
-You may also want to clean everything in only one run using ``--id`` or ``--last`` options.
+You may also want to clean everything in only one run using
+the ``--id`` or ``--last`` options.
 
 .. code-block:: shell
 
@@ -1494,11 +1495,12 @@ You may also want to clean everything in only one run using ``--id`` or ``--last
         testcloud
             warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
 
-You also could skip clean phase(s) using --skip.
+You can also skip cleaning selected resources using the ``--skip``
+option.
 
 .. code-block:: shell
 
-    $ tmt clean -v --last
+    $ tmt clean -v --last --skip images
     clean
     guests
         Stopping guests in run '/var/tmp/tmt/run-001' plan '/plans/testcloud'.

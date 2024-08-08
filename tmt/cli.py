@@ -1865,23 +1865,21 @@ def status(
 #  Clean
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Supported clean phases
-STEPS: list[str] = ["guests", "runs", "images"]
-
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
+# Supported clean resources
+CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 
 
-@main.group(chain=True, invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
+@main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @option(
-    '-l', '--last', is_flag=True, help='Clean everything of the last run.')
+    '-l', '--last', is_flag=True,
+    help='Clean resources related to the last run.')
 @option(
     '-i', '--id', 'id_', metavar="ID",
-    help='Run id (name or directory path) to clean everything of.')
+    help='Identifier (name or directory path) of the run to be cleaned.')
 @option(
-    '-S', '--skip', choices=STEPS,
-    help='The clean phases to skip', multiple=True)
+    '-s', '--skip', choices=CLEAN_RESOURCES,
+    help='The resources which should be kept on the disk.', multiple=True)
 @verbosity_options
 @dry_options
 def clean(context: Context,
