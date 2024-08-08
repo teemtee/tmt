@@ -72,6 +72,10 @@ RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
 #: A type of collection IDs tracked for a single result.
 ResultIds = dict[str, Optional[str]]
 
+#: Raw result as written in a YAML file. A dictionary, but for now
+#: the actual keys are not important.
+RawResult = Any
+
 
 @dataclasses.dataclass
 class ResultGuestData(SerializableContainer):

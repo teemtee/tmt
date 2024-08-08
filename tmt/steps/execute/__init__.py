@@ -93,7 +93,7 @@ TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
         Path("/usr/local/bin/rstrnt-report-result"),
         Path("/usr/local/bin/rhts-report-result")],
     related_variables=[],
-    created_file="restraint-result"
+    created_file="tmt-report-results.yaml"
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
@@ -442,6 +442,15 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
+@dataclasses.dataclass
+class ResultCollection:
+    """ Collection of raw results loaded from a file """
+
+    filepaths: list[Path]
+    file_exists: bool = False
+    results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)
+
+
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     """ Common parent of execute plugins """
 
@@ -574,75 +583,144 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         return invocation.test_data_path / TMT_REPORT_RESULT_SCRIPT.created_file
 
-    def load_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
+    def _load_custom_results_file(self, invocation: TestInvocation) -> ResultCollection:
         """
-        Load results from a file created by ``tmt-report-result`` script.
+        Load results created by the test itself.
 
-        :returns: list of :py:class:`tmt.Result` instances loaded from the file,
-            or an empty list if the file does not exist.
+        :param invocation: test invocation to which the results belong to.
+        :returns: raw loaded results.
         """
-
-        report_result_path = self._tmt_report_results_filepath(invocation)
-
-        # Nothing to do if there's no result file
-        if not report_result_path.exists():
-            self.debug(f"tmt-report-results file '{report_result_path}' does not exist.")
-            return []
-
-        # Check the test result
-        self.debug(f"tmt-report-results file '{report_result_path} detected.")
-
-        with open(report_result_path) as result_file:
-            result_list = [line for line in result_file.readlines() if "TESTRESULT" in line]
-        if not result_list:
-            raise tmt.utils.ExecuteError(
-                f"Test result not found in result file '{report_result_path}'.")
-        result = result_list[0].split("=")[1].strip()
-
-        # Map the restraint result to the corresponding tmt value
-        actual_result = ResultOutcome.ERROR
-        note: Optional[str] = None
-
-        try:
-            actual_result = ResultOutcome(result.lower())
-        except ValueError:
-            if result == 'SKIP':
-                actual_result = ResultOutcome.INFO
-            else:
-                note = f"invalid test result '{result}' in result file"
-
-        return [tmt.Result.from_test_invocation(
-            invocation=invocation,
-            result=actual_result,
-            log=[invocation.relative_path / TEST_OUTPUT_FILENAME],
-            note=note)]
-
-    def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
-        """ Process custom results.yaml file created by the test itself """
-        test, guest = invocation.test, invocation.guest
 
         custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
         custom_results_path_json = invocation.test_data_path / 'results.json'
 
+        collection = ResultCollection(filepaths=[
+            custom_results_path_yaml, custom_results_path_json])
+
         if custom_results_path_yaml.exists():
             with open(custom_results_path_yaml) as results_file:
-                results = tmt.utils.yaml_to_list(results_file)
+                collection.results = tmt.utils.yaml_to_list(results_file)
 
         elif custom_results_path_json.exists():
             with open(custom_results_path_json) as results_file:
-                results = tmt.utils.json_to_list(results_file)
+                collection.results = tmt.utils.json_to_list(results_file)
 
         else:
-            return [tmt.Result.from_test_invocation(
-                invocation=invocation,
-                note=f"custom results file not found in '{invocation.test_data_path}'",
-                result=ResultOutcome.ERROR)]
+            return collection
 
-        if not results:
-            return [tmt.Result.from_test_invocation(
-                invocation=invocation,
-                note="custom results are empty",
-                result=ResultOutcome.ERROR)]
+        collection.file_exists = True
+
+        return collection
+
+    def _load_tmt_report_results_file(self, invocation: TestInvocation) -> ResultCollection:
+        """
+        Load results created by ``tmt-report-result`` script.
+
+        :param invocation: test invocation to which the results belong to.
+        :returns: raw loaded results.
+        """
+
+        results_path = self._tmt_report_results_filepath(invocation)
+        collection = ResultCollection(filepaths=[results_path])
+
+        # Nothing to do if there's no result file
+        if not results_path.exists():
+            return collection
+
+        # Check the test result
+        collection.file_exists = True
+        collection.results = tmt.utils.yaml_to_list(results_path.read_text())
+
+        return collection
+
+    def _process_results_reduce(
+            self,
+            invocation: TestInvocation,
+            results: list['tmt.result.RawResult']) -> list['tmt.result.Result']:
+        """
+        Reduce given results to one outcome.
+
+        This is the default behavior applied to test results, all
+        results will be reduced to the worst outcome possible.
+
+        :param invocation: test invocation to which the results belong to.
+        :param results: results to reduce.
+        :returns: list of results.
+        """
+
+        # The worst result outcome we can find among loaded results...
+        original_outcome: Optional[ResultOutcome] = None
+        # ... and the actual outcome we decided is the best representing
+        # the results.
+        # The original one may be left unset - malformed results file,
+        # for example, provides no usable original outcome.
+        actual_outcome: ResultOutcome
+        note: Optional[str] = None
+
+        try:
+            outcomes = [
+                ResultOutcome.from_spec(result.get('result'))
+                for result in results
+                ]
+
+        except tmt.utils.SpecificationError as exc:
+            actual_outcome = ResultOutcome.ERROR
+            note = exc.message
+
+        else:
+            hierarchy = [
+                ResultOutcome.SKIP,
+                ResultOutcome.PASS,
+                ResultOutcome.WARN,
+                ResultOutcome.FAIL]
+            outcome_indices = [hierarchy.index(outcome) for outcome in outcomes]
+            actual_outcome = original_outcome = hierarchy[max(outcome_indices)]
+
+        # Find a usable log - the first one matching our "interim" outcome.
+        # We cannot use the "actual" outcome, because that one may not even
+        # exist in the results file - tmt might have conjured it based on
+        # provided results, or set it to "error" because of errors. Only
+        # the "interim" is guaranteed to be found among the results.
+        test_logs = [invocation.relative_path / TEST_OUTPUT_FILENAME]
+
+        if original_outcome is not None:
+            for result in results:
+                if result.get('result') != original_outcome.value:
+                    continue
+
+                result_logs: list[str] = result.get('log', [])
+
+                if result_logs:
+                    test_logs.append(invocation.relative_test_data_path / result_logs[0])
+
+                break
+
+        return [tmt.Result.from_test_invocation(
+            invocation=invocation,
+            result=actual_outcome,
+            log=test_logs,
+            note=note)]
+
+    def _process_results_partials(
+            self,
+            invocation: TestInvocation,
+            results: list['tmt.result.RawResult'],
+            default_log: Optional[Path] = None) -> list['tmt.result.Result']:
+        """
+        Treat results as partial results belonging to a test.
+
+        This is the default behavior for custom results, all results
+        would be prefixed with test name, plus various their attributes
+        would be updated.
+
+        :param invocation: test invocation to which the results belong to.
+        :param results: results to process.
+        :param default_log: attach this log file to results which do not
+            have any log provided.
+        :returns: list of results.
+        """
+
+        test, guest = invocation.test, invocation.guest
 
         custom_results = []
         for partial_result_data in results:
@@ -665,6 +743,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # but Result has to point relative to the execute workdir
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log]
+
+            # Include the default output log if no log provided
+            if not partial_result.log and default_log is not None:
+                partial_result.log.append(default_log)
 
             # TODO: this might need more care: the test has been assigned a serial
             # number, which is now part of its data directory path. Now, the test
@@ -696,6 +778,78 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         return custom_results
 
+    def extract_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
+        """ Extract results from the file generated by the test itself """
+
+        collection = self._load_custom_results_file(invocation)
+
+        if not collection.file_exists:
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
+                note=f"custom results file not found in '{invocation.test_data_path}'",
+                result=ResultOutcome.ERROR)]
+
+        if not collection.results:
+            return [tmt.Result.from_test_invocation(
+                invocation=invocation,
+                note="no custom results were provided",
+                result=ResultOutcome.ERROR)]
+
+        return self._process_results_partials(invocation, collection.results)
+
+    def extract_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
+        """
+        Extract results from the file generated by ``tmt-report-result`` script.
+
+        All recorded results are reduced to one result eventually.
+        """
+
+        collection = self._load_tmt_report_results_file(invocation)
+
+        results_path = collection.filepaths[0]
+
+        if not collection.file_exists:
+            self.debug(f"tmt-report-results file '{results_path}' does not exist.")
+
+            return []
+
+        self.debug(f"tmt-report-results file '{results_path}' detected.")
+
+        if not collection.results:
+            raise tmt.utils.ExecuteError(
+                f"Test results not found in result file '{results_path}'.")
+
+        return self._process_results_reduce(invocation, collection.results)
+
+    def extract_tmt_report_results_restraint(
+            self,
+            invocation: TestInvocation,
+            default_log: Path) -> list["tmt.Result"]:
+        """
+        Extract results from the file generated by ``tmt-report-result`` script.
+
+        Special, restraint-like handling is used to convert each
+        recorded result into a standalone result.
+        """
+
+        collection = self._load_tmt_report_results_file(invocation)
+
+        results_path = collection.filepaths[0]
+
+        if not collection.file_exists:
+            self.debug(f"tmt-report-results file '{results_path}' does not exist.")
+
+            return []
+
+        self.debug(f"tmt-report-results file '{results_path}' detected.")
+
+        if not collection.results:
+            raise tmt.utils.ExecuteError(
+                f"Test results not found in result file '{results_path}'.")
+
+        return self._process_results_partials(
+            invocation, collection.results, default_log=default_log)
+
     def extract_results(
             self,
             invocation: TestInvocation,
@@ -705,10 +859,17 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self.debug(f"Extract results of '{invocation.test.name}'.")
 
         if invocation.test.result == 'custom':
-            return self.load_custom_results(invocation)
+            return self.extract_custom_results(invocation)
 
+        # Handle the 'tmt-report-result' command results as separate tests
+        if invocation.test.result == 'restraint':
+            return self.extract_tmt_report_results_restraint(
+                invocation=invocation,
+                default_log=invocation.relative_path / TEST_OUTPUT_FILENAME)
+
+        # Handle the 'tmt-report-result' command results as a single test
         if self._tmt_report_results_filepath(invocation).exists():
-            return self.load_tmt_report_results(invocation)
+            return self.extract_tmt_report_results(invocation)
 
         return invocation.test.test_framework.extract_results(invocation, logger)
 

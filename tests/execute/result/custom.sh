@@ -57,13 +57,13 @@ rlJournalStart
     testName="/test/empty-custom-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides empty 'results.yaml' file"
-        rlAssertGrep "custom results are empty" $rlRun_LOG
+        rlAssertGrep "no custom results were provided" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/empty-custom-results-json"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides empty 'results.json' file"
-        rlAssertGrep "custom results are empty" $rlRun_LOG
+        rlAssertGrep "no custom results were provided" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/wrong-yaml-results-file"

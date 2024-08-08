@@ -1,0 +1,41 @@
+summary: Verify separate results reporting
+description:
+    Ensure that individual test results are correctly reported for
+    each call of the rstrnt-report-result script.
+result: restraint
+
+/separate_rstrnt_fail:
+    test: |
+        touch /tmp/pass_log ; rstrnt-report-result /test/good PASS -o /tmp/pass_log
+        rstrnt-report-result /test/weird WARN
+        rstrnt-report-result /test/bad FAIL
+
+/separate_rstrnt_pass:
+    test: |
+        touch /tmp/pass_log ; rstrnt-report-result /test/good_1 PASS -o /tmp/pass_log
+        rstrnt-report-result /test/good_2 PASS
+        rstrnt-report-result /test/good_3 PASS
+
+/separate_rstrnt_skip:
+    test: |
+        touch /tmp/skip_log ; rstrnt-report-result /test/skip_1 SKIP -o /tmp/skip_log
+        rstrnt-report-result /test/skip_2 SKIP
+        rstrnt-report-result /test/skip_3 SKIP
+
+/separate_rhts_fail:
+    test: |
+        touch /tmp/pass_log; rhts-report-result /test/good PASS /tmp/pass_log
+        touch /tmp/warn_log; rhts-report-result /test/weird WARN /tmp/warn_log
+        touch /tmp/fail_log; rhts-report-result /test/bad FAIL /tmp/fail_log
+
+/separate_rhts_pass:
+    test: |
+        touch /tmp/pass_log; rhts-report-result /test/good_1 PASS /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/good_2 PASS /tmp/pass_log
+        touch /tmp/pass_log; rhts-report-result /test/good_3 PASS /tmp/pass_log
+
+/separate_rhts_skip:
+    test: |
+        touch /tmp/skip_log; rhts-report-result /test/skip_1 SKIP /tmp/skip_log
+        touch /tmp/skip_log; rhts-report-result /test/skip_2 SKIP /tmp/skip_log
+        touch /tmp/skip_log; rhts-report-result /test/skip_3 SKIP /tmp/skip_log

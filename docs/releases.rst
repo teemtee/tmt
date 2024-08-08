@@ -37,6 +37,16 @@ duplicate ids.
 Test directories pruning now works correctly for nested fmf trees
 and there is also a test for it.
 
+The test key :ref:`/spec/tests/result` now supports new value
+``restraint`` which allows to treat each execution of the
+``tmt-report-result``, ``rstrnt-report-result`` and
+``rhts-report-result`` commands as an independent test for which a
+separate result is reported. The behaviour for existing tests
+which already utilise these commands remains unchanged (the
+overall result is determined by selecting the result with the
+value which resides highest on the hierarchy of `skip`, `pass`,
+`warn`, `fail`).
+
 tmt-1.34
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
