@@ -478,6 +478,7 @@ definitions:
       - error
       - fail
       - custom
+      - restraint
 
   result_note:
     type: string

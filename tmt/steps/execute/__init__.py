@@ -93,7 +93,7 @@ TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
         Path("/usr/local/bin/rstrnt-report-result"),
         Path("/usr/local/bin/rhts-report-result")],
     related_variables=[],
-    created_file="results.yaml"
+    created_file="restraint-results.yaml"
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
@@ -651,11 +651,25 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             log=test_logs,
             note=note)]
 
-    def load_custom_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
-        """ Process custom results.yaml file created by the test itself """
+    def load_custom_results(
+            self,
+            invocation: TestInvocation,
+            results_path: Optional[Path] = None,
+            default_log: Optional[Path] = None) -> list["tmt.Result"]:
+        """
+        Process custom results.yaml file created by the test itself
+
+        :param results_path: use provided custom results path instead of
+            the default one
+        :param default_log: include default output log in results which
+            do not have any log provided
+        """
         test, guest = invocation.test, invocation.guest
 
-        custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
+        if results_path is not None:
+            custom_results_path_yaml = results_path
+        else:
+            custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
         custom_results_path_json = invocation.test_data_path / 'results.json'
 
         if custom_results_path_yaml.exists():
@@ -699,8 +713,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # but Result has to point relative to the execute workdir
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log]
-            if partial_result.name == invocation.test.name:
-                partial_result.log.append(invocation.relative_path / TEST_OUTPUT_FILENAME)
+
+            # Include the default output log if no log provided
+            if not partial_result.log and default_log is not None:
+                partial_result.log.append(default_log)
 
             # TODO: this might need more care: the test has been assigned a serial
             # number, which is now part of its data directory path. Now, the test
@@ -743,6 +759,14 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if invocation.test.result == 'custom':
             return self.load_custom_results(invocation)
 
+        # Handle the 'tmt-report-result' command results as separate tests
+        if invocation.test.result == 'restraint':
+            return self.load_custom_results(
+                invocation,
+                results_path=self._tmt_report_results_filepath(invocation),
+                default_log=invocation.relative_path / TEST_OUTPUT_FILENAME)
+
+        # Handle the 'tmt-report-result' command results as a single test
         if self._tmt_report_results_filepath(invocation).exists():
             return self.load_tmt_report_results(invocation)
 

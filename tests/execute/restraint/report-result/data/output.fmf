@@ -1,0 +1,21 @@
+summary:
+    Check that test output it correctly collected
+
+test: |
+    tmp=$(mktemp -d)
+
+    echo ok | tee $tmp/fine.txt
+    tmt-report-result good-no-log PASS
+    tmt-report-result good-with-log PASS -o $tmp/fine.txt
+
+    echo ko | tee $tmp/wrong.txt
+    tmt-report-result bad-no-log FAIL
+    tmt-report-result bad-with-log FAIL -o $tmp/wrong.txt
+
+    rm -rf $tmp
+
+/single:
+    result: respect
+
+/separate:
+    result: restraint

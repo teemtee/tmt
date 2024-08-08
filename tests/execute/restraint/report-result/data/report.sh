@@ -1,7 +1,7 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-RESULT_FILE="$TMT_TEST_DATA/results.yaml"
+RESULT_FILE="$TMT_TEST_DATA/restraint-results.yaml"
 
 rlJournalStart
     rlPhaseStartSetup
