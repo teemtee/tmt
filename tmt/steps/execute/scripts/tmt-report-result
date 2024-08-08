@@ -76,12 +76,12 @@ if [ $# -lt 2 ] || [ $help == True ]; then
     echo "  -h, --help                      Show help options"
     echo ""
     echo "Application Options:"
-    echo "  --port=PORT                     Property is ignored by tmt."
-    echo "  -s, --server=URL                Property is ignored by tmt."
-    echo "  -t, --message=TEXT              Property is ignored by tmt."
+    echo "  --port=PORT                     This option is ignored by tmt."
+    echo "  -s, --server=URL                This option is ignored by tmt."
+    echo "  -t, --message=TEXT              This option is ignored by tmt."
     echo "  -o, --outputfile=FILE           Log to upload with result, \$OUTPUTFILE is used by default"
-    echo "  -p, --disable-plugin=PLUGIN     Property is ignored by tmt."
-    echo "  --no-plugins                    Property is ignored by tmt."
+    echo "  -p, --disable-plugin=PLUGIN     This option is ignored by tmt."
+    echo "  --no-plugins                    This option is ignored by tmt."
     echo ""
     exit 1
 fi
