@@ -1930,7 +1930,7 @@ def clean(context: Context,
         if tmt.utils.WORKDIR_ROOT.exists():
             if 'guests' not in skip and not clean_obj.guests():
                 exit_code = 1
-            if 'runs' not in skip and not clean_obj.runs():
+            if 'runs' not in skip and not clean_obj.runs(id_):
                 exit_code = 1
         else:
             clean_obj.warn(
@@ -2007,7 +2007,9 @@ def clean_runs(
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context))
-    context.obj.clean_partials["runs"].append(clean_obj.runs)
+    context.obj.clean_partials["runs"].append(
+        lambda: clean_obj.runs(
+            (context.parent and context.parent.params.get('id_', [])) or id_))
 
 
 @clean.command(name='guests')

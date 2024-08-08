@@ -3933,7 +3933,7 @@ class Clean(tmt.utils.Common):
                 return False
         return True
 
-    def runs(self) -> bool:
+    def runs(self, id_: tuple[str, ...]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
         root_path = Path(self.opt('workdir-root'))
@@ -3944,7 +3944,7 @@ class Clean(tmt.utils.Common):
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
-        all_workdirs = list(tmt.utils.generate_runs(root_path, self.opt('id_')))
+        all_workdirs = list(tmt.utils.generate_runs(root_path, id_))
         keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
