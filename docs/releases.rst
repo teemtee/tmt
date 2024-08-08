@@ -48,9 +48,9 @@ value which resides highest on the hierarchy of `skip`, `pass`,
 `warn`, `fail`).
 
 Add support for ``--last``, ``--id``, and ``--skip`` params for
-the ``clean`` subcommand. Users can clean resources from the last 
-run or from a run with a given id. Users can also choose to skip 
-cleaning ``guests``,  ``runs`` or ``images``.
+the ``clean`` subcommand. Users can clean resources from the last
+run or from a run with a given id. Users can also choose to skip
+cleaning ``guests``, ``runs`` or ``images``.
 
 
 tmt-1.34
