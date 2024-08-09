@@ -4277,54 +4277,84 @@ def fmf_id(
         *,
         name: str,
         fmf_root: Path,
-        always_get_ref: bool = False,
         logger: tmt.log.Logger) -> 'tmt.base.FmfId':
     """ Return full fmf identifier of the node """
 
     def run(command: Command) -> str:
-        """ Run command, return output """
-        try:
-            result = command.run(cwd=fmf_root, logger=logger)
-            if result.stdout is None:
-                return ""
-            return result.stdout.strip()
-        except RunError:
-            # Always return an empty string in case 'git' command is run in a non-git repo
+        """ Run command, return output. We don't need the stderr here, but we need exit status. """
+        result = command.run(cwd=fmf_root, logger=logger)
+        if result.stdout is None:
             return ""
+        return result.stdout.strip()
 
     from tmt.base import FmfId
 
     fmf_id = FmfId(fmf_root=fmf_root, name=name)
 
     # Prepare url (for now handle just the most common schemas)
-    branch = run(Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"))
     try:
-        remote_name = branch[:branch.index('/')]
-    except ValueError:
-        remote_name = 'origin'
-    remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
-    fmf_id.url = public_git_url(remote) if remote else None
+        # Check if we are a git repo
+        run(Command("git", "rev-parse", "--is-inside-work-tree"))
 
-    # Construct path (if different from git root)
-    fmf_id.git_root = git_root(fmf_root=fmf_root, logger=logger)
-
-    if fmf_id.git_root:
+        # Initialize common git facts
+        # Get some basic git references for HEAD
+        all_refs = run(Command("git", "for-each-ref", "--format=%(refname)", "--points-at=@"))
+        logger.debug(f"git all_refs: {all_refs}")
+        # curr_ref is either HEAD or fully-qualified (branch) reference
+        curr_ref = run(Command("git", "rev-parse", "--symbolic-full-name", "@"))
+        logger.debug(f"git initial curr_ref: {curr_ref}")
+        # Get the top-level git_root
+        fmf_id.git_root = git_root(fmf_root=fmf_root, logger=logger)
+        assert fmf_id.git_root is not None
+        # Construct path (if different from git root)
         if fmf_id.git_root.resolve() != fmf_root.resolve():
             fmf_id.path = Path('/') / fmf_root.relative_to(fmf_id.git_root)
+    except RunError:
+        # Not a git repo, everything should be pointing to None at this point
+        return fmf_id
 
-        # Get the ref (skip for the default)
-        fmf_id.default_branch = default_branch(repository=fmf_id.git_root, logger=logger)
-        if fmf_id.default_branch is None:
-            fmf_id.ref = None
-        else:
-            ref = run(Command("git", "rev-parse", "--abbrev-ref", "HEAD"))
-            if ref != fmf_id.default_branch or always_get_ref:
-                fmf_id.ref = ref
-            else:
-                # Note that it is a valid configuration without having a default
-                # branch here. Consumers of returned fmf_id object should check
-                # the fmf_id contains everything they need.
-                fmf_id.ref = None
+    if curr_ref != "HEAD":
+        # The reference is fully qualified -> we are on a branch
+        # Get the short name
+        branch = run(Command("git", "for-each-ref", "--format=%(refname:short)", curr_ref))
+        fmf_id.ref = branch
+    else:
+        # Not on a branch, check if we are on a tag or just a refs
+        try:
+            tags = run(Command("git", "describe", "--tags"))
+            logger.debug(f"git tags: {tags}")
+            # Is it possible to find which tag was used to checkout?
+            # Now we just assume the first tag is the one we want
+            tag_used = tags.splitlines()[0]
+            logger.debug(f"Using tag: {tag_used}")
+            # Point curr_ref to the fully-qualified ref
+            curr_ref = f"refs/tags/{tag_used}"
+            fmf_id.ref = tag_used
+        except RunError:
+            # We are not on a tag, just use the first available reference
+            curr_ref = all_refs.splitlines()[0] if all_refs else curr_ref
+            # Point the ref to the commit
+            commit = run(Command("git", "rev-parse", curr_ref))
+            logger.debug(f"Using commit: {commit}")
+            fmf_id.ref = commit
+
+    logger.debug(f"curr_ref used: {curr_ref}")
+    remote_name = run(
+        Command(
+            "git",
+            "for-each-ref",
+            "--format=%(upstream:remotename)",
+            curr_ref))
+    if not remote_name:
+        # If no specific upstream is defined, default to `origin`
+        remote_name = "origin"
+    try:
+        remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
+        fmf_id.url = public_git_url(remote)
+        fmf_id.default_branch = default_branch(
+            repository=fmf_id.git_root, remote=remote, logger=logger)
+    except RunError:
+        pass
 
     return fmf_id
 
@@ -6998,6 +7028,18 @@ def _template_filter_listed(
         max=max,
         quote=quote,
         join=join))
+
+
+def _template_filter_web_git_url(path_str: str, url: str, ref: str) -> str:
+    """
+    Sanitize git url using :py:meth:`tmt.utils.web_git_url`
+
+    .. code-block:: jinja
+
+        {{ "/"|web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref) }}
+    """
+    path = Path(path_str) if path_str else None
+    return web_git_url(url, ref, path)
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
