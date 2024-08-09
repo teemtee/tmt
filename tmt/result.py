@@ -140,9 +140,9 @@ class CheckResult(BaseResult):
 
 
 @dataclasses.dataclass
-class PhaseCheckResult(CheckResult):
+class SubCheckResult(CheckResult):
     """
-    Describes what tmt knows about a single phase test check result.
+    Describes what tmt knows about a single subtest check result.
 
     It does not contain any additional fields; it simply defines a type to
     easily differentiate between a :py:class:`tmt.result.CheckResult` and a
@@ -151,15 +151,20 @@ class PhaseCheckResult(CheckResult):
 
 
 @dataclasses.dataclass
-class PhaseResult(BaseResult):
-    """ Describes what tmt knows about a single test phase result (sub-result) """
+class SubResult(BaseResult):
+    """ Describes what tmt knows about a single test subresult """
 
-    check: list[PhaseCheckResult] = field(
-        default_factory=cast(Callable[[], list[PhaseCheckResult]], list),
+    check: list[SubCheckResult] = field(
+        default_factory=cast(Callable[[], list[SubCheckResult]], list),
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
-            PhaseCheckResult.from_serialized(check) for check in serialized]
+            SubCheckResult.from_serialized(check) for check in serialized]
         )
+
+
+@dataclasses.dataclass
+class PhaseResult(BaseResult):
+    """ Describes what tmt knows about result of individual phases, e.g. prepare ansible """
 
 
 @dataclasses.dataclass
@@ -186,11 +191,11 @@ class Result(BaseResult):
         unserialize=lambda serialized: ResultGuestData.from_serialized(serialized)
         )
 
-    phase: list[PhaseResult] = field(
-        default_factory=cast(Callable[[], list[PhaseResult]], list),
+    subresult: list[SubResult] = field(
+        default_factory=cast(Callable[[], list[SubResult]], list),
         serialize=lambda results: [result.to_serialized() for result in results],
         unserialize=lambda serialized: [
-            PhaseResult.from_serialized(phase) for phase in serialized]
+            SubResult.from_serialized(subresult) for subresult in serialized]
         )
 
     check: list[CheckResult] = field(
