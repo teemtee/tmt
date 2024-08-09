@@ -1865,14 +1865,28 @@ def status(
 #  Clean
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Supported clean resources
+CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.group(chain=True, invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
+
+@main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @pass_context
+@option(
+    '-l', '--last', is_flag=True,
+    help='Clean resources related to the last run.')
+@option(
+    '-i', '--id', 'id_', metavar="ID", multiple=True,
+    help='Identifier (name or directory path) of the run to be cleaned.')
+@option(
+    '-s', '--skip', choices=CLEAN_RESOURCES,
+    help='The resources which should be kept on the disk.', multiple=True)
 @verbosity_options
 @dry_options
-def clean(context: Context, **kwargs: Any) -> None:
+def clean(context: Context,
+          last: bool,
+          id_: tuple[str, ...],
+          skip: list[str],
+          **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
 
@@ -1885,6 +1899,9 @@ def clean(context: Context, **kwargs: Any) -> None:
     the same, irrespective of the order on the command line. First, all
     the guests are cleaned, followed by runs and images.
     """
+    if last and id_:
+        raise tmt.utils.GeneralError(
+            "Options --last and --id cannot be used together.")
 
     context.obj.clean_logger = context.obj.logger \
         .descend(logger_name='clean', extra_shift=0) \
@@ -1911,15 +1928,16 @@ def clean(context: Context, **kwargs: Any) -> None:
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context))
         if tmt.utils.WORKDIR_ROOT.exists():
-            if not clean_obj.guests():
+            if 'guests' not in skip and not clean_obj.guests():
                 exit_code = 1
-            if not clean_obj.runs():
+            if 'runs' not in skip and not clean_obj.runs(id_):
                 exit_code = 1
         else:
             clean_obj.warn(
                 f"Directory '{tmt.utils.WORKDIR_ROOT}' does not exist, "
                 f"skipping guest and run cleanup.")
-        clean_obj.images()
+        if 'images' not in skip and not clean_obj.images():
+            exit_code = 1
         raise SystemExit(exit_code)
 
 
@@ -1989,7 +2007,9 @@ def clean_runs(
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context))
-    context.obj.clean_partials["runs"].append(clean_obj.runs)
+    context.obj.clean_partials["runs"].append(
+        lambda: clean_obj.runs(
+            (context.parent and context.parent.params.get('id_', [])) or id_))
 
 
 @clean.command(name='guests')

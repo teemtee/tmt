@@ -1475,6 +1475,43 @@ to see what would actually happen using ``--dry`` mode:
             testcloud
                 warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
 
+You may also want to clean everything in only one run using
+the ``--id`` or ``--last`` options.
+
+.. code-block:: shell
+
+    $ tmt clean -v --last
+    clean
+    guests
+        Stopping guests in run '/var/tmp/tmt/run-001' plan '/plans/testcloud'.
+            finish
+
+                guest: stopped
+                guest: removed
+                summary: 0 tasks completed
+    runs
+        Removing workdir '/var/tmp/tmt/run-001'.
+    images
+        testcloud
+            warn: Directory '/var/tmp/tmt/testcloud/images' does not exist.
+
+You can also skip cleaning selected resources using the ``--skip``
+option.
+
+.. code-block:: shell
+
+    $ tmt clean -v --last --skip images
+    clean
+    guests
+        Stopping guests in run '/var/tmp/tmt/run-001' plan '/plans/testcloud'.
+            finish
+
+                guest: stopped
+                guest: removed
+                summary: 0 tasks completed
+    runs
+        Removing workdir '/var/tmp/tmt/run-001'.
+
 In some cases, you may want to have a bit more control over the
 behaviour which can be achieved using subcommands and their
 options. All of the options described above can be used with
