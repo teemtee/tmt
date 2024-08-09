@@ -318,6 +318,8 @@ lint.select = [
     "PLC",  # pylint-convention
     "PLE",  # pylint-error
     "PLR",  # pylint-refactor
+    "FLY",  # flynt
+    "FURB",  # refurb
     "RUF",  # ruff
     "D",    # pydocstyle
     ]
@@ -337,6 +339,7 @@ lint.ignore = [
     "S603",  # `subprocess` call: check for execution of untrusted input
     "S607",  # Starting a process with a partial executable path
     "S105",  # Possible hardcoded password assigned to: "PASS"
+    "SIM103",  # Return the condition directly - can hurt readability
 
     # pydocstyle
     # TODO: the permanent list (drop this comment once the temporary list
@@ -372,6 +375,7 @@ lint.typing-modules = ["tmt._compat.typing"]
     "S605",  # Starting a process with a shell: seems safe, but may be changed in the future
     "S318",  # Using xml to parse untrusted data is known to be vulnerable to XML attacks
     "S108",  # Probable insecure usage of temporary file or directory: "{}"
+    "FLY002",  # Use f-string instead of .join
     ]
 # The purpose of tmt/_compat is to be used with TID251 (banned imports)
 "tmt/_compat/**.py" = ["TID251"]

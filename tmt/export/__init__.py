@@ -379,7 +379,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     html_headings_from_file = [i[0] for i in
                                re.findall('(^<h[1-4]>(.+?)</h[1-4]>$)',
                                           md_to_html,
-                                          re.M)]
+                                          re.MULTILINE)]
 
     # No invalid headings in the file w/o headings
     if not html_headings_from_file:

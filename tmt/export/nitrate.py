@@ -263,7 +263,7 @@ def return_markdown_file() -> Optional[Path]:
     """ Return path to the markdown file """
     files = '\n'.join(os.listdir())
     reg_exp = r'.+\.md$'
-    md_files = re.findall(reg_exp, files, re.M)
+    md_files = re.findall(reg_exp, files, re.MULTILINE)
     fail_message = ("in the current working directory.\n"
                     "Manual steps couldn't be exported")
     if len(md_files) == 1:
@@ -285,7 +285,7 @@ def get_category(path: Path) -> str:
         with open(path / 'Makefile', encoding='utf-8') as makefile_file:
             makefile = makefile_file.read()
         category_search = re.search(
-            r'echo\s+"Type:\s*(.*)"', makefile, re.M)
+            r'echo\s+"Type:\s*(.*)"', makefile, re.MULTILINE)
         if category_search:
             category = category_search.group(1)
     # Default to 'Sanity' if Makefile or Type not found

@@ -75,6 +75,7 @@ LABEL_FORMAT = '[{label}]'
 
 LoggableValue = Union[
     str,
+    dict[str, Any],
     int,
     bool,
     float,
@@ -410,7 +411,7 @@ class TopicFilter(logging.Filter):
         if details.message_topic is None:
             return True
 
-        if details.message_topic in details.logger_topics:
+        if details.ignore_quietness:
             return True
 
         return False
