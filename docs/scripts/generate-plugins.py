@@ -67,7 +67,7 @@ def container_ignored_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             field_names.append(field.name)
@@ -81,7 +81,7 @@ def container_inherited_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_inherited(container, field, metadata):
             field_names.append(field.name)
@@ -95,7 +95,7 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             continue

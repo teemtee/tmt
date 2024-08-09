@@ -1,7 +1,7 @@
 :tocdepth: 0
 
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
-    {% set _, option, _, metadata = container_field(plugin_data_class, field_name) %}
+    {% set _, option, _, _, metadata = container_field(plugin_data_class, field_name) %}
 
     {% if metadata.metavar %}
 {{ option }}: ``{{ metadata.metavar }}``

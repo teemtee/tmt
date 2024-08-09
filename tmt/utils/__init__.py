@@ -2929,25 +2929,9 @@ def container_items(container: ContainerInstance) -> Iterator[tuple[str, Any]]:
         yield field.name, container.__dict__[field.name]
 
 
-@overload
-def container_field(
-        container: ContainerClass,
-        key: str) -> tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]']:
-    pass
-
-
-@overload
-def container_field(
-        container: ContainerInstance,
-        key: str) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
-    pass
-
-
 def container_field(
         container: Container,
-        key: str) -> Union[
-            tuple[str, str, dataclasses.Field[Any], 'FieldMetadata[Any]'],
-            tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']]:
+        key: str) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
     """
     Return a dataclass/data container field info by the field's name.
 
@@ -2965,14 +2949,8 @@ def container_field(
             continue
 
         metadata = field.metadata.get('tmt', FieldMetadata())
-        if inspect.isclass(container):
-            return field.name, key_to_option(field.name), field, metadata
-
-        return (
-            field.name,
-            key_to_option(field.name),
-            container.__dict__[field.name],
-            field, metadata)
+        fname = container.__dict__[field.name] if not inspect.isclass(container) else None
+        return field.name, key_to_option(field.name), fname, field, metadata
 
     if isinstance(container, DataContainer):
         raise GeneralError(
@@ -3236,7 +3214,7 @@ class SerializableContainer(DataContainer):
             for option, value in serialized.items():
                 key = option_to_key(option)
 
-                _, _, _, metadata = container_field(cls, key)
+                _, _, _, _, metadata = container_field(cls, key)
 
                 if metadata.unserialize_callback:
                     yield key, metadata.unserialize_callback(value)
@@ -5453,7 +5431,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         self._previous_line: Optional[str] = None
 
-    def __enter__(self: 'Self') -> 'Self':
+    def __enter__(self) -> 'Self':
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -5977,7 +5955,7 @@ def dataclass_normalize_field(
     value = raw_value
 
     if dataclasses.is_dataclass(container):
-        _, _, _, metadata = container_field(type(container), keyname)
+        _, _, _, _, metadata = container_field(type(container), keyname)
 
         if metadata.normalize_callback:
             value = metadata.normalize_callback(key_address, raw_value, logger)

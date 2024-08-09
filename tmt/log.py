@@ -75,6 +75,7 @@ LABEL_FORMAT = '[{label}]'
 
 LoggableValue = Union[
     str,
+    dict[str, Any],
     int,
     bool,
     float,
