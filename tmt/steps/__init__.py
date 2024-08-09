@@ -49,8 +49,8 @@ from tmt.utils import (
     field,
     key_to_option,
     option_to_key,
-    render_template,
     )
+from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
 

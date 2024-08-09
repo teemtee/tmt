@@ -17,6 +17,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.git
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, Environment, EnvVarValue, Path, field
 
@@ -358,7 +359,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.debug(f"Clone '{url}' to '{self.testdir}'.")
             # Shallow clone to speed up testing and
             # minimize data transfers if ref is not provided
-            tmt.utils.git_clone(
+            tmt.utils.git.git_clone(
                 url=url,
                 destination=self.testdir,
                 shallow=ref is None,
@@ -435,7 +436,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             with contextlib.suppress(tmt.utils.RunError, AttributeError):
                 self.verbose(
                     'hash',
-                    tmt.utils.git_hash(directory=self.testdir, logger=self._logger),
+                    tmt.utils.git.git_hash(directory=self.testdir, logger=self._logger),
                     'green'
                     )
 
@@ -520,7 +521,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         modified_url = self.get('modified-url')
         if modified_url:
             previous = modified_url
-            modified_url = tmt.utils.clonable_git_url(modified_url)
+            modified_url = tmt.utils.git.clonable_git_url(modified_url)
             self.info('modified-url', modified_url, 'green')
             if previous != modified_url:
                 self.debug(f"Original url was '{previous}'.")
@@ -531,7 +532,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if modified_only:
             modified_ref = self.get(
                 'modified-ref',
-                tmt.utils.default_branch(repository=self.testdir, logger=self._logger))
+                tmt.utils.git.default_branch(repository=self.testdir, logger=self._logger))
             self.info('modified-ref', modified_ref, 'green')
             ref_commit = self.run(
                 Command('git', 'rev-parse', '--short', str(modified_ref)),

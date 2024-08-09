@@ -6,6 +6,7 @@ import pytest
 import tmt
 import tmt.base
 import tmt.libraries.beakerlib
+import tmt.utils.git
 from tmt.utils import Path
 
 
@@ -121,7 +122,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
             identifier=identifier,
             parent=parent).fetch()
     # Second time there shouldn't be an attempt to clone...
-    monkeypatch.setattr("tmt.utils.git_clone", MagicMock(
+    monkeypatch.setattr("tmt.utils.git.git_clone", MagicMock(
         side_effect=RuntimeError('Should not be called')))
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLib(
