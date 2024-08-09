@@ -1017,7 +1017,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     data_base = self._plugin_base_class._data_class
 
                     debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
-                    debug3('compatible keys', list(data_base.keys()))
+                    debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
 
                     # Copy compatible keys only, ignore everything else
                     # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
@@ -1313,7 +1313,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         # Include common options supported across all plugins
         return [
             metadata.option
-            for _, _, _, metadata in (
+            for _, _, _, _, metadata in (
                 container_field(cls._data_class, key)
                 for key in container_keys(cls._data_class)
                 )
