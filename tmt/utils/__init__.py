@@ -5193,7 +5193,7 @@ class DistGitHandler:
         ret_values = []
         try:
             with open(cwd / self.sources_file_name) as f:
-                for line in f.readlines():
+                for line in f:
                     match = self.re_source.match(line)
                     if match is None:
                         raise GeneralError(
