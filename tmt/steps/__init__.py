@@ -8,7 +8,7 @@ import itertools
 import re
 import shutil
 import textwrap
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
+    from tmt.result import BaseResult
     from tmt.steps.provision import Guest
 
 
@@ -251,6 +252,9 @@ StepDataT = TypeVar('StepDataT', bound='StepData')
 
 #: A type variable representing a return value of plugin's ``go()`` method.
 PluginReturnValueT = TypeVar('PluginReturnValueT')
+
+#: A type variable representing a result type.
+ResultT = TypeVar('ResultT', bound='BaseResult')
 
 
 @dataclasses.dataclass
@@ -686,6 +690,40 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             'data': [datum.to_serialized() for datum in self.data]
             }
         self.write(Path('step.yaml'), tmt.utils.dict_to_yaml(content))
+
+    def _load_results(
+            self,
+            result_class: type[ResultT],
+            allow_missing: bool = False) -> list[ResultT]:
+        """ Load results of this step from the workdir """
+
+        try:
+            raw_results: list[Any] = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
+
+            return [
+                result_class.from_serialized(raw_result) for raw_result in raw_results
+                ]
+
+        except tmt.utils.FileError as exc:
+            if allow_missing:
+                self.debug(f'{self.__class__.__name__} results not found.', level=2)
+                return []
+
+            raise GeneralError('Cannot load step results.') from exc
+
+        except Exception as exc:
+            raise GeneralError('Cannot load step results.') from exc
+
+    def _save_results(self, results: Sequence['BaseResult']) -> None:
+        """ Save results of this step to the workdir """
+
+        try:
+            raw_results = [result.to_serialized() for result in results]
+
+            self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(raw_results))
+
+        except Exception as exc:
+            raise GeneralError('Cannot save step results.') from exc
 
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
