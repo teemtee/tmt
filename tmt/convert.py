@@ -228,7 +228,7 @@ def read_datafile(
         testinfo = datafile
 
     # Beaker task name
-    search_result = re.search(regex_task, testinfo, re.M)
+    search_result = re.search(regex_task, testinfo, re.MULTILINE)
     if search_result is None:
         raise ConvertError("Unable to parse 'Name' from testinfo.desc.")
     beaker_task = search_result.group(1).strip()
@@ -237,13 +237,13 @@ def read_datafile(
     data['extra-summary'] = beaker_task
 
     # Summary
-    search_result = re.search(regex_summary, testinfo, re.M)
+    search_result = re.search(regex_summary, testinfo, re.MULTILINE)
     if search_result is not None:
         data['summary'] = search_result.group(1).strip()
         echo(style('summary: ', fg='green') + data['summary'])
 
     # Test script
-    search_result = re.search(regex_test, datafile_test, re.M)
+    search_result = re.search(regex_test, datafile_test, re.MULTILINE)
     if search_result is None:
         if filename == 'metadata':
             # entry_point property is optional. When absent 'make run' is used.
@@ -271,7 +271,7 @@ def read_datafile(
                 with open(makefile_path, encoding='utf-8') as makefile_file:
                     makefile = makefile_file.read()
                     search_result = \
-                        re.search(makefile_regex_test, makefile, re.M)
+                        re.search(makefile_regex_test, makefile, re.MULTILINE)
             except OSError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
@@ -280,7 +280,7 @@ def read_datafile(
         # Read the test file and determine the framework used.
         if test_path:
             with open(test_path, encoding="utf-8") as test_file:
-                if re.search("beakerlib", test_file.read(), re.M):
+                if re.search("beakerlib", test_file.read(), re.MULTILINE):
                     data["framework"] = "beakerlib"
                 else:
                     data["framework"] = "shell"
@@ -291,28 +291,28 @@ def read_datafile(
         raise ConvertError(f"Unable to open '{test_path}'.")
 
     # Contact
-    search_result = re.search(regex_contact, testinfo, re.M)
+    search_result = re.search(regex_contact, testinfo, re.MULTILINE)
     if search_result is not None:
         data['contact'] = search_result.group(1).strip()
         echo(style('contact: ', fg='green') + data['contact'])
 
     if filename == 'Makefile':
         # Component
-        search_result = re.search(r'^RunFor:[ \t]*(.*)$', testinfo, re.M)
+        search_result = re.search(r'^RunFor:[ \t]*(.*)$', testinfo, re.MULTILINE)
         if search_result is not None:
             data['component'] = search_result.group(1).split()
             echo(style('component: ', fg='green') +
                  ' '.join(data['component']))
 
     # Duration
-    search_result = re.search(regex_duration, testinfo, re.M)
+    search_result = re.search(regex_duration, testinfo, re.MULTILINE)
     if search_result is not None:
         data['duration'] = search_result.group(1).strip()
         echo(style('duration: ', fg='green') + data['duration'])
 
     if filename == 'Makefile':
         # Environment
-        variables = re.findall(r'^Environment:[ \t]*(.*)$', testinfo, re.M)
+        variables = re.findall(r'^Environment:[ \t]*(.*)$', testinfo, re.MULTILINE)
         if variables:
             data['environment'] = {}
             for variable in variables:
@@ -334,7 +334,7 @@ def read_datafile(
         return name
 
     # RhtsRequires or repoRequires (optional) goes to require
-    requires = re.findall(regex_require, testinfo, re.M)
+    requires = re.findall(regex_require, testinfo, re.MULTILINE)
     if requires:
         data['require'] = [
             sanitize_name(require.strip()) for line in requires
@@ -342,7 +342,7 @@ def read_datafile(
         echo(style('require: ', fg='green') + ' '.join(data['require']))
 
     # Requires or softDependencies (optional) goes to recommend
-    recommends = re.findall(regex_recommend, testinfo, re.M)
+    recommends = re.findall(regex_recommend, testinfo, re.MULTILINE)
     if recommends:
         data['recommend'] = [
             sanitize_name(recommend.strip()) for line in recommends
@@ -352,7 +352,7 @@ def read_datafile(
 
     if filename == 'Makefile':
         # Convert Type into tags
-        search_result = re.search(r'^Type:[ \t]*(.*)$', testinfo, re.M)
+        search_result = re.search(r'^Type:[ \t]*(.*)$', testinfo, re.MULTILINE)
         if search_result is not None:
             makefile_type = search_result.group(1).strip()
             if 'all' in [type_.lower() for type_ in types]:
@@ -364,7 +364,7 @@ def read_datafile(
                 echo(style("tag: ", fg="green") + " ".join(tags))
                 data["tag"] = tags
         # Add relevant bugs to the 'link' attribute
-        for bug_line in re.findall(r'^Bug:\s*([0-9\s]+)', testinfo, re.M):
+        for bug_line in re.findall(r'^Bug:\s*([0-9\s]+)', testinfo, re.MULTILINE):
             for bug in re.findall(r'(\d+)', bug_line):
                 add_link(bug, data, SYSTEM_BUGZILLA)
 
@@ -519,7 +519,7 @@ def read(
             if '\\\n' in datafile:
                 datafile_test = re.sub(r'\\\n', newline_stub, datafile)
             regexp = r'^run:.*\n\t(.*)$'
-            search_result = re.search(regexp, datafile_test, re.M)
+            search_result = re.search(regexp, datafile_test, re.MULTILINE)
             if search_result is None:
                 # Target not found in the Makefile
                 return []
@@ -533,7 +533,7 @@ def read(
         def target_content_build() -> list[str]:
             """ Extract lines from the build content """
             regexp = r'^build:.*\n((?:\t[^\n]*\n?)*)'
-            search_result = re.search(regexp, datafile, re.M)
+            search_result = re.search(regexp, datafile, re.MULTILINE)
             if search_result is None:
                 # Target not found in the Makefile
                 return []
@@ -760,7 +760,7 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
     Check for the tier attribute, if there are multiple TierX tags, pick
     the one with the lowest index.
     """
-    tier_match = re.match(r'^Tier ?(?P<num>\d+)$', tag, re.I)
+    tier_match = re.match(r'^Tier ?(?P<num>\d+)$', tag, re.IGNORECASE)
     if tier_match:
         num = tier_match.group('num')
         if 'tier' in data:
@@ -984,12 +984,12 @@ def extract_relevancy(
         return None
     # Fallback to the original relevancy syntax
     # The relevancy definition begins with the header
-    matched = re.search(RELEVANCY_LEGACY_HEADER, notes, re.I + re.M + re.S)
+    matched = re.search(RELEVANCY_LEGACY_HEADER, notes, re.IGNORECASE + re.MULTILINE + re.DOTALL)
     if not matched:
         return None
     relevancy = matched.groups()[0]
     # Remove possible additional text after an empty line
-    matched = re.search(r"(.*?)\n\s*\n.*", relevancy, re.S)
+    matched = re.search(r"(.*?)\n\s*\n.*", relevancy, re.DOTALL)
     if matched:
         relevancy = matched.groups()[0]
     return relevancy.strip()
