@@ -84,8 +84,36 @@ class EPEL(ToggleableFeature):
         self._disable('epel-disable.yaml')
 
 
+class FIPS(ToggleableFeature):
+    NAME = 'fips'
+
+    def is_unsupported(self) -> bool:
+        return isinstance(self.guest, (tmt.steps.provision.podman.GuestContainer,
+                                       tmt.steps.provision.local.GuestLocal))
+
+    def _reboot_guest(self) -> None:
+        self.info('reboot', 'Rebooting guest', color='yellow')
+        self.guest.reboot()
+        self.info('reboot', 'Reboot finished', color='yellow')
+
+    def enable(self) -> None:
+        if not self.is_unsupported():
+            self._enable('fips-enable.yaml')
+            self._reboot_guest()
+        else:
+            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
+
+    def disable(self) -> None:
+        if not self.is_unsupported():
+            self._disable('fips-disable.yaml')
+            self._reboot_guest()
+        else:
+            self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
+
+
 _FEATURES: dict[str, type[Feature]] = {
-    EPEL.NAME: EPEL
+    EPEL.NAME: EPEL,
+    FIPS.NAME: FIPS
     }
 
 
@@ -96,6 +124,13 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
         option='--epel',
         metavar='enabled|disabled',
         help='Whether EPEL repository should be installed & enabled or disabled.'
+        )
+
+    fips: Optional[str] = field(
+        default=None,
+        option='--fips',
+        metavar='enabled|disabled',
+        help='Whether FIPS should be enabled or disabled.'
         )
 
 
@@ -111,6 +146,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         prepare:
             how: feature
             epel: enabled
+            fips: enabled
 
     Or
 
@@ -119,6 +155,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         prepare:
             how: feature
             epel: disabled
+            fips: disabled
     """
 
     _data_class = PrepareFeatureData
@@ -136,7 +173,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return []
 
-        # Enable or disable epel
+        # Enable or disable epel/fips
         for feature_key in _FEATURES:
             value = cast(Optional[str], getattr(self.data, feature_key, None))
             if value is None:
