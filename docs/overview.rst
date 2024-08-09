@@ -753,7 +753,9 @@ Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
 Zhaojuan Guo, Natália Bubáková, Michal Josef Špaček, Jiří Popelka,
 Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez,
 James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
-Qinghua Cheng and Michael Engel.
+Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
+Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica and
+Otto Šabart.
 
 
 Copyright
