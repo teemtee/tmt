@@ -44,10 +44,7 @@ def _is_ignored(
     if metadata.internal is True:
         return True
 
-    if hasattr(container, '_OPTIONLESS_FIELDS') and field.name in container._OPTIONLESS_FIELDS:
-        return True
-
-    return False
+    return hasattr(container, '_OPTIONLESS_FIELDS') and field.name in container._OPTIONLESS_FIELDS
 
 
 def _is_inherited(

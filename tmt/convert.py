@@ -83,8 +83,8 @@ def read_manual(
     new_cwd.mkdir(exist_ok=True)
     os.chdir(new_cwd)
 
-    for case_id in case_ids:
-        testcase = nitrate.TestCase(case_id)
+    for cid in case_ids:
+        testcase = nitrate.TestCase(cid)
         if testcase.status.name != 'CONFIRMED' and not disabled:
             log.debug(f'{testcase.identifier} skipped (testcase is not CONFIRMED).')
             continue
