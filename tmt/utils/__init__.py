@@ -2158,7 +2158,7 @@ class _MultiInvokableCommonMeta(_CommonMeta):
     """
 
     # N805: ruff does not recognize this as a metaclass, `cls` is correct
-    def __init__(cls, *args: Any, **kwargs: Any) -> None:  # noqa: N805
+    def __init__(cls, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         cls.cli_invocations: list[tmt.cli.CliInvocation] = []
@@ -5966,7 +5966,7 @@ def dataclass_normalize_field(
     # test.
     #
     # Keep for debugging purposes, as long as normalization settles down.
-    if value is None or value == [] or value == ():
+    if not value:
         logger.debug(
             f'field "{key_address}" normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
