@@ -29,6 +29,7 @@ class GuestLocal(tmt.Guest):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -50,7 +51,8 @@ class GuestLocal(tmt.Guest):
             reduced.
         """
 
-        playbook = self._ansible_playbook_path(playbook)
+        if playbook_root:
+            playbook = self._ansible_playbook_path(playbook, playbook_root)
 
         return self._run_guest_command(
             Command(

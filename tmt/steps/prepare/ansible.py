@@ -166,7 +166,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 logger.info('playbook-path', playbook_path, 'green')
 
-            guest.ansible(playbook_path, extra_args=self.data.extra_args)
+            guest.ansible(
+                playbook_path,
+                playbook_root=self.step.plan.fmf_root,
+                extra_args=self.data.extra_args)
 
         return results
 
