@@ -112,6 +112,10 @@ class Prepare(tmt.steps.Step):
 
     _plugin_base_class = PreparePlugin
 
+    _preserved_workdir_members = [
+        *tmt.steps.Step._preserved_workdir_members,
+        'results.yaml']
+
     def __init__(
             self,
             *,

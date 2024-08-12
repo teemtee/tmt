@@ -93,6 +93,10 @@ class Finish(tmt.steps.Step):
 
     _plugin_base_class = FinishPlugin
 
+    _preserved_workdir_members = [
+        *tmt.steps.Step._preserved_workdir_members,
+        'results.yaml']
+
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
         super().wake()

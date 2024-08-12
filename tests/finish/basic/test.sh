@@ -19,6 +19,14 @@ rlJournalStart
         rlAssertNotExists "$tmp/cleanup-test"
     rlPhaseEnd
 
+    rlPhaseStartTest "Verify prepare and finish step save results"
+        rlRun "tmt run -i $tmp --scratch provision prepare finish"
+        rlAssertExists "$tmp/prepare/results.yaml"
+        rlAssertEquals "Prepare results exists and it's empty" "$(cat $tmp/prepare/results.yaml)" "[]"
+        rlAssertExists "$tmp/finish/results.yaml"
+        rlAssertEquals "Finish results exists and it's empty" "$(cat $tmp/finish/results.yaml)" "[]"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
