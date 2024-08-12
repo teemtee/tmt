@@ -986,17 +986,14 @@ class Execute(tmt.steps.Step):
     def load(self) -> None:
         """ Load test results """
         super().load()
-        try:
-            results = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
-            self._results = [Result.from_serialized(data) for data in results]
-        except tmt.utils.FileError:
-            self.debug('Test results not found.', level=2)
+
+        self._results = self._load_results(Result, allow_missing=True)
 
     def save(self) -> None:
         """ Save test results to the workdir """
         super().save()
-        results = [result.to_serialized() for result in self.results()]
-        self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(results))
+
+        self._save_results(self.results())
 
     def wake(self) -> None:
         """ Wake up the step (process workdir and command line) """
