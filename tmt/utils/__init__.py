@@ -2157,7 +2157,6 @@ class _MultiInvokableCommonMeta(_CommonMeta):
     that cannot be shared among classes.
     """
 
-    # N805: ruff does not recognize this as a metaclass, `cls` is correct
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
@@ -2949,8 +2948,12 @@ def container_field(
             continue
 
         metadata = field.metadata.get('tmt', FieldMetadata())
-        fname = container.__dict__[field.name] if not inspect.isclass(container) else None
-        return field.name, key_to_option(field.name), fname, field, metadata
+        return (
+            field.name,
+            key_to_option(field.name),
+            container.__dict__[field.name] if not inspect.isclass(container) else None,
+            field,
+            metadata)
 
     if isinstance(container, DataContainer):
         raise GeneralError(
