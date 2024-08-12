@@ -270,7 +270,7 @@ class Prepare(tmt.steps.Step):
         #
         # 1. make the list of requirements unique,
         # 2. group guests with same requirements.
-        from tmt.steps.prepare.install import _RawPrepareInstallStepData
+        from tmt.steps.prepare.install import PrepareInstallData
 
         pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
         pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
@@ -297,34 +297,31 @@ class Prepare(tmt.steps.Step):
             if not collection.dependencies:
                 continue
 
-            data: _RawPrepareInstallStepData = {
-                'how': 'install',
-                'name': 'requires',
-                'summary': 'Install required packages',
-                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                'where': [guest.name for guest in collection.guests],
-                'package': [
-                    dependency.to_spec()
-                    for dependency in collection.dependencies
-                    ]}
-            self._phases.append(PreparePlugin.delegate(self, raw_data=data))
+            data = PrepareInstallData(
+                name='requires',
+                how='install',
+                summary='Install required packages',
+                order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
+                where=[guest.name for guest in collection.guests],
+                package=collection.dependencies
+                )
+
+            self._phases.append(PreparePlugin.delegate(self, data=data))
 
         for collection in pruned_recommends.values():
             if not collection.dependencies:
                 continue
 
-            data = {
-                'how': 'install',
-                'name': 'recommends',
-                'summary': 'Install recommended packages',
-                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                'where': [guest.name for guest in collection.guests],
-                'package': [
-                    dependency.to_spec()
-                    for dependency in collection.dependencies
-                    ],
-                'missing': 'skip'}
-            self._phases.append(PreparePlugin.delegate(self, raw_data=data))
+            data = PrepareInstallData(
+                how='install',
+                name='recommends',
+                summary='Install recommended packages',
+                order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
+                where=[guest.name for guest in collection.guests],
+                package=collection.dependencies,
+                missing='skip')
+
+            self._phases.append(PreparePlugin.delegate(self, data=data))
 
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
