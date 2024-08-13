@@ -4,4 +4,3 @@ plan:
     import:
         url: https://github.com/teemtee/tests
         name: /plans/polarion
-        ref: update_polarion_tests
