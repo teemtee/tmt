@@ -779,8 +779,9 @@ def test_fedora_dist_git(tmppath):
     (tmppath / 'sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
     (tmppath / 'tmt.spec').write_text('')
     fedora_sources_obj = tmt.utils.FedoraDistGit()
-    assert [("https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
-            "fn-1.tar.gz")] == fedora_sources_obj.url_and_name(cwd=tmppath)
+    assert fedora_sources_obj.url_and_name(cwd=tmppath) == [(
+        "https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
+        "fn-1.tar.gz")]
 
 
 class TestValidateGitStatus:

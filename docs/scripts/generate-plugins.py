@@ -44,10 +44,7 @@ def _is_ignored(
     if metadata.internal is True:
         return True
 
-    if hasattr(container, '_OPTIONLESS_FIELDS') and field.name in container._OPTIONLESS_FIELDS:
-        return True
-
-    return False
+    return hasattr(container, '_OPTIONLESS_FIELDS') and field.name in container._OPTIONLESS_FIELDS
 
 
 def _is_inherited(
@@ -67,7 +64,7 @@ def container_ignored_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             field_names.append(field.name)
@@ -81,7 +78,7 @@ def container_inherited_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_inherited(container, field, metadata):
             field_names.append(field.name)
@@ -95,7 +92,7 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
     field_names: list[str] = []
 
     for field in tmt.utils.container_fields(container):
-        _, _, _, metadata = tmt.utils.container_field(container, field.name)
+        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             continue

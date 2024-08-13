@@ -187,7 +187,8 @@ class Prepare(tmt.steps.Step):
 
             @property
             def as_key(self) -> frozenset['tmt.base.DependencySimple']:
-                return frozenset(collection.dependencies)
+                # ignore[attr-defined]: mypy doesn't seem to understand collection as `frozenset`
+                return frozenset(collection.dependencies)  # type: ignore[has-type]
 
         # All phases from all steps.
         phases = [
@@ -223,7 +224,9 @@ class Prepare(tmt.steps.Step):
                     continue
 
                 collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
-                    phase.essential_requires(),
+                    # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
+                    # actually PluginClass
+                    phase.essential_requires(),  # type: ignore[attr-defined]
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger)
 

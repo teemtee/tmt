@@ -946,7 +946,7 @@ class Guest(tmt.utils.Common):
             return
         keys = 'ok changed unreachable failed skipped rescued ignored'.split()
         for key in keys:
-            matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.M)
+            matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.MULTILINE)
             if matched and int(matched.group(1)) > 0:
                 tasks = fmf.utils.listed(matched.group(1), 'task')
                 self.verbose(key, tasks, 'green')
