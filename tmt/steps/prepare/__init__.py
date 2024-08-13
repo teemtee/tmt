@@ -187,8 +187,8 @@ class Prepare(tmt.steps.Step):
 
             @property
             def as_key(self) -> frozenset['tmt.base.DependencySimple']:
-                return frozenset(collection.dependencies)  # type: ignore[has-type]
                 # mypy doesn't seem to understand collection as `frozenset`
+                return frozenset(collection.dependencies)  # type: ignore[has-type]
 
         # All phases from all steps.
         phases = [
