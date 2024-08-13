@@ -382,7 +382,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
-            launch_time = self.step.plan.execute.results()[0].start_time or self.time()
+            # launch time should be the earliest start time of all plans
+            launch_time = min([r.start_time or self.time()
+                               for r in self.step.plan.execute.results()])
 
         # Create launch, suites (if "--suite_per_plan") and tests;
         # or report to existing launch/suite if its id is given
