@@ -140,7 +140,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     exclude_variables: str = field(
         option="--exclude-variables",
         metavar="PATTERN",
-        default=_str_env_to_default('defect_type', "^TMT_.*"),
+        default=_str_env_to_default('exclude_variables', "^TMT_.*"),
         help="""
              Regular expression for excluding environment variables
              from reporting to ReportPortal ('^TMT_.*' used by default).
