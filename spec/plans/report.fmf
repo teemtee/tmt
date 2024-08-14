@@ -1,7 +1,7 @@
 summary: Report test results
 story:
     As a tester I want to have a nice overview of results once
-    the testing if finished.
+    the testing is finished.
 description:
     Report test results according to user preferences.
 
