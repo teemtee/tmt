@@ -20,7 +20,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
             keys: Optional[list[str]] = None,
             **variables: Any
             ) -> str:
-        return tmt.utils.render_template_file(
+        return tmt.utils.templates.render_template_file(
             template_filepath or tmt.export.TEMPLATES_DIRECTORY / default_template_filename,
             KEYS=keys,
             **variables

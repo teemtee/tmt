@@ -5,7 +5,8 @@ import textwrap
 
 import tmt.plugins
 import tmt.steps.provision
-from tmt.utils import Path, render_template_file
+from tmt.utils import Path
+from tmt.utils.templates import render_template_file
 
 HELP = textwrap.dedent("""
 Usage: generate-hardware-matrix.py <TEMPLATE-PATH> <OUTPUT-PATH>

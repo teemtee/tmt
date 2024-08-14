@@ -9,6 +9,7 @@ import tmt
 import tmt.base
 import tmt.log
 import tmt.utils
+import tmt.utils.git
 from tmt.base import DependencyFmfId, DependencySimple
 from tmt.convert import write
 from tmt.steps.discover import Discover
@@ -222,13 +223,13 @@ class BeakerLib(Library):
                         assert self.url is not None  # narrow type
                         destination = Path(tmp)
                         try:
-                            tmt.utils.git_clone(
+                            tmt.utils.git.git_clone(
                                 url=self.url,
                                 destination=destination,
                                 shallow=True,
                                 env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                                 logger=self._logger)
-                            self.parent.debug('hash', tmt.utils.git_hash(
+                            self.parent.debug('hash', tmt.utils.git.git_hash(
                                 directory=destination, logger=self._logger))
                         except (tmt.utils.RunError, tmt.utils.RetryError):
                             self.parent.debug(f"Repository '{self.url}' not found.")
@@ -267,7 +268,7 @@ class BeakerLib(Library):
                     # Shallow clone to speed up testing and
                     # minimize data transfers if ref is not provided
                     if not clone_dir.exists():
-                        tmt.utils.git_clone(
+                        tmt.utils.git.git_clone(
                             url=self.url,
                             destination=clone_dir,
                             shallow=self.ref is None,
@@ -276,7 +277,7 @@ class BeakerLib(Library):
 
                     # Detect the default branch from the origin
                     try:
-                        self.default_branch = tmt.utils.default_branch(
+                        self.default_branch = tmt.utils.git.default_branch(
                             repository=clone_dir, logger=self._logger)
                     except OSError:
                         raise tmt.utils.GeneralError(
@@ -317,7 +318,7 @@ class BeakerLib(Library):
                         raise
 
                     # Log what HEAD really is
-                    self.parent.debug('hash', tmt.utils.git_hash(
+                    self.parent.debug('hash', tmt.utils.git.git_hash(
                         directory=clone_dir, logger=self._logger))
 
                     # Copy only the required library

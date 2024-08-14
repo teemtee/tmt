@@ -32,14 +32,16 @@ from tmt.utils import (
     WaitingIncompleteError,
     WaitingTimedOutError,
     _CommonBase,
-    clonable_git_url,
     duration_to_seconds,
     filter_paths,
+    wait,
+    )
+from tmt.utils.git import (
+    clonable_git_url,
     git_add,
     inject_auth_git_url,
     public_git_url,
     validate_git_status,
-    wait,
     )
 
 from . import MATCH, assert_log, assert_not_log
@@ -173,9 +175,9 @@ def test_inject_auth_git_url(monkeypatch) -> None:
     # https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
     # username can be anything but cannot be an empty string
     monkeypatch.setattr('os.environ', {
-        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
-        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
-        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
         })
     assert inject_auth_git_url('https://gitlab.com/namespace/project') \
         == 'https://foo:abcdefgh@gitlab.com/namespace/project'
@@ -184,12 +186,12 @@ def test_inject_auth_git_url(monkeypatch) -> None:
     # https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
     # just token or username is used (value before @)
     monkeypatch.setattr('os.environ', {
-        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
-        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
-        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
-        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
-        f'{tmt.utils.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
-        f'{tmt.utils.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
+        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
         })
     assert inject_auth_git_url('https://github.com/namespace/project') \
         == 'https://abcdefgh@github.com/namespace/project'
