@@ -27,8 +27,11 @@ description: |
          name: /test/one
          path: /
 
-       # String, outcome of the test execution.
+       # String, the effective outcome of the test execution.
        result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+
+       # String, the original outcome of the test execution.
+       original_result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
        # String, optional comment to report with the result.
        note: "Things were great."
@@ -209,6 +212,10 @@ description: |
     The same applies to ``context``, tmt will set this key for the
     original test result in the custom result set to the value known
     to tmt.
+
+    The ``original_result`` key holds the outcome of the test as reported
+    by the test itself, without any additional influence of test checks,
+    subresults or :py:ref:`/spec/tests/result`.
 
     See also the complete `JSON schema`__.
 

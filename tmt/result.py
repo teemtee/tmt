@@ -123,6 +123,11 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
+    original_result: ResultOutcome = field(
+        default=ResultOutcome.PASS,
+        serialize=lambda result: result.value,
+        unserialize=ResultOutcome.from_spec
+        )
     note: Optional[str] = None
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
@@ -279,6 +284,7 @@ class Result(BaseResult):
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan._fmf_context,
             result=result,
+            original_result=result,
             note=note,
             start_time=invocation.start_time,
             end_time=invocation.end_time,
