@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
+import fmf.utils
 
 import tmt
 import tmt.base
@@ -446,9 +447,32 @@ class TestInvocation:
 class ResultCollection:
     """ Collection of raw results loaded from a file """
 
+    invocation: TestInvocation
+
     filepaths: list[Path]
     file_exists: bool = False
     results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)
+
+    def validate(self) -> None:
+        """
+        Validate raw collected results against the result JSON schema.
+
+        Report found errors as warnings via :py:attr:`invocation` logger.
+        """
+
+        schema = tmt.utils.load_schema(Path('results.yaml'))
+        schema_store = tmt.utils.load_schema_store()
+
+        result = fmf.utils.validate_data(self.results, schema, schema_store=schema_store)
+
+        if not result.errors:
+            self.invocation.logger.debug('Results successfully validated.', level=4, shift=1)
+
+            return
+
+        for _, error in tmt.utils.preformat_jsonschema_validation_errors(result.errors):
+            self.invocation.logger.warning(
+                f'Result format violation: {error}', shift=1)
 
 
 class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
@@ -594,8 +618,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         custom_results_path_yaml = invocation.test_data_path / 'results.yaml'
         custom_results_path_json = invocation.test_data_path / 'results.json'
 
-        collection = ResultCollection(filepaths=[
-            custom_results_path_yaml, custom_results_path_json])
+        collection = ResultCollection(
+            invocation=invocation,
+            filepaths=[custom_results_path_yaml, custom_results_path_json])
 
         if custom_results_path_yaml.exists():
             with open(custom_results_path_yaml) as results_file:
@@ -621,7 +646,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """
 
         results_path = self._tmt_report_results_filepath(invocation)
-        collection = ResultCollection(filepaths=[results_path])
+        collection = ResultCollection(invocation=invocation, filepaths=[results_path])
 
         # Nothing to do if there's no result file
         if not results_path.exists():
@@ -795,6 +820,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 note="no custom results were provided",
                 result=ResultOutcome.ERROR)]
 
+        collection.validate()
+
         return self._process_results_partials(invocation, collection.results)
 
     def extract_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
@@ -818,6 +845,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if not collection.results:
             raise tmt.utils.ExecuteError(
                 f"Test results not found in result file '{results_path}'.")
+
+        collection.validate()
 
         return self._process_results_reduce(invocation, collection.results)
 
@@ -846,6 +875,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if not collection.results:
             raise tmt.utils.ExecuteError(
                 f"Test results not found in result file '{results_path}'.")
+
+        collection.validate()
 
         return self._process_results_partials(
             invocation, collection.results, default_log=default_log)

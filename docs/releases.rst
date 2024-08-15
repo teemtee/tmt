@@ -4,6 +4,12 @@
     Releases
 ======================
 
+tmt-1.36
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
+file does not follow the :ref:`result specification</spec/plans/results>`.
+
 
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

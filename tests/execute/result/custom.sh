@@ -14,6 +14,7 @@ rlJournalStart
     testName="/test/custom-results"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 1 "Test provides 'results.yaml' file by itself"
+        rlAssertGrep "warn: Result format violation: :3.name - 'without-leading-slash' does not match '^/.*'" $rlRun_LOG
         rlAssertGrep "00:11:22 pass /test/custom-results/test/passing" $rlRun_LOG
         rlAssertGrep "00:22:33 fail /test/custom-results/test/failing" $rlRun_LOG
         rlAssertGrep "00:00:00 skip /test/custom-results/test/skipped" $rlRun_LOG
@@ -94,6 +95,7 @@ rlJournalStart
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides partial result with wrong value"
         rlAssertGrep "Invalid partial custom result 'errrrrr'." $rlRun_LOG
+        rlAssertGrep "warn: Result format violation: :0.result - 'errrrrr' is not one of \\['pass', 'fail', 'info', 'warn', 'error', 'skip'\\]" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

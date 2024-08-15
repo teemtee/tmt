@@ -42,7 +42,7 @@ definitions:
         $ref: "/schemas/common#/definitions/timestamp"
 
       duration:
-        $ref: "/definitions/duration"
+        $ref: "#/definitions/duration"
 
     required:
       - name
@@ -76,7 +76,7 @@ definitions:
         $ref: "/schemas/common#/definitions/timestamp"
 
       duration:
-        $ref: "/definitions/duration"
+        $ref: "#/definitions/duration"
 
       check:
         $ref: "/definitions/check_results"
@@ -84,6 +84,11 @@ definitions:
     required:
       - name
       - result
+
+  subresults:
+    type: array
+    items:
+      $ref: "/definitions/subresult"
 
 type: array
 items:
@@ -128,7 +133,7 @@ items:
       $ref: "/schemas/common#/definitions/timestamp"
 
     duration:
-      $ref: "/definitions/duration"
+      $ref: "#/definitions/duration"
 
     ids:
       type: object
@@ -143,7 +148,7 @@ items:
       $ref: "/definitions/check_results"
 
     subresult:
-      $ref: "/definitions/subresult"
+      $ref: "/definitions/subresults"
 
   required:
     - name

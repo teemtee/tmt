@@ -5310,6 +5310,29 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     return node
 
 
+def preformat_jsonschema_validation_errors(
+        raw_errors: list[Any],
+        prefix: Optional[str] = None) -> list[tuple[jsonschema.ValidationError, str]]:
+    """
+    A bit of error formatting for JSON schema validation.
+
+    It is possible to use str(error), but the result is a bit too
+    JSON-ish. Let's present an error message in a way that helps users
+    to point finger on each and every issue. But don't throw the
+    original errors away!
+    """
+
+    prefix = f'{prefix}:' if prefix else ''
+    errors: list[tuple[jsonschema.ValidationError, str]] = []
+
+    for error in raw_errors:
+        path = f'{prefix}:{".".join(str(p) for p in error.path)}'
+
+        errors.append((error, f'{path} - {error.message}'))
+
+    return errors
+
+
 def validate_fmf_node(
         node: fmf.Tree,
         schema_name: str,
@@ -5323,19 +5346,7 @@ def validate_fmf_node(
     if result.result is True:
         return []
 
-    # A bit of error formatting. It is possible to use str(error), but the result
-    # is a bit too JSON-ish. Let's present an error message in a way that helps
-    # users to point finger on each and every issue. But don't throw the original
-    # errors away!
-
-    errors: list[tuple[jsonschema.ValidationError, str]] = []
-
-    for error in result.errors:
-        path = f'{node.name}:{".".join(error.path)}'
-
-        errors.append((error, f'{path} - {error.message}'))
-
-    return errors
+    return preformat_jsonschema_validation_errors(result.errors, prefix=node.name)
 
 
 # A type for callbacks given to wait()
