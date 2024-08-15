@@ -25,6 +25,11 @@ from tmt.utils import (
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: allow passing security group rules for guest creation
+    '0.0.72',
+    # NEW: guest log API adds multiple blobs
+    # NEW: dropped boot.method enum
+    '0.0.70',
     # NEW: zcrypt HW requirement
     '0.0.69',
     # NEW: added cpu.flag constraint
