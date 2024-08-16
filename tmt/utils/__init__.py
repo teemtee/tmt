@@ -5326,7 +5326,7 @@ def preformat_jsonschema_validation_errors(
     errors: list[tuple[jsonschema.ValidationError, str]] = []
 
     for error in raw_errors:
-        path = f'{prefix}:{".".join(str(p) for p in error.path)}'
+        path = f'{prefix}{".".join(str(p) for p in error.path)}'
 
         errors.append((error, f'{path} - {error.message}'))
 
