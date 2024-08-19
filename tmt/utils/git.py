@@ -1,6 +1,7 @@
 """ Test Metadata Utilities """
 
 
+import dataclasses
 import functools
 import os
 import re
@@ -24,6 +25,22 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.base
+
+
+@dataclasses.dataclass
+class GitInfo:
+    """ Data container for commonly queried git data. """
+
+    git_root: Path
+    """Path to the git root."""
+    ref: str
+    """Most human-readable git ref."""
+    remote: str
+    """Git remote linked to the current git ref."""
+    default_branch: Optional[str]
+    """Default branch of the remote."""
+    url: Optional[str]
+    """Public url of the remote."""
 
 
 # Avoid multiple subprocess calls for the same url
