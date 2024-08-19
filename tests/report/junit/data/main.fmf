@@ -17,6 +17,15 @@
         /timeout:
             test: ./runtest.sh timeout
             duration: 2s
+        /skip:
+            test: ./runtest.sh pass
+            result: skip
+        /info:
+            test: ./runtest.sh pass
+            result: info
+        /warn:
+            test: ./runtest.sh pass
+            result: warn
 
     /shell:
         framework: shell
@@ -27,3 +36,12 @@
         /timeout:
             test: sleep 10
             duration: 2s
+        /skip:
+            test: "true"
+            result: skip
+        /info:
+            test: "true"
+            result: info
+        /warn:
+            test: "false"
+            result: warn

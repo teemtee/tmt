@@ -1,1 +1,4 @@
 summary: Check for JUnit output
+require+:
+  # To support xmllint tool
+  - libxml2
