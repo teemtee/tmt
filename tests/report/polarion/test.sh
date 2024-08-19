@@ -14,6 +14,8 @@ rlJournalStart
         rlAssertGrep '<property name="polarion-project-id" value="RHELBASEOS" />' "xunit.xml"
         rlAssertGrep '<property name="polarion-testcase-id" value="BASEOS-10914" />' "xunit.xml"
         rlAssertGrep '<property name="polarion-custom-plannedin" value="RHEL-9.1.0" />' "xunit.xml"
+
+        rlRun "xmllint --noout --schema 'tmt-report-polarion.xsd' 'xunit.xml'" 0 "Checking generated XUnit against the XSD schema"
     rlPhaseEnd
 
     rlPhaseStartCleanup
