@@ -1176,9 +1176,9 @@ def test_flatten(lists: list[list[Any]], unique: bool, expected: list[Any]) -> N
         ]
     )
 def test_format_duration(duration, expected):
-    from tmt.steps.execute import ExecutePlugin
+    from tmt.utils import format_duration
 
-    assert ExecutePlugin.format_duration(duration) == expected
+    assert format_duration(duration) == expected
 
 
 def test_filter_paths(source_dir):
