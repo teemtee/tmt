@@ -6,7 +6,6 @@ from requre.cassette import StorageKeysInspectSimple
 from requre.helpers.guess_object import Guess
 from requre.helpers.requests_response import RequestResponseHandling
 
-import tmt.utils
 import tmt.utils.git
 
 nitrate.set_cache_level(nitrate.CACHE_NONE)

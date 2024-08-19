@@ -57,10 +57,10 @@ def _template_filter_match(  # type: ignore[reportUnusedFunction,unused-ignore]
         {{ 'foo/bar' | match('foo/.*').group() }}
 
         # 'foo/bar' -> ''
-        {{ 'foo/bar' | regex_match('foo/(.+?)/(.*)') }}
+        {{ 'foo/bar' | match('foo/(.+?)/(.*)') }}
 
         # 'foo/bar/baz' -> 'bar'
-        {{ 'foo/bar' | regex_match('foo/(.+?)/.*').group(1) }}
+        {{ 'foo/bar' | match('foo/(.+?)/.*').group(1) }}
     """
 
     return re.match(pattern, s)
@@ -79,14 +79,14 @@ def _template_filter_search(  # type: ignore[reportUnusedFunction,unused-ignore]
 
     .. code-block:: jinja
 
-         # '  foo/bar' -> 'foo/bar'
-        {{ '  foo/bar' | match('foo/.*').group() }}
+         # 'baz/foo/bar' -> 'foo/bar'
+        {{ 'baz/foo/bar' | search('foo/.*').group() }}
 
-        # '  foo/bar' -> ''
-        {{ '  foo/bar' | regex_match('foo/(.+?)/(.*)') }}
+        # 'baz/foo/bar' -> ''
+        {{ 'baz/foo/bar' | search('foo/(.+?)/(.*)') }}
 
-        # '  foo/bar/baz' -> 'bar'
-        {{ '  foo/bar' | regex_match('foo/(.+?)/.*').group(1) }}
+        # 'baz/foo/bar/baz' -> 'bar'
+        {{ 'baz/foo/bar' | search('foo/(.+?)/.*').group(1) }}
     """
 
     return re.search(pattern, s)
@@ -165,14 +165,14 @@ def _template_filter_regex_search(  # type: ignore[reportUnusedFunction,unused-i
 
     .. code-block:: jinja
 
-        # '  foo/bar' -> 'foo/bar'
-        {{ '  foo/bar' | regex_search('foo/.*') }}
+        # 'baz/foo/bar' -> 'foo/bar'
+        {{ 'baz/foo/bar' | regex_search('foo/.*') }}
 
-        # '  foo/bar' -> ''
-        {{ '  foo/bar' | regex_search('foo/(.+?)/(.*)') }}
+        # 'baz/foo/bar' -> ''
+        {{ 'baz/foo/bar' | regex_search('foo/(.+?)/(.*)') }}
 
-        # '  foo/bar/baz' -> 'bar'
-        {{ '  foo/bar/baz' | regex_search('foo/(.+?)/.*') }}
+        # 'baz/foo/bar/baz' -> 'bar'
+        {{ 'baz/foo/bar/baz' | regex_search('foo/(.+?)/.*') }}
     """
 
     match = re.search(pattern, s)
