@@ -7,8 +7,3 @@ adjust:
   - enabled: true
     when: how == full or trigger == commit
     tag+: [additional_coverage]
-
-# Pretend SCM version as tests are not running in git environment
-environment:
-    # Pretend SCM version needed as
-    SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.1.dev0
