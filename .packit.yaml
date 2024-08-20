@@ -125,6 +125,16 @@ jobs:
       environments:
         - *tmt-cloud-resources
 
+  # CI tests (independent of OS)
+  - <<: *tests
+    targets: [ fedora-latest-stable ]
+    identifier: dev
+    tf_extra_params:
+      test:
+        tmt:
+          name: /plans/dev
+    skip_build: true
+
   # Build commits to main
   - <<: *copr_build
     trigger: commit
