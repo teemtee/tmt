@@ -296,7 +296,7 @@ class Lintable(Generic[LintableT]):
 
         enforce_checks = enforce_checks or []
 
-        linters = linters or self.resolve_enabled_linters(
+        linters = linters if linters is not None else self.resolve_enabled_linters(
             enable_checks=enable_checks,
             disable_checks=disable_checks)
 
