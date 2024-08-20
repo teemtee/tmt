@@ -181,6 +181,17 @@ jobs:
     targets:
       - epel-9
 
+  # CI tests (independent of OS)
+  - <<: *test-base
+    targets:
+      - fedora-latest-stable
+    identifier: dev
+    tf_extra_params:
+      test:
+        tmt:
+          name: /plans/dev
+    skip_build: true
+
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
