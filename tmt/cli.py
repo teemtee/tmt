@@ -635,6 +635,10 @@ def _lint_collection(
         enable_checks=enable_checks or None,
         disable_checks=disable_checks or None)
 
+    # Do not proceed, if there are no enabled linters - teemtee/tmt/issues/3156
+    if not linters:
+        return exit_code
+
     objs: list[tmt.base.Core] = [
         obj for cls in klasses
         for obj in cls.from_tree(context.obj.tree)]
