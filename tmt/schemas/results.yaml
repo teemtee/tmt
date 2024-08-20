@@ -52,7 +52,7 @@ definitions:
   check_results:
     type: array
     items:
-      $ref: "/definitions/check_result"
+      $ref: "#/definitions/check_result"
 
   subresult:
     type: object
@@ -79,7 +79,7 @@ definitions:
         $ref: "#/definitions/duration"
 
       check:
-        $ref: "/definitions/check_results"
+        $ref: "#/definitions/check_results"
 
     required:
       - name
@@ -88,7 +88,7 @@ definitions:
   subresults:
     type: array
     items:
-      $ref: "/definitions/subresult"
+      $ref: "#/definitions/subresult"
 
 type: array
 items:
@@ -145,10 +145,10 @@ items:
       $ref: "/schemas/common#/definitions/result_log"
 
     check:
-      $ref: "/definitions/check_results"
+      $ref: "#/definitions/check_results"
 
     subresult:
-      $ref: "/definitions/subresults"
+      $ref: "#/definitions/subresults"
 
   required:
     - name
