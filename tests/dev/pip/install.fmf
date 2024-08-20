@@ -11,6 +11,10 @@ adjust+:
     because: |
       Python 3.14 wheels for cffi are not available yet
 
+environment:
+    # Pretend SCM version as tests are not running in git environment
+    SETUPTOOLS_SCM_PRETEND_VERSION_FOR_TMT: 0.0.1.dev0
+
 /mini:
     summary: Ensure the minimal pip install works
     test: |
