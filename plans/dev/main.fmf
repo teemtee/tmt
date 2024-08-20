@@ -1,0 +1,28 @@
+/:
+  inherit: false
+
+execute:
+  how: tmt
+discover:
+  how: fmf
+  filter: "tag: dev"
+
+prepare:
+  - name: Install common base packages
+    how: install
+    package:
+      - python3-pip
+      - git
+
+/with_tmt:
+  summary: Run CI tests with the current tmt version
+  prepare+:
+    - name: Install tmt in a venv
+      how: shell
+      script: |
+        python3 -m venv /tmp/venv
+        source /tmp/venv/bin/activate
+        export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_TMT=0.0.1.dev0
+        pip install -e .
+  discover+:
+    filter+: " & tag: with_tmt"
