@@ -1,0 +1,12 @@
+execute:
+    how: tmt
+discover:
+    how: shell
+    tests:
+    - name: booted image
+      test: bootc status | grep localhost/tmt-bootc-includes-deps
+provision:
+    how: bootc
+    add-deps: false
+    containerimage: localhost/tmt-bootc-includes-deps
+    disk: 20
