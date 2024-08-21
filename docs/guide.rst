@@ -400,7 +400,7 @@ quickly overwrite existing files with the right content.
 
 .. _linking_tmt_objects:
 
-Linking tmt objects
+Linking Issues
 ------------------------------------------------------------------
 If you create a Jira issue for a bug or a feature, you can link it
 to the test or plan that covers it. This can be either done automatically

@@ -1274,7 +1274,7 @@ _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join
     help='Finish phase content in yaml format.')
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link to the relevant issues.')
+    help='Link created plan to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def plans_create(
@@ -1462,7 +1462,7 @@ _story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], jo
     help=f'Story template ({_story_templates}).')
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link to the relevant issues.')
+    help='Link created story to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def stories_create(
