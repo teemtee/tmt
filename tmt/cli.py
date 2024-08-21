@@ -2249,7 +2249,7 @@ def link(context: Context,
          link: str,
          separate: bool,
          ) -> None:
-    nodes: list[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']] = []
+    nodes: list[Union[tmt.base.Test, tmt.base.Plan, tmt.base.Story]] = []
     for name in names:
         if context.obj.tree.tests(names=[name]):
             nodes.extend(context.obj.tree.tests(names=[name]))

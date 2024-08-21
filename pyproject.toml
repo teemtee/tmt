@@ -70,7 +70,7 @@ report-polarion = [
     "tmt[export-polarion]",
     ]
 link-jira = [
-    "jira>=3.2.0",
+    "jira>=3.5.0",
     ]
 all = [
     "tmt[test-convert]",

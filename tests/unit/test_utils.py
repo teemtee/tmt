@@ -1714,9 +1714,9 @@ class TestJiraLink(unittest.TestCase):
             [test], tmt.base.Links(
                 data=['verifies:issues.redhat.com/browse/TT-262']))
         result = mock_add_simple_link.call_args.args[1]
-        assert (
-            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name='
-            '%2Ftests%2Fprovision%2Fvirtual%2Fdependencies&test-ref=link-issues-to-jira') in result['url']
+        assert ('http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%'
+                '2Fteemtee%2Ftmt.git&test-name=%2Ftests%2Fprovision%2Fvirtual%'
+                '2Fdependencies&test-ref=link-issues-to-jra') in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')

@@ -5968,11 +5968,11 @@ def jira_link(
     """ Link the object to Jira issue and create the URL to tmt web service """
     import_jira()
 
-    def create_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
+    def create_url_params(tmt_object: tmt.base.Core) -> dict[str, str]:
         tmt_type = tmt_object.__class__.__name__.lower()
         fmf_id = tmt_object.fmf_id
 
-        url_params: dict[str, str] = {
+        url_params: dict[str, Union[str, None]] = {
             'format': 'html',
             f'{tmt_type}-url': fmf_id.url,
             f'{tmt_type}-name': fmf_id.name
@@ -6016,7 +6016,7 @@ def jira_link(
                     linking_config["service"],
                     service_url),
                 "title": f'[tmt_web] Metadata of the {type(node).__name__.lower()}'
-                         f' covering this issue'}
+                f' covering this issue'}
             jira.add_simple_link(issue_id, link_object)
         if len(nodes) > 1 and not separate:
             url_part = create_url_params(tmt_object=node)
@@ -6024,8 +6024,8 @@ def jira_link(
             link_object = {
                 "url": create_url(linking_config["service"], service_url),
                 "title": f'[tmt_web] Metadata of the'
-                         f' {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
-                         f' covering this issue'
+                f' {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
+                f' covering this issue'
                 }
     if len(nodes) > 1 and not separate:
         # Send request to JIRA when len(nodes) > 1 and not separate, after all nodes were processed

@@ -3083,7 +3083,7 @@ class Tree(tmt.utils.Common):
             run: Optional['Run'] = None,
             links: Optional[list['LinkNeedle']] = None,
             excludes: Optional[list[str]] = None,
-            apply_command_line: Optional[bool] = True
+            apply_command_line: bool = True
             ) -> list[Plan]:
         """ Search available plans """
         # Handle defaults, apply possible command line options

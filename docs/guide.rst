@@ -413,7 +413,7 @@ on creation of a new test or plan, or later on using the ``tmt link`` command.
 For this feature to be enabled, you have to create a configuration node in a
 configuration tree. Once the configuration is present, it automatically enables
 the linking on its own, no further actions needed.
-The configuration has a reserved keywork ``linking`` and should
+The configuration has a reserved keyword ``linking`` and should
 have following structure:
 
 .. code-block:: yaml
