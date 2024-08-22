@@ -39,6 +39,7 @@ metadata specification (L1 and L2) and allows easy test execution.
 %pyproject_extras_subpkg -n tmt export-polarion
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
+%pyproject_extras_subpkg -n tmt link-jira
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
