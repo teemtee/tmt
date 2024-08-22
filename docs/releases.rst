@@ -4,9 +4,11 @@
     Releases
 ======================
 
-
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add support --workdir-root for clean function, users can specify
+the dir they want to clean things for.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
@@ -23,7 +25,6 @@ a new ``adjust-tests`` key which allows modifying metadata of all
 discovered tests. This can be useful especially when fetching
 tests from remote repositories where the user does not have write
 access.
-
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
