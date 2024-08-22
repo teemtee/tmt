@@ -1928,7 +1928,7 @@ def clean(context: Context,
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context))
         if tmt.utils.WORKDIR_ROOT.exists():
-            if 'guests' not in skip and not clean_obj.guests():
+            if 'guests' not in skip and not clean_obj.guests(id_):
                 exit_code = 1
             if 'runs' not in skip and not clean_obj.runs(id_):
                 exit_code = 1
@@ -2018,7 +2018,7 @@ def clean_runs(
 @option(
     '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
 @option(
-    '-i', '--id', 'id_', metavar="ID", default=None, multiple=True,
+    '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.')
 @option(
     '-h', '--how', metavar='METHOD',
@@ -2050,7 +2050,9 @@ def clean_guests(
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context))
-    context.obj.clean_partials["guests"].append(clean_obj.guests)
+    context.obj.clean_partials["guests"].append(
+        lambda: clean_obj.guests(
+            (context.parent and context.parent.params.get('id_', [])) or id_))
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
