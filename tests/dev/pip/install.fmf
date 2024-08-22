@@ -12,6 +12,10 @@ adjust:
     # if/once that happens, the xfail should be moved to 'full' only
     because: "Un-installable dependencies on Python 3.13"
 
+environment:
+    # Pretend SCM version as tests are not running in git environment
+    SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.1.dev0
+
 /mini:
     summary: Ensure the minimal pip install works
     test: |
