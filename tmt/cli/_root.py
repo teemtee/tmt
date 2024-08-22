@@ -1639,12 +1639,14 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 @option(
     '-s', '--skip', choices=CLEAN_RESOURCES,
     help='The resources which should be kept on the disk.', multiple=True)
+@workdir_root_options
 @verbosity_options
 @dry_options
 def clean(context: Context,
           last: bool,
           id_: tuple[str, ...],
           skip: list[str],
+          workdir_root: Optional[str],
           **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
@@ -1662,6 +1664,9 @@ def clean(context: Context,
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
 
+    if workdir_root and not Path(workdir_root).exists():
+        raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
+
     context.obj.clean_logger = context.obj.logger \
         .descend(logger_name='clean', extra_shift=0) \
         .apply_verbosity_options(**kwargs)
@@ -1676,8 +1681,7 @@ def clean(context: Context,
     if context.invoked_subcommand is None:
         assert context.obj.clean_logger is not None  # narrow type
 
-        # Set path to default
-        context.params['workdir_root'] = tmt.utils.WORKDIR_ROOT
+        root_path = effective_workdir_root(workdir_root)
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
@@ -1685,15 +1689,16 @@ def clean(context: Context,
             .descend(logger_name='clean', extra_shift=0)
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
-            cli_invocation=CliInvocation.from_context(context))
-        if tmt.utils.WORKDIR_ROOT.exists():
+            cli_invocation=CliInvocation.from_context(context),
+            workdir_root=root_path)
+        if root_path.exists():
             if 'guests' not in skip and not clean_obj.guests(id_):
                 exit_code = 1
             if 'runs' not in skip and not clean_obj.runs(id_):
                 exit_code = 1
         else:
             clean_obj.warn(
-                f"Directory '{tmt.utils.WORKDIR_ROOT}' does not exist, "
+                f"Directory '{root_path}' does not exist, "
                 f"skipping guest and run cleanup.")
         if 'images' not in skip and not clean_obj.images():
             exit_code = 1
