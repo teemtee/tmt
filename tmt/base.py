@@ -3919,6 +3919,7 @@ class Clean(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  name: Optional[str] = None,
                  workdir: tmt.utils.WorkdirArgumentType = None,
+                 workdir_root: Optional[Path] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """
@@ -3936,6 +3937,7 @@ class Clean(tmt.utils.Common):
             parent=parent,
             name=name,
             workdir=workdir,
+            workdir_root=workdir_root,
             cli_invocation=cli_invocation)
 
     def images(self) -> bool:
@@ -3998,7 +4000,7 @@ class Clean(tmt.utils.Common):
     def guests(self, run_ids: tuple[str, ...]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4032,7 +4034,7 @@ class Clean(tmt.utils.Common):
     def runs(self, id_: tuple[str, ...]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.

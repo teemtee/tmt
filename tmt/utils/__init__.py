@@ -263,13 +263,16 @@ T = TypeVar('T')
 WriteMode = Literal['w', 'a']
 
 
-def effective_workdir_root() -> Path:
+def effective_workdir_root(workdir_root_option: Optional[str] = None) -> Path:
     """
     Find out what the actual workdir root is.
 
-    If ``TMT_WORKDIR_ROOT`` variable is set, it is used as the workdir root.
-    Otherwise, the default of :py:data:`WORKDIR_ROOT` is used.
+    If ``workdir-root`` cli option is set, it is used as the workdir root.
+    Otherwise, ``TMT_WORKDIR_ROOT`` variable is used, if it is set. Or, the default
+    of :py:data:`WORKDIR_ROOT` is used.
     """
+    if workdir_root_option:
+        return Path(workdir_root_option)
 
     if 'TMT_WORKDIR_ROOT' in os.environ:
         return Path(os.environ['TMT_WORKDIR_ROOT'])
@@ -1500,6 +1503,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
+            workdir_root: Optional[Path] = None,
             relative_indent: int = 1,
             cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             logger: tmt.log.Logger,
@@ -1525,6 +1529,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self.name = name or self.__class__.__name__.lower()
         self.parent = parent
 
+        self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
 
         self.inject_logger(logger)
@@ -2172,6 +2177,18 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
         return self._clone_dirpath
+
+    @property
+    def workdir_root(self) -> Path:
+        if self._workdir_root:
+            return self._workdir_root
+        if self.parent:
+            return self.parent.workdir_root
+        return effective_workdir_root()
+
+    @workdir_root.setter
+    def workdir_root(self, workdir_root: Path) -> None:
+        self._workdir_root = workdir_root
 
 
 class _MultiInvokableCommonMeta(_CommonMeta):

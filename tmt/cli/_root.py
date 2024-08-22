@@ -35,7 +35,7 @@ import tmt.utils.jira
 import tmt.utils.rest
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Command, Path
+from tmt.utils import Command, Path, effective_workdir_root
 
 if TYPE_CHECKING:
     import tmt.steps.discover
@@ -1739,7 +1739,7 @@ def perform_clean(
 @dry_options
 def clean_runs(
         context: Context,
-        workdir_root: str,
+        workdir_root: Optional[str],
         last: bool,
         id_: tuple[str, ...],
         keep: Optional[int],
@@ -1755,7 +1755,7 @@ def clean_runs(
             "Options --last, --id and --keep cannot be used together.")
     if keep is not None and keep < 0:
         raise tmt.utils.GeneralError("--keep must not be a negative number.")
-    if not Path(workdir_root).exists():
+    if workdir_root and not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
@@ -1765,7 +1765,8 @@ def clean_runs(
         .descend(logger_name='clean-runs', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CliInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context),
+        workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["runs"].append(
         lambda: clean_obj.runs(
             (context.parent and context.parent.params.get('id_', [])) or id_))
@@ -1786,7 +1787,7 @@ def clean_runs(
 @dry_options
 def clean_guests(
         context: Context,
-        workdir_root: str,
+        workdir_root: Optional[str],
         last: bool,
         id_: tuple[str, ...],
         **kwargs: Any) -> None:
@@ -1798,7 +1799,7 @@ def clean_guests(
     if last and bool(id_):
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-    if not Path(workdir_root).exists():
+    if workdir_root and not Path(workdir_root).exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
@@ -1808,7 +1809,8 @@ def clean_guests(
         .descend(logger_name='clean-guests', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CliInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context),
+        workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
             (context.parent and context.parent.params.get('id_', [])) or id_))
