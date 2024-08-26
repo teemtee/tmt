@@ -88,8 +88,22 @@ rlJournalStart
             rlAssertGrep '<subresult name="/skip-subtest/extra-skip" outcome="skip"/>' "custom-subresults-template-out.xml"
             rlAssertGrep '<result name="/test/shell/subresults/skip" disabled="0" errors="0" failures="0" skipped="1" tests="2" time="0" outcome="pass"' "custom-subresults-template-out.xml"
             rlAssertGrep '<result name="/test/shell/subresults/sleep" disabled="0" errors="0" failures="1" skipped="0" tests="2" time="5"' "custom-subresults-template-out.xml"
+        rlPhaseEnd
 
-            rlAssertGrep '<subresult name="/fail-subtest/good" outcome="pass"/>' "custom-subresults-template-out.xml"
+        rlPhaseStartTest "[$method] Check the 'subresults' flavor"
+            rlRun "tmt run -avr execute -h $method report -h junit --file subresults-out.xml --flavor subresults 2>&1 >/dev/null | tee output" 2
+
+            # Parent result recorded in testuite tag
+            rlAssertGrep '<testsuite name="/test/beakerlib/fail" disabled="0" errors="1" failures="0" skipped="0" tests="1"' "subresults-out.xml"
+            rlAssertGrep '<testsuite name="/test/beakerlib/pass" disabled="0" errors="0" failures="0" skipped="0" tests="1" ' "subresults-out.xml"
+            rlAssertGrep '<testsuite name="/test/shell/fail" disabled="0" errors="1" failures="0" skipped="0" tests="1"'
+
+            # Parent result testsuite must have its respective testcase tag
+            rlAssertGrep '<testcase name="/test/beakerlib/fail">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/beakerlib/pass">' "subresults-out.xml"
+
+            # TODO: Add check for additional subresults as soon as they get saved by:
+            # - https://github.com/teemtee/tmt/pull/3200
         rlPhaseEnd
     done
 

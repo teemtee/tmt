@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.XX.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/report/junit` report plugin now supports a new
+``subresults`` JUnit flavor. This flavor adds support for tmt subresults and
+changes the level of ``<testsuite>`` and ``<testcase>`` tags. By using this
+flavor, the ``tmt.Result`` tags become ``<testsuite>`` tags with one
+``<testcase>`` tag representing the parent result, and possible additional
+``<testcase>`` tags for each ``tmt.result.SubResult``.
+
 
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
