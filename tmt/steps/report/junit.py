@@ -1,7 +1,7 @@
 import dataclasses
 import functools
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -81,8 +81,29 @@ class ImplementProperties:
         name: str
         value: str
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            wrapped: Union[tmt.Result, tmt.result.SubResult],
+            subresults_context_class: 'type[ResultsContext]') -> None:
+
+        self._wrapped = wrapped
+        self._subresults_context_class = subresults_context_class
         self._properties: dict[str, str] = {}
+
+    @property
+    def subresult(self) -> 'ResultsContext':
+        """
+        Override the ``tmt.Result.subresult`` and wrap all the ``tmt.result.SubResult`` instances
+        into the ``ResultsContext``.
+        """
+
+        # `tmt.result.SubResult.subresult` is not defined, just raise the AttributeError to silent
+        # the typing errors.
+        if isinstance(self._wrapped, tmt.result.SubResult):
+            raise AttributeError(
+                f"'{self._wrapped.__class__.__name__} object has no attribute 'subresult'")
+
+        return self._subresults_context_class(self._wrapped.subresult)
 
     @property
     def properties(self) -> list[PropertyDict]:
@@ -118,11 +139,13 @@ class ResultsContext(ImplementProperties):
     wraps all the :py:class:`tmt.Result` instances into the :py:class:`ResultWrapper`.
     """
 
-    def __init__(self, results: list[tmt.Result]) -> None:
+    def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
+        """ Decorate/wrap all the ``tmt.Results`` with more attributes """
         super().__init__()
 
         # Decorate all the tmt.Results with more attributes
-        self._results: list[ResultWrapper] = [ResultWrapper(r) for r in results]
+        self._results: list[ResultWrapper] = [
+            ResultWrapper(r, subresults_context_class=self.__class__) for r in results]
 
     def __iter__(self) -> Iterator[ResultWrapper]:
         """ Possibility to iterate over results by iterating an instance """
@@ -318,7 +341,7 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
     flavor: str = field(
         default=DEFAULT_FLAVOR_NAME,
         option='--flavor',
-        choices=[DEFAULT_FLAVOR_NAME, CUSTOM_FLAVOR_NAME],
+        choices=[DEFAULT_FLAVOR_NAME, CUSTOM_FLAVOR_NAME, 'subresults'],
         help='Name of a JUnit flavor to generate.')
 
     template_path: Optional[Path] = field(
