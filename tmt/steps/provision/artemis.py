@@ -741,20 +741,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         if self.data.api_version not in SUPPORTED_API_VERSIONS:
             raise ArtemisProvisionError(f"API version '{self.data.api_version}' not supported.")
 
-        try:
-            user_data = {
-                key.strip(): value.strip()
-                for key, value in (
-                    pair.split('=', 1)
-                    for pair in self.data.user_data
-                    )
-                }
-
-        except ValueError:
-            raise ArtemisProvisionError('Cannot parse user-data.')
-
         data = ArtemisGuestData.from_plugin(self)
-        data.user_data = user_data
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
