@@ -10,7 +10,6 @@ import shlex
 import signal as _signal
 import string
 import subprocess
-import tempfile
 import threading
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
@@ -38,6 +37,7 @@ import tmt.package_managers
 import tmt.plugins
 import tmt.queue
 import tmt.steps
+import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
 from tmt.options import option
@@ -48,6 +48,7 @@ from tmt.utils import (
     Command,
     OnProcessStartCallback,
     Path,
+    ProvisionError,
     SerializableContainer,
     ShellScript,
     configure_constant,
@@ -1389,10 +1390,18 @@ class GuestSsh(Guest):
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
-        # Use '/run/user/uid' if it exists, 'temp dir' otherwise.
-        run_dir = Path(f"/run/user/{os.getuid()}")
-        socket_dir = run_dir if run_dir.is_dir() else Path(tempfile.mkdtemp())
-        return socket_dir / f'tmt-{self.pathless_safe_name}'
+        assert isinstance(self.parent, tmt.steps.provision.Provision)
+        assert self.parent.workdir is not None
+
+        socket_dir = self.parent.workdir / 'ssh-sockets'
+
+        try:
+            socket_dir.mkdir(parents=True, exist_ok=True)
+
+        except Exception as exc:
+            raise ProvisionError(f"Failed to create SSH socket directory '{socket_dir}'.") from exc
+
+        return socket_dir / f'{self.pathless_safe_name}.socket'
 
     @property
     def _ssh_options(self) -> Command:
