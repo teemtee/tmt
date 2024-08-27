@@ -972,20 +972,9 @@ Current Limits
     For the most up-to-date list of issues related to multihost,
     our Github can display all issues with the `multihost`__ label.
 
-* requirements of all tests (:ref:`/spec/tests/require`,
-  :ref:`/spec/tests/recommend`) are installed on all guests. See
-  `this issue`__ for more details.
 * interaction between guests provisioned by different plugins. Think
   "a server from ``podman`` plugin vs client from ``virtual``".
   This is not yet supported, see `this issue`__.
 
-* ``provision`` step is still running in sequence, guests are
-  provisioned one by one. This is not technically necessary, and
-  with tools we now have for handling parallelization of other
-  steps, provisioning deserves the same treatment, resulting in,
-  hopefully, a noticeable speed up (especially with plugins like
-  ``beaker`` or ``artemis``).
-
 __ https://github.com/teemtee/tmt/labels/multihost
-__ https://github.com/teemtee/tmt/issues/2010
 __ https://github.com/teemtee/tmt/issues/2047
