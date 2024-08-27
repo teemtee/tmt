@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from tmt.log import Logger
-from tmt.steps.provision import Guest, GuestData, GuestSsh, GuestSshData
+from tmt.steps.provision import Guest, GuestData, GuestSsh, GuestSshData, Provision
 from tmt.utils import Command, CommandOutput
 
 
@@ -54,8 +54,13 @@ def test_execute_no_connection_closed(
         stdout: str,
         expected: str,
         monkeypatch: Any) -> None:
+    step = Provision(
+        plan=MagicMock(name='mock<plan>'),
+        data={},
+        logger=root_logger)
     guest = GuestSsh(
         logger=root_logger,
+        parent=step,
         name='foo',
         data=GuestSshData(primary_address='bar')
         )
@@ -65,7 +70,6 @@ def test_execute_no_connection_closed(
         '_run_guest_command',
         MagicMock(return_value=CommandOutput(stdout=stdout, stderr=None))
         )
-    monkeypatch.setattr(guest, 'parent', MagicMock())
 
     output = guest.execute(Command('some-command'), test_session=True)
     assert output.stdout == expected
