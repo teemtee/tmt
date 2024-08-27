@@ -33,4 +33,4 @@ example:
     # Request a guest with a Thunderbolt controller
     device:
         device-name: "~ Intel Corporation .* Thunderbolt 3"
-        driver: thundebolt
+        driver: thunderbolt
