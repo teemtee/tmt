@@ -41,7 +41,7 @@ description: |
         Only ``=`` and ``!=`` operators are accepted for flag-like requirements,
         e.g. :ref:`virtualization.is-virtualized </spec/hardware/virtualization>`.
 
-        Only ``=``, ``!``, ``~`` and ``!~`` operators are accepted for
+        Only ``=``, ``!=``, ``~`` and ``!~`` operators are accepted for
         requirements that accept string values, e.g.
         :ref:`cpu.model-name </spec/hardware/cpu>` or
         :ref:`virtualization.hypervisor </spec/hardware/virtualization>`.
