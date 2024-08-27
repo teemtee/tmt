@@ -31,7 +31,6 @@ import logging
 import logging.handlers
 import os
 import sys
-import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,6 +43,8 @@ from typing import (
     )
 
 import click
+
+from tmt._compat.warnings import deprecated
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -823,12 +824,12 @@ class Logger:
                 shift=shift)
             )
 
+    @deprecated("Use Logger.warning instead")
     def warn(
             self,
             message: str,
             shift: int
             ) -> None:
-        warnings.warn("Use `warning` instead", DeprecationWarning, stacklevel=1)
         return self.warning(message, shift)
 
     def fail(
