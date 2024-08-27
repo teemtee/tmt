@@ -5310,6 +5310,37 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     return node
 
 
+def preformat_jsonschema_validation_errors(
+        raw_errors: list[jsonschema.ValidationError],
+        prefix: Optional[str] = None) -> list[tuple[jsonschema.ValidationError, str]]:
+    """
+    A helper to preformat JSON schema validation errors.
+
+    Raw errors can be converted to strings with a simple ``str()`` call,
+    but resulting string is very JSON-ish. This helper provides
+    simplified string representation consisting of error message and
+    element path.
+
+    :param raw_error: raw validation errors as provided by
+        :py:mod:`jsonschema`.
+    :param prefix: if specified, it is added at the beginning of each
+        stringified error.
+    :returns: a list of two-item tuples, the first item being the
+        original validation error, the second item being its simplified
+        string rendering.
+    """
+
+    prefix = f'{prefix}:' if prefix else ''
+    errors: list[tuple[jsonschema.ValidationError, str]] = []
+
+    for error in raw_errors:
+        path = f'{prefix}{".".join(str(p) for p in error.path)}'
+
+        errors.append((error, f'{path} - {error.message}'))
+
+    return errors
+
+
 def validate_fmf_node(
         node: fmf.Tree,
         schema_name: str,
@@ -5323,19 +5354,7 @@ def validate_fmf_node(
     if result.result is True:
         return []
 
-    # A bit of error formatting. It is possible to use str(error), but the result
-    # is a bit too JSON-ish. Let's present an error message in a way that helps
-    # users to point finger on each and every issue. But don't throw the original
-    # errors away!
-
-    errors: list[tuple[jsonschema.ValidationError, str]] = []
-
-    for error in result.errors:
-        path = f'{node.name}:{".".join(error.path)}'
-
-        errors.append((error, f'{path} - {error.message}'))
-
-    return errors
+    return preformat_jsonschema_validation_errors(result.errors, prefix=node.name)
 
 
 # A type for callbacks given to wait()

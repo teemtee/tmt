@@ -464,6 +464,7 @@ definitions:
       - info
       - warn
       - error
+      - skip
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
   result_interpret:
@@ -477,6 +478,7 @@ definitions:
       - warn
       - error
       - fail
+      - skip
       - custom
       - restraint
 
