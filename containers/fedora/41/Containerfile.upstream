@@ -1,0 +1,10 @@
+#
+# A Fedora 41 image tailored for tmt test suite
+#
+# tmt/tests/fedora/41/upstream:latest
+#
+
+FROM quay.io/fedora/fedora:41
+
+    # Populate dnf cache
+RUN dnf makecache
