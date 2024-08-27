@@ -6,10 +6,10 @@ require:
     - python3-devel
 tier: null
 adjust:
-    when: distro == fedora-rawhide
+    when: distro == fedora-rawhide or distro == fedora-41
     result: xfail
-    # 'mini' should start passing once https://github.com/hgrecco/pint/issues/1969 is resolved
-    # if/once that happens, the xfail should be moved to 'full' only
+    # Depends on https://github.com/hgrecco/pint/issues/1969
+    # The 'full' dependes on https://github.com/psss/python-nitrate/pull/49
     because: "Un-installable dependencies on Python 3.13"
 
 /mini:

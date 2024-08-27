@@ -5,8 +5,8 @@ require:
 - tmt
 tier: 4
 adjust:
-    when: distro == fedora-rawhide
+    when: distro == fedora-rawhide or distro == fedora-41
     result: xfail
     # Remove the xfail adjust once it starts passing.
-    # Dependent on https://github.com/crate-py/rpds/issues/72, PyO3 0.22
+    # https://github.com/hgrecco/pint/issues/1969
     because: "Un-installable dependencies on Python 3.13"
