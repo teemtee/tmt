@@ -24,6 +24,9 @@
         summary: Run command 'false' but report pass
         test: 'false'
         result: xfail
+    /subresults:
+        summary: Fake the subresults data and print them into final report
+        test: 'true'
 
 # Special plan to introduce more than one guest, for verification of --display-guest.
 # Disabled by default, but enabled in the corresponding test by a magic of context.

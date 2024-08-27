@@ -2,6 +2,8 @@ import dataclasses
 import webbrowser
 from typing import Optional
 
+from jinja2 import select_autoescape
+
 import tmt
 import tmt.log
 import tmt.options
@@ -66,6 +68,10 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         # Prepare the template
         environment = tmt.utils.templates.default_template_environment()
+
+        # Explicitly enable the autoescape because it's disabled by default by TMT
+        # (see /teemtee/tmt/issues/2873 for more info.
+        environment.autoescape = select_autoescape(enabled_extensions=('html.j2'))
 
         if self.data.absolute_paths:
             def _linkable_path(path: str) -> str:
