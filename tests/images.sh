@@ -23,6 +23,7 @@ $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/39/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/40/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/41/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/coreos:stable
 $TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable
@@ -37,6 +38,7 @@ $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest}"
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 fedora-39
 fedora-40
+fedora-41
 fedora-rawhide
 fedora-coreos}"
 
@@ -44,6 +46,13 @@ fedora-coreos}"
 function is_fedora_rawhide () {
     [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
     [[ "$1" = "fedora-rawhide" ]] && return 0
+
+    return 1
+}
+
+function is_fedora_41 () {
+    [[ "$1" =~ ^.*fedora/41[:/].* ]] && return 0
+    [[ "$1" = "fedora-41" ]] && return 0
 
     return 1
 }

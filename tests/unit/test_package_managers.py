@@ -40,6 +40,8 @@ tmt.plugins.explore(logger)
 # Local images created via `make images-tests`, reference to local registry
 CONTAINER_FEDORA_RAWHIDE = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/rawhide/upstream:latest')
+CONTAINER_FEDORA_41 = Container(
+    url='containers-storage:localhost/tmt/tests/container/fedora/41/upstream:latest')
 CONTAINER_FEDORA_40 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/40/upstream:latest')
 CONTAINER_FEDORA_39 = Container(
@@ -82,6 +84,7 @@ def has_legacy_dnf(container: ContainerData) -> bool:
 
     return container.image_url_or_id not in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
         CONTAINER_FEDORA_COREOS_OSTREE.url
         )
@@ -92,6 +95,7 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
 
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
         CONTAINER_FEDORA_COREOS_OSTREE.url
         )
@@ -105,6 +109,8 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
 CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
+
+    (CONTAINER_FEDORA_41, PACKAGE_MANAGER_DNF5),
 
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF),
@@ -190,6 +196,7 @@ def fixture_guest_per_test(
 def is_dnf5_preinstalled(container: ContainerData) -> bool:
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
         CONTAINER_FEDORA_COREOS_OSTREE.url)
 
