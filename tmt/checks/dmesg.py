@@ -11,7 +11,7 @@ import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
-from tmt.utils import Path, field, render_run_exception_streams
+from tmt.utils import Path, field, format_timestamp, render_run_exception_streams
 
 if TYPE_CHECKING:
     import tmt.base
@@ -95,11 +95,9 @@ class DmesgCheck(Check):
             event: CheckEvent,
             logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
 
-        from tmt.steps.execute import ExecutePlugin
-
         assert invocation.phase.step.workdir is not None  # narrow type
 
-        timestamp = ExecutePlugin.format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+        timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
