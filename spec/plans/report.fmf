@@ -4,6 +4,7 @@ story:
     the testing is finished.
 description:
     Report test results according to user preferences.
+example:
 
 /display:
     summary: Show results in the terminal window
@@ -202,33 +203,7 @@ description:
 /file:
     description: |
 
-        Save the report into a ``report.yaml`` file with the
-        following format:
-
-        .. code-block:: yaml
-
-            result: OVERALL_RESULT
-            plans:
-                /plan/one:
-                    result: PLAN_RESULT
-                    tests:
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
-
-                        /test/two:
-                            result: TEST_RESULT
-                            log:
-                                - LOG_PATH
-                                - LOG_PATH
-                                - LOG_PATH
-                /plan/two:
-                    result: PLAN_RESULT
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
+        Save the report into a ``report.yaml`` file.
 
         Where ``OVERALL_RESULT`` is the overall result of all plan
         results. It is counted the same way as ``PLAN_RESULT``.
@@ -262,3 +237,29 @@ description:
         to the execute step plan run directory. The ``log`` key
         will be a list of such paths, even if there is just a single
         log.
+
+    example: |
+        .. code-block:: yaml
+
+            result: OVERALL_RESULT
+            plans:
+                /plan/one:
+                    result: PLAN_RESULT
+                    tests:
+                        /test/one:
+                            result: TEST_RESULT
+                            log:
+                              - LOG_PATH
+
+                        /test/two:
+                            result: TEST_RESULT
+                            log:
+                                - LOG_PATH
+                                - LOG_PATH
+                                - LOG_PATH
+                /plan/two:
+                    result: PLAN_RESULT
+                        /test/one:
+                            result: TEST_RESULT
+                            log:
+                              - LOG_PATH
