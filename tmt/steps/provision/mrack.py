@@ -988,7 +988,23 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         try:
             response = self.api.create(data)
+
         except ProvisioningError as exc:
+            import xmlrpc.client
+
+            cause = exc.__cause__
+
+            if isinstance(cause, xmlrpc.client.Fault):
+                if 'is not a valid user name' in cause.faultString:
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                        "was refused as unknown.") from exc
+
+                if 'is not a valid submission delegate':
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                        "is not a valid submission delegate.") from exc
+
             raise ProvisionError('Failed to create Beaker job') from exc
 
         if response:
