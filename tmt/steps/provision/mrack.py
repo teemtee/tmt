@@ -686,6 +686,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             if hardware and hardware.constraint:
                 host.update({"beaker": self._translate_tmt_hw(hardware)})
             host["beaker"]["ks_append"] = host.get('kickstart')
+            host["beaker"]["ks_meta"] = host.get('kickstart').get('metadata')
             req: dict[str, Any] = super().create_host_requirement(host)
             whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
             req.update({"whiteboard": whiteboard})
