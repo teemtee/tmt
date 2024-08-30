@@ -3899,7 +3899,7 @@ class Clean(tmt.utils.Common):
                         self.cli_invocation.options['quiet'] = quiet
         return successful
 
-    def guests(self) -> bool:
+    def guests(self, run_ids: tuple[str, ...]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
         root_path = Path(self.opt('workdir-root'))
@@ -3910,7 +3910,7 @@ class Clean(tmt.utils.Common):
                 Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(root_path, self.opt('id_')):
+        for abs_path in tmt.utils.generate_runs(root_path, run_ids):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
