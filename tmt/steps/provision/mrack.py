@@ -1000,7 +1000,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
                         "was refused as unknown.") from exc
 
-                if 'is not a valid submission delegate':
+                if 'is not a valid submission delegate' in cause.faultString:
                     raise ProvisionError(
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
                         "is not a valid submission delegate.") from exc
