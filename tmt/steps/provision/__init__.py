@@ -952,18 +952,36 @@ class Guest(tmt.utils.Common):
                 tasks = fmf.utils.listed(matched.group(1), 'task')
                 self.verbose(key, tasks, 'green')
 
-    def _ansible_playbook_path(self, playbook: Path, playbook_root: Path) -> Path:
-        """ Prepare full ansible playbook path """
-        # self.debug(f"Applying playbook '{playbook}' on guest '{self.primary_address}'.")
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        # parent = cast(Provision, self.parent)
-        # assert parent.plan.fmf_root is not None  # narrow type
-        # Playbook paths should be relative to the metadata tree root
-        playbook = playbook_root / playbook.unrooted()
-        if not playbook.exists() or not playbook.is_relative_to(playbook_root):
-            raise tmt.utils.GeneralError(f"{playbook} is not relative to the metadata tree root.")
+    def _sanitize_ansible_playbook_path(
+            self,
+            playbook: Path,
+            playbook_root: Optional[Path]) -> Path:
+        """
+        Prepare full ansible playbook path.
+
+        :param playbook: path to the playbook to run.
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
+        :returns: an absolute path to a playbook.
+        :raises GeneralError: when ``playbook_root`` is set, but
+            ``playbook`` is not located in this filesystem tree, or when
+            the eventual playbook path is not absolute.
+        """
+
+        # Some playbooks must be under playbook root, which is often
+        # a metadata tree root.
+        if playbook_root is not None:
+            playbook = playbook_root / playbook.unrooted()
+
+            if not playbook.is_relative_to(playbook_root):
+                raise tmt.utils.GeneralError(
+                    f"'{playbook}' is not relative to the expected root '{playbook_root}'.")
+
+        if not playbook.exists():
+            raise tmt.utils.FileError(f"Playbook '{playbook}' does not exist.")
 
         self.debug(f"Playbook full path: '{playbook}'", level=2)
+
         return playbook
 
     def _prepare_environment(
@@ -1056,6 +1074,8 @@ class Guest(tmt.utils.Common):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -1083,7 +1103,8 @@ class Guest(tmt.utils.Common):
         the playbook while this method makes sure our logging is consistent.
 
         :param playbook: path to the playbook to run.
-        :param playbook_root: TODO fill doc
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -1540,6 +1561,8 @@ class GuestSsh(Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -1549,8 +1572,8 @@ class GuestSsh(Guest):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-        if playbook_root:
-            playbook = self._ansible_playbook_path(playbook, playbook_root)
+
+        playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
 
