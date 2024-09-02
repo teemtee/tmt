@@ -349,8 +349,12 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         is_flag=True,
         help="List locally available images.")
 
-    image_url: Optional[str] = None
-    instance_name: Optional[str] = None
+    image_url: Optional[str] = field(
+        default=None,
+        internal=True)
+    instance_name: Optional[str] = field(
+        default=None,
+        internal=True)
 
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.

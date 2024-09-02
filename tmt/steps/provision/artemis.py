@@ -199,7 +199,9 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         normalize=_normalize_log_type)
 
     # Provided by Artemis response
-    guestname: Optional[str] = None
+    guestname: Optional[str] = field(
+        default=None,
+        internal=True)
 
     # Timeouts and deadlines
     provision_timeout: int = field(
