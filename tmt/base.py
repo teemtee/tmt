@@ -4008,7 +4008,14 @@ class Clean(tmt.utils.Common):
                 Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(self.workdir_root, run_ids):
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, run_ids))
+        keep = self.opt('keep')
+        if keep is not None:
+            # Sort by modify time of the workdirs to keep the newest guests
+            all_workdirs.sort(
+                key=lambda workdir: Path(workdir / 'run.yaml').stat().st_mtime, reverse=True)
+            all_workdirs = all_workdirs[keep:]
+        for abs_path in all_workdirs:
             run = Run(
                 logger=self._logger,
                 id_=abs_path,

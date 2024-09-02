@@ -1786,6 +1786,9 @@ def clean_runs(
     '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.')
 @option(
+    '-k', '--keep', type=int, default=None,
+    help='The number of latest guests to keep, clean the rest.')
+@option(
     '-h', '--how', metavar='METHOD',
     help='Stop guests of the specified provision method.')
 @verbosity_options
@@ -1795,6 +1798,7 @@ def clean_guests(
         _workdir_root: Optional[str],
         last: bool,
         id_: tuple[str, ...],
+        keep: Optional[int],
         **kwargs: Any) -> None:
     """
     Stop running guests of runs.
