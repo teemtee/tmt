@@ -673,15 +673,22 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
                 'hostRequires': transformed.to_mrack()
                 }
 
-        def create_host_requirement(self, host: dict[str, Any]) -> dict[str, Any]:
+        def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
-            hardware = cast(Optional[tmt.hardware.Hardware], host.get('hardware'))
-            if hardware and hardware.constraint:
-                host.update({"beaker": self._translate_tmt_hw(hardware)})
-            req: dict[str, Any] = super().create_host_requirement(host)
-            whiteboard = host.get("whiteboard", host.get("tmt_name", req.get("whiteboard")))
-            req.update({"whiteboard": whiteboard})
-            logger.info('whiteboard', whiteboard, 'green')
+
+            req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
+
+            if host.hardware and host.hardware.constraint:
+                req['beaker'] = self._translate_tmt_hw(host.hardware)
+
+            if host.beaker_job_owner:
+                req['job_owner'] = host.beaker_job_owner
+
+            # Whiteboard must be added *after* request preparation, to overwrite the default one.
+            req['whiteboard'] = host.whiteboard
+
+            logger.info('whiteboard', host.whiteboard, 'green')
+
             return req
 
     _MRACK_IMPORTED = True
@@ -755,6 +762,15 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int)
 
+    beaker_job_owner: Optional[str] = field(
+        default=None,
+        option='--beaker-job-owner',
+        metavar='USERNAME',
+        help="""
+             If set, Beaker jobs will be submitted on behalf of ``USERNAME``.
+             Submitting user must be a submission delegate for the ``USERNAME``.
+             """)
+
 
 @dataclasses.dataclass
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -776,6 +792,20 @@ GUEST_STATE_COLORS = {
     "Reserved": "green",
     "Completed": "green",
     }
+
+
+@dataclasses.dataclass
+class CreateJobParameters:
+    """ Collect all parameters for a future Beaker job """
+
+    tmt_name: str
+    name: str
+    os: str
+    arch: str
+    hardware: Optional[tmt.hardware.Hardware]
+    whiteboard: Optional[str]
+    beaker_job_owner: Optional[str]
+    group: str = 'linux'
 
 
 class BeakerAPI:
@@ -840,14 +870,13 @@ class BeakerAPI:
     @async_run
     async def create(
             self,
-            data: dict[str, Any],
-            ) -> Any:
+            data: CreateJobParameters) -> Any:
         """
         Create - or request creation of - a resource using mrack up.
 
-        :param data: optional key/value data to send with the request.
-
+        :param data: describes the provisioning request.
         """
+
         mrack_requirement = self._mrack_transformer.create_host_requirement(data)
         log_msg_start = f"{self.dsp_name} [{self.mrack_requirement.get('name')}]"
         self._bkr_job_id, self._req = await self._mrack_provider.create_server(mrack_requirement)
@@ -879,6 +908,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
+
+    beaker_job_owner: Optional[str] = None
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -946,25 +977,35 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     def _create(self, tmt_name: str) -> None:
         """ Create beaker job xml request and submit it to Beaker hub """
 
-        data: dict[str, Any] = {
-            'tmt_name': tmt_name,
-            'hardware': self.hardware,
-            'name': f'{self.image}-{self.arch}',
-            'os': self.image,
-            'group': 'linux',
-            }
-
-        if self.whiteboard is not None:
-            data["whiteboard"] = self.whiteboard
-
-        if self.arch is not None:
-            data["arch"] = self.arch
+        data = CreateJobParameters(
+            tmt_name=tmt_name,
+            hardware=self.hardware,
+            arch=self.arch,
+            os=self.image,
+            name=f'{self.image}-{self.arch}',
+            whiteboard=self.whiteboard or tmt_name,
+            beaker_job_owner=self.beaker_job_owner)
 
         try:
             response = self.api.create(data)
-        except ProvisioningError as mrack_provisioning_err:
-            raise ProvisionError(
-                f"Failed to create, response:\n{mrack_provisioning_err}")
+
+        except ProvisioningError as exc:
+            import xmlrpc.client
+
+            cause = exc.__cause__
+
+            if isinstance(cause, xmlrpc.client.Fault):
+                if 'is not a valid user name' in cause.faultString:
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                        "was refused as unknown.") from exc
+
+                if 'is not a valid submission delegate' in cause.faultString:
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                        "is not a valid submission delegate.") from exc
+
+            raise ProvisionError('Failed to create Beaker job') from exc
 
         if response:
             self.info('guest', 'has been requested', 'green')

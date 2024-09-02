@@ -17,6 +17,11 @@ tmt-1.36
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of other users, through
+``beaker-job-owner`` key. The current user must be a submission delegate
+for the given job owner.
+
 
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
