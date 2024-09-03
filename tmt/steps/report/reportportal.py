@@ -163,7 +163,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     artifacts_url: Optional[str] = field(
         metavar="ARTIFACTS_URL",
         option="--artifacts-url",
-        default=_str_env_to_default('artifacts_url', None),
+        default=os.getenv('TMT_REPORT_ARTIFACTS_URL'),
         help="Link to test artifacts provided for report plugins.")
 
     launch_url: Optional[str] = None
