@@ -5997,12 +5997,12 @@ def jira_link(
     linking_node = config_tree.fmf_tree.find('/user/linking')
     if not linking_node and linking_node.data.get('linking') is None:
         return
-    linking_config = linking_node.data.get('linking')[0]
+    linking_config = linking_node.data.get('issue-tracker')[0]
     verifies = links.get('verifies')[0]
     target = verifies.to_dict()['target']
     # Parse the target url
     issue_id = target.split('/')[-1]
-    jira = JIRA(server=linking_config['server'], token_auth=linking_config['token'])
+    jira = JIRA(server=linking_config['url'], token_auth=linking_config['token'])
     link_object: dict[str, str] = {}
     service_url: dict[str, str] = {}
     for node in nodes:
@@ -6011,7 +6011,7 @@ def jira_link(
         if len(nodes) == 1 or (len(nodes) > 1 and separate):
             service_url = create_url_params(tmt_object=node)
             link_object = {
-                "url": create_url(linking_config["service"], service_url),
+                "url": create_url(linking_config["tmt-web-url"], service_url),
                 "title": f'[tmt_web] Metadata of the {type(node).__name__.lower()}'
                 f' covering this issue'}
             jira.add_simple_link(issue_id, link_object)
@@ -6019,7 +6019,7 @@ def jira_link(
             url_part = create_url_params(tmt_object=node)
             service_url.update(url_part)
             link_object = {
-                "url": create_url(linking_config["service"], service_url),
+                "url": create_url(linking_config["tmt-web-url"], service_url),
                 "title": f'[tmt_web] Metadata of the'
                 f' {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
                 f' covering this issue'}

@@ -1698,10 +1698,10 @@ class TestJiraLink(unittest.TestCase):
     def setUp(self):
         self.tree = fmf.Tree(data={'fmf_id': 'root'})
         self.tree.child(name='user', data={})
-        self.tree.find('/user').child(data={'linking': [
+        self.tree.find('/user').child(data={'issue-tracker': [
             {'type': 'jira',
-             'server': 'https://issues.redhat.com',
-             'service': 'http://localhost:8000/',
+             'url': 'https://issues.redhat.com',
+             'tmt-web-url': 'http://localhost:8000/',
              'token': ''}]}, name='linking')
         self.logger = tmt.log.Logger(actual_logger=logging.getLogger('tmt'))
 
@@ -1716,7 +1716,7 @@ class TestJiraLink(unittest.TestCase):
         result = mock_add_simple_link.call_args.args[1]
         assert ('http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%'
                 '2Fteemtee%2Ftmt.git&test-name=%2Ftests%2Fprovision%2Fvirtual%'
-                '2Fdependencies&test-ref=link-issues-to-jra') in result['url']
+                '2Fdependencies&test-ref=link-issues-to-jira') in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')
