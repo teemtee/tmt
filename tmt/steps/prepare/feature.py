@@ -41,17 +41,6 @@ class Feature(tmt.utils.Common):
 
 
 class ToggleableFeature(Feature):
-    def get_root_path(self) -> Path:
-        """ Get the root path for getting the path of a playbook"""
-        assert self.parent is not None  # narrow type
-        assert self.parent.parent is not None  # narrow type
-        assert self.parent.parent.parent is not None  # narrow type
-        plan = cast(tmt.base.Plan, self.parent.parent.parent)
-        assert plan.my_run is not None  # narrow type
-        assert plan.my_run.tree is not None  # narrow type
-        assert plan.my_run.tree.root is not None  # narrow type
-        return plan.my_run.tree.root
-
     def _run_playbook(self, op: str, playbook_filename: str) -> None:
         playbook_path = self._find_playbook(playbook_filename)
         if not playbook_path:
@@ -59,7 +48,7 @@ class ToggleableFeature(Feature):
                 f"{op.capitalize()} {self.NAME.upper()} is not supported on this guest.")
 
         self.info(f'{op.capitalize()} {self.NAME.upper()}')
-        self.guest.ansible(playbook_path.relative_to(self.get_root_path()))
+        self.guest.ansible(playbook_path)
 
     def _enable(self, playbook_filename: str) -> None:
         self._run_playbook('enable', playbook_filename)

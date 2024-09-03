@@ -234,6 +234,7 @@ class GuestContainer(tmt.Guest):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -245,6 +246,8 @@ class GuestContainer(tmt.Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -254,7 +257,8 @@ class GuestContainer(tmt.Guest):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-        playbook = self._ansible_playbook_path(playbook)
+
+        playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         # As non-root we must run with podman unshare
         podman_command = Command()

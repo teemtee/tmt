@@ -29,6 +29,7 @@ class GuestLocal(tmt.Guest):
     def _run_ansible(
             self,
             playbook: Path,
+            playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
             log: Optional[tmt.log.LoggingFunction] = None,
@@ -40,6 +41,8 @@ class GuestLocal(tmt.Guest):
         playbook in whatever way is fitting for the guest and infrastructure.
 
         :param playbook: path to the playbook to run.
+        :param playbook_root: if set, ``playbook`` path must be located
+            under the given root path.
         :param extra_args: additional arguments to be passed to ``ansible-playbook``
             via ``--extra-args``.
         :param friendly_command: if set, it would be logged instead of the
@@ -50,7 +53,7 @@ class GuestLocal(tmt.Guest):
             reduced.
         """
 
-        playbook = self._ansible_playbook_path(playbook)
+        playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         return self._run_guest_command(
             Command(
