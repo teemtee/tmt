@@ -3997,7 +3997,7 @@ class Clean(tmt.utils.Common):
                         self.cli_invocation.options['quiet'] = quiet
         return successful
 
-    def guests(self, run_ids: tuple[str, ...]) -> bool:
+    def guests(self, run_ids: tuple[str, ...], keep: Optional[int]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
         self.verbose('workdir root', self.workdir_root)
@@ -4009,7 +4009,6 @@ class Clean(tmt.utils.Common):
         successful = True
         assert self._cli_context_object is not None  # narrow type
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, run_ids))
-        keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs to keep the newest guests
             all_workdirs.sort(
@@ -4038,7 +4037,7 @@ class Clean(tmt.utils.Common):
                 return False
         return True
 
-    def runs(self, id_: tuple[str, ...]) -> bool:
+    def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
         self.verbose('workdir root', self.workdir_root)
@@ -4050,7 +4049,6 @@ class Clean(tmt.utils.Common):
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
-        keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
             all_workdirs.sort(
