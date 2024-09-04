@@ -4,15 +4,12 @@
     Releases
 ======================
 
+
 tmt-1.36
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
 file does not follow the :ref:`result specification</spec/plans/results>`.
-
-
-tmt-1.36
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
@@ -21,6 +18,8 @@ The :ref:`/plugins/provision/beaker` provision plugin gains
 support for submitting jobs on behalf of other users, through
 ``beaker-job-owner`` key. The current user must be a submission delegate
 for the given job owner.
+
+In preparation for subresults: subresults and their checks have been integrated into HTML report and display plugin, result phase renamed to subresult.
 
 
 tmt-1.35
