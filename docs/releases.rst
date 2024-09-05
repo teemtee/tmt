@@ -5,6 +5,18 @@
 ======================
 
 
+tmt-1.37
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+tmt will now put SSH master control socket into ``ssh-socket``
+subdirectory of a workdir. Originally, sockets were stored in
+``/run/user/$UID`` directory, but this path led to conflicts when
+multiple tmt instances shared sockets incorrectly. A fix landed in
+1.36 that put sockets into ``provision`` subdirectory of each plan,
+but this solution breaks plans with longer names because of
+unavoidable UNIX socket path limit of 104 (or 108) characters.
+
+
 tmt-1.36
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
