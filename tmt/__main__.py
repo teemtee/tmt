@@ -14,8 +14,14 @@ def run_cli() -> None:
     """
     try:
         import tmt.utils  # noqa: I001
-        import tmt.cli
-        tmt.cli.main()
+
+        # Import CLI commands.
+        # TODO: some kind of `import tmt.cli.*` would be nice
+        import tmt.cli._root
+        import tmt.cli.status
+
+        tmt.cli._root.main()
+
     except ImportError as error:
         print("Error: tmt package does not seem to be installed")
         raise SystemExit(1) from error
