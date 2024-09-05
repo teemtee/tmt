@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import hashlib
 import os
 import re
 import secrets
@@ -115,6 +116,15 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: connections. It is a combination of the default SSH options and those
 #: provided by environment variables.
 BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_options()
+
+#: SSH master socket path is limited to this many characters.
+#:
+#: .. note::
+#:
+#:    Sources don't agree on the exact value. Some error messages state
+#:    108 is the limit, but some discussions speak about 104 characters.
+#:    Staying on the safer side.
+SSH_MASTER_SOCKET_LENGTH_LIMIT = 104
 
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
@@ -1415,13 +1425,25 @@ class GuestSsh(Guest):
         return f'{self.user}@{self.primary_address}'
 
     @functools.cached_property
+    def is_ssh_multiplexing_enabled(self) -> bool:
+        """ Whether SSH multiplexing should be used """
+
+        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            self.warn("SSH multiplexing will not be used because the SSH socket path "
+                      f"'{self._ssh_master_socket_path}' is too long.")
+            return False
+
+        return True
+
+    @functools.cached_property
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        assert self.parent.workdir is not None
+        assert self.parent.plan.my_run is not None
+        assert self.parent.plan.my_run.workdir is not None
 
-        socket_dir = self.parent.workdir / 'ssh-sockets'
+        socket_dir = self.parent.plan.my_run.workdir / 'ssh-sockets'
 
         try:
             socket_dir.mkdir(parents=True, exist_ok=True)
@@ -1429,7 +1451,26 @@ class GuestSsh(Guest):
         except Exception as exc:
             raise ProvisionError(f"Failed to create SSH socket directory '{socket_dir}'.") from exc
 
-        return socket_dir / f'{self.pathless_safe_name}.socket'
+        # Try more informative, but possibly too long path, constructed from pieces
+        # humans can easily understand and follow.
+        #
+        # The template is what seems to be a common template in general SSH discussions,
+        # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
+        # name is meaningless outside of its plan, it might be too ambiguous. Starting with
+        # what SSH folk uses, we may amend it later.
+        socket_path = socket_dir / f'{self.primary_address}-{self.port}-{self.user}.socket'
+
+        if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            return socket_path
+
+        # Fall back to a less readable, but hopefully shorter and therefore acceptable filename.
+        # Note that we don't check the length anymore: giving up, this is the path, take it
+        # or leave it. And callers may very well leave it, we tried our best.
+        digest = hashlib \
+            .shake_128(f'{self.primary_address}-{self.port}-{self.user}'.encode()) \
+            .hexdigest(16)
+
+        return socket_dir / f'{digest}.socket'
 
     @property
     def _ssh_options(self) -> Command:
@@ -1456,7 +1497,8 @@ class GuestSsh(Guest):
             options.extend(['-oPasswordAuthentication=no'])
 
         # Include the SSH master process
-        options.append(f'-S{self._ssh_master_socket_path}')
+        if self.is_ssh_multiplexing_enabled:
+            options.append(f'-S{self._ssh_master_socket_path}')
 
         options.extend([f'-o{option}' for option in self.ssh_option])
 
