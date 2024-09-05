@@ -5832,17 +5832,6 @@ def field(
         )
 
 
-@functools.cache
-def is_selinux_supported() -> bool:
-    """
-    Returns ``true`` if SELinux filesystem is supported by the kernel, ``false`` otherwise.
-
-    For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
-    """
-    with open('/proc/filesystems') as file:
-        return any('selinuxfs' in line for line in file)
-
-
 def locate_key_origin(node: fmf.Tree, key: str) -> Optional[fmf.Tree]:
     """
     Find an fmf node where the given key is defined.
