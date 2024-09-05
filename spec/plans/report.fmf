@@ -89,6 +89,15 @@ description:
 
         .. note::
 
+            For Polarion report to export correctly you need to
+            use password authentication, since exporting the
+            report happens through Polarion XUnit importer which
+            does not support using tokens. You can still
+            authenticate with token to only generate the report
+            using ``--no-upload`` argument.
+
+        .. note::
+
             Your Polarion project might need a custom value format
             for the ``arch``, ``planned-in`` and other fields. The
             format of these fields might differ across Polarion
