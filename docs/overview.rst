@@ -268,8 +268,8 @@ the latest greatest version from the ``copr`` repository::
 Not sure, just want to try out how it works? Experiment safely and
 easily inside a container::
 
-    podman run -it --rm quay.io/testing-farm/tmt bash
-    podman run -it --rm quay.io/testing-farm/tmt-all bash
+    podman run -it --rm quay.io/teemtee/tmt bash
+    podman run -it --rm quay.io/teemtee/tmt-all bash
 
 .. _pip_install:
 
