@@ -9,7 +9,7 @@ from tmt.steps.report.junit import ReportJUnit, ReportJUnitData
 from tmt.utils import Path
 
 
-@pytest.fixture()
+@pytest.fixture
 def report_fix(tmppath: Path, root_logger):
     # need to provide genuine workdir paths - mock would break os.path.* calls
     step_mock = MagicMock(workdir=tmppath)

@@ -4,13 +4,13 @@ from tmt.convert import relevancy_to_adjust
 from tmt.utils import ConvertError
 
 
-@pytest.fixture()
+@pytest.fixture
 def mini(root_logger):
     """ Minimal example """
     return relevancy_to_adjust("distro = fedora: False", root_logger)
 
 
-@pytest.fixture()
+@pytest.fixture
 def full(root_logger):
     """ Full example """
     return relevancy_to_adjust("""

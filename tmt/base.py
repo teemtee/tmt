@@ -3740,8 +3740,7 @@ class Status(tmt.utils.Common):
                 earliest_step_index = -1
                 break
             plan_status_index = tmt.steps.STEPS.index(plan_status)
-            if plan_status_index < earliest_step_index:
-                earliest_step_index = plan_status_index
+            earliest_step_index = min(plan_status_index, earliest_step_index)
 
         if earliest_step_index == len(tmt.steps.STEPS):
             run_status = 'done'

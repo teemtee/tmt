@@ -233,7 +233,7 @@ def _parametrize_test_discovery() -> Iterator[tuple[ContainerData, PackageManage
     yield from CONTAINER_DISCOVERY_MATRIX.values()
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container',
                           'expected_package_manager'),
                          list(_parametrize_test_discovery()),
@@ -389,7 +389,7 @@ def _parametrize_test_install() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'package',
@@ -510,7 +510,7 @@ def _parametrize_test_install_nonexistent() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'expected_command',
@@ -621,7 +621,7 @@ def _parametrize_test_install_nonexistent_skip() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'expected_command',
@@ -737,7 +737,7 @@ def _parametrize_test_install_dont_check_first() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'package',
@@ -852,7 +852,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'package',
@@ -977,7 +977,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'supported',
@@ -1300,7 +1300,7 @@ def _generate_test_check_presence_ids(value) -> str:
     return ''
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'installable',
@@ -1401,7 +1401,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'installable',
@@ -1521,7 +1521,7 @@ def _parametrize_test_install_multiple() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'packages',
@@ -1658,7 +1658,7 @@ def _parametrize_test_install_downloaded() -> \
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'packages',
@@ -1803,7 +1803,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'installables',
@@ -1881,7 +1881,7 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'installables',
@@ -1993,7 +1993,7 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
 
 
-@pytest.mark.containers()
+@pytest.mark.containers
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'installables',

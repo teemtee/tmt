@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.11.1"
+    rev: "v1.11.2"
     hooks:
       - id: mypy
         language_version: "3.9"
@@ -67,7 +67,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.371
+    rev: v1.1.379
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -110,7 +110,7 @@ repos:
           - "types-docutils"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.29.1"
+    rev: "0.29.2"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -139,7 +139,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.5.7
+    rev: v0.6.4
     hooks:
       - id: ruff
         args:
@@ -147,7 +147,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.35.0
+    rev: 1.36.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
@@ -167,7 +167,7 @@ repos:
           - tomli  # Required for python < 3.11
 
   - repo: https://github.com/djlint/djLint
-    rev: v1.34.1
+    rev: v1.35.2
     hooks:
       - id: djlint
         files: "\\.j2"
