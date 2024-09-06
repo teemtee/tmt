@@ -731,7 +731,9 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         help='Image (distro or "compose" in Beaker terminology) to provision.')
 
     # Provided in Beaker job
-    job_id: Optional[str] = None
+    job_id: Optional[str] = field(
+        default=None,
+        internal=True)
 
     # Timeouts and deadlines
     provision_timeout: int = field(
