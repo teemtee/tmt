@@ -1424,9 +1424,12 @@ class GuestSsh(Guest):
         """ Return user@guest """
         return f'{self.user}@{self.primary_address}'
 
-    @functools.cached_property
+    @property
     def is_ssh_multiplexing_enabled(self) -> bool:
         """ Whether SSH multiplexing should be used """
+
+        if self.primary_address is None:
+            return False
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             self.warn("SSH multiplexing will not be used because the SSH socket path "
@@ -1458,6 +1461,9 @@ class GuestSsh(Guest):
         # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
         # name is meaningless outside of its plan, it might be too ambiguous. Starting with
         # what SSH folk uses, we may amend it later.
+
+        # This should be true, otherwise `is_ssh_multiplexing_enabled` would return `False`
+        # and nobody would need to use SSH master socket path.
         assert self.primary_address
 
         guest_id_components: list[str] = [self.primary_address]
