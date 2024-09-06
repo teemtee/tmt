@@ -1425,7 +1425,7 @@ class GuestSsh(Guest):
         return f'{self.user}@{self.primary_address}'
 
     @functools.cached_property
-    def _is_ssh_master_socket_path_valid(self) -> bool:
+    def _is_ssh_master_socket_path_acceptable(self) -> bool:
         """ Whether the SSH master socket path we create is acceptable by SSH """
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
@@ -1442,7 +1442,7 @@ class GuestSsh(Guest):
         if self.primary_address is None:
             return False
 
-        if not self._is_ssh_master_socket_path_valid:
+        if not self._is_ssh_master_socket_path_acceptable:
             return False
 
         return True
