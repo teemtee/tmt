@@ -121,8 +121,9 @@ BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_opt
 #:
 #: * UNIX socket path is limited to either 108 or 104 characters, depending
 #:   on the platform. See `man 7 unix` and/or kernel sources, for example.
-#: * SSH client processes may add connection has when connecting to the
-#:   socket, that is a couple of characters we need space for.
+#: * SSH client processes may create paths with added "connection hash"
+#:   when connecting to the master, that is a couple of characters we need
+#:   space for.
 #:
 SSH_MASTER_SOCKET_LENGTH_LIMIT = 104 - 20
 
