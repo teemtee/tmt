@@ -1,0 +1,5 @@
+summary: Check that SSH multiplexing works as expected
+tag+:
+  - provision-only
+  - provision-connect
+  - provision-virtual

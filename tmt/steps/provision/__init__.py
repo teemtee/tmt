@@ -1538,6 +1538,12 @@ class GuestSsh(Guest):
             logger: Optional[tmt.log.Logger] = None) -> None:
         logger = logger or self._logger
 
+        if not self.is_ssh_multiplexing_enabled:
+            logger.debug('The SSH master process cannot be terminated because it is disabled.',
+                         level=3)
+
+            return
+
         with self._ssh_master_process_lock:
             if self._ssh_master_process is None:
                 logger.debug('The SSH master process cannot be terminated because it is unset.',
@@ -1567,13 +1573,17 @@ class GuestSsh(Guest):
     def _ssh_command(self) -> Command:
         """ A base SSH command shared by all SSH processes """
 
-        with self._ssh_master_process_lock:
-            if self._ssh_master_process is None:
-                self._ssh_master_process = self._spawn_ssh_master_process()
+        if self.is_ssh_multiplexing_enabled:
+            with self._ssh_master_process_lock:
+                if self._ssh_master_process is None:
+                    self._ssh_master_process = self._spawn_ssh_master_process()
 
         return self._base_ssh_command
 
     def _unlink_ssh_master_socket_path(self) -> None:
+        if not self.is_ssh_multiplexing_enabled:
+            return
+
         with self._ssh_master_process_lock:
             if not self._ssh_master_socket_path:
                 return
