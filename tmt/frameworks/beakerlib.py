@@ -38,6 +38,15 @@ class Beakerlib(TestFramework):
             'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
                 invocation.guest.scripts_path /
                 tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.source_filename),
+
+            # The command in this variable gets called with every `rlPhaseEnd` call in beakerlib.
+            'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
+                f'bash {invocation.guest.scripts_path / tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename}'),
+
+            # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
+            # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
+            # - https://github.com/beakerlib/beakerlib/blob/cfa801fb175fef1e47b8552d6cf6efcb51df7227/src/testing.sh#L1074
+            'TESTID': EnvVarValue(str(invocation.test.serial_number)),
             })
 
     @classmethod
@@ -54,8 +63,15 @@ class Beakerlib(TestFramework):
     def extract_results(
             cls,
             invocation: 'TestInvocation',
+            results: list[tmt.result.Result],
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a beakerlib test """
+
+        # The outcome of a parent tmt result must be never modified based on subresults outcomes.
+        # The parent result outcome will be always set to outcome reported by a Beaker. The
+        # subresults are there just to provide more detail.
+        subresults = cls.results_to_subresults(results)
+
         # Initialize data, prepare log paths
         note: Optional[str] = None
         log: list[Path] = []
@@ -67,7 +83,7 @@ class Beakerlib(TestFramework):
         beakerlib_results_filepath = invocation.path / 'TestResults'
 
         try:
-            results = invocation.phase.read(beakerlib_results_filepath, level=3)
+            bkr_results = invocation.phase.read(beakerlib_results_filepath, level=3)
         except tmt.utils.FileError:
             logger.debug(f"Unable to read '{beakerlib_results_filepath}'.", level=3)
             note = 'beakerlib: TestResults FileError'
@@ -76,12 +92,13 @@ class Beakerlib(TestFramework):
                 invocation=invocation,
                 result=ResultOutcome.ERROR,
                 note=note,
-                log=log)]
+                log=log,
+                subresult=subresults)]
 
-        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', results)
+        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', bkr_results)
         # States are: started, incomplete and complete
         # FIXME In quotes until beakerlib/beakerlib/pull/92 is merged
-        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', results)
+        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', bkr_results)
 
         if search_result is None or search_state is None:
             # Same outcome but make it easier to debug
@@ -99,7 +116,8 @@ class Beakerlib(TestFramework):
                 invocation=invocation,
                 result=ResultOutcome.ERROR,
                 note=note,
-                log=log)]
+                log=log,
+                subresult=subresults)]
 
         result = search_result.group(1)
         state = search_state.group(1)
@@ -119,8 +137,10 @@ class Beakerlib(TestFramework):
         # Finally we have a valid result
         else:
             actual_result = ResultOutcome.from_spec(result.lower())
+
         return [tmt.Result.from_test_invocation(
             invocation=invocation,
             result=actual_result,
             note=note,
-            log=log)]
+            log=log,
+            subresult=subresults)]
