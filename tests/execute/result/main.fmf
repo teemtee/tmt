@@ -10,3 +10,6 @@
 /special:
     summary: Test special characters generated to tmt-report-results.yaml
     test: ./special.sh
+/subresults:
+    summary: Multiple calls to tmt-report-result should generate tmt subresults
+    test: ./subresults.sh
