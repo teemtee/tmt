@@ -205,7 +205,7 @@ class Result(BaseResult):
             CheckResult.from_serialized(check) for check in serialized]
         )
     data_path: Optional[Path] = field(
-        default=None,
+        default=cast(Optional[Path], None),
         serialize=lambda path: None if path is None else str(path),
         unserialize=lambda value: None if value is None else Path(value)
         )
