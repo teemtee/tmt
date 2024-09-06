@@ -226,9 +226,6 @@ def create_package_manager(
         else:
             guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
-    elif package_manager_class is tmt.package_managers.apt.Apt:
-        guest.execute(ShellScript('apt update'))
-
     return package_manager_class(guest=guest, logger=logger)
 
 
