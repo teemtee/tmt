@@ -1458,7 +1458,19 @@ class GuestSsh(Guest):
         # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
         # name is meaningless outside of its plan, it might be too ambiguous. Starting with
         # what SSH folk uses, we may amend it later.
-        socket_path = socket_dir / f'{self.primary_address}-{self.port}-{self.user}.socket'
+        assert self.primary_address
+
+        guest_id_components: list[str] = [self.primary_address]
+
+        if self.port:
+            guest_id_components.append(str(self.port))
+
+        if self.user:
+            guest_id_components.append(self.user)
+
+        guest_id = '-'.join(guest_id_components)
+
+        socket_path = socket_dir / f'{guest_id}.socket'
 
         if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT:
             return socket_path
@@ -1467,7 +1479,7 @@ class GuestSsh(Guest):
         # Note that we don't check the length anymore: giving up, this is the path, take it
         # or leave it. And callers may very well leave it, we tried our best.
         digest = hashlib \
-            .shake_128(f'{self.primary_address}-{self.port}-{self.user}'.encode()) \
+            .shake_128(guest_id.encode()) \
             .hexdigest(16)
 
         return socket_dir / f'{digest}.socket'
