@@ -213,6 +213,12 @@ class SubResult(BaseResult):
             SubCheckResult.from_serialized(check) for check in serialized]
         )
 
+    data_path: Optional[Path] = field(
+        default=cast(Optional[Path], None),
+        serialize=lambda path: None if path is None else str(path),
+        unserialize=lambda value: None if value is None else Path(value)
+        )
+
 
 @dataclasses.dataclass
 class PhaseResult(BaseResult):
@@ -270,7 +276,9 @@ class Result(BaseResult):
             result: ResultOutcome,
             note: Optional[str] = None,
             ids: Optional[ResultIds] = None,
-            log: Optional[list[Path]] = None) -> 'Result':
+            log: Optional[list[Path]] = None,
+            subresult: Optional[list[SubResult]] = None,
+            ) -> 'Result':
         """
         Create a result from a test invocation.
 
@@ -318,7 +326,8 @@ class Result(BaseResult):
             ids=ids,
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
-            data_path=invocation.relative_test_data_path)
+            data_path=invocation.relative_test_data_path,
+            subresult=subresult or [])
 
         return _result.interpret_result(invocation.test.result)
 
