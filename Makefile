@@ -119,7 +119,7 @@ images-tests: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
 	podman images | grep 'localhost/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/' | sort
 
 images-tests-bases:  ## Download base images for custom test images
-	for image in $(TMT_TEST_IMAGE_BASES); do podman pull "$$image"; done
+	podman pull $(TMT_TEST_IMAGE_BASES)
 
 define test-container-image-target-to-name =
 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,${1})
