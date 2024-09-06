@@ -119,12 +119,12 @@ BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_opt
 
 #: SSH master socket path is limited to this many characters.
 #:
-#: .. note::
+#: * UNIX socket path is limited to either 108 or 104 characters, depending
+#:   on the platform. See `man 7 unix` and/or kernel sources, for example.
+#: * SSH client processes may add connection has when connecting to the
+#:   socket, that is a couple of characters we need space for.
 #:
-#:    Sources don't agree on the exact value. Some error messages state
-#:    108 is the limit, but some discussions speak about 104 characters.
-#:    Staying on the safer side.
-SSH_MASTER_SOCKET_LENGTH_LIMIT = 104
+SSH_MASTER_SOCKET_LENGTH_LIMIT = 104 - 20
 
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
@@ -1424,6 +1424,17 @@ class GuestSsh(Guest):
         """ Return user@guest """
         return f'{self.user}@{self.primary_address}'
 
+    @functools.cached_property
+    def _is_ssh_master_socket_path_valid(self) -> bool:
+        """ Whether the SSH master socket path we create is acceptable by SSH """
+
+        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            self.warn("SSH multiplexing will not be used because the SSH socket path "
+                      f"'{self._ssh_master_socket_path}' is too long.")
+            return False
+
+        return True
+
     @property
     def is_ssh_multiplexing_enabled(self) -> bool:
         """ Whether SSH multiplexing should be used """
@@ -1431,9 +1442,7 @@ class GuestSsh(Guest):
         if self.primary_address is None:
             return False
 
-        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            self.warn("SSH multiplexing will not be used because the SSH socket path "
-                      f"'{self._ssh_master_socket_path}' is too long.")
+        if not self._is_ssh_master_socket_path_valid:
             return False
 
         return True
