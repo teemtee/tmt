@@ -63,7 +63,7 @@ example: |
 /ansible:
     summary:
         Apply ansible playbook to get the desired final state.
-    description:
+    description: |
         One or more playbooks can be provided as a list under the
         ``playbook`` attribute.  Each of them will be applied
         using ``ansible-playbook`` in the given order. The path
@@ -74,6 +74,16 @@ example: |
 
         Remote playbooks can be referenced as well as the local ones,
         and both kinds can be used at the same time.
+
+        .. note::
+
+            When executing tests in the Testing Farm, `selected
+            ansible collections`__ are available on the test
+            runner and can be used in user playbooks.
+
+            __ https://gitlab.com/testing-farm/gluetool-modules/-/blob/main/container/requirements.yml
+
+            TODO: Point to TF docs instead when ready.
 
     example: |
         prepare:
