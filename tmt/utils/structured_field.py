@@ -11,7 +11,6 @@ from tmt.utils import StructuredFieldError, format_value, pure_ascii
 #  StructuredField
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# TODO: deprecate ASAP
 log = fmf.utils.Logging('tmt').logger
 
 SFSectionValueType = Union[str, list[str]]
