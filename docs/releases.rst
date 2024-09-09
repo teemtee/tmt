@@ -24,6 +24,15 @@ discovered tests. This can be useful especially when fetching
 tests from remote repositories where the user does not have write
 access.
 
+The ``tmt reportportal`` plugin has newly introduced size limit
+for logs uploaded to ReportPortal because large logs decreases
+ReportPortal UI usability. Default limit are 1 MB for a test
+output and 50 kB for a traceback (error log).
+Limits can be controlled using the newly introduced
+``reportportal`` plugin options ``-log-size-limit`` and
+``--traceback-size-limit`` or the respective environment
+variables.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
