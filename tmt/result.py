@@ -138,6 +138,9 @@ class BaseResult(SerializableContainer):
     end_time: Optional[str] = None
     duration: Optional[str] = None
 
+    def __post_init__(self) -> None:
+        self.original_result = self.result
+
     def show(self) -> str:
         """ Return a nicely colored result with test name (and note) """
 
@@ -284,7 +287,6 @@ class Result(BaseResult):
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan._fmf_context,
             result=result,
-            original_result=result,
             note=note,
             start_time=invocation.start_time,
             end_time=invocation.end_time,
