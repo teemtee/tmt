@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 JSON: 'TypeAlias' = Any
+DEFAULT_LOG_SIZE_LIMIT: int = 1024 * 1024
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
@@ -41,11 +42,34 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
-def _filter_invalid_chars(data: str) -> str:
+def _filter_invalid_chars(data: str, step_data: 'ReportReportPortalData') -> str:
     return re.sub(
         '[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+',
         '',
         data)
+
+
+def _filter_log_per_size(data: str, step_data: 'ReportReportPortalData') -> str:
+    size = len(data)
+    header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
+              f"exceeds tmt reportportal plugin limit of {step_data.log_size_limit} bytes."
+              "The limit is controlled with --log-size-limit plugin option or"
+              "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT environment variable.\n\n")
+    if size > step_data.log_size_limit:
+        return f"{header}{data[:step_data.log_size_limit]}"
+    return data
+
+
+_LOG_FILTERS = [
+    _filter_log_per_size,
+    _filter_invalid_chars,
+    ]
+
+
+def _filter_log(log: str, step_data: 'ReportReportPortalData') -> str:
+    for log_filter in _LOG_FILTERS:
+        log = log_filter(log, step_data)
+    return log
 
 
 @dataclasses.dataclass
@@ -141,6 +165,17 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              Pass the defect type to be used for failed test, which is defined in the project
              (e.g. 'Idle'). 'To Investigate' is used by default.
              """)
+
+    log_size_limit: int = field(
+        option="--log-size-limit",
+        metavar="LOG_SIZE_LIMIT",
+        default=int(
+            _str_env_to_default('log_size_limit', str(DEFAULT_LOG_SIZE_LIMIT))),
+        help=f"""
+              Size limit in bytes for log upload to ReportPortal.
+              The default limit is {DEFAULT_LOG_SIZE_LIMIT} bytes
+              ({DEFAULT_LOG_SIZE_LIMIT / 1024 / 1024} MB).
+              """)
 
     exclude_variables: str = field(
         option="--exclude-variables",
@@ -610,11 +645,23 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             response = self.rp_api_post(
                                 session=session,
                                 path="log/entry",
-                                json={"message": message,
+                                json={"message": _filter_log(log, self.data),
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": "ERROR",
                                       "time": result.end_time})
+
+                            # Write out failures
+                            if index == 0 and status == "FAILED":
+                                message = _filter_log(result.failures(log), self.data)
+                                response = self.rp_api_post(
+                                    session=session,
+                                    path="log/entry",
+                                    json={"message": message,
+                                          "itemUuid": item_uuid,
+                                          "launchUuid": launch_uuid,
+                                          "level": "ERROR",
+                                          "time": result.end_time})
 
                     test_time = result.end_time or self.time()
 
