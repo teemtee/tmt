@@ -86,6 +86,7 @@ images:  ## Build tmt images for podman/docker
 	podman build -t tmt --squash -f ./containers/Containerfile.mini .
 	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
+TMT_TEST_IMAGE_BASES = $(shell grep -rh 'FROM ' containers/ | cut -d' ' -f2 | sort | uniq)
 TMT_TEST_IMAGE_TARGET_PREFIX = images-tests
 TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/tests/container
 
@@ -116,6 +117,9 @@ TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images-t
 
 images-tests: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
 	podman images | grep 'localhost/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/' | sort
+
+images-tests-bases:  ## Download base images for custom test images
+	podman pull $(TMT_TEST_IMAGE_BASES)
 
 define test-container-image-target-to-name =
 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,${1})
