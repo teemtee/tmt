@@ -23,6 +23,6 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
-        # rlRun "rm -r $long_run" 0 "Remove run directory with the long name"
+        rlRun "rm -r $long_run" 0 "Remove run directory with the long name"
     rlPhaseEnd
 rlJournalEnd
