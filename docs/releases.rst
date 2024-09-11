@@ -18,6 +18,8 @@ option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
 
+``tmt lint`` now reports a failure if empty environment files are found.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
