@@ -5,7 +5,7 @@
 ======================
 
 
-tmt-1.37
+tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now put SSH master control socket into ``ssh-socket``
