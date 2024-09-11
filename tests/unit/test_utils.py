@@ -27,7 +27,6 @@ from tmt.utils import (
     GeneralError,
     Path,
     ShellScript,
-    StructuredField,
     StructuredFieldError,
     WaitingIncompleteError,
     WaitingTimedOutError,
@@ -43,6 +42,7 @@ from tmt.utils.git import (
     public_git_url,
     validate_git_status,
     )
+from tmt.utils.structured_field import StructuredField
 
 from . import MATCH, assert_log, assert_not_log
 

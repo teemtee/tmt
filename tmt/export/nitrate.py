@@ -21,6 +21,7 @@ import tmt.identifier
 import tmt.utils
 import tmt.utils.git
 from tmt.utils import ConvertError, Path
+from tmt.utils.structured_field import StructuredField
 
 if TYPE_CHECKING:
     import tmt.base
@@ -85,7 +86,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
     for component in test.component:
         try:
             for testcase in find_general_plan(component).testcases:
-                struct_field = tmt.utils.StructuredField(testcase.notes)
+                struct_field = StructuredField(testcase.notes)
                 try:
                     fmf_id = tmt.base.FmfId.from_spec(
                         cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf'))))
@@ -234,7 +235,7 @@ def enabled_somewhere(test: 'tmt.Test') -> bool:
 
 def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
     """ Check whether test is enabled for specified environment """
-    field = tmt.utils.StructuredField(tcms_notes)
+    field = StructuredField(tcms_notes)
     context_dict = {}
     try:
         for line in cast(str, field.get('environment')).split('\n'):
@@ -577,7 +578,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         echo(style('arguments: ', fg='green') + "' '")
 
     # Structured Field
-    struct_field = tmt.utils.StructuredField(
+    struct_field = StructuredField(
         nitrate_case.notes if nitrate_case else '')
     echo(style('Structured Field: ', fg='green'))
 

@@ -3,7 +3,7 @@ from textwrap import dedent
 import pytest
 
 from tmt.convert import extract_relevancy, filter_common_data
-from tmt.utils import StructuredField
+from tmt.utils.structured_field import StructuredField
 
 
 def test_extract_relevancy_field_has_priority():

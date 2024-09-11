@@ -18,6 +18,7 @@ import tmt.identifier
 import tmt.log
 import tmt.utils
 from tmt.utils import ConvertError, GeneralError, Path, format_value
+from tmt.utils.structured_field import StructuredField
 
 log = fmf.utils.Logging('tmt').logger
 
@@ -975,7 +976,7 @@ RelevancyType = Union[str, list[str]]
 
 def extract_relevancy(
         notes: str,
-        field: tmt.utils.StructuredField) -> Optional[RelevancyType]:
+        field: StructuredField) -> Optional[RelevancyType]:
     """ Get relevancy from testcase, respecting sf priority """
     try:
         if "relevancy" in field:
@@ -1074,7 +1075,7 @@ def read_nitrate_case(
     if not testcase.automated:
         data['manual'] = True
     # Relevancy
-    field = tmt.utils.StructuredField(testcase.notes)
+    field = StructuredField(testcase.notes)
     relevancy = extract_relevancy(testcase.notes, field)
     if relevancy:
         data['adjust'] = relevancy_to_adjust(relevancy, logger)
