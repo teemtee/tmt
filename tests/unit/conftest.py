@@ -58,7 +58,7 @@ try:
         tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
         return TempPathFactory(tmp_path_factory)
 
-    @pytest.fixture()
+    @pytest.fixture
     def tmppath(tmp_path: pathlib.Path) -> Path:  # noqa: TID251
         return Path(str(tmp_path))
 
@@ -75,7 +75,7 @@ except ImportError:
             ) -> TempPathFactory:
         return TempPathFactory(tmpdir_factory)
 
-    @pytest.fixture()
+    @pytest.fixture
     def tmppath(tmpdir: py.path.local) -> Path:
         return Path(str(tmpdir))
 
@@ -94,7 +94,7 @@ def source_dir(tmppath_factory: TempPathFactory) -> Path:
     return source_location
 
 
-@pytest.fixture()
+@pytest.fixture
 def target_dir(tmppath_factory: TempPathFactory) -> Path:
     """ Return target directory path and clean up after tests """
     return tmppath_factory.mktemp('target')

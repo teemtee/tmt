@@ -5064,7 +5064,8 @@ def dataclass_normalize_field(
     value = raw_value
 
     if dataclasses.is_dataclass(container):
-        _, _, _, _, metadata = container_field(type(container), keyname)
+        _, _, _, _, metadata = container_field(
+            type(container) if not isinstance(container, type) else container, keyname)
 
         if metadata.normalize_callback:
             value = metadata.normalize_callback(key_address, raw_value, logger)

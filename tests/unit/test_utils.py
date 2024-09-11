@@ -49,7 +49,7 @@ from . import MATCH, assert_log, assert_not_log
 run = Common(logger=tmt.log.Logger.create(verbose=0, debug=0, quiet=False)).run
 
 
-@pytest.fixture()
+@pytest.fixture
 def local_git_repo(tmppath: Path) -> Path:
     origin = tmppath / 'origin'
     origin.mkdir()
@@ -75,7 +75,7 @@ def local_git_repo(tmppath: Path) -> Path:
     return origin
 
 
-@pytest.fixture()
+@pytest.fixture
 def origin_and_local_git_repo(local_git_repo: Path) -> tuple[Path, Path]:
     top_dir = local_git_repo.parent
     fork_dir = top_dir / 'fork'
@@ -88,7 +88,7 @@ def origin_and_local_git_repo(local_git_repo: Path) -> tuple[Path, Path]:
     return local_git_repo, fork_dir
 
 
-@pytest.fixture()
+@pytest.fixture
 def nested_file(tmppath: Path) -> tuple[Path, Path, Path]:
     top_dir = tmppath / 'top_dir'
     top_dir.mkdir()
