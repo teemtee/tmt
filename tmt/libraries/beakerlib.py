@@ -10,7 +10,7 @@ import tmt.base
 import tmt.log
 import tmt.utils
 import tmt.utils.git
-from tmt.base import DependencyFmfId, DependencySimple
+from tmt.base import DependencyFmfId, DependencySimple, FmfId
 from tmt.convert import write
 from tmt.steps.discover import Discover
 from tmt.utils import Command, Environment, EnvVarValue, Path
@@ -329,6 +329,16 @@ class BeakerLib(Library):
                         raise LibraryError
                     self.parent.debug(f"Library {self} is copied into {directory}")
                     shutil.copytree(library_path, local_library_path, dirs_exist_ok=True)
+
+                    fake_library_id = self.identifier if isinstance(
+                        self.identifier, DependencyFmfId) else FmfId(
+                        url=self.url, ref=self.ref, path=self.path, name=self.name)
+
+                    self.parent.verbose(
+                        'using remote git library',
+                        cast(dict[str, str], fake_library_id.to_minimal_dict()),
+                        'green',
+                        level=3)
 
                     # Remove metadata file(s) and create one with full data
                     # Node with library might not exist, provide usable error message
