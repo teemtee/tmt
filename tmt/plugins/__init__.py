@@ -113,8 +113,11 @@ def _explore_custom_directories(logger: Logger) -> None:
         return
 
     for _path in os.environ[ENVIRONMENT_NAME].split(os.pathsep):
+        # TID251: `pathlib` does not provide `os.patch.expandvars`, its
+        # use is allowed. For the simplicity, keeping `expanduser` as well,
+        # to avoid str -> Path -> str -> Path conversion.
         _explore_directory(
-            Path(os.path.expandvars(os.path.expanduser(_path))).resolve(),
+            Path(os.path.expandvars(os.path.expanduser(_path))).resolve(),  # noqa: TID251
             logger)
 
 

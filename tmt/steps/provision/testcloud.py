@@ -665,7 +665,7 @@ class GuestTestcloud(tmt.GuestSsh):
     @functools.cached_property
     def is_kvm(self) -> bool:
         # Is the combination of host-requested architecture kvm capable?
-        return bool(self.arch == platform.machine() and os.path.exists("/dev/kvm"))
+        return bool(self.arch == platform.machine() and Path('/dev/kvm').exists())
 
     @functools.cached_property
     def is_legacy_os(self) -> bool:

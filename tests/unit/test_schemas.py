@@ -85,8 +85,8 @@ Detailed validation error:
         pytest.fail(f"{label} {name} fails validation")
 
 
-def _tree_path(tree):
-    return os.path.relpath(os.path.abspath(tree._path))
+def _tree_path(tree: tmt.Tree):
+    return tree._path.absolute().relative_to(Path.cwd())
 
 
 def extract_testcase_id(arg):
