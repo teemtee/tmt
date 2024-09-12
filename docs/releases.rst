@@ -5,7 +5,7 @@
 ======================
 
 
-tmt-1.36
+tmt-1.36.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
@@ -22,7 +22,7 @@ for the given job owner.
 In preparation for subresults: subresults and their checks have been integrated into HTML report and display plugin, result phase renamed to subresult.
 
 
-tmt-1.35
+tmt-1.35.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If during test execution guest freezes in the middle of reboot,
@@ -70,7 +70,7 @@ run or from a run with a given id. Users can also choose to skip
 cleaning ``guests``, ``runs`` or ``images``.
 
 
-tmt-1.34
+tmt-1.34.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/spec/tests/duration` now supports multiplication.
@@ -88,7 +88,7 @@ the corresponding ``disk[N].size``
 :ref:`HW requirements</spec/hardware/disk>`.
 
 
-tmt-1.33
+tmt-1.33.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
@@ -127,7 +127,7 @@ This order picks the right package manager in the case when the
 guest is ``ostree-booted`` but has the dnf installed.
 
 
-tmt-1.32
+tmt-1.32.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The hardware specification for :ref:`/spec/hardware/disk` has been
@@ -178,7 +178,7 @@ packages required to be present with ``dist-git-require`` option.
 __ https://pagure.io/testcloud/
 
 
-tmt-1.31
+tmt-1.31.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/spec/plans/provision` step is now able to perform
@@ -237,7 +237,7 @@ to be additionally updated. Environment variables were rewritten to
 the uniform form ``TMT_PLUGIN_REPORT_REPORTPORTAL_${option}``.
 
 
-tmt-1.30
+tmt-1.30.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The new :ref:`tmt try</stories/cli/try>` command provides an
@@ -287,7 +287,7 @@ See the `full changelog`__ for more details.
 __ https://github.com/teemtee/tmt/releases/tag/1.30.0
 
 
-tmt-1.29
+tmt-1.29.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test directories can be pruned with the ``prune`` option usable in
@@ -327,7 +327,7 @@ See the `full changelog`__ for more details.
 __ https://github.com/teemtee/tmt/releases/tag/1.29.0
 
 
-tmt-1.28
+tmt-1.28.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The new :ref:`/stories/cli/multiple phases/update-missing` option
