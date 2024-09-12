@@ -751,7 +751,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         :returns: list of results.
         """
 
-        test, guest = invocation.test, invocation.guest
+        test, _ = invocation.test, invocation.guest
 
         custom_results = []
         for partial_result_data in results:
@@ -795,7 +795,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             partial_result.serial_number = test.serial_number
 
             # Enforce the correct guest info
-            partial_result.guest = ResultGuestData(name=guest.name, role=guest.role)
+            partial_result.guest = ResultGuestData.from_test_invocation(invocation=invocation)
 
             # For the result representing the test itself, set the important
             # attributes to reflect the reality.
