@@ -11,7 +11,7 @@
 
 `tldr tmt-try`
 
-- Make project tests manageable by `tmt`:
+- Initialize `tmt` files/project structure:
 
 `tmt init`
 
