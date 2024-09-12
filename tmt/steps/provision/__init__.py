@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import hashlib
 import os
 import re
 import secrets
@@ -115,6 +116,16 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: connections. It is a combination of the default SSH options and those
 #: provided by environment variables.
 BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_options()
+
+#: SSH master socket path is limited to this many characters.
+#:
+#: * UNIX socket path is limited to either 108 or 104 characters, depending
+#:   on the platform. See `man 7 unix` and/or kernel sources, for example.
+#: * SSH client processes may create paths with added "connection hash"
+#:   when connecting to the master, that is a couple of characters we need
+#:   space for.
+#:
+SSH_MASTER_SOCKET_LENGTH_LIMIT = 104 - 20
 
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
@@ -1415,13 +1426,37 @@ class GuestSsh(Guest):
         return f'{self.user}@{self.primary_address}'
 
     @functools.cached_property
+    def _is_ssh_master_socket_path_acceptable(self) -> bool:
+        """ Whether the SSH master socket path we create is acceptable by SSH """
+
+        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            self.warn("SSH multiplexing will not be used because the SSH socket path "
+                      f"'{self._ssh_master_socket_path}' is too long.")
+            return False
+
+        return True
+
+    @property
+    def is_ssh_multiplexing_enabled(self) -> bool:
+        """ Whether SSH multiplexing should be used """
+
+        if self.primary_address is None:
+            return False
+
+        if not self._is_ssh_master_socket_path_acceptable:
+            return False
+
+        return True
+
+    @functools.cached_property
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        assert self.parent.workdir is not None
+        assert self.parent.plan.my_run is not None
+        assert self.parent.plan.my_run.workdir is not None
 
-        socket_dir = self.parent.workdir / 'ssh-sockets'
+        socket_dir = self.parent.plan.my_run.workdir / 'ssh-sockets'
 
         try:
             socket_dir.mkdir(parents=True, exist_ok=True)
@@ -1429,7 +1464,41 @@ class GuestSsh(Guest):
         except Exception as exc:
             raise ProvisionError(f"Failed to create SSH socket directory '{socket_dir}'.") from exc
 
-        return socket_dir / f'{self.pathless_safe_name}.socket'
+        # Try more informative, but possibly too long path, constructed from pieces
+        # humans can easily understand and follow.
+        #
+        # The template is what seems to be a common template in general SSH discussions,
+        # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
+        # name is meaningless outside of its plan, it might be too ambiguous. Starting with
+        # what SSH folk uses, we may amend it later.
+
+        # This should be true, otherwise `is_ssh_multiplexing_enabled` would return `False`
+        # and nobody would need to use SSH master socket path.
+        assert self.primary_address
+
+        guest_id_components: list[str] = [self.primary_address]
+
+        if self.port:
+            guest_id_components.append(str(self.port))
+
+        if self.user:
+            guest_id_components.append(self.user)
+
+        guest_id = '-'.join(guest_id_components)
+
+        socket_path = socket_dir / f'{guest_id}.socket'
+
+        if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            return socket_path
+
+        # Fall back to a less readable, but hopefully shorter and therefore acceptable filename.
+        # Note that we don't check the length anymore: giving up, this is the path, take it
+        # or leave it. And callers may very well leave it, we tried our best.
+        digest = hashlib \
+            .shake_128(guest_id.encode()) \
+            .hexdigest(16)
+
+        return socket_dir / f'{digest}.socket'
 
     @property
     def _ssh_options(self) -> Command:
@@ -1456,7 +1525,8 @@ class GuestSsh(Guest):
             options.extend(['-oPasswordAuthentication=no'])
 
         # Include the SSH master process
-        options.append(f'-S{self._ssh_master_socket_path}')
+        if self.is_ssh_multiplexing_enabled:
+            options.append(f'-S{self._ssh_master_socket_path}')
 
         options.extend([f'-o{option}' for option in self.ssh_option])
 
@@ -1496,6 +1566,12 @@ class GuestSsh(Guest):
             logger: Optional[tmt.log.Logger] = None) -> None:
         logger = logger or self._logger
 
+        if not self.is_ssh_multiplexing_enabled:
+            logger.debug('The SSH master process cannot be terminated because it is disabled.',
+                         level=3)
+
+            return
+
         with self._ssh_master_process_lock:
             if self._ssh_master_process is None:
                 logger.debug('The SSH master process cannot be terminated because it is unset.',
@@ -1525,13 +1601,17 @@ class GuestSsh(Guest):
     def _ssh_command(self) -> Command:
         """ A base SSH command shared by all SSH processes """
 
-        with self._ssh_master_process_lock:
-            if self._ssh_master_process is None:
-                self._ssh_master_process = self._spawn_ssh_master_process()
+        if self.is_ssh_multiplexing_enabled:
+            with self._ssh_master_process_lock:
+                if self._ssh_master_process is None:
+                    self._ssh_master_process = self._spawn_ssh_master_process()
 
         return self._base_ssh_command
 
     def _unlink_ssh_master_socket_path(self) -> None:
+        if not self.is_ssh_multiplexing_enabled:
+            return
+
         with self._ssh_master_process_lock:
             if not self._ssh_master_socket_path:
                 return
