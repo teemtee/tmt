@@ -29,6 +29,9 @@ In verbose mode, the ``discover`` step now prints information
 about the beakerlib libraries which were fetched for the test
 execution. Use ``tmt run discover -vvv`` to see the details.
 
+``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option
+backed by :ref:`prepare/feature</plugins/prepare/feature>` plugin.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,9 +109,6 @@ Add support for ``--last``, ``--id``, and ``--skip`` params for
 the ``clean`` subcommand. Users can clean resources from the last
 run or from a run with a given id. Users can also choose to skip
 cleaning ``guests``, ``runs`` or ``images``.
-
-``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option
-backed by :ref:`prepare/feature</plugins/prepare/feature>` plugin.
 
 
 tmt-1.34.0
