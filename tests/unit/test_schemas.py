@@ -8,9 +8,10 @@ import pytest
 import tmt
 import tmt.log
 import tmt.utils
+from tmt.utils import Path
 
-PATH = os.path.dirname(os.path.realpath(__file__))
-ROOTDIR = os.path.join(PATH, "../..")
+PATH = Path(__file__).resolve().parent
+ROOTDIR = PATH.parent.parent
 
 LOGGER = tmt.log.Logger.create(verbose=0, debug=0, quiet=False)
 
@@ -44,7 +45,7 @@ def _iter_trees():
     # But the code below works, like a charm, and we will need to cover more trees than
     # just the root one, so leaving the code here but disabled.
     if False:
-        for dirpath, dirnames, _ in os.walk(os.path.join(ROOTDIR, 'tests')):
+        for dirpath, dirnames, _ in os.walk(ROOTDIR / 'tests'):
             if '.fmf' in dirnames:
                 yield tmt.Tree(path=dirpath)
 
@@ -193,7 +194,7 @@ def test_hw_schema_examples(hw: str, request) -> None:
     validate_node(
         tree,
         node,
-        os.path.join('provision', 'artemis.yaml'),
+        Path('provision') / 'artemis.yaml',
         'HW requirements',
         request.node.callspec.id
         )
@@ -248,7 +249,7 @@ def test_ks_schema_examples(ks: str, request) -> None:
     validate_node(
         tree,
         node,
-        os.path.join('provision', 'artemis.yaml'),
+        Path('provision') / 'artemis.yaml',
         'Kickstart requirements',
         request.node.callspec.id
         )
@@ -272,7 +273,7 @@ def test_watchdog_specification() -> None:
     validate_node(
         tree,
         node,
-        os.path.join('provision', 'artemis.yaml'),
+        Path('provision') / 'artemis.yaml',
         'Watchdog specification',
         'both-wd-options'
         )

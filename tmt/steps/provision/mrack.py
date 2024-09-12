@@ -15,7 +15,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, ProvisionError, ShellScript, UpdatableMessage, field
+from tmt.utils import Command, Path, ProvisionError, ShellScript, UpdatableMessage, field
 
 mrack: Any
 providers: Any
@@ -824,28 +824,25 @@ class BeakerAPI:
 
         # use global context class
         global_context = mrack.context.global_context
-        mrack_config = ""
 
-        if os.path.exists(os.path.join(os.path.dirname(__file__), "mrack/mrack.conf")):
-            mrack_config = os.path.join(
-                os.path.dirname(__file__),
-                "mrack/mrack.conf",
-                )
+        mrack_config_locations = [
+            Path(__file__).parent / "mrack/mrack.conf",
+            Path("/etc/tmt/mrack.conf"),
+            Path("~/.mrack/mrack.conf").expanduser(),
+            Path.cwd() / "mrack.conf"
+            ]
 
-        if os.path.exists("/etc/tmt/mrack.conf"):
-            mrack_config = "/etc/tmt/mrack.conf"
+        mrack_config: Optional[Path] = None
 
-        if os.path.exists(os.path.join(os.path.expanduser("~"), ".mrack/mrack.conf")):
-            mrack_config = os.path.join(os.path.expanduser("~"), ".mrack/mrack.conf")
-
-        if os.path.exists(os.path.join(os.getcwd(), "mrack.conf")):
-            mrack_config = os.path.join(os.getcwd(), "mrack.conf")
+        for potential_location in mrack_config_locations:
+            if potential_location.exists():
+                mrack_config = potential_location
 
         if not mrack_config:
             raise ProvisionError("Configuration file 'mrack.conf' not found.")
 
         try:
-            global_context.init(mrack_config)
+            global_context.init(str(mrack_config))
         except mrack.errors.ConfigError as mrack_conf_err:
             raise ProvisionError(mrack_conf_err)
 
