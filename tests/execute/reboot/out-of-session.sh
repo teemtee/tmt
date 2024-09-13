@@ -42,12 +42,12 @@ rlJournalStart
         tmt_reboot_command="export TMT_TEST_PIDFILE=/var/tmp/tmt-test.pid; export TMT_TEST_PIDFILE_LOCK=/var/tmp/tmt-test.pid.lock; export TMT_DEBUG=1; tmt-reboot"
 
         if [ "$PROVISION_HOW" = "container" ]; then
-            podman_exec="$(sed -nr 's/\s*Run command: (podman exec .*) \/bin\/bash.*cd.*/\1/p' tmt.output)"
+            podman_exec="$(sed -nr 's/\s*Run command: (podman exec .*) \/bin\/bash.*cd.*/\1/p' tmt.output | head -1)"
 
             $podman_exec bash -c "$tmt_reboot_command"
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
-            ssh_exec="$(sed -nr "s/\s*Run command: (ssh .* -tt root@.*) 'export .*/\1/p" tmt.output)"
+            ssh_exec="$(sed -nr "s/\s*Run command: (ssh .* -tt root@.*) 'export .*/\1/p" tmt.output | head -1)"
 
             $ssh_exec "$tmt_reboot_command"
         fi
