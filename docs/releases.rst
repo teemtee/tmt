@@ -4,6 +4,22 @@
     Releases
 ======================
 
+tmt-1.37
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/report/junit` report plugin now validates all the XML
+flavors against their respective XSD schemas and tries to prettify the final
+XML output. These functionalities are always disabled for ``custom`` flavors.
+The prettify functionality can be controlled for non-custom templates by
+``--prettify`` and ``--no-prettify`` arguments.
+
+The :ref:`/plugins/report/junit` report plugin now uses Jinja instead of
+``junit-xml`` library to generate the JUnit XMLs. It also adds support for a
+new ``--flavor`` argument. Using this argument the user can choose between a
+``default`` flavor, which keeps the current behavior untouched, and a
+``custom`` flavor where user must provide a custom template using a
+``--template-path`` argument.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

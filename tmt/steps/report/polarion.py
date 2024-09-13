@@ -224,9 +224,18 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             'description', 'planned_in', 'assignee', 'pool_team', 'arch', 'platform', 'build',
             'sample_image', 'logs', 'compose_id', 'fips']
 
-        junit_suite = make_junit_xml(self)
+        xml_data = make_junit_xml(
+            phase=self,
+
+            # TODO: Explicitly use 'default' flavor until the 'polarion' flavor
+            # gets implemented in junit report plugin.
+            # flavor='polarion',
+            flavor='default',
+
+            include_output_log=self.data.include_output_log)
+
         # S314: Any potential xml parser vulnerability mitigation would require defusedxml package
-        xml_tree = ET.fromstring(junit_suite.to_xml_string([junit_suite]))  # noqa: S314
+        xml_tree = ET.fromstring(xml_data)  # noqa: S314
         properties = {
             'polarion-project-id': project_id,
             'polarion-user-id': PolarionWorkItem._session.user_id,
@@ -290,7 +299,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         f_path = self.data.file or self.workdir / DEFAULT_NAME
         with open(f_path, 'wb') as fw:
-            ET.ElementTree(xml_tree).write(fw)
+            ET.ElementTree(xml_tree).write(fw, xml_declaration=True, encoding='utf-8')
 
         if upload:
             server_url = str(PolarionWorkItem._session._server.url)
@@ -312,4 +321,4 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             self.info(
                 "curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> "
                 "<POLARION_URL>/polarion/import/xunit")
-        self.info(f"xUnit file saved at: {f_path}")
+        self.info('xUnit file saved at', f_path, 'yellow')
