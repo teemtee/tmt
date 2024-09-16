@@ -253,6 +253,9 @@ description: |
     .. versionchanged:: 1.36
        phase results are now renamed to the ``subresult`` key.
 
+    .. versionchanged:: 1.37
+       original result of test, subtest and check is stored in ``original_result`` key.
+
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 
 example:
