@@ -4,7 +4,7 @@
     Releases
 ======================
 
-tmt-1.37
+tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/report/junit` report plugin now validates all the XML
@@ -21,7 +21,7 @@ new ``--flavor`` argument. Using this argument the user can choose between a
 ``--template-path`` argument.
 
 
-tmt-1.37.0
+tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now put SSH master control socket into ``ssh-socket``
@@ -47,7 +47,8 @@ support for submitting jobs on behalf of other users, through
 ``beaker-job-owner`` key. The current user must be a submission delegate
 for the given job owner.
 
-In preparation for subresults: subresults and their checks have been integrated into HTML report and display plugin, result phase renamed to subresult.
+In preparation for subresults: subresults and their checks have been integrated
+into HTML report and display plugin, result phase renamed to subresult.
 
 
 tmt-1.35.0
