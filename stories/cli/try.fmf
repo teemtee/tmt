@@ -138,7 +138,7 @@ link:
         description: |
             Enable EPEL repository
 
-            .. versionadded:: 1.35
+            .. versionadded:: 1.37
 
         example:
             - tmt try fedora@virtual --epel
