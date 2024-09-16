@@ -153,7 +153,7 @@ link:
         description: |
             Install local rpm package on the guest.
 
-            .. versionadded:: 1.35
+            .. versionadded:: 1.37
 
         example:
             - tmt try fedora@virtual --install tree
