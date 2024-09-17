@@ -31,22 +31,26 @@ if TYPE_CHECKING:
 class GitInfo:
     """ Data container for commonly queried git data. """
 
+    #: Path to the git root.
     git_root: Path
-    """Path to the git root."""
+
+    #: Most human-readable git ref.
     ref: str
-    """Most human-readable git ref."""
+
+    #: Git remote linked to the current git ref.
     remote: str
-    """Git remote linked to the current git ref."""
+
+    #: Default branch of the remote.
     default_branch: Optional[str]
-    """Default branch of the remote."""
+
+    #: Public url of the remote.
     url: Optional[str]
-    """Public url of the remote."""
 
     @classmethod
     @functools.cache
     def from_fmf_root(cls, *, fmf_root: Path, logger: tmt.log.Logger) -> Optional["GitInfo"]:
         """
-        Get the current git info of a fmf tree.
+        Get the current git info of an fmf tree.
 
         :param fmf_root: Root path of the fmf tree
         :param logger: Current tmt logger
@@ -71,10 +75,10 @@ class GitInfo:
             # Initialize common git facts
             # Get some basic git references for HEAD
             all_refs = run(Command("git", "for-each-ref", "--format=%(refname)", "--points-at=@"))
-            logger.debug("git all_refs", all_refs)
+            logger.debug("git all_refs", all_refs, level=3)
             # curr_ref is either HEAD or fully-qualified (branch) reference
             curr_ref = run(Command("git", "rev-parse", "--symbolic-full-name", "@"))
-            logger.debug("git initial curr_ref", curr_ref)
+            logger.debug("git initial curr_ref", curr_ref, level=3)
             # Get the top-level git_root
             _git_root = git_root(fmf_root=fmf_root, logger=logger)
             assert _git_root is not None  # narrow type
@@ -91,11 +95,11 @@ class GitInfo:
             # Not on a branch, check if we are on a tag or just a refs
             try:
                 tags = run(Command("git", "describe", "--tags"))
-                logger.debug("git tags", tags)
+                logger.debug("git tags", tags, level=3)
                 # Is it possible to find which tag was used to checkout?
                 # Now we just assume the first tag is the one we want
                 tag_used = tags.splitlines()[0]
-                logger.debug("Using tag", tag_used)
+                logger.debug("Using tag", tag_used, level=3)
                 # Point curr_ref to the fully-qualified ref
                 curr_ref = f"refs/tags/{tag_used}"
                 ref = tag_used
@@ -104,10 +108,10 @@ class GitInfo:
                 curr_ref = all_refs.splitlines()[0] if all_refs else curr_ref
                 # Point the ref to the commit
                 commit = run(Command("git", "rev-parse", curr_ref))
-                logger.debug("Using commit", commit)
+                logger.debug("Using commit", commit, level=3)
                 ref = commit
 
-        logger.debug("curr_ref used", curr_ref)
+        logger.debug("curr_ref used", curr_ref, level=3)
         remote_name = run(
             Command(
                 "git",
