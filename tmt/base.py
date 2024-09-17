@@ -1295,8 +1295,7 @@ class Test(
                 tests = Tree(
                     path=path,
                     logger=logger).tests(
-                    names=[
-                        directory_path.name],
+                    names=[directory_path.name],
                     apply_command_line=False)
                 tmt.utils.jira_link(nodes=tests, links=links, logger=logger)
 
@@ -2031,8 +2030,7 @@ class Plan(
                 plans = Tree(
                     path=path,
                     logger=logger).plans(
-                    names=[
-                        directory_path.name],
+                    names=[directory_path.name],
                     apply_command_line=False)
                 tmt.utils.jira_link(nodes=plans, links=links, logger=logger)
 
@@ -2754,8 +2752,7 @@ class Story(
                 stories = Tree(
                     path=path,
                     logger=logger).stories(
-                    names=[
-                        directory_path.name],
+                    names=[directory_path.name],
                     apply_command_line=False)
                 tmt.utils.jira_link(nodes=stories, links=links, logger=logger)
 

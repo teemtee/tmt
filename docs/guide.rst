@@ -408,7 +408,7 @@ on creation of a new test or plan, or later on using the ``tmt link`` command.
 
 .. code-block:: shell
 
-    tmt link verifies:issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
+    tmt link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
 
 For this feature to be enabled, you have to create a configuration node in a
 configuration tree. Once the configuration is present, it automatically enables
@@ -418,15 +418,15 @@ have following structure:
 
 .. code-block:: yaml
 
-    linking:
+    issue-tracker:
       - type: jira
-        server: https://issues.redhat.com
-        service: http://localhost:8000/
+        url: https://issues.redhat.com
+        tmt-web-url: http://localhost:8000/
         token: <YOUR_PERSONAL_JIRA_TOKEN>
 
 The ``type`` key specifies the type of the issue tracking service
 you want to link to (so far only Jira is supported).
-The ``server`` is the URL of said service. The ``service`` is the URL of the
+The ``url`` is the URL of said service. The ``tmt-web-url`` is the URL of the
 service that presents a tmt metadata in a human-readable form.
 The ``token`` is a personal token that is used to authenticate the user.
 How to obtain this token is described `here
