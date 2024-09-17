@@ -10,6 +10,10 @@ Introduction
 
 Feel free and welcome to contribute to this project. You can start
 with filing issues and ideas for improvement in GitHub tracker__.
+Before creating a new issue you might want to check the existing
+issues to prevent filing a duplicate. Important issues affecting
+many users are marked with the `known issue`__ label.
+
 Our favorite thoughts from The Zen of Python:
 
 * Beautiful is better than ugly.
@@ -33,7 +37,8 @@ first word capitalized and enclose any names in single quotes:
 
     self.warn(f"File '{path}' not found.")
 
-__ https://github.com/teemtee/tmt
+__ https://github.com/teemtee/tmt/issues
+__ https://github.com/teemtee/tmt/labels/known%20issue
 __ https://www.python.org/dev/peps/pep-0008/
 
 
