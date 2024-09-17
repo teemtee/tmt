@@ -366,10 +366,13 @@ class GuestContainer(tmt.Guest):
         if not self.is_ready:
             return
 
-        self.debug("Update selinux context of the run workdir.", level=3)
+        assert self.parent.plan.my_run is not None  # narrow type
         assert self.parent.plan.workdir is not None  # narrow type
+
         # Relabel workdir to container_file_t if SELinux supported
-        if tmt.utils.is_selinux_supported():
+        self.debug("Update selinux context of the run workdir.", level=3)
+
+        if self.parent.plan.my_run.runner.facts.has_selinux:
             self._run_guest_command(Command(
                 "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
                 ), shell=False, silent=True)
