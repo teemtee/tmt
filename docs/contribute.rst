@@ -662,6 +662,14 @@ make clean
 Release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The ``tmt`` project is released monthly. If there are urgent
+changes which need to be released quickly, a hotfix release may be
+created to address the important problem sooner.
+
+
+Regular
+------------------------------------------------------------------
+
 Follow the steps below to create a new major or minor release:
 
 * Update ``overview.rst`` with new contributors since the last release
@@ -700,3 +708,20 @@ __ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
 __ https://pypi.org/project/tmt/
+
+
+Hotfix
+------------------------------------------------------------------
+
+The following steps should be followed when an important urgent
+fix needs to be released before the regular schedule:
+
+* Create a new branch from the ``fedora`` branch
+* Use ``git cherry-pick`` to apply the selected change
+* Mention the hotfix release on the release page
+* Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
+* Create a new pull request with the target branch set to ``fedora``
+* Make sure that tests pass and merge the pull request
+* Tag the commit and publish the release in the same way as for
+  regular release
+* Create a pull request with the hotfix release notes changes
