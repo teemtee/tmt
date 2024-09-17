@@ -27,6 +27,7 @@ import tmt.steps
 import tmt.templates
 import tmt.trying
 import tmt.utils
+import tmt.utils.rest
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path
 
@@ -250,7 +251,7 @@ class HelpFormatter(click.HelpFormatter):
             col_max: int = 30,
             col_spacing: int = 2) -> None:
         rows = [
-            (option, tmt.utils.render_rst(help, _BOOTSTRAP_LOGGER))
+            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER))
             for option, help in rows
             ]
 

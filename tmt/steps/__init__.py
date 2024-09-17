@@ -34,6 +34,7 @@ import tmt.log
 import tmt.options
 import tmt.queue
 import tmt.utils
+import tmt.utils.rest
 from tmt.options import option, show_step_method_hints
 from tmt.utils import (
     DEFAULT_NAME,
@@ -1171,7 +1172,7 @@ class Method:
 
         self.name = name
         self.class_ = class_
-        self.doc = tmt.utils.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
+        self.doc = tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
         self.order = order
 
         # Parse summary and description from provided doc string
