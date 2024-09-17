@@ -5964,6 +5964,7 @@ def import_jira() -> None:
 def jira_link(
         nodes: Sequence[Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']],
         links: 'tmt.base.Links',
+        logger: tmt.log.Logger,
         separate: bool = False) -> None:
     """ Link the object to Jira issue and create the URL to tmt web service """
     import_jira()
@@ -5991,6 +5992,10 @@ def jira_link(
     def create_url(baseurl: str, url_params: dict[str, str]) -> str:
         return urllib.parse.urljoin(baseurl, '?' + urllib.parse.urlencode(url_params))
 
+    logger.print(
+        f'Linking {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
+        f' to Jira issue.')
+
     # Setup config tree
     config_tree = tmt.utils.Config()
     # Linking is not setup in config, therefore user does not want to use linking
@@ -6006,6 +6011,18 @@ def jira_link(
     link_object: dict[str, str] = {}
     service_url: dict[str, str] = {}
     for node in nodes:
+        # Try to add the link relation to object's data if it is not already there
+        with node.node as data:
+            link_relation = {"verifies": target}
+            if 'link' in data:
+                if link_relation not in data['link']:
+                    logger.print('Adding linking to the metadata.')
+                    data['link'].append(link_relation)
+                else:
+                    logger.print('Linking already exists in the object data, skipping this step.')
+            else:
+                logger.print('Adding linking to the metadata.')
+                data['link'] = [link_relation]
         # Single object in list of nodes = creating new object
         # or linking multiple existing separately
         if len(nodes) == 1 or (len(nodes) > 1 and separate):
@@ -6015,6 +6032,7 @@ def jira_link(
                 "title": f'[tmt_web] Metadata of the {type(node).__name__.lower()}'
                 f' covering this issue'}
             jira.add_simple_link(issue_id, link_object)
+            logger.print(f'Link added to issue {target}.')
         if len(nodes) > 1 and not separate:
             url_part = create_url_params(tmt_object=node)
             service_url.update(url_part)
@@ -6026,3 +6044,4 @@ def jira_link(
     if len(nodes) > 1 and not separate:
         # Send request to JIRA when len(nodes) > 1 and not separate, after all nodes were processed
         jira.add_simple_link(issue_id, link_object)
+        logger.print(f'Link added to issue {target}.')

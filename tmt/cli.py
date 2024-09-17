@@ -2257,4 +2257,4 @@ def link(context: Context,
             nodes.extend(context.obj.tree.plans(names=[name]))
         if context.obj.tree.stories(names=[name]):
             nodes.extend(context.obj.tree.stories(names=[name]))
-    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), separate)
+    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), context.obj.logger, separate)

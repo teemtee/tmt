@@ -2,6 +2,7 @@ import datetime
 import logging
 import queue
 import re
+import shutil
 import signal
 import textwrap
 import threading
@@ -1704,33 +1705,68 @@ class TestJiraLink(unittest.TestCase):
              'tmt-web-url': 'http://localhost:8000/',
              'token': ''}]}, name='linking')
         self.logger = tmt.log.Logger(actual_logger=logging.getLogger('tmt'))
+        tmt.base.Test.create(
+            names=['tmp/test'],
+            template='shell',
+            path=Path('.'),
+            logger=self.logger)
+        tmt.base.Plan.create(
+            names=['tmp/plan'],
+            template='mini',
+            path=Path('.'),
+            logger=self.logger)
+        tmt.base.Story.create(
+            names=['tmp/story'],
+            template='mini',
+            path=Path('.'),
+            logger=self.logger)
+
+    def tearDown(self):
+        # Cleanup the created files of tmt objects
+        shutil.rmtree(Path('.').joinpath('tmp/'))
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')
     def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.tree
-        test = tmt.Tree(logger=self.logger, path=Path(".")).tests()[0]
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
         tmt.utils.jira_link(
             [test], tmt.base.Links(
-                data=['verifies:issues.redhat.com/browse/TT-262']))
+                data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
-        assert ('http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%'
-                '2Fteemtee%2Ftmt.git&test-name=%2Ftests%2Fprovision%2Fvirtual%'
-                '2Fdependencies&test-ref=link-issues-to-jira') in result['url']
+        assert (
+            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
+            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira') in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')
     def test_jira_link_test_plan_story(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.tree
-        test = tmt.Tree(logger=self.logger, path=Path(".")).tests()[0]
-        plan = tmt.Tree(logger=self.logger, path=Path(".")).plans()[0]
-        story = tmt.Tree(logger=self.logger, path=Path(".")).stories()[0]
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
+        plan = tmt.Tree(logger=self.logger, path=Path(".")).plans(names=['tmp'])[0]
+        story = tmt.Tree(logger=self.logger, path=Path(".")).stories(names=['tmp'])[0]
         tmt.utils.jira_link([test, plan, story], tmt.base.Links(
-            data=['verifies:issues.redhat.com/browse/TT-262']))
+            data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
         assert (
-            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name='
-            '%2Ftests%2Fprovision%2Fvirtual%2Fdependencies&test-ref=link-issues-to-jira&plan-url='
-            'https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&plan-name=%2Fplans%2Ffeatures%2Fadvanced&'
-            'plan-ref=link-issues-to-jira&story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&story-name='
-            '%2Fspec%2Fcontext%2Fdimension&story-ref=link-issues-to-jira') in result['url']
+            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
+            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira&plan-url=https%3A%2F%2Fgithub.com'
+            '%2Fteemtee%2Ftmt.git&plan-name=%2Ftests%2Ftmp%2Fplan&plan-ref=link-issues-to-jira&'
+            'story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
+            'story-name=%2Ftests%2Ftmp%2Fstory&story-ref=link-issues-to-jira') in result['url']
+
+    @unittest.mock.patch('jira.JIRA.add_simple_link')
+    @unittest.mock.patch('tmt.utils.Config')
+    def test_create_link_relation(self, mock_config_tree, mock_add_simple_link) -> None:
+        mock_config_tree.return_value.fmf_tree = self.tree
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
+        tmt.utils.jira_link(
+            [test], tmt.base.Links(
+                data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
+        # Load the test object again with the link present
+        test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
+        result = mock_add_simple_link.call_args.args[1]
+        assert (
+            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
+            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira') in result['url']
+        assert test.link.get('verifies')[0].target == 'issues.redhat.com/browse/TT-262'
