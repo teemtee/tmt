@@ -679,7 +679,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
 
             if host.hardware and host.hardware.constraint:
-                req['beaker'] = self._translate_tmt_hw(host.hardware)
+                req.update(self._translate_tmt_hw(host.hardware))
 
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
