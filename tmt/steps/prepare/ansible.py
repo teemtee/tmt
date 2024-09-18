@@ -167,16 +167,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 logger.info('playbook-path', playbook_path, 'green')
 
-            # Check if fmf root exists
-            try:
-                playbook_root = self.step.plan.fmf_root
-            except TypeError:
-                raise PrepareError(
-                    "No fmf root found. Directory is not initialized with `tmt init`")
-
             guest.ansible(
                 playbook_path,
-                playbook_root=playbook_root,
+                playbook_root=self.step.plan.fmf_root,
                 extra_args=self.data.extra_args)
 
         return results
