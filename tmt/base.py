@@ -773,7 +773,12 @@ class Core(
     # TODO: cached_property candidates
     @property
     def fmf_root(self) -> Path:
-        return Path(self.node.root)
+        # Check if fmf root exists
+        try:
+            return Path(self.node.root)
+        except TypeError:
+            raise tmt.utils.GeneralError(
+                "No fmf root found. Directory is not initialized with `tmt init`")
 
     @property
     def git_root(self) -> Optional[Path]:
