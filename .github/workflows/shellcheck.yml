@@ -28,6 +28,7 @@ jobs:
           exclude-path: |
             tests/**
             examples/**/test.sh
+            tmt/steps/execute/scripts/tmt.sh.j2
             tmt/templates/**
           token: ${{ secrets.GITHUB_TOKEN }}
 
