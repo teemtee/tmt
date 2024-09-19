@@ -329,6 +329,8 @@ class GuestFacts(SerializableContainer):
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_ostree: Optional[bool] = None
+    is_toolbox: Optional[bool] = None
+    toolbox_container_name: Optional[str] = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
@@ -589,6 +591,47 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
+    def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
+        # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
+        output = self._execute(
+            guest,
+            Command(
+                tmt.utils.DEFAULT_SHELL,
+                '-c',
+                'if [ -e /run/.toolboxenv ]; then echo yes; else echo no; fi'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        return output.stdout.strip() == 'yes'
+
+    def _query_toolbox_container_name(self, guest: 'Guest') -> Optional[str]:
+        output = self._execute(
+            guest,
+            Command(
+                tmt.utils.DEFAULT_SHELL,
+                '-c',
+                'if [ -e /run/.containerenv ]; then echo yes; else echo no; fi'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        if output.stdout.strip() == 'no':
+            return None
+
+        output = self._execute(
+            guest,
+            Command('cat', '/run/.containerenv'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        for line in output.stdout.splitlines():
+            if line.startswith('name="'):
+                return line[6:-1]
+
+        return None
+
     def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
         # TODO: there must be a canonical way of getting permitted capabilities.
         # For now, we're interested in whether we can access kernel message buffer.
@@ -610,6 +653,8 @@ class GuestFacts(SerializableContainer):
         self.has_selinux = self._query_has_selinux(guest)
         self.is_superuser = self._query_is_superuser(guest)
         self.is_ostree = self._query_is_ostree(guest)
+        self.is_toolbox = self._query_is_toolbox(guest)
+        self.toolbox_container_name = self._query_toolbox_container_name(guest)
         self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True

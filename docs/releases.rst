@@ -28,6 +28,11 @@ contrast to the :ref:`/spec/core/contact` key, this field is not
 supposed to be updated and can be useful when trying to track down
 the original author for consultation.
 
+The ``container`` executor now works in `Fedora Toolbx`__ when Podman is run
+using ``flatpak-spawn --host`` on the host system.
+
+__ https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/
+
 
 tmt-1.41.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

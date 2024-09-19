@@ -1,0 +1,11 @@
+summary: Test container provisioner in toolbox
+description:
+    Make sure that container provisioner works well
+    in a toolbox container.
+require:
+    - toolbox
+tag+:
+  - provision-only
+  - provision-container
+require+:
+  - toolbox
