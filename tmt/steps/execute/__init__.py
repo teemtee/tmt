@@ -751,7 +751,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         :returns: list of results.
         """
 
-        test, _ = invocation.test, invocation.guest
+        test = invocation.test
 
         custom_results = []
         for partial_result_data in results:
