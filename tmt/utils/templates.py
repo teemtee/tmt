@@ -293,7 +293,11 @@ def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ig
 
     .. code-block:: jinja
 
-        {{ "/"|web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref) }}
+        {{ "/path/to/the/code.py" | web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref) }}
+
+        {{ "/tmt/base.py" | web_git_url("https://github.com/teemtee/tmt.git", "main") }}
+        -> https://github.com/teemtee/tmt/tree/main/tmt/base.py
+
     """
     path = Path(path_str) if path_str else None
     return web_git_url(url, ref, path)
