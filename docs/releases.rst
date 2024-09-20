@@ -25,6 +25,10 @@ reference, either branch, tag, git-describe, or if all fails the commit hash.
 You may encounter this in the verbose log of ``tmt tests show`` or plan/test
 imports.
 
+In verbose mode, the ``discover`` step now prints information
+about the beakerlib libraries which were fetched for the test
+execution. Use ``tmt run discover -vvv`` to see the details.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

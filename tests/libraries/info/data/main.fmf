@@ -1,0 +1,9 @@
+/plan:
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+/test:
+    test: /bin/true
+    require: library(httpd/http)
