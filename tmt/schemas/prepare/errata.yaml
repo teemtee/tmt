@@ -42,5 +42,15 @@ properties:
   no-filter:
     type: boolean
 
+  name:
+    type: string
+
+  order:
+    $ref: "/schemas/core#/definitions/order"
+
+  where:
+    $ref: "/schemas/common#/definitions/where"
+
+
 required:
   - how
