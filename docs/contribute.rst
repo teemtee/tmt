@@ -38,7 +38,7 @@ first word capitalized and enclose any names in single quotes:
     self.warn(f"File '{path}' not found.")
 
 __ https://github.com/teemtee/tmt/issues
-__ https://github.com/teemtee/tmt/labels/known%20issue
+__ https://github.com/teemtee/tmt/issues?q=label%3A%22known+issue%22
 __ https://www.python.org/dev/peps/pep-0008/
 
 
