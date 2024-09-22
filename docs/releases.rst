@@ -12,6 +12,11 @@ generate the XUnit file. It doesn't do any extra modifications to the XML tree
 using an ``ElementTree`` anymore. Also the schema is now validated against the
 XSD.
 
+The values in the generated ``tmt-report-results.yaml`` file are
+now wrapped in double quotes, and any double quotes within the
+values are escaped to ensure that the resulting file is always
+valid YAML.
+
 The :ref:`/plugins/report/junit` report plugin now validates all the XML
 flavors against their respective XSD schemas and tries to prettify the final
 XML output. These functionalities are always disabled for ``custom`` flavors.
