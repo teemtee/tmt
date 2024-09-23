@@ -30,7 +30,7 @@ rlJournalStart
     rlPhaseStartTest "Epel"
         rlRun -s "./epel.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
-        rlAssertGrep "out: PLAY \[Enable EPEL repositories\]" $rlRun_LOG
+        rlAssertGrep "PLAY \[Enable EPEL repositories\]" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
