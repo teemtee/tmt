@@ -47,7 +47,6 @@ class Action(enum.Enum):
     START_LOGIN = "-", "jump directly to login after start"
     START_ASK = "-", "do nothing without first asking the user"
     START_TEST = "-", "start directly with executing detected tests"
-    START_CLI_OPTION = "-", "do requested cli option then ask the user"
 
     @property
     def key(self) -> str:
@@ -313,13 +312,6 @@ class Try(tmt.utils.Common):
 
         plan.provision.go()
 
-    def action_start_cli_option(self, plan: Plan) -> None:
-        """ Do requested cli option """
-        self.action_start(plan)
-
-        plan.provision.go()
-        plan.prepare.go()
-
     def action_test(self, plan: Plan) -> None:
         """ Test again """
         plan.discover.go(force=True)
@@ -461,8 +453,6 @@ class Try(tmt.utils.Common):
             action = Action.START_LOGIN
         elif self.opt("ask"):
             action = Action.START_ASK
-        elif any(self.opt(o) for o in self.cli_options):
-            action = Action.START_CLI_OPTION
         elif self.tests:
             action = Action.START_TEST
         else:
