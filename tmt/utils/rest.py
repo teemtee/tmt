@@ -91,7 +91,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         # To simplify the implementation, this is merging of multiple
         # empty lines into one. Rendering of nodes than does not have
         # to worry about an empty line already being on the stack.
-        if self._rendered_paragraphs[-1] != '':
+        if self._rendered_paragraphs and self._rendered_paragraphs[-1] != '':
             self._emit_paragraphs([''])
 
     # Simple logging for nodes that have no effect
