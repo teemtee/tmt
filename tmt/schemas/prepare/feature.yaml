@@ -25,5 +25,14 @@ properties:
       - enabled
       - disabled
 
+  name:
+    type: string
+
+  order:
+    $ref: "/schemas/core#/definitions/order"
+
+  where:
+    $ref: "/schemas/common#/definitions/where"
+
 required:
   - how

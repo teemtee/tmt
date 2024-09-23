@@ -20,6 +20,15 @@ new ``--flavor`` argument. Using this argument the user can choose between a
 ``custom`` flavor where user must provide a custom template using a
 ``--template-path`` argument.
 
+The ``fmf-id.ref`` will now try to report the most human-readable committish
+reference, either branch, tag, git-describe, or if all fails the commit hash.
+You may encounter this in the verbose log of ``tmt tests show`` or plan/test
+imports.
+
+In verbose mode, the ``discover`` step now prints information
+about the beakerlib libraries which were fetched for the test
+execution. Use ``tmt run discover -vvv`` to see the details.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

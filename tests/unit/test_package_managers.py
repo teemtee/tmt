@@ -101,6 +101,26 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
         )
 
 
+def assert_output(
+        expected_output: Optional[str],
+        stdout: Optional[str],
+        stderr: Optional[str]) -> None:
+    """
+    Check that the expected output is present
+
+    We don't care whether the expected string is in stdout or stderr.
+    Just make sure the output is there.
+    """
+
+    # Nothing to do if there are no expectations
+    if not expected_output:
+        return
+
+    combined_output = (stdout or "") + (stderr or "")
+    assert combined_output != ""
+    assert expected_output in combined_output
+
+
 # Note: keep the list ordered by the most desired package manager to the
 # least desired one. For most of the tests, the order is not important,
 # but the list is used to generate the discovery tests as well, and the
@@ -299,7 +319,6 @@ def _parametrize_test_install() -> \
             PackageManagerClass,
             Package,
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -309,24 +328,21 @@ def _parametrize_test_install() -> \
                     package_manager_class, \
                     Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
-                    'Installing:', \
-                    None  # noqa: E501
+                    'Installing:'  # noqa: E501
 
             elif 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('dconf'), \
                     r"rpm -q --whatprovides dconf \|\| yum install -y  dconf && rpm -q --whatprovides dconf", \
-                    'Installed:\n  dconf', \
-                    None  # noqa: E501
+                    'Installed:\n  dconf'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree", \
-                    'Installed:\n  tree', \
-                    None  # noqa: E501
+                    'Installed:\n  tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if container.url == CONTAINER_FEDORA_RAWHIDE.url:
@@ -334,56 +350,49 @@ def _parametrize_test_install() -> \
                     package_manager_class, \
                     Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
-                    'Installing:', \
-                    None
+                    'Installing:'
 
             elif 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     Package('dconf'), \
                     r"rpm -q --whatprovides dconf \|\| dnf install -y  dconf", \
-                    'Installed:\n  dconf', \
-                    None
+                    'Installed:\n  dconf'
 
             else:
                 yield container, \
                     package_manager_class, \
                     Package('tree'), \
                     r"rpm -q --whatprovides tree \|\| dnf install -y  tree", \
-                    'Installed:\n  tree', \
-                    None
+                    'Installed:\n  tree'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"rpm -q --whatprovides tree \|\| dnf5 install -y  tree", \
-                'Installing:', \
-                None
+                'Installing:'
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree \|\| apt install -y  tree", \
-                'Setting up tree', \
-                None  # noqa: E501
+                'Setting up tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
-                'Installing: tree', \
-                None  # noqa: E501
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"apk info -e tree \|\| apk add tree", \
-                'Installing tree', \
-                None
+                'Installing tree'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -394,8 +403,7 @@ def _parametrize_test_install() -> \
                           'package_manager_class',
                           'package',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -405,8 +413,7 @@ def test_install(
         package_manager_class: PackageManagerClass,
         package: Package,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -420,24 +427,17 @@ def test_install(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_nonexistent() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[Container, PackageManagerClass, str, Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf5 install -y  tree-but-spelled-wrong", \
-                None, \
                 'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
@@ -445,14 +445,12 @@ def _parametrize_test_install_nonexistent() -> \
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong", \
-                    None, \
                     'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong", \
-                    None, \
                     'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
@@ -460,14 +458,12 @@ def _parametrize_test_install_nonexistent() -> \
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    None, \
                     'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             elif 'fedora' in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    None, \
                     'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
 
             elif ('centos' in container.url and 'centos/7' not in container.url) \
@@ -475,35 +471,30 @@ def _parametrize_test_install_nonexistent() -> \
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    'No match for argument: tree-but-spelled-wrong', \
-                    'Error: Unable to find a match: tree-but-spelled-wrong'  # noqa: E501
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    'No package tree-but-spelled-wrong available.', \
-                    'Error: Nothing to do'  # noqa: E501
+                    'No package tree-but-spelled-wrong available.'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y  tree-but-spelled-wrong", \
-                None, \
                 'E: Unable to locate package tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree-but-spelled-wrong", \
-                'no package provides tree-but-spelled-wrong', \
-                'error: Packages not found: tree-but-spelled-wrong'  # noqa: E501
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong", \
-                None, \
                 'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]'  # noqa: E501
 
         else:
@@ -514,8 +505,7 @@ def _parametrize_test_install_nonexistent() -> \
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_nonexistent()),
                          indirect=["container"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -524,8 +514,7 @@ def test_install_nonexistent(
         guest: GuestContainer,
         package_manager_class: PackageManagerClass,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(container, guest, package_manager_class, root_logger)
@@ -539,82 +528,67 @@ def test_install_nonexistent(
     assert excinfo.type is tmt.utils.RunError
     assert excinfo.value.returncode != 0
 
-    if expected_stdout:
-        assert excinfo.value.stdout is not None
-        assert expected_stdout in excinfo.value.stdout
-
-    if expected_stderr:
-        assert excinfo.value.stderr is not None
-        assert expected_stderr in excinfo.value.stderr
+    assert_output(expected_output, excinfo.value.stdout, excinfo.value.stderr)
 
 
 def _parametrize_test_install_nonexistent_skip() -> \
-        Iterator[tuple[Container, PackageManagerClass, str, Optional[str], Optional[str]]]:
+        Iterator[tuple[Container, PackageManagerClass, str, Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf5 install -y --skip-unavailable tree-but-spelled-wrong", \
-                None, \
                 None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y --skip-broken tree-but-spelled-wrong", \
-                'No match for argument: tree-but-spelled-wrong', \
-                None  # noqa: E501
+                'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
+            if container.url == CONTAINER_FEDORA_RAWHIDE.url:  # noqa: SIM114
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
-                    None, \
                     'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             elif 'fedora' in container.url:  # noqa: SIM114
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
-                    'No match for argument: tree-but-spelled-wrong', \
-                    None  # noqa: E501
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             elif ('centos' in container.url and 'centos/7' not in container.url) \
                     or 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
-                    'No match for argument: tree-but-spelled-wrong', \
-                    None  # noqa: E501
+                    'No match for argument: tree-but-spelled-wrong'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true", \
-                    'No package tree-but-spelled-wrong available.', \
-                    'Error: Nothing to do'  # noqa: E501
+                    'No package tree-but-spelled-wrong available.'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y --ignore-missing tree-but-spelled-wrong \|\| /bin/true", \
-                None, \
                 'E: Unable to locate package tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree-but-spelled-wrong \|\| /bin/true", \
-                'no package provides tree-but-spelled-wrong', \
-                'error: Packages not found: tree-but-spelled-wrong'  # noqa: E501
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 r"apk info -e tree-but-spelled-wrong \|\| apk add tree-but-spelled-wrong \|\| /bin/true", \
-                None, \
                 'ERROR: unable to select packages:\n  tree-but-spelled-wrong (no such package):\n    required by: world[tree-but-spelled-wrong]'  # noqa: E501
 
         else:
@@ -625,8 +599,7 @@ def _parametrize_test_install_nonexistent_skip() -> \
 @pytest.mark.parametrize(('container',
                           'package_manager_class',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_nonexistent_skip()),
                          indirect=["container"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -635,8 +608,7 @@ def test_install_nonexistent_skip(
         guest: GuestContainer,
         package_manager_class: PackageManagerClass,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(container, guest, package_manager_class, root_logger)
@@ -649,13 +621,7 @@ def test_install_nonexistent_skip(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_dont_check_first() -> \
@@ -664,7 +630,6 @@ def _parametrize_test_install_dont_check_first() -> \
             PackageManagerClass,
             Package,
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -673,7 +638,6 @@ def _parametrize_test_install_dont_check_first() -> \
                 package_manager_class, \
                 Package('tree'), \
                 r"dnf5 install -y  tree", \
-                None, \
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
@@ -682,15 +646,13 @@ def _parametrize_test_install_dont_check_first() -> \
                     package_manager_class, \
                     Package('dconf'), \
                     r"dnf install -y  dconf", \
-                    'Installed:\n  dconf', \
-                    None
+                    'Installed:\n  dconf'
             else:
                 yield container, \
                     package_manager_class, \
                     Package('tree'), \
                     r"dnf install -y  tree", \
-                    'Installed:\n  tree', \
-                    None
+                    'Installed:\n  tree'
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
             if 'ubi/8' in container.url:
@@ -698,40 +660,35 @@ def _parametrize_test_install_dont_check_first() -> \
                     package_manager_class, \
                     Package('dconf'), \
                     r"yum install -y  dconf && rpm -q --whatprovides dconf", \
-                    'Installed:\n  dconf', \
-                    None
+                    'Installed:\n  dconf'
 
             else:
                 yield container, \
                     package_manager_class, \
                     Package('tree'), \
                     r"yum install -y  tree && rpm -q --whatprovides tree", \
-                    'Installed:\n  tree', \
-                    None
+                    'Installed:\n  tree'
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"export DEBIAN_FRONTEND=noninteractive; apt install -y  tree", \
-                'Setting up tree', \
-                None
+                'Setting up tree'
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
-                'Installing: tree', \
-                None
+                'Installing: tree'
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
                 r"apk add tree", \
-                'Installing tree', \
-                None
+                'Installing tree'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -742,8 +699,7 @@ def _parametrize_test_install_dont_check_first() -> \
                           'package_manager_class',
                           'package',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_dont_check_first()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -753,8 +709,7 @@ def test_install_dont_check_first(
         package_manager_class: PackageManagerClass,
         package: Package,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -771,17 +726,11 @@ def test_install_dont_check_first(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_reinstall() -> Iterator[tuple[
-        Container, PackageManagerClass, Optional[str], Optional[str], Optional[str]]]:
+        Container, PackageManagerClass, Optional[str], Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
@@ -791,8 +740,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                     Package('tar'), \
                     True, \
                     r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar", \
-                    'Reinstalling:\n tar', \
-                    None  # noqa: E501
+                    'Reinstalling:\n tar'  # noqa: E501
 
             else:
                 yield container, \
@@ -800,8 +748,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                     Package('tar'), \
                     True, \
                     r"rpm -q --whatprovides tar && yum reinstall -y  tar && rpm -q --whatprovides tar", \
-                    'Reinstalled:\n  tar', \
-                    None  # noqa: E501
+                    'Reinstalled:\n  tar'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
@@ -809,8 +756,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                 Package('tar'), \
                 True, \
                 r"rpm -q --whatprovides tar && dnf reinstall -y  tar", \
-                'Reinstalled:\n  tar', \
-                None
+                'Reinstalled:\n  tar'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
@@ -818,8 +764,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                 Package('tar'), \
                 True, \
                 r"rpm -q --whatprovides tar && dnf5 reinstall -y  tar", \
-                'Reinstalling tar', \
-                None
+                'Reinstalling tar'
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
@@ -827,15 +772,13 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                 Package('tar'), \
                 True, \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tar && apt reinstall -y  tar", \
-                'Setting up tar', \
-                None  # noqa: E501
+                'Setting up tar'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 Package('tar'), \
                 False, \
-                None, \
                 None, \
                 None
 
@@ -845,8 +788,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                 Package('bash'), \
                 True, \
                 r"apk info -e bash && apk fix bash", \
-                'Reinstalling bash', \
-                None
+                'Reinstalling bash'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -858,8 +800,7 @@ def _parametrize_test_reinstall() -> Iterator[tuple[
                           'package',
                           'supported',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_reinstall()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -870,8 +811,7 @@ def test_reinstall(
         package: Package,
         supported: bool,
         expected_command: Optional[str],
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -895,13 +835,8 @@ def test_reinstall(
         assert excinfo.value.message \
             == "rpm-ostree does not support reinstall operation."
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    if expected_output:
+        assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
@@ -913,16 +848,14 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                 package_manager_class, \
                 True, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong && dnf5 reinstall -y  tree-but-spelled-wrong", \
-                'no package provides tree-but-spelled-wrong', \
-                None  # noqa: E501
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
                 package_manager_class, \
                 True, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong && dnf reinstall -y  tree-but-spelled-wrong", \
-                'no package provides tree-but-spelled-wrong', \
-                None  # noqa: E501
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
             if 'fedora' in container.url:  # noqa: SIM114
@@ -930,38 +863,33 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                     package_manager_class, \
                     True, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    'no package provides tree-but-spelled-wrong', \
-                    None  # noqa: E501
+                    'no package provides tree-but-spelled-wrong'  # noqa: E501
 
             elif 'centos' in container.url and 'centos/7' not in container.url:
                 yield container, \
                     package_manager_class, \
                     True, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    'no package provides tree-but-spelled-wrong', \
-                    None  # noqa: E501
+                    'no package provides tree-but-spelled-wrong'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     True, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong && yum reinstall -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong", \
-                    'no package provides tree-but-spelled-wrong', \
-                None  # noqa: E501
+                    'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 True, \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong && apt reinstall -y  tree-but-spelled-wrong", \
-                None, \
                 'dpkg-query: no packages found matching tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 False, \
-                None, \
                 None, \
                 None
 
@@ -970,8 +898,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                 package_manager_class, \
                 True, \
                 r"apk info -e tree-but-spelled-wrong && apk fix tree-but-spelled-wrong", \
-                None, \
-                ''
+                None
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -982,8 +909,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[tuple[
                           'package_manager_class',
                           'supported',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_generate_test_reinstall_nonexistent_matrix()),
                          indirect=["container"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -993,8 +919,7 @@ def test_reinstall_nonexistent(
         package_manager_class: PackageManagerClass,
         supported: bool,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(container, guest, package_manager_class, root_logger)
@@ -1018,17 +943,12 @@ def test_reinstall_nonexistent(
         assert excinfo.value.message \
             == "rpm-ostree does not support reinstall operation."
 
-    if expected_stdout:
-        assert excinfo.value.stdout is not None
-        assert expected_stdout in excinfo.value.stdout
-
-    if expected_stderr:
-        assert excinfo.value.stderr is not None
-        assert expected_stderr in excinfo.value.stderr
+    if expected_output:
+        assert_output(expected_output, excinfo.value.stdout, excinfo.value.stderr)
 
 
 def _generate_test_check_presence() -> Iterator[
-        tuple[Container, PackageManagerClass, Installable, str, Optional[str], Optional[str]]]:
+        tuple[Container, PackageManagerClass, Installable, str, Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -1037,24 +957,21 @@ def _generate_test_check_presence() -> Iterator[
                 Package('coreutils'), \
                 True, \
                 r"rpm -q --whatprovides coreutils", \
-                r'\s+out:\s+coreutils-', \
-                None
+                r'\s+out:\s+coreutils-'
 
             yield container, \
                 package_manager_class, \
                 Package('tree-but-spelled-wrong'), \
                 False, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                None
+                r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/arch'), \
                 True, \
                 r"rpm -q --whatprovides /usr/bin/arch", \
-                r'\s+out:\s+coreutils-', \
-                None
+                r'\s+out:\s+coreutils-'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'ubi/8' in container.url:
@@ -1063,24 +980,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('util-linux'), \
                     True, \
                     r"rpm -q --whatprovides util-linux", \
-                    r'\s+out:\s+util-linux-', \
-                    None
+                    r'\s+out:\s+util-linux-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/flock'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
-                    r'\s+out:\s+util-linux-', \
-                    None
+                    r'\s+out:\s+util-linux-'
 
             elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
                 yield container, \
@@ -1088,24 +1002,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('coreutils'), \
                     True, \
                     r"rpm -q --whatprovides coreutils", \
-                    r'\s+out:\s+coreutils-', \
-                    None
+                    r'\s+out:\s+coreutils-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/arch'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/arch", \
-                    r'\s+out:\s+coreutils-', \
-                    None
+                    r'\s+out:\s+coreutils-'
 
             else:
                 yield container, \
@@ -1113,24 +1024,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('util-linux-core'), \
                     True, \
                     r"rpm -q --whatprovides util-linux-core", \
-                    r'\s+out:\s+util-linux-core-', \
-                    None
+                    r'\s+out:\s+util-linux-core-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/flock'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
-                    r'\s+out:\s+util-linux-core-', \
-                    None
+                    r'\s+out:\s+util-linux-core-'
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
             if 'centos/7' in container.url or 'ubi/8' in container.url:
@@ -1139,24 +1047,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('util-linux'), \
                     True, \
                     r"rpm -q --whatprovides util-linux", \
-                    r'\s+out:\s+util-linux-', \
-                    None
+                    r'\s+out:\s+util-linux-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/flock'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
-                    r'\s+out:\s+util-linux-', \
-                    None
+                    r'\s+out:\s+util-linux-'
 
             elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
                 yield container, \
@@ -1164,24 +1069,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('coreutils'), \
                     True, \
                     r"rpm -q --whatprovides coreutils", \
-                    r'\s+out:\s+coreutils-', \
-                    None
+                    r'\s+out:\s+coreutils-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/arch'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/arch", \
-                    r'\s+out:\s+coreutils-', \
-                    None
+                    r'\s+out:\s+coreutils-'
 
             else:
                 yield container, \
@@ -1189,24 +1091,21 @@ def _generate_test_check_presence() -> Iterator[
                     Package('util-linux-core'), \
                     True, \
                     r"rpm -q --whatprovides util-linux-core", \
-                    r'\s+out:\s+util-linux-core-', \
-                    None
+                    r'\s+out:\s+util-linux-core-'
 
                 yield container, \
                     package_manager_class, \
                     Package('tree-but-spelled-wrong'), \
                     False, \
                     r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                    r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                    None
+                    r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/flock'), \
                     True, \
                     r"rpm -q --whatprovides /usr/bin/flock", \
-                    r'\s+out:\s+util-linux-core-', \
-                    None
+                    r'\s+out:\s+util-linux-core-'
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
@@ -1214,15 +1113,13 @@ def _generate_test_check_presence() -> Iterator[
                 Package('util-linux'), \
                 True, \
                 r"dpkg-query --show util-linux", \
-                r'\s+out:\s+util-linux', \
-                None
+                r'\s+out:\s+util-linux'
 
             yield container, \
                 package_manager_class, \
                 Package('tree-but-spelled-wrong'), \
                 False, \
                 r"dpkg-query --show tree-but-spelled-wrong", \
-                None, \
                 r'\s+err:\s+dpkg-query: no packages found matching tree-but-spelled-wrong'
 
             yield container, \
@@ -1230,8 +1127,7 @@ def _generate_test_check_presence() -> Iterator[
                 FileSystemPath('/usr/bin/flock'), \
                 True, \
                 r"dpkg-query --show util-linux", \
-                r'\s+out:\s+util-linux', \
-                None
+                r'\s+out:\s+util-linux'
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
@@ -1239,24 +1135,21 @@ def _generate_test_check_presence() -> Iterator[
                 Package('util-linux'), \
                 True, \
                 r"rpm -q --whatprovides util-linux", \
-                r'\s+out:\s+util-linux', \
-                None
+                r'\s+out:\s+util-linux'
 
             yield container, \
                 package_manager_class, \
                 Package('tree-but-spelled-wrong'), \
                 False, \
                 r"rpm -q --whatprovides tree-but-spelled-wrong", \
-                r'\s+out:\s+no package provides tree-but-spelled-wrong', \
-                None
+                r'\s+out:\s+no package provides tree-but-spelled-wrong'
 
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/flock'), \
                 True, \
                 r"rpm -qf /usr/bin/flock", \
-                r'\s+out:\s+util-linux-core', \
-                None
+                r'\s+out:\s+util-linux-core'
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
@@ -1264,24 +1157,21 @@ def _generate_test_check_presence() -> Iterator[
                 Package('busybox'), \
                 True, \
                 r"apk info -e busybox", \
-                r'\s+out:\s+busybox', \
-                None
+                r'\s+out:\s+busybox'
 
             yield container, \
                 package_manager_class, \
                 Package('tree-but-spelled-wrong'), \
                 False, \
                 r"apk info -e tree-but-spelled-wrong", \
-                None, \
-                ''
+                None
 
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/arch'), \
                 True, \
                 r"apk info -e busybox", \
-                r'\s+out:\s+busybox', \
-                None
+                r'\s+out:\s+busybox'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -1306,8 +1196,7 @@ def _generate_test_check_presence_ids(value) -> str:
                           'installable',
                           'expected_result',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_generate_test_check_presence()),
                          indirect=["container"],
                          ids=_generate_test_check_presence_ids)
@@ -1318,8 +1207,7 @@ def test_check_presence(
         installable: Installable,
         expected_result: bool,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(container, guest, package_manager_class, root_logger)
@@ -1329,15 +1217,12 @@ def test_check_presence(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert_log(caplog, remove_colors=True, message=MATCH(expected_stdout))
-
-    if expected_stderr:
-        assert_log(caplog, remove_colors=True, message=MATCH(expected_stderr))
+    if expected_output:
+        assert_log(caplog, remove_colors=True, message=MATCH(expected_output))
 
 
 def _parametrize_test_install_filesystempath() -> Iterator[
-        tuple[Container, PackageManagerClass, FileSystemPath, Optional[str], Optional[str]]]:
+        tuple[Container, PackageManagerClass, FileSystemPath, Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Dnf5:
@@ -1345,16 +1230,14 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
                 r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf5 install -y  /usr/bin/dos2unix", \
-                '[1/1] dos2unix', \
-                None  # noqa: E501
+                '[1/1] dos2unix'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
                 r"rpm -q --whatprovides /usr/bin/dos2unix \|\| dnf install -y  /usr/bin/dos2unix", \
-                'Installed:\n  dos2unix-', \
-                None  # noqa: E501
+                'Installed:\n  dos2unix-'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
             if 'centos/7' in container.url:
@@ -1362,40 +1245,35 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                     package_manager_class, \
                     FileSystemPath('/usr/bin/dos2unix'), \
                     r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix", \
-                    'Installed:\n  dos2unix.', \
-                    None  # noqa: E501
+                    'Installed:\n  dos2unix.'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     FileSystemPath('/usr/bin/dos2unix'), \
                     r"rpm -q --whatprovides /usr/bin/dos2unix \|\| yum install -y  /usr/bin/dos2unix && rpm -q --whatprovides /usr/bin/dos2unix", \
-                    'Installed:\n  dos2unix-', \
-                    None  # noqa: E501
+                    'Installed:\n  dos2unix-'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show dos2unix \|\| apt install -y  dos2unix", \
-                "Setting up dos2unix", \
-                None  # noqa: E501
+                "Setting up dos2unix"  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
                 r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  /usr/bin/dos2unix", \
-                "Installing 1 packages:\n  dos2unix-", \
-                None  # noqa: E501
+                "Installing 1 packages:\n  dos2unix-"  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
                 r"apk info -e dos2unix \|\| apk add dos2unix", \
-                'Installing dos2unix', \
-                None
+                'Installing dos2unix'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -1406,8 +1284,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                           'package_manager_class',
                           'installable',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_filesystempath()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -1417,8 +1294,7 @@ def test_install_filesystempath(
         package_manager_class: PackageManagerClass,
         installable: FileSystemPath,
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -1432,13 +1308,7 @@ def test_install_filesystempath(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_multiple() -> \
@@ -1447,7 +1317,6 @@ def _parametrize_test_install_multiple() -> \
             PackageManagerClass,
             tuple[Package, Package],
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -1457,16 +1326,14 @@ def _parametrize_test_install_multiple() -> \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
                     r"rpm -q --whatprovides dconf libpng \|\| yum install -y  dconf libpng && rpm -q --whatprovides dconf libpng", \
-                    'Complete!', \
-                    None  # noqa: E501
+                    'Complete!'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils", \
-                    'Complete!', \
-                    None  # noqa: E501
+                    'Complete!'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'ubi/8' in container.url:
@@ -1474,23 +1341,20 @@ def _parametrize_test_install_multiple() -> \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
                     r"rpm -q --whatprovides dconf libpng \|\| dnf install -y  dconf libpng", \
-                    'Complete!', \
-                    None
+                    'Complete!'
 
             else:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils", \
-                    'Complete!', \
-                    None
+                    'Complete!'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"rpm -q --whatprovides tree diffutils \|\| dnf5 install -y  tree diffutils", \
-                None, \
                 None
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
@@ -1498,24 +1362,21 @@ def _parametrize_test_install_multiple() -> \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils", \
-                'Setting up tree', \
-                None  # noqa: E501
+                'Setting up tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"rpm -q --whatprovides tree diffutils \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree diffutils", \
-                'Installing: tree', \
-                None  # noqa: E501
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"apk info -e tree diffutils \|\| apk add tree diffutils", \
-                'Installing tree', \
-                None
+                'Installing tree'
 
         else:
             pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
@@ -1526,8 +1387,7 @@ def _parametrize_test_install_multiple() -> \
                           'package_manager_class',
                           'packages',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_multiple()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -1537,8 +1397,7 @@ def test_install_multiple(
         package_manager_class: PackageManagerClass,
         packages: tuple[Package, Package],
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -1552,13 +1411,7 @@ def test_install_multiple(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_downloaded() -> \
@@ -1567,7 +1420,6 @@ def _parametrize_test_install_downloaded() -> \
             PackageManagerClass,
             tuple[Package, Package],
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -1579,7 +1431,6 @@ def _parametrize_test_install_downloaded() -> \
                     (Package('tree'), Package('diffutils')),
                     r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true",  # noqa: E501
                     'Complete!',
-                    None,
                     marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command")
                     )
 
@@ -1588,16 +1439,14 @@ def _parametrize_test_install_downloaded() -> \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
                     r"yum install -y --skip-broken /tmp/dconf.rpm /tmp/libpng.rpm \|\| /bin/true", \
-                    'Complete!', \
-                    None  # noqa: E501
+                    'Complete!'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
-                    'Complete!', \
-                    None  # noqa: E501
+                    'Complete!'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'ubi/8' in container.url:
@@ -1605,23 +1454,20 @@ def _parametrize_test_install_downloaded() -> \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
                     r"dnf install -y  /tmp/dconf.rpm /tmp/libpng.rpm", \
-                    'Complete!', \
-                    None
+                    'Complete!'
 
             else:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
-                    'Complete!', \
-                    None
+                    'Complete!'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"dnf5 install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
-                None, \
                 None
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -1629,8 +1475,7 @@ def _parametrize_test_install_downloaded() -> \
                 package_manager_class, \
                 (Package('tree'), Package('diffutils')), \
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree.rpm /tmp/diffutils.rpm", \
-                'Installing: tree', \
-                None  # noqa: E501
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield pytest.param(
@@ -1639,7 +1484,6 @@ def _parametrize_test_install_downloaded() -> \
                 (Package('tree'), Package('diffutils')),
                 r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils",  # noqa: E501
                 'Setting up tree',
-                None,
                 marks=pytest.mark.skip(reason="not supported yet")
             )
 
@@ -1650,7 +1494,6 @@ def _parametrize_test_install_downloaded() -> \
                 (Package('tree'), Package('diffutils')),
                 r"apk info -e tree diffutils \|\| apk add tree diffutils",
                 'Installing tree',
-                None,
                 marks=pytest.mark.skip(reason="not supported yet")
                 )
 
@@ -1663,8 +1506,7 @@ def _parametrize_test_install_downloaded() -> \
                           'package_manager_class',
                           'packages',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_downloaded()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -1674,8 +1516,7 @@ def test_install_downloaded(
         package_manager_class: PackageManagerClass,
         packages: tuple[Package, Package],
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -1718,13 +1559,7 @@ def test_install_downloaded(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_debuginfo() -> Iterator[
@@ -1733,7 +1568,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
             PackageManagerClass,
             tuple[Package, Package],
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -1745,7 +1579,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 (Package('tree'), Package('dos2unix')),
                 "",
                 None,
-                None,
                 marks=pytest.mark.skip(reason="debuginfo install not supported yet on coreos")
                 )
 
@@ -1754,7 +1587,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 package_manager_class, \
                 (Package('dos2unix'), Package('tree')), \
                 r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo", \
-                None, \
                 None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf \
@@ -1766,7 +1598,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     (Package('dos2unix'), Package('tree')),
                     r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                     None,
-                    None,
                     marks=pytest.mark.skip(
                         reason='centos comes without debuginfo repos, we do not enable them yet'))
 
@@ -1775,7 +1606,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
                     r"debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo", \
-                    None, \
                     None  # noqa: E501
 
             else:
@@ -1783,7 +1613,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     package_manager_class, \
                     (Package('dos2unix'), Package('tree')), \
                     r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo", \
-                    None, \
                     None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt \
@@ -1794,7 +1623,6 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 package_manager_class,
                 (Package('tree'), Package('dos2unix')),
                 "",
-                None,
                 None,
                 marks=pytest.mark.skip(reason="not supported yet")
                 )
@@ -1808,8 +1636,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                           'package_manager_class',
                           'installables',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_debuginfo()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -1819,8 +1646,7 @@ def test_install_debuginfo(
         package_manager_class: PackageManagerClass,
         installables: tuple[Package, Package],
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
 
@@ -1835,13 +1661,7 @@ def test_install_debuginfo(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)
 
 
 def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
@@ -1850,7 +1670,6 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
             PackageManagerClass,
             tuple[Package, Package],
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -1861,7 +1680,6 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                 package_manager_class, \
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
                 r"debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo", \
-                None, \
                 None  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt \
@@ -1872,7 +1690,6 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                 package_manager_class,
                 (Package('tree-but-spelled-wrong'), Package('dos2unix')),
                 "",
-                None,
                 None,
                 marks=pytest.mark.skip(reason="not supported yet")
                 )
@@ -1886,8 +1703,7 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
                           'package_manager_class',
                           'installables',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_debuginfo_nonexistent()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -1897,8 +1713,7 @@ def test_install_debuginfo_nonexistent(
         package_manager_class: PackageManagerClass,
         installables: tuple[Package, Package],
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -1916,13 +1731,7 @@ def test_install_debuginfo_nonexistent(
     assert excinfo.type is tmt.utils.RunError
     assert excinfo.value.returncode != 0
 
-    if expected_stdout:
-        assert excinfo.value.stdout is not None
-        assert expected_stdout in excinfo.value.stdout
-
-    if expected_stderr:
-        assert excinfo.value.stderr is not None
-        assert expected_stderr in excinfo.value.stderr
+    assert_output(expected_output, excinfo.value.stdout, excinfo.value.stderr)
 
 
 def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
@@ -1931,7 +1740,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
             PackageManagerClass,
             tuple[Package, Package],
             str,
-            Optional[str],
             Optional[str]]]:
 
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
@@ -1943,7 +1751,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 (Package('tree'), Package('dos2unix')),
                 "",
                 None,
-                None,
                 marks=pytest.mark.skip(reason="debuginfo install not supported yet on coreos")
                 )
 
@@ -1952,7 +1759,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 package_manager_class, \
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
                 r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong", \
-                None, \
                 None
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf \
@@ -1964,7 +1770,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')),
                     r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
                     None,
-                    None,
                     marks=pytest.mark.skip(
                         reason='centos comes without debuginfo repos, we do not enable them yet'))
 
@@ -1973,7 +1778,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     package_manager_class, \
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')), \
                     r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong", \
-                    None, \
                     None
 
         elif package_manager_class is tmt.package_managers.apt.Apt \
@@ -1984,7 +1788,6 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 package_manager_class,
                 (Package('tree-but-spelled-wrong'), Package('dos2unix')),
                 "",
-                None,
                 None,
                 marks=pytest.mark.skip(reason="not supported yet")
                 )
@@ -1998,8 +1801,7 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                           'package_manager_class',
                           'installables',
                           'expected_command',
-                          'expected_stdout',
-                          'expected_stderr'),
+                          'expected_output'),
                          list(_parametrize_test_install_debuginfo_nonexistent_skip()),
                          indirect=["container_per_test"],
                          ids=CONTAINER_MATRIX_IDS)
@@ -2009,8 +1811,7 @@ def test_install_debuginfo_nonexistent_skip(
         package_manager_class: PackageManagerClass,
         installables: tuple[Package, Package],
         expected_command: str,
-        expected_stdout: Optional[str],
-        expected_stderr: Optional[str],
+        expected_output: Optional[str],
         root_logger: tmt.log.Logger,
         caplog: _pytest.logging.LogCaptureFixture) -> None:
     package_manager = create_package_manager(
@@ -2027,10 +1828,4 @@ def test_install_debuginfo_nonexistent_skip(
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
-    if expected_stdout:
-        assert output.stdout is not None
-        assert expected_stdout in output.stdout
-
-    if expected_stderr:
-        assert output.stderr is not None
-        assert expected_stderr in output.stderr
+    assert_output(expected_output, output.stdout, output.stderr)

@@ -795,7 +795,6 @@ class Core(
         return tmt.utils.fmf_id(
             name=self.name,
             fmf_root=self.fmf_root,
-            always_get_ref=True,
             logger=self._logger)
 
     @functools.cached_property
@@ -940,7 +939,7 @@ class Core(
                             f'key "{bad_property}" not recognized by schema {error.schema["$id"]}'
                     else:
                         yield LinterOutcome.WARN, \
-                            'key "{bad_property}" not recognized by schema'
+                            f'key "{bad_property}" not recognized by schema'
 
             # A key not recognized, but when patternProperties are allowed. In that case,
             # the key is both not listed and not matching the pattern.

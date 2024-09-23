@@ -83,6 +83,26 @@ class ResultGuestData(SerializableContainer):
 
     name: str = f'{tmt.utils.DEFAULT_NAME}-0'
     role: Optional[str] = None
+    primary_address: Optional[str] = None
+
+    @classmethod
+    def from_test_invocation(
+            cls,
+            *,
+            invocation: 'tmt.steps.execute.TestInvocation') -> 'ResultGuestData':
+        """
+        Create a guest data for a result from a test invocation.
+
+        A helper for extracting interesting guest data from a given test
+        invocation.
+
+        :param invocation: a test invocation capturing the test run and results.
+        """
+
+        return ResultGuestData(
+            name=invocation.guest.name,
+            role=invocation.guest.role,
+            primary_address=invocation.guest.primary_address)
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.
@@ -253,8 +273,6 @@ class Result(BaseResult):
         default_ids.update(ids)
         ids = default_ids
 
-        guest_data = ResultGuestData(name=invocation.guest.name, role=invocation.guest.role)
-
         _result = Result(
             name=invocation.test.name,
             serial_number=invocation.test.serial_number,
@@ -267,7 +285,7 @@ class Result(BaseResult):
             duration=invocation.real_duration,
             ids=ids,
             log=log or [],
-            guest=guest_data,
+            guest=ResultGuestData.from_test_invocation(invocation=invocation),
             data_path=invocation.relative_test_data_path)
 
         return _result.interpret_result(ResultInterpret(

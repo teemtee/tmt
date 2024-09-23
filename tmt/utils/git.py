@@ -1,6 +1,7 @@
 """ Test Metadata Utilities """
 
 
+import dataclasses
 import functools
 import os
 import re
@@ -24,6 +25,118 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.base
+
+
+@dataclasses.dataclass
+class GitInfo:
+    """ Data container for commonly queried git data. """
+
+    #: Path to the git root.
+    git_root: Path
+
+    #: Most human-readable git ref.
+    ref: str
+
+    #: Git remote linked to the current git ref.
+    remote: str
+
+    #: Default branch of the remote.
+    default_branch: Optional[str]
+
+    #: Public url of the remote.
+    url: Optional[str]
+
+    @classmethod
+    @functools.cache
+    def from_fmf_root(cls, *, fmf_root: Path, logger: tmt.log.Logger) -> Optional["GitInfo"]:
+        """
+        Get the current git info of an fmf tree.
+
+        :param fmf_root: Root path of the fmf tree
+        :param logger: Current tmt logger
+        :return: Git info container or ``None`` if git metadata could not be resolved
+        """
+
+        def run(command: Command) -> str:
+            """
+            Run command, return output.
+            We don't need the stderr here, but we need exit status.
+            """
+            result = command.run(cwd=fmf_root, logger=logger)
+            if result.stdout is None:
+                return ""
+            return result.stdout.strip()
+
+        # Prepare url (for now handle just the most common schemas)
+        try:
+            # Check if we are a git repo
+            run(Command("git", "rev-parse", "--is-inside-work-tree"))
+
+            # Initialize common git facts
+            # Get some basic git references for HEAD
+            all_refs = run(Command("git", "for-each-ref", "--format=%(refname)", "--points-at=@"))
+            logger.debug("git all_refs", all_refs, level=3)
+            # curr_ref is either HEAD or fully-qualified (branch) reference
+            curr_ref = run(Command("git", "rev-parse", "--symbolic-full-name", "@"))
+            logger.debug("git initial curr_ref", curr_ref, level=3)
+            # Get the top-level git_root
+            _git_root = git_root(fmf_root=fmf_root, logger=logger)
+            assert _git_root is not None  # narrow type
+        except RunError:
+            # Not a git repo, everything should be pointing to None at this point
+            return None
+
+        if curr_ref != "HEAD":
+            # The reference is fully qualified -> we are on a branch
+            # Get the short name
+            branch = run(Command("git", "for-each-ref", "--format=%(refname:short)", curr_ref))
+            ref = branch
+        else:
+            # Not on a branch, check if we are on a tag or just a refs
+            try:
+                tags = run(Command("git", "describe", "--tags"))
+                logger.debug("git tags", tags, level=3)
+                # Is it possible to find which tag was used to checkout?
+                # Now we just assume the first tag is the one we want
+                tag_used = tags.splitlines()[0]
+                logger.debug("Using tag", tag_used, level=3)
+                # Point curr_ref to the fully-qualified ref
+                curr_ref = f"refs/tags/{tag_used}"
+                ref = tag_used
+            except RunError:
+                # We are not on a tag, just use the first available reference
+                curr_ref = all_refs.splitlines()[0] if all_refs else curr_ref
+                # Point the ref to the commit
+                commit = run(Command("git", "rev-parse", curr_ref))
+                logger.debug("Using commit", commit, level=3)
+                ref = commit
+
+        logger.debug("curr_ref used", curr_ref, level=3)
+        remote_name = run(
+            Command(
+                "git",
+                "for-each-ref",
+                "--format=%(upstream:remotename)",
+                curr_ref))
+        if not remote_name:
+            # If no specific upstream is defined, default to `origin`
+            remote_name = "origin"
+        try:
+            remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
+            url = public_git_url(remote)
+            _default_branch = default_branch(
+                repository=_git_root, remote=remote, logger=logger)
+        except RunError:
+            url = None
+            _default_branch = None
+
+        return GitInfo(
+            git_root=_git_root,
+            ref=ref,
+            remote=remote_name,
+            url=url,
+            default_branch=_default_branch
+            )
 
 
 # Avoid multiple subprocess calls for the same url

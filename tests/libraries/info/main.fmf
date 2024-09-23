@@ -1,0 +1,4 @@
+summary: Check info about fetched libraries
+description:
+    In verbose level the discover steps should print detailed
+    information about the beakerlib libraries being fetched.

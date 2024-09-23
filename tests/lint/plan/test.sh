@@ -67,6 +67,10 @@ rlJournalStart
         rlAssertGrep "fail P001 unknown key \"discove\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"environmen\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"summaryABCDEF\" is used" $rlRun_LOG
+
+        rlRun -s "$tmt plan lint invalid-plugin-key" 0
+        rlAssertGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
+        rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "P007: step phases require existing guests and roles"

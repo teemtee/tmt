@@ -530,7 +530,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     item_attributes = attributes.copy()
                     if result:
                         test_time = result.start_time or self.time()
-                        # for multi-host tests store also provision name and role
+
+                        # for guests, save their primary address
+                        if result.guest.primary_address:
+                            item_attributes.append({
+                                'key': 'guest_primary_address',
+                                'value': result.guest.primary_address})
+
+                        # for multi-host tests store also guest name and role
                         if result.guest.name != 'default-0':
                             item_attributes.append(
                                 {'key': 'guest_name', 'value': result.guest.name})

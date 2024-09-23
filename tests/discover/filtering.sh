@@ -86,7 +86,10 @@ rlJournalStart
         rlAssertEquals "Check that number of fmf-ids equals to tests number" \
                        "$ids_amount" "$tests_amount"
         rlAssertEquals "Check url" "$url_discover" "$url_fmf_id"
-        rlAssertEquals "Check ref" "HEAD" "$ref_fmf_id"
+        # Expected ref comes from running git describe on tmt repo:
+        #  git describe --tags eae4d527
+        expected_ref="0.10-8-geae4d527"
+        rlAssertEquals "Check ref" "$expected_ref" "$ref_fmf_id"
     rlPhaseEnd
 
     rlPhaseStartTest 'fmf-id (w/o url): Show fmf ids for discovered tests'

@@ -182,6 +182,7 @@ dependencies = ["tmt[docs]"]
 # script) e.g. -E, -d, and -D. These should not affect generated documentation
 # files below, but it may be providing additional metadata for RTD to index.
 html = "sphinx-build -b html {root}/docs {root}/docs/_build {args}"
+linkcheck = "sphinx-build -b linkcheck {root}/docs {root}/docs/_build {args}"
 man = [
     "cp {root}/docs/header.txt {root}/man.rst",
     "tail -n+8 docs/overview.rst >> {root}/man.rst",

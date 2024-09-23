@@ -54,7 +54,7 @@ def local_git_repo(tmppath: Path) -> Path:
     origin = tmppath / 'origin'
     origin.mkdir()
 
-    run(Command('git', 'init'), cwd=origin)
+    run(Command('git', 'init', '-b', 'main'), cwd=origin)
     run(
         Command('git', 'config', '--local', 'user.email', 'lzachar@redhat.com'),
         cwd=origin)
@@ -918,6 +918,45 @@ class TestValidateGitStatus:
 
         assert validation_result == (
             False, 'Not pushed changes in .fmf/version main.fmf')
+
+
+@pytest.mark.parametrize("git_ref",
+                         ["tag", "branch", "merge", "commit"])
+def test_fmf_id(local_git_repo, root_logger, git_ref):
+    run(Command('git', 'checkout', '-b', 'other_branch'), cwd=local_git_repo)
+    # Initialize tmt tree with a test
+    tmt.Tree.init(logger=root_logger, path=local_git_repo, template="empty", force=False)
+    with (local_git_repo / "test.fmf").open("w") as f:
+        f.write('test: echo')
+    run(Command('git', 'add', '-A'), cwd=local_git_repo)
+    run(Command('git', 'commit', '-m', 'Initialized tmt tree'), cwd=local_git_repo)
+    commit_hash = run(Command('git', 'rev-parse', 'HEAD'), cwd=local_git_repo).stdout.strip()
+
+    if git_ref == "tag":
+        run(Command('git', 'tag', 'some_tag'), cwd=local_git_repo)
+        run(Command('git', 'checkout', 'some_tag'), cwd=local_git_repo)
+    if git_ref == "commit":
+        # Create an empty commit and checkout the previous commit
+        run(Command('git', 'commit', '--allow-empty', '-m',
+            'Random other commit'), cwd=local_git_repo)
+        run(Command('git', 'checkout', 'HEAD^'), cwd=local_git_repo)
+    if git_ref == "merge":
+        run(Command('git', 'checkout', '--detach', 'main'), cwd=local_git_repo)
+        run(Command('git', 'merge', 'other_branch'), cwd=local_git_repo)
+        commit_hash = run(Command('git', 'rev-parse', 'HEAD'),
+                          cwd=local_git_repo).stdout.strip()
+
+    fmf_id = tmt.utils.fmf_id(name="/test", fmf_root=local_git_repo, logger=root_logger)
+    assert fmf_id.git_root == local_git_repo
+    assert fmf_id.ref is not None
+    if git_ref == "tag":
+        assert fmf_id.ref == "some_tag"
+    if git_ref == "branch":
+        assert fmf_id.ref == "other_branch"
+    if git_ref == "merge":
+        assert fmf_id.ref == commit_hash
+    if git_ref == "commit":
+        assert fmf_id.ref == commit_hash
 
 
 class TestGitAdd:
