@@ -2249,6 +2249,14 @@ def link(context: Context,
          link: str,
          separate: bool,
          ) -> None:
+    """
+    Create a link to tmt web service in an issue tracking software.
+
+    Using the specified target, a link will be generated and added
+    to an issue. Link is generated from names of tmt objects
+    passed in arguments and configuration file.
+    """
+
     nodes: list[Union[tmt.base.Test, tmt.base.Plan, tmt.base.Story]] = []
     for name in names:
         if context.obj.tree.tests(names=[name]):
