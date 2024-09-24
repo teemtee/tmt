@@ -1,4 +1,6 @@
 
+import urllib.parse
+
 from tmt.utils import DistGitHandler, Path
 
 MOCK_SOURCES_FILENAME = 'mock_sources'
@@ -26,4 +28,5 @@ class TestDistGit(DistGitHandler):
                 src_name = split[1]
             except IndexError:
                 src_name = url
-            yield (Path(self.server) / url, src_name)
+
+            yield (urllib.parse.urljoin(self.server, url), src_name)
