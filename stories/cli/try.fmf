@@ -141,7 +141,7 @@ link:
             .. versionadded:: 1.37
 
         example:
-            - tmt try fedora@virtual --epel
+            - tmt try centos-stream-9@virtual --epel
 
         link:
           - implemented-by: /tmt/trying.py
