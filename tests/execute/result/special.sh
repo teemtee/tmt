@@ -11,7 +11,7 @@ rlJournalStart
         rlRun -s "tmt run -v -i $run" 0
 
         RESULT_FILE="$run/special-chars/execute/data/guest/default-0/0-7-special-characters-in-the-name-1/data/tmt-report-results.yaml"
-        rlRun "yq -ye '.' $RESULT_FILE" 0 "Check the YAML is valid"
+        rlRun "yq -e '.' $RESULT_FILE" 0 "Check the YAML is valid"
 
         rlAssertGrep 'name: "/0\.\.7 \\"special\\": \\" characters: \*\$@|&>< in: the: name"' "$RESULT_FILE"
         rlAssertGrep "result: \"pass\"" "$RESULT_FILE"
