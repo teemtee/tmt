@@ -65,6 +65,8 @@ from tmt._compat.pathlib import Path
 from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
     import tmt.base
     import tmt.cli
     import tmt.options
