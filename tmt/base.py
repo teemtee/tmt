@@ -54,6 +54,7 @@ import tmt.steps.report
 import tmt.templates
 import tmt.utils
 import tmt.utils.git
+import tmt.utils.jira
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result
@@ -1297,7 +1298,7 @@ class Test(
                     logger=logger).tests(
                     names=[directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=tests, links=links, logger=logger)
+                tmt.utils.jira.jira_link(nodes=tests, links=links, logger=logger)
 
     @property
     def manual_test_path(self) -> Path:
@@ -2032,7 +2033,7 @@ class Plan(
                     logger=logger).plans(
                     names=[directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=plans, links=links, logger=logger)
+                tmt.utils.jira.jira_link(nodes=plans, links=links, logger=logger)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2754,7 +2755,7 @@ class Story(
                     logger=logger).stories(
                     names=[directory_path.name],
                     apply_command_line=False)
-                tmt.utils.jira_link(nodes=stories, links=links, logger=logger)
+                tmt.utils.jira.jira_link(nodes=stories, links=links, logger=logger)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:

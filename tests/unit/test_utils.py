@@ -21,6 +21,7 @@ import tmt.log
 import tmt.plugins
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.jira
 from tmt.log import Logger
 from tmt.utils import (
     Command,
@@ -1730,7 +1731,7 @@ class TestJiraLink(unittest.TestCase):
     def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.tree
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
-        tmt.utils.jira_link(
+        tmt.utils.jira.jira_link(
             [test], tmt.base.Links(
                 data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
@@ -1745,7 +1746,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
         plan = tmt.Tree(logger=self.logger, path=Path(".")).plans(names=['tmp'])[0]
         story = tmt.Tree(logger=self.logger, path=Path(".")).stories(names=['tmp'])[0]
-        tmt.utils.jira_link([test, plan, story], tmt.base.Links(
+        tmt.utils.jira.jira_link([test, plan, story], tmt.base.Links(
             data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
         assert (
@@ -1760,7 +1761,7 @@ class TestJiraLink(unittest.TestCase):
     def test_create_link_relation(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.tree
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
-        tmt.utils.jira_link(
+        tmt.utils.jira.jira_link(
             [test], tmt.base.Links(
                 data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
         # Load the test object again with the link present

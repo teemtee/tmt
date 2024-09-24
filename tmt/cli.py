@@ -27,6 +27,7 @@ import tmt.steps
 import tmt.templates
 import tmt.trying
 import tmt.utils
+import tmt.utils.jira
 import tmt.utils.rest
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path
@@ -2265,4 +2266,4 @@ def link(context: Context,
             nodes.extend(context.obj.tree.plans(names=[name]))
         if context.obj.tree.stories(names=[name]):
             nodes.extend(context.obj.tree.stories(names=[name]))
-    tmt.utils.jira_link(nodes, tmt.base.Links(data=link), context.obj.logger, separate)
+    tmt.utils.jira.jira_link(nodes, tmt.base.Links(data=link), context.obj.logger, separate)
