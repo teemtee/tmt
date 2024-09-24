@@ -1,0 +1,7 @@
+{% if properties %}
+<properties>
+    {% for property in properties %}
+    <property name="{{ property.name | e }}" value="{{ property.value | e }}"/>
+    {% endfor %}
+</properties>
+{% endif %}

@@ -69,12 +69,11 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
         raise tmt.utils.ReportError(f"Malformed duration '{duration}'.") from error
 
 
-class ResultWrapper:
+class ImplementProperties:
     """
-    The context wrapper for :py:class:`tmt.Result`.
+    Define a properties attribute.
 
-    Adds possibility to wrap the :py:class:`tmt.Result` and dynamically add more attributes which
-    get available inside the template context.
+    This class can be used to easily add properties attribute by inheriting it.
     """
 
     class PropertyDict(TypedDict):
@@ -83,8 +82,7 @@ class ResultWrapper:
         name: str
         value: str
 
-    def __init__(self, wrapped: tmt.Result) -> None:
-        self._wrapped = wrapped
+    def __init__(self) -> None:
         self._properties: dict[str, str] = {}
 
     @property
@@ -92,15 +90,28 @@ class ResultWrapper:
         return [{'name': k, 'value': v} for k, v in self._properties.items()]
 
     @properties.setter
-    def properties(self, keyval: dict[str, str]) -> None:
-        self._properties = keyval
+    def properties(self, keyval: dict[str, Optional[str]]) -> None:
+        self._properties = {k: v for k, v in keyval.items() if v is not None}
+
+
+class ResultWrapper(ImplementProperties):
+    """
+    The context wrapper for :py:class:`tmt.Result`.
+
+    Adds possibility to wrap the :py:class:`tmt.Result` and dynamically add more attributes which
+    get available inside the template context.
+    """
+
+    def __init__(self, wrapped: tmt.Result) -> None:
+        super().__init__()
+        self._wrapped = wrapped
 
     def __getattr__(self, name: str) -> Any:
         """ Returns an attribute of a wrapped ``tmt.Result`` instance """
         return getattr(self._wrapped, name)
 
 
-class ResultsContext:
+class ResultsContext(ImplementProperties):
     """
     The results context for Jinja templates.
 
@@ -109,6 +120,8 @@ class ResultsContext:
     """
 
     def __init__(self, results: list[tmt.Result]) -> None:
+        super().__init__()
+
         # Decorate all the tmt.Results with more attributes
         self._results: list[ResultWrapper] = [ResultWrapper(r) for r in results]
 
