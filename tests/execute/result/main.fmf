@@ -7,3 +7,6 @@
 /repeated:
     summary: Repeated test should provide multiple results
     test: ./repeated.sh
+/special:
+    summary: Test special characters generated to tmt-report-results.yaml
+    test: ./special.sh
