@@ -1,6 +1,6 @@
 import urllib.parse
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import fmf.utils
 
@@ -10,7 +10,11 @@ import tmt.utils
 from tmt._compat.pathlib import Path
 from tmt.plugins import ModuleImporter
 
-import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[unused-ignore]
+if TYPE_CHECKING:
+    import jira
+
+
+import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
     'jira',
     tmt.utils.ReportError,
     "Install 'tmt+link-jira' to use the Jira linking.",
@@ -55,20 +59,44 @@ def jira_link(
     # Setup config tree
     config_tree = tmt.utils.Config()
     # Linking is not setup in config, therefore user does not want to use linking
-    linking_node = config_tree.fmf_tree.find('/user/linking')
-    if not linking_node and linking_node.data.get('linking') is None:
+    linking_node = cast(Optional[fmf.Tree], config_tree.fmf_tree.find('/user/linking'))
+
+    if not linking_node:
         return
-    linking_config = linking_node.data.get('issue-tracker')[0]
+
+    issue_trackers: Any = linking_node.data.get('issue-tracker')
+
+    if not issue_trackers:
+        return
+
+    if isinstance(issue_trackers, list):
+        raise tmt.utils.GeneralError("Invalid config!")
+
+    if not isinstance(issue_trackers[0], dict):
+        raise tmt.utils.GeneralError("Invalid config!")
+
+    linking_config = cast(list[dict[str, Any]], issue_trackers)[0]
+
     verifies = links.get('verifies')[0]
     target = verifies.to_dict()['target']
     # Parse the target url
     issue_id = target.split('/')[-1]
-    jira = jira_module.JIRA(server=linking_config['url'], token_auth=linking_config['token'])
+    # ignore[attr-defined]: it is defined, but mypy seems to fail
+    # detecting it correctly.
+    jira = jira_module.JIRA(  # type: ignore[attr-defined]
+        server=linking_config['url'],
+        token_auth=linking_config['token'])
     link_object: dict[str, str] = {}
     service_url: dict[str, str] = {}
     for node in nodes:
         # Try to add the link relation to object's data if it is not already there
-        with node.node as data:
+        #
+        # cast & ignore: _data is basically a container with test/plan/story
+        # metadata. As such, it has a lot of keys and values of
+        # various data types.
+        with node.node as _data:  # type: ignore[reportUnknownVariableType,unused-ignore]
+            data = cast(dict[str, Any], _data)
+
             link_relation = {"verifies": target}
             if 'link' in data:
                 if link_relation not in data['link']:
