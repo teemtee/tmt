@@ -651,7 +651,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if dist_git_extract and dist_git_extract != '/':
             try:
 
-                dist_git_extract = Path(glob.glob(sourcedir / dist_git_extract.lstrip('/'))[0])
+                dist_git_extract = Path(
+                    glob.glob(str(sourcedir / dist_git_extract.lstrip('/')))[0])
             except IndexError:
                 raise tmt.utils.DiscoverError(
                     f"Couldn't glob '{dist_git_extract}' "
