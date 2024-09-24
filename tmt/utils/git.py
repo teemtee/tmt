@@ -448,7 +448,7 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     """
     sources = [
         *test.fmf_sources,
-        test.fmf_root / '.fmf' / 'version'
+        test.anchor_path / '.fmf' / 'version'
         ]
 
     # Use tmt's run instead of subprocess.run

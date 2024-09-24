@@ -147,11 +147,13 @@ class FmfId(
     VALID_KEYS: ClassVar[list[str]] = ['url', 'ref', 'path', 'name']
 
     #: Keys that are present, might be set, but shall not be exported.
-    NONEXPORTABLE_KEYS: ClassVar[list[str]] = ['fmf_root', 'git_root', 'default_branch']
+    NONEXPORTABLE_KEYS: ClassVar[list[str]] = [
+        'fmf_root', 'anchor_path', 'git_root', 'default_branch']
 
     # Save context of the ID for later - there are places where it matters,
     # e.g. to not display `ref` under some conditions.
     fmf_root: Optional[Path] = None
+    anchor_path: Optional[Path] = None
     git_root: Optional[Path] = None
     default_branch: Optional[str] = None
 
@@ -772,17 +774,20 @@ class Core(
 
     # TODO: cached_property candidates
     @property
-    def fmf_root(self) -> Path:
+    def fmf_root(self) -> Optional[Path]:
         # Check if fmf root exists
         try:
             return Path(self.node.root)
         except TypeError:
-            raise tmt.utils.GeneralError(
-                "No fmf root found. Directory is not initialized with `tmt init`")
+            return None
+
+    @property
+    def anchor_path(self) -> Path:
+        return self.fmf_root or Path.cwd()
 
     @property
     def git_root(self) -> Optional[Path]:
-        return tmt.utils.git.git_root(fmf_root=self.fmf_root, logger=self._logger)
+        return tmt.utils.git.git_root(fmf_root=self.anchor_path, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
     # and constructing a workaround would be hard because of support of
@@ -800,7 +805,7 @@ class Core(
 
         return tmt.utils.fmf_id(
             name=self.name,
-            fmf_root=self.fmf_root,
+            fmf_root=self.anchor_path,
             logger=self._logger)
 
     @functools.cached_property

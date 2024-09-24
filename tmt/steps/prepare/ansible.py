@@ -169,7 +169,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
             guest.ansible(
                 playbook_path,
-                playbook_root=self.step.plan.fmf_root,
+                playbook_root=self.step.plan.anchor_path,
                 extra_args=self.data.extra_args)
 
         return results
