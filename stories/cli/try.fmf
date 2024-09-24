@@ -127,3 +127,22 @@ link:
             package: vim
         execute:
             how: tmt
+
+/option:
+    story:
+        As a user I want an easy way to run common options in ``1minutetip`` and ``tmt run``
+
+    /epel:
+        story:
+            As a user I want an easy way to enable epel repository
+        description: |
+            Enable EPEL repository
+
+            .. versionadded:: 1.37
+
+        example:
+            - tmt try centos-stream-9@virtual --epel
+
+        link:
+          - implemented-by: /tmt/trying.py
+          - implemented-by: /tmt/steps/prepare/feature.py

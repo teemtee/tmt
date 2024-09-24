@@ -20,6 +20,8 @@ import tmt.templates
 import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
+from tmt.steps.prepare import PreparePlugin
+from tmt.steps.prepare.feature import _RawPrepareFeatureStepData
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
@@ -103,6 +105,7 @@ class Try(tmt.utils.Common):
         self.tests: list[tmt.Test] = []
         self.plans: list[Plan] = []
         self.image_and_how = self.opt("image_and_how")
+        self.cli_options = ["epel"]
 
         # Use the verbosity level 3 unless user explicitly requested
         # a different level on the command line
@@ -402,6 +405,28 @@ class Try(tmt.utils.Common):
         run_id = click.style(plan.my_run.workdir, fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
+    def handle_options(self, plan: Plan) -> None:
+        """ Choose requested cli option """
+
+        for option in self.cli_options:
+            if self.opt(option):
+                getattr(self, f"handle_{option}")(plan)
+
+    def handle_epel(self, plan: Plan) -> None:
+        """ Enable EPEL repository """
+
+        # tmt run prepare --how feature --epel enabled
+        data: _RawPrepareFeatureStepData = {
+            "name": "tmt-try-epel",
+            'how': 'feature',
+            'epel': "enabled",
+            }
+
+        phase: PreparePlugin[Any] = cast(
+            PreparePlugin[Any], PreparePlugin.delegate(
+                plan.prepare, raw_data=data))
+        plan.prepare._phases.append(phase)
+
     def go(self) -> None:
         """ Run the interactive session """
 
@@ -418,8 +443,9 @@ class Try(tmt.utils.Common):
         self.welcome()
         self.save()
 
-        # Set the default verbosity level
+        # Set the default verbosity level, handle options
         for plan in self.plans:
+            self.handle_options(plan)
             self.action_verbose(plan)
 
         # Choose the initial action
