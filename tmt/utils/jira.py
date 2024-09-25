@@ -52,27 +52,29 @@ def jira_link(
     def create_url(baseurl: str, url_params: dict[str, str]) -> str:
         return urllib.parse.urljoin(baseurl, '?' + urllib.parse.urlencode(url_params))
 
+    # Setup config tree, exit if config is missing
+    try:
+        config_tree = tmt.utils.Config()
+        linking_node = cast(Optional[fmf.Tree], config_tree.fmf_tree.find('/user/linking'))
+    except tmt.utils.MetadataError:
+        return
+
+    if not linking_node:
+        # Linking is not setup in config, therefore user does not want to use linking
+        return
+
     logger.print(
         f'Linking {fmf.utils.listed([type(node).__name__.lower() for node in nodes])}'
         f' to Jira issue.')
 
-    # Setup config tree
-    config_tree = tmt.utils.Config()
-    # Linking is not setup in config, therefore user does not want to use linking
-    linking_node = cast(Optional[fmf.Tree], config_tree.fmf_tree.find('/user/linking'))
-
-    if not linking_node:
-        return
-
     issue_trackers: Any = linking_node.data.get('issue-tracker')
 
     if not issue_trackers:
-        return
-
-    if isinstance(issue_trackers, list):
+        # Incorrectly setup config - wrong keyword
         raise tmt.utils.GeneralError("Invalid config!")
 
     if not isinstance(issue_trackers[0], dict):
+        # Incorrectly setup config - configuration empty
         raise tmt.utils.GeneralError("Invalid config!")
 
     linking_config = cast(list[dict[str, Any]], issue_trackers)[0]
