@@ -54,7 +54,6 @@ import tmt.steps.report
 import tmt.templates
 import tmt.utils
 import tmt.utils.git
-import tmt.utils.jira
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result
@@ -1292,6 +1291,7 @@ class Test(
                 force=force,
                 logger=logger)
 
+            import tmt.utils.jira
             if links.get('verifies') and dry is False:
                 tests = Tree(
                     path=path,
@@ -2027,6 +2027,7 @@ class Plan(
                 force=force,
                 logger=logger)
 
+            import tmt.utils.jira
             if links.get('verifies') and dry is False:
                 plans = Tree(
                     path=path,
@@ -2749,6 +2750,7 @@ class Story(
                 force=force,
                 logger=logger)
 
+            import tmt.utils.jira
             if links.get('verifies') and dry is False:
                 stories = Tree(
                     path=path,
