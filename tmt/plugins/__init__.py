@@ -389,22 +389,20 @@ class ModuleImporter(Generic[ModuleT]):
             self,
             module: str,
             exc_class: type[Exception],
-            exc_message: str,
-            logger: Logger) -> None:
+            exc_message: str) -> None:
         self._module_name = module
         self._exc_class = exc_class
         self._exc_message = exc_message
-        self._logger = logger
 
         self._module: Optional[ModuleT] = None
 
-    def __call__(self) -> ModuleT:
+    def __call__(self, logger: Logger) -> ModuleT:
         if self._module is None:
             self._module = _import_or_raise(
                 module=self._module_name,
                 exc_class=self._exc_class,
                 exc_message=self._exc_message,
-                logger=self._logger)
+                logger=logger)
 
         assert self._module  # narrow type
         return self._module
