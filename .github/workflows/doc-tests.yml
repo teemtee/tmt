@@ -24,6 +24,12 @@ jobs:
             args: -W
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
       - name: Run sphinx builder ${{ matrix.builder }}
         run: |
           pip install hatch
