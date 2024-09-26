@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional, cast
 
 import fmf
@@ -175,6 +176,21 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
 
         if self.revision:
             self.ref = self.revision
+
+
+def parallel_copytree(src: Path, dst: Path) -> None:
+    """Copy a directory tree asynchronously"""
+
+    if not dst.exists():
+        dst.mkdir(parents=True)
+
+    with ThreadPoolExecutor() as executor:
+        for item in src.iterdir():
+            dst_path = dst / item.name
+            if item.is_dir():
+                executor.submit(shutil.copytree, item, dst_path, symlinks=True)
+            else:
+                executor.submit(shutil.copy2, item, dst_path)
 
 
 @tmt.steps.provides_method('fmf')
@@ -413,7 +429,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
-                    shutil.copytree(directory, self.testdir, symlinks=True)
+                    parallel_copytree(directory, self.testdir)
 
         # Prepare path of the dynamic reference
         try:
