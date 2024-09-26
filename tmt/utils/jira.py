@@ -17,8 +17,7 @@ if TYPE_CHECKING:
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
     'jira',
     tmt.utils.ReportError,
-    "Install 'tmt+link-jira' to use the Jira linking.",
-    tmt.log.Logger.get_bootstrap_logger())
+    "Install 'tmt+link-jira' to use the Jira linking.")
 
 
 def jira_link(
@@ -27,7 +26,7 @@ def jira_link(
         logger: tmt.log.Logger,
         separate: bool = False) -> None:
     """ Link the object to Jira issue and create the URL to tmt web service """
-    jira_module = import_jira()
+    jira_module = import_jira(logger)
 
     def create_url_params(tmt_object: tmt.base.Core) -> dict[str, Any]:
         tmt_type = tmt_object.__class__.__name__.lower()
