@@ -2011,7 +2011,7 @@ class Plan(
                 })
 
         for plan_name in names:
-            plan_path = Path(plan_name)
+            plan_path = path / Path(plan_name).unrooted()
 
             if plan_path.suffix != '.fmf':
                 plan_path = plan_path.parent / f'{plan_path.name}.fmf'
@@ -2732,20 +2732,20 @@ class Story(
                 })
 
         for story_name in names:
-            story_path = Path(story_name)
+            story_path = path / Path(story_name).unrooted()
 
             if story_path.suffix != '.fmf':
                 story_path = story_path.parent / f'{story_path.name}.fmf'
 
             # Create directory & story
             tmt.utils.create_directory(
-                path=path / story_path.parent,
+                path=story_path.parent,
                 name='story directory',
                 dry=dry,
                 logger=logger)
 
             tmt.utils.create_file(
-                path=path / story_path,
+                path=story_path,
                 name='story',
                 content=story_content,
                 dry=dry,
