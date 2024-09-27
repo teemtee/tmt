@@ -3977,7 +3977,7 @@ class Clean(tmt.utils.Common):
         """ Clean guests of runs """
         self.info('guests', color='blue')
         root_path = self.workdir_root
-        self.verbose(f"workdir: {root_path}")
+        self.verbose('workdir root', root_path)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4012,7 +4012,7 @@ class Clean(tmt.utils.Common):
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
         root_path = self.workdir_root
-        self.verbose(f"workdir: {root_path}")
+        self.verbose('workdir root', root_path)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
