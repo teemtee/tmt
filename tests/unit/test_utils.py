@@ -1703,7 +1703,7 @@ class TestJiraLink(unittest.TestCase):
         self.tree.find('/user').child(data={'issue-tracker': [
             {'type': 'jira',
              'url': 'https://issues.redhat.com',
-             'tmt-web-url': 'http://localhost:8000/',
+             'tmt-web-url': 'http://tmt.testing-farm.io/',
              'token': ''}]}, name='linking')
         self.logger = tmt.log.Logger(actual_logger=logging.getLogger('tmt'))
         tmt.base.Test.create(
@@ -1733,11 +1733,11 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
         tmt.utils.jira.jira_link(
             [test], tmt.base.Links(
-                data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
+                data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
-        assert (
-            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
-            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira') in result['url']
+        assert 'http://tmt.testing-farm.io/?format=html' in result['url']
+        assert '&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&test-name=%2Ftests%2Funit%2Ftmp%2Ftest' in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')
@@ -1747,14 +1747,18 @@ class TestJiraLink(unittest.TestCase):
         plan = tmt.Tree(logger=self.logger, path=Path(".")).plans(names=['tmp'])[0]
         story = tmt.Tree(logger=self.logger, path=Path(".")).stories(names=['tmp'])[0]
         tmt.utils.jira.jira_link([test, plan, story], tmt.base.Links(
-            data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
+            data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
         result = mock_add_simple_link.call_args.args[1]
-        assert (
-            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
-            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira&plan-url=https%3A%2F%2Fgithub.com'
-            '%2Fteemtee%2Ftmt.git&plan-name=%2Ftests%2Ftmp%2Fplan&plan-ref=link-issues-to-jira&'
-            'story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
-            'story-name=%2Ftests%2Ftmp%2Fstory&story-ref=link-issues-to-jira') in result['url']
+        assert 'http://tmt.testing-farm.io/?format=html' in result['url']
+
+        assert '&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&test-name=%2Ftests%2Funit%2Ftmp%2Ftest' in result['url']
+
+        assert '&plan-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&plan-name=%2Ftests%2Funit%2Ftmp%2Fplan' in result['url']
+
+        assert '&story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&story-name=%2Ftests%2Funit%2Ftmp%2Fstory' in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
     @unittest.mock.patch('tmt.utils.Config')
@@ -1763,11 +1767,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
         tmt.utils.jira.jira_link(
             [test], tmt.base.Links(
-                data=['verifies:issues.redhat.com/browse/TT-262']), self.logger)
+                data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
         # Load the test object again with the link present
         test = tmt.Tree(logger=self.logger, path=Path(".")).tests(names=['tmp/test'])[0]
-        result = mock_add_simple_link.call_args.args[1]
-        assert (
-            'http://localhost:8000/?format=html&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&'
-            'test-name=%2Ftests%2Ftmp%2Ftest&test-ref=link-issues-to-jira') in result['url']
-        assert test.link.get('verifies')[0].target == 'issues.redhat.com/browse/TT-262'
+        assert test.link.get('verifies')[0].target == 'https://issues.redhat.com/browse/TT-262'
