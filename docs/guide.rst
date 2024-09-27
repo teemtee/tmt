@@ -399,7 +399,6 @@ you need another try. In such case add ``-f`` or ``--force`` to
 quickly overwrite existing files with the right content.
 
 
-
 .. _custom_templates:
 
 Custom Templates

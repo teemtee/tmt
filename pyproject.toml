@@ -145,7 +145,6 @@ dependencies = [
     "types-babel",
     "types-docutils",
     "types-lxml",
-    "types-docutils"
     ]
 features = ["all"]
 

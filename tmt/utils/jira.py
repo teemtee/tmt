@@ -29,6 +29,7 @@ def jira_link(
     jira_module = import_jira(logger)
 
     def create_url_params(tmt_object: tmt.base.Core) -> dict[str, Any]:
+        """ Prepare url parameters prefixed with tmt object type """
         tmt_type = tmt_object.__class__.__name__.lower()
         fmf_id = tmt_object.fmf_id
 
@@ -49,6 +50,7 @@ def jira_link(
         return url_params
 
     def create_url(baseurl: str, url_params: dict[str, str]) -> str:
+        """ Prepare the full url from base and parameters """
         return urllib.parse.urljoin(baseurl, '?' + urllib.parse.urlencode(url_params))
 
     # Setup config tree, exit if config is missing

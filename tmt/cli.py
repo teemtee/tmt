@@ -825,7 +825,7 @@ _metadata_templates = fmf.utils.listed(
     help=f'Test script template ({_script_templates}).')
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link to the relevant issues.')
+    help='Link created test to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def tests_create(
