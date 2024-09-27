@@ -112,8 +112,8 @@ A race condition in the
 thus multihost tests using this provision method should now work
 reliably without unexpected connection failures.
 
-Add support --workdir-root for clean function, users can specify
-the dir they want to clean things for.
+Add support ``--workdir-root`` for clean function, users can specify
+the directory they want to clean things for.
 
 
 tmt-1.37.0

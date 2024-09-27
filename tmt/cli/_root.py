@@ -1680,8 +1680,8 @@ def clean(context: Context,
     exit_code = 0
     if context.invoked_subcommand is None:
         assert context.obj.clean_logger is not None  # narrow type
-
-        root_path = effective_workdir_root(workdir_root)
+        workdir_root_path = Path(workdir_root) if workdir_root else None
+        root_path = effective_workdir_root(workdir_root_path)
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
@@ -1765,13 +1765,14 @@ def clean_runs(
 
     assert context.obj.clean_logger is not None  # narrow type
 
+    workdir_root_path = Path(workdir_root) if workdir_root else None
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-runs', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root))
+        workdir_root=effective_workdir_root(workdir_root_path))
     context.obj.clean_partials["runs"].append(
         lambda: clean_obj.runs(
             (context.parent and context.parent.params.get('id_', [])) or id_))
@@ -1808,14 +1809,14 @@ def clean_guests(
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
-
+    workdir_root_path = Path(workdir_root) if workdir_root else None
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-guests', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root))
+        workdir_root=effective_workdir_root(workdir_root_path))
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
             (context.parent and context.parent.params.get('id_', [])) or id_))

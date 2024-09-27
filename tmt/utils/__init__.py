@@ -263,13 +263,13 @@ T = TypeVar('T')
 WriteMode = Literal['w', 'a']
 
 
-def effective_workdir_root(workdir_root_option: Optional[str] = None) -> Path:
+def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     """
     Find out what the actual workdir root is.
 
-    If ``workdir-root`` cli option is set, it is used as the workdir root.
-    Otherwise, ``TMT_WORKDIR_ROOT`` variable is used, if it is set. Or, the default
-    of :py:data:`WORKDIR_ROOT` is used.
+    If the ``workdir-root`` cli option is set, it is used as the workdir root.
+    Otherwise, the ``TMT_WORKDIR_ROOT`` environment variable is used if set.
+    If neither is specified, the default value of :py:data:``WORKDIR_ROOT`` is used.
     """
     if workdir_root_option:
         return Path(workdir_root_option)

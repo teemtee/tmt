@@ -4000,7 +4000,8 @@ class Clean(tmt.utils.Common):
     def guests(self, run_ids: tuple[str, ...]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = Path(self.workdir_root)
+        root_path = self.workdir_root
+        self.verbose(f"workdir: {root_path}")
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4034,7 +4035,8 @@ class Clean(tmt.utils.Common):
     def runs(self, id_: tuple[str, ...]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = Path(self.workdir_root)
+        root_path = self.workdir_root
+        self.verbose(f"workdir: {root_path}")
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
