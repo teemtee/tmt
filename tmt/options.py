@@ -183,7 +183,9 @@ FIX_OPTIONS: list[ClickOptionDecoratorType] = [
 
 WORKDIR_ROOT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--workdir-root', metavar='PATH', envvar='TMT_WORKDIR_ROOT',
+        '--workdir-root', '_workdir_root',
+        metavar='PATH',
+        envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
         help=f"""
              Path to root directory containing run workdirs.
