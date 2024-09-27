@@ -7,7 +7,6 @@ import fmf.utils
 import tmt.base
 import tmt.log
 import tmt.utils
-from tmt._compat.pathlib import Path
 from tmt.plugins import ModuleImporter
 
 if TYPE_CHECKING:
@@ -39,11 +38,8 @@ def jira_link(
             f'{tmt_type}-name': fmf_id.name
             }
 
-        if fmf_id.path and isinstance(fmf_id.git_root, Path):
-            fmf_path = fmf_id.path.relative_to(fmf_id.git_root).resolve().as_posix()
-            fmf_path = fmf_path.removeprefix(fmf_id.git_root.as_posix())
-            url_params[f'{tmt_type}-path'] = fmf_path.lstrip('/')
-
+        if fmf_id.path:
+            url_params[f'{tmt_type}-path'] = fmf_id.path
         if fmf_id.ref:
             url_params[f'{tmt_type}-ref'] = fmf_id.ref
 
@@ -56,7 +52,7 @@ def jira_link(
     # Setup config tree, exit if config is missing
     try:
         config_tree = tmt.utils.Config()
-        linking_node = cast(Optional[fmf.Tree], config_tree.fmf_tree.find('/user/linking'))
+        linking_node = cast(Optional[fmf.Tree], config_tree.fmf_tree.find('/link'))
     except tmt.utils.MetadataError:
         return
 
