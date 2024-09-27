@@ -13,6 +13,11 @@ rlJournalStart
         rlLogInfo "WITH_SYSTEM_PACKAGES=$WITH_SYSTEM_PACKAGES"
         rlLogInfo "HATCH_ENVIRONMENT=$HATCH_ENVIRONMENT"
 
+        # TODO: instead of declaration of requirements, we run this command to avoid
+        # having two copies of the list, in Makefile and in test metadata. Having it
+        # in yet another place, sourced by both entities, could help.
+        rlRun "make -C ../../ develop"
+
         rlLogInfo "pip is $(which pip), $(pip --version)"
         rlLogInfo "hatch is $(which hatch), $(hatch --version)"
     rlPhaseEnd
