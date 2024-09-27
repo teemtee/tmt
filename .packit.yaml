@@ -96,12 +96,11 @@ jobs:
         - tmt:
             context:
               how: provision
-        - &tmt-cloud-resources
-          settings:
+          settings: &tmt-cloud-resources
             provisioning:
               tags:
                 BusinessUnit: tmt
-        - artifacts:
+          artifacts:
             - type: repository
               id: https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-40-x86_64/
 
