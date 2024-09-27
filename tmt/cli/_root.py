@@ -1646,7 +1646,7 @@ def clean(context: Context,
           last: bool,
           id_: tuple[str, ...],
           skip: list[str],
-          workdir_root: Optional[str],
+          _workdir_root: Optional[str],
           **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
@@ -1663,8 +1663,8 @@ def clean(context: Context,
     if last and id_:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-
-    if workdir_root and not Path(workdir_root).exists():
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+    if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     context.obj.clean_logger = context.obj.logger \
@@ -1680,8 +1680,7 @@ def clean(context: Context,
     exit_code = 0
     if context.invoked_subcommand is None:
         assert context.obj.clean_logger is not None  # narrow type
-        workdir_root_path = Path(workdir_root) if workdir_root else None
-        root_path = effective_workdir_root(workdir_root_path)
+        root_path = effective_workdir_root(workdir_root)
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
@@ -1744,7 +1743,7 @@ def perform_clean(
 @dry_options
 def clean_runs(
         context: Context,
-        workdir_root: Optional[str],
+        _workdir_root: Optional[str],
         last: bool,
         id_: tuple[str, ...],
         keep: Optional[int],
@@ -1760,19 +1759,19 @@ def clean_runs(
             "Options --last, --id and --keep cannot be used together.")
     if keep is not None and keep < 0:
         raise tmt.utils.GeneralError("--keep must not be a negative number.")
-    if workdir_root and not Path(workdir_root).exists():
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+    if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
 
-    workdir_root_path = Path(workdir_root) if workdir_root else None
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-runs', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root_path))
+        workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["runs"].append(
         lambda: clean_obj.runs(
             (context.parent and context.parent.params.get('id_', [])) or id_))
@@ -1793,7 +1792,7 @@ def clean_runs(
 @dry_options
 def clean_guests(
         context: Context,
-        workdir_root: Optional[str],
+        _workdir_root: Optional[str],
         last: bool,
         id_: tuple[str, ...],
         **kwargs: Any) -> None:
@@ -1805,18 +1804,18 @@ def clean_guests(
     if last and bool(id_):
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-    if workdir_root and not Path(workdir_root).exists():
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+    if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
-    workdir_root_path = Path(workdir_root) if workdir_root else None
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger
         .descend(logger_name='clean-guests', extra_shift=0)
         .apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root_path))
+        workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
             (context.parent and context.parent.params.get('id_', [])) or id_))

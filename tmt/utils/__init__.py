@@ -272,7 +272,7 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     If neither is specified, the default value of :py:data:``WORKDIR_ROOT`` is used.
     """
     if workdir_root_option:
-        return Path(workdir_root_option)
+        return workdir_root_option
 
     if 'TMT_WORKDIR_ROOT' in os.environ:
         return Path(os.environ['TMT_WORKDIR_ROOT'])
