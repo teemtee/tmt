@@ -781,8 +781,8 @@ Link Issues
 ------------------------------------------------------------------
 
 You can link issues to the test or plan that covers it. This can
-be either done directly during creation of a new test or plan, or
-later on using the ``tmt link`` command:
+be done either directly during creation of a new test or plan, or
+later using the ``tmt link`` command:
 
 .. code-block:: shell
 
@@ -807,7 +807,7 @@ you want to link to (so far only Jira is supported). The ``url``
 is the URL of said service. The ``tmt-web-url`` is the URL of the
 service that presents tmt metadata in a human-readable form. The
 ``token`` is a personal token that is used to authenticate the
-user.  How to obtain this token is described `here
+user. How to obtain this token is described `here
 <https://support.atlassian.com/atlassian-account/docs/
 manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
 (please note that this can vary if you use custom Jira instance).
