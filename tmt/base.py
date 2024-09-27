@@ -566,10 +566,83 @@ class DependencyFile(
         return True, ''
 
 
-_RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
+class _RawDependencyMake(TypedDict):
+    type: Optional[str]
+    target: Optional[str]
+    args: list[str]
+
+
+@dataclasses.dataclass
+class DependencyMake(
+        SpecBasedContainer[_RawDependencyMake, _RawDependencyMake],
+        SerializableContainer,
+        tmt.export.Exportable['DependencyMake']):
+    VALID_KEYS: ClassVar[list[str]] = ['type', 'target', 'args']
+
+    type: str = 'make'
+    target: Optional[str] = None
+    args: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list)
+
+    # TODO: frozen=True would be better, but our containers may get modified,
+    # and fixing that would result in a big patch. To allow use of dependencies
+    # in sets, provide __hash__ & fix the rest later.
+    def __hash__(self) -> int:
+        values = tuple(getattr(self, key) for key in self.VALID_KEYS if key != 'args') \
+            + tuple(arg for arg in self.args)
+
+        return hash(values)
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_dict(self) -> _RawDependencyMake:  # type: ignore[override]
+        """ Return keys and values in the form of a dictionary """
+        return cast(_RawDependencyMake, super().to_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_dict(self) -> _RawDependencyMake:  # type: ignore[override]
+        """ Convert to a mapping with unset keys omitted """
+        return cast(_RawDependencyMake, super().to_minimal_dict())
+
+    # ignore[override]: expected, we do want to accept and return more
+    # specific types than those declared in superclass.
+    @classmethod
+    def from_spec(cls, raw: _RawDependencyMake) -> 'DependencyMake':
+        """ Convert from a specification file or from a CLI option """
+        dependency = cls(target=raw.get('target'))
+
+        raw_args = raw.get('args', [])
+
+        if raw_args:
+            if isinstance(raw_args, str):
+                dependency.args.append(raw_args)
+            else:
+                dependency.args += [
+                    str(arg) for arg in raw_args
+                    ]
+
+        return dependency
+
+    @staticmethod
+    def validate() -> tuple[bool, str]:
+        """
+        Validate file dependency and return a human readable error
+
+        There is no way to check validity of type or pattern string at
+        this time. Return a tuple (boolean, message) as the result of
+        validation. The boolean specifies the validation result and the
+        message the validation error. In case the file dependency is
+        valid, return an empty string as the message.
+        """
+        return True, ''
+
+
+_RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile, _RawDependencyMake]
 _RawDependency = Union[_RawDependencyItem, list[_RawDependencyItem]]
 
-Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
+Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile, DependencyMake]
 
 
 def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependency:
@@ -578,8 +651,12 @@ def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependen
         dependency_type = raw_dependency.get('type', 'library')
         if dependency_type == 'library':  # can't use isinstance check with TypedDict
             return DependencyFmfId.from_spec(raw_dependency)  # type: ignore[arg-type]
+
         if dependency_type == 'file':
             return DependencyFile.from_spec(raw_dependency)  # type: ignore[arg-type]
+
+        if dependency_type == 'make':
+            return DependencyMake.from_spec(raw_dependency)  # type: ignore[arg-type]
 
     assert isinstance(raw_dependency, str)  # check type
     return DependencySimple.from_spec(raw_dependency)
