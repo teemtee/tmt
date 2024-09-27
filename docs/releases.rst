@@ -7,8 +7,8 @@
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add support --workdir-root for clean function, users can specify
-the dir they want to clean things for.
+Add support ``--workdir-root`` for clean function, users can specify
+the directory they want to clean things for.
 
 The :ref:`/plugins/report/polarion` report plugin now uses Jinja template to
 generate the XUnit file. It doesn't do any extra modifications to the XML tree
