@@ -74,34 +74,6 @@ if TYPE_CHECKING:
     from tmt._compat.typing import Self, TypeAlias
 
 
-def _normalize_user_data(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> dict[str, str]:
-    if isinstance(raw_value, dict):
-        return {
-            str(key).strip(): str(value).strip() for key, value in raw_value.items()
-            }
-
-    if isinstance(raw_value, (list, tuple)):
-        user_data = {}
-
-        for datum in raw_value:
-            try:
-                key, value = datum.split('=', 1)
-
-            except ValueError as exc:
-                raise tmt.utils.NormalizationError(
-                    key_address, datum, 'a KEY=VALUE string') from exc
-
-            user_data[key.strip()] = value.strip()
-
-        return user_data
-
-    raise tmt.utils.NormalizationError(
-        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
-
-
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
     """
     Deduce the actual value of a global constant which may be left unset.
@@ -5415,6 +5387,54 @@ def normalize_shell_script(
         return ShellScript(value)
 
     raise NormalizationError(key_address, value, 'a string')
+
+
+def normalize_value_optional_string_dict(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> dict[str, str]:
+    """
+    Normalize a dict-or-list-or-tuple input value.
+
+    The input value could be specified in two ways:
+
+    * Dict, or
+    * List/tuple contains ``KEY=VALUE`` strings.
+
+    The acceptable formats are:
+
+    .. code-block:: python
+       {'metadata': 'no_autopart', 'script': 'autopart --type lvm' }
+
+       ['metadata=no_autopart', 'script=autopart --type lvm']
+
+       ('metadata=no_autopart', 'script=autopart --type lvm')
+
+    :param raw_value: dict, or list, or tuple.
+    """
+
+    if isinstance(raw_value, dict):
+        return {
+            str(key).strip(): str(value).strip() for key, value in raw_value.items()
+            }
+
+    if isinstance(raw_value, (list, tuple)):
+        user_data = {}
+
+        for datum in raw_value:
+            try:
+                key, value = datum.split('=', 1)
+
+            except ValueError as exc:
+                raise tmt.utils.NormalizationError(
+                    key_address, datum, 'a KEY=VALUE string') from exc
+
+            user_data[key.strip()] = value.strip()
+
+        return user_data
+
+    raise tmt.utils.NormalizationError(
+        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
 
 
 class NormalizeKeysMixin(_CommonBase):
