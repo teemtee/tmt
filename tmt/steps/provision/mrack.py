@@ -698,7 +698,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
-            req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
+            req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
@@ -708,6 +708,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+
+            logger.debug('mrack request', req, level=4)
 
             logger.info('whiteboard', host.whiteboard, 'green')
 
@@ -791,7 +793,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         metavar='KEY=VALUE',
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
-        normalize=tmt.utils.normalize_value_optional_string_dict)
+        normalize=tmt.utils.normalize_string_dict)
 
     beaker_job_owner: Optional[str] = field(
         default=None,
@@ -834,10 +836,21 @@ class CreateJobParameters:
     os: str
     arch: str
     hardware: Optional[tmt.hardware.Hardware]
+    kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
-    beaker: dict[str, str]
     group: str = 'linux'
+
+    def to_mrack(self) -> dict[str, Any]:
+        data = dataclasses.asdict(self)
+
+        data['beaker'] = {}
+
+        if self.kickstart:
+            data['beaker']['ks_meta'] = self.kickstart.get('metadata')
+            data['beaker']['ks_append'] = self.kickstart
+
+        return data
 
 
 class BeakerAPI:
@@ -1010,12 +1023,12 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         data = CreateJobParameters(
             tmt_name=tmt_name,
             hardware=self.hardware,
+            kickstart=self.kickstart,
             arch=self.arch,
             os=self.image,
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner,
-            beaker={'ks_append': self.kickstart})
+            beaker_job_owner=self.beaker_job_owner)
 
         try:
             response = self.api.create(data)

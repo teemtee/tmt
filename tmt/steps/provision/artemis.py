@@ -17,7 +17,7 @@ from tmt.utils import (
     UpdatableMessage,
     dict_to_yaml,
     field,
-    normalize_value_optional_string_dict,
+    normalize_string_dict,
     retry_session,
     )
 
@@ -154,14 +154,14 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         metavar='KEY=VALUE',
         help='Optional data to attach to guest.',
         multiple=True,
-        normalize=normalize_value_optional_string_dict)
+        normalize=normalize_string_dict)
     kickstart: dict[str, str] = field(
         default_factory=dict,
         option='--kickstart',
         metavar='KEY=VALUE',
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
-        normalize=normalize_value_optional_string_dict)
+        normalize=normalize_string_dict)
 
     log_type: list[str] = field(
         default_factory=list,

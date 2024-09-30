@@ -5389,28 +5389,27 @@ def normalize_shell_script(
     raise NormalizationError(key_address, value, 'a string')
 
 
-def normalize_value_optional_string_dict(
+def normalize_string_dict(
         key_address: str,
         raw_value: Any,
         logger: tmt.log.Logger) -> dict[str, str]:
     """
-    Normalize a dict-or-list-or-tuple input value.
+    Normalize a key/value dictionary.
 
     The input value could be specified in two ways:
 
-    * Dict, or
-    * List/tuple contains ``KEY=VALUE`` strings.
+    * a dictionary, or
+    * a list of ``KEY=VALUE`` strings.
 
-    The acceptable formats are:
+    For example, the following are acceptable inputs:
 
     .. code-block:: python
-       {'metadata': 'no_autopart', 'script': 'autopart --type lvm' }
 
-       ['metadata=no_autopart', 'script=autopart --type lvm']
+       {'foo': 'bar', 'qux': 'quux'}
 
-       ('metadata=no_autopart', 'script=autopart --type lvm')
+       ['foo=bar', 'qux=quux']
 
-    :param raw_value: dict, or list, or tuple.
+    :param value: input value from key source.
     """
 
     if isinstance(raw_value, dict):
@@ -5419,19 +5418,19 @@ def normalize_value_optional_string_dict(
             }
 
     if isinstance(raw_value, (list, tuple)):
-        user_data = {}
+        normalized = {}
 
-        for datum in raw_value:
+        for datum in cast(list[str], raw_value):
             try:
                 key, value = datum.split('=', 1)
 
             except ValueError as exc:
-                raise tmt.utils.NormalizationError(
+                raise NormalizationError(
                     key_address, datum, 'a KEY=VALUE string') from exc
 
-            user_data[key.strip()] = value.strip()
+            normalized[key.strip()] = value.strip()
 
-        return user_data
+        return normalized
 
     raise tmt.utils.NormalizationError(
         key_address, value, 'a dictionary or a list of KEY=VALUE strings')
