@@ -51,11 +51,11 @@ In verbose mode, the ``discover`` step now prints information
 about the beakerlib libraries which were fetched for the test
 execution. Use ``tmt run discover -vvv`` to see the details.
 
-``tmt try`` now supports :ref:`/stories/cli/try/option/epel` option
-backed by :ref:`prepare/feature</plugins/prepare/feature>` plugin.
-
-``tmt try`` now supports :ref:`/stories/cli/try/option/install` option
-backed by :ref:`prepare/feature</plugins/prepare/install>` plugin.
+The ``tmt try`` command now supports the new
+:ref:`/stories/cli/try/option/epel` option backed by the
+:ref:`prepare/feature</plugins/prepare/feature>` plugin and the
+new :ref:`/stories/cli/try/option/install` option backed by the
+:ref:`prepare/feature</plugins/prepare/install>` plugin.
 
 
 tmt-1.36.1
