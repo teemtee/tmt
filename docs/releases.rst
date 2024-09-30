@@ -41,7 +41,7 @@ You may encounter this in the verbose log of ``tmt tests show`` or plan/test
 imports.
 
 :ref:`Result specification</spec/plans/results>` now defines
-``original_result`` key holding the original outcome of a test, subtest
+``original-result`` key holding the original outcome of a test, subtest
 or test checks. The effective outcome, stored in ``result`` key, is
 computed from the original outcome, and it is affected by inputs like
 :ref:`test result interpretation</spec/tests/result>` or

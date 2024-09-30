@@ -31,7 +31,7 @@ description: |
        result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
        # String, the original outcome of the test execution.
-       original_result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
        # String, optional comment to report with the result.
        note: "Things were great."
@@ -86,7 +86,7 @@ description: |
         - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, the original outcome of the check execution.
-          original_result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
@@ -124,7 +124,7 @@ description: |
           result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, the original outcome of the phase execution.
-          original_result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
@@ -219,7 +219,7 @@ description: |
     original test result in the custom result set to the value known
     to tmt.
 
-    The ``original_result`` key holds the outcome of a test, check or
+    The ``original-result`` key holds the outcome of a test, check or
     subresult as reported by the test, check or subresult itself, without
     any additional influence.
     A reported outcome may be a subject to interpretation, and tmt may
@@ -254,7 +254,7 @@ description: |
        phase results are now renamed to the ``subresult`` key.
 
     .. versionchanged:: 1.37
-       original result of test, subtest and check is stored in ``original_result`` key.
+       original result of test, subtest and check is stored in ``original-result`` key.
 
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 

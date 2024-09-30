@@ -29,7 +29,7 @@ definitions:
       result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
-      original_result:
+      original-result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
       note:
@@ -66,7 +66,7 @@ definitions:
       result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
-      original_result:
+      original-result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
       note:
@@ -126,7 +126,7 @@ items:
     result:
       $ref: "/schemas/common#/definitions/result_outcome"
 
-    original_result:
+    original-result:
       $ref: "/schemas/common#/definitions/result_outcome"
 
     context:
