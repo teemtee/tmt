@@ -290,7 +290,12 @@ max-line-length = "99"
 line-length = 99
 src = ["tmt", "tests"]
 target-version = "py39"
-lint.select = [
+
+[tool.ruff.format]
+quote-style = "preserve"  # TODO: Convert to a specific quote style
+
+[tool.ruff.lint]
+select = [
     "F",  # pyflakes
     "E",  # pycodestyle error
     "W",  # pycodestyle warning
@@ -308,7 +313,6 @@ lint.select = [
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
-    "ISC",  # flake8-implicit-str-concat
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
@@ -331,7 +335,7 @@ lint.select = [
     "RUF",  # ruff
     "D",    # pydocstyle
     ]
-lint.ignore = [
+ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     "G004",  # Logging statement uses f-string
@@ -373,8 +377,8 @@ lint.ignore = [
     "D415",  # First line should end with a period, question mark, or exclamation point
     ]
 
-lint.logger-objects = ["tmt.log.Logger"]
-lint.typing-modules = ["tmt._compat.typing"]
+logger-objects = ["tmt.log.Logger"]
+typing-modules = ["tmt._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests
