@@ -7,6 +7,11 @@
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The new ``tmt link`` command has been included as a Tech Preview
+to gather early feedback from users about the way how issues are
+linked with newly created and existing tests and plans. See the
+:ref:`link-issues` section for details about the configuration.
+
 The :ref:`/plugins/report/polarion` report plugin now uses Jinja template to
 generate the XUnit file. It doesn't do any extra modifications to the XML tree
 using an ``ElementTree`` anymore. Also the schema is now validated against the

@@ -773,6 +773,47 @@ locations without any change to the resulting `fmf` tree:
 This gives you a nice flexibility to extend the metadata when and
 where needed as your project organically grows.
 
+
+.. _link-issues:
+
+Link Issues
+------------------------------------------------------------------
+
+You can link issues to the test or plan that covers it. This can
+be done either directly during creation of a new test or plan, or
+later using the ``tmt link`` command:
+
+.. code-block:: shell
+
+    tmt link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
+
+In order to enable this feature, create a configuration file
+``.config/tmt/link.fmf`` and define an ``issue-tracker`` section
+there. Once the configuration is present, it enables the linking
+on its own, no further action is needed. The section should have
+the following format:
+
+.. code-block:: yaml
+
+    issue-tracker:
+      - type: jira
+        url: https://issues.redhat.com
+        tmt-web-url: https://tmt.testing-farm.io/
+        token: <YOUR_PERSONAL_JIRA_TOKEN>
+
+The ``type`` key specifies the type of the issue tracking service
+you want to link to (so far only Jira is supported). The ``url``
+is the URL of said service. The ``tmt-web-url`` is the URL of the
+service that presents tmt metadata in a human-readable form. The
+``token`` is a personal token that is used to authenticate the
+user. How to obtain this token is described `here
+<https://support.atlassian.com/atlassian-account/docs/
+manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
+(please note that this can vary if you use custom Jira instance).
+
+.. versionadded:: 1.37
+
+
 .. _anchors-aliases:
 
 Anchors and Aliases
