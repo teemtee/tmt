@@ -21,8 +21,6 @@ import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.steps.prepare.feature import _RawPrepareFeatureStepData
-from tmt.steps.prepare.install import _RawPrepareInstallStepData
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
@@ -417,31 +415,34 @@ class Try(tmt.utils.Common):
         """ Enable EPEL repository """
 
         # tmt run prepare --how feature --epel enabled
-        data: _RawPrepareFeatureStepData = {
-            "name": "tmt-try-epel",
-            'how': 'feature',
-            'epel': "enabled",
-            }
+        from tmt.steps.prepare.feature import PrepareFeatureData
+
+        data = PrepareFeatureData(
+            name="tmt-try-epel",
+            how='feature',
+            epel="enabled")
 
         phase: PreparePlugin[Any] = cast(
-            PreparePlugin[Any], PreparePlugin.delegate(
-                plan.prepare, raw_data=data))
+            PreparePlugin[Any],
+            PreparePlugin.delegate(plan.prepare, data=data))
+
         plan.prepare._phases.append(phase)
 
     def handle_install(self, plan: Plan) -> None:
         """ Install local rpm package on the guest. """
-        packages = list(self.opt("install"))
 
         # tmt run prepare --how install --package PACKAGE
-        data: _RawPrepareInstallStepData = {
-            "name": "tmt-try-install",
-            'how': 'install',
-            'package': packages,
-            }
+        from tmt.steps.prepare.install import PrepareInstallData
+
+        data = PrepareInstallData(
+            name="tmt-try-install",
+            how='install',
+            package=list(self.opt("install")))
 
         phase: PreparePlugin[Any] = cast(
-            PreparePlugin[Any], PreparePlugin.delegate(
-                plan.prepare, raw_data=data))
+            PreparePlugin[Any],
+            PreparePlugin.delegate(plan.prepare, data=data))
+
         plan.prepare._phases.append(phase)
 
     def go(self) -> None:
