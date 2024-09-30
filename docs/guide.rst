@@ -798,7 +798,7 @@ the following format:
     issue-tracker:
       - type: jira
         url: https://issues.redhat.com
-        tmt-web-url: http://tmt.testing-farm.io/
+        tmt-web-url: https://tmt.testing-farm.io/
         token: <YOUR_PERSONAL_JIRA_TOKEN>
 
 The ``type`` key specifies the type of the issue tracking service
@@ -810,6 +810,8 @@ user. How to obtain this token is described `here
 <https://support.atlassian.com/atlassian-account/docs/
 manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
 (please note that this can vary if you use custom Jira instance).
+
+.. versionadded:: 1.37
 
 
 .. _anchors-aliases:
