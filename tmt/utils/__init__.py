@@ -39,6 +39,7 @@ from typing import (
     Generic,
     Literal,
     Optional,
+    TextIO,
     TypeVar,
     Union,
     cast,
@@ -2420,6 +2421,29 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
+class TracebackVerbosity(enum.Enum):
+    """ Levels of logged traveback verbosity """
+
+    #: Render only exception and its causes.
+    DEFAULT = '0'
+    #: Render also call stack for exception and each of its causes.
+    VERBOSE = '1'
+    #: Render also call stack and local variables for exception and each of its causes.
+    FULL = 'full'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'TracebackVerbosity':
+        try:
+            return TracebackVerbosity(spec)
+
+        except ValueError:
+            raise SpecificationError(f"Invalid traceback verbosity '{spec}'.")
+
+    @classmethod
+    def from_env(cls) -> 'TracebackVerbosity':
+        return TracebackVerbosity.from_spec(os.getenv('TMT_SHOW_TRACEBACK', '0').lower())
+
+
 def render_run_exception_streams(
         stdout: Optional[str],
         stderr: Optional[str],
@@ -2458,7 +2482,9 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
     yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
-def render_exception_stack(exception: BaseException) -> Iterator[str]:
+def render_exception_stack(
+        exception: BaseException,
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
     """ Render traceback of the given exception """
 
     exception_traceback = traceback.TracebackException(
@@ -2480,7 +2506,7 @@ def render_exception_stack(exception: BaseException) -> Iterator[str]:
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
         yield f'  {B(frame.line)}'
 
-        if os.getenv('TMT_SHOW_TRACEBACK', '0').lower() == 'full' and frame.locals:
+        if traceback_verbosity is TracebackVerbosity.FULL and frame.locals:
             yield ''
 
             for k, v in frame.locals.items():
@@ -2489,7 +2515,9 @@ def render_exception_stack(exception: BaseException) -> Iterator[str]:
             yield ''
 
 
-def render_exception(exception: BaseException) -> Iterator[str]:
+def render_exception(
+        exception: BaseException,
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
     """ Render the exception and its causes for printing """
 
     def _indent(iterable: Iterable[str]) -> Iterator[str]:
@@ -2507,16 +2535,17 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield ''
         yield from render_run_exception(exception)
 
-    if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
+    if traceback_verbosity is not TracebackVerbosity.DEFAULT:
         yield ''
-        yield from _indent(render_exception_stack(exception))
+        yield from _indent(render_exception_stack(
+            exception, traceback_verbosity=traceback_verbosity))
 
     # Follow the chain and render all causes
     def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
         yield ''
         yield f'Cause number {number}:'
         yield ''
-        yield from _indent(render_exception(cause))
+        yield from _indent(render_exception(cause, traceback_verbosity=traceback_verbosity))
 
     def _render_causes(causes: list[BaseException]) -> Iterator[str]:
         yield ''
@@ -2537,13 +2566,52 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield from _render_causes(causes)
 
 
-def show_exception(exception: BaseException) -> None:
-    """ Display the exception and its causes """
+def show_exception(
+        exception: BaseException,
+        include_logfiles: bool = True) -> None:
+    """
+    Display the exception and its causes.
+
+    :param exception: exception to log.
+    :param include_logfiles: if set, exception will be logged into known
+        logfiles as well as to standard error output.
+    """
 
     from tmt.cli import EXCEPTION_LOGGER
 
-    EXCEPTION_LOGGER.print('', file=sys.stderr)
-    EXCEPTION_LOGGER.print('\n'.join(render_exception(exception)), file=sys.stderr)
+    traceback_verbosity = TracebackVerbosity.from_env()
+
+    def _render_exception(traceback_verbosity: TracebackVerbosity) -> Iterator[str]:
+        yield ''
+        yield from render_exception(exception, traceback_verbosity=traceback_verbosity)
+
+    for line in _render_exception(traceback_verbosity):
+        EXCEPTION_LOGGER.print(line, file=sys.stderr)
+
+    if include_logfiles:
+        logger = EXCEPTION_LOGGER.clone()
+        logger.apply_colors_output = False
+
+        logfile_streams: list[TextIO] = []
+
+        with contextlib.ExitStack() as stack:
+            for path in tmt.log.LogfileHandler.emitting_to:
+                try:
+                    # SIM115: all opened files are added on exit stack, and they
+                    # will get collected and closed properly.
+                    stream: TextIO = open(path, 'a')  # noqa: SIM115
+
+                    logfile_streams.append(stream)
+                    stack.enter_context(stream)
+
+                except Exception as exc:
+                    show_exception(
+                        GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
+                        include_logfiles=False)
+
+            for line in _render_exception(traceback_verbosity=TracebackVerbosity.FULL):
+                for stream in logfile_streams:
+                    logger.print(line, file=stream)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
