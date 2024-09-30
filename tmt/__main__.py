@@ -37,7 +37,11 @@ def run_cli() -> None:
             raise SystemExit(2) from error
 
         except Exception as nested_error:
-            print(f"Error: failed while importing tmt package: {nested_error}", file=sys.stderr)
+            import traceback
+
+            print(f"Error: failed while reporting exception: {nested_error}", file=sys.stderr)
+            traceback.print_exc()
+
             raise SystemExit(2) from nested_error
 
 
