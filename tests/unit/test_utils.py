@@ -1736,12 +1736,13 @@ class TestJiraLink(unittest.TestCase):
     def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
-        tmt.utils.jira.jira_link(
-            [test], tmt.base.Links(
-                data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
+        tmt.utils.jira.link(
+            tmt_objects=[test],
+            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            logger=self.logger)
         result = mock_add_simple_link.call_args.args[1]
-        assert 'https://tmt.testing-farm.io/?format=html' in result['url']
-        assert '&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert 'https://tmt.testing-farm.io/?' in result['url']
+        assert 'test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
         assert '&test-name=%2Ftmp%2Ftest' in result['url']
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
@@ -1752,12 +1753,14 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         plan = tmt.Tree(logger=self.logger, path=self.tmp).plans(names=['tmp'])[0]
         story = tmt.Tree(logger=self.logger, path=self.tmp).stories(names=['tmp'])[0]
-        tmt.utils.jira.jira_link([test, plan, story], tmt.base.Links(
-            data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
+        tmt.utils.jira.link(
+            tmt_objects=[test, plan, story],
+            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            logger=self.logger)
         result = mock_add_simple_link.call_args.args[1]
-        assert 'https://tmt.testing-farm.io/?format=html' in result['url']
+        assert 'https://tmt.testing-farm.io/?' in result['url']
 
-        assert '&test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert 'test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
         assert '&test-name=%2Ftmp%2Ftest' in result['url']
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
@@ -1774,9 +1777,10 @@ class TestJiraLink(unittest.TestCase):
     def test_create_link_relation(self, mock_config_tree, mock_add_simple_link) -> None:
         mock_config_tree.return_value.fmf_tree = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
-        tmt.utils.jira.jira_link(
-            [test], tmt.base.Links(
-                data=['verifies:https://issues.redhat.com/browse/TT-262']), self.logger)
+        tmt.utils.jira.link(
+            tmt_objects=[test],
+            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            logger=self.logger)
         # Load the test object again with the link present
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         assert test.link.get('verifies')[0].target == 'https://issues.redhat.com/browse/TT-262'

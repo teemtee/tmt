@@ -2258,12 +2258,16 @@ def link(context: Context,
     passed in arguments and configuration file.
     """
 
-    nodes: list[Union[tmt.base.Test, tmt.base.Plan, tmt.base.Story]] = []
-    for name in names:
-        if context.obj.tree.tests(names=[name]):
-            nodes.extend(context.obj.tree.tests(names=[name]))
-        if context.obj.tree.plans(names=[name]):
-            nodes.extend(context.obj.tree.plans(names=[name]))
-        if context.obj.tree.stories(names=[name]):
-            nodes.extend(context.obj.tree.stories(names=[name]))
-    tmt.utils.jira.jira_link(nodes, tmt.base.Links(data=link), context.obj.logger, separate)
+    tmt_objects = (
+        context.obj.tree.tests(names=list(names)) +
+        context.obj.tree.plans(names=list(names)) +
+        context.obj.tree.stories(names=list(names)))
+
+    if not tmt_objects:
+        raise tmt.utils.GeneralError("No test, plan or story found for linking.")
+
+    tmt.utils.jira.link(
+        tmt_objects=tmt_objects,
+        links=tmt.base.Links(data=link),
+        separate=separate,
+        logger=context.obj.logger)

@@ -1298,7 +1298,7 @@ class Test(
                     logger=logger).tests(
                     names=[f"^{name}$"],
                     apply_command_line=False)
-                tmt.utils.jira.jira_link(nodes=tests, links=links, logger=logger)
+                tmt.utils.jira.link(tmt_objects=tests, links=links, logger=logger)
 
     @property
     def manual_test_path(self) -> Path:
@@ -2033,7 +2033,7 @@ class Plan(
                     logger=logger).plans(
                     names=[f"^{name}$"],
                     apply_command_line=False)
-                tmt.utils.jira.jira_link(nodes=plans, links=links, logger=logger)
+                tmt.utils.jira.link(tmt_objects=plans, links=links, logger=logger)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2755,7 +2755,7 @@ class Story(
                     logger=logger).stories(
                     names=[f"^{name}$"],
                     apply_command_line=False)
-                tmt.utils.jira.jira_link(nodes=stories, links=links, logger=logger)
+                tmt.utils.jira.link(tmt_objects=stories, links=links, logger=logger)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
