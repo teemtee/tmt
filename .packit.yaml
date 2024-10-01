@@ -102,7 +102,7 @@ jobs:
                 BusinessUnit: tmt
           artifacts:
             - type: repository
-              id: https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-40-x86_64/
+              id: https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-temp/fedora-40-x86_64/
 
   # Test internal plugins
   - <<: *tests
