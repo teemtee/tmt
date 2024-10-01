@@ -30,7 +30,7 @@ class Shell(TestFramework):
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a shell test """
         assert invocation.return_code is not None
-        note = None
+        note: list[str] = []
 
         try:
             # Process the exit code and prepare the log path
@@ -39,11 +39,11 @@ class Shell(TestFramework):
             result = ResultOutcome.ERROR
             # Add note about the exceeded duration
             if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                note = 'timeout'
+                note.append('timeout')
                 invocation.phase.timeout_hint(invocation)
 
             elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                note = 'pidfile locking'
+                note.append('pidfile locking')
 
         return [tmt.Result.from_test_invocation(
             invocation=invocation,

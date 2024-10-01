@@ -686,7 +686,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         # The original one may be left unset - malformed results file,
         # for example, provides no usable original outcome.
         actual_outcome: ResultOutcome
-        note: Optional[str] = None
+        note: list[str] = []
 
         try:
             outcomes = [
@@ -696,7 +696,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         except tmt.utils.SpecificationError as exc:
             actual_outcome = ResultOutcome.ERROR
-            note = exc.message
+            note.append(exc.message)
 
         else:
             hierarchy = [
@@ -763,10 +763,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
             else:
                 if not partial_result.name.startswith('/'):
-                    if partial_result.note and isinstance(partial_result.note, str):
-                        partial_result.note += ", custom test result name should start with '/'"
-                    else:
-                        partial_result.note = "custom test result name should start with '/'"
+                    partial_result.note.append("custom test result name should start with '/'")
                     partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
 
@@ -817,13 +814,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if not collection.file_exists:
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
-                note=f"custom results file not found in '{invocation.test_data_path}'",
+                note=[f"custom results file not found in '{invocation.test_data_path}'"],
                 result=ResultOutcome.ERROR)]
 
         if not collection.results:
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
-                note="no custom results were provided",
+                note=["no custom results were provided"],
                 result=ResultOutcome.ERROR)]
 
         collection.validate()

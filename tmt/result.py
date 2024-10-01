@@ -152,7 +152,8 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
-    note: Optional[str] = None
+    note: list[str] = field(
+        default_factory=cast(Callable[[], list[str]], list))
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
         serialize=lambda logs: [str(log) for log in logs],
@@ -176,9 +177,13 @@ class BaseResult(SerializableContainer):
             ]
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
+
+    @property
+    def printable_note(self) -> str:
+        return ', '.join(self.note)
 
 
 @dataclasses.dataclass
@@ -268,7 +273,7 @@ class Result(BaseResult):
             *,
             invocation: 'tmt.steps.execute.TestInvocation',
             result: ResultOutcome,
-            note: Optional[str] = None,
+            note: Optional[list[str]] = None,
             ids: Optional[ResultIds] = None,
             log: Optional[list[Path]] = None) -> 'Result':
         """
@@ -311,7 +316,7 @@ class Result(BaseResult):
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan._fmf_context,
             result=result,
-            note=note,
+            note=note or [],
             start_time=invocation.start_time,
             end_time=invocation.end_time,
             duration=invocation.real_duration,
@@ -337,15 +342,7 @@ class Result(BaseResult):
             return self
 
         # Extend existing note or set a new one
-        if self.note:
-            self.note += f', original result: {self.result.value}'
-
-        elif self.note is None:
-            self.note = f'original result: {self.result.value}'
-
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Test result note '{self.note}' must be a string.")
+        self.note.append(f'original result: {self.result.value}')
 
         if interpret == ResultInterpret.XFAIL:
             # Swap just fail<-->pass, keep the rest as is (info, warn,
@@ -417,7 +414,7 @@ class Result(BaseResult):
             components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
 
