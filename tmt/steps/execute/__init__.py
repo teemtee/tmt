@@ -5,10 +5,10 @@ import json
 import os
 import signal as _signal
 import subprocess
-import tempfile
 import threading
 from contextlib import suppress
 from dataclasses import dataclass
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -58,7 +58,7 @@ TEST_OUTPUT_FILENAME = 'output.txt'
 # Metadata file with details about the current test
 TEST_METADATA_FILENAME = 'metadata.yaml'
 
-# Scripts source directory
+#: Scripts source directory
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
 #: The default scripts destination directory
@@ -67,16 +67,35 @@ SCRIPTS_DEST_DIR = Path("/var/tmp/tmt/bin")  # noqa: S108 insecure usage of temp
 
 @dataclass
 class Script:
-    """ Represents a script provided by the internal executor """
+    """
+    Represents a script provided by the internal executor.
+
+    Must be used as a context manager. The context manager returns
+    the source file path.
+
+    The source file name matches the name of the file specified via
+    the ``path` attribute and must be located in the directory specified
+    via :py:data:`SCRIPTS_SRC_DIR` variable.
+    """
 
     path: Path
     aliases: list[Path]
     related_variables: list[str]
 
+    def __enter__(self) -> Path:
+        return SCRIPTS_SRC_DIR / self.path.name
+
+    def __exit__(self, *args: object) -> None:
+        pass
+
 
 @dataclass
 class ScriptCreatingFile(Script):
-    """ Represents a script which creates a file """
+    """
+    Represents a script which creates a file.
+
+    See :py:class:`Script` for more details.
+    """
 
     created_file: str
 
@@ -85,18 +104,41 @@ class ScriptCreatingFile(Script):
 class ScriptTemplate(Script):
     """
     Represents a Jinja2 templated script.
-    The source filename must have a ``.j2`` suffix.
+
+    Must be used as a context manager. The context manager returns
+    the source file path.
+
+    The source file name is constructed from the name of the file specified
+    via the ``path` attribute that is extended with the ``.j2`` suffix.
+    The template file must be located in the directory specified
+    via :py:data:`SCRIPTS_SRC_DIR` variable.
     """
 
     context: dict[str, str]
+
+    _rendered_script_path: Optional[Path] = None
+
+    def __enter__(self) -> Path:
+        with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
+            rendered_script.write(render_template_file(
+                SCRIPTS_SRC_DIR / f"{self.path.name}.j2", None, **self.context))
+
+        self._rendered_script_path = Path(rendered_script.name)
+
+        return self._rendered_script_path
+
+    def __exit__(self, *args: object) -> None:
+        assert self._rendered_script_path
+        os.unlink(self._rendered_script_path)
 
 
 def effective_scripts_dest_dir() -> Path:
     """
     Find out what the actual scripts destination directory is.
 
-    If ``TMT_SCRIPTS_DEST_DIR`` variable is set, it is used as the scripts destination
-    directory. Otherwise, the default of :py:data:`SCRIPTS_DEST_DIR` is used.
+    If the ``TMT_SCRIPTS_DEST_DIR`` variable is set, it is used as the scripts
+    destination directory. Otherwise, the default of :py:data:`SCRIPTS_DEST_DIR`
+    is used.
     """
 
     if 'TMT_SCRIPTS_DEST_DIR' in os.environ:
@@ -153,13 +195,13 @@ TMT_ABORT_SCRIPT = ScriptCreatingFile(
     created_file="abort"
     )
 
-# Profile script for adding SCRIPTS_DEST_DIR to executable pats system-wide
+# Profile script for adding SCRIPTS_DEST_DIR to executable paths system-wide
 TMT_ETC_PROFILE_D = ScriptTemplate(
     path=Path("/etc/profile.d/tmt.sh"),
     aliases=[],
     related_variables=[],
     context={
-        'scripts_dest_dir': str(effective_scripts_dest_dir())
+        'SCRIPTS_DEST_DIR': str(effective_scripts_dest_dir())
         })
 
 
@@ -635,40 +677,20 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         return invocations
 
-    def _render_script_template(self, source: Path, context: dict[str, str]) -> Path:
-        """ Render script template with given context """
-
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as rendered_script:
-            rendered_script.write(render_template_file(source, None, **context))
-
-        return Path(rendered_script.name)
-
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """ Prepare additional scripts for testing """
         # Create scripts directory
-        guest.execute(Command("mkdir", "-p", str(SCRIPTS_DEST_DIR)))
+        guest.execute(Command("mkdir", "-p", str(effective_scripts_dest_dir())))
 
         # Install all scripts on guest
         for script in self.scripts:
-            source = SCRIPTS_SRC_DIR / script.path.name
-
-            # Render script template
-            if isinstance(script, ScriptTemplate):
-                source = self._render_script_template(
-                    SCRIPTS_SRC_DIR / f"{script.path.name}.j2",
-                    context=script.context
-                    )
-
-            for dest in [script.path, *script.aliases]:
-                guest.push(
-                    source=source,
-                    destination=dest,
-                    options=["-p", "--chmod=755"],
-                    superuser=guest.facts.is_superuser is not True)
-
-            # Remove script template source
-            if isinstance(script, ScriptTemplate):
-                os.unlink(source)
+            with script as source:
+                for dest in [script.path, *script.aliases]:
+                    guest.push(
+                        source=source,
+                        destination=dest,
+                        options=["-p", "--chmod=755"],
+                        superuser=guest.facts.is_superuser is not True)
 
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """ Create path to test's ``tmt-report-result`` file """
