@@ -791,31 +791,18 @@ def test_zcrypt_mode(root_logger: Logger) -> None:
 
 def test_iommu_is_supported(root_logger: Logger) -> None:
 
-    result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
-        _parse_iommu({"is-supported": True}), root_logger)
+    for value in True, False:
 
-    assert result.to_mrack() == {
-        'system': {
+        result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
+            _parse_iommu({"is-supported": value}), root_logger)
+
+        assert result.to_mrack() == {
             'key_value': {
                 '_key': 'VIRT_IOMMU',
                 '_op': '==',
-                '_value': '1'
+                '_value': str(int(value))
                 }
             }
-        }
-
-    result = _CONSTRAINT_TRANSFORMERS['iommu.is_supported'](
-        _parse_iommu({"is-supported": False}), root_logger)
-
-    assert result.to_mrack() == {
-        'system': {
-            'key_value': {
-                '_key': 'VIRT_IOMMU',
-                '_op': '==',
-                '_value': '0'
-                }
-            }
-        }
 
 
 def test_location_lab_controller(root_logger: Logger) -> None:

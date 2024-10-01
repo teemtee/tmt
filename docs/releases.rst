@@ -57,6 +57,11 @@ The ``tmt try`` command now supports the new
 new :ref:`/stories/cli/try/option/install` option backed by the
 :ref:`prepare/feature</plugins/prepare/install>` plugin.
 
+The new key :ref:`/spec/hardware/iommu` allowing to provision a
+guest with the `Input–output memory management unit` has been
+added into the :ref:`/spec/hardware` specification and implemented
+in the :ref:`/plugins/provision/beaker` provision plugin.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
