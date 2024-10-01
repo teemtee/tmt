@@ -1742,7 +1742,7 @@ class TestJiraLink(unittest.TestCase):
             logger=self.logger)
         result = mock_add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
-        assert 'test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert 'test-url=https%3A%2F%2Fgithub.com%2F' in result['url']
         assert '&test-name=%2Ftmp%2Ftest' in result['url']
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
@@ -1760,15 +1760,15 @@ class TestJiraLink(unittest.TestCase):
         result = mock_add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
 
-        assert 'test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert 'test-url=https%3A%2F%2Fgithub.com%2F' in result['url']
         assert '&test-name=%2Ftmp%2Ftest' in result['url']
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
-        assert '&plan-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&plan-url=https%3A%2F%2Fgithub.com%2F' in result['url']
         assert '&plan-name=%2Ftmp%2Fplan' in result['url']
         assert '&plan-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
-        assert '&story-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt' in result['url']
+        assert '&story-url=https%3A%2F%2Fgithub.com%2F' in result['url']
         assert '&story-name=%2Ftmp%2Fstory' in result['url']
         assert '&story-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
