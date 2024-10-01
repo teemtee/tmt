@@ -1174,6 +1174,9 @@ class Guest(tmt.utils.Common):
 
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
+        from tmt.steps.execute.internal import effective_pidfile_root
+        pid_directory = effective_pidfile_root()
+        self.execute(ShellScript(f"mkdir -p {pid_directory} && chmod ugo+rwx {pid_directory}"))
 
     # A couple of requiremens for this field:
     #
