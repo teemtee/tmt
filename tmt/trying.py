@@ -22,6 +22,7 @@ from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.feature import _RawPrepareFeatureStepData
+from tmt.steps.prepare.install import _RawPrepareInstallStepData
 from tmt.utils import MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
@@ -105,7 +106,7 @@ class Try(tmt.utils.Common):
         self.tests: list[tmt.Test] = []
         self.plans: list[Plan] = []
         self.image_and_how = self.opt("image_and_how")
-        self.cli_options = ["epel"]
+        self.cli_options = ["epel", "install"]
 
         # Use the verbosity level 3 unless user explicitly requested
         # a different level on the command line
@@ -420,6 +421,22 @@ class Try(tmt.utils.Common):
             "name": "tmt-try-epel",
             'how': 'feature',
             'epel': "enabled",
+            }
+
+        phase: PreparePlugin[Any] = cast(
+            PreparePlugin[Any], PreparePlugin.delegate(
+                plan.prepare, raw_data=data))
+        plan.prepare._phases.append(phase)
+
+    def handle_install(self, plan: Plan) -> None:
+        """ Install local rpm package on the guest. """
+        packages = list(self.opt("install"))
+
+        # tmt run prepare --how install --package PACKAGE
+        data: _RawPrepareInstallStepData = {
+            "name": "tmt-try-install",
+            'how': 'install',
+            'package': packages,
             }
 
         phase: PreparePlugin[Any] = cast(

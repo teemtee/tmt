@@ -1760,6 +1760,9 @@ def init(
     "--epel", is_flag=True, default=False,
     help="Enable epel repository.")
 @option(
+    "--install", default=[], metavar="PACKAGE", multiple=True,
+    help="Install package on the guest.")
+@option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")
 @verbosity_options
