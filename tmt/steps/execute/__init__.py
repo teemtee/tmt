@@ -1170,8 +1170,10 @@ class Execute(tmt.steps.Step):
         """
         return self._results
 
-    def results_for_tests(self, tests: list['tmt.base.Test']) \
-            -> list[tuple[Optional[Result], Optional['tmt.base.Test']]]:
+    def results_for_tests(
+            self,
+            tests: list['tmt.base.Test']
+            ) -> list[tuple[Optional[Result], Optional['tmt.base.Test']]]:
         """
         Collect results and corresponding tests.
 

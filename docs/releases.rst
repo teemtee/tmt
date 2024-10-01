@@ -66,6 +66,10 @@ The :ref:`/plugins/provision/beaker` provision plugin now newly
 supports providing a custom :ref:`/spec/plans/provision/kickstart`
 configuration.
 
+The :ref:`/plugins/report/reportportal` plugin now uploads the
+complete set of discovered tests, including those which have not
+been executed. These tests are marked as ``skipped``.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
