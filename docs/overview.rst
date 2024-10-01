@@ -755,7 +755,8 @@ Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez,
 James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
 Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
-Otto Šabart, Ismail Ibrahim Quwarah and Sergei Petrosian.
+Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
+Koscielniak and Han Han.
 
 
 Copyright
