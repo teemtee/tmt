@@ -33,8 +33,9 @@ description: |
        # String, the original outcome of the test execution.
        original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
-       # String, optional comment to report with the result.
-       note: "Things were great."
+       # List of strings, optional comments to report with the result.
+       note:
+         - "Things were great."
 
        # List of strings, paths to log files.
        log:
@@ -88,8 +89,9 @@ description: |
           # String, the original outcome of the check execution.
           original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
-          # String, optional comment to report with the result.
-          note: "Things were great."
+          # List of strings, optional comments to report with the result.
+          note:
+            - "Things were great."
 
           # List of strings, paths to logs files.
           log:
@@ -126,8 +128,9 @@ description: |
           # String, the original outcome of the phase execution.
           original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
-          # String, optional comment to report with the result.
-          note: "Things were great."
+          # List of strings, optional comments to report with the result.
+          note:
+            - "Things were great."
 
           # List of strings, paths to log files.
           log:
@@ -269,7 +272,8 @@ example:
       start-time: "2023-03-10T09:44:14.439120+00:00"
       end-time: "2023-03-10T09:44:24.242227+00:00"
       duration: 00:00:09
-      note: good result
+      note:
+        - good result
       ids:
         extra-nitrate: some-nitrate-id
       guest:
@@ -284,7 +288,8 @@ example:
       start-time: "2023-03-10T09:44:14.439120+00:00"
       end-time: "2023-03-10T09:44:24.242227+00:00"
       duration: 00:00:09
-      note: fail result
+      note:
+        - fail result
       guest:
         name: default-0
 
@@ -295,7 +300,8 @@ example:
       log:
         - pass_log
       duration: 00:11:22
-      note: good result
+      note:
+        - good result
       ids:
         extra-nitrate: some-nitrate-id
 
@@ -305,7 +311,8 @@ example:
         - fail_log
         - another_log
       duration: 00:22:33
-      note: fail result
+      note:
+        - fail result
 
   - |
     # Example of a perfectly valid, yet stingy custom results file
@@ -325,7 +332,8 @@ example:
       start-time: "2023-03-10T09:44:14.439120+00:00"
       end-time: "2023-03-10T09:44:24.242227+00:00"
       duration: 00:00:09
-      note: good result
+      note:
+        - good result
       ids:
         extra-nitrate: some-nitrate-id
       guest:
@@ -335,12 +343,12 @@ example:
           event: after-test
           result: pass
           log: []
-          note:
+          note: []
         - name: kernel-panic
           event: after-test
           result: pass
           log: []
-          note:
+          note: []
 
   - |
     # syntax: json

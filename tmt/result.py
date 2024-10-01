@@ -176,7 +176,8 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
-    note: Optional[str] = None
+    note: list[str] = field(
+        default_factory=cast(Callable[[], list[str]], list))
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
         serialize=lambda logs: [str(log) for log in logs],
@@ -200,9 +201,13 @@ class BaseResult(SerializableContainer):
             ]
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
+
+    @property
+    def printable_note(self) -> str:
+        return ', '.join(self.note)
 
 
 @dataclasses.dataclass
@@ -297,7 +302,7 @@ class Result(BaseResult):
             *,
             invocation: 'tmt.steps.execute.TestInvocation',
             result: ResultOutcome,
-            note: Optional[str] = None,
+            note: Optional[list[str]] = None,
             ids: Optional[ResultIds] = None,
             log: Optional[list[Path]] = None,
             subresult: Optional[list[SubResult]] = None) -> 'Result':
@@ -341,7 +346,7 @@ class Result(BaseResult):
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan._fmf_context,
             result=result,
-            note=note,
+            note=note or [],
             start_time=invocation.start_time,
             end_time=invocation.end_time,
             duration=invocation.real_duration,
@@ -355,13 +360,6 @@ class Result(BaseResult):
         interpret_checks = {check.how: check.result for check in invocation.test.check}
 
         return _result.interpret_result(invocation.test.result, interpret_checks)
-
-    def append_note(self, note: str) -> None:
-        """ Append text to result note """
-        if self.note:
-            self.note += f", {note}"
-        else:
-            self.note = note
 
     def interpret_check_result(
             self,
@@ -385,21 +383,21 @@ class Result(BaseResult):
 
         if interpret == CheckResultInterpret.RESPECT:
             if interpreted_outcome == ResultOutcome.FAIL:
-                self.append_note(f"check '{check_name}' failed")
+                self.note.append(f"check '{check_name}' failed")
 
         elif interpret == CheckResultInterpret.INFO:
             interpreted_outcome = ResultOutcome.INFO
-            self.append_note(f"check '{check_name}' is informational")
+            self.note.append(f"check '{check_name}' is informational")
 
         elif interpret == CheckResultInterpret.XFAIL:
 
             if reduced_outcome == ResultOutcome.PASS:
                 interpreted_outcome = ResultOutcome.FAIL
-                self.append_note(f"check '{check_name}' did not fail as expected")
+                self.note.append(f"check '{check_name}' did not fail as expected")
 
             if reduced_outcome == ResultOutcome.FAIL:
                 interpreted_outcome = ResultOutcome.PASS
-                self.append_note(f"check '{check_name}' failed as expected")
+                self.note.append(f"check '{check_name}' failed as expected")
 
         return interpreted_outcome
 
@@ -437,11 +435,11 @@ class Result(BaseResult):
         # Override result with result outcome provided by user
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
             self.result = ResultOutcome(interpret.value)
-            self.append_note(f"test result overridden: {self.result.value}")
+            self.note.append(f"test result overridden: {self.result.value}")
 
             # Add original result to note if the result has changed
             if self.result != self.original_result:
-                self.append_note(f"original test result: {self.original_result.value}")
+                self.note.append(f"original test result: {self.original_result.value}")
 
             return self
 
@@ -450,15 +448,15 @@ class Result(BaseResult):
 
             if self.result == ResultOutcome.PASS:
                 self.result = ResultOutcome.FAIL
-                self.append_note("test was expected to fail")
+                self.note.append("test was expected to fail")
 
             elif self.result == ResultOutcome.FAIL:
                 self.result = ResultOutcome.PASS
-                self.append_note("test failed as expected")
+                self.note.append("test failed as expected")
 
         # Add original result to note if the result has changed
         if self.result != self.original_result:
-            self.append_note(f"original test result: {self.original_result.value}")
+            self.note.append(f"original test result: {self.original_result.value}")
 
         return self
 
@@ -522,7 +520,7 @@ class Result(BaseResult):
             components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
 
