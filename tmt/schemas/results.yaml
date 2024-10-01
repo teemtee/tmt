@@ -29,6 +29,9 @@ definitions:
       result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
+      original-result:
+        $ref: "/schemas/common#/definitions/result_outcome"
+
       note:
         $ref: "/schemas/common#/definitions/result_note"
 
@@ -61,6 +64,9 @@ definitions:
         type: string
 
       result:
+        $ref: "/schemas/common#/definitions/result_outcome"
+
+      original-result:
         $ref: "/schemas/common#/definitions/result_outcome"
 
       note:
@@ -118,6 +124,9 @@ items:
       type: integer
 
     result:
+      $ref: "/schemas/common#/definitions/result_outcome"
+
+    original-result:
       $ref: "/schemas/common#/definitions/result_outcome"
 
     context:

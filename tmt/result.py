@@ -123,6 +123,11 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
+    original_result: ResultOutcome = field(
+        default=ResultOutcome.PASS,
+        serialize=lambda result: result.value,
+        unserialize=ResultOutcome.from_spec
+        )
     note: Optional[str] = None
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
@@ -132,6 +137,9 @@ class BaseResult(SerializableContainer):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     duration: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.original_result = self.result
 
     def show(self) -> str:
         """ Return a nicely colored result with test name (and note) """

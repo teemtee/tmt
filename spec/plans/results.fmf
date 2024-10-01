@@ -27,8 +27,11 @@ description: |
          name: /test/one
          path: /
 
-       # String, outcome of the test execution.
+       # String, the effective outcome of the test execution.
        result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+
+       # String, the original outcome of the test execution.
+       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
        # String, optional comment to report with the result.
        note: "Things were great."
@@ -79,8 +82,11 @@ description: |
       # key. Fields have the same meaning as fields of the "parent" test result, but
       # relate to each check alone.
       check:
-          # String, outcome of the check execution.
+          # String, the effective outcome of the check execution.
         - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+
+          # String, the original outcome of the check execution.
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
@@ -114,8 +120,11 @@ description: |
           # String, name of the test phase.
         - name: First test case
 
-          # String, outcome of the phase execution.
+          # String, the effective outcome of the phase execution.
           result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+
+          # String, the original outcome of the phase execution.
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
 
           # String, optional comment to report with the result.
           note: "Things were great."
@@ -210,6 +219,26 @@ description: |
     original test result in the custom result set to the value known
     to tmt.
 
+    The ``original-result`` key holds the outcome of a test, check or
+    subresult as reported by the test, check or subresult itself, without
+    any additional influence.
+    A reported outcome may be a subject to interpretation, and tmt may
+    consider additional inputs and eventually report different effective
+    outcome in the ``result`` key.
+
+    The following rules apply when it comes to test, test check and subresult
+    outcomes and their interpretation and effects:
+
+    * Test outcome is interpreted according to
+      :py:ref:`/spec/tests/result`. It is not yet planned for test check
+      outcomes be interpreted. It is not yet planned for subresult
+      outcomes to be interpreted.
+    * Test checks and subresults do not influence the effective test
+      outcome. It is however planned for test check outcomes to affect
+      the test outcome, see https://github.com/teemtee/tmt/issues/3185
+      for more details. It is not planned for subresults to affect
+      the test outcome, and we do not expect them to gain this effect.
+
     See also the complete `JSON schema`__.
 
     For custom results files in JSON format, the same rules and schema
@@ -223,6 +252,9 @@ description: |
 
     .. versionchanged:: 1.36
        phase results are now renamed to the ``subresult`` key.
+
+    .. versionchanged:: 1.37
+       original result of test, subtest and check is stored in ``original-result`` key.
 
     __ https://github.com/teemtee/tmt/blob/main/tmt/schemas/results.yaml
 
