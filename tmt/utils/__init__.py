@@ -576,7 +576,7 @@ class Environment(dict[str, EnvVarValue]):
             content = environment_filepath.read_text()
 
         # Parse yaml file
-        if Path(filename).suffix.lower() in ('yaml', 'yml'):
+        if Path(filename).suffix.lower() in ('.yaml', '.yml'):
             environment = cls.from_yaml(content)
 
         else:
