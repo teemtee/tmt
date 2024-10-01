@@ -412,7 +412,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "warnings.deprecated".msg = "Use tmt._compat.warnings.deprecated instead."
-"os.path.join".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
+"os.path".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]

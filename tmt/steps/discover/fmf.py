@@ -544,8 +544,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
                     ), cwd=self.testdir)
             if output.stdout:
-                directories = [os.path.dirname(name) for name in output.stdout.split('\n')]
-                modified = {f"^/{re.escape(name)}" for name in directories if name}
+                directories = [Path(name).parent for name in output.stdout.split('\n')]
+                modified = {f"^/{re.escape(str(directory))}"
+                            for directory in directories if directory}
                 if not modified:
                     # Nothing was modified, do not select anything
                     return

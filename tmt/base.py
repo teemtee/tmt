@@ -1606,9 +1606,12 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
         # don't expand it at all, let's put the original value back
         # into the stream.
         # See https://github.com/teemtee/tmt/issues/2654.
+        #
+        # TID251: `pathlib` does not provide `os.patch.expandvars`, its
+        # use is allowed.
         expanded_env: list[tuple[bool, str, str]] = [
             (False, item[1:], item) if item.startswith('@')
-            else (True, os.path.expandvars(f'${item}'), item)
+            else (True, os.path.expandvars(f'${item}'), item)  # noqa: TID251
             for item in split_data]
 
         # Expand unexpanded items, this time with fmf context providing
@@ -1621,8 +1624,9 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
                 if was_expanded:
                     expanded_ctx.append(item)
                     continue
-
-                expanded = os.path.expandvars(f'${item}')
+                # TID251: `pathlib` does not provide `os.patch.expandvars`, its
+                # use is allowed.
+                expanded = os.path.expandvars(f'${item}')  # noqa: TID251
                 expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
 
         # This cast is tricky: we get a string, and we return a
@@ -2006,15 +2010,15 @@ class Plan(
                 'link': links.to_spec()
                 })
 
-        for name in names:
-            (directory, plan) = os.path.split(name)
-            directory_path = path / directory.lstrip('/')
-            has_fmf_ext = os.path.splitext(plan)[1] == '.fmf'
-            plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
+        for plan_name in names:
+            plan_path = path / Path(plan_name).unrooted()
+
+            if plan_path.suffix != '.fmf':
+                plan_path = plan_path.parent / f'{plan_path.name}.fmf'
 
             # Create directory & plan
             tmt.utils.create_directory(
-                path=directory_path,
+                path=plan_path.parent,
                 name='plan directory',
                 dry=dry,
                 logger=logger)
@@ -2031,7 +2035,7 @@ class Plan(
                 plans = Tree(
                     path=path,
                     logger=logger).plans(
-                    names=[f"^{name}$"],
+                    names=[f"^{plan_name}$"],
                     apply_command_line=False)
                 tmt.utils.jira.link(tmt_objects=plans, links=links, logger=logger)
 
@@ -2727,16 +2731,15 @@ class Story(
                 'link': links.to_spec()
                 })
 
-        for name in names:
-            # Prepare paths
-            (directory, story) = os.path.split(name)
-            directory_path = path / directory.lstrip('/')
-            has_fmf_ext = os.path.splitext(story)[1] == '.fmf'
-            story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
+        for story_name in names:
+            story_path = path / Path(story_name).unrooted()
+
+            if story_path.suffix != '.fmf':
+                story_path = story_path.parent / f'{story_path.name}.fmf'
 
             # Create directory & story
             tmt.utils.create_directory(
-                path=directory_path,
+                path=story_path.parent,
                 name='story directory',
                 dry=dry,
                 logger=logger)
@@ -2753,7 +2756,7 @@ class Story(
                 stories = Tree(
                     path=path,
                     logger=logger).stories(
-                    names=[f"^{name}$"],
+                    names=[f"^{story_name}$"],
                     apply_command_line=False)
                 tmt.utils.jira.link(tmt_objects=stories, links=links, logger=logger)
 
@@ -4007,7 +4010,7 @@ class Clean(tmt.utils.Common):
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
             all_workdirs.sort(
-                key=lambda workdir: os.path.getmtime(workdir / 'run.yaml'), reverse=True)
+                key=lambda workdir: (workdir / 'run.yaml').stat().st_mtime, reverse=True)
             all_workdirs = all_workdirs[keep:]
 
         successful = True
