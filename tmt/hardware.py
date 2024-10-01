@@ -1334,6 +1334,25 @@ def _parse_zcrypt(spec: Spec) -> BaseConstraint:
 
 
 @ungroupify
+def _parse_iommu(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``iommu`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    group.constraints += _parse_flag_constraints(spec,
+                                                 'iommu',
+                                                 ('is-supported',))
+    group.constraints += _parse_text_constraints(spec, 'iommu', ('model-name',))
+
+    return group
+
+
+@ungroupify
 def _parse_location(spec: Spec) -> BaseConstraint:
     """
     Parse constraints related to the ``location`` HW requirement.
@@ -1427,6 +1446,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'zcrypt' in spec:
         group.constraints += [_parse_zcrypt(spec['zcrypt'])]
+
+    if 'iommu' in spec:
+        group.constraints += [_parse_iommu(spec['iommu'])]
 
     return group
 

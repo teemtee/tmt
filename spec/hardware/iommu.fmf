@@ -1,0 +1,32 @@
+summary: |
+    Select or provision a guest with the `Input–output memory management unit`.
+
+description: |
+    .. code-block::
+
+       iommu:
+           # Boolean, whether the guest supports IOMMU
+           is-supported: true|false
+           # String, the model name for IOMMU
+           model-name: "virtio"|"intel"|"smmuv3"|...
+
+    .. versionadded:: 1.37
+
+    .. versionchanged:: 1.37
+       ``beaker`` plugin supports ``iommu``
+
+example:
+  - |
+    # Require a guest that supports IOMMU
+    iommu:
+        is-supported: true
+
+  - |
+    # Require a guest with the IOMMU of virtio model
+    iommu:
+        is-supported: true
+        model-name: virtio
+
+link:
+    - implemented-by: /tmt/steps/provision/mrack.py
+      note: "``iommu.is-supported`` only"
