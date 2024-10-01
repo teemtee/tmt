@@ -17,6 +17,7 @@ from tmt.utils import (
     UpdatableMessage,
     dict_to_yaml,
     field,
+    normalize_string_dict,
     retry_session,
     )
 
@@ -86,34 +87,6 @@ DEFAULT_API_RETRIES = 10
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
 
 
-def _normalize_user_data(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> dict[str, str]:
-    if isinstance(raw_value, dict):
-        return {
-            str(key).strip(): str(value).strip() for key, value in raw_value.items()
-            }
-
-    if isinstance(raw_value, (list, tuple)):
-        user_data = {}
-
-        for datum in raw_value:
-            try:
-                key, value = datum.split('=', 1)
-
-            except ValueError as exc:
-                raise tmt.utils.NormalizationError(
-                    key_address, datum, 'a KEY=VALUE string') from exc
-
-            user_data[key.strip()] = value.strip()
-
-        return user_data
-
-    raise tmt.utils.NormalizationError(
-        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
-
-
 def _normalize_log_type(
         key_address: str,
         raw_value: Any,
@@ -181,14 +154,14 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         metavar='KEY=VALUE',
         help='Optional data to attach to guest.',
         multiple=True,
-        normalize=_normalize_user_data)
+        normalize=normalize_string_dict)
     kickstart: dict[str, str] = field(
         default_factory=dict,
         option='--kickstart',
         metavar='KEY=VALUE',
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
-        normalize=_normalize_user_data)
+        normalize=normalize_string_dict)
 
     log_type: list[str] = field(
         default_factory=list,

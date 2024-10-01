@@ -15,7 +15,14 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, Path, ProvisionError, ShellScript, UpdatableMessage, field
+from tmt.utils import (
+    Command,
+    Path,
+    ProvisionError,
+    ShellScript,
+    UpdatableMessage,
+    field,
+    )
 
 mrack: Any
 providers: Any
@@ -691,8 +698,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
-
-            req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
+            req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
@@ -702,6 +708,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+
+            logger.debug('mrack request', req, level=4)
 
             logger.info('whiteboard', host.whiteboard, 'green')
 
@@ -779,6 +787,13 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              {DEFAULT_API_SESSION_REFRESH} seconds by default.
              """,
         normalize=tmt.utils.normalize_int)
+    kickstart: dict[str, str] = field(
+        default_factory=dict,
+        option='--kickstart',
+        metavar='KEY=VALUE',
+        help='Optional Beaker kickstart to use when provisioning the guest.',
+        multiple=True,
+        normalize=tmt.utils.normalize_string_dict)
 
     beaker_job_owner: Optional[str] = field(
         default=None,
@@ -821,9 +836,21 @@ class CreateJobParameters:
     os: str
     arch: str
     hardware: Optional[tmt.hardware.Hardware]
+    kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
     group: str = 'linux'
+
+    def to_mrack(self) -> dict[str, Any]:
+        data = dataclasses.asdict(self)
+
+        data['beaker'] = {}
+
+        if self.kickstart:
+            data['beaker']['ks_meta'] = self.kickstart.get('metadata')
+            data['beaker']['ks_append'] = self.kickstart
+
+        return data
 
 
 class BeakerAPI:
@@ -923,6 +950,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
+    kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
 
@@ -995,6 +1023,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         data = CreateJobParameters(
             tmt_name=tmt_name,
             hardware=self.hardware,
+            kickstart=self.kickstart,
             arch=self.arch,
             os=self.image,
             name=f'{self.image}-{self.arch}',

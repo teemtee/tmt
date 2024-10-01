@@ -62,6 +62,10 @@ guest with the `Input–output memory management unit` has been
 added into the :ref:`/spec/hardware` specification and implemented
 in the :ref:`/plugins/provision/beaker` provision plugin.
 
+The :ref:`/plugins/provision/beaker` provision plugin now newly
+supports providing a custom :ref:`/spec/plans/provision/kickstart`
+configuration.
+
 
 tmt-1.36.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
