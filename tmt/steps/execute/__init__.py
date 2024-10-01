@@ -74,7 +74,7 @@ class Script:
     the source file path.
 
     The source file name matches the name of the file specified via
-    the ``path` attribute and must be located in the directory specified
+    the ``path`` attribute and must be located in the directory specified
     via :py:data:`SCRIPTS_SRC_DIR` variable.
     """
 
@@ -109,7 +109,7 @@ class ScriptTemplate(Script):
     the source file path.
 
     The source file name is constructed from the name of the file specified
-    via the ``path` attribute that is extended with the ``.j2`` suffix.
+    via the ``path`` attribute, with the ``.j2`` suffix appended.
     The template file must be located in the directory specified
     via :py:data:`SCRIPTS_SRC_DIR` variable.
     """
@@ -136,9 +136,9 @@ def effective_scripts_dest_dir() -> Path:
     """
     Find out what the actual scripts destination directory is.
 
-    If the ``TMT_SCRIPTS_DEST_DIR`` variable is set, it is used as the scripts
-    destination directory. Otherwise, the default of :py:data:`SCRIPTS_DEST_DIR`
-    is used.
+    If the ``TMT_SCRIPTS_DEST_DIR`` environment variable is set, it is used
+    as the scripts destination directory. Otherwise, the default
+    of :py:data:`SCRIPTS_DEST_DIR` is used.
     """
 
     if 'TMT_SCRIPTS_DEST_DIR' in os.environ:
