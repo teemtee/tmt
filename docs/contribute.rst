@@ -697,7 +697,7 @@ Finally, if everything went well:
 * Close the corresponding release milestone
 * Once the non development `copr build`__ is completed, move the
   ``quay`` branch to point to the release commit as well to build
-  fresh container images.
+  fresh `container images`__.
 
 Handle manually what did not went well:
 
@@ -712,6 +712,7 @@ __ https://github.com/teemtee/tmt/releases/
 __ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
+__ https://quay.io/repository/teemtee/tmt
 __ https://pypi.org/project/tmt/
 
 
