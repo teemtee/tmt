@@ -200,6 +200,19 @@ description: |
             For more information see the
             :ref:`/stories/features/abort` feature documentation.
 
+        The scripts are hosted by default in the ``/var/tmp/tmt/bin``
+        directory. The directory can be changed using
+        the ``TMT_SCRIPTS_DEST_DIR`` environment variable. This directory
+        works across all supported operating systems, including those using
+        ``rpm-ostree`` and ``bootc``. The path is added to executable paths
+        using the system-wide ``/etc/profile.d/tmt.sh`` profile script.
+
+        .. warning::
+
+            Please be aware that the provided scripts will only be available
+            in a shell that loads the profile scripts. This is the default
+            for ``bash``-like shells, but might not work for others.
+
     example: |
         execute:
             how: tmt
