@@ -95,5 +95,10 @@ properties:
   where:
     $ref: "/schemas/common#/definitions/where"
 
+  adjust-tests:
+    type: array
+    items:
+      type: object
+
 required:
   - how
