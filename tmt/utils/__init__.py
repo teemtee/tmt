@@ -3344,7 +3344,7 @@ def shell_variables(
     return [f"{key}={shlex.quote(str(value))}" for key, value in data.items()]
 
 
-def duration_to_seconds(duration: str) -> int:
+def duration_to_seconds(duration: str, magic: Optional[str] = None) -> int:
     """ Convert extended sleep time format into seconds """
     units = {
         's': 1,
@@ -3389,6 +3389,9 @@ def duration_to_seconds(duration: str) -> int:
             multiply_by *= float(match['float'])
         else:
             total_time += int(match['digit']) * units.get(match['suffix'], 1)
+    # Inject value so we have something to multiply
+    if magic and total_time == 0:
+        total_time = duration_to_seconds(magic)
     # Multiply in the end and round up
     return ceil(total_time * multiply_by)
 
