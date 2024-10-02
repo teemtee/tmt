@@ -466,6 +466,16 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
+
+TMT_SCRIPTS_DEST_DIR
+    Destination directory for storing ``tmt`` scripts on the guest.
+    By default ``/var/tmp/tmt/bin`` is used. For more information
+    see the `tmt internal test executor`__ documentation.
+
+__ https://tmt.readthedocs.io/en/stable/spec/plans.html#tmt
+
+    .. versionadded:: 1.38
+
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
     option, and passed to the ``-o`` option of ``ssh`` command. See
