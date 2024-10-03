@@ -136,7 +136,12 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF),
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_YUM),
 
-    (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
+    # Supported in theory, but in practice, dnf5 is not going to
+    # officially be part of Fedora 39, and we are seeing some strange
+    # and broken behavior ruining our tests. On top of that, Fedora 39
+    # is going to be EOL very soon, therefore disabling this particular
+    # combination.
+    # (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_YUM),
 
