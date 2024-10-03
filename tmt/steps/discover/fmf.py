@@ -162,7 +162,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     adjust_tests: Optional[list[_RawAdjustRule]] = field(
         default_factory=list,
         normalize=lambda key_address, raw_value, logger: [] if raw_value is None
-        else ([raw_value] if not isinstance(raw_value, list) else raw_value))
+        else ([raw_value] if not isinstance(raw_value, list) else raw_value),
+        help="Modify metadata of discovered tests from the plan itself.")
 
     # Upgrade plan path so the plan is not pruned
     upgrade_path: Optional[str] = None
@@ -267,6 +268,25 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
+
+    To modify the discovered tests' metadata directly from the plan (for example if
+    it is an yet-to-be added package, special HW, or missing permissions to modify the tests repo),
+    you can use the ``adjust-tests``. Its value is the list of actions to do, each action is the
+    "merging" operation of fmf (similar form as is used in the adjust rules)
+
+    Following example adds an 'avc' check for each discovered test, doubles its duration and
+    replaces each occurrence of the word 'python3.11' in the list of required packages.
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            adjust-tests:
+            - check+:
+                - how: avc
+            - duration+: '*2'
+            - require~:
+                - '/python3.11/python3.12/'
     """
 
     _data_class = DiscoverFmfStepData
