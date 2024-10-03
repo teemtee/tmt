@@ -13,13 +13,15 @@ rlJournalStart
     rlPhaseStartTest "Test the subresults were generated into the results.yaml"
         rlRun "tmt run --id $run_dir --scratch -v 2>&1 >/dev/null | tee output" 1
 
-        # Check the parent test outcomes
+        # Check the parent result outcomes
         rlAssertGrep "fail /test/beakerlib (on default-0)" "output"
         rlAssertGrep "fail /test/fail (on default-0)" "output"
         rlAssertGrep "pass /test/pass (on default-0)" "output"
-        rlAssertGrep "total: 1 test passed and 2 tests failed" "output"
+        rlAssertGrep "pass /test/skip (on default-0)" "output"
+        rlAssertGrep "total: 2 tests passed and 2 tests failed" "output"
 
-        # Check subtests outcomes
+
+        # Check the beakerlib test framework subtests outcomes
 
         ## The internal tests which are checking the TESTID and
         ## BEAKERLIB_COMMAND_REPORT_RESULT variables must pass
@@ -30,8 +32,31 @@ rlJournalStart
         rlAssertGrep "fail /test/beakerlib/phase-test-fail" "output"
         rlAssertGrep "pass /test/beakerlib/phase-cleanup" "output"
 
+        # Extra calls of tmt-report-result in the beakerlib test phase
+        rlAssertGrep "pass /test/beakerlib/extra-tmt-report-result/good" "output"
+        rlAssertGrep "fail /test/beakerlib/extra-tmt-report-result/bad" "output"
+        rlAssertGrep "warn /test/beakerlib/extra-tmt-report-result/weird" "output"
+        rlAssertGrep "skip /test/beakerlib/extra-tmt-report-result/skip" "output"
+
+        # The phase itself must also exists as a subresult and it should pass,
+        # even one of its extra tmt-report-result reported a FAIL. The phase
+        # outcome evaluation is based on beakerlib test framework.
+        rlAssertGrep "pass /test/beakerlib/phase-test-multiple-tmt-report-result" "output"
+
+
+        # Check the shell framework subtests outcomes
+        rlAssertGrep "pass /test/fail/subtest/good" "output"
+        rlAssertGrep "fail /test/fail/subtest/fail" "output"
         rlAssertGrep "warn /test/fail/subtest/weird" "output"
+        rlAssertGrep "skip /test/fail/subtest/skip" "output"
+
+        rlAssertGrep "pass /test/pass/subtest/good0" "output"
+        rlAssertGrep "pass /test/pass/subtest/good1" "output"
         rlAssertGrep "pass /test/pass/subtest/good2" "output"
+
+        rlAssertGrep "pass /test/skip/subtest/extra-pass" "output"
+        rlAssertGrep "skip /test/skip/subtest/extra-skip" "output"
+
 
         # Check the subresults get correctly saved in results.yaml
         rlRun "results_file=${run_dir}/plan/execute/results.yaml"
@@ -41,16 +66,22 @@ rlJournalStart
         rlAssertGrep "name: /test/beakerlib/phase-test-pass" "subresults_beakerlib.yaml"
         rlAssertGrep "name: /test/beakerlib/phase-test-fail" "subresults_beakerlib.yaml"
         rlAssertGrep "name: /test/beakerlib/phase-cleanup" "subresults_beakerlib.yaml"
+        rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/good" "subresults_beakerlib.yaml"
+        rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/bad" "subresults_beakerlib.yaml"
+        rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/weird" "subresults_beakerlib.yaml"
+        rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/skip" "subresults_beakerlib.yaml"
 
         rlRun "yq -ey '.[] | select(.name == \"/test/fail\") | .subresult' ${results_file} > subresults_fail.yaml"
         rlAssertGrep "name: /test/fail/subtest/good" "subresults_fail.yaml"
         rlAssertGrep "name: /test/fail/subtest/fail" "subresults_fail.yaml"
         rlAssertGrep "name: /test/fail/subtest/weird" "subresults_fail.yaml"
+        rlAssertGrep "name: /test/fail/subtest/skip" "subresults_fail.yaml"
 
         rlRun "yq -ey '.[] | select(.name == \"/test/pass\") | .subresult' ${results_file} > subresults_pass.yaml"
         rlAssertGrep "name: /test/pass/subtest/good0" "subresults_pass.yaml"
         rlAssertGrep "name: /test/pass/subtest/good1" "subresults_pass.yaml"
         rlAssertGrep "name: /test/pass/subtest/good2" "subresults_pass.yaml"
+        rlAssertNotGrep "original-result: \(fail\|skip\|warn\)" "subresults_pass.yaml"
     rlPhaseEnd
 
     rlPhaseStartCleanup

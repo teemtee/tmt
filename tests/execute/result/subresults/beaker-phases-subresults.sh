@@ -26,8 +26,22 @@ rlJournalStart
         rlAssertGrep "asdf-asdf" "output"
     rlPhaseEnd
 
+    rlPhaseStartTest "phase-test multiple tmt-report-result"
+        rlRun "touch /tmp/bkr_good_log"
+        rlRun "touch /tmp/bkr_bad_log"
+        rlRun "touch /tmp/bkr_weird_log"
+        rlRun "touch /tmp/bkr_skip_log"
+
+        # This will create more subresults for each tmt-report-result call
+        rlRun "tmt-report-result extra-tmt-report-result/good PASS /tmp/bkr_good_log"
+        rlRun "tmt-report-result extra-tmt-report-result/bad FAIL /tmp/bkr_bad_log"
+        rlRun "tmt-report-result extra-tmt-report-result/weird WARN /tmp/bkr_weird_log"
+        rlRun "tmt-report-result extra-tmt-report-result/skip SKIP /tmp/bkr_skip_log"
+    rlPhaseEnd
+
     rlPhaseStartCleanup "phase-cleanup"
         rlRun "popd"
+        rlRun "rm -f /tmp/bkr_{good,bad,weird}_log"
         rlRun "rm -r $tmp" 0 "Remove tmp directory"
     rlPhaseEnd
 rlJournalEnd
