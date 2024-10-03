@@ -82,6 +82,38 @@ rlJournalStart
         rlAssertGrep "name: /test/pass/subtest/good1" "subresults_pass.yaml"
         rlAssertGrep "name: /test/pass/subtest/good2" "subresults_pass.yaml"
         rlAssertNotGrep "original-result: \(fail\|skip\|warn\)" "subresults_pass.yaml"
+
+        # Check the subresults log entries are set in results.yaml
+        rlAssertGrep "- extra-tmt-report-result_good_bkr_good_log" "subresults_beakerlib.yaml"
+        rlAssertGrep "- extra-tmt-report-result_bad_bkr_bad_log" "subresults_beakerlib.yaml"
+        rlAssertGrep "- extra-tmt-report-result_weird_bkr_weird_log" "subresults_beakerlib.yaml"
+        rlAssertGrep "- extra-tmt-report-result_skip_bkr_skip_log" "subresults_beakerlib.yaml"
+
+        rlAssertGrep "- subtest_good_good_log" "subresults_fail.yaml"
+        rlAssertGrep "- subtest_fail_fail_log" "subresults_fail.yaml"
+        rlAssertGrep "- subtest_weird_weird_log" "subresults_fail.yaml"
+        rlAssertGrep "- subtest_skip_skip_log" "subresults_fail.yaml"
+
+        rlAssertGrep "- subtest_good0_good0_log" "subresults_pass.yaml"
+        rlAssertGrep "- subtest_good1_good1_log" "subresults_pass.yaml"
+        rlAssertGrep "- subtest_good2_good2_log" "subresults_pass.yaml"
+
+        # Check the subresults log files actually exist
+        rlRun "log_dir=$run_dir/plan/execute/data/guest/default-0/test"
+        rlAssertExists "$log_dir/pass-3/data/subtest_good0_good0_log"
+        rlAssertExists "$log_dir/pass-3/data/subtest_good1_good1_log"
+        rlAssertExists "$log_dir/pass-3/data/subtest_good2_good2_log"
+
+        rlAssertExists "$log_dir/fail-2/data/subtest_fail_fail_log"
+        rlAssertExists "$log_dir/fail-2/data/subtest_good_good_log"
+        rlAssertExists "$log_dir/fail-2/data/subtest_skip_skip_log"
+        rlAssertExists "$log_dir/fail-2/data/subtest_weird_weird_log"
+
+        rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_bad_bkr_bad_log"
+        rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_good_bkr_good_log"
+        rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_skip_bkr_skip_log"
+        rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_weird_bkr_weird_log"
+        rlAssertExists "$log_dir/beakerlib-1/data/journal.xml"
     rlPhaseEnd
 
     rlPhaseStartCleanup
