@@ -33,10 +33,10 @@ rlJournalStart
         rlRun "touch /tmp/bkr_skip_log"
 
         # This will create more subresults for each tmt-report-result call
-        rlRun "tmt-report-result extra-tmt-report-result/good PASS /tmp/bkr_good_log"
-        rlRun "tmt-report-result extra-tmt-report-result/bad FAIL /tmp/bkr_bad_log"
-        rlRun "tmt-report-result extra-tmt-report-result/weird WARN /tmp/bkr_weird_log"
-        rlRun "tmt-report-result extra-tmt-report-result/skip SKIP /tmp/bkr_skip_log"
+        rlRun "tmt-report-result -o /tmp/bkr_good_log extra-tmt-report-result/good PASS"
+        rlRun "tmt-report-result -o /tmp/bkr_bad_log extra-tmt-report-result/bad FAIL"
+        rlRun "tmt-report-result -o /tmp/bkr_weird_log extra-tmt-report-result/weird WARN"
+        rlRun "tmt-report-result -o /tmp/bkr_skip_log extra-tmt-report-result/skip SKIP"
     rlPhaseEnd
 
     rlPhaseStartCleanup "phase-cleanup"
