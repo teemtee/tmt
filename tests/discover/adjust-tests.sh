@@ -15,8 +15,11 @@ rlJournalStart
         rlRun -s "yq '.[].require' < $tests_yaml"
         rlAssertGrep "foo" "$rlRun_LOG"
         rlRun -s "yq '.[].duration' < $tests_yaml"
-        # Note the space before 10.. duration is adjusted to the raw input ' 10h'
-        rlAssertGrep " 10h" "$rlRun_LOG"
+        # 'duration_to_seconds' takes care of injection the default '5m' as the base
+        rlAssertGrep "*2" "$rlRun_LOG"
+        # check added
+        rlRun -s "yq '.[].check' < $tests_yaml"
+        rlAssertGrep "avc" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -208,6 +208,8 @@ execute:
             how: fmf
             test: /tests/discover1
             adjust-tests:
-            - duration+: " 10h"
+            - duration+: "*2"
             - require+:
                 - foo
+            - check+:
+                - how: avc
