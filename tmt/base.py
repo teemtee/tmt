@@ -1358,6 +1358,9 @@ class Test(
                     [check.to_spec() for check in cast(list[Check], value)]
                     ))
                 continue
+            if key == 'result':
+                echo(tmt.utils.format(key, value.value))
+                continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
         if self.verbosity_level:
