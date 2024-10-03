@@ -1,9 +1,9 @@
 /pass:
     summary: Basic pass test of shell subresults
     test: |
-        touch /tmp/good0_log; tmt-report-result /subtest/good0 PASS /tmp/good0_log
-        touch /tmp/good1_log; tmt-report-result /subtest/good1 PASS /tmp/good1_log
-        touch /tmp/good2_log; tmt-report-result /subtest/good2 PASS /tmp/good2_log
+        touch /tmp/good0_log; tmt-report-result -o /tmp/good0_log /subtest/good0 PASS
+        touch /tmp/good1_log; tmt-report-result -o /tmp/good1_log /subtest/good1 PASS
+        touch /tmp/good2_log; tmt-report-result -o /tmp/good2_log /subtest/good2 PASS
 
 /skip:
     summary: Test with skipped and pass test should pass
@@ -14,10 +14,10 @@
 /fail:
     summary: Reduced outcome of shell subresults must be fail
     test: |
-        touch /tmp/good_log; tmt-report-result /subtest/good PASS /tmp/good_log
-        touch /tmp/fail_log; tmt-report-result /subtest/fail FAIL /tmp/fail_log
-        touch /tmp/weird_log; tmt-report-result /subtest/weird WARN /tmp/weird_log
-        touch /tmp/skip_log; tmt-report-result /subtest/skip SKIP /tmp/skip_log
+        touch /tmp/good_log; tmt-report-result -o /tmp/good_log /subtest/good PASS
+        touch /tmp/fail_log; tmt-report-result -o /tmp/fail_log /subtest/fail FAIL
+        touch /tmp/weird_log; tmt-report-result -o /tmp/weird_log /subtest/weird WARN
+        touch /tmp/skip_log; tmt-report-result -o /tmp/skip_log /subtest/skip SKIP
 
 /beakerlib:
     summary: Beakerlib rlPhaseEnd as a tmt subresult
