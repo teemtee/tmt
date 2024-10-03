@@ -720,6 +720,9 @@ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
 PIP:
 https://pypi.org/project/tmt/
 
+Quay:
+https://quay.io/organization/teemtee
+
 Metadata Specification:
 https://tmt.readthedocs.io/en/stable/spec.html
 
