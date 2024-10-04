@@ -22,7 +22,7 @@ import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
+from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
@@ -895,11 +895,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         self.debug(f"Extract results of '{invocation.test.name}'.")
 
-        if invocation.test.result == 'custom':
+        if invocation.test.result == ResultInterpret.CUSTOM:
             return self.extract_custom_results(invocation)
 
         # Handle the 'tmt-report-result' command results as separate tests
-        if invocation.test.result == 'restraint':
+        if invocation.test.result == ResultInterpret.RESTRAINT:
             return self.extract_tmt_report_results_restraint(
                 invocation=invocation,
                 default_log=invocation.relative_path / TEST_OUTPUT_FILENAME)

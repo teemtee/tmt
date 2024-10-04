@@ -57,7 +57,7 @@ import tmt.utils.git
 import tmt.utils.jira
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.result import Result
+from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
     Environment,
@@ -1074,7 +1074,12 @@ class Test(
         exporter=lambda environment: environment.to_fmf_spec())
 
     duration: str = DEFAULT_TEST_DURATION_L1
-    result: str = 'respect'
+    result: ResultInterpret = field(
+        default=ResultInterpret.RESPECT,
+        normalize=ResultInterpret.normalize,
+        serialize=lambda result: result.value,
+        unserialize=ResultInterpret.from_spec,
+        exporter=lambda result: result.value)
 
     where: list[str] = field(default_factory=list)
 
@@ -1352,6 +1357,9 @@ class Test(
                     key,
                     [check.to_spec() for check in cast(list[Check], value)]
                     ))
+                continue
+            if key == 'result':
+                echo(tmt.utils.format(key, value.value))
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
