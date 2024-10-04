@@ -86,7 +86,7 @@ class Shell(TestFramework):
             result=actual_outcome,
             log=test_logs,
             note=note,
-            subresult=cls.results_to_subresults(results))]
+            subresult=[r.to_subresult(invocation) for r in results])]
 
     @classmethod
     def extract_results(

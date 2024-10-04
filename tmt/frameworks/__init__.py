@@ -109,19 +109,6 @@ class TestFramework:
         return []
 
     @classmethod
-    def results_to_subresults(cls, results: list[tmt.result.Result]) -> list[tmt.result.SubResult]:
-        """ Convert given results to tmt subresults """
-
-        return [
-            tmt.result.SubResult(
-                # invocation=r.invocation,
-                name=r.name,
-                result=r.result,
-                note=r.note,
-                log=r.log
-                ) for r in results]
-
-    @classmethod
     def extract_results(
             cls,
             invocation: 'TestInvocation',
