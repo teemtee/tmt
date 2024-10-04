@@ -209,7 +209,13 @@ execute:
             test: /tests/discover1
             adjust-tests:
             - duration+: "*2"
+            - recommend:
+                - FAILURE
+              when: trigger is not defined
+              because: check if context is evaluated
             - require+:
                 - foo
+              when: trigger == commit
+              because: check if context is evaluated
             - check+:
                 - how: avc

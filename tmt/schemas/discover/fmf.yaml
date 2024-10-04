@@ -96,9 +96,7 @@ properties:
     $ref: "/schemas/common#/definitions/where"
 
   adjust-tests:
-    type: array
-    items:
-      type: object
+    $ref: "/schemas/core#/definitions/adjust"
 
 required:
   - how
