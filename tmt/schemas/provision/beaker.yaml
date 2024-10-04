@@ -37,6 +37,9 @@ properties:
   hardware:
     $ref: "/schemas/provision/hardware#/definitions/hardware"
 
+  kickstart:
+    $ref: "/schemas/provision/kickstart#/definitions/kickstart"
+
   role:
     $ref: "/schemas/common#/definitions/role"
 

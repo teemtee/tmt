@@ -2,6 +2,7 @@ import email.utils
 import os
 import re
 import types
+import urllib.parse
 from collections.abc import Iterator
 from contextlib import suppress
 from functools import cache
@@ -339,7 +340,9 @@ def add_to_nitrate_runs(
 def prepare_extra_summary(test: 'tmt.Test', append_summary: bool) -> str:
     """ extra-summary for export --create test """
     assert test.fmf_id.url is not None  # narrow type
-    remote_dirname = re.sub('.git$', '', os.path.basename(test.fmf_id.url))
+
+    parsed_url = urllib.parse.urlparse(test.fmf_id.url)
+    remote_dirname = re.sub('.git$', '', Path(parsed_url.path).name)
     if not remote_dirname:
         raise ConvertError("Unable to find git remote url.")
     generated = f"{remote_dirname} {test.name}"

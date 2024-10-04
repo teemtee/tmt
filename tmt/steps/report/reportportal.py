@@ -8,7 +8,7 @@ import requests
 
 import tmt.log
 import tmt.steps.report
-from tmt.result import Result, ResultOutcome
+from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
 if TYPE_CHECKING:
@@ -511,125 +511,124 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
-            # For each test
-            for test in self.step.plan.discover.tests():
-
+            for result, test in self.step.plan.execute.results_for_tests(
+                    self.step.plan.discover.tests()):
                 test_time = self.time()
+                test_name = None
+                test_description = ''
+                test_link = None
+                test_id = None
+                env_vars = None
 
-                results: list[Optional[Result]] = [None]
-                if executed:
-                    results = [result for result in self.step.plan.execute.results()
-                               if test.serial_number == result.serial_number]
+                item_attributes = attributes.copy()
+                if result:
+                    serial_number = result.serial_number
+                    test_name = result.name
+                    test_time = result.start_time or self.time()
+                    # for guests, save their primary address
+                    if result.guest.primary_address:
+                        item_attributes.append({
+                            'key': 'guest_primary_address',
+                            'value': result.guest.primary_address})
+                    # for multi-host tests store also provision name and role
+                    if result.guest.name != 'default-0':
+                        item_attributes.append(
+                            {'key': 'guest_name', 'value': result.guest.name})
+                    if result.guest.role:
+                        item_attributes.append(
+                            {'key': 'guest_role', 'value': result.guest.role})
 
-                # process even tests not having test results
-                for result in results:
-
-                    # TODO: for happz, connect Test to Result if possible
-                    #       (but now it is probably too hackish to be fixed)
-
-                    item_attributes = attributes.copy()
-                    if result:
-                        test_time = result.start_time or self.time()
-
-                        # for guests, save their primary address
-                        if result.guest.primary_address:
-                            item_attributes.append({
-                                'key': 'guest_primary_address',
-                                'value': result.guest.primary_address})
-
-                        # for multi-host tests store also guest name and role
-                        if result.guest.name != 'default-0':
-                            item_attributes.append(
-                                {'key': 'guest_name', 'value': result.guest.name})
-                        if result.guest.role:
-                            item_attributes.append(
-                                {'key': 'guest_role', 'value': result.guest.role})
-
+                # update RP item with additional attributes if test details are available
+                if test:
+                    serial_number = test.serial_number
+                    if not test_name:
+                        test_name = test.name
                     if test.contact:
                         item_attributes.append({"key": "contact", "value": test.contact[0]})
+                    if test.summary:
+                        test_description = test.summary
+                    if test.web_link():
+                        test_link = test.web_link()
+                    if test.id:
+                        test_id = test.id
                     env_vars = [
                         {'key': key, 'value': value}
                         for key, value in test.environment.items()
                         if not re.search(envar_pattern, key)]
 
-                    if create_test:
+                if create_test:
+                    if ((self.data.upload_to_launch and launch_per_plan)
+                            or self.data.upload_to_suite):
+                        test_description = self.append_description(test_description)
 
-                        test_description = test.summary or ""
-                        if ((self.data.upload_to_launch and launch_per_plan)
-                                or self.data.upload_to_suite):
-                            test_description = self.append_description(test_description)
+                    # Create a test item
+                    self.info("test", test_name, color="cyan")
+                    response = self.rp_api_post(
+                        session=session,
+                        path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
+                        json={"name": test_name,
+                              "description": test_description,
+                              "attributes": item_attributes,
+                              "parameters": env_vars,
+                              "codeRef": test_link,
+                              "launchUuid": launch_uuid,
+                              "type": "step",
+                              "testCaseId": test_id,
+                              "startTime": test_time})
+                    item_uuid = yaml_to_dict(response.text).get("id")
+                    assert item_uuid is not None
+                    self.verbose("uuid", item_uuid, "yellow", shift=1)
+                    self.data.test_uuids[serial_number] = item_uuid
+                else:
+                    item_uuid = self.data.test_uuids[serial_number]
+                # Support for idle tests
+                status = "SKIPPED"
+                if result:
+                    # For each log
+                    for index, log_path in enumerate(result.log):
+                        try:
+                            log = self.step.plan.execute.read(log_path)
+                        except tmt.utils.FileError:
+                            continue
 
-                        # Create a test item
-                        self.info("test", test.name, color="cyan")
+                        level = "INFO" if log_path == result.log[0] else "TRACE"
+                        status = self.TMT_TO_RP_RESULT_STATUS[result.result]
+
+                        # Upload log
                         response = self.rp_api_post(
                             session=session,
-                            path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
-                            json={"name": test.name,
-                                  "description": test_description,
-                                  "attributes": item_attributes,
-                                  "parameters": env_vars,
-                                  "codeRef": test.web_link() or None,
+                            path="log/entry",
+                            json={"message": _filter_invalid_chars(log),
+                                  "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
-                                  "type": "step",
-                                  "testCaseId": test.id or None,
-                                  "startTime": test_time})
-                        item_uuid = yaml_to_dict(response.text).get("id")
-                        assert item_uuid is not None
-                        self.verbose("uuid", item_uuid, "yellow", shift=1)
-                        self.data.test_uuids[test.serial_number] = item_uuid
-                    else:
-                        item_uuid = self.data.test_uuids[test.serial_number]
+                                  "level": level,
+                                  "time": result.end_time})
 
-                    # Support for idle tests
-                    status = "SKIPPED"
-                    if executed and result:
-                        # For each log
-                        for index, log_path in enumerate(result.log):
-                            try:
-                                log = self.step.plan.execute.read(log_path)
-                            except tmt.utils.FileError:
-                                continue
-
-                            level = "INFO" if log_path == result.log[0] else "TRACE"
-                            status = self.TMT_TO_RP_RESULT_STATUS[result.result]
-
-                            # Upload log
+                        # Write out failures
+                        if index == 0 and status == "FAILED":
+                            message = _filter_invalid_chars(result.failures(log))
                             response = self.rp_api_post(
                                 session=session,
                                 path="log/entry",
-                                json={"message": _filter_invalid_chars(log),
+                                json={"message": message,
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
-                                      "level": level,
+                                      "level": "ERROR",
                                       "time": result.end_time})
 
-                            # Write out failures
-                            if index == 0 and status == "FAILED":
-                                message = _filter_invalid_chars(result.failures(log))
-                                response = self.rp_api_post(
-                                    session=session,
-                                    path="log/entry",
-                                    json={"message": message,
-                                          "itemUuid": item_uuid,
-                                          "launchUuid": launch_uuid,
-                                          "level": "ERROR",
-                                          "time": result.end_time})
+                    test_time = result.end_time or self.time()
 
-                        # TODO: Add tmt files as attachments
-
-                        test_time = result.end_time or self.time()
-
-                    # Finish the test item
-                    response = self.rp_api_put(
-                        session=session,
-                        path=f"item/{item_uuid}",
-                        json={
-                            "launchUuid": launch_uuid,
-                            "endTime": test_time,
-                            "status": status,
-                            "issue": {
-                                "issueType": self.get_defect_type_locator(session, defect_type)}})
-                    launch_time = test_time
+                # Finish the test item
+                response = self.rp_api_put(
+                    session=session,
+                    path=f"item/{item_uuid}",
+                    json={
+                        "launchUuid": launch_uuid,
+                        "endTime": test_time,
+                        "status": status,
+                        "issue": {
+                            "issueType": self.get_defect_type_locator(session, defect_type)}})
+                launch_time = test_time
 
             if create_suite:
                 # Finish the test suite

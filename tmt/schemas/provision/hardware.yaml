@@ -355,6 +355,20 @@ definitions:
     # empty `boot`.
     minProperties: 1
 
+  # Hw requirements `iommu` block
+  iommu:
+    type: object
+
+    properties:
+      is-supported:
+        type: boolean
+
+      model-name:
+        type: string
+
+    additionalProperties: false
+    minProperties: 1
+
   # HW requirements: basic block
   block:
     type: object
@@ -404,6 +418,9 @@ definitions:
 
       virtualization:
         "$ref": "#/definitions/virtualization"
+
+      iommu:
+        "$ref": "#/definitions/iommu"
 
     additionalProperties: false
 

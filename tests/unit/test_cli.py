@@ -10,14 +10,15 @@ import pytest
 import tmt.cli
 import tmt.log
 from tests import CliRunner
+from tmt.utils import Path
 
 # Prepare path to examples
-PATH = os.path.dirname(os.path.realpath(__file__))
+PATH = Path(__file__).resolve().parent
 
 
 def example(name):
     """ Return path to given example """
-    return os.path.join(PATH, "../../examples/", name)
+    return PATH / "../../examples/" / name
 
 
 runner = CliRunner()

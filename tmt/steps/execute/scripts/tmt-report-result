@@ -10,14 +10,17 @@ die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 
 write_report_file () {
-    echo "  - name: ${TESTNAME}" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "    result: ${TESTRESULT}" >> "$REPORT_RESULT_OUTPUTFILE"
+    echo "  - name: \"${TESTNAME}\"" >> "$REPORT_RESULT_OUTPUTFILE"
+    echo "    result: \"${TESTRESULT}\"" >> "$REPORT_RESULT_OUTPUTFILE"
     if [ -n "${outputFile}" ]; then
+        # FIXME: The UNIX filenames can contain double quotes in the filename
+        #       (`$outputFile`). We should escape them as well as for TESTNAME.
+        #       Otherwise, the resulting YAML file can be invalid.
         echo "    log:" >> "$REPORT_RESULT_OUTPUTFILE"
-        echo "      - ${outputFile}" >> "$REPORT_RESULT_OUTPUTFILE"
+        echo "      - \"${outputFile}\"" >> "$REPORT_RESULT_OUTPUTFILE"
     fi
     echo "    end-time: \"$(date --utc +%FT%T.%6N%:z)\"" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "    data-path: ${TMT_TEST_DATA/$TMT_TEST_EXE}" >> "$REPORT_RESULT_OUTPUTFILE"
+    echo "    data-path: \"${TMT_TEST_DATA/$TMT_TEST_EXE}\"" >> "$REPORT_RESULT_OUTPUTFILE"
 }
 
 copy_outputfile_to_data_dir () {
@@ -85,7 +88,10 @@ if [ $# -lt 2 ] || [ $help == True ]; then
     echo ""
     exit 1
 fi
+
 TESTNAME=$1
+# If test name contains double quotes, escape them with a backslash
+TESTNAME=${TESTNAME//\"/\\\"}
 # If last character is a ':' then delete it.
 [[ ${TESTNAME: -1} == ':' ]] && TESTNAME=${TESTNAME::-1}
 # If the first character isn't a '/' then add it.

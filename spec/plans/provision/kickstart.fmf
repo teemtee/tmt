@@ -74,3 +74,9 @@ example:
                 "no-autopart harness=restraint"
             kernel-options: "ksdevice=eth1"
             kernel-options-post: "quiet"
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py
+    note: since 1.37
+  - implemented-by: /tmt/steps/provision/artemis.py
+    note: since 1.22

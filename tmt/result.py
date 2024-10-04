@@ -8,6 +8,7 @@ import fmf
 import fmf.utils
 
 import tmt.identifier
+import tmt.log
 import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.utils import GeneralError, Path, SerializableContainer, field
@@ -50,12 +51,35 @@ class ResultInterpret(enum.Enum):
 
     # Special interpret values
     RESPECT = 'respect'
-    CUSTOM = 'custom'
     XFAIL = 'xfail'
+    CUSTOM = 'custom'
+    RESTRAINT = 'restraint'
 
     @classmethod
     def is_result_outcome(cls, value: 'ResultInterpret') -> bool:
         return value.name in list(ResultOutcome.__members__.keys())
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'ResultInterpret':
+        try:
+            return ResultInterpret(spec)
+        except ValueError:
+            raise tmt.utils.SpecificationError(f"Invalid result interpretation '{spec}'.")
+
+    @classmethod
+    def normalize(
+            cls,
+            key_address: str,
+            value: Any,
+            logger: tmt.log.Logger) -> 'ResultInterpret':
+        if isinstance(value, ResultInterpret):
+            return value
+
+        if isinstance(value, str):
+            return cls.from_spec(value)
+
+        raise tmt.utils.SpecificationError(
+            f"Invalid result interpretation '{value}' at {key_address}.")
 
 
 RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
@@ -123,6 +147,11 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
+    original_result: ResultOutcome = field(
+        default=ResultOutcome.PASS,
+        serialize=lambda result: result.value,
+        unserialize=ResultOutcome.from_spec
+        )
     note: Optional[str] = None
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
@@ -132,6 +161,9 @@ class BaseResult(SerializableContainer):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     duration: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.original_result = self.result
 
     def show(self) -> str:
         """ Return a nicely colored result with test name (and note) """
@@ -288,8 +320,7 @@ class Result(BaseResult):
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
             data_path=invocation.relative_test_data_path)
 
-        return _result.interpret_result(ResultInterpret(
-            invocation.test.result) if invocation.test.result else ResultInterpret.RESPECT)
+        return _result.interpret_result(invocation.test.result)
 
     def interpret_result(self, interpret: ResultInterpret) -> 'Result':
         """

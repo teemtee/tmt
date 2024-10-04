@@ -719,6 +719,9 @@ class GuestData(SerializableContainer):
             if isinstance(value, (list, tuple)):
                 printable_value = fmf.utils.listed(value)
 
+            elif isinstance(value, dict):
+                printable_value = tmt.utils.format_value(value)
+
             elif isinstance(value, tmt.hardware.Hardware):
                 printable_value = tmt.utils.dict_to_yaml(value.to_spec())
 

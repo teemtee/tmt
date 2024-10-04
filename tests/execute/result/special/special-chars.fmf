@@ -1,0 +1,10 @@
+execute:
+    how: tmt
+discover:
+    how: shell
+    tests:
+      - name: '0..7 special: characters: *$@|&>< in: the: name'
+        result: restraint
+        test: "tmt-report-result '0..7 \"special\": \" characters: *$@|&>< in: the: name' PASS"
+provision:
+    how: container

@@ -27,6 +27,7 @@ import tmt.steps
 import tmt.templates
 import tmt.trying
 import tmt.utils
+import tmt.utils.jira
 import tmt.utils.rest
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path
@@ -824,7 +825,7 @@ _metadata_templates = fmf.utils.listed(
     help=f'Test script template ({_script_templates}).')
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link to the relevant issues.')
+    help='Link created test to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def tests_create(
@@ -1272,6 +1273,9 @@ _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join
 @option(
     '--finish', metavar='YAML', multiple=True,
     help='Finish phase content in yaml format.')
+@option(
+    '--link', metavar='[RELATION:]TARGET', multiple=True,
+    help='Link created plan to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def plans_create(
@@ -1457,6 +1461,9 @@ _story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], jo
     '-t', '--template', metavar='TEMPLATE',
     prompt=f'Template ({_story_templates})',
     help=f'Story template ({_story_templates}).')
+@option(
+    '--link', metavar='[RELATION:]TARGET', multiple=True,
+    help='Link created story to the relevant issues.')
 @verbosity_options
 @force_dry_options
 def stories_create(
@@ -1749,6 +1756,12 @@ def init(
 @option(
     "-l", "--login", is_flag=True, default=False,
     help="Log into the guest only, do not run any tests.")
+@option(
+    "--epel", is_flag=True, default=False,
+    help="Enable epel repository.")
+@option(
+    "--install", default=[], metavar="PACKAGE", multiple=True,
+    help="Install package on the guest.")
 @option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")
@@ -2226,3 +2239,38 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """ Setup shell completions for fish """
     setup_completion('fish', install, context)
+
+
+@main.command(name='link')
+@pass_context
+@click.argument('link', nargs=1, metavar='[RELATION:]TARGET')
+@click.argument('names', nargs=-1, metavar='[TEST|PLAN|STORY]...')
+@option(
+    '--separate', is_flag=True,
+    help="Create linking separately for multiple passed objects.")
+def link(context: Context,
+         names: list[str],
+         link: str,
+         separate: bool,
+         ) -> None:
+    """
+    Create a link to tmt web service in an issue tracking software.
+
+    Using the specified target, a link will be generated and added
+    to an issue. Link is generated from names of tmt objects
+    passed in arguments and configuration file.
+    """
+
+    tmt_objects = (
+        context.obj.tree.tests(names=list(names)) +
+        context.obj.tree.plans(names=list(names)) +
+        context.obj.tree.stories(names=list(names)))
+
+    if not tmt_objects:
+        raise tmt.utils.GeneralError("No test, plan or story found for linking.")
+
+    tmt.utils.jira.link(
+        tmt_objects=tmt_objects,
+        links=tmt.base.Links(data=link),
+        separate=separate,
+        logger=context.obj.logger)

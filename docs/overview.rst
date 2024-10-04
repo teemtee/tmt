@@ -720,6 +720,9 @@ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
 PIP:
 https://pypi.org/project/tmt/
 
+Quay:
+https://quay.io/organization/teemtee
+
 Metadata Specification:
 https://tmt.readthedocs.io/en/stable/spec.html
 
@@ -755,7 +758,8 @@ Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez,
 James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
 Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
-Otto Šabart, Ismail Ibrahim Quwarah and Sergei Petrosian.
+Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
+Koscielniak and Han Han.
 
 
 Copyright

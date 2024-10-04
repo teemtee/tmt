@@ -22,7 +22,7 @@ import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import CheckResult, Result, ResultGuestData, ResultOutcome
+from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
@@ -895,11 +895,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         self.debug(f"Extract results of '{invocation.test.name}'.")
 
-        if invocation.test.result == 'custom':
+        if invocation.test.result == ResultInterpret.CUSTOM:
             return self.extract_custom_results(invocation)
 
         # Handle the 'tmt-report-result' command results as separate tests
-        if invocation.test.result == 'restraint':
+        if invocation.test.result == ResultInterpret.RESTRAINT:
             return self.extract_tmt_report_results_restraint(
                 invocation=invocation,
                 default_log=invocation.relative_path / TEST_OUTPUT_FILENAME)
@@ -1169,3 +1169,31 @@ class Execute(tmt.steps.Step):
         https://tmt.readthedocs.io/en/latest/spec/plans.html#execute
         """
         return self._results
+
+    def results_for_tests(
+            self,
+            tests: list['tmt.base.Test']
+            ) -> list[tuple[Optional[Result], Optional['tmt.base.Test']]]:
+        """
+        Collect results and corresponding tests.
+
+        :returns: a list of result and test pairs.
+            * if there is not test found for the result, e.g. when
+            results were loaded from storage but tests were not,
+            ``None`` represents the missing test: ``(result, None)``.
+            * if there is no result for a test, e.g. when the test was
+            not executed, ``None`` represents the missing result:
+            ``(None, test)``.
+        """
+
+        known_serial_numbers = {test.serial_number: test for test in tests}
+        referenced_serial_numbers = {result.serial_number for result in self._results}
+
+        return [
+            (result, known_serial_numbers.get(result.serial_number))
+            for result in self._results
+            ] + [
+            (None, test)
+            for test in tests
+            if test.serial_number not in referenced_serial_numbers
+            ]

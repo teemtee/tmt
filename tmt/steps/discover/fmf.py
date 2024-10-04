@@ -544,8 +544,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     'git', 'log', '--format=', '--stat', '--name-only', f"{modified_ref}..HEAD"
                     ), cwd=self.testdir)
             if output.stdout:
-                directories = [os.path.dirname(name) for name in output.stdout.split('\n')]
-                modified = {f"^/{re.escape(name)}" for name in directories if name}
+                directories = [Path(name).parent for name in output.stdout.split('\n')]
+                modified = {f"^/{re.escape(str(directory))}"
+                            for directory in directories if directory}
                 if not modified:
                     # Nothing was modified, do not select anything
                     return
@@ -650,8 +651,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # glob otherwise
         if dist_git_extract and dist_git_extract != '/':
             try:
-                dist_git_extract = Path(glob.glob(os.path.join(
-                    sourcedir, dist_git_extract.lstrip('/')))[0])
+
+                dist_git_extract = Path(
+                    glob.glob(str(sourcedir / dist_git_extract.lstrip('/')))[0])
             except IndexError:
                 raise tmt.utils.DiscoverError(
                     f"Couldn't glob '{dist_git_extract}' "
@@ -673,8 +675,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             except tmt.utils.MetadataError:
                 self.warn("No fmf root to remove, there isn't one already.")
             if not self.is_dry_run:
-                shutil.rmtree(os.path.join(
-                    dist_git_extract or extracted_fmf_root, '.fmf'))
+                shutil.rmtree((dist_git_extract or extracted_fmf_root) / '.fmf')
         if not dist_git_extract:
             try:
                 top_fmf_root = tmt.utils.find_fmf_root(sourcedir, ignore_paths=[sourcedir])[0]

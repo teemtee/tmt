@@ -15,7 +15,14 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, ProvisionError, ShellScript, UpdatableMessage, field
+from tmt.utils import (
+    Command,
+    Path,
+    ProvisionError,
+    ShellScript,
+    UpdatableMessage,
+    field,
+    )
 
 mrack: Any
 providers: Any
@@ -512,6 +519,21 @@ def _transform_zcrypt_mode(
         children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
 
 
+def _transform_iommu_is_supported(
+        constraint: tmt.hardware.FlagConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+
+    test = (constraint.operator, constraint.value)
+
+    if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
+        return MrackHWKeyValue('VIRT_IOMMU', '==', '1')
+
+    if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
+        return MrackHWKeyValue('VIRT_IOMMU', '==', '0')
+
+    return _transform_unsupported(constraint, logger)
+
+
 def _transform_location_lab_controller(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -573,6 +595,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
+    'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
     }
 
 
@@ -675,8 +698,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """ Create single input for Beaker provisioner """
-
-            req: dict[str, Any] = super().create_host_requirement(dataclasses.asdict(host))
+            req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
@@ -686,6 +708,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+
+            logger.debug('mrack request', req, level=4)
 
             logger.info('whiteboard', host.whiteboard, 'green')
 
@@ -763,6 +787,13 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              {DEFAULT_API_SESSION_REFRESH} seconds by default.
              """,
         normalize=tmt.utils.normalize_int)
+    kickstart: dict[str, str] = field(
+        default_factory=dict,
+        option='--kickstart',
+        metavar='KEY=VALUE',
+        help='Optional Beaker kickstart to use when provisioning the guest.',
+        multiple=True,
+        normalize=tmt.utils.normalize_string_dict)
 
     beaker_job_owner: Optional[str] = field(
         default=None,
@@ -805,9 +836,21 @@ class CreateJobParameters:
     os: str
     arch: str
     hardware: Optional[tmt.hardware.Hardware]
+    kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
     group: str = 'linux'
+
+    def to_mrack(self) -> dict[str, Any]:
+        data = dataclasses.asdict(self)
+
+        data['beaker'] = {}
+
+        if self.kickstart:
+            data['beaker']['ks_meta'] = self.kickstart.get('metadata')
+            data['beaker']['ks_append'] = self.kickstart
+
+        return data
 
 
 class BeakerAPI:
@@ -824,28 +867,25 @@ class BeakerAPI:
 
         # use global context class
         global_context = mrack.context.global_context
-        mrack_config = ""
 
-        if os.path.exists(os.path.join(os.path.dirname(__file__), "mrack/mrack.conf")):
-            mrack_config = os.path.join(
-                os.path.dirname(__file__),
-                "mrack/mrack.conf",
-                )
+        mrack_config_locations = [
+            Path(__file__).parent / "mrack/mrack.conf",
+            Path("/etc/tmt/mrack.conf"),
+            Path("~/.mrack/mrack.conf").expanduser(),
+            Path.cwd() / "mrack.conf"
+            ]
 
-        if os.path.exists("/etc/tmt/mrack.conf"):
-            mrack_config = "/etc/tmt/mrack.conf"
+        mrack_config: Optional[Path] = None
 
-        if os.path.exists(os.path.join(os.path.expanduser("~"), ".mrack/mrack.conf")):
-            mrack_config = os.path.join(os.path.expanduser("~"), ".mrack/mrack.conf")
-
-        if os.path.exists(os.path.join(os.getcwd(), "mrack.conf")):
-            mrack_config = os.path.join(os.getcwd(), "mrack.conf")
+        for potential_location in mrack_config_locations:
+            if potential_location.exists():
+                mrack_config = potential_location
 
         if not mrack_config:
             raise ProvisionError("Configuration file 'mrack.conf' not found.")
 
         try:
-            global_context.init(mrack_config)
+            global_context.init(str(mrack_config))
         except mrack.errors.ConfigError as mrack_conf_err:
             raise ProvisionError(mrack_conf_err)
 
@@ -910,6 +950,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     arch: str
     image: str = "fedora-latest"
     hardware: Optional[tmt.hardware.Hardware] = None
+    kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
 
@@ -982,6 +1023,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         data = CreateJobParameters(
             tmt_name=tmt_name,
             hardware=self.hardware,
+            kickstart=self.kickstart,
             arch=self.arch,
             os=self.image,
             name=f'{self.image}-{self.arch}',

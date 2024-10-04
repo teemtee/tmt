@@ -576,7 +576,7 @@ class Environment(dict[str, EnvVarValue]):
             content = environment_filepath.read_text()
 
         # Parse yaml file
-        if os.path.splitext(filename)[1].lower() in ('.yaml', '.yml'):
+        if Path(filename).suffix.lower() in ('.yaml', '.yml'):
             environment = cls.from_yaml(content)
 
         else:
@@ -5387,6 +5387,53 @@ def normalize_shell_script(
         return ShellScript(value)
 
     raise NormalizationError(key_address, value, 'a string')
+
+
+def normalize_string_dict(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> dict[str, str]:
+    """
+    Normalize a key/value dictionary.
+
+    The input value could be specified in two ways:
+
+    * a dictionary, or
+    * a list of ``KEY=VALUE`` strings.
+
+    For example, the following are acceptable inputs:
+
+    .. code-block:: python
+
+       {'foo': 'bar', 'qux': 'quux'}
+
+       ['foo=bar', 'qux=quux']
+
+    :param value: input value from key source.
+    """
+
+    if isinstance(raw_value, dict):
+        return {
+            str(key).strip(): str(value).strip() for key, value in raw_value.items()
+            }
+
+    if isinstance(raw_value, (list, tuple)):
+        normalized = {}
+
+        for datum in cast(list[str], raw_value):
+            try:
+                key, value = datum.split('=', 1)
+
+            except ValueError as exc:
+                raise NormalizationError(
+                    key_address, datum, 'a KEY=VALUE string') from exc
+
+            normalized[key.strip()] = value.strip()
+
+        return normalized
+
+    raise tmt.utils.NormalizationError(
+        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
 
 
 class NormalizeKeysMixin(_CommonBase):

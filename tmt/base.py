@@ -54,9 +54,10 @@ import tmt.steps.report
 import tmt.templates
 import tmt.utils
 import tmt.utils.git
+import tmt.utils.jira
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.result import Result
+from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
     Environment,
@@ -1073,7 +1074,12 @@ class Test(
         exporter=lambda environment: environment.to_fmf_spec())
 
     duration: str = DEFAULT_TEST_DURATION_L1
-    result: str = 'respect'
+    result: ResultInterpret = field(
+        default=ResultInterpret.RESPECT,
+        normalize=ResultInterpret.normalize,
+        serialize=lambda result: result.value,
+        unserialize=ResultInterpret.from_spec,
+        exporter=lambda result: result.value)
 
     where: list[str] = field(default_factory=list)
 
@@ -1291,6 +1297,14 @@ class Test(
                 force=force,
                 logger=logger)
 
+            if links.get('verifies') and dry is False:
+                tests = Tree(
+                    path=path,
+                    logger=logger).tests(
+                    names=[f"^{name}$"],
+                    apply_command_line=False)
+                tmt.utils.jira.link(tmt_objects=tests, links=links, logger=logger)
+
     @property
     def manual_test_path(self) -> Path:
         assert self.manual, 'Test is not manual yet path to manual instructions was requested'
@@ -1343,6 +1357,9 @@ class Test(
                     key,
                     [check.to_spec() for check in cast(list[Check], value)]
                     ))
+                continue
+            if key == 'result':
+                echo(tmt.utils.format(key, value.value))
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
@@ -1597,9 +1614,12 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
         # don't expand it at all, let's put the original value back
         # into the stream.
         # See https://github.com/teemtee/tmt/issues/2654.
+        #
+        # TID251: `pathlib` does not provide `os.patch.expandvars`, its
+        # use is allowed.
         expanded_env: list[tuple[bool, str, str]] = [
             (False, item[1:], item) if item.startswith('@')
-            else (True, os.path.expandvars(f'${item}'), item)
+            else (True, os.path.expandvars(f'${item}'), item)  # noqa: TID251
             for item in split_data]
 
         # Expand unexpanded items, this time with fmf context providing
@@ -1612,8 +1632,9 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
                 if was_expanded:
                     expanded_ctx.append(item)
                     continue
-
-                expanded = os.path.expandvars(f'${item}')
+                # TID251: `pathlib` does not provide `os.patch.expandvars`, its
+                # use is allowed.
+                expanded = os.path.expandvars(f'${item}')  # noqa: TID251
                 expanded_ctx.append(f'${original_item}' if expanded.startswith('$') else expanded)
 
         # This cast is tricky: we get a string, and we return a
@@ -1990,15 +2011,22 @@ class Plan(
         # Override template with data provided on command line
         plan_content = Plan.edit_template(plan_content)
 
-        for name in names:
-            (directory, plan) = os.path.split(name)
-            directory_path = path / directory.lstrip('/')
-            has_fmf_ext = os.path.splitext(plan)[1] == '.fmf'
-            plan_path = directory_path / (plan + ('' if has_fmf_ext else '.fmf'))
+        # Append link with appropriate relation
+        links = Links(data=list(cast(list[_RawLink], Plan._opt('link', []))))
+        if links:  # Output 'links' if and only if it is not empty
+            plan_content += dict_to_yaml({
+                'link': links.to_spec()
+                })
+
+        for plan_name in names:
+            plan_path = path / Path(plan_name).unrooted()
+
+            if plan_path.suffix != '.fmf':
+                plan_path = plan_path.parent / f'{plan_path.name}.fmf'
 
             # Create directory & plan
             tmt.utils.create_directory(
-                path=directory_path,
+                path=plan_path.parent,
                 name='plan directory',
                 dry=dry,
                 logger=logger)
@@ -2010,6 +2038,14 @@ class Plan(
                 dry=dry,
                 force=force,
                 logger=logger)
+
+            if links.get('verifies') and dry is False:
+                plans = Tree(
+                    path=path,
+                    logger=logger).plans(
+                    names=[f"^{plan_name}$"],
+                    apply_command_line=False)
+                tmt.utils.jira.link(tmt_objects=plans, links=links, logger=logger)
 
     def _iter_steps(self,
                     enabled_only: bool = True,
@@ -2696,16 +2732,22 @@ class Story(
             except KeyError:
                 raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
 
-        for name in names:
-            # Prepare paths
-            (directory, story) = os.path.split(name)
-            directory_path = path / directory.lstrip('/')
-            has_fmf_ext = os.path.splitext(story)[1] == '.fmf'
-            story_path = directory_path / (story + ('' if has_fmf_ext else '.fmf'))
+        # Append link with appropriate relation
+        links = Links(data=list(cast(list[_RawLink], Story._opt('link', []))))
+        if links:  # Output 'links' if and only if it is not empty
+            story_content += dict_to_yaml({
+                'link': links.to_spec()
+                })
+
+        for story_name in names:
+            story_path = path / Path(story_name).unrooted()
+
+            if story_path.suffix != '.fmf':
+                story_path = story_path.parent / f'{story_path.name}.fmf'
 
             # Create directory & story
             tmt.utils.create_directory(
-                path=directory_path,
+                path=story_path.parent,
                 name='story directory',
                 dry=dry,
                 logger=logger)
@@ -2717,6 +2759,14 @@ class Story(
                 dry=dry,
                 force=force,
                 logger=logger)
+
+            if links.get('verifies') and dry is False:
+                stories = Tree(
+                    path=path,
+                    logger=logger).stories(
+                    names=[f"^{story_name}$"],
+                    apply_command_line=False)
+                tmt.utils.jira.link(tmt_objects=stories, links=links, logger=logger)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -2954,23 +3004,30 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             unique: bool = True,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: bool = True
             ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['test']
         names = names or []
-        filters = (filters or []) + list(Test._opt('filters', []))
-        conditions = (conditions or []) + list(Test._opt('conditions', []))
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Test._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Test._opt('exclude', []))
+        excludes = (excludes or [])
         # Used in: tmt run test --name NAME, tmt test ls NAME...
-        cmd_line_names: list[str] = list(Test._opt('names', []))
+        cmd_line_names: list[str] = []
+
+        if apply_command_line:
+            filters += list(Test._opt('filters', []))
+            conditions += list(Test._opt('conditions', []))
+            excludes += list(Test._opt('exclude', []))
+            cmd_line_names = list(Test._opt('names', []))
 
         # Sanitize test names to make sure no name includes control character
         cmd_line_names = self.sanitize_cli_names(cmd_line_names)
@@ -3034,22 +3091,29 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             run: Optional['Run'] = None,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: bool = True
             ) -> list[Plan]:
         """ Search available plans """
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
         local_plan_keys = (keys or []) + ['execute']
         remote_plan_keys = (keys or []) + ['plan']
-        names = (names or []) + list(Plan._opt('names', []))
-        filters = (filters or []) + list(Plan._opt('filters', []))
-        conditions = (conditions or []) + list(Plan._opt('conditions', []))
+        names = (names or [])
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Plan._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Plan._opt('exclude', []))
+        excludes = (excludes or [])
+
+        if apply_command_line:
+            names += list(Plan._opt('names', []))
+            filters += list(Plan._opt('filters', []))
+            conditions += list(Plan._opt('conditions', []))
+            excludes += list(Plan._opt('exclude', []))
 
         # Sanitize plan names to make sure no name includes control character
         names = self.sanitize_cli_names(names)
@@ -3105,21 +3169,28 @@ class Tree(tmt.utils.Common):
             conditions: Optional[list[str]] = None,
             whole: bool = False,
             links: Optional[list['LinkNeedle']] = None,
-            excludes: Optional[list[str]] = None
+            excludes: Optional[list[str]] = None,
+            apply_command_line: Optional[bool] = True
             ) -> list[Story]:
         """ Search available stories """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['story']
-        names = (names or []) + list(Story._opt('names', []))
-        filters = (filters or []) + list(Story._opt('filters', []))
-        conditions = (conditions or []) + list(Story._opt('conditions', []))
+        names = (names or [])
+        filters = (filters or [])
+        conditions = (conditions or [])
         # FIXME: cast() - typeless "dispatcher" method
         links = (links or []) + [
             LinkNeedle.from_spec(value)
             for value in cast(list[str], Story._opt('links', []))
             ]
-        excludes = (excludes or []) + list(Story._opt('exclude', []))
+        excludes = (excludes or [])
+
+        if apply_command_line:
+            names += list(Story._opt('names', []))
+            filters += list(Story._opt('filters', []))
+            conditions += list(Story._opt('conditions', []))
+            excludes += list(Story._opt('exclude', []))
 
         # Sanitize story names to make sure no name includes control character
         names = self.sanitize_cli_names(names)
@@ -3947,7 +4018,7 @@ class Clean(tmt.utils.Common):
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
             all_workdirs.sort(
-                key=lambda workdir: os.path.getmtime(workdir / 'run.yaml'), reverse=True)
+                key=lambda workdir: (workdir / 'run.yaml').stat().st_mtime, reverse=True)
             all_workdirs = all_workdirs[keep:]
 
         successful = True
