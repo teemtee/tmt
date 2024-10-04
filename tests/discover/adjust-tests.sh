@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt run -i $run discover plans --name /fmf/adjust-tests"
+        rlRun -s "tmt -c trigger=commit run -i $run discover plans --name /fmf/adjust-tests"
         # If we ever change the path...
         tests_yaml="$(find $run -name tests.yaml)"
         rlAssertExits "$tests_yaml"
@@ -20,6 +20,9 @@ rlJournalStart
         # check added
         rlRun -s "yq '.[].check' < $tests_yaml"
         rlAssertGrep "avc" $rlRun_LOG
+        # recommend should not contain FAILURE
+        rlRun -s "yq '.[].recommend' < $tests_yaml"
+        rlAssertNotGrep "FAILURE" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup

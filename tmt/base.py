@@ -2857,7 +2857,7 @@ class Tree(tmt.utils.Common):
                  path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
                  fmf_context: Optional[FmfContext] = None,
-                 additional_rules: Optional[list[Any]] = None,
+                 additional_rules: Optional[list[_RawAdjustRule]] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 

@@ -271,8 +271,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     To modify the discovered tests' metadata directly from the plan (for example if
     it is an yet-to-be added package, special HW, or missing permissions to modify the tests repo),
-    you can use the ``adjust-tests``. Its value is the list of actions to do, each action is the
-    "merging" operation of fmf (similar form as is used in the adjust rules)
+    you can use the ``adjust-tests``. Values are in the same form as the adjust rules, you can use
+    same functionality.
 
     Following example adds an 'avc' check for each discovered test, doubles its duration and
     replaces each occurrence of the word 'python3.11' in the list of required packages.
@@ -285,6 +285,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             - check+:
                 - how: avc
             - duration+: '*2'
+              because: Slow system under test
+              when: arch == i286
             - require~:
                 - '/python3.11/python3.12/'
     """
