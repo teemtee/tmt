@@ -915,20 +915,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         collection.validate()
 
-        # TODO: Can we use the Result.from_invocation(...) here? Should I somehow map the results
-        # to the test invocation here or not?
-        results = [tmt.Result.from_serialized(r) for r in collection.results]
-
-        # TODO: Should I somehow map the Result to test invocation?
-        for result in results:
-            # Ensure the result name is in test namespace
-            # TODO: Do we want to move it under main test namespace or not, I suppose we do.
-            if result.name.startswith('/'):
-                result.name = f'{invocation.test.name}{result.name}'
-            else:
-                result.name = f'{invocation.test.name}/{result.name}'
-
-        return results
+        return [tmt.Result.from_serialized(r) for r in collection.results]
 
     def extract_tmt_report_results_restraint(
             self,

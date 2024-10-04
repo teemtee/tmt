@@ -70,7 +70,7 @@ class Beakerlib(TestFramework):
         # The outcome of a parent tmt result must be never modified based on subresults outcomes.
         # The parent result outcome will be always set to outcome reported by a Beaker. The
         # subresults are there just to provide more detail.
-        subresults = cls.results_to_subresults(results)
+        subresults = [r.to_subresult(invocation) for r in results]
 
         # Initialize data, prepare log paths
         note: Optional[str] = None
