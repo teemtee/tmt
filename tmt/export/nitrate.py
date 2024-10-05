@@ -285,10 +285,10 @@ def get_category(path: Path) -> str:
     """ Get category from Makefile """
     category = DEFAULT_NITRATE_CATEGORY
     try:
-        with open(path / 'Makefile', encoding='utf-8') as makefile_file:
-            makefile = makefile_file.read()
         category_search = re.search(
-            r'echo\s+"Type:\s*(.*)"', makefile, re.MULTILINE)
+            r'echo\s+"Type:\s*(.*)"',
+            (path / 'Makefile').read_text(encoding='utf-8'),
+            re.MULTILINE)
         if category_search:
             category = category_search.group(1)
     # Default to 'Sanity' if Makefile or Type not found

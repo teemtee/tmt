@@ -230,6 +230,9 @@ GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GI
 T = TypeVar('T')
 
 
+WriteMode = Literal['w', 'a']
+
+
 def effective_workdir_root() -> Path:
     """
     Find out what the actual workdir root is.
@@ -1985,16 +1988,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             path = self.workdir / path
         self.debug(f"Read file '{path}'.", level=level)
         try:
-            with open(path, encoding='utf-8', errors='replace') as data:
-                return data.read()
+            return path.read_text(encoding='utf-8', errors='replace')
+
         except OSError as error:
-            raise FileError(f"Failed to read '{path}'.\n{error}")
+            raise FileError("Failed to read from '{path}'.") from error
 
     def write(
             self,
             path: Path,
             data: str,
-            mode: str = 'w',
+            mode: WriteMode = 'w',
             level: int = 2) -> None:
         """ Write a file to the workdir """
         if self.workdir:
@@ -2005,10 +2008,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         if self.is_dry_run:
             return
         try:
-            with open(path, mode, encoding='utf-8', errors='replace') as file:
-                file.write(data)
+            if mode == 'a':
+                path.append_text(data, encoding='utf-8', errors='replace')
+
+            else:
+                path.write_text(data, encoding='utf-8', errors='replace')
+
         except OSError as error:
-            raise FileError(f"Failed to write '{path}'.\n{error}")
+            raise FileError("Failed to write into '{path}' file.") from error
 
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         """
@@ -3292,12 +3299,10 @@ def markdown_to_html(filename: Path) -> str:
         raise ConvertError("Install tmt+test-convert to export tests.")
 
     try:
-        with open(filename) as file:
-            try:
-                text = file.read()
-            except UnicodeError:
-                raise MetadataError(f"Unable to read '{filename}'.")
-            return markdown.markdown(text)
+        try:
+            return markdown.markdown(filename.read_text())
+        except UnicodeError:
+            raise MetadataError(f"Unable to read '{filename}'.")
     except OSError:
         raise ConvertError(f"Unable to open '{filename}'.")
 
@@ -4325,20 +4330,19 @@ class DistGitHandler:
         package = globbed[0].stem
         ret_values = []
         try:
-            with open(cwd / self.sources_file_name) as f:
-                for line in f:
-                    match = self.re_source.match(line)
-                    if match is None:
-                        raise GeneralError(
-                            f"Couldn't match '{self.sources_file_name}' "
-                            f"content with '{self.re_source.pattern}'.")
-                    used_hash, source_name, hash_value = match.groups()
-                    ret_values.append((self.lookaside_server + self.uri.format(
-                        name=package,
-                        filename=source_name,
-                        hash=hash_value,
-                        hashtype=used_hash.lower()
-                        ), source_name))
+            for line in (cwd / self.sources_file_name).read_text().splitlines():
+                match = self.re_source.match(line)
+                if match is None:
+                    raise GeneralError(
+                        f"Couldn't match '{self.sources_file_name}' "
+                        f"content with '{self.re_source.pattern}'.")
+                used_hash, source_name, hash_value = match.groups()
+                ret_values.append((self.lookaside_server + self.uri.format(
+                    name=package,
+                    filename=source_name,
+                    hash=hash_value,
+                    hashtype=used_hash.lower()
+                    ), source_name))
         except Exception as error:
             raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
         if not ret_values:
@@ -4425,18 +4429,17 @@ def distgit_download(
         if output.stdout is None:
             raise tmt.utils.GeneralError("Missing remote origin url.")
         remotes = output.stdout.split('\n')
-        handler = tmt.utils.get_distgit_handler(remotes=remotes)
+        handler = get_distgit_handler(remotes=remotes)
     else:
-        handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
+        handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
-        with tmt.utils.retry_session() as session:
+        with retry_session() as session:
             response = session.get(url)
         response.raise_for_status()
         target_dir.mkdir(exist_ok=True, parents=True)
-        with open(target_dir / source_name, 'wb') as tarball:
-            tarball.write(response.content)
+        (target_dir / source_name).write_bytes(response.content)
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
@@ -4649,8 +4652,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
         schema_filepath = resource_files('schemas') / schema_filepath
 
     try:
-        with open(schema_filepath, encoding='utf-8') as f:
-            return cast(Schema, yaml_to_dict(f.read()))
+        return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as exc:
         raise FileError(f"Failed to load schema file {schema_filepath}\n{exc}")

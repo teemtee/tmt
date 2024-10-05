@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Union
+from typing import Optional, Union
 
 
 class Path(pathlib.PosixPath):
@@ -43,3 +43,12 @@ class Path(pathlib.PosixPath):
             return self.relative_to("/")
 
         return self
+
+    def append_text(
+            self,
+            data: str,
+            encoding: Optional[str] = None,
+            errors: Optional[str] = None,
+            newline: Optional[str] = None) -> int:
+        with self.open('a', encoding=encoding, errors=errors, newline=newline) as f:
+            return f.write(data)

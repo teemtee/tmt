@@ -61,9 +61,7 @@ def _save_report(
         *report
         ]
 
-    mode = 'a' if append else 'w'
-
-    invocation.phase.write(report_filepath, '\n'.join(report), mode=mode)
+    invocation.phase.write(report_filepath, '\n'.join(report), mode='a' if append else 'w')
 
     return report_filepath
 
