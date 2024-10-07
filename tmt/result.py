@@ -177,7 +177,8 @@ class BaseResult(SerializableContainer):
         unserialize=ResultOutcome.from_spec
         )
     note: list[str] = field(
-        default_factory=cast(Callable[[], list[str]], list))
+        default_factory=cast(Callable[[], list[str]], list),
+        unserialize=lambda value: [] if value is None else value)
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
         serialize=lambda logs: [str(log) for log in logs],
