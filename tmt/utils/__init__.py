@@ -2710,7 +2710,7 @@ def json_to_list(data: Any) -> list[Any]:
     """ Convert json into list """
 
     try:
-        loaded_data = json.load(data)
+        loaded_data = json.loads(data)
     except json.decoder.JSONDecodeError as error:
         raise GeneralError(f"Invalid json syntax: {error}")
 
