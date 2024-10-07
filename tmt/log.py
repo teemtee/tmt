@@ -281,6 +281,7 @@ class LogRecordDetails:
 
 
 class LogfileHandler(logging.FileHandler):
+    #: Paths of all log files to which ``LogfileHandler`` was attached.
     emitting_to: list[Path] = []
 
     def __init__(self, filepath: 'tmt.utils.Path') -> None:
@@ -487,7 +488,7 @@ class Logger:
         self.quiet = quiet
         self.topics = topics or DEFAULT_TOPICS
 
-        self.apply_colors_output = self._apply_colors_output = apply_colors_output
+        self.apply_colors_output = apply_colors_output
         self.apply_colors_logging = apply_colors_logging
 
         self._decolorize_output = create_decolorizer(apply_colors_output)
