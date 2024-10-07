@@ -99,9 +99,9 @@ class Shell(TestFramework):
         Check result of a shell test.
 
         If there are no extra results (e.g. extracted from the tmt-report-results.yaml), continue
-        normally (set the parent result outcome according to test exit status).
+        normally - set the parent result outcome according to test exit status.
 
-        Otherwise, process the given results, reduce their outcomes into single one and set these
+        Otherwise, process given results, reduce their outcomes into a single one and set these
         results as tmt subresults.
 
         :param invocation: test invocation to which the results belong to.
@@ -111,6 +111,8 @@ class Shell(TestFramework):
         assert invocation.return_code is not None
         note = None
 
+        # If no extra results were passed (e.g. `tmt-report-result` was not called during the
+        # test), just process the exit code of a shell test and return the result.
         if not results:
             try:
                 # Process the exit code and prepare the log path
@@ -131,6 +133,6 @@ class Shell(TestFramework):
                 log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
                 note=note)]
 
-        # Handle the 'tmt-report-result' command results as a single test with assigned tmt
+        # Handle the `tmt-report-result` command results as a single test with assigned tmt
         # subresults.
         return cls._process_results_reduce(invocation, results)
