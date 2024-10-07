@@ -11,17 +11,9 @@ permissions:
 
 jobs:
   doc-test:
-    name: Sphinx-${{ matrix.builder }}
+    name: Sphinx Documentation Tests
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental || false }}
-    strategy:
-      fail-fast: false
-      matrix:
-        builder: [ html, linkcheck ]
-        include:
-          # Run default html builder with warnings as error
-          - builder: html
-            args: -W
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +22,12 @@ jobs:
           python-version: '3.x'
           cache: 'pip'
 
-      - name: Run sphinx builder ${{ matrix.builder }}
-        run: |
-          pip install hatch
-          hatch run docs:${{ matrix.builder }} ${{ matrix.args }}
+      - name: Install hatch
+        run: pip install hatch
+
+      - name: Run sphinx html builder
+        # -W = warnings as error
+        run: hatch run docs:html -W
+
+      - name: Run sphinx linkcheck
+        run: hatch run docs:linkcheck
