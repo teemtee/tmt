@@ -308,6 +308,7 @@ man_pages = [
 # man_show_urls = False
 
 # -- Options for linkcheck builder ----------------------------------------
+linkcheck_retries = 3
 linkcheck_ignore = [
     # Github "source code line" anchors are apparently too dynamic for linkcheck
     # to detect correctly. The link exists, a browser can open it, but linkcheck
