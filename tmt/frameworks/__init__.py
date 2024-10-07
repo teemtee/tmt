@@ -118,8 +118,7 @@ class TestFramework:
         Extract test results.
 
         :param invocation: test invocation to which the check belongs to.
-        :param results: list of results which will be optionally saved as subresults by a
-            framework.
+        :param results: current list of results as reported by a test
         :param logger: to use for logging.
         :returns: list of results produced by the given test.
         """

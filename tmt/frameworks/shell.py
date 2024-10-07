@@ -111,28 +111,28 @@ class Shell(TestFramework):
         assert invocation.return_code is not None
         note = None
 
-        # If no extra results were passed (e.g. `tmt-report-result` was not called during the
-        # test), just process the exit code of a shell test and return the result.
-        if not results:
-            try:
-                # Process the exit code and prepare the log path
-                result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[invocation.return_code]
-            except KeyError:
-                result = ResultOutcome.ERROR
-                # Add note about the exceeded duration
-                if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                    note = 'timeout'
-                    invocation.phase.timeout_hint(invocation)
-
-                elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                    note = 'pidfile locking'
-
-            return [tmt.Result.from_test_invocation(
-                invocation=invocation,
-                result=result,
-                log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
-                note=note)]
-
         # Handle the `tmt-report-result` command results as a single test with assigned tmt
         # subresults.
-        return cls._process_results_reduce(invocation, results)
+        if results:
+            return cls._process_results_reduce(invocation, results)
+
+        # If no extra results were passed (e.g. `tmt-report-result` was not called during the
+        # test), just process the exit code of a shell test and return the result.
+        try:
+            # Process the exit code and prepare the log path
+            result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[invocation.return_code]
+        except KeyError:
+            result = ResultOutcome.ERROR
+            # Add note about the exceeded duration
+            if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+                note = 'timeout'
+                invocation.phase.timeout_hint(invocation)
+
+            elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
+                note = 'pidfile locking'
+
+        return [tmt.Result.from_test_invocation(
+            invocation=invocation,
+            result=result,
+            log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
+            note=note)]
