@@ -59,32 +59,22 @@
                     </testcase>
                 {% endfor %}
 
-                {#
-                    TODO:
-                    Optionally include testcase properties?
-
-                    Optionally add the result properties
-                    {% if result.properties is defined %}
-                        {% with properties=result.properties %}
-                            include "includes/_properties.xml.j2"
-                        {% endwith %}
-                    {% endif %}
-                #}
+                {# Optionally add the result properties #}
+                {% if result.properties is defined %}
+                    {% with properties=result.properties %}
+                        {% include "includes/_properties.xml.j2" %}
+                    {% endwith %}
+                {% endif %}
             </testsuite>
         {% endfor %}
     {% endblock %}
 
-    {#
-        TODO:
-        Optionally include testsuites properties if they are defined.
-
-        Optionally include the properties section in testsuites tag
-        {% if RESULTS.properties is defined %}
-            {% with properties=RESULTS.properties %}
-                include "includes/_properties.xml.j2"
-            {% endwith %}
-        {% endif %}
-    #}
+    {# Optionally include the properties section in testsuites tag #}
+    {% if RESULTS.properties is defined %}
+        {% with properties=RESULTS.properties %}
+            {% include "includes/_properties.xml.j2" %}
+        {% endwith %}
+    {% endif %}
 
     </testsuites>
 {% endblock %}

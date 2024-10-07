@@ -81,29 +81,8 @@ class ImplementProperties:
         name: str
         value: str
 
-    def __init__(
-            self,
-            wrapped: Union[tmt.Result, tmt.result.SubResult],
-            subresults_context_class: 'type[ResultsContext]') -> None:
-
-        self._wrapped = wrapped
-        self._subresults_context_class = subresults_context_class
+    def __init__(self) -> None:
         self._properties: dict[str, str] = {}
-
-    @property
-    def subresult(self) -> 'ResultsContext':
-        """
-        Override the ``tmt.Result.subresult`` and wrap all the ``tmt.result.SubResult`` instances
-        into the ``ResultsContext``.
-        """
-
-        # `tmt.result.SubResult.subresult` is not defined, just raise the AttributeError to silent
-        # the typing errors.
-        if isinstance(self._wrapped, tmt.result.SubResult):
-            raise AttributeError(
-                f"'{self._wrapped.__class__.__name__} object has no attribute 'subresult'")
-
-        return self._subresults_context_class(self._wrapped.subresult)
 
     @property
     def properties(self) -> list[PropertyDict]:
@@ -122,13 +101,33 @@ class ResultWrapper(ImplementProperties):
     get available inside the template context.
     """
 
-    def __init__(self, wrapped: tmt.Result) -> None:
+    def __init__(
+            self,
+            wrapped: Union[tmt.Result, tmt.result.SubResult],
+            subresults_context_class: 'type[ResultsContext]') -> None:
+
         super().__init__()
         self._wrapped = wrapped
+        self._subresults_context_class = subresults_context_class
 
     def __getattr__(self, name: str) -> Any:
         """ Returns an attribute of a wrapped ``tmt.Result`` instance """
         return getattr(self._wrapped, name)
+
+    @property
+    def subresult(self) -> 'ResultsContext':
+        """
+        Override the ``tmt.Result.subresult`` and wrap all the ``tmt.result.SubResult`` instances
+        into the ``ResultsContext``.
+        """
+
+        # `tmt.result.SubResult.subresult` is not defined, just raise the AttributeError to silent
+        # the typing errors.
+        if isinstance(self._wrapped, tmt.result.SubResult):
+            raise AttributeError(
+                f"'{self._wrapped.__class__.__name__} object has no attribute 'subresult'")
+
+        return self._subresults_context_class(self._wrapped.subresult)
 
 
 class ResultsContext(ImplementProperties):
@@ -140,7 +139,7 @@ class ResultsContext(ImplementProperties):
     """
 
     def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
-        """ Decorate/wrap all the ``tmt.Results`` with more attributes """
+        """ Decorate/wrap all the ``tmt.Result`` instances with more attributes """
         super().__init__()
 
         # Decorate all the tmt.Results with more attributes
