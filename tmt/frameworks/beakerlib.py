@@ -68,7 +68,7 @@ class Beakerlib(TestFramework):
         """ Check result of a beakerlib test """
 
         # The outcome of a parent tmt result must be never modified based on subresults outcomes.
-        # The parent result outcome will be always set to outcome reported by a Beaker. The
+        # The parent result outcome will be always set to outcome reported by a beakerlib. The
         # subresults are there just to provide more detail.
         subresults = [r.to_subresult(invocation) for r in results]
 
@@ -83,7 +83,7 @@ class Beakerlib(TestFramework):
         beakerlib_results_filepath = invocation.path / 'TestResults'
 
         try:
-            bkr_results = invocation.phase.read(beakerlib_results_filepath, level=3)
+            beakerlib_results = invocation.phase.read(beakerlib_results_filepath, level=3)
         except tmt.utils.FileError:
             logger.debug(f"Unable to read '{beakerlib_results_filepath}'.", level=3)
             note = 'beakerlib: TestResults FileError'
@@ -95,10 +95,10 @@ class Beakerlib(TestFramework):
                 log=log,
                 subresult=subresults)]
 
-        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', bkr_results)
+        search_result = re.search('TESTRESULT_RESULT_STRING=(.*)', beakerlib_results)
         # States are: started, incomplete and complete
         # FIXME In quotes until beakerlib/beakerlib/pull/92 is merged
-        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', bkr_results)
+        search_state = re.search(r'TESTRESULT_STATE="?(\w+)"?', beakerlib_results)
 
         if search_result is None or search_state is None:
             # Same outcome but make it easier to debug
