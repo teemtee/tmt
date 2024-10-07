@@ -22,8 +22,19 @@ jobs:
           python-version: '3.x'
           cache: 'pip'
 
+      - name: Cache Hatch environments
+        uses: actions/cache@v3
+        with:
+          path: .hatch_envs
+          key: ${{ runner.os }}-hatch-envs-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-hatch-envs-
+
       - name: Install hatch
         run: pip install hatch
+
+      - name: Set HATCH_ENV_TYPE_VIRTUAL_PATH
+        run: echo "HATCH_ENV_TYPE_VIRTUAL_PATH=$(pwd)/.hatch_envs" >> $GITHUB_ENV
 
       - name: Run sphinx html builder
         # -W = warnings as error
