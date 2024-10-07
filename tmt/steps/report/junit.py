@@ -1,6 +1,7 @@
 import dataclasses
 import functools
 from collections.abc import Iterator
+from importlib.abc import Traversable
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
@@ -13,6 +14,7 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt.plugins import ModuleImporter
 from tmt.result import ResultOutcome
 from tmt.utils import Path, field
@@ -31,7 +33,7 @@ DEFAULT_FLAVOR_NAME = 'default'
 CUSTOM_FLAVOR_NAME = 'custom'
 
 # Relative path to tmt junit template directory.
-DEFAULT_TEMPLATE_DIR = Path('steps/report/junit/templates/')
+DEFAULT_TEMPLATE_DIR = tmt.utils.resource_files('steps/report/junit/templates/')
 
 # ignore[unused-ignore]: Pyright would report that "module cannot be
 # used as a type", and it would be correct. On the other hand, it works,
@@ -167,7 +169,7 @@ class ResultsContext(ImplementProperties):
 def make_junit_xml(
         phase: tmt.steps.report.ReportPlugin[Any],
         flavor: str = DEFAULT_FLAVOR_NAME,
-        template_path: Optional[Path] = None,
+        template_path: Optional[Traversable] = None,
         include_output_log: bool = True,
         prettify: bool = True,
         results_context: Optional[ResultsContext] = None,
@@ -193,13 +195,18 @@ def make_junit_xml(
     # Prepare the template environment
     environment = default_template_environment()
 
-    template_path = template_path or tmt.utils.resource_files(
-        DEFAULT_TEMPLATE_DIR / Path(f'{flavor}.xml.j2'))
+    template_path = template_path or DEFAULT_TEMPLATE_DIR / f'{flavor}.xml.j2'
 
     # Use a FileSystemLoader for a non-custom flavor
     if flavor != CUSTOM_FLAVOR_NAME:
+        # TODO: Check if PackageLoader would work instead
+        # Note: the issue here is that jinja passes the paths through `os.fspath` which breaks the
+        # MultiplexedPath. This can be resolved by using `as_files` to create a context and copy
+        # all files to a real data folder, or jinja could learn to support generic Traversable
+        if isinstance(DEFAULT_TEMPLATE_DIR, MultiplexedPath):
+            phase.warn("Jinja template extension for report/junit/templates is not supported yet.")
         environment.loader = FileSystemLoader(
-            searchpath=tmt.utils.resource_files(DEFAULT_TEMPLATE_DIR))
+            searchpath=str(DEFAULT_TEMPLATE_DIR))
 
     def _read_log(log: Path) -> str:
         """ Read the contents of a given result log """
@@ -246,8 +253,7 @@ def make_junit_xml(
 
     # The schema check must be done only for a non-custom JUnit flavors
     if flavor != CUSTOM_FLAVOR_NAME:
-        xsd_schema_path = Path(tmt.utils.resource_files(
-            Path(f'steps/report/junit/schemas/{flavor}.xsd')))
+        xsd_schema_path = tmt.utils.resource_files(f'steps/report/junit/schemas/{flavor}.xsd')
 
         schema_root: XMLElement = etree.XML(xsd_schema_path.read_bytes())
         xml_parser_kwargs['schema'] = etree.XMLSchema(schema_root)

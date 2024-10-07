@@ -132,7 +132,7 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         '-v', '--verbose', count=True, default=0,
         help='Show more details. Use multiple times to raise verbosity.'),
     option(
-        '-d', '--debug', count=True, default=0,
+        '-d', '--debug', count=True, default=0, envvar="TMT_DEBUG",
         help='Provide debugging information. Repeat to see more details.'),
     option(
         '-q', '--quiet', is_flag=True,
