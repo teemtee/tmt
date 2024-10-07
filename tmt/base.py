@@ -776,10 +776,9 @@ class Core(
     @property
     def fmf_root(self) -> Optional[Path]:
         # Check if fmf root exists
-        try:
+        if self.node.root is not None:
             return Path(self.node.root)
-        except TypeError:
-            return None
+        return None
 
     @property
     def anchor_path(self) -> Path:
