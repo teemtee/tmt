@@ -29,6 +29,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.pathlib import Path
@@ -284,6 +285,9 @@ class Plan(
         'ansible',
     ]
 
+    def step_logger(self, step_name: str) -> tmt.log.Logger:
+        return self._logger.descend(logger_name=step_name)
+
     def __init__(
         self,
         *,
@@ -362,37 +366,37 @@ class Plan(
             raise tmt.utils.GeneralError(f"Invalid '{step_name}' config in '{self}'.")
 
         self.discover = tmt.steps.discover.Discover(
-            logger=logger.descend(logger_name='discover'),
+            logger=self.step_logger('discover'),
             plan=self,
             raw_data=_normalize_raw_step_phases('discover'),
         )
         self.provision = tmt.steps.provision.Provision(
-            logger=logger.descend(logger_name='provision'),
+            logger=self.step_logger('provision'),
             plan=self,
             raw_data=_normalize_raw_step_phases('provision'),
         )
         self.prepare = tmt.steps.prepare.Prepare(
-            logger=logger.descend(logger_name='prepare'),
+            logger=self.step_logger('prepare'),
             plan=self,
             raw_data=_normalize_raw_step_phases('prepare'),
         )
         self.execute = tmt.steps.execute.Execute(
-            logger=logger.descend(logger_name='execute'),
+            logger=self.step_logger('execute'),
             plan=self,
             raw_data=_normalize_raw_step_phases('execute'),
         )
         self.report = tmt.steps.report.Report(
-            logger=logger.descend(logger_name='report'),
+            logger=self.step_logger('report'),
             plan=self,
             raw_data=_normalize_raw_step_phases('report'),
         )
         self.finish = tmt.steps.finish.Finish(
-            logger=logger.descend(logger_name='finish'),
+            logger=self.step_logger('finish'),
             plan=self,
             raw_data=_normalize_raw_step_phases('finish'),
         )
         self.cleanup = tmt.steps.cleanup.Cleanup(
-            logger=logger.descend(logger_name='cleanup'),
+            logger=self.step_logger('cleanup'),
             plan=self,
             raw_data=_normalize_raw_step_phases('cleanup'),
         )
@@ -1638,8 +1642,8 @@ class Plan(
         derived_plan.discover._tests = tests
         derived_plan.discover.status('done')
 
-        shutil.copytree(
-            self.discover.step_workdir, derived_plan.discover.step_workdir, dirs_exist_ok=True
+        tmt.utils.filesystem.copy_tree(
+            self.discover.step_workdir, derived_plan.discover.step_workdir, self._logger
         )
 
         # Load results from discovered tests and save them to the execute step.
