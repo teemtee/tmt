@@ -1,5 +1,7 @@
 import abc
 import copy
+import itertools
+import queue
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar
@@ -30,6 +32,8 @@ class Task(abc.ABC, Generic[TaskResultT]):
         instance of the same class, but filled with information related
         to the result of its action.
     """
+
+    id: Optional[int]
 
     #: A logger to use for logging events related to the outcome.
     logger: Logger
@@ -344,7 +348,7 @@ class MultiGuestTask(Task[TaskResultT]):
         )
 
 
-class Queue(list[TaskT]):
+class Queue(queue.Queue[TaskT]):
     """
     Queue class for running tasks.
     """
@@ -354,21 +358,24 @@ class Queue(list[TaskT]):
 
         self.name = name
         self._logger = logger
+        self._task_counter = itertools.count(start=1)
 
     def enqueue_task(self, task: TaskT) -> None:
         """
         Put new task into a queue
         """
 
-        self.append(task)
+        task.id = next(self._task_counter)
+
+        self.put(task)
 
         self._logger.info(
-            f'queued {self.name} task #{len(self)}',
+            f'queued {self.name} task #{task.id}',
             task.name,
             color='cyan',
         )
 
-    def run(self) -> Iterator[TaskT]:
+    def run(self, stop_on_error: bool = True) -> Iterator[TaskT]:
         """
         Start crunching the queued tasks.
 
@@ -376,11 +383,17 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        for i, task in enumerate(self):
+        while True:
+            try:
+                task = self.get_nowait()
+
+            except queue.Empty:
+                return
+
             self._logger.info('')
 
             self._logger.info(
-                f'{self.name} task #{i + 1}',
+                f'{self.name} task #{task.id}',
                 task.name,
                 color='cyan',
             )
@@ -394,5 +407,5 @@ class Queue(list[TaskT]):
                 yield outcome
 
             # TODO: make this optional
-            if failed_tasks:
+            if failed_tasks and stop_on_error:
                 return

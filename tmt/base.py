@@ -38,6 +38,7 @@ from click import confirm, echo
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
+import tmt._queue
 import tmt.ansible
 import tmt.base
 import tmt.checks
@@ -66,6 +67,7 @@ import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.typing import Self
+from tmt._queue import Queue
 from tmt.checks import Check
 from tmt.container import (
     SerializableContainer,
@@ -2098,6 +2100,9 @@ class Plan(
         'ansible',
     ]
 
+    def step_logger(self, step_name: str) -> tmt.log.Logger:
+        return self._logger.descend(logger_name=step_name)
+
     def __init__(
         self,
         *,
@@ -2158,32 +2163,32 @@ class Plan(
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
-            logger=logger.descend(logger_name='discover'),
+            logger=self.step_logger('discover'),
             plan=self,
             data=self.node.get('discover'),
         )
         self.provision = tmt.steps.provision.Provision(
-            logger=logger.descend(logger_name='provision'),
+            logger=self.step_logger('provision'),
             plan=self,
             data=self.node.get('provision'),
         )
         self.prepare = tmt.steps.prepare.Prepare(
-            logger=logger.descend(logger_name='prepare'),
+            logger=self.step_logger('prepare'),
             plan=self,
             data=self.node.get('prepare'),
         )
         self.execute = tmt.steps.execute.Execute(
-            logger=logger.descend(logger_name='execute'),
+            logger=self.step_logger('execute'),
             plan=self,
             data=self.node.get('execute'),
         )
         self.report = tmt.steps.report.Report(
-            logger=logger.descend(logger_name='report'),
+            logger=self.step_logger('report'),
             plan=self,
             data=self.node.get('report'),
         )
         self.finish = tmt.steps.finish.Finish(
-            logger=logger.descend(logger_name='finish'),
+            logger=self.step_logger('finish'),
             plan=self,
             data=self.node.get('finish'),
         )
@@ -4374,6 +4379,67 @@ class RunData(SerializableContainer):
     )
 
 
+@container
+class PlanTask(tmt._queue.GuestlessTask[None]):
+    """A task to run a plan"""
+
+    plans: list[Plan]
+
+    #: Plan that was executed.
+    plan: Optional[Plan]
+
+    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
+    def __init__(self, logger: tmt.log.Logger, plans: list[Plan], **kwargs: Any) -> None:
+        super().__init__(logger, **kwargs)
+
+        self.plans = plans
+        self.plan = None
+
+    @property
+    def name(self) -> str:
+        return cast(str, fmf.utils.listed([plan.name for plan in self.plans]))
+
+    def go(self) -> Iterator['PlanTask']:
+        """
+        Perform the task.
+
+        Called by :py:class:`Queue` machinery to accomplish the task. It expects
+        the child class would implement :py:meth:`run`, with ``go`` taking care
+        of task/queue interaction.
+
+        :yields: instances of the same class, describing invocations of the
+            task and their outcome. For each guest, one instance would be
+            yielded.
+        """
+
+        def inject_logger(task: 'PlanTask', plan: Plan, logger: tmt.log.Logger) -> None:
+            plan.inject_logger(logger)
+
+            for step_name in tmt.steps.STEPS:
+                getattr(plan, step_name).inject_logger(plan.step_logger(step_name))
+
+        def _on_complete(task: 'Self', plan: 'Plan') -> 'Self':
+            task.plan = plan
+
+            return task
+
+        yield from self._invoke_in_pool(
+            # Run across all queued plans.
+            units=self.plans,
+            # Unit ID here is plan's name
+            get_label=lambda task, plan: plan.name,
+            extract_logger=lambda task, plan: plan._logger,
+            inject_logger=inject_logger,
+            # Submit work for the executor pool.
+            submit=lambda task, plan, logger, executor: executor.submit(plan.go),
+            on_complete=_on_complete,
+            logger=self.logger,
+        )
+
+    def run(self, logger: tmt.log.Logger) -> None:
+        raise AssertionError("run is not used by PlanTask.go")
+
+
 class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
     """
     Test run, a container of plans
@@ -4612,25 +4678,35 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
 
     @functools.cached_property
-    def plans(self) -> Sequence[Plan]:
+    def plans(self) -> list[Plan]:
         """
-        Test plans for execution
+        Test plans to execute.
+
+        It is populated by a fmf tree, and eventually contains plans
+        scheduled for execution: plans created from already known plans,
+        and plans can be removed as well.
+
+        Unlike :py:attr:`plan_staging_queue`, ``plans`` will not get empty
+        as plans may get replaced with one or more new plans, but are not
+        removed once processed.
         """
 
         if self._plans is None:
             assert self.tree is not None  # narrow type
             self._plans = self.tree.plans(run=self, filters=['enabled:true'])
+
         return self._plans
 
     @functools.cached_property
-    def plan_queue(self) -> Sequence[Plan]:
+    def plan_staging_queue(self) -> list[Plan]:
         """
-        A list of plans remaining to be executed.
+        A list of plans remaining to be queued by run and executed.
 
-        It is being populated via :py:attr:`plans`, but eventually,
-        :py:meth:`go` will remove plans from it as they get processed.
-        :py:attr:`plans` will remain untouched and will represent all
-        plans collected.
+        It begins as a copy of :py:attr:`plans`, but remains a separate
+        list and, as plans are enqueued, plans are removed from this list.
+        On the other hand, as :py:meth:`Plan.go` gets invoked, pan reshaping
+        may happen, and this list gains new entries. Eventually, as all
+        plans get executed, this list would end up empty.
         """
 
         return self.plans[:]
@@ -4643,15 +4719,12 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         :param others: plans to put into the queue instead of ``plans``.
         """
 
-        plans = cast(list[Plan], self.plans)
-        plan_queue = cast(list[Plan], self.plan_queue)
+        if plan in self.plan_staging_queue:
+            self.plan_staging_queue.remove(plan)
+            self.plans.remove(plan)
 
-        if plan in plan_queue:
-            plan_queue.remove(plan)
-            plans.remove(plan)
-
-        plan_queue.extend(others)
-        plans.extend(others)
+        self.plan_staging_queue.extend(others)
+        self.plans.extend(others)
 
     def finish(self) -> None:
         """
@@ -4850,23 +4923,45 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.verbose(f"Found {listed(self.plans, 'plan')}.")
         self.save()
 
-        # Iterate over plans
-        crashed_plans: list[tuple[Plan, Exception]] = []
+        queue: Queue[PlanTask] = Queue('plans', self._logger.descend(logger_name=f'{self}.queue'))
 
-        while self.plan_queue:
-            plan = cast(list[Plan], self.plan_queue).pop(0)
+        failed_tasks: list[PlanTask] = []
 
-            try:
-                plan.go()
+        def _enqueue_new_plans() -> None:
+            staging_queue = self.plan_staging_queue[:]
 
-            except Exception as exc:
-                if self.opt('on-plan-error') == 'quit':
-                    raise tmt.utils.GeneralError('plan failed', causes=[exc])
+            if not staging_queue:
+                return
 
-                crashed_plans.append((plan, exc))
+            for plan in staging_queue:
+                self.plan_staging_queue.remove(plan)
 
-        if crashed_plans:
-            raise tmt.utils.GeneralError('plan failed', causes=[exc for _, exc in crashed_plans])
+            queue.enqueue_task(PlanTask(self._logger, staging_queue))
+
+        _enqueue_new_plans()
+
+        for outcome in queue.run(stop_on_error=False):
+            _enqueue_new_plans()
+
+            if outcome.exc:
+                outcome.logger.fail(str(outcome.exc))
+
+                failed_tasks.append(outcome)
+                continue
+
+        if failed_tasks:
+            raise tmt.utils.GeneralError(
+                'plan failed',
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+            )
+
+        #           crashed_plans: list[tuple[Plan, Exception]] = []
+
+        #            except Exception as exc:
+        #                if self.opt('on-plan-error') == 'quit':
+        #                    raise tmt.utils.GeneralError(
+        #                        'plan failed',
+        #                        causes=[exc])
 
         # Update the last run id at the very end
         # (override possible runs created during execution)
