@@ -34,6 +34,21 @@
     <xs:element name="system-err" type="xs:string"/>
     <xs:element name="system-out" type="xs:string"/>
 
+    <xs:element name="properties">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="property" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="property">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="testcase">
         <xs:complexType>
             <xs:sequence>
@@ -42,9 +57,10 @@
                 <xs:element ref="failure" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="system-out" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="system-err" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="properties" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
-            <xs:attribute name="time" type="xs:string" use="optional"/>
+            <xs:attribute name="time" type="xs:float" use="optional"/>
         </xs:complexType>
     </xs:element>
 
@@ -52,8 +68,11 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="testcase" minOccurs="0" maxOccurs="unbounded"/>
+
+                <!-- TODO: These should not be probably allowed
                 <xs:element ref="system-out" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="system-err" minOccurs="0" maxOccurs="1"/>
+                -->
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
             <xs:attribute name="tests" type="xs:string" use="required"/>
@@ -61,7 +80,7 @@
             <xs:attribute name="errors" type="xs:string" use="required"/>
             <xs:attribute name="disabled" type="xs:string" use="required"/>
             <xs:attribute name="skipped" type="xs:string" use="required"/>
-            <xs:attribute name="time" type="xs:string" use="required"/>
+            <xs:attribute name="time" type="xs:float" use="required"/>
             <xs:attribute name="timestamp" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
@@ -70,12 +89,13 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="testsuite" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="properties" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
-            <xs:attribute name="time" type="xs:string" use="required"/>
-            <xs:attribute name="tests" type="xs:string" use="required"/>
-            <xs:attribute name="failures" type="xs:string" use="required"/>
-            <xs:attribute name="disabled" type="xs:string" use="required"/>
-            <xs:attribute name="errors" type="xs:string" use="required"/>
+            <xs:attribute name="time" type="xs:float" use="required"/>
+            <xs:attribute name="tests" type="xs:string" use="optional"/>
+            <xs:attribute name="failures" type="xs:string" use="optional"/>
+            <xs:attribute name="disabled" type="xs:string" use="optional"/>
+            <xs:attribute name="errors" type="xs:string" use="optional"/>
         </xs:complexType>
     </xs:element>
 </xs:schema>
