@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  HATCH_ENV_TYPE_VIRTUAL_PATH: ${{ github.workspace }}/.hatch_envs
+
 jobs:
   doc-test:
     name: Sphinx Documentation Tests
@@ -23,18 +26,14 @@ jobs:
           cache: 'pip'
 
       - name: Cache Hatch environments
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: .hatch_envs
-          key: ${{ runner.os }}-hatch-envs-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-hatch-envs-
+          path: |
+            ${{ github.workspace }}/.hatch_envs
+          key: hatch-envs-${{ hashFiles('pyproject.toml') }}
 
       - name: Install hatch
         run: pip install hatch
-
-      - name: Set HATCH_ENV_TYPE_VIRTUAL_PATH
-        run: echo "HATCH_ENV_TYPE_VIRTUAL_PATH=$(pwd)/.hatch_envs" >> $GITHUB_ENV
 
       - name: Run sphinx html builder
         # -W = warnings as error
