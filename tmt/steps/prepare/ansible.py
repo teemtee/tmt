@@ -72,10 +72,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     .. warning::
 
         When specifying playbooks with paths:
-        if metadata tree root exist:
-            all paths must be relative to the metadata tree root.
-        if metadata tree root NOT exist:
-            all paths must be relative to the current working directory.
+
+        * If a metadata tree root exists, all paths must be relative to the metadata tree root.
+        * If the metadata tree root does not exist, \
+all paths must be relative to the current working directory.
 
     Run a single playbook on the guest:
 
