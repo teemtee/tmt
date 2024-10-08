@@ -552,7 +552,7 @@ class DistGitHandler:
         package = globbed[0].stem
         ret_values: list[tuple[str, str]] = []
         try:
-            for line in (cwd / self.sources_file_name).read_text().splitlines():
+            for line in (cwd / self.sources_file_name).splitlines():
                 match = self.re_source.match(line)
                 if match is None:
                     raise GeneralError(
