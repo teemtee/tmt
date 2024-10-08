@@ -2015,7 +2015,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                 path.write_text(data, encoding='utf-8', errors='replace')
 
         except OSError as error:
-            raise FileError("Failed to write into '{path}' file.") from error
+            raise FileError(f"Failed to write into '{path}' file.") from error
 
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         """
