@@ -150,9 +150,6 @@ description: |
           check:
             ...
 
-          # String, path to /data directory storing possible test artifacts
-          data-path: path/to/test/data
-
     .. _/spec/plans/results/outcomes:
 
     The ``result`` key can have the following values:
