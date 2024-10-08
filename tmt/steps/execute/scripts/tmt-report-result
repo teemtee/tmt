@@ -20,7 +20,6 @@ write_report_file () {
         echo "      - \"${outputFile}\"" >> "$REPORT_RESULT_OUTPUTFILE"
     fi
     echo "    end-time: \"$(date --utc +%FT%T.%6N%:z)\"" >> "$REPORT_RESULT_OUTPUTFILE"
-    echo "    data-path: \"${TMT_TEST_DATA/$TMT_TEST_EXE}\"" >> "$REPORT_RESULT_OUTPUTFILE"
 }
 
 copy_outputfile_to_data_dir () {
