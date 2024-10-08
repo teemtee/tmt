@@ -2,7 +2,6 @@
 set -o errexit -o pipefail -o noclobber -o nounset
 
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/tmt-report-results.yaml"
-TMT_TEST_EXE="${TMT_TREE/tree/execute}"
 outputFile=
 help=False
 
