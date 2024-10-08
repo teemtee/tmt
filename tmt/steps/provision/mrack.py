@@ -1,12 +1,15 @@
 import asyncio
 import dataclasses
 import datetime
+import importlib.metadata
 import logging
 import os
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, Union, cast
+
+import packaging.version
 
 import tmt
 import tmt.hardware
@@ -23,6 +26,8 @@ from tmt.utils import (
     UpdatableMessage,
     field,
     )
+
+MRACK_VERSION: Optional[str] = None
 
 mrack: Any
 providers: Any
@@ -44,6 +49,16 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: How often Beaker session should be refreshed to pick up up-to-date
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
+
+
+def mrack_constructs_ks_pre() -> bool:
+    """ Kickstart construction has been improved in 1.21.0 """
+
+    assert MRACK_VERSION is not None
+
+    return packaging.version.Version(MRACK_VERSION) \
+        >= packaging.version.Version('1.21.0')
+
 
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
@@ -718,6 +733,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
     if _MRACK_IMPORTED:
         return
 
+    global MRACK_VERSION
     global mrack
     global providers
     global ProvisioningError
@@ -734,6 +750,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
         from mrack.providers.beaker import BeakerProvider
         from mrack.transformers.beaker import BeakerTransformer
+
+        MRACK_VERSION = importlib.metadata.version('mrack')
 
         # hack: remove mrack stdout and move the logfile to /tmp
         mrack.logger.removeHandler(mrack.console_handler)
@@ -780,6 +798,23 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
+
+            if host.kickstart:
+                if 'kernel-options' in host.kickstart:
+                    req['kernel_options'] = host.kickstart['kernel-options']
+
+                if 'kernel-options-post' in host.kickstart:
+                    req['kernel_options_post'] = host.kickstart['kernel-options-post']
+
+                if not mrack_constructs_ks_pre():
+                    ks_components: list[str] = []
+
+                    for ks_section in ('pre-install', 'script', 'post-install'):
+                        if ks_section in host.kickstart:
+                            ks_components.append(host.kickstart[ks_section])
+
+                    if ks_components:
+                        req['ks_append'] = ['\n'.join(ks_components)]
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
