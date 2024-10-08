@@ -1,6 +1,6 @@
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -12,6 +12,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.templates
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
     from tmt.base import Plan
+
+T = TypeVar('T')
 
 
 @dataclasses.dataclass
@@ -168,6 +171,7 @@ class Prepare(tmt.steps.Step):
             return
 
         import tmt.base
+        from tmt.base import DependencyMake, DependencySimple, assert_simple_dependencies
 
         # Required & recommended packages
         #
@@ -178,7 +182,7 @@ class Prepare(tmt.steps.Step):
         # package `bar`, and `foo` and `bar` cannot be installed at the same
         # time.
         @dataclasses.dataclass
-        class DependencyCollection:
+        class DependencyCollection(Generic[T]):
             """ Bundle guests and packages to install on them """
 
             # Guest*s*, not a guest. The list will start with just one guest in
@@ -186,13 +190,11 @@ class Prepare(tmt.steps.Step):
             # we'd start adding guests to the list when spotting same set of
             # dependencies.
             guests: list[Guest]
-            dependencies: list['tmt.base.DependencySimple'] \
-                = dataclasses.field(default_factory=list)
+            dependencies: list[T] = dataclasses.field(default_factory=list)
 
             @property
-            def as_key(self) -> frozenset['tmt.base.DependencySimple']:
-                # ignore[attr-defined]: mypy doesn't seem to understand collection as `frozenset`
-                return frozenset(collection.dependencies)  # type: ignore[has-type]
+            def as_key(self) -> frozenset[T]:
+                return frozenset(self.dependencies)
 
         # All phases from all steps.
         phases = [
@@ -210,12 +212,15 @@ class Prepare(tmt.steps.Step):
         guests = self.plan.provision.guests()
 
         # Collecting all required packages, per guest.
-        collected_requires: dict[Guest, DependencyCollection] = {
-            guest: DependencyCollection(guests=[guest]) for guest in guests
-            }
+        collected_simple_requires: dict[Guest, DependencyCollection[DependencySimple]] = {
+            guest: DependencyCollection(guests=[guest]) for guest in guests}
 
         # Collecting all recommended packages, per guest.
-        collected_recommends: dict[Guest, DependencyCollection] = {
+        collected_simple_recommends: dict[Guest, DependencyCollection[DependencySimple]] = {
+            guest: DependencyCollection(guests=[guest]) for guest in guests}
+
+        # Collected `make` requires, per guest.
+        collected_make_requires: dict[Guest, DependencyCollection[DependencyMake]] = {
             guest: DependencyCollection(guests=[guest]) for guest in guests
             }
 
@@ -227,7 +232,7 @@ class Prepare(tmt.steps.Step):
                 if not phase.enabled_on_guest(guest):
                     continue
 
-                collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
+                collected_simple_requires[guest].dependencies += assert_simple_dependencies(
                     # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
                     # actually PluginClass
                     phase.essential_requires(),  # type: ignore[attr-defined]
@@ -244,25 +249,31 @@ class Prepare(tmt.steps.Step):
                 if not test.enabled_on_guest(guest):
                     continue
 
-                collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
-                    test.require,
-                    'After beakerlib processing, tests may have only simple requirements',
-                    self._logger)
+                requires = test.require[:]
 
-                collected_recommends[guest].dependencies += tmt.base.assert_simple_dependencies(
+                while requires:
+                    require = requires.pop(0)
+
+                    if isinstance(require, DependencyMake):
+                        collected_make_requires[guest].dependencies.append(require)
+
+                    else:
+                        collected_simple_requires[guest].dependencies = assert_simple_dependencies(
+                            [require],
+                            'After beakerlib processing, tests may have only simple requirements',
+                            self._logger)
+
+                collected_simple_recommends[guest].dependencies += assert_simple_dependencies(
                     test.recommend,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger)
 
-                collected_requires[guest].dependencies += test.test_framework.get_requirements(
-                    test,
-                    self._logger)
+                collected_simple_requires[guest].dependencies \
+                    += test.test_framework.get_requirements(test, self._logger)
 
                 for check in test.check:
-                    collected_requires[guest].dependencies += check.plugin.essential_requires(
-                        guest,
-                        test,
-                        self._logger)
+                    collected_simple_requires[guest].dependencies \
+                        += check.plugin.essential_requires(guest, test, self._logger)
 
         # Now we have guests and all their requirements. There can be
         # duplicities, multiple tests requesting the same package, but also
@@ -275,57 +286,83 @@ class Prepare(tmt.steps.Step):
         # 1. make the list of requirements unique,
         # 2. group guests with same requirements.
         from tmt.steps.prepare.install import PrepareInstallData
+        from tmt.steps.prepare.shell import PrepareShellData
 
-        pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
-        pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
+        def _prune(collections: dict[Guest, DependencyCollection[T]]
+                   ) -> dict[frozenset[T], DependencyCollection[T]]:
+            pruned: dict[frozenset[T], DependencyCollection[T]] = {}
 
-        for guest, collection in collected_requires.items():
-            collection.dependencies = uniq(collection.dependencies)
+            for guest, collection in collections.items():
+                collection.dependencies = uniq(collection.dependencies)
 
-            if collection.as_key in pruned_requires:
-                pruned_requires[collection.as_key].guests.append(guest)
+                if collection.as_key in pruned:
+                    pruned[collection.as_key].guests.append(guest)
 
-            else:
-                pruned_requires[collection.as_key] = collection
+                else:
+                    pruned[collection.as_key] = collection
 
-        for guest, collection in collected_recommends.items():
-            collection.dependencies = uniq(collection.dependencies)
+            return pruned
 
-            if collection.as_key in pruned_recommends:
-                pruned_recommends[collection.as_key].guests.append(guest)
+        pruned_simple_requires: dict[
+            frozenset[DependencySimple],
+            DependencyCollection[DependencySimple]] = _prune(collected_simple_requires)
+        pruned_simple_recommends: dict[
+            frozenset[DependencySimple],
+            DependencyCollection[DependencySimple]] = _prune(collected_simple_recommends)
+        pruned_make_requirements: dict[
+            frozenset[DependencyMake],
+            DependencyCollection[DependencyMake]] = _prune(collected_make_requires)
 
-            else:
-                pruned_recommends[collection.as_key] = collection
-
-        for collection in pruned_requires.values():
-            if not collection.dependencies:
+        for require_collection in pruned_simple_requires.values():
+            if not require_collection.dependencies:
                 continue
 
-            data = PrepareInstallData(
+            install_data = PrepareInstallData(
                 name='requires',
                 how='install',
                 summary='Install required packages',
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                where=[guest.name for guest in collection.guests],
-                package=collection.dependencies
+                where=[guest.name for guest in require_collection.guests],
+                package=require_collection.dependencies
                 )
 
-            self._phases.append(PreparePlugin.delegate(self, data=data))
+            self._phases.append(PreparePlugin.delegate(self, data=install_data))
 
-        for collection in pruned_recommends.values():
-            if not collection.dependencies:
+        for recommend_collection in pruned_simple_recommends.values():
+            if not recommend_collection.dependencies:
                 continue
 
-            data = PrepareInstallData(
+            install_data = PrepareInstallData(
                 how='install',
                 name='recommends',
                 summary='Install recommended packages',
                 order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                where=[guest.name for guest in collection.guests],
-                package=collection.dependencies,
+                where=[guest.name for guest in recommend_collection.guests],
+                package=recommend_collection.dependencies,
                 missing='skip')
 
-            self._phases.append(PreparePlugin.delegate(self, data=data))
+            self._phases.append(PreparePlugin.delegate(self, data=install_data))
+
+        for require_make_collection in pruned_make_requirements.values():
+            if not require_make_collection.dependencies:
+                continue
+
+            for require in require_make_collection.dependencies:
+                script = tmt.utils.templates.render_template(
+                    'make {{ REQUIRE.args | join() }} {{ REQUIRE.target }}',
+                    REQUIRE=require
+                    )
+
+                shell_data = PrepareShellData(
+                    name='requires-make',
+                    how='shell',
+                    summary='Run make targets to install required packages',
+                    order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES_MAKE,
+                    where=[guest.name for guest in require_make_collection.guests],
+                    script=[tmt.utils.ShellScript(script)]
+                    )
+
+                self._phases.append(PreparePlugin.delegate(self, data=shell_data))
 
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
