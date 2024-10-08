@@ -87,10 +87,6 @@ definitions:
       check:
         $ref: "#/definitions/check_results"
 
-      # TODO: Fixme?
-      data-path:
-        type: string
-
     required:
       - name
       - result
@@ -148,9 +144,6 @@ items:
     duration:
       $ref: "#/definitions/duration"
 
-    # TODO: Fixme? e.g. using ref. otherwise I am getting the error:
-    # warn: Result format violation: 0 - Additional properties are not allowed
-    # ('data-path' was unexpected)
     data-path:
       type: string
 

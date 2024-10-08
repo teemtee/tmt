@@ -220,12 +220,6 @@ class SubResult(BaseResult):
             SubCheckResult.from_serialized(check) for check in serialized]
         )
 
-    data_path: Optional[Path] = field(
-        default=cast(Optional[Path], None),
-        serialize=lambda path: None if path is None else str(path),
-        unserialize=lambda value: None if value is None else Path(value)
-        )
-
 
 @dataclasses.dataclass
 class PhaseResult(BaseResult):
@@ -394,7 +388,6 @@ class Result(BaseResult):
             start_time=self.start_time,
             end_time=self.end_time,
             duration=self.duration,
-            data_path=self.data_path,
 
             # Also convert all CheckResult instances to SubCheckResult instances
             check=[c.to_subcheck() for c in self.check])
