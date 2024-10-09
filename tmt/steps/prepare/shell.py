@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Any, Optional, cast
 
 import fmf
@@ -9,15 +8,16 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript, field
+from tmt.utils import ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
 
-@dataclasses.dataclass
+@container
 class PrepareShellData(tmt.steps.prepare.PrepareStepData):
     script: list[ShellScript] = field(
         default_factory=list,

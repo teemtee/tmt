@@ -1,5 +1,4 @@
 import contextlib
-import dataclasses
 import glob
 import os
 import re
@@ -19,8 +18,9 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
 from tmt.base import _RawAdjustRule
+from tmt.container import container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
-from tmt.utils import Command, Environment, EnvVarValue, Path, field
+from tmt.utils import Command, Environment, EnvVarValue, Path
 
 
 def normalize_ref(
@@ -36,7 +36,7 @@ def normalize_ref(
     raise tmt.utils.NormalizationError(key_address, value, 'unset or a string')
 
 
-@dataclasses.dataclass
+@container
 class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     # Basic options
     url: Optional[str] = field(

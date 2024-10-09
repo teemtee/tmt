@@ -1,4 +1,3 @@
-import dataclasses
 import os
 from typing import TYPE_CHECKING, Optional, cast
 
@@ -10,8 +9,8 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.steps.provision.testcloud
 import tmt.utils
+from tmt.container import container, field
 from tmt.steps.provision.testcloud import GuestTestcloud
-from tmt.utils import field
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -86,7 +85,7 @@ class GuestBootc(GuestTestcloud):
         super().remove()
 
 
-@dataclasses.dataclass
+@container
 class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
     container_file: Optional[str] = field(
         default=None,
