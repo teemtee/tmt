@@ -146,7 +146,7 @@ _LINTER_DESCRIPTION_PATTERN = re.compile(r"""
     """, re.VERBOSE)
 
 
-@dataclasses.dataclass(init=False)
+@dataclasses.dataclass(init=False)  # noqa: TID251
 class Linter:
     """
     A single linter

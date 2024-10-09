@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 TaskResultT = TypeVar('TaskResultT')
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class Task(Generic[TaskResultT]):
     """
     A base class for queueable actions.
@@ -119,7 +119,7 @@ def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
     return loggers
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class GuestlessTask(Task[TaskResultT]):
     """
     A task not assigned to a particular set of guests.
@@ -174,7 +174,7 @@ class GuestlessTask(Task[TaskResultT]):
             yield self
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class MultiGuestTask(Task[TaskResultT]):
     """
     A task assigned to a particular set of guests.

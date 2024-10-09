@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     import tmt.utils
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)  # noqa: TID251
 class Deprecated:
     """
     Version information and hint for obsolete options

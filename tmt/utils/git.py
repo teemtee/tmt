@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import tmt.base
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class GitInfo:
     """
     Data container for commonly queried git data.

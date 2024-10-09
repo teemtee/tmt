@@ -2584,7 +2584,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run provisioning of multiple guests

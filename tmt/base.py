@@ -1686,7 +1686,7 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
-@dataclasses.dataclass(repr=False)
+@dataclasses.dataclass(repr=False)  # noqa: TID251
 class LintableCollection(tmt.lint.Lintable['LintableCollection']):
     """
     Linting rules applied to a collection of Tests, Plans or Stories
@@ -4367,7 +4367,7 @@ class Clean(tmt.utils.Common):
         return successful
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class LinkNeedle:
     """
     A container to use for searching links.

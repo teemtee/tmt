@@ -206,7 +206,7 @@ class ConstraintNameComponents(NamedTuple):
     child_name: Optional[str]
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class ConstraintComponents:
     """
     Components of a constraint

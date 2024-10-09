@@ -116,7 +116,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
 # same time.
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class DependencyCollection:
     """
     Bundle guests and packages to install on them
@@ -126,7 +126,7 @@ class DependencyCollection:
     # first, but when grouping guests by same requirements, we'd start
     # adding guests to the list when spotting same set of dependencies.
     guests: list[Guest]
-    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)
+    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     @property
     def as_key(self) -> 'DependencyCollectionKey':

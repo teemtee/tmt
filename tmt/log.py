@@ -254,7 +254,7 @@ def indent(
         + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class LogRecordDetails:
     """
     tmt's log message components attached to log records
@@ -266,7 +266,7 @@ class LogRecordDetails:
     color: Optional[str] = None
     shift: int = 0
 
-    logger_labels: list[str] = dataclasses.field(default_factory=list)
+    logger_labels: list[str] = dataclasses.field(default_factory=list)  # noqa: TID251
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
@@ -278,7 +278,7 @@ class LogRecordDetails:
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
-    logger_topics: set[Topic] = dataclasses.field(default_factory=set)
+    logger_topics: set[Topic] = dataclasses.field(default_factory=set)  # noqa: TID251
     message_topic: Optional[Topic] = None
 
 
