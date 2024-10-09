@@ -133,7 +133,7 @@ def test_systemd():
     assert 'Tier two functional tests' in result.output
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class DecideColorizationTestcase:
     """ A single test case for :py:func:`tmt.log.decide_colorization` """
 

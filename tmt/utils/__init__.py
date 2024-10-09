@@ -1027,7 +1027,7 @@ OnProcessStartCallback = Callable[
     ]
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)  # noqa: TID251
 class CommandOutput:
     stdout: Optional[str]
     stderr: Optional[str]
@@ -2943,7 +2943,7 @@ def option_to_key(option: str) -> str:
     return option.replace('-', '_')
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class FieldMetadata(Generic[T]):
     """
     A dataclass metadata container used by our custom dataclass field management.
@@ -3009,7 +3009,7 @@ class FieldMetadata(Generic[T]):
 
     #: CLI option parameters, for lazy option creation.
     _option_args: Optional['FieldCLIOption'] = None
-    _option_kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)
+    _option_kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)  # noqa: TID251
 
     #: A :py:func:`click.option` decorator defining a corresponding CLI option.
     _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
@@ -6177,7 +6177,7 @@ def field(
     # as if returning the value of type matching the field declaration, and the original
     # field() is called with wider argument types than expected, because we use our own
     # overloading to narrow types *our* custom field() accepts.
-    return dataclasses.field(  # type: ignore[call-overload]
+    return dataclasses.field(  # type: ignore[call-overload]  # noqa: TID251
         default=default,
         default_factory=default_factory or dataclasses.MISSING,
         metadata={'tmt': metadata}
