@@ -1,4 +1,3 @@
-import dataclasses
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -6,6 +5,7 @@ import click
 from fmf.utils import listed
 
 import tmt
+from tmt.container import container, field, key_to_option
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -18,10 +18,10 @@ import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import GeneralError, Path, field, key_to_option
+from tmt.utils import GeneralError, Path
 
 
-@dataclasses.dataclass
+@container
 class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     dist_git_source: bool = field(
         default=False,

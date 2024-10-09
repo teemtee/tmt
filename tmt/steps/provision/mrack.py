@@ -15,13 +15,13 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     Command,
     Path,
     ProvisionError,
     ShellScript,
     UpdatableMessage,
-    field,
     )
 
 mrack: Any
@@ -727,7 +727,7 @@ def async_run(func: Any) -> Any:
     return update_wrapper
 
 
-@dataclasses.dataclass
+@container
 class BeakerGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
     user: str = field(
@@ -805,7 +805,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """)
 
 
-@dataclasses.dataclass
+@container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

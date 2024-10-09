@@ -35,6 +35,16 @@ import tmt.options
 import tmt.queue
 import tmt.utils
 import tmt.utils.rest
+from tmt.container import (
+    SerializableContainer,
+    SpecBasedContainer,
+    container,
+    container_field,
+    container_keys,
+    field,
+    key_to_option,
+    option_to_key,
+    )
 from tmt.options import option, show_step_method_hints
 from tmt.utils import (
     DEFAULT_NAME,
@@ -43,13 +53,6 @@ from tmt.utils import (
     GeneralError,
     Path,
     RunError,
-    SerializableContainer,
-    SpecBasedContainer,
-    container_field,
-    container_keys,
-    field,
-    key_to_option,
-    option_to_key,
     )
 from tmt.utils.templates import render_template
 
@@ -258,7 +261,7 @@ PluginReturnValueT = TypeVar('PluginReturnValueT')
 ResultT = TypeVar('ResultT', bound='BaseResult')
 
 
-@dataclasses.dataclass
+@container
 class StepData(
         SpecBasedContainer[_RawStepData, _RawStepData],
         tmt.utils.NormalizeKeysMixin,
@@ -335,7 +338,7 @@ class RawWhereableStepData(TypedDict, total=False):
     where: Union[str, list[str]]
 
 
-@dataclasses.dataclass
+@container
 class WhereableStepData:
     """
     Keys shared by step data that may be limited to a particular guest.
@@ -1980,7 +1983,7 @@ class Login(Action):
             self._login(cwd, env)
 
 
-@dataclasses.dataclass
+@container
 class GuestTopology(SerializableContainer):
     """ Describes a guest in the topology of provisioned tmt guests """
 
@@ -1994,7 +1997,7 @@ class GuestTopology(SerializableContainer):
         self.hostname = guest.topology_address
 
 
-@dataclasses.dataclass(init=False)
+@container(init=False)
 class Topology(SerializableContainer):
     """ Describes the topology of provisioned tmt guests """
 

@@ -19,6 +19,7 @@ import tmt.log
 import tmt.steps
 import tmt.utils
 from tmt.checks import CheckEvent
+from tmt.container import container, field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
@@ -29,7 +30,6 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
-    field,
     format_duration,
     format_timestamp,
     )
@@ -132,7 +132,7 @@ SCRIPTS = (
     )
 
 
-@dataclasses.dataclass
+@container
 class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     duration: str = field(
         # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
