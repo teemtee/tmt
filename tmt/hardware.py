@@ -1379,7 +1379,8 @@ def _parse_beaker(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_text_constraints(spec, 'beaker', ('pool',))
+    group.constraints += _parse_text_constraints(spec, 'beaker', ('pool',),
+                                                 allowed_operators=[Operator.EQ, Operator.NEQ])
 
     return group
 
