@@ -1,14 +1,13 @@
-import dataclasses
 from typing import Any, Optional
 
 import pytest
 
 import tmt.log
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     SerializableContainer,
     dataclass_normalize_field,
-    field,
     )
 
 
@@ -28,7 +27,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
             raise tmt.utils.NormalizationError(key_address, raw_value, 'unset or an integer') \
                 from exc
 
-    @dataclasses.dataclass
+    @container
     class DummyContainer(SerializableContainer):
         foo: Optional[int] = field(
             default=1,
@@ -57,7 +56,7 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
 
 
 def test_field_custom_serialize():
-    @dataclasses.dataclass
+    @container
     class DummyContainer(SerializableContainer):
         foo: list[str] = field(
             default_factory=list,

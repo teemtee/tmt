@@ -1,4 +1,3 @@
-import dataclasses
 import re
 import shutil
 from collections.abc import Iterator
@@ -15,6 +14,7 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -25,7 +25,7 @@ from tmt.package_managers import (
     )
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Command, Path, ShellScript, field
+from tmt.utils import Command, Path, ShellScript
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 
@@ -633,7 +633,7 @@ class InstallApk(InstallBase):
             'installing debuginfo packages.')
 
 
-@dataclasses.dataclass
+@container
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
     package: list[tmt.base.DependencySimple] = field(
         default_factory=list,

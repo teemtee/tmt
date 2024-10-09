@@ -17,8 +17,9 @@ import tmt.steps.provision.podman
 import tmt.steps.provision.testcloud
 import tmt.utils
 from tmt.checks import Check, CheckPlugin, provides_check
+from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
-from tmt.utils import Path, field, format_timestamp, render_run_exception_streams
+from tmt.utils import Path, format_timestamp, render_run_exception_streams
 
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
@@ -105,7 +106,7 @@ class GuestContext:
     keep_running: bool = True
 
 
-@dataclasses.dataclass
+@container
 class WatchdogCheck(Check):
     interval: int = field(
         default=60,

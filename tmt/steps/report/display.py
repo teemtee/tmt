@@ -1,4 +1,3 @@
-import dataclasses
 from collections.abc import Sequence
 from typing import Optional
 
@@ -6,9 +5,10 @@ import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.report
+from tmt.container import container, field
 from tmt.result import BaseResult, CheckResult, Result, SubCheckResult, SubResult
 from tmt.steps.execute import TEST_OUTPUT_FILENAME
-from tmt.utils import Path, field
+from tmt.utils import Path
 
 # How much test and test check info should be shifted to the right in the output.
 # We want tests to be shifted by one extra level, with their checks shifted by
@@ -19,7 +19,7 @@ SUBRESULT_SHIFT = CHECK_SHIFT
 SUBRESULT_CHECK_SHIFT = SUBRESULT_SHIFT + 1
 
 
-@dataclasses.dataclass
+@container
 class ReportDisplayData(tmt.steps.report.ReportStepData):
     display_guest: str = field(
         default='auto',

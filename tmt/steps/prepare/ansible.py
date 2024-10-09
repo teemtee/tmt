@@ -1,4 +1,3 @@
-import dataclasses
 import tempfile
 from typing import Optional, Union
 
@@ -12,6 +11,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps.provision import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
@@ -24,7 +24,6 @@ from tmt.utils import (
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
-    field,
     normalize_string_list,
     retry_session,
     )
@@ -35,7 +34,7 @@ class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
     playbooks: list[str]
 
 
-@dataclasses.dataclass
+@container
 class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
     playbook: list[str] = field(
         default_factory=list,
