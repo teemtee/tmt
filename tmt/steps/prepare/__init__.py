@@ -12,6 +12,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from tmt.base import Plan
 
 
-@dataclasses.dataclass
+@container
 class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
