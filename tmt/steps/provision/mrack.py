@@ -147,6 +147,18 @@ class MrackHWBinOp(MrackHWElement):
 
 
 @dataclasses.dataclass(init=False)
+class MrackHWValue(MrackHWElement):
+    """ An element without operator """
+
+    def __init__(self, name: str, value: str) -> None:
+        super().__init__(name)
+
+        self.attributes = {
+            '_value': value
+            }
+
+
+@dataclasses.dataclass(init=False)
 class MrackHWKeyValue(MrackHWElement):
     """ A key-value element """
 
@@ -223,10 +235,14 @@ def _transform_beaker_pool(
         constraint.operator,
         constraint.value)
 
-    return MrackHWBinOp(
-        'pool',
-        beaker_operator,
-        actual_value)
+    if beaker_operator == '==':
+        return MrackHWValue(
+            'pool',
+            actual_value)
+
+    return MrackHWNotGroup(children=[
+        MrackHWValue('pool', actual_value)
+        ])
 
 
 def _transform_cpu_flag(
