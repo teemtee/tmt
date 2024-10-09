@@ -1,11 +1,11 @@
 import dataclasses
-import enum
 import functools
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
 import tmt.steps.provision
 import tmt.utils
+from tmt.checks.enums import CheckEvent, CheckResultInterpret
 from tmt.plugins import PluginRegistry
 from tmt.utils import (
     NormalizeKeysMixin,
@@ -67,20 +67,7 @@ def find_plugin(name: str) -> 'CheckPluginClass':
 class _RawCheck(TypedDict):
     how: str
     enabled: bool
-
-
-class CheckEvent(enum.Enum):
-    """ Events in test runtime when a check can be executed """
-
-    BEFORE_TEST = 'before-test'
-    AFTER_TEST = 'after-test'
-
-    @classmethod
-    def from_spec(cls, spec: str) -> 'CheckEvent':
-        try:
-            return CheckEvent(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
+    result: str
 
 
 @dataclasses.dataclass
@@ -100,6 +87,12 @@ class Check(
         default=True,
         is_flag=True,
         help='Whether the check is enabled or not.')
+    result: CheckResultInterpret = field(
+        default=CheckResultInterpret.RESPECT,
+        help='How to interpret the check result.',
+        serialize=lambda result: result.value,
+        unserialize=CheckResultInterpret.from_spec
+        )
 
     @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
@@ -228,7 +221,7 @@ def normalize_test_check(
     if isinstance(raw_test_check, str):
         try:
             return CheckPlugin.delegate(
-                raw_data={'how': raw_test_check, 'enabled': True},
+                raw_data={'how': raw_test_check, 'enabled': True, 'result': 'respect'},
                 logger=logger)
 
         except Exception as exc:

@@ -10,3 +10,6 @@
 /special:
     summary: Test special characters generated to tmt-report-results.yaml
     test: ./special.sh
+/check_results:
+    summary: Test behaviour of check results, including after-test checks
+    test: ./check_results.sh
