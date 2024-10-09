@@ -957,8 +957,16 @@ class CreateJobParameters:
         data['beaker'] = {}
 
         if self.kickstart:
-            data['beaker']['ks_meta'] = self.kickstart.get('metadata')
-            data['beaker']['ks_append'] = self.kickstart
+            kickstart = self.kickstart.copy()
+
+            if 'metadata' in kickstart:
+                data['beaker']['ks_meta'] = kickstart.pop('metadata')
+
+            # Mrack does not handle metadata-only kickstart nicely, ends
+            # up with just an empty string. Don't tempt it, don't let it
+            # see kickstart if it was just metadata.
+            if kickstart:
+                data['beaker']['ks_append'] = kickstart
 
         return data
 
