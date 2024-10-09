@@ -67,6 +67,7 @@ def find_plugin(name: str) -> 'CheckPluginClass':
 class _RawCheck(TypedDict):
     how: str
     enabled: bool
+    result: str
 
 
 class CheckEvent(enum.Enum):
@@ -81,6 +82,19 @@ class CheckEvent(enum.Enum):
             return CheckEvent(spec)
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
+
+
+class CheckResultInterpret(enum.Enum):
+    INFO = 'info'
+    RESPECT = 'respect'
+    XFAIL = 'xfail'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'CheckResultInterpret':
+        try:
+            return CheckResultInterpret(spec)
+        except ValueError:
+            raise ValueError(f"Invalid check result interpretation '{spec}'.")
 
 
 @dataclasses.dataclass
@@ -100,6 +114,12 @@ class Check(
         default=True,
         is_flag=True,
         help='Whether the check is enabled or not.')
+    result: CheckResultInterpret = field(
+        default=CheckResultInterpret.RESPECT,
+        help='How to interpret the check result.',
+        serialize=lambda result: result.value,
+        unserialize=CheckResultInterpret.from_spec
+        )
 
     @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
@@ -228,7 +248,7 @@ def normalize_test_check(
     if isinstance(raw_test_check, str):
         try:
             return CheckPlugin.delegate(
-                raw_data={'how': raw_test_check, 'enabled': True},
+                raw_data={'how': raw_test_check, 'enabled': True, 'result': 'respect'},
                 logger=logger)
 
         except Exception as exc:
