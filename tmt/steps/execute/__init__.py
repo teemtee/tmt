@@ -7,7 +7,6 @@ import signal as _signal
 import subprocess
 import threading
 from contextlib import suppress
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -59,7 +58,7 @@ TEST_METADATA_FILENAME = 'metadata.yaml'
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
 
-@dataclass
+@dataclasses.dataclass  # noqa: TID251
 class Script:
     """ Represents a script provided by the internal executor """
 
@@ -68,7 +67,7 @@ class Script:
     related_variables: list[str]
 
 
-@dataclass
+@dataclasses.dataclass  # noqa: TID251
 class ScriptCreatingFile(Script):
     """ Represents a script which creates a file """
 
@@ -151,7 +150,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class TestInvocation:
     """
     A bundle describing one test invocation.
@@ -172,8 +171,8 @@ class TestInvocation:
     process: Optional[subprocess.Popen[bytes]] = None
     process_lock: threading.Lock = field(default_factory=threading.Lock)
 
-    results: list[Result] = dataclasses.field(default_factory=list)
-    check_results: list[CheckResult] = dataclasses.field(default_factory=list)
+    results: list[Result] = dataclasses.field(default_factory=list)  # noqa: TID251
+    check_results: list[CheckResult] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     check_data: dict[str, Any] = field(default_factory=dict)
 
@@ -449,7 +448,7 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class ResultCollection:
     """ Collection of raw results loaded from a file """
 
@@ -457,7 +456,7 @@ class ResultCollection:
 
     filepaths: list[Path]
     file_exists: bool = False
-    results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)
+    results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     def validate(self) -> None:
         """

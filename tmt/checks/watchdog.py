@@ -84,7 +84,7 @@ def report_progress(
         f.write('\n')
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class GuestContext:
     """ Per-guest watchdog context """
 

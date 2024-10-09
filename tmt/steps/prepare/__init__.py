@@ -177,7 +177,7 @@ class Prepare(tmt.steps.Step):
         # package `foo` while the test running on the "client" might require
         # package `bar`, and `foo` and `bar` cannot be installed at the same
         # time.
-        @dataclasses.dataclass
+        @dataclasses.dataclass  # noqa: TID251
         class DependencyCollection:
             """ Bundle guests and packages to install on them """
 
@@ -187,7 +187,7 @@ class Prepare(tmt.steps.Step):
             # dependencies.
             guests: list[Guest]
             dependencies: list['tmt.base.DependencySimple'] \
-                = dataclasses.field(default_factory=list)
+                = dataclasses.field(default_factory=list)  # noqa: TID251
 
             @property
             def as_key(self) -> frozenset['tmt.base.DependencySimple']:
