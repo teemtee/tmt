@@ -10,7 +10,7 @@ import fmf.utils
 import tmt.identifier
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckEvent
+from tmt.checks import CheckEvent, CheckResultInterpret
 from tmt.utils import GeneralError, Path, SerializableContainer, field
 
 if TYPE_CHECKING:
@@ -189,6 +189,20 @@ class CheckResult(BaseResult):
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
 
+    def interpret_check_result(self, interpret: CheckResultInterpret) -> 'CheckResult':
+        """Interpret check result according to the check_result interpretation."""
+
+        if interpret == CheckResultInterpret.RESPECT:
+            return self
+        if interpret == CheckResultInterpret.INFO:
+            self.result = ResultOutcome.INFO
+        elif interpret == CheckResultInterpret.XFAIL:
+            self.result = {
+                ResultOutcome.FAIL: ResultOutcome.PASS,
+                ResultOutcome.PASS: ResultOutcome.FAIL
+                }.get(self.result, self.result)
+        return self
+
     def to_subcheck(self) -> 'SubCheckResult':
         """ Convert check to a tmt SubCheckResult """
 
@@ -324,11 +338,18 @@ class Result(BaseResult):
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
             data_path=invocation.relative_test_data_path,
-            subresult=subresult or [])
+            subresult=subresult or [],
+            check=invocation.check_results or [])
 
-        return _result.interpret_result(invocation.test.result)
+        interpret_checks = {check.how: check.result for check in invocation.test.check}
 
-    def interpret_result(self, interpret: ResultInterpret) -> 'Result':
+        return _result.interpret_result(invocation.test.result, interpret_checks)
+
+    def interpret_result(
+            self,
+            interpret: ResultInterpret,
+            interpret_checks: dict[str, CheckResultInterpret]
+            ) -> 'Result':
         """
         Interpret result according to a given interpretation instruction.
 
@@ -339,34 +360,40 @@ class Result(BaseResult):
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
-        if interpret in (ResultInterpret.RESPECT, ResultInterpret.CUSTOM):
+        if interpret not in (ResultInterpret):
+            raise tmt.utils.SpecificationError(
+                f"Invalid result '{interpret.value}' in test '{self.name}'."
+                )
+
+        if interpret in (ResultInterpret.CUSTOM, ResultInterpret.RESTRAINT):
+            # Interpret check results first, in case there is "info"
+            self.check = [
+                check_result.interpret_check_result(interpret_checks[check_result.name])
+                for check_result in self.check
+                ]
+
             return self
 
-        # Extend existing note or set a new one
-        if self.note:
-            self.note += f', original result: {self.result.value}'
+        # Keeping "hardcoded" PASS, FAIL, ERROR...
+        if interpret not in (ResultInterpret.XFAIL, ResultInterpret.RESPECT):
+            return self
 
-        elif self.note is None:
-            self.note = f'original result: {self.result.value}'
+        failed_checks = [
+            check_result
+            for check_result in self.check
+            if check_result.result == ResultOutcome.FAIL
+            ]
 
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Test result note '{self.note}' must be a string.")
-
+        if failed_checks:
+            self.result = ResultOutcome.FAIL
+            check_note = ", ".join([f"Check '{check.name}' failed" for check in failed_checks])
+            self.note = f"{self.note}, {check_note}" if self.note else check_note
         if interpret == ResultInterpret.XFAIL:
-            # Swap just fail<-->pass, keep the rest as is (info, warn,
-            # error)
+            # Swap fail<-->pass
             self.result = {
                 ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL
+                ResultOutcome.PASS: ResultOutcome.FAIL,
                 }.get(self.result, self.result)
-
-        elif ResultInterpret.is_result_outcome(interpret):
-            self.result = ResultOutcome(interpret.value)
-
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
         return self
 
