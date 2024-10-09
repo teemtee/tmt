@@ -51,7 +51,7 @@ def _size_env_to_default(option: str, default: 'Size') -> 'Size':
     return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class LogFilterSettings:
     size: 'Size' = DEFAULT_LOG_SIZE_LIMIT
     is_traceback: bool = False
