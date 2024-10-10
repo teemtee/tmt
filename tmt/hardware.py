@@ -1501,6 +1501,8 @@ def _parse_block(spec: Spec) -> BaseConstraint:
     :returns: block representation as :py:class:`BaseConstraint` or one of its
     subclasses.
     """
+    if len(spec) > 1 and ('and' in spec or 'or' in spec):
+        raise tmt.utils.GeneralError("only one of block/and/or is allowed")
 
     if 'and' in spec:
         return _parse_and(spec['and'])
