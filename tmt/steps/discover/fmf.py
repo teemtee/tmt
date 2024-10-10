@@ -18,6 +18,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
+from tmt.base import _RawAdjustRule
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, Environment, EnvVarValue, Path, field
 
@@ -157,6 +158,13 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         show_default=True,
         help="Copy only immediate directories of executed tests and their required files.")
 
+    # Edit discovered tests
+    adjust_tests: Optional[list[_RawAdjustRule]] = field(
+        default_factory=list,
+        normalize=lambda key_address, raw_value, logger: [] if raw_value is None
+        else ([raw_value] if not isinstance(raw_value, list) else raw_value),
+        help="Modify metadata of discovered tests from the plan itself.")
+
     # Upgrade plan path so the plan is not pruned
     upgrade_path: Optional[str] = None
 
@@ -260,6 +268,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
+
+    To modify the discovered tests' metadata directly from the plan (for example if
+    it is an yet-to-be added package, special HW, or missing permissions to modify the tests repo),
+    you can use the ``adjust-tests``. Values are in the same form as the adjust rules, you can use
+    same functionality.
+
+    Following example adds an 'avc' check for each discovered test, doubles its duration and
+    replaces each occurrence of the word 'python3.11' in the list of required packages.
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            adjust-tests:
+            - check+:
+                - how: avc
+            - duration+: '*2'
+              because: Slow system under test
+              when: arch == i286
+            - require~:
+                - '/python3.11/python3.12/'
     """
 
     _data_class = DiscoverFmfStepData
@@ -564,7 +593,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
-            fmf_context=self.step.plan._fmf_context)
+            fmf_context=self.step.plan._fmf_context,
+            additional_rules=self.data.adjust_tests)
         self._tests = tree.tests(
             filters=filters,
             names=names,

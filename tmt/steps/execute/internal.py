@@ -401,7 +401,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 timeout = None
 
             else:
-                timeout = tmt.utils.duration_to_seconds(test.duration)
+                timeout = tmt.utils.duration_to_seconds(
+                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
 
             try:
                 output = guest.execute(
