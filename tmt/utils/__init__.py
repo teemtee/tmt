@@ -1991,7 +1991,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             return path.read_text(encoding='utf-8', errors='replace')
 
         except OSError as error:
-            raise FileError("Failed to read from '{path}'.") from error
+            raise FileError(f"Failed to read from '{path}'.") from error
 
     def write(
             self,
