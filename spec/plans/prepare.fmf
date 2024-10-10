@@ -77,13 +77,11 @@ example: |
 
         .. note::
 
-            When executing tests in the Testing Farm, `selected
-            ansible collections`__ are available on the test
-            runner and can be used in user playbooks.
-
-            __ https://gitlab.com/testing-farm/gluetool-modules/-/blob/main/container/requirements.yml
-
-            TODO: Point to TF docs instead when ready.
+            Depending on the specific setup of the test runner,
+            there might be limitations affecting which playbooks
+            can be used, for example the list of available ansible
+            collections. See the :ref:`testing-farm` section for
+            details.
 
     example: |
         prepare:
