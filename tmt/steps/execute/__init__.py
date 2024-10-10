@@ -371,8 +371,7 @@ class TestInvocation:
 
         elif self.soft_reboot_requested:
             # Extract custom hints from the file, and reset it.
-            with open(self.reboot_request_path) as reboot_file:
-                reboot_data = json.loads(reboot_file.read())
+            reboot_data = json.loads(self.reboot_request_path.read_text())
 
             if reboot_data.get('command'):
                 with suppress(TypeError):
@@ -629,12 +628,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             filepaths=[custom_results_path_yaml, custom_results_path_json])
 
         if custom_results_path_yaml.exists():
-            with open(custom_results_path_yaml) as results_file:
-                collection.results = tmt.utils.yaml_to_list(results_file)
+            collection.results = tmt.utils.yaml_to_list(custom_results_path_yaml.read_text())
 
         elif custom_results_path_json.exists():
-            with open(custom_results_path_json) as results_file:
-                collection.results = tmt.utils.json_to_list(results_file)
+            collection.results = tmt.utils.json_to_list(custom_results_path_json.read_text())
 
         else:
             return collection

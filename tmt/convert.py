@@ -157,10 +157,8 @@ def write_markdown(path: Path, content: dict[str, str]) -> None:
         to_print += "# Cleanup\n" + content['cleanup'] + '\n'
 
     try:
-        with open(path, 'w', encoding='utf-8') as md_file:
-            md_file.write(to_print)
-            echo(style(
-                f"Test case successfully stored into '{path}'.", fg='magenta'))
+        path.write_text(to_print, encoding='utf-8')
+        echo(style(f"Test case successfully stored into '{path}'.", fg='magenta'))
     except OSError:
         raise ConvertError(f"Unable to write '{path}'.")
 
@@ -269,10 +267,10 @@ def read_datafile(
             # As 'make' command was specified for test, ensure Makefile present.
             makefile_path = path / 'Makefile'
             try:
-                with open(makefile_path, encoding='utf-8') as makefile_file:
-                    makefile = makefile_file.read()
-                    search_result = \
-                        re.search(makefile_regex_test, makefile, re.MULTILINE)
+                search_result = re.search(
+                    makefile_regex_test,
+                    makefile_path.read_text(encoding='utf-8'),
+                    re.MULTILINE)
             except OSError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
@@ -280,11 +278,10 @@ def read_datafile(
                 test_path = path / search_result.group(1).split()[-1]
         # Read the test file and determine the framework used.
         if test_path:
-            with open(test_path, encoding="utf-8") as test_file:
-                if re.search("beakerlib", test_file.read(), re.MULTILINE):
-                    data["framework"] = "beakerlib"
-                else:
-                    data["framework"] = "shell"
+            if re.search("beakerlib", test_path.read_text(encoding="utf-8"), re.MULTILINE):
+                data["framework"] = "beakerlib"
+            else:
+                data["framework"] = "shell"
         else:
             data["framework"] = "shell"
         echo(style("framework: ", fg="green") + data["framework"])
@@ -452,8 +449,7 @@ def read(
         assert filename is not None  # type check
         datafile_path = path / filename
         try:
-            with open(datafile_path, encoding='utf-8') as datafile_file:
-                datafile = datafile_file.read()
+            datafile = datafile_path.read_text(encoding='utf-8')
         except OSError:
             raise ConvertError(f"Unable to open '{datafile_path}'.")
         echo(f"found in '{datafile_path}'.")
@@ -462,8 +458,7 @@ def read(
     testinfo_path = path / 'testinfo.desc'
     if testinfo_path.is_file():
         try:
-            with open(testinfo_path, encoding='utf-8') as testinfo_file:
-                old_testinfo = testinfo_file.read()
+            old_testinfo = testinfo_path.read_text(encoding='utf-8')
             testinfo_path.unlink()
         except OSError:
             raise ConvertError(
@@ -495,8 +490,7 @@ def read(
 
         # Read testinfo.desc
         try:
-            with open(testinfo_path, encoding='utf-8') as testinfo_file:
-                testinfo = testinfo_file.read()
+            testinfo = testinfo_path.read_text(encoding='utf-8')
         except OSError:
             raise ConvertError(f"Unable to open '{testinfo_path}'.")
 
@@ -561,8 +555,8 @@ def read(
         # Restore the original testinfo.desc content (if existed)
         if old_testinfo:
             try:
-                with open(testinfo_path, 'w', encoding='utf-8') as testinfo_file:
-                    testinfo_file.write(old_testinfo)
+                testinfo_path.write_text(old_testinfo, encoding='utf-8')
+
             except OSError:
                 raise ConvertError(
                     f"Unable to write '{testinfo_path}'.")
@@ -578,8 +572,7 @@ def read(
         echo(style('Purpose ', fg='blue'), nl=False)
         purpose_path = path / 'PURPOSE'
         try:
-            with open(purpose_path, encoding='utf-8') as purpose_file:
-                content = purpose_file.read()
+            content = purpose_path.read_text(encoding='utf-8')
             echo(f"found in '{purpose_path}'.")
             for header in ['PURPOSE', 'Description', 'Author']:
                 content = re.sub(f'^{header}.*\n', '', content)
@@ -1171,8 +1164,8 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
 
     # Store metadata into a fmf file
     try:
-        with open(path, 'w', encoding='utf-8') as fmf_file:
-            fmf_file.write(tmt.utils.dict_to_yaml(sorted_data))
+        path.write_text(tmt.utils.dict_to_yaml(sorted_data), encoding='utf-8')
+
     except OSError:
         raise ConvertError(f"Unable to write '{path}'")
     if not quiet:

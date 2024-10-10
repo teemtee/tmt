@@ -764,8 +764,7 @@ class GuestTestcloud(tmt.GuestSsh):
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)
             self.verbose('key', self.key[0], 'green')
-            with open(self.workdir / f'{key_name}.pub') as pubkey_file:
-                public_key = pubkey_file.read()
+            public_key = (self.workdir / f'{key_name}.pub').read_text()
 
         # Place public key content into the machine configuration
         self.config.USER_DATA = Template(USER_DATA).safe_substitute(
