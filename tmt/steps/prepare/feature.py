@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, cast
+from typing import Callable, Optional, cast
 
 import tmt
 import tmt.base
@@ -9,11 +9,33 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
+from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Path, field
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
+
+FeatureClass = type['Feature']
+_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
+
+
+def provides_feature(
+        feature: str) -> Callable[[FeatureClass], FeatureClass]:
+    """
+    A decorator for registering feature plugins.
+    Decorate a feature plugin class to register a feature.
+    """
+
+    def _provides_feature(feature_cls: FeatureClass) -> FeatureClass:
+        _FEATURE_PLUGIN_REGISTRY.register_plugin(
+            plugin_id=feature,
+            plugin=feature_cls,
+            logger=tmt.log.Logger.get_bootstrap_logger())
+
+        return feature_cls
+
+    return _provides_feature
 
 
 class Feature(tmt.utils.Common):
@@ -32,6 +54,12 @@ class Feature(tmt.utils.Common):
 
         self.guest = guest
 
+    def enable(self) -> None:
+        raise NotImplementedError
+
+    def disable(self) -> None:
+        raise NotImplementedError
+
     def _find_playbook(self, filename: str) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
         if filepath.exists():
@@ -40,8 +68,6 @@ class Feature(tmt.utils.Common):
         self.warn(f"Cannot find any suitable playbook for '{filename}'.")
         return None
 
-
-class ToggleableFeature(Feature):
     def _run_playbook(self, op: str, playbook_filename: str) -> None:
         playbook_path = self._find_playbook(playbook_filename)
         if not playbook_path:
@@ -50,33 +76,6 @@ class ToggleableFeature(Feature):
 
         self.info(f'{op.capitalize()} {self.NAME.upper()}')
         self.guest.ansible(playbook_path)
-
-    def _enable(self, playbook_filename: str) -> None:
-        self._run_playbook('enable', playbook_filename)
-
-    def _disable(self, playbook_filename: str) -> None:
-        self._run_playbook('disable', playbook_filename)
-
-    def enable(self) -> None:
-        raise NotImplementedError
-
-    def disable(self) -> None:
-        raise NotImplementedError
-
-
-class EPEL(ToggleableFeature):
-    NAME = 'epel'
-
-    def enable(self) -> None:
-        self._enable('epel-enable.yaml')
-
-    def disable(self) -> None:
-        self._disable('epel-disable.yaml')
-
-
-_FEATURES: dict[str, type[Feature]] = {
-    EPEL.NAME: EPEL
-    }
 
 
 @dataclasses.dataclass
@@ -139,14 +138,20 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return []
 
-        # Enable or disable epel
-        for feature_key, feature_class in _FEATURES.items():
-            value = cast(Optional[str], getattr(self.data, feature_key, None))
+        print("### DEBUG IZMI ###")
+        print(f"obsah registru: {list(_FEATURE_PLUGIN_REGISTRY.iter_plugins())}")
+        print_value = cast(Optional[str], getattr(self.data, "epel", None))
+        print(f"obsah value: {print_value}")
+
+        for feature_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
+            feature = _FEATURE_PLUGIN_REGISTRY.get_plugin(feature_id)
+
+            assert feature is not None  # narrow type
+
+            value = cast(Optional[str], getattr(self.data, feature.NAME, None))
             if value is None:
                 continue
-
-            feature = feature_class(parent=self, guest=guest, logger=logger)
-            if isinstance(feature, ToggleableFeature):
+            if isinstance(feature, Feature):
                 value = value.lower()
                 if value == 'enabled':
                     feature.enable()
@@ -154,8 +159,6 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
                     feature.disable()
                 else:
                     raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
-            else:
-                raise tmt.utils.GeneralError(f"Unsupported feature '{feature_key}'.")
 
         return results
 
