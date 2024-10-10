@@ -34,7 +34,12 @@ TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
 #: The default directory for storing test pid file.
-TEST_PIDFILE_ROOT = Path('/var/tmp')  # noqa: S108 insecure usage of temporary dir
+pid_directory = '/var/tmp/pid'  # noqa: S108 insecure usage of temporary dir
+Path(pid_directory).mkdir(parents=True, exist_ok=True)
+user_id = os.system("id -u")  # noqa: S605 Starting a process with a shell
+if user_id == os.stat(pid_directory).st_uid:
+    os.chmod(pid_directory, 0o777)  # noqa: S103 setting a permissive mask on file or directory
+TEST_PIDFILE_ROOT = Path(pid_directory)
 
 
 def effective_pidfile_root() -> Path:
