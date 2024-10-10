@@ -1,0 +1,13 @@
+execute:
+    how: tmt
+discover:
+    how: shell
+    tests:
+    - name: booted image
+      test: bootc status && bootc status | grep localhost/tmtbase
+provision:
+    how: bootc
+    add-deps: false
+    containerfile: "$TMT_BOOTC_CONTAINERFILE_RUNDIR/includes_deps.containerfile"
+    containerfile-workdir: .
+    disk: 20
