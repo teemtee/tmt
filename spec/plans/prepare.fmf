@@ -75,15 +75,9 @@ example: |
         Remote playbooks can be referenced as well as the local ones,
         and both kinds can be used at the same time.
 
-        .. note::
-
-            When executing tests in the Testing Farm, `selected
-            ansible collections`__ are available on the test
-            runner and can be used in user playbooks.
-
-            __ https://gitlab.com/testing-farm/gluetool-modules/-/blob/main/container/requirements.yml
-
-            TODO: Point to TF docs instead when ready.
+        See the :ref:`testing-farm` section for detailed
+        information about which collections are available on the
+        test runner.
 
     example: |
         prepare:
