@@ -10,7 +10,7 @@ import fmf.utils
 import tmt.identifier
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckEvent
+from tmt.checks.enums import CheckEvent, CheckResultInterpret
 from tmt.utils import GeneralError, Path, SerializableContainer, field
 
 if TYPE_CHECKING:
@@ -188,6 +188,27 @@ class CheckResult(BaseResult):
         default=CheckEvent.BEFORE_TEST,
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
+    check_result: CheckResultInterpret = field(
+        default=CheckResultInterpret.RESPECT,
+        serialize=lambda result: result.value,
+        unserialize=CheckResultInterpret.from_spec
+        )
+
+    def interpret_check_result(self) -> 'CheckResult':
+        """Interpret check result according to the check_result interpretation."""
+
+        if self.check_result == CheckResultInterpret.RESPECT:
+            return self
+
+        if self.check_result == CheckResultInterpret.INFO:
+            self.result = ResultOutcome.INFO
+        elif self.check_result == CheckResultInterpret.XFAIL:
+            self.result = {
+                ResultOutcome.FAIL: ResultOutcome.PASS,
+                ResultOutcome.PASS: ResultOutcome.FAIL
+                }.get(self.result, self.result)
+
+        return self
 
 
 @dataclasses.dataclass
@@ -345,6 +366,21 @@ class Result(BaseResult):
         else:
             raise tmt.utils.SpecificationError(
                 f"Test result note '{self.note}' must be a string.")
+
+        # Interpret check results
+        failed_checks: list[CheckResult] = []
+        for check in self.check:
+            interpreted_check = check.interpret_check_result()
+            if (
+                    interpreted_check.result == ResultOutcome.FAIL and
+                    interpreted_check.check_result != CheckResultInterpret.INFO
+                    ):
+                failed_checks.append(interpreted_check)
+
+        if failed_checks:
+            self.result = ResultOutcome.FAIL
+            check_note = ', '.join([f"Check '{check.name}' failed" for check in failed_checks])
+            self.note = f"{self.note}, {check_note}" if self.note else check_note
 
         if interpret == ResultInterpret.XFAIL:
             # Swap just fail<-->pass, keep the rest as is (info, warn,
