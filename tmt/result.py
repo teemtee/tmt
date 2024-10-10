@@ -189,6 +189,14 @@ class CheckResult(BaseResult):
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
 
+    def to_subcheck(self) -> 'SubCheckResult':
+        """ Convert check to a tmt SubCheckResult """
+
+        # TODO: Try to find a better way for conversion?
+        # TODO: Some attributes will be probably modified for SubCheckResult e.g. name (namespace)
+        # TODO: Still need to check if this actually works
+        return SubCheckResult.from_serialized(self.to_serialized())
+
 
 @dataclasses.dataclass
 class SubCheckResult(CheckResult):
@@ -269,7 +277,9 @@ class Result(BaseResult):
             result: ResultOutcome,
             note: Optional[str] = None,
             ids: Optional[ResultIds] = None,
-            log: Optional[list[Path]] = None) -> 'Result':
+            log: Optional[list[Path]] = None,
+            subresult: Optional[list[SubResult]] = None,
+            ) -> 'Result':
         """
         Create a result from a test invocation.
 
@@ -317,7 +327,8 @@ class Result(BaseResult):
             ids=ids,
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
-            data_path=invocation.relative_test_data_path)
+            data_path=invocation.relative_test_data_path,
+            subresult=subresult or [])
 
         return _result.interpret_result(invocation.test.result)
 
@@ -362,6 +373,24 @@ class Result(BaseResult):
                 f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
         return self
+
+    def to_subresult(self, invocation: 'tmt.steps.execute.TestInvocation') -> 'SubResult':
+        """ Convert result to tmt subresult """
+
+        # TODO: Try to find a better way for conversion (e.g. using
+        # from_spec/to_spec/from_serialized/to_serialized).
+        return SubResult(
+            # Add subresult name under the test namespace
+            name=f"{invocation.test.name}/{self.name.lstrip('/')}",
+            result=self.result,
+            note=self.note,
+            log=self.log,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+
+            # Also convert all CheckResult instances to SubCheckResult instances
+            check=[c.to_subcheck() for c in self.check])
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
