@@ -190,7 +190,7 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         default=None,
         help="Branch, tag or commit specifying the git revision.")
 
-    keep_git_metadata: Optional[bool] = field(
+    keep_git_metadata: bool = field(
         option="--keep-git-metadata",
         is_flag=True,
         default=False,
@@ -267,11 +267,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     def show(self, keys: Optional[list[str]] = None) -> None:
         """ Show config details """
         super().show([])
-        # FIXME: cast() - typeless "dispatcher" method
-        tests = cast(list[TestDescription], self.get('tests'))
-        if tests:
-            test_names = [test.name for test in tests]
-            click.echo(tmt.utils.format('tests', test_names))
+
+        if self.data.tests:
+            click.echo(tmt.utils.format('tests', [test.name for test in self.data.tests]))
 
     def fetch_remote_repository(
             self,
@@ -332,17 +330,15 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
         # dist-git related
         sourcedir = self.workdir / 'source'
-        dist_git_source = self.get('dist-git-source', False)
 
         # Fetch remote repository related
-        url = self.get('url', None)
-        ref = self.get('ref', None)
 
         # Git metadata are necessary for dist_git_source
-        keep_git_metadata = True if dist_git_source else self.get('keep_git_metadata', False)
+        keep_git_metadata = True if self.data.dist_git_source \
+            else self.data.keep_git_metadata
 
-        if url:
-            self.fetch_remote_repository(url, ref, testdir, keep_git_metadata)
+        if self.data.url:
+            self.fetch_remote_repository(self.data.url, self.data.ref, testdir, keep_git_metadata)
         else:
             # Symlink tests directory to the plan work tree
             assert self.step.plan.worktree  # narrow type
@@ -382,7 +378,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             if not data.duration:
                 data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
             # Add source dir path variable
-            if dist_git_source:
+            if self.data.dist_git_source:
                 data.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
             # Create a simple fmf node, with correct name. Emit only keys and values
@@ -397,14 +393,14 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 }
             tests.child(data.name, test_fmf_keys)
 
-        if dist_git_source:
+        if self.data.dist_git_source:
             assert self.step.plan.my_run is not None  # narrow type
             assert self.step.plan.my_run.tree is not None  # narrow type
             assert self.step.plan.my_run.tree.root is not None  # narrow type
             try:
                 run_result = self.run(
                     Command("git", "rev-parse", "--show-toplevel"),
-                    cwd=testdir if url else self.step.plan.my_run.tree.root,
+                    cwd=testdir if self.data.url else self.step.plan.my_run.tree.root,
                     ignore_dry=True)
                 assert run_result.stdout is not None
                 git_root = Path(run_result.stdout.strip('\n'))
@@ -415,17 +411,15 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                     f"Directory '{self.step.plan.my_run.tree.root}' "
                     f"is not a git repository.")
             try:
-                download_only: bool = self.get('dist-git-download-only')
                 self.download_distgit_source(
                     distgit_dir=git_root,
                     target_dir=sourcedir,
-                    handler_name=self.get('dist-git-type'),
-                    )
+                    handler_name=self.data.dist_git_type)
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
                 # FIXME 'worktree' could be used as sourcedir when 'url' is not set
                 shutil.copytree(git_root, sourcedir, symlinks=True, dirs_exist_ok=True)
 
-                if download_only:
+                if self.data.dist_git_download_only:
                     self.debug("Do not extract sources as 'download_only' is set.")
                 else:
                     # Check if prepare is enabled, warn user if not
@@ -449,7 +443,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         # Propagate `where` key and TMT_SOURCE_DIR
         for test in self._tests:
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
-            if dist_git_source:
+            if self.data.dist_git_source:
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
     def tests(
