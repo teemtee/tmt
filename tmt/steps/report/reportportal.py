@@ -511,8 +511,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
-            for result, test in self.step.plan.execute.results_for_tests(
+            # For each test
+            for result, test_address in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
+                test = test_address[1] if test_address else None
+
                 test_time = self.time()
                 test_name = None
                 test_description = ''

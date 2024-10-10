@@ -11,6 +11,9 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.options
     import tmt.steps
+    from tmt._compat.typing import TypeAlias
+
+    TestAddress: TypeAlias = tuple[str, 'tmt.Test']
 
 import tmt.base
 import tmt.steps
@@ -118,13 +121,32 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+            enabled: Optional[bool] = None) -> list['TestAddress']:
         """
-        Return discovered tests
+        Return discovered tests.
 
-        Each DiscoverPlugin has to implement this method.
-        Should return a list of Test() objects.
+        :param phase_name: if set, return only tests discovered by the
+            phase of this name. Otherwise, all tests discovered by the
+            phase are returned.
+
+            .. note::
+
+               This parameter exists to present unified interface with
+               :py:meth:`tmt.steps.discover.Discover.tests` API, but it
+               has no interesting effect in case of individual phases:
+
+               * left unset, all tests discovered by the phase are
+                 returned,
+               * set to a phase name, tests discovered by that phase
+                 should be returned. But a phase does not have access to
+                 other phases' tests, therefore setting it to anything
+                 but this phase name would produce an empty list.
+        :param enabled: if set, return only tests that are enabled
+            (``enabled=True``) or disabled (``enabled=False``). Otherwise,
+            all tests are returned.
+        :returns: a list of phase name and test pairs.
         """
+
         raise NotImplementedError
 
     def download_distgit_source(
@@ -149,8 +171,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """ Log details about the imported plan """
         parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
         if parent and parent.plan._original_plan and \
-                parent.plan._original_plan._remote_plan_fmf_id:
-            remote_plan_id = parent.plan._original_plan._remote_plan_fmf_id
+                parent.plan._original_plan._imported_plan_fmf_id:
+            remote_plan_id = parent.plan._original_plan._imported_plan_fmf_id
             # FIXME: cast() - https://github.com/python/mypy/issues/7981
             # Note the missing Optional for values - to_minimal_dict() would
             # not include unset keys, therefore all values should be valid.
@@ -326,7 +348,7 @@ class Discover(tmt.steps.Step):
         text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
         self.info('summary', text, 'green', shift=1)
         # Test list in verbose mode
-        for test in self.tests(enabled=True):
+        for _, test in self.tests(enabled=True):
             self.verbose(test.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
@@ -354,7 +376,7 @@ class Discover(tmt.steps.Step):
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
                 # Check discovered tests, modify test name/path
-                for test in phase.tests(enabled=True):
+                for _, test in phase.tests(enabled=True):
                     test.name = f"{prefix}{test.name}"
                     test.path = Path(f"/{phase.safe_name}{test.path}")
                     # Update test environment with plan environment
@@ -364,7 +386,7 @@ class Discover(tmt.steps.Step):
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
-        for test in self.tests():
+        for _, test in self.tests():
             test.serial_number = self.plan.draw_test_serial_number(test)
 
         # Show fmf identifiers for tests discovered in plan
@@ -373,7 +395,7 @@ class Discover(tmt.steps.Step):
             if self.tests(enabled=True):
                 export_fmf_ids: list[str] = []
 
-                for test in self.tests(enabled=True):
+                for _, test in self.tests(enabled=True):
                     fmf_id = test.fmf_id
 
                     if not fmf_id.url:
@@ -420,21 +442,36 @@ class Discover(tmt.steps.Step):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
-        def _iter_all_tests() -> Iterator['tmt.Test']:
-            tests = self._failed_tests if self._failed_tests else self._tests
-            for phase_tests in tests.values():
-                yield from phase_tests
+            enabled: Optional[bool] = None) -> list['TestAddress']:
+        """
+        Return discovered tests.
 
-        def _iter_phase_tests() -> Iterator['tmt.Test']:
-            assert phase_name is not None
-            tests = self._failed_tests if self._failed_tests else self._tests
+        :param phase_name: if set, return only tests discovered by the
+            phase of this name. Otherwise, tests discovered by all
+            phases are returned.
+        :param enabled: if set, return only tests that are enabled
+            (``enabled=True``) or disabled (``enabled=False``). Otherwise,
+            all tests are returned.
+        :returns: a list of phase name and test pairs.
+        """
 
-            yield from tests[phase_name]
+        suitable_tests = self._failed_tests if self._failed_tests else self._tests
+        suitable_phases = [phase_name] if phase_name is not None else list(self._tests.keys())
 
-        iterator = _iter_all_tests if phase_name is None else _iter_phase_tests
+        def _iter_tests() -> Iterator['TestAddress']:
+            # PLR1704: this redefinition of `phase_name` is acceptable, the original
+            # value is not longer needed as it has been turned into `suitable_phases`.
+            for phase_name, phase_tests in suitable_tests.items():  # noqa: PLR1704
+                if phase_name not in suitable_phases:
+                    continue
+
+                for test in phase_tests:
+                    yield phase_name, test
 
         if enabled is None:
-            return list(iterator())
+            return list(_iter_tests())
 
-        return [test for test in iterator() if test.enabled is enabled]
+        return [
+            (phase_name, test)
+            for phase_name, test in _iter_tests()
+            if test.enabled is enabled]
