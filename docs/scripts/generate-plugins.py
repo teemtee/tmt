@@ -6,6 +6,7 @@ import textwrap
 from typing import Any
 
 import tmt.checks
+import tmt.container
 import tmt.log
 import tmt.plugins
 import tmt.steps
@@ -16,7 +17,8 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
 import tmt.utils
-from tmt.utils import ContainerClass, Path
+from tmt.container import ContainerClass
+from tmt.utils import Path
 from tmt.utils.templates import render_template_file
 
 REVIEWED_PLUGINS: tuple[str, ...] = (
@@ -36,7 +38,7 @@ Generate pages for step plugins sources.
 def _is_ignored(
         container: ContainerClass,
         field: dataclasses.Field[Any],
-        metadata: tmt.utils.FieldMetadata) -> bool:
+        metadata: tmt.container.FieldMetadata) -> bool:
     """ Check whether a given field is to be ignored in documentation """
 
     if field.name in ('how', '_OPTIONLESS_FIELDS'):
@@ -51,7 +53,7 @@ def _is_ignored(
 def _is_inherited(
         container: ContainerClass,
         field: dataclasses.Field[Any],
-        metadata: tmt.utils.FieldMetadata) -> bool:
+        metadata: tmt.container.FieldMetadata) -> bool:
     """ Check whether a given field is inherited from step data base class """
 
     # TODO: for now, it's a list, but inspecting the actual tree of classes
@@ -64,8 +66,8 @@ def container_ignored_fields(container: ContainerClass) -> list[str]:
 
     field_names: list[str] = []
 
-    for field in tmt.utils.container_fields(container):
-        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
+    for field in tmt.container.container_fields(container):
+        _, _, _, _, metadata = tmt.container.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             field_names.append(field.name)
@@ -78,8 +80,8 @@ def container_inherited_fields(container: ContainerClass) -> list[str]:
 
     field_names: list[str] = []
 
-    for field in tmt.utils.container_fields(container):
-        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
+    for field in tmt.container.container_fields(container):
+        _, _, _, _, metadata = tmt.container.container_field(container, field.name)
 
         if _is_inherited(container, field, metadata):
             field_names.append(field.name)
@@ -92,8 +94,8 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
 
     field_names: list[str] = []
 
-    for field in tmt.utils.container_fields(container):
-        _, _, _, _, metadata = tmt.utils.container_field(container, field.name)
+    for field in tmt.container.container_fields(container):
+        _, _, _, _, metadata = tmt.container.container_field(container, field.name)
 
         if _is_ignored(container, field, metadata):
             continue
@@ -184,8 +186,8 @@ def main() -> None:
         STEP=step_name,
         PLUGINS=plugin_generator,
         REVIEWED_PLUGINS=REVIEWED_PLUGINS,
-        container_fields=tmt.utils.container_fields,
-        container_field=tmt.utils.container_field,
+        container_fields=tmt.container.container_fields,
+        container_field=tmt.container.container_field,
         container_ignored_fields=container_ignored_fields,
         container_inherited_fields=container_inherited_fields,
         container_intrinsic_fields=container_intrinsic_fields))

@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Optional, cast
 
 import tmt
@@ -8,9 +7,10 @@ import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Path, field
+from tmt.utils import Path
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
@@ -82,7 +82,7 @@ class _RawPrepareFeatureStepData(tmt.steps.prepare._RawPrepareStepData, total=Fa
     epel: str
 
 
-@dataclasses.dataclass
+@container
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     epel: Optional[str] = field(
         default=None,

@@ -1,4 +1,3 @@
-import dataclasses
 import webbrowser
 from typing import Optional
 
@@ -11,12 +10,13 @@ import tmt.steps
 import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
-from tmt.utils import Path, field
+from tmt.container import container, field
+from tmt.utils import Path
 
 HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
 
 
-@dataclasses.dataclass
+@container
 class ReportHtmlData(tmt.steps.report.ReportStepData):
     open: bool = field(
         default=False,
