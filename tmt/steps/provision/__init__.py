@@ -1306,23 +1306,7 @@ class Guest(tmt.utils.Common):
         except tmt.utils.RunError:
             pass
 
-        # Install under '/root/pkg' for read-only distros
-        # (for now the check is based on 'rpm-ostree' presence)
-        # FIXME: Find a better way how to detect read-only distros
-        # self.debug("Check for a read-only distro.")
-        if self.facts.package_manager == 'rpm-ostree':
-            self.package_manager.install(
-                Package('rsync'),
-                options=tmt.package_managers.Options(
-                    install_root=Path('/root/pkg'),
-                    release_version='/'
-                    )
-                )
-
-            self.execute(Command('ln', '-sf', '/root/pkg/bin/rsync', '/usr/local/bin/rsync'))
-
-        else:
-            self.package_manager.install(Package('rsync'))
+        self.package_manager.install(Package('rsync'))
 
         return CheckRsyncOutcome.INSTALLED
 

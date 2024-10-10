@@ -8,6 +8,7 @@ import subprocess
 import threading
 from contextlib import suppress
 from dataclasses import dataclass
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -27,6 +28,7 @@ from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
+    Command,
     Path,
     ShellScript,
     Stopwatch,
@@ -34,6 +36,7 @@ from tmt.utils import (
     format_duration,
     format_timestamp,
     )
+from tmt.utils.templates import render_template_file
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -55,32 +58,101 @@ TEST_OUTPUT_FILENAME = 'output.txt'
 # Metadata file with details about the current test
 TEST_METADATA_FILENAME = 'metadata.yaml'
 
-# Scripts source directory
+#: Scripts source directory
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
+
+#: The default scripts destination directory
+SCRIPTS_DEST_DIR = Path("/var/tmp/tmt/bin")  # noqa: S108 insecure usage of temporary dir
 
 
 @dataclass
 class Script:
-    """ Represents a script provided by the internal executor """
+    """
+    Represents a script provided by the internal executor.
+
+    Must be used as a context manager. The context manager returns
+    the source file path.
+
+    The source file name matches the name of the file specified via
+    the ``path`` attribute and must be located in the directory specified
+    via :py:data:`SCRIPTS_SRC_DIR` variable.
+    """
 
     path: Path
     aliases: list[Path]
     related_variables: list[str]
 
+    def __enter__(self) -> Path:
+        return SCRIPTS_SRC_DIR / self.path.name
+
+    def __exit__(self, *args: object) -> None:
+        pass
+
 
 @dataclass
 class ScriptCreatingFile(Script):
-    """ Represents a script which creates a file """
+    """
+    Represents a script which creates a file.
+
+    See :py:class:`Script` for more details.
+    """
 
     created_file: str
 
 
+@dataclass
+class ScriptTemplate(Script):
+    """
+    Represents a Jinja2 templated script.
+
+    Must be used as a context manager. The context manager returns
+    the source file path.
+
+    The source file name is constructed from the name of the file specified
+    via the ``path`` attribute, with the ``.j2`` suffix appended.
+    The template file must be located in the directory specified
+    via :py:data:`SCRIPTS_SRC_DIR` variable.
+    """
+
+    context: dict[str, str]
+
+    _rendered_script_path: Optional[Path] = None
+
+    def __enter__(self) -> Path:
+        with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
+            rendered_script.write(render_template_file(
+                SCRIPTS_SRC_DIR / f"{self.path.name}.j2", None, **self.context))
+
+        self._rendered_script_path = Path(rendered_script.name)
+
+        return self._rendered_script_path
+
+    def __exit__(self, *args: object) -> None:
+        assert self._rendered_script_path
+        os.unlink(self._rendered_script_path)
+
+
+def effective_scripts_dest_dir() -> Path:
+    """
+    Find out what the actual scripts destination directory is.
+
+    If the ``TMT_SCRIPTS_DEST_DIR`` environment variable is set, it is used
+    as the scripts destination directory. Otherwise, the default
+    of :py:data:`SCRIPTS_DEST_DIR` is used.
+    """
+
+    if 'TMT_SCRIPTS_DEST_DIR' in os.environ:
+        return Path(os.environ['TMT_SCRIPTS_DEST_DIR'])
+
+    return SCRIPTS_DEST_DIR
+
+
 # Script handling reboots, in restraint compatible fashion
 TMT_REBOOT_SCRIPT = ScriptCreatingFile(
-    path=Path("/usr/local/bin/tmt-reboot"),
+    path=effective_scripts_dest_dir() / 'tmt-reboot',
     aliases=[
-        Path("/usr/local/bin/rstrnt-reboot"),
-        Path("/usr/local/bin/rhts-reboot")],
+        effective_scripts_dest_dir() / 'rstrnt-reboot',
+        effective_scripts_dest_dir() / 'rhts-reboot'],
     related_variables=[
         "TMT_REBOOT_COUNT",
         "REBOOTCOUNT",
@@ -89,43 +161,54 @@ TMT_REBOOT_SCRIPT = ScriptCreatingFile(
     )
 
 TMT_REBOOT_CORE_SCRIPT = Script(
-    path=Path("/usr/local/bin/tmt-reboot-core"),
+    path=effective_scripts_dest_dir() / 'tmt-reboot-core',
     aliases=[],
     related_variables=[])
 
 # Script handling result reporting, in restraint compatible fashion
 TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
-    path=Path("/usr/local/bin/tmt-report-result"),
+    path=effective_scripts_dest_dir() / 'tmt-report-result',
     aliases=[
-        Path("/usr/local/bin/rstrnt-report-result"),
-        Path("/usr/local/bin/rhts-report-result")],
+        effective_scripts_dest_dir() / 'rstrnt-report-result',
+        effective_scripts_dest_dir() / 'rhts-report-result'],
     related_variables=[],
     created_file="tmt-report-results.yaml"
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
 TMT_FILE_SUBMIT_SCRIPT = Script(
-    path=Path("/usr/local/bin/tmt-file-submit"),
+    path=effective_scripts_dest_dir() / 'tmt-file-submit',
     aliases=[
-        Path("/usr/local/bin/rstrnt-report-log"),
-        Path("/usr/local/bin/rhts-submit-log"),
-        Path("/usr/local/bin/rhts_submit_log")],
+        effective_scripts_dest_dir() / 'rstrnt-report-log',
+        effective_scripts_dest_dir() / 'rhts-submit-log',
+        effective_scripts_dest_dir() / 'rhts_submit_log'],
     related_variables=[]
     )
 
 # Script handling text execution abortion, in restraint compatible fashion
 TMT_ABORT_SCRIPT = ScriptCreatingFile(
-    path=Path("/usr/local/bin/tmt-abort"),
+    path=effective_scripts_dest_dir() / 'tmt-abort',
     aliases=[
-        Path("/usr/local/bin/rstrnt-abort"),
-        Path("/usr/local/bin/rhts-abort")],
+        effective_scripts_dest_dir() / 'rstrnt-abort',
+        effective_scripts_dest_dir() / 'rhts-abort'],
     related_variables=[],
     created_file="abort"
     )
 
+# Profile script for adding SCRIPTS_DEST_DIR to executable paths system-wide
+TMT_ETC_PROFILE_D = ScriptTemplate(
+    path=Path("/etc/profile.d/tmt.sh"),
+    aliases=[],
+    related_variables=[],
+    context={
+        'SCRIPTS_DEST_DIR': str(effective_scripts_dest_dir())
+        })
+
+
 # List of all available scripts
 SCRIPTS = (
     TMT_ABORT_SCRIPT,
+    TMT_ETC_PROFILE_D,
     TMT_FILE_SUBMIT_SCRIPT,
     TMT_REBOOT_SCRIPT,
     TMT_REBOOT_CORE_SCRIPT,
@@ -597,16 +680,18 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """ Prepare additional scripts for testing """
+        # Create scripts directory
+        guest.execute(Command("mkdir", "-p", str(effective_scripts_dest_dir())))
+
         # Install all scripts on guest
         for script in self.scripts:
-            source = SCRIPTS_SRC_DIR / script.path.name
-
-            for dest in [script.path, *script.aliases]:
-                guest.push(
-                    source=source,
-                    destination=dest,
-                    options=["-p", "--chmod=755"],
-                    superuser=guest.facts.is_superuser is not True)
+            with script as source:
+                for dest in [script.path, *script.aliases]:
+                    guest.push(
+                        source=source,
+                        destination=dest,
+                        options=["-p", "--chmod=755"],
+                        superuser=guest.facts.is_superuser is not True)
 
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """ Create path to test's ``tmt-report-result`` file """
