@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 JSON: 'TypeAlias' = Any
+DEFAULT_LOG_SIZE_LIMIT: int = 1024 * 1024
+DEFAULT_TRACEBACK_SIZE_LIMIT: int = 100 * 1024
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
@@ -41,11 +43,46 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
-def _filter_invalid_chars(data: str) -> str:
+def _filter_invalid_chars(data: str,
+                          step_data: 'ReportReportPortalData',
+                          is_traceback: bool = False) -> str:
     return re.sub(
         '[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+',
         '',
         data)
+
+
+def _filter_log_per_size(data: str,
+                         step_data: 'ReportReportPortalData',
+                         is_traceback: bool = False) -> str:
+    size = len(data)
+    if is_traceback:
+        limit = step_data.traceback_size_limit
+        variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
+        option = "--traceback-size-limit"
+    else:
+        limit = step_data.log_size_limit
+        variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
+        option = "--log-size-limit"
+    header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
+              f"exceeds tmt reportportal plugin limit of {limit} bytes."
+              f"The limit is controlled with {option} plugin option or"
+              f"{variable} environment variable.\n\n")
+    if size > step_data.log_size_limit:
+        return f"{header}{data[:step_data.log_size_limit]}"
+    return data
+
+
+_LOG_FILTERS = [
+    _filter_log_per_size,
+    _filter_invalid_chars,
+    ]
+
+
+def _filter_log(log: str, step_data: 'ReportReportPortalData', is_traceback: bool = False) -> str:
+    for log_filter in _LOG_FILTERS:
+        log = log_filter(log, step_data, is_traceback=is_traceback)
+    return log
 
 
 @dataclasses.dataclass
@@ -141,6 +178,28 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              Pass the defect type to be used for failed test, which is defined in the project
              (e.g. 'Idle'). 'To Investigate' is used by default.
              """)
+
+    log_size_limit: int = field(
+        option="--log-size-limit",
+        metavar="LOG_SIZE_LIMIT",
+        default=int(
+            _str_env_to_default('log_size_limit', str(DEFAULT_LOG_SIZE_LIMIT))),
+        help=f"""
+              Size limit in bytes for log upload to ReportPortal.
+              The default limit is {DEFAULT_LOG_SIZE_LIMIT} bytes
+              ({DEFAULT_LOG_SIZE_LIMIT / 1024 / 1024} MB).
+              """)
+
+    traceback_size_limit: int = field(
+        option="--traceback-size-limit",
+        metavar="TRACEBACK_SIZE_LIMIT",
+        default=int(
+            _str_env_to_default('traceback_size_limit', str(DEFAULT_TRACEBACK_SIZE_LIMIT))),
+        help=f"""
+              Size limit in bytes for traceback log upload to ReportPortal.
+              The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT} bytes
+              ({DEFAULT_TRACEBACK_SIZE_LIMIT / 1024} kB).
+              """)
 
     exclude_variables: str = field(
         option="--exclude-variables",
@@ -610,11 +669,25 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             response = self.rp_api_post(
                                 session=session,
                                 path="log/entry",
-                                json={"message": message,
+                                json={"message": _filter_log(log, self.data),
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": "ERROR",
                                       "time": result.end_time})
+
+                            # Write out failures
+                            if index == 0 and status == "FAILED":
+                                message = _filter_log(result.failures(log),
+                                                      self.data,
+                                                      is_traceback=True)
+                                response = self.rp_api_post(
+                                    session=session,
+                                    path="log/entry",
+                                    json={"message": message,
+                                          "itemUuid": item_uuid,
+                                          "launchUuid": launch_uuid,
+                                          "level": "ERROR",
+                                          "time": result.end_time})
 
                     test_time = result.end_time or self.time()
 
