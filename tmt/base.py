@@ -4326,8 +4326,8 @@ def resolve_dynamic_ref(
 
     # Read it, process it and get the value of the attribute 'ref'
     try:
-        with open(ref_filepath, encoding='utf-8') as datafile:
-            data = tmt.utils.yaml_to_dict(datafile.read())
+        data = tmt.utils.yaml_to_dict(ref_filepath.read_text(encoding='utf-8'))
+
     except OSError as error:
         raise tmt.utils.FileError(f"Failed to read '{ref_filepath}'.") from error
     # Build a dynamic reference tree, adjust ref based on the context

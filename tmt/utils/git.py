@@ -552,20 +552,19 @@ class DistGitHandler:
         package = globbed[0].stem
         ret_values: list[tuple[str, str]] = []
         try:
-            with open(cwd / self.sources_file_name) as f:
-                for line in f:
-                    match = self.re_source.match(line)
-                    if match is None:
-                        raise GeneralError(
-                            f"Couldn't match '{self.sources_file_name}' "
-                            f"content with '{self.re_source.pattern}'.")
-                    used_hash, source_name, hash_value = match.groups()
-                    ret_values.append((self.lookaside_server + self.uri.format(
-                        name=package,
-                        filename=source_name,
-                        hash=hash_value,
-                        hashtype=used_hash.lower()
-                        ), source_name))
+            for line in (cwd / self.sources_file_name).splitlines():
+                match = self.re_source.match(line)
+                if match is None:
+                    raise GeneralError(
+                        f"Couldn't match '{self.sources_file_name}' "
+                        f"content with '{self.re_source.pattern}'.")
+                used_hash, source_name, hash_value = match.groups()
+                ret_values.append((self.lookaside_server + self.uri.format(
+                    name=package,
+                    filename=source_name,
+                    hash=hash_value,
+                    hashtype=used_hash.lower()
+                    ), source_name))
         except Exception as error:
             raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
         if not ret_values:
@@ -662,8 +661,7 @@ def distgit_download(
             response = session.get(url)
         response.raise_for_status()
         target_dir.mkdir(exist_ok=True, parents=True)
-        with open(target_dir / source_name, 'wb') as tarball:
-            tarball.write(response.content)
+        (target_dir / source_name).write_bytes(response.content)
 
 
 def git_clone(

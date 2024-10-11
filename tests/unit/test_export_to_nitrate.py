@@ -22,7 +22,7 @@ class NitrateExportAutomated(TestCase):
         file_name = 'test.md'
         assert file_name in files
 
-        step = convert_manual_to_nitrate(file_name)[0]
+        step = convert_manual_to_nitrate(Path(file_name))[0]
         html_generated = """<b>Test</b>\
 <p>Step 1.</p><p>Verify tmt shows help page
 <code>bash
@@ -46,7 +46,7 @@ tmt init</code></p>
         file_name = 'test.md'
         assert file_name in files
 
-        expect = convert_manual_to_nitrate(file_name)[1]
+        expect = convert_manual_to_nitrate(Path(file_name))[1]
         html_generated = """<b>Test</b>\
 <p>Step 1.</p><p>Text similar to the one below is displayed
 ```
@@ -78,7 +78,7 @@ base or full.</code></li>
         files = os.listdir()
         file_name = 'test_empty.md'
         assert file_name in files
-        html = convert_manual_to_nitrate(file_name)
+        html = convert_manual_to_nitrate(Path(file_name))
         html_generated = ('', '', '', '')
         assert html == html_generated
 
@@ -87,7 +87,7 @@ base or full.</code></li>
         files = os.listdir()
         file_name = 'test.md'
         assert file_name in files
-        cleanup = convert_manual_to_nitrate(file_name)[2]
+        cleanup = convert_manual_to_nitrate(Path(file_name))[2]
         html_generated = ''
         assert cleanup == html_generated
 
@@ -97,7 +97,7 @@ base or full.</code></li>
         file_name = 'test.md'
         assert file_name in files
 
-        cleanup = convert_manual_to_nitrate(file_name)[3]
+        cleanup = convert_manual_to_nitrate(Path(file_name))[3]
         html_generated = """<p>Optionally remove temporary directory created \
 in the first step
 2 line of cleanup
