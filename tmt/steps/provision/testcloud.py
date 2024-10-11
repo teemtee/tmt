@@ -740,6 +740,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self._domain = DomainConfiguration(self.instance_name)
         self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
 
+        # Is this a CoreOS?
+        self._domain.coreos = self.is_coreos
+
         self._instance = testcloud.instance.Instance(
             domain_configuration=self._domain,
             image=self._image, desired_arch=self.arch,
