@@ -292,7 +292,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 },
                             },
                         },
-                    {'or': []},
+                    {
+                        'system': {
+                            'model': {
+                                '_op': 'like',
+                                '_value': 'PowerEdge R750',
+                                },
+                            },
+                        },
                     ]
                 },
             {
@@ -883,6 +890,22 @@ def test_system_numa_nodes(root_logger: Logger) -> None:
             'numanodes': {
                 '_op': '==',
                 '_value': '2'
+                }
+            }
+        }
+
+
+def test_system_model_name(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['system.model_name'](
+        _parse_system({'model-name': '!~ PowerEdge R750.*'}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'system': {
+                'model': {
+                    '_op': 'like',
+                    '_value': 'PowerEdge R750%'
+                    }
                 }
             }
         }
