@@ -1,4 +1,3 @@
-import dataclasses
 import os
 import re
 from time import time
@@ -8,8 +7,9 @@ import requests
 
 import tmt.log
 import tmt.steps.report
+from tmt.container import container, field
 from tmt.result import ResultOutcome
-from tmt.utils import field, yaml_to_dict
+from tmt.utils import yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -48,7 +48,7 @@ def _filter_invalid_chars(data: str) -> str:
         data)
 
 
-@dataclasses.dataclass
+@container
 class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
     url: Optional[str] = field(

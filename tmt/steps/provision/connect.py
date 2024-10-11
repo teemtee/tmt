@@ -1,16 +1,16 @@
-import dataclasses
 from typing import Any, Optional, Union
 
 import tmt
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.utils import Command, ShellScript, field
+from tmt.container import container, field
+from tmt.utils import Command, ShellScript
 
 DEFAULT_USER = "root"
 
 
-@dataclasses.dataclass
+@container
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
     # Connect plugin actually allows `guest` key to be controlled by an option.
     _OPTIONLESS_FIELDS = tuple(
@@ -74,7 +74,7 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         return ConnectGuestData(**options)
 
 
-@dataclasses.dataclass
+@container
 class ProvisionConnectData(ConnectGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

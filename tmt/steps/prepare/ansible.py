@@ -1,4 +1,3 @@
-import dataclasses
 import tempfile
 from typing import Optional, Union
 
@@ -11,9 +10,10 @@ import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Path, PrepareError, field, normalize_string_list, retry_session
+from tmt.utils import Path, PrepareError, normalize_string_list, retry_session
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -21,7 +21,7 @@ class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
     playbooks: list[str]
 
 
-@dataclasses.dataclass
+@container
 class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
     playbook: list[str] = field(
         default_factory=list,

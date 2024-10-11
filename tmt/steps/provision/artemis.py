@@ -1,4 +1,3 @@
-import dataclasses
 import datetime
 import functools
 from typing import Any, Optional, TypedDict, cast
@@ -12,11 +11,11 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     ProvisionError,
     UpdatableMessage,
     dict_to_yaml,
-    field,
     normalize_string_dict,
     retry_session,
     )
@@ -101,7 +100,7 @@ def _normalize_log_type(
         key_address, raw_value, 'a string or a list of strings')
 
 
-@dataclasses.dataclass
+@container
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     user: str = field(
         default=DEFAULT_USER,
@@ -251,7 +250,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         help='If set, the script provided or fetched will be executed.')
 
 
-@dataclasses.dataclass
+@container
 class ProvisionArtemisData(ArtemisGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

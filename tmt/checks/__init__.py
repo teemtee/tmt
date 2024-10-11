@@ -1,4 +1,3 @@
-import dataclasses
 import enum
 import functools
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
@@ -6,13 +5,15 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, T
 import tmt.log
 import tmt.steps.provision
 import tmt.utils
-from tmt.plugins import PluginRegistry
-from tmt.utils import (
-    NormalizeKeysMixin,
+from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
+    container,
     field,
+    key_to_option,
     )
+from tmt.plugins import PluginRegistry
+from tmt.utils import NormalizeKeysMixin
 
 if TYPE_CHECKING:
     import tmt.base
@@ -83,7 +84,7 @@ class CheckEvent(enum.Enum):
             raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
 
 
-@dataclasses.dataclass
+@container
 class Check(
         SpecBasedContainer[_RawCheck, _RawCheck],
         SerializableContainer,
@@ -118,7 +119,7 @@ class Check(
 
     def to_spec(self) -> _RawCheck:
         return cast(_RawCheck, {
-            tmt.utils.key_to_option(key): value
+            key_to_option(key): value
             for key, value in self.items()
             })
 

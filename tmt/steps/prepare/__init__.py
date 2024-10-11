@@ -12,6 +12,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from tmt.base import Plan
 
 
-@dataclasses.dataclass
+@container
 class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
@@ -177,7 +178,7 @@ class Prepare(tmt.steps.Step):
         # package `foo` while the test running on the "client" might require
         # package `bar`, and `foo` and `bar` cannot be installed at the same
         # time.
-        @dataclasses.dataclass
+        @dataclasses.dataclass  # noqa: TID251
         class DependencyCollection:
             """ Bundle guests and packages to install on them """
 
@@ -187,7 +188,7 @@ class Prepare(tmt.steps.Step):
             # dependencies.
             guests: list[Guest]
             dependencies: list['tmt.base.DependencySimple'] \
-                = dataclasses.field(default_factory=list)
+                = dataclasses.field(default_factory=list)  # noqa: TID251
 
             @property
             def as_key(self) -> frozenset['tmt.base.DependencySimple']:
