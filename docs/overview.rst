@@ -366,6 +366,13 @@ TMT_PLUGINS
     Path to a directory with additional plugins. Multiple paths
     separated with the ``:`` character can be provided as well.
 
+TMT_FEELING_SAFE
+    Set this variable to ``True`` to enable potentially dangerous
+    operations such as executing tests directly on the test runner
+    using the ``local`` provision method. Use with caution, only
+    when you can fully trust the ``tmt`` metadata or if you know
+    what you are doing.
+
 TMT_CONFIG_DIR
     Path to an alternative directory with config files. By default
     ``~/.config/tmt`` is used.
