@@ -10,7 +10,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test $PROVISION_HOW"
         # Run the plan, check for expected results
-        rlRun -s "tmt run -av --scratch --id $run provision -h $PROVISION_HOW" 1
+        rlRun -s "tmt --feeling-safe run -av --scratch --id $run provision -h $PROVISION_HOW" 1
         rlAssertGrep "2 tests passed and 1 test failed" $rlRun_LOG
 
         # Check output and extra logs in the test data directory

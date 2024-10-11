@@ -10,21 +10,21 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "All steps at once (don't remove)"
-        rlRun "tmt run --id $run --all \
+        rlRun "tmt --feeling-safe run --id $run --all \
             provision --how local \
             execute --how tmt --script true"
         rlAssertExists $run
     rlPhaseEnd
 
     rlPhaseStartTest "All steps at once (remove)"
-        rlRun "tmt run --id $run --all --remove \
+        rlRun "tmt --feeling-safe run --id $run --all --remove \
             provision --how local \
             execute --how tmt --script true"
         rlAssertNotExists $run
     rlPhaseEnd
 
     rlPhaseStartTest "Selected steps (remove)"
-        rlRun "tmt run --id $run --remove \
+        rlRun "tmt --feeling-safe run --id $run --remove \
             discover \
             provision --how local \
             execute --how tmt --script true"

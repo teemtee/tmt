@@ -14,7 +14,7 @@ rlJournalStart
 
     rlPhaseStartTest "Truncated"
         for v in '' '-v'; do
-          rlRun -s "tmt run --id $run --scratch --all \
+          rlRun -s "tmt --feeling-safe run --id $run --scratch --all \
             provision $v --how local \
             execute --how tmt --script true \
             prepare --how shell --script 'for i in {001..101}; do echo OUT-\$i; done; false'" "$ECODE"
@@ -27,7 +27,7 @@ rlJournalStart
 
     rlPhaseStartTest "Not Truncated"
         # Whole run is in verbose mode
-        rlRun -s "tmt run -v --id $run --scratch --all \
+        rlRun -s "tmt --feeling-safe run -v --id $run --scratch --all \
           provision $v --how local \
           execute --how tmt --script true \
           prepare --how shell --script 'for i in {001..101}; do echo OUT-\$i; done; false'" "$ECODE"
@@ -36,7 +36,7 @@ rlJournalStart
         rlAssertGrep 'OUT-001' $rlRun_LOG -F
 
         # Prepare is in verbose mode
-        rlRun -s "tmt run --id $run --scratch --all \
+        rlRun -s "tmt --feeling-safe run --id $run --scratch --all \
           provision --how local \
           execute --how tmt --script true \
           prepare -v --how shell --script 'for i in {001..101}; do echo OUT-\$i; done; false'" "$ECODE"

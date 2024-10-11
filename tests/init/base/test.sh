@@ -28,7 +28,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Execute"
-        rlRun -s "tmt run -ar provision -h local"
+        rlRun -s "tmt --feeling-safe run -ar provision -h local"
         rlAssertGrep "total: 1 test passed" $rlRun_LOG
     rlPhaseEnd
 

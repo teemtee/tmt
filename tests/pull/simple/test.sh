@@ -10,11 +10,11 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test one step ($PROVISION_HOW)"
-        rlRun "tmt run -i $run --scratch provision -h $PROVISION_HOW finish"
+        rlRun "tmt --feeling-safe run -i $run --scratch provision -h $PROVISION_HOW finish"
     rlPhaseEnd
 
     rlPhaseStartTest "Test two steps ($PROVISION_HOW)"
-        rlRun "tmt run -i $run --scratch provision -h $PROVISION_HOW"
+        rlRun "tmt --feeling-safe run -i $run --scratch provision -h $PROVISION_HOW"
         rlRun "tmt run -i $run finish"
     rlPhaseEnd
 

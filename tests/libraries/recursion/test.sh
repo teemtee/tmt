@@ -33,7 +33,7 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartTest "Libs in the same repo"
-        rlRun -s "tmt run --rm -a -vvv -ddd provision -h local"
+        rlRun -s "tmt --feeling-safe run --rm -a -vvv -ddd provision -h local"
         rlAssertGrep "2 tests passed" $rlRun_LOG
     rlPhaseEnd
 

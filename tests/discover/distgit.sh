@@ -181,7 +181,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
+        rlRun -s "tmt --feeling-safe run --keep --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /tests/from-source provision -h local prepare"
 
@@ -225,7 +225,7 @@ EOF
         sed -e '/^BuildArch:/aSource0: with-tmt-1.tgz' $TEST_DIR/data/demo.spec > demo.spec
         sed -e 's/package-src/with-tmt-1/' -i demo.spec
 
-        rlRun -s 'tmt run --id /var/tmp/tmt/XXX --scratch plans --default \
+        rlRun -s 'tmt --feeling-safe run --id /var/tmp/tmt/XXX --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /from-source provision -h local prepare'
 
@@ -244,7 +244,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
+        rlRun -s 'tmt --feeling-safe run --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING prepare provision -h local'
 
@@ -276,7 +276,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
+        rlRun -s 'tmt --feeling-safe run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
             --dist-git-type TESTING --dist-git-merge provision -h local prepare'
 
@@ -336,7 +336,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s 'tmt run --id $WORKDIR --scratch plans --default \
+        rlRun -s 'tmt --feeling-safe run --id $WORKDIR --scratch plans --default \
             discover -v --how fmf --dist-git-source \
             --dist-git-type TESTING --dist-git-merge --dist-git-remove-fmf-root provision -h local prepare'
 
@@ -359,7 +359,7 @@ EOF
     rlPhaseStartTest "Run directly from the DistGit (Fedora) [cli]"
         rlRun 'pushd tmt'
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --id $WORKDIR --keep --scratch plans --default \
+        rlRun -s 'tmt --feeling-safe run --id $WORKDIR --keep --scratch plans --default \
             discover -v --how fmf --dist-git-source \
             tests --name tests/prepare/install$ provision -h local prepare'
          assert_tests $WORKDIR "/tests/prepare/install"
@@ -369,14 +369,15 @@ EOF
     rlPhaseStartTest "Run directly from the DistGit (Fedora) [plan]"
         rlRun 'pushd tmt'
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --id $WORKDIR --scratch plans --name distgit discover provision -h local prepare'
+        rlRun -s 'tmt --feeling-safe run --keep --id $WORKDIR --scratch \
+            plans --name distgit discover provision -h local prepare'
         assert_tests $WORKDIR "/tests/prepare/install"
         rlRun 'popd'
     rlPhaseEnd
 
     rlPhaseStartTest "URL is path to a local distgit repo"
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --scratch --id $WORKDIR plans --default \
+        rlRun -s 'tmt --feeling-safe run --keep --scratch --id $WORKDIR plans --default \
             discover --how fmf --dist-git-source --dist-git-type fedora --url $CLONED_RPMS_TMT \
             --dist-git-merge tests --name tests/prepare/install$ prepare provision -h local'
         assert_tests $WORKDIR tests/prepare/install
@@ -386,9 +387,12 @@ EOF
         rlPhaseStartTest "${prefix}path pointing to the fmf root in the extracted sources"
             rlRun 'pushd tmt'
             WORKDIR=/var/tmp/tmt/XXX
-            rlRun -s "tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
-            --dist-git-source --dist-git-merge --ref e2d36db --dist-git-extract ${prefix}tmt-1.7.0/tests/execute/framework/data \
-            tests --name ^/tests/beakerlib/with-framework\$ prepare provision -h local"
+            rlRun -s "tmt --feeling-safe run --keep --scratch --id $WORKDIR \
+                plans --default discover -v --how fmf --ref e2d36db \
+                --dist-git-source --dist-git-merge \
+                --dist-git-extract ${prefix}tmt-1.7.0/tests/execute/framework/data \
+                tests --name ^/tests/beakerlib/with-framework\$ \
+                prepare provision -h local"
             assert_tests $WORKDIR /tests/beakerlib/with-framework
 
             rlRun 'popd'
@@ -397,10 +401,11 @@ EOF
 
     rlPhaseStartTest "Specify URL and REF of DistGit repo (Fedora)"
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
-        --dist-git-source --ref e2d36db --dist-git-merge  --dist-git-init \
-        --url https://src.fedoraproject.org/rpms/tmt.git \
-        tests --name tests/prepare/install$  prepare provision -h local'
+        rlRun -s 'tmt --feeling-safe run --keep --scratch --id $WORKDIR \
+            plans --default discover -v --how fmf \
+            --dist-git-source --ref e2d36db --dist-git-merge  --dist-git-init \
+            --url https://src.fedoraproject.org/rpms/tmt.git \
+            tests --name tests/prepare/install$  prepare provision -h local'
         assert_tests $WORKDIR "/tmt-1.7.0/tests/prepare/install"
     rlPhaseEnd
 
@@ -427,7 +432,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
+        rlRun -s "tmt --feeling-safe run --keep --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /tests/from-source provision -h local prepare"
         assert_tests $WORKDIR '"/tests/from-source'

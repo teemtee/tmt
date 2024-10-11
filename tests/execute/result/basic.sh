@@ -9,7 +9,8 @@ run()
     orig=$3 # original result
     ret=$4  # tmt return code
 
-    rlRun -s "tmt run -a --scratch --id \${run} test --name ${tn} provision --how local report -v 2>&1 >/dev/null | grep report -A2 | tail -n 1" \
+    rlRun -s "tmt --feeling-safe run -a --scratch --id \${run} test --name ${tn} \
+        provision --how local report -v 2>&1 >/dev/null | grep report -A2 | tail -n 1" \
         ${ret} "Result: ${res}, Test name: ${tn}, Original result: '${orig}', tmt return code: ${ret}"
 
     if [ -z "${orig}" ]; then # No original result provided
@@ -47,7 +48,8 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Verbose execute prints result"
-        rlRun -s "tmt run --id \${run} --scratch --until execute tests --filter tag:-cherry_pick provision --how local execute -v 2>&1 >/dev/null" "2"
+        rlRun -s "tmt --feeling-safe run --id \${run} --scratch --until execute \
+            tests --filter tag:-cherry_pick provision --how local execute -v 2>&1 >/dev/null" "2"
         while read -r line; do
             if rlIsRHELLike "=8" && [[ $line =~ /test/error-timeout ]]; then
                 # Centos stream 8 doesn't do watchdog properly https://github.com/teemtee/tmt/issues/1387
@@ -90,7 +92,7 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartTest "Verify fmf context lands in results"
-        rlRun -s "tmt -c foo=bar run --id ${run} --scratch -a provision --how local test -n '/pass'"
+        rlRun -s "tmt --feeling-safe -c foo=bar run --id ${run} --scratch -a provision --how local test -n '/pass'"
         rlAssertEquals "Context is stored in result" "$(yq -r ".[] | .context | to_entries[] | \"\\(.key)=\\(.value[])\"" $run/default/plan/execute/results.yaml)" "foo=bar"
     rlPhaseEnd
 
