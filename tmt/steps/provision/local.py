@@ -157,7 +157,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         know are safe so that you don't destroy your laptop ;-)
 
         From tmt version 1.38, the ``--feeling-safe`` option or
-        the ``TMT_FEELING_SAFE=True`` environment variable is
+        the ``TMT_FEELING_SAFE=1`` environment variable is
         required in order to use the local provision plugin.
 
     Example config:

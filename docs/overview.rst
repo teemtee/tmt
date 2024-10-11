@@ -367,7 +367,7 @@ TMT_PLUGINS
     separated with the ``:`` character can be provided as well.
 
 TMT_FEELING_SAFE
-    Set this variable to ``True`` to enable potentially dangerous
+    Set this variable to ``1`` to enable potentially dangerous
     operations such as executing tests directly on the test runner
     using the ``local`` provision method. Use with caution, only
     when you can fully trust the ``tmt`` metadata or if you know
