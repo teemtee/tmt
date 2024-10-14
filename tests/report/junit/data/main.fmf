@@ -27,5 +27,7 @@
         /timeout:
             test: sleep 10
             duration: 2s
+
+        # TODO: Add test for control characters and non-allowed utf-8 XML chars, e.g. using printf
         /escape"<speci&l>_chars:
             test: "echo '<speci&l>\"chars'"
