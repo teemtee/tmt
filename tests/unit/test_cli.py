@@ -95,8 +95,7 @@ def test_step():
     for step in ['discover', 'provision', 'prepare']:
         tmp = tempfile.mkdtemp()
         result = runner.invoke(
-            tmt.cli.main,
-            ['--feeling-safe', '--root', example('local'), 'run', '-i', tmp, step])
+            tmt.cli.main, ['--root', example('local'), 'run', '-i', tmp, step])
         assert result.exit_code == 0
         assert step in result.output
         assert 'finish' not in result.output

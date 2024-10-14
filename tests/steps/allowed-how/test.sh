@@ -9,10 +9,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun    "tmt --feeling-safe -vv run --scratch -i $tmp provision -h local" 0
+        rlRun    "tmt -vv run --scratch -i $tmp provision -h local" 0
 
-        rlRun -s "tmt --feeling-safe -vv run --scratch -i $tmp provision -h local \
-            provision --allowed-how 'virtual.*'" 2
+        rlRun -s "tmt -vv run --scratch -i $tmp provision -h local provision --allowed-how 'virtual.*'" 2
         rlAssertGrep "Suitable provision method 'local' disallowed by configuration." $rlRun_LOG
         rlAssertGrep "Unsupported provision method 'local' in the '/plan' plan." $rlRun_LOG
 

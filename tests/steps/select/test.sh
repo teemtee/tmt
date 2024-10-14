@@ -16,7 +16,7 @@ rlJournalStart
             exitcode=0
             [[ $selected_step == execute ]] && exitcode=2
             [[ $selected_step == report ]] && exitcode=3
-            rlRun "tmt --feeling-safe run $options $selected_step 2>&1 >/dev/null | tee output" $exitcode
+            rlRun "tmt run $options $selected_step 2>&1 >/dev/null | tee output" $exitcode
             for step in $steps; do
                 if [[ $step == $selected_step ]]; then
                     rlAssertGrep "^ *$step" output
@@ -28,14 +28,14 @@ rlJournalStart
     done
 
     rlPhaseStartTest "All steps"
-        rlRun "tmt --feeling-safe run $options --all provision -h local 2>&1 >/dev/null | tee output"
+        rlRun "tmt run $options --all provision -h local 2>&1 >/dev/null | tee output"
         for step in $steps; do
             rlAssertGrep $step output
         done
     rlPhaseEnd
 
     rlPhaseStartTest "Skip steps"
-        rlRun "tmt --feeling-safe run $options --skip prepare 2>&1 >/dev/null | tee output"
+        rlRun "tmt run $options --skip prepare 2>&1 >/dev/null | tee output"
         for step in $steps; do
             if [[ $step == prepare ]]; then
                 rlAssertNotGrep $step output
@@ -46,7 +46,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Until"
-        rlRun "tmt --feeling-safe run $options --until execute discover -h shell 2>&1 >/dev/null | tee output"
+        rlRun "tmt run $options --until execute discover -h shell 2>&1 >/dev/null | tee output"
         for step in discover provision prepare execute; do
             rlAssertGrep $step output
         done
@@ -68,7 +68,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Before"
-        rlRun "tmt --feeling-safe run $options --before report discover -h shell 2>&1 >/dev/null | tee output"
+        rlRun "tmt run $options --before report discover -h shell 2>&1 >/dev/null | tee output"
         for step in discover provision prepare execute; do
             rlAssertGrep $step output
         done

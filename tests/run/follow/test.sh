@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun "tmt --feeling-safe run --id $run &>/dev/null &" 0 "Start a tmt run in background"
+        rlRun "tmt run --id $run &>/dev/null &" 0 "Start a tmt run in background"
         rlRun "sleep 1" 0 "Ignore logging during the first second"
         rlRun -s "timeout -s INT 5 tmt run --id $run --follow" 124 "Follow logs for 5 seconds"
         rlAssertGrep "step-01" $rlRun_LOG

@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt plan create -t mini plan1"
         rlRun "tmt plan create -t mini plan2"
-        rlRun "tmt --feeling-safe run -a -S report provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt run -a -S report provision -h local 2>&1 >/dev/null | tee run-output"
         rlRun "runid=\$(head -n 1 run-output)" 0 "Get the run ID"
     rlPhaseEnd
 
@@ -46,7 +46,7 @@ rlJournalStart
 
     rlPhaseStartTest "Different root"
         rlRun "tmprun=\$(mktemp -d)" 0 "Create a temporary directory for runs"
-        rlRun "tmt --feeling-safe run -a -i $tmprun/run provision -h local"
+        rlRun "tmt run -a -i $tmprun/run provision -h local"
         rlRun "tmt status --workdir-root $tmprun | tee output"
         rlRun "wc -l output | tee lines" 0 "Get the number of lines"
         rlLog "The status should only show one run and its heading"
@@ -58,14 +58,13 @@ rlJournalStart
         rlAssertGrep "done\s+$runid" "output" -E
         # Remove the initial run, we do not need it anymore
         rlRun "rm -r $runid"
-        rlRun "tmt --feeling-safe run -r provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt run -r provision -h local 2>&1 >/dev/null | tee run-output"
         rlRun "runid=\$(head -n 1 run-output)" 0 "Get the run ID"
         rlRun "tmt status --abandoned | tee output"
         rlAssertGrep "done\s+$runid" "output" -E
         rlRun "tmt run -l finish"
 
-        rlRun "tmt --feeling-safe run -ar provision -h local \
-            prepare -h shell -s false 2>&1 >/dev/null \
+        rlRun "tmt run -ar provision -h local prepare -h shell -s false 2>&1 >/dev/null \
             | tee run-output" 2 "Let the prepare step fail"
         rlRun "runid=\$(head -n 1 run-output)" 0 "Get the run ID"
         rlRun "tmt status --active | tee output"

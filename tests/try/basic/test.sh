@@ -6,7 +6,6 @@ rlJournalStart
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun "config=$(realpath config)"
         rlRun "export TMT_NO_COLOR=1"
-        rlRun "export TMT_FEELING_SAFE=1"
         rlRun "pushd data"
     rlPhaseEnd
 

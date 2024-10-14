@@ -13,7 +13,7 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt test create -t shell tests/test"
         rlRun "tmt plans create -t mini plans/test-plan"
-        rlRun "tmt --feeling-safe run --until report provision -h local"
+        rlRun "tmt run --until report provision -h local"
         rlRun "cd .. && tmt run -vvvdddr --last --since report"
     rlPhaseEnd
 
