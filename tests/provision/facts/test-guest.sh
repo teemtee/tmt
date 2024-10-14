@@ -62,8 +62,7 @@ rlJournalStart
             rlDie "Provision method ${PROVISION_HOW} is not supported by the test."
         fi
 
-        rlRun -s "tmt --feeling-safe run -i $run --scratch \
-            provision -h "$PROVISION_HOW" $provision_options plan -n /plans/features/core"
+        rlRun -s "tmt run -i $run --scratch     provision -h "$PROVISION_HOW" $provision_options plan -n /plans/features/core"
 
         rlAssertGrep "arch: $arch" $rlRun_LOG
         rlAssertGrep "distro: $distro" $rlRun_LOG
@@ -72,8 +71,7 @@ rlJournalStart
         rlAssertNotGrep "selinux: $selinux" $rlRun_LOG
         rlAssertNotGrep "is superuser: " $rlRun_LOG
 
-        rlRun -s "tmt --feeling-safe run -i $run --scratch -vv \
-            provision -h "$PROVISION_HOW" $provision_options plan -n /plans/features/core"
+        rlRun -s "tmt run -i $run --scratch -vv provision -h "$PROVISION_HOW" $provision_options plan -n /plans/features/core"
 
         rlAssertGrep "arch: $arch" $rlRun_LOG
         rlAssertGrep "distro: $distro" $rlRun_LOG
@@ -84,8 +82,7 @@ rlJournalStart
 
         # If provisioning method allows a less privileged user, check that one as well
         if [ "$bfu_provision_options" != "" ]; then
-            rlRun -s "tmt --feeling-safe run -i $run --scratch -vv \
-                provision -h "$PROVISION_HOW" $bfu_provision_options plan -n /plans/features/core"
+            rlRun -s "tmt run -i $run --scratch -vv provision -h "$PROVISION_HOW" $bfu_provision_options plan -n /plans/features/core"
 
             rlAssertGrep "arch: $arch" $rlRun_LOG
             rlAssertGrep "distro: $distro" $rlRun_LOG

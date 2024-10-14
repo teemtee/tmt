@@ -53,8 +53,7 @@ EOF
 
     rlPhaseStartTest "Search for lib in a dynamically resolved branch"
         rlRun "pushd $repo1"
-        rlRun -s "tmt --feeling-safe --context foo=1 \
-            run --rm -a -vvv -ddd discover provision -h local"
+        rlRun -s "tmt --context foo=1 run --rm -a -vvv -ddd discover provision -h local"
         rlAssertGrep "Dynamic 'ref' definition file '.*' detected." $rlRun_LOG -E
         rlAssertGrep "Dynamic 'ref' resolved as 'otherbranch'." $rlRun_LOG
         rlAssertGrep "total: 1 test passed" $rlRun_LOG

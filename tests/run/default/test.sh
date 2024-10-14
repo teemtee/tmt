@@ -10,7 +10,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "No Metadata"
-        rlRun "tmt --feeling-safe run -r $options execute -h tmt -s 'touch $tmp/no-metadata'"
+        rlRun "tmt run -r $options execute -h tmt -s 'touch $tmp/no-metadata'"
         rlAssertExists "$tmp/no-metadata"
     rlPhaseEnd
 
@@ -18,14 +18,14 @@ rlJournalStart
         rlRun "tmt init"
         rlRun "tmt test create -t shell tests/smoke"
         rlRun "echo 'touch $tmp/no-plan' >> tests/smoke/test.sh"
-        rlRun "tmt --feeling-safe run $options"
+        rlRun "tmt run $options"
         rlAssertExists "$tmp/no-plan"
         rlRun "tmt run -r --last report -fv finish -f" 0 "Try --last report (verify #287)"
     rlPhaseEnd
 
     rlPhaseStartTest "Explicit default"
         rlRun "tmt plan create -t mini plans/plan"
-        rlRun "tmt --feeling-safe run $options plan --default 2>&1 >/dev/null | tee output"
+        rlRun "tmt run $options plan --default 2>&1 >/dev/null | tee output"
         rlAssertGrep "/default/plan" "output"
         rlAssertNotgrep "/plans/plan" "output"
     rlPhaseEnd

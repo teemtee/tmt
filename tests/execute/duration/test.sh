@@ -18,18 +18,18 @@ rlJournalStart
                 fi
 
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive short tests"
-                    rlRun -s "tmt --feeling-safe $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name short" 0
+                    rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name short" 0
 
                     rlRun "grep 'duration \"5\" exceeded' $tmp/log.txt" 1
                 rlPhaseEnd
 
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive long tests"
                     if [ "$interactive" = "" ]; then
-                        rlRun -s "tmt --feeling-safe $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 2
+                        rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 2
 
                         rlAssertNotGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
                     else
-                        rlRun -s "tmt --feeling-safe $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 0
+                        rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 0
 
                         rlAssertGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
                     fi

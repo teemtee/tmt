@@ -9,8 +9,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
     rlPhaseEnd
 
-    tmt_command="tmt --feeling-safe run --scratch -a --id ${run} \
-        provision --how local execute -vv report -vv test --name"
+    tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vv test --name"
 
     testName="/test/custom-results"
     rlPhaseStartTest "${testName}"

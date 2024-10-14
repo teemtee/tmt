@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test ($PROVISION_HOW)"
-        rlRun "tmt --feeling-safe run -arvvv provision --how $PROVISION_HOW"
+        rlRun "tmt run -arvvv provision --how $PROVISION_HOW"
     rlPhaseEnd
 
     rlPhaseStartCleanup

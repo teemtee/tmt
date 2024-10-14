@@ -9,7 +9,7 @@ rlJournalStart
         rlRun "set -o pipefail"
         rlRun "tmt init"
         rlRun "tmt plan create -t mini plan"
-        rlRun -s "tmt --feeling-safe run provision -h local"
+        rlRun -s "tmt run provision -h local"
         rlRun "runid=\$(head -n 1 $rlRun_LOG)" 0 "Get the run ID"
     rlPhaseEnd
 

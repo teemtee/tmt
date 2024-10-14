@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        tmt="tmt --feeling-safe run -ar provision -h local"
+        tmt="tmt run -ar provision -h local"
         rlRun "$tmt execute -h tmt -s true" 0 "Good test"
         rlRun "$tmt execute -h tmt -s false" 1 "Bad test"
         rlRun "$tmt execute -h tmt -s fooo" 2 "Weird test"

@@ -38,7 +38,7 @@ rlJournalStart
 
                 # Run given method
                 if [ "$PROVISION_HOW" = "local" ]; then
-                    rlRun "tmt --feeling-safe run -i $run --scratch -av provision -h $PROVISION_HOW           plan -n /$plan"
+                    rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW           plan -n /$plan"
                 else
                     rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW -i $image plan -n /$plan"
                 fi

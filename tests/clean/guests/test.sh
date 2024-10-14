@@ -53,10 +53,8 @@ rlJournalStart
 
     rlPhaseStartTest "Different root"
         rlRun "tmprun=\$(mktemp -d)" 0 "Create a temporary directory for runs"
-        rlRun "tmt run --feeling-safe -i $tmprun/run1 --until provision \
-            provision -h local 2>&1 >/dev/null | tee run-output"
-        rlRun "tmt run --feeling-safe -i $tmprun/run2 --until \
-            provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt run -i $tmprun/run1 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt run -i $tmprun/run2 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
         rlRun "tmt clean guests --workdir-root $tmprun"
         rlRun "tmt status --workdir-root $tmprun -vv | tee output"
         rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmprun/run1" "output" -E

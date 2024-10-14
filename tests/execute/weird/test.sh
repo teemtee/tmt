@@ -10,7 +10,7 @@ rlJournalStart
 
     for executor in tmt; do
         rlPhaseStartTest "Test with the $executor executor"
-            rlRun "tmt --feeling-safe run -i $tmp/$executor -avvvddd \
+            rlRun "tmt run -i $tmp/$executor -avvvddd \
                 provision -h local \
                 execute -h $executor 2>&1 >/dev/null | tee output"
             rlAssertGrep 'Before: This text is fine.' output

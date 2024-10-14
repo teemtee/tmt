@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "With $PROVISION_HOW provision method (tty:false)"
-        rlRun -s "tmt --feeling-safe run -avvvvddd provision -h $PROVISION_HOW"
+        rlRun -s "tmt run -avvvvddd provision -h $PROVISION_HOW"
 
         rlAssertGrep "out: prepare: stdin: False" $rlRun_LOG
         rlAssertGrep "out: prepare: stdout: False" $rlRun_LOG
