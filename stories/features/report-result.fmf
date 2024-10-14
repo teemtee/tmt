@@ -12,13 +12,14 @@ description: |
     guest and overwrite any existing scripts with the same name.
 
     The command can be called multiple times for a single test,
-    all these calls will be internally saved as tmt subresults. The final
-    result will be the most severe rating. Available values ordered by severity
-    are SKIP, PASS, WARN and FAIL.
+    all these calls will be internally saved as tmt subresults.
+    The final result will be the most severe rating. Available
+    values ordered by severity are SKIP, PASS, WARN and FAIL.
 
-    Once the ``tmt-report-result`` command is called for the first time, the
-    return value of the test itself no longer matters, and only the results
-    saved by ``tmt-report-result`` command calls are consumed by tmt.
+    Once the ``tmt-report-result`` command is called for the first
+    time, the return value of the test itself no longer matters,
+    and only the results saved by ``tmt-report-result`` command
+    calls are consumed by tmt.
 
     __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-report-result
 
