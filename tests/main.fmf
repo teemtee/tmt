@@ -4,6 +4,8 @@ contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 require: [tmt]
 duration: 10m
+environment:
+    TMT_FEELING_SAFE: 1
 
 adjust:
   - check: [avc]
