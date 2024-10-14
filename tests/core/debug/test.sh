@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt run -ar prepare -ddd"
+        rlRun -s "tmt --feeling-safe run -ar prepare -ddd"
         rlAssertGrep "Debug message from prepare" $rlRun_LOG
     rlPhaseEnd
 

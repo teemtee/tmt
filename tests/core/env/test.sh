@@ -16,7 +16,7 @@ rlJournalStart
     rlPhaseEnd
 
     for execute in 'tmt'; do
-        tmt="tmt run -avvvr execute --how $execute"
+        tmt="tmt --feeling-safe run -avvvr execute --how $execute"
 
         rlPhaseStartTest "Variable in L1 ($execute)"
             rlRun -s "$tmt plan --name no test --name yes"
@@ -33,7 +33,7 @@ rlJournalStart
         rlPhaseStartTest "Variable in option ($execute)"
             for plan in yes no; do
                 for test in yes no; do
-                    rlRun -s "tmt run -avvvr -e STR=O -e INT=0 \
+                    rlRun -s "tmt --feeling-safe run -avvvr -e STR=O -e INT=0 \
                         execute --how $execute \
                         plan --name $plan \
                         test --name $test"
@@ -47,7 +47,7 @@ rlJournalStart
         rlPhaseStartTest "Variable in YAML file ($execute)"
             for plan in yes no; do
                 for test in yes no; do
-                    rlRun -s "tmt run -avvvr -e @vars.yaml \
+                    rlRun -s "tmt --feeling-safe run -avvvr -e @vars.yaml \
                         execute --how $execute \
                         plan --name $plan \
                         test --name $test"
@@ -57,7 +57,7 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Empty environment file ($execute)"
-            rlRun -s "tmt run -r -e @empty.yaml"
+            rlRun -s "tmt --feeling-safe run -r -e @empty.yaml"
             rlAssertGrep "warn: Empty environment file" $rlRun_LOG
         rlPhaseEnd
     done

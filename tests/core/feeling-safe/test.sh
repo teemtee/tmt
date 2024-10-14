@@ -8,11 +8,17 @@ rlJournalStart
         rlRun "rundir=$(mktemp -d)" 0 "Creating tmp directory"
     rlPhaseEnd
 
-    rlPhaseStartTest "Sanity"
-        rlRun -s "tmt                run -i $rundir --scratch provision -h local plan -n /plans/features/core"
+    rlPhaseStartTest "Not Feeling Safe"
+        rlRun -s "tmt run -i $rundir --scratch \
+            provision -h local \
+            plan --name /plans/features/core" 2
         rlAssertNotGrep "User is feeling safe" $rlRun_LOG
+    rlPhaseEnd
 
-        rlRun -s "tmt --feeling-safe run -i $rundir --scratch provision -h local plan -n /plans/features/core"
+    rlPhaseStartTest "Feeling Safe"
+        rlRun -s "tmt --feeling-safe run -i $rundir --scratch \
+            provision -h local \
+            plan --name /plans/features/core"
         rlAssertGrep "User is feeling safe" $rlRun_LOG
     rlPhaseEnd
 

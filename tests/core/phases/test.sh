@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "rundir=$(mktemp -d)"
         rlRun "pushd data"
 
-        run="tmt --log-topic=cli-invocations run -i $rundir --scratch -a"
+        run="tmt --feeling-safe --log-topic=cli-invocations run -i $rundir --scratch -a"
 
         function check() {
             rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.order)\"' $rundir/plans/$1/report/step.yaml"

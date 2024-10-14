@@ -122,8 +122,10 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run Tests"
-        rlRun -s "tmt run -v --remove --dry plan --name /plans/minimal" 0 "Run tests (dry mode)"
-        rlRun -s "tmt run -v --remove       plan --name /plans/minimal" 0 "Run tests"
+        rlRun -s "tmt --feeling-safe run -v --remove --dry \
+            plan --name /plans/minimal" 0 "Run tests (dry mode)"
+        rlRun -s "tmt --feeling-safe run -v --remove \
+            plan --name /plans/minimal" 0 "Run tests"
         rlAssertGrep "pass /lint/plans" $rlRun_LOG
         rlAssertGrep "pass /lint/tests" $rlRun_LOG
     rlPhaseEnd
@@ -136,7 +138,7 @@ rlJournalStart
 
     rlPhaseStartTest "Imported plan's adjust should be respected"
         rlRun -s "tmt run --remove --dry plan --name /plans/full/tmt" 2 "Expect error (dry mode)"
-        rlRun -s "tmt -c how=full run -r --dry plan -n /plans/full/tmt" 0 "Run plan (dry mode)"
+        rlRun -s "tmt --feeling-safe -c how=full run -r --dry plan -n /plans/full/tmt" 0 "Run plan (dry mode)"
     rlPhaseEnd
 
     rlPhaseStartCleanup

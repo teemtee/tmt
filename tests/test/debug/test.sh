@@ -14,7 +14,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test $PROVISION_HOW"
         # Run until execute
-        tmt="tmt run --id $run --verbose"
+        tmt="tmt --feeling-safe run --id $run --verbose"
         rlRun "$tmt --all --scratch --before execute provision -h $PROVISION_HOW"
 
         # Failing test

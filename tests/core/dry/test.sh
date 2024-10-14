@@ -3,13 +3,13 @@
 
 rlJournalStart
     rlPhaseStartTest "Test debug/verbose levels"
-        rlRun "tmt run --dry -r"
-        rlRun "tmt run --dry -dvr"
-        rlRun "tmt run --dry -ddvvr"
-        rlRun "tmt run --dry -dddvvvr"
+        rlRun "tmt --feeling-safe run --dry -r"
+        rlRun "tmt --feeling-safe run --dry -dvr"
+        rlRun "tmt --feeling-safe run --dry -ddvvr"
+        rlRun "tmt --feeling-safe run --dry -dddvvvr"
     rlPhaseEnd
 
     rlPhaseStartTest "Dry provision propagation"
-        rlRun "tmt run --all --remove provision --how virtual --dry"
+        rlRun "tmt --feeling-safe run --all --remove provision --how virtual --dry"
     rlPhaseEnd
 rlJournalEnd
