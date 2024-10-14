@@ -12,6 +12,10 @@ description: |
     First, all time values are summed together, and only then are they multiplied.
     The final value is then rounded up to the whole number.
 
+    Note that the asterisk character ``*`` has a special meaning
+    in YAML syntax and thus you need to put it into the quotes to
+    make it a string.
+
     Must be a ``string``. The default value is ``5m``.
 
     .. versionadded:: 1.34
@@ -36,7 +40,7 @@ example:
 
   - |
     # Multiplication is evaluated last (total 24s: 2s * 3 * 4)
-    duration: *3 2s *4
+    duration: "*3 2s *4"
 
   - |
     # Use context adjust to extend duration for given arch
@@ -49,9 +53,9 @@ example:
     # Use context adjust to scale duration for given arch
     duration: 5m
     adjust:
-      - duration+: *2
+      - duration+: "*2"
         when: arch == aarch64
-      - duration+: *0.9
+      - duration+: "*0.9"
         when: arch == s390x
 
 
