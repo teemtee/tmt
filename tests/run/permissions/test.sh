@@ -40,7 +40,7 @@ EOF
         rlRun "tmt run"
         rlAssertEquals "Correct permission" "$(stat --format '%a' $WORKDIR_ROOT)" "1777"
         # Another user can use WORKDIR_ROOT
-        rlRun "su -l -c 'cd $tmp; tmt run' '$USER'"
+        rlRun "su -l -c 'cd $tmp; tmt --feeling-safe run' '$USER'"
         rlFileRestore
     rlPhaseEnd
 
