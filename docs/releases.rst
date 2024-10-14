@@ -12,7 +12,7 @@ The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
 
 In order to prevent dangerous commands to be unintentionally run
-on user laptop, the :ref:`/plugins/provision/local` provision
+on user's system, the :ref:`/plugins/provision/local` provision
 plugin now requires to be executed with the ``--feeling-safe``
 option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
