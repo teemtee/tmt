@@ -145,7 +145,22 @@ DEFAULT_PLUGIN_ORDER_REQUIRES = 70
 DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 # Config directory
-CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
+
+
+def effective_config_dir() -> Path:
+    """
+    Find out what the actual config directory is.
+
+    If ``TMT_CONFIG_DIR`` variable is set, it is used. Otherwise,
+    :py:const:`DEFAULT_CONFIG_DIR` is picked.
+    """
+
+    if 'TMT_CONFIG_DIR' in os.environ:
+        return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
+
+    return DEFAULT_CONFIG_DIR.expanduser()
+
 
 # Special process return codes
 
@@ -857,14 +872,13 @@ class Config:
 
     def __init__(self) -> None:
         """ Initialize config directory path """
-        raw_path = os.getenv('TMT_CONFIG_DIR', None)
-        self.path = (Path(raw_path) if raw_path else CONFIG_DIR).expanduser()
+        self.path = effective_config_dir()
 
         try:
             self.path.mkdir(parents=True, exist_ok=True)
         except OSError as error:
             raise GeneralError(
-                f"Failed to create config '{self.path}'.\n{error}")
+                f"Failed to create config '{self.path}'.") from error
 
     @property
     def _last_run_symlink(self) -> Path:
