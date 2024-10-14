@@ -139,8 +139,9 @@ You might want to set some useful environment variables when
 working on ``tmt`` tests, for example ``TMT_FEELING_SAFE`` to
 allow the ``local`` provision method or ``TMT_SHOW_TRACEBACK`` to
 show the full details for all failures. Consider installing the
-``direnv`` command which can take care of these for you.
+`direnv`__ command which can take care of these for you.
 
+__ https://direnv.net/#basic-installation
 
 
 Unit Tests
