@@ -1789,3 +1789,64 @@ class TestJiraLink(unittest.TestCase):
         # Load the test object again with the link present
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         assert test.link.get('verifies')[0].target == 'https://issues.redhat.com/browse/TT-262'
+
+
+def test_render_command_report_output():
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo',
+        command=ShellScript('/bar/baz'),
+        output=tmt.utils.CommandOutput(
+            stdout='This is some stdout',
+            stderr='This is some stderr'
+            )
+        )) == """## foo
+
+# /bar/baz
+
+# stdout (1 lines)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is some stdout
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# stderr (1 lines)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is some stderr
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""
+
+
+def test_render_command_report_exception():
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo',
+        command=ShellScript('/bar/baz'),
+        exc=tmt.utils.RunError(
+            'foo failed',
+            ShellScript('/bar/baz').to_shell_command(),
+            1,
+            stdout='This is some stdout',
+            stderr='This is some stderr'
+            )
+        )) == """## foo
+
+# /bar/baz
+
+# stdout (1 lines)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is some stdout
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# stderr (1 lines)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is some stderr
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""
+
+
+def test_render_command_report_minimal():
+    print(list(tmt.utils.render_command_report(
+        label='foo'
+        )))
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo'
+        )) == """## foo
+"""

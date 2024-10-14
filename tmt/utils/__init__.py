@@ -2289,6 +2289,21 @@ class RunError(GeneralError):
         # `finish`), save a logger for later.
         self.logger = caller._logger if isinstance(caller, Common) else None
 
+    @functools.cached_property
+    def output(self) -> CommandOutput:
+        """
+        Captured output of the command.
+
+        .. note::
+
+           This field contains basically the same info as :py:attr:`stdout`
+           and :py:attr:`stderr`, but it's bundled into a single object.
+           This is how command output is passed between functions, therefore
+           the exception should offer it as well.
+        """
+
+        return CommandOutput(self.stdout, self.stderr)
+
 
 class MetadataError(GeneralError):
     """ General metadata error """
@@ -2446,27 +2461,102 @@ class TracebackVerbosity(enum.Enum):
 
 
 def render_run_exception_streams(
-        stdout: Optional[str],
-        stderr: Optional[str],
-        verbose: int = 0) -> Iterator[str]:
+        output: CommandOutput,
+        verbose: int = 0,
+        comment_sign: str = '#') -> Iterator[str]:
     """ Render run exception output streams for printing """
 
-    for name, output in (('stdout', stdout), ('stderr', stderr)):
-        if not output:
+    for name, content in (('stdout', output.stdout), ('stderr', output.stderr)):
+        if not content:
             continue
-        output_lines = output.strip().split('\n')
+        content_lines = content.strip().split('\n')
         # Show all lines in verbose mode, limit to maximum otherwise
         if verbose > 0:
-            line_summary = f"{len(output_lines)}"
+            line_summary = f"{len(content_lines)}"
         else:
-            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
-            output_lines = output_lines[-OUTPUT_LINES:]
+            line_summary = f"{min(len(content_lines), OUTPUT_LINES)}/{len(content_lines)}"
+            content_lines = content_lines[-OUTPUT_LINES:]
 
-        yield f'{name} ({line_summary} lines)'
-        yield OUTPUT_WIDTH * '~'
-        yield from output_lines
-        yield OUTPUT_WIDTH * '~'
+        yield f'{comment_sign} {name} ({line_summary} lines)'
+        yield comment_sign + (OUTPUT_WIDTH - 1) * '~'
+        yield from content_lines
+        yield comment_sign + (OUTPUT_WIDTH - 1) * '~'
         yield ''
+
+
+@overload
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: CommandOutput,
+        exc: None = None) -> Iterator[str]:
+    pass
+
+
+@overload
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: None = None,
+        exc: RunError) -> Iterator[str]:
+    pass
+
+
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: Optional[CommandOutput] = None,
+        exc: Optional[RunError] = None,
+        comment_sign: str = '#') -> Iterator[str]:
+    """
+    Format a command output for a report file.
+
+    To provide unified look of various files reporting command outputs,
+    this helper would combine its arguments and emit lines the caller
+    may then write to a file. The following template is used:
+
+    .. code-block::
+
+        ## ${label}
+
+        # ${command}
+
+        # stdout (N lines)
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ...
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        # stderr (N lines)
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ...
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    :param label: a string describing the intent of the command. It is
+        useful for user who reads the report file eventually.
+    :param command: command that was executed.
+    :param output: if set, it contains output of the command. It has
+        higher priority than ``exc``.
+    :param exc: if set, it represents a failed command, and input stored
+        in it is rendered.
+    :param comment_sign: a character to mark lines with comments that
+        document the report.
+    """
+
+    yield f'{comment_sign}{comment_sign} {label}'
+    yield ''
+
+    if command:
+        yield f'{comment_sign} {command.to_element()}'
+        yield ''
+
+    if output is not None:
+        yield from render_run_exception_streams(output, verbose=1)
+
+    elif exc is not None:
+        yield from render_run_exception_streams(exc.output, verbose=1)
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
@@ -2480,7 +2570,7 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
     else:
         verbose = 0
 
-    yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
+    yield from render_run_exception_streams(exception.output, verbose=verbose)
 
 
 def render_exception_stack(
