@@ -911,7 +911,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         collection.validate()
 
-        return [tmt.Result.from_serialized(r) for r in collection.results]
+        return [tmt.Result.from_serialized(result) for result in collection.results]
 
     def extract_tmt_report_results_restraint(
             self,
