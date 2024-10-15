@@ -57,28 +57,16 @@ adjust+:
 
 /provision:
     discover+:
-        test:
-          - "^/tests/provision"
-          - "^/tests/provision"
-          - "^/tests/provision"
+        test: "^/tests/provision"
 
 /prepare:
     discover+:
-        test:
-          - "^/tests/prepare"
-          - "^/tests/prepare"
-          - "^/tests/prepare"
+        test: "^/tests/prepare"
 
 /execute:
     discover+:
-        test:
-          - "^/tests/execute"
-          - "^/tests/execute"
-          - "^/tests/execute"
+        test: "^/tests/execute"
 
 /the-rest:
     discover+:
-        test:
-          - "^/tests/(?!provision|prepare|execute)"
-          - "^/tests/(?!provision|prepare|execute)"
-          - "^/tests/(?!provision|prepare|execute)"
+        test: "^/tests/(?!provision|prepare|execute)"

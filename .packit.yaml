@@ -22,9 +22,8 @@ actions: &base-actions
     - hatch version
 
 targets: &all-targets
-  fedora-40:
-    additional_repos:
-      - https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-wip/fedora-40-x86_64/
+  - fedora-all
+  - epel-9
 
 jobs:
   # Build pull requests
@@ -96,13 +95,11 @@ jobs:
         - tmt:
             context:
               how: provision
-          settings: &tmt-cloud-resources
+        - &tmt-cloud-resources
+          settings:
             provisioning:
               tags:
                 BusinessUnit: tmt
-          artifacts:
-            - type: repository
-              id: https://download.copr.fedorainfracloud.org/results/frantisekz/testcloud-temp/fedora-40-x86_64/
 
   # Test internal plugins
   - <<: *tests
@@ -152,6 +149,17 @@ jobs:
     owner: "@teemtee"
     project: tmt
     actions: *base-actions
+
+  # Fedora releases
+  - job: propose_downstream
+    trigger: release
+    dist_git_branches: *all-targets
+
+  - job: koji_build
+    trigger: commit
+    allowed_pr_authors: [ "packit", "psss", "lzachar" ]
+    allowed_committers: [ "packit", "psss", "lzachar" ]
+    dist_git_branches: *all-targets
 
   - job: bodhi_update
     trigger: commit
