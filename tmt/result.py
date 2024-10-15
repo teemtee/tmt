@@ -374,14 +374,13 @@ class Result(BaseResult):
 
         return self
 
-    def to_subresult(self, invocation: 'tmt.steps.execute.TestInvocation') -> 'SubResult':
+    def to_subresult(self) -> 'SubResult':
         """ Convert result to tmt subresult """
 
         # TODO: Try to find a better way for conversion (e.g. using
         # from_spec/to_spec/from_serialized/to_serialized).
         return SubResult(
-            # Add subresult name under the test namespace
-            name=f"{invocation.test.name}/{self.name.lstrip('/')}",
+            name=self.name,
             result=self.result,
             note=self.note,
             log=self.log,
