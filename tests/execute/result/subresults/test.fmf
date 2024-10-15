@@ -1,17 +1,17 @@
-/pass:
+/shell/pass:
     summary: Basic pass test of shell subresults
     test: |
         touch /tmp/good0_log; tmt-report-result -o /tmp/good0_log /subtest/good0 PASS
         touch /tmp/good1_log; tmt-report-result -o /tmp/good1_log /subtest/good1 PASS
         touch /tmp/good2_log; tmt-report-result -o /tmp/good2_log /subtest/good2 PASS
 
-/skip:
+/shell/skip:
     summary: Test with skipped and pass test should pass
     test: |
         tmt-report-result /subtest/extra-pass PASS
         tmt-report-result /subtest/extra-skip SKIP
 
-/fail:
+/shell/fail:
     summary: Reduced outcome of shell subresults must be fail
     test: |
         touch /tmp/good_log; tmt-report-result -o /tmp/good_log /subtest/good PASS
