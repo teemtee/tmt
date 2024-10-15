@@ -11,51 +11,51 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test the subresults were generated into the results.yaml"
-        rlRun "tmt run --id $run_dir --scratch -v 2>&1 >/dev/null | tee output" 1
+        rlRun -s "tmt run --id $run_dir --scratch -v 2>&1 >/dev/null" 1
 
         # Check the main result outcomes
-        rlAssertGrep "fail /test/beakerlib (on default-0)" "output"
-        rlAssertGrep "fail /test/fail (on default-0)" "output"
-        rlAssertGrep "pass /test/pass (on default-0)" "output"
-        rlAssertGrep "pass /test/skip (on default-0)" "output"
-        rlAssertGrep "total: 2 tests passed and 2 tests failed" "output"
+        rlAssertGrep "fail /test/beakerlib (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "fail /test/fail (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/pass (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/skip (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "total: 2 tests passed and 2 tests failed" "$rlRun_LOG"
 
 
         # Check the beakerlib test framework subtests outcomes
 
         ## The internal tests which are checking the TESTID and
         ## BEAKERLIB_COMMAND_REPORT_RESULT variables must pass
-        rlAssertGrep "pass /test/beakerlib/Internal-test-of-environment-variable-values" "output"
+        rlAssertGrep "pass /test/beakerlib/Internal-test-of-environment-variable-values" "$rlRun_LOG"
 
-        rlAssertGrep "pass /test/beakerlib/phase-setup" "output"
-        rlAssertGrep "pass /test/beakerlib/phase-test-pass" "output"
-        rlAssertGrep "fail /test/beakerlib/phase-test-fail" "output"
-        rlAssertGrep "pass /test/beakerlib/phase-cleanup" "output"
+        rlAssertGrep "pass /test/beakerlib/phase-setup" "$rlRun_LOG"
+        rlAssertGrep "pass /test/beakerlib/phase-test-pass" "$rlRun_LOG"
+        rlAssertGrep "fail /test/beakerlib/phase-test-fail" "$rlRun_LOG"
+        rlAssertGrep "pass /test/beakerlib/phase-cleanup" "$rlRun_LOG"
 
         # Extra calls of tmt-report-result in the beakerlib test phase
-        rlAssertGrep "pass /test/beakerlib/extra-tmt-report-result/good" "output"
-        rlAssertGrep "fail /test/beakerlib/extra-tmt-report-result/bad" "output"
-        rlAssertGrep "warn /test/beakerlib/extra-tmt-report-result/weird" "output"
-        rlAssertGrep "skip /test/beakerlib/extra-tmt-report-result/skip" "output"
+        rlAssertGrep "pass /test/beakerlib/extra-tmt-report-result/good" "$rlRun_LOG"
+        rlAssertGrep "fail /test/beakerlib/extra-tmt-report-result/bad" "$rlRun_LOG"
+        rlAssertGrep "warn /test/beakerlib/extra-tmt-report-result/weird" "$rlRun_LOG"
+        rlAssertGrep "skip /test/beakerlib/extra-tmt-report-result/skip" "$rlRun_LOG"
 
         # The phase itself must also exists as a subresult and it should pass,
         # even one of its extra tmt-report-result reported a FAIL. The phase
         # outcome evaluation is based on beakerlib test framework.
-        rlAssertGrep "pass /test/beakerlib/phase-test-multiple-tmt-report-result" "output"
+        rlAssertGrep "pass /test/beakerlib/phase-test-multiple-tmt-report-result" "$rlRun_LOG"
 
 
         # Check the shell framework subtests outcomes
-        rlAssertGrep "pass /test/fail/subtest/good" "output"
-        rlAssertGrep "fail /test/fail/subtest/fail" "output"
-        rlAssertGrep "warn /test/fail/subtest/weird" "output"
-        rlAssertGrep "skip /test/fail/subtest/skip" "output"
+        rlAssertGrep "pass /test/fail/subtest/good" "$rlRun_LOG"
+        rlAssertGrep "fail /test/fail/subtest/fail" "$rlRun_LOG"
+        rlAssertGrep "warn /test/fail/subtest/weird" "$rlRun_LOG"
+        rlAssertGrep "skip /test/fail/subtest/skip" "$rlRun_LOG"
 
-        rlAssertGrep "pass /test/pass/subtest/good0" "output"
-        rlAssertGrep "pass /test/pass/subtest/good1" "output"
-        rlAssertGrep "pass /test/pass/subtest/good2" "output"
+        rlAssertGrep "pass /test/pass/subtest/good0" "$rlRun_LOG"
+        rlAssertGrep "pass /test/pass/subtest/good1" "$rlRun_LOG"
+        rlAssertGrep "pass /test/pass/subtest/good2" "$rlRun_LOG"
 
-        rlAssertGrep "pass /test/skip/subtest/extra-pass" "output"
-        rlAssertGrep "skip /test/skip/subtest/extra-skip" "output"
+        rlAssertGrep "pass /test/skip/subtest/extra-pass" "$rlRun_LOG"
+        rlAssertGrep "skip /test/skip/subtest/extra-skip" "$rlRun_LOG"
 
 
         # Check the subresults get correctly saved in results.yaml
@@ -117,7 +117,6 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm output"
         rlRun "rm subresults_{beakerlib,fail,pass}.yaml"
         rlRun "popd"
         rlRun "rm -rf $run_dir" 0 "Remove run directory"
