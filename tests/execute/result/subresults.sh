@@ -13,7 +13,7 @@ rlJournalStart
     rlPhaseStartTest "Test the subresults were generated into the results.yaml"
         rlRun "tmt run --id $run_dir --scratch -v 2>&1 >/dev/null | tee output" 1
 
-        # Check the parent result outcomes
+        # Check the main result outcomes
         rlAssertGrep "fail /test/beakerlib (on default-0)" "output"
         rlAssertGrep "fail /test/fail (on default-0)" "output"
         rlAssertGrep "pass /test/pass (on default-0)" "output"
