@@ -278,8 +278,7 @@ class Result(BaseResult):
             note: Optional[str] = None,
             ids: Optional[ResultIds] = None,
             log: Optional[list[Path]] = None,
-            subresult: Optional[list[SubResult]] = None,
-            ) -> 'Result':
+            subresult: Optional[list[SubResult]] = None) -> 'Result':
         """
         Create a result from a test invocation.
 
