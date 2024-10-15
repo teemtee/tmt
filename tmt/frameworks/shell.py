@@ -99,7 +99,7 @@ class Shell(TestFramework):
         Check result of a shell test.
 
         If there are no extra results (e.g. extracted from the tmt-report-results.yaml), continue
-        normally - set the parent result outcome according to test exit status.
+        normally - set the main result outcome according to test exit status.
 
         Otherwise, process given results, reduce their outcomes into a single one and set these
         results as tmt subresults.
