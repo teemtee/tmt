@@ -192,9 +192,6 @@ class CheckResult(BaseResult):
     def to_subcheck(self) -> 'SubCheckResult':
         """ Convert check to a tmt SubCheckResult """
 
-        # TODO: Try to find a better way for conversion?
-        # TODO: Some attributes will be probably modified for SubCheckResult e.g. name (namespace)
-        # TODO: Still need to check if this actually works
         return SubCheckResult.from_serialized(self.to_serialized())
 
 
