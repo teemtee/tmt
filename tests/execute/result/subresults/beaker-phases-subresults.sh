@@ -17,13 +17,13 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "phase-test pass"
-        rlRun "echo mytest-pass | tee output" 0 "Check output"
-        rlAssertGrep "mytest-pass" "output"
+        rlRun -s "echo mytest-pass" 0 "Check output"
+        rlAssertGrep "mytest-pass" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "phase-test fail"
-        rlRun "echo mytest-fail | tee output" 0 "Check output"
-        rlAssertGrep "asdf-asdf" "output"
+        rlRun -s "echo mytest-fail" 0 "Check output"
+        rlAssertGrep "asdf-asdf" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "phase-test multiple tmt-report-result"
