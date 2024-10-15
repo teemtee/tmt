@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.38.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/report/junit` report plugin now removes all
+invalid XML characters from the final JUnit XML.
+
+
+
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
