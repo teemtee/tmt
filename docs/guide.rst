@@ -1021,4 +1021,4 @@ __ https://github.com/teemtee/tmt/labels/multihost
 __ https://github.com/teemtee/tmt/issues/2047
 
 
-.. include:: guide/testing-farm.inc.rst
+.. include:: guide/test-runner.inc.rst

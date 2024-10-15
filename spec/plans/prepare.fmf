@@ -80,7 +80,7 @@ example: |
             Depending on the specific setup of the test runner,
             there might be limitations affecting which playbooks
             can be used, for example the list of available ansible
-            collections. See the :ref:`testing-farm` section for
+            collections. See the :ref:`test-runner` section for
             details.
 
     example: |
