@@ -40,7 +40,7 @@ class Beakerlib(TestFramework):
 
             # The command in this variable gets called with every `rlPhaseEnd` call in beakerlib.
             'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
-                f'bash {tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.path}'),
+                tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.path),
 
             # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
             # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
