@@ -109,7 +109,7 @@ def _escape_control_chars_filter(func: Callable[[str], str]) -> Callable[[str], 
         escaped_value = illegal_regex.sub("", value)
 
         # It's important to call the parent `func` at the end of the wrapper, otherwise the
-        # jinja autoescape doesn't work correctly (the illegal chars are escaped two times).
+        # jinja autoescape doesn't work correctly (some chars like '&' are escaped two times).
         return func(escaped_value)
 
     return wrapper
