@@ -27,21 +27,20 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "phase-test multiple tmt-report-result"
-        rlRun "touch /tmp/bkr_good_log"
-        rlRun "touch /tmp/bkr_bad_log"
-        rlRun "touch /tmp/bkr_weird_log"
-        rlRun "touch /tmp/bkr_skip_log"
+        rlRun "touch bkr_good_log"
+        rlRun "touch bkr_bad_log"
+        rlRun "touch bkr_weird_log"
+        rlRun "touch bkr_skip_log"
 
         # This will create more subresults for each tmt-report-result call
-        rlRun "tmt-report-result -o /tmp/bkr_good_log extra-tmt-report-result/good PASS"
-        rlRun "tmt-report-result -o /tmp/bkr_bad_log extra-tmt-report-result/bad FAIL"
-        rlRun "tmt-report-result -o /tmp/bkr_weird_log extra-tmt-report-result/weird WARN"
-        rlRun "tmt-report-result -o /tmp/bkr_skip_log extra-tmt-report-result/skip SKIP"
+        rlRun "tmt-report-result -o bkr_good_log extra-tmt-report-result/good PASS"
+        rlRun "tmt-report-result -o bkr_bad_log extra-tmt-report-result/bad FAIL"
+        rlRun "tmt-report-result -o bkr_weird_log extra-tmt-report-result/weird WARN"
+        rlRun "tmt-report-result -o bkr_skip_log extra-tmt-report-result/skip SKIP"
     rlPhaseEnd
 
     rlPhaseStartCleanup "phase-cleanup"
         rlRun "popd"
-        rlRun "rm -f /tmp/bkr_{good,bad,weird}_log"
         rlRun "rm -r $tmp" 0 "Remove tmp directory"
     rlPhaseEnd
 rlJournalEnd
