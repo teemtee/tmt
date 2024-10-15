@@ -95,7 +95,6 @@ class Shell(TestFramework):
             results: list[tmt.result.Result],
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """
-
         Check result of a shell test.
 
         If there are no extra results (e.g. extracted from the tmt-report-results.yaml), continue
