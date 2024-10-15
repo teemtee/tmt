@@ -1,4 +1,3 @@
-#### FIXME: the tmp dirs here!
 /shell/pass:
     summary: Basic pass test of shell subresults
     test: |
