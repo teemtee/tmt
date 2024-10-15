@@ -15,9 +15,9 @@ rlJournalStart
 
         # Check the main result outcomes
         rlAssertGrep "fail /test/beakerlib (on default-0)" "$rlRun_LOG"
-        rlAssertGrep "fail /test/fail (on default-0)" "$rlRun_LOG"
-        rlAssertGrep "pass /test/pass (on default-0)" "$rlRun_LOG"
-        rlAssertGrep "pass /test/skip (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "fail /test/shell/fail (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/pass (on default-0)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/skip (on default-0)" "$rlRun_LOG"
         rlAssertGrep "total: 2 tests passed and 2 tests failed" "$rlRun_LOG"
 
 
@@ -45,17 +45,17 @@ rlJournalStart
 
 
         # Check the shell framework subtests outcomes
-        rlAssertGrep "pass /test/fail/subtest/good" "$rlRun_LOG"
-        rlAssertGrep "fail /test/fail/subtest/fail" "$rlRun_LOG"
-        rlAssertGrep "warn /test/fail/subtest/weird" "$rlRun_LOG"
-        rlAssertGrep "skip /test/fail/subtest/skip" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/fail/subtest/good" "$rlRun_LOG"
+        rlAssertGrep "fail /test/shell/fail/subtest/fail" "$rlRun_LOG"
+        rlAssertGrep "warn /test/shell/fail/subtest/weird" "$rlRun_LOG"
+        rlAssertGrep "skip /test/shell/fail/subtest/skip" "$rlRun_LOG"
 
-        rlAssertGrep "pass /test/pass/subtest/good0" "$rlRun_LOG"
-        rlAssertGrep "pass /test/pass/subtest/good1" "$rlRun_LOG"
-        rlAssertGrep "pass /test/pass/subtest/good2" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/pass/subtest/good0" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/pass/subtest/good1" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/pass/subtest/good2" "$rlRun_LOG"
 
-        rlAssertGrep "pass /test/skip/subtest/extra-pass" "$rlRun_LOG"
-        rlAssertGrep "skip /test/skip/subtest/extra-skip" "$rlRun_LOG"
+        rlAssertGrep "pass /test/shell/skip/subtest/extra-pass" "$rlRun_LOG"
+        rlAssertGrep "skip /test/shell/skip/subtest/extra-skip" "$rlRun_LOG"
 
 
         # Check the subresults get correctly saved in results.yaml
@@ -71,16 +71,16 @@ rlJournalStart
         rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/weird" "subresults_beakerlib.yaml"
         rlAssertGrep "name: /test/beakerlib/extra-tmt-report-result/skip" "subresults_beakerlib.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/fail\") | .subresult' ${results_file} > subresults_fail.yaml"
-        rlAssertGrep "name: /test/fail/subtest/good" "subresults_fail.yaml"
-        rlAssertGrep "name: /test/fail/subtest/fail" "subresults_fail.yaml"
-        rlAssertGrep "name: /test/fail/subtest/weird" "subresults_fail.yaml"
-        rlAssertGrep "name: /test/fail/subtest/skip" "subresults_fail.yaml"
+        rlRun "yq -ey '.[] | select(.name == \"/test/shell/fail\") | .subresult' ${results_file} > subresults_fail.yaml"
+        rlAssertGrep "name: /test/shell/fail/subtest/good" "subresults_fail.yaml"
+        rlAssertGrep "name: /test/shell/fail/subtest/fail" "subresults_fail.yaml"
+        rlAssertGrep "name: /test/shell/fail/subtest/weird" "subresults_fail.yaml"
+        rlAssertGrep "name: /test/shell/fail/subtest/skip" "subresults_fail.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/pass\") | .subresult' ${results_file} > subresults_pass.yaml"
-        rlAssertGrep "name: /test/pass/subtest/good0" "subresults_pass.yaml"
-        rlAssertGrep "name: /test/pass/subtest/good1" "subresults_pass.yaml"
-        rlAssertGrep "name: /test/pass/subtest/good2" "subresults_pass.yaml"
+        rlRun "yq -ey '.[] | select(.name == \"/test/shell/pass\") | .subresult' ${results_file} > subresults_pass.yaml"
+        rlAssertGrep "name: /test/shell/pass/subtest/good0" "subresults_pass.yaml"
+        rlAssertGrep "name: /test/shell/pass/subtest/good1" "subresults_pass.yaml"
+        rlAssertGrep "name: /test/shell/pass/subtest/good2" "subresults_pass.yaml"
         rlAssertNotGrep "original-result: \(fail\|skip\|warn\)" "subresults_pass.yaml"
 
         # Check the subresults log entries are set in results.yaml
@@ -100,14 +100,14 @@ rlJournalStart
 
         # Check the subresults log files actually exist
         rlRun "log_dir=$run_dir/plan/execute/data/guest/default-0/test"
-        rlAssertExists "$log_dir/pass-3/data/subtest_good0_good0_log"
-        rlAssertExists "$log_dir/pass-3/data/subtest_good1_good1_log"
-        rlAssertExists "$log_dir/pass-3/data/subtest_good2_good2_log"
+        rlAssertExists "$log_dir/shell/pass-3/data/subtest_good0_good0_log"
+        rlAssertExists "$log_dir/shell/pass-3/data/subtest_good1_good1_log"
+        rlAssertExists "$log_dir/shell/pass-3/data/subtest_good2_good2_log"
 
-        rlAssertExists "$log_dir/fail-2/data/subtest_fail_fail_log"
-        rlAssertExists "$log_dir/fail-2/data/subtest_good_good_log"
-        rlAssertExists "$log_dir/fail-2/data/subtest_skip_skip_log"
-        rlAssertExists "$log_dir/fail-2/data/subtest_weird_weird_log"
+        rlAssertExists "$log_dir/shell/fail-2/data/subtest_fail_fail_log"
+        rlAssertExists "$log_dir/shell/fail-2/data/subtest_good_good_log"
+        rlAssertExists "$log_dir/shell/fail-2/data/subtest_skip_skip_log"
+        rlAssertExists "$log_dir/shell/fail-2/data/subtest_weird_weird_log"
 
         rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_bad_bkr_bad_log"
         rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_good_bkr_good_log"
