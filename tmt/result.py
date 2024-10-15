@@ -373,19 +373,18 @@ class Result(BaseResult):
     def to_subresult(self) -> 'SubResult':
         """ Convert result to tmt subresult """
 
-        # TODO: Try to find a better way for conversion (e.g. using
-        # from_spec/to_spec/from_serialized/to_serialized).
-        return SubResult(
-            name=self.name,
-            result=self.result,
-            note=self.note,
-            log=self.log,
-            start_time=self.start_time,
-            end_time=self.end_time,
-            duration=self.duration,
+        keys_to_keep = [
+            'name',
+            'result',
+            'note',
+            'log',
+            'start-time',
+            'end-time',
+            'duration',
+            'check']
 
-            # Also convert all CheckResult instances to SubCheckResult instances
-            check=[check.to_subcheck() for check in self.check])
+        return SubResult.from_serialized(
+            {key: value for key, value in self.to_serialized().items() if key in keys_to_keep})
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
