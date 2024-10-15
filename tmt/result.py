@@ -388,7 +388,7 @@ class Result(BaseResult):
             duration=self.duration,
 
             # Also convert all CheckResult instances to SubCheckResult instances
-            check=[c.to_subcheck() for c in self.check])
+            check=[check.to_subcheck() for check in self.check])
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
