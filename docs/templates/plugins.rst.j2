@@ -30,8 +30,10 @@
             {% else %}
     Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor %}
             {% endif %}
+        {% elif actual_default.__class__.__name__ == 'CheckResultInterpret' %}
+    Default: ``{{ actual_default.value }}``
         {% else %}
-            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default)) %}
+            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default), shift=0) %}
     Default: *could not render default value correctly*
         {% endif %}
     {% endif %}
