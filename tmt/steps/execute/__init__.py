@@ -62,12 +62,12 @@ TEST_METADATA_FILENAME = 'metadata.yaml'
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
 #: The default scripts destination directory
-SCRIPTS_DEST_DIR = Path("/usr/local/bin")
+DEFAULT_SCRIPTS_DEST_DIR = Path("/usr/local/bin")
 
 #: The default scripts destination directory for rpm-ostree based distributions, https://github.com/teemtee/tmt/discussions/3260
-SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
+DEFAULT_SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
 
-#: The default tmt environment variable name for forcing ``SCRIPTS_DEST_DIR``
+#: The tmt environment variable name for forcing ``SCRIPTS_DEST_DIR``
 SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DEST_DIR'
 
 
@@ -83,13 +83,13 @@ class Script:
     location is relative to the directory specified via the :py:data:`SCRIPTS_SRC_DIR`
     variable. All scripts must be located in this directory.
 
-    The default destination directory of the scripts is :py:data:`SCRIPTS_DEST_DIR`.
+    The default destination directory of the scripts is :py:data:`DEFAULT_SCRIPTS_DEST_DIR`.
     On ``rpm-ostree`` distributions like Fedora CoreOS, the default destination
-    directory is :py:data:``SCRIPTS_DEST_DIR_OSTREE``. The destination directory
+    directory is :py:data:``DEFAULT_SCRIPTS_DEST_DIR_OSTREE``. The destination directory
     of the scripts can be forced by the script using ``destination_path`` attribute.
 
     The destination directory can be overridden using the environment variable defined
-    by the :py:data:`SCRIPTS_DEST_DIR_VARIABLE` variable.
+    by the :py:data:`DEFAULT_SCRIPTS_DEST_DIR_VARIABLE` variable.
 
     The ``enabled`` attribute can specify a function which is called with :py:class:`Guest`
     instance to evaluate if the script is enabled. This can be useful to optionally disable
@@ -108,13 +108,18 @@ class Script:
     def __exit__(self, *args: object) -> None:
         pass
 
-    def guest_path(self, guest: Guest, alias: Optional[str] = None) -> Path:
-        """ Return path of the script or the script alias on a guest """
-        filename = alias or self.source_filename
+    def guest_path(self, guest: Guest, filename: Optional[str] = None) -> Path:
+        """ Return path of the script on the guest """
+        filename = filename or self.source_filename
+
+        if self.destination_path:
+            return self.destination_path
+
         scripts_dest_dir = effective_scripts_dest_dir(
-            default=SCRIPTS_DEST_DIR_OSTREE if guest.facts.is_ostree else SCRIPTS_DEST_DIR
-            )
-        return self.destination_path if self.destination_path else scripts_dest_dir / filename
+            default=DEFAULT_SCRIPTS_DEST_DIR_OSTREE
+            if guest.facts.is_ostree else DEFAULT_SCRIPTS_DEST_DIR)
+
+        return scripts_dest_dir / filename
 
 
 @dataclass
@@ -160,7 +165,7 @@ class ScriptTemplate(Script):
         os.unlink(self._rendered_script_path)
 
 
-def effective_scripts_dest_dir(default: Path = SCRIPTS_DEST_DIR) -> Path:
+def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
     """
     Find out what the actual scripts destination directory is.
 
@@ -242,8 +247,9 @@ TMT_ETC_PROFILE_D = ScriptTemplate(
     aliases=[],
     related_variables=[],
     context={
-        'SCRIPTS_DEST_DIR': str(effective_scripts_dest_dir(default=SCRIPTS_DEST_DIR_OSTREE))
-        },
+        'SCRIPTS_DEST_DIR': str(
+            effective_scripts_dest_dir(
+                default=DEFAULT_SCRIPTS_DEST_DIR_OSTREE))},
     enabled=lambda guest: guest.facts.is_ostree is True)
 
 
@@ -723,19 +729,20 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """ Prepare additional scripts for testing """
         # For rpm-ostree based distributions use a different default destination directory
         scripts_dest_dir = effective_scripts_dest_dir(
-            default=SCRIPTS_DEST_DIR_OSTREE if guest.facts.is_ostree else SCRIPTS_DEST_DIR)
+            default=DEFAULT_SCRIPTS_DEST_DIR_OSTREE
+            if guest.facts.is_ostree else DEFAULT_SCRIPTS_DEST_DIR)
 
-        # Create scripts directory
+        # Make sure scripts directory exists
         guest.execute(Command("mkdir", "-p", str(scripts_dest_dir)))
 
         # Install all scripts on guest
         for script in self.scripts:
             with script as source:
-                for dest in [script.source_filename, *script.aliases]:
+                for filename in [script.source_filename, *script.aliases]:
                     if script.enabled(guest):
                         guest.push(
                             source=source,
-                            destination=script.guest_path(guest, dest),
+                            destination=script.guest_path(guest, filename),
                             options=[
                                 "-p",
                                 "--chmod=755"],
