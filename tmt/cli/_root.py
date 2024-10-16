@@ -1680,7 +1680,7 @@ def clean(context: Context,
     exit_code = 0
     if context.invoked_subcommand is None:
         assert context.obj.clean_logger is not None  # narrow type
-        root_path = effective_workdir_root(workdir_root)
+        workdir_root = effective_workdir_root(workdir_root)
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
@@ -1689,15 +1689,15 @@ def clean(context: Context,
             .apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context),
-            workdir_root=root_path)
-        if root_path.exists():
+            workdir_root=workdir_root)
+        if workdir_root.exists():
             if 'guests' not in skip and not clean_obj.guests(id_):
                 exit_code = 1
             if 'runs' not in skip and not clean_obj.runs(id_):
                 exit_code = 1
         else:
             clean_obj.warn(
-                f"Directory '{root_path}' does not exist, "
+                f"Directory '{workdir_root}' does not exist, "
                 f"skipping guest and run cleanup.")
         if 'images' not in skip and not clean_obj.images():
             exit_code = 1
