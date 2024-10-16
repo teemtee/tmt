@@ -469,8 +469,10 @@ TMT_REBOOT_TIMEOUT
 
 TMT_SCRIPTS_DEST_DIR
     Destination directory for storing ``tmt`` scripts on the guest.
-    By default ``/var/tmp/tmt/bin`` is used. For more information
-    see the `tmt internal test executor`__ documentation.
+    By default ``/usr/local/bin`` is used, except for guests using
+    ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used. See the
+    `tmt internal test executor`__ documentation for more details
+    on the scripts installed on the guest.
 
 __ https://tmt.readthedocs.io/en/stable/spec/plans.html#tmt
 
