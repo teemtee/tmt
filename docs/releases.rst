@@ -18,6 +18,10 @@ option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
 
+When plan discovers tests using :ref:`/plugins/discover/fmf` plugin
+it is possible to modify metadata of such discovered tests with the
+``adjust-tests`` option specified in the plan itself.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
