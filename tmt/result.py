@@ -359,6 +359,8 @@ class Result(BaseResult):
             self.check = [check_result.interpret_check_result(
                 interpret_checks[check_result.name]) for check_result in self.check]
 
+            return self
+
         # Keeping "hardcoded" PASS, FAIL, ERROR...
         if interpret not in (ResultInterpret.XFAIL, ResultInterpret.RESPECT):
             return self
