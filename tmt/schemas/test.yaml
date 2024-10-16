@@ -54,12 +54,12 @@ properties:
   check:
     anyOf:
       - type: string
-      - $ref: "/schemas/common#/definitions/check"
+      - $ref: "#/definitions/check"
       - type: array
         items:
           anyOf:
             - type: string
-            - $ref: "/schemas/common#/definitions/check"
+            - $ref: "#/definitions/check"
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#id
   id:
@@ -145,3 +145,20 @@ patternProperties:
 
 required:
   - test
+
+definitions:
+  check:
+    type: object
+    properties:
+      how:
+        type: string
+      enabled:
+        type: boolean
+      result:
+        type: string
+        enum:
+          - respect
+          - xfail
+          - info
+    required:
+      - how

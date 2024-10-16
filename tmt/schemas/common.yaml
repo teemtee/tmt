@@ -493,15 +493,3 @@ definitions:
     type: string
     # yamllint disable-line rule:line-length
     pattern: "^\\d{2,}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2}:\\d{2}$"
-
-  check:
-    type: object
-    properties:
-      how:
-        type: string
-
-      enabled:
-        type: boolean
-
-    required:
-      - how

@@ -4,6 +4,26 @@
     Releases
 ======================
 
+tmt-1.38.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/spec/tests/check` specification now supports a new ``result``
+key for individual checks. This attribute allows users to control how the
+result of each check affects the overall test result. The following values
+are supported:
+
+respect (default)
+    The check result is respected and affects the overall test result.
+xfail
+    The check result is expected to fail (pass becomes fail and vice-versa).
+info
+    The check result is always treated as "INFO" and does not affect the
+    overall test result.
+
+Please note that tests, which were previously passing with failing checks
+will now fail by default, unless the 'xfail' or 'info' is added.
+
+
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
