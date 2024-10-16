@@ -125,3 +125,5 @@ link:
     note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name``, ``cpu.hyper-threading``, ``cpu.stepping`` and ``cpu.vendor-name`` only"
+  - implemented-by: /tmt/steps/provision/testcloud.py
+    note: "``cpu.processors`` only"
