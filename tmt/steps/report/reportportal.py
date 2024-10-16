@@ -43,15 +43,10 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
+@dataclasses.dataclass
 class LogFilterSettings:
-    size: int
-    is_traceback: bool
-
-    def __init__(self,
-                 size: int = DEFAULT_LOG_SIZE_LIMIT,
-                 is_traceback: bool = False):
-        self.size = size
-        self.is_traceback = is_traceback
+    size: int = DEFAULT_LOG_SIZE_LIMIT
+    is_traceback: bool = False
 
 
 def _filter_invalid_chars(data: str,
@@ -65,17 +60,17 @@ def _filter_invalid_chars(data: str,
 def _filter_log_per_size(data: str,
                          settings: LogFilterSettings) -> str:
     size = len(data)
-    if settings.is_traceback:
-        variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
-        option = "--traceback-size-limit"
-    else:
-        variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
-        option = "--log-size-limit"
-    header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
-              f"exceeds tmt reportportal plugin limit of {settings.size} bytes."
-              f"The limit is controlled with {option} plugin option or"
-              f"{variable} environment variable.\n\n")
     if size > settings.size:
+        if settings.is_traceback:
+            variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_TRACEBACK_SIZE_LIMIT"
+            option = "--traceback-size-limit"
+        else:
+            variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
+            option = "--log-size-limit"
+        header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
+                  f"exceeds tmt reportportal plugin limit of {settings.size} bytes."
+                  f"The limit is controlled with {option} plugin option or"
+                  f"{variable} environment variable.\n\n")
         return f"{header}{data[:settings.size]}"
     return data
 
