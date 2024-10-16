@@ -554,12 +554,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     except tmt.utils.RebootTimeoutError:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'reboot timeout'
+                            result.note.append('reboot timeout')
 
                     else:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'crashed too many times'
+                            result.note.append('crashed too many times')
 
                 # Handle reboot, abort, exit-first
                 if invocation.reboot_requested:
@@ -572,12 +572,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     except tmt.utils.RebootTimeoutError:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'reboot timeout'
+                            result.note.append('reboot timeout')
 
                 if invocation.abort_requested:
                     for result in invocation.results:
                         # In case of aborted all results in list will be aborted
-                        result.note = 'aborted'
+                        result.note.append('aborted')
 
                 self._results.extend(invocation.results)
 
