@@ -13,6 +13,6 @@
 /subresults:
     summary: Multiple calls to tmt-report-result should generate tmt subresults
     test: ./subresults.sh
-/check_results_interpret:
+/check_results:
     summary: Test check result interpretations
     test: ./check_results.sh
