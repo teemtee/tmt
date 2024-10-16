@@ -1,0 +1,6 @@
+provision:
+    how: container
+    image: $IMAGE
+execute:
+    how: tmt
+    script: ls $PATHS
