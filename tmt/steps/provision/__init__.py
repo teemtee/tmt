@@ -443,7 +443,7 @@ class GuestFacts(SerializableContainer):
         output = self._execute(
             guest,
             Command(
-                'bash',
+                tmt.utils.DEFAULT_SHELL,
                 '-c',
                 'if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo yes; else echo no; fi'))
 

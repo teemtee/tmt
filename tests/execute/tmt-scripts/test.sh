@@ -8,6 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
+        # List of paths to check, on a single line
         PATHS=$(echo $FOUND $NOT_FOUND)
 
         rlRun -s "tmt run -vvv -e IMAGE=$IMAGE -e \"PATHS='$PATHS'\" --id $run" 2 "Run the plan"
