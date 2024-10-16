@@ -1181,6 +1181,9 @@ class Method:
         self.summary: str = lines[0].strip()
         self.description: str = '\n'.join(lines[1:])
 
+    def __repr__(self) -> str:
+        return f'<{self.name} from {self.class_.__module__}>'
+
     def describe(self) -> str:
         """ Format name and summary for a nice method overview """
         return f'{self.name} '.ljust(22, '.') + f' {self.summary}'
