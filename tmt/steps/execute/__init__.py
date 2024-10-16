@@ -9,7 +9,7 @@ import threading
 from contextlib import suppress
 from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -62,7 +62,13 @@ TEST_METADATA_FILENAME = 'metadata.yaml'
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
 #: The default scripts destination directory
-SCRIPTS_DEST_DIR = Path("/var/tmp/tmt/bin")  # noqa: S108 insecure usage of temporary dir
+SCRIPTS_DEST_DIR = Path("/usr/local/bin")
+
+#: The default scripts destination directory for rpm-ostree based distributions, https://github.com/teemtee/tmt/discussions/3260
+SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
+
+#: The default tmt environment variable name for forcing ``SCRIPTS_DEST_DIR``
+SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DEST_DIR'
 
 
 @dataclass
@@ -73,20 +79,42 @@ class Script:
     Must be used as a context manager. The context manager returns
     the source file path.
 
-    The source file name matches the name of the file specified via
-    the ``path`` attribute and must be located in the directory specified
-    via :py:data:`SCRIPTS_SRC_DIR` variable.
+    The source file is defined by the ``source_filename`` attribute and its
+    location is relative to the directory specified via the :py:data:`SCRIPTS_SRC_DIR`
+    variable. All scripts must be located in this directory.
+
+    The default destination directory of the scripts is :py:data:`SCRIPTS_DEST_DIR`.
+    On ``rpm-ostree`` distributions like Fedora CoreOS, the default destination
+    directory is :py:data:``SCRIPTS_DEST_DIR_OSTREE``. The destination directory
+    of the scripts can be forced by the script using ``destination_path`` attribute.
+
+    The destination directory can be overridden using the environment variable defined
+    by the :py:data:`SCRIPTS_DEST_DIR_VARIABLE` variable.
+
+    The ``enabled`` attribute can specify a function which is called with :py:class:`Guest`
+    instance to evaluate if the script is enabled. This can be useful to optionally disable
+    a script for specific guests.
     """
 
-    path: Path
-    aliases: list[Path]
+    source_filename: str
+    destination_path: Optional[Path]
+    aliases: list[str]
     related_variables: list[str]
+    enabled: Callable[[Guest], bool]
 
     def __enter__(self) -> Path:
-        return SCRIPTS_SRC_DIR / self.path.name
+        return SCRIPTS_SRC_DIR / self.source_filename
 
     def __exit__(self, *args: object) -> None:
         pass
+
+    def guest_path(self, guest: Guest, alias: Optional[str] = None) -> Path:
+        """ Return path of the script or the script alias on a guest """
+        filename = alias or self.source_filename
+        scripts_dest_dir = effective_scripts_dest_dir(
+            default=SCRIPTS_DEST_DIR_OSTREE if guest.facts.is_ostree else SCRIPTS_DEST_DIR
+            )
+        return self.destination_path if self.destination_path else scripts_dest_dir / filename
 
 
 @dataclass
@@ -108,8 +136,8 @@ class ScriptTemplate(Script):
     Must be used as a context manager. The context manager returns
     the source file path.
 
-    The source file name is constructed from the name of the file specified
-    via the ``path`` attribute, with the ``.j2`` suffix appended.
+    The source filename is constructed from the name of the file specified
+    via the ``source_filename`` attribute, with the ``.j2`` suffix appended.
     The template file must be located in the directory specified
     via :py:data:`SCRIPTS_SRC_DIR` variable.
     """
@@ -121,7 +149,7 @@ class ScriptTemplate(Script):
     def __enter__(self) -> Path:
         with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
             rendered_script.write(render_template_file(
-                SCRIPTS_SRC_DIR / f"{self.path.name}.j2", None, **self.context))
+                SCRIPTS_SRC_DIR / f"{self.source_filename}.j2", None, **self.context))
 
         self._rendered_script_path = Path(rendered_script.name)
 
@@ -132,77 +160,91 @@ class ScriptTemplate(Script):
         os.unlink(self._rendered_script_path)
 
 
-def effective_scripts_dest_dir() -> Path:
+def effective_scripts_dest_dir(default: Path = SCRIPTS_DEST_DIR) -> Path:
     """
     Find out what the actual scripts destination directory is.
 
     If the ``TMT_SCRIPTS_DEST_DIR`` environment variable is set, it is used
-    as the scripts destination directory. Otherwise, the default
-    of :py:data:`SCRIPTS_DEST_DIR` is used.
+    as the scripts destination directory. Otherwise, the ``default``
+    is returned.
     """
 
-    if 'TMT_SCRIPTS_DEST_DIR' in os.environ:
-        return Path(os.environ['TMT_SCRIPTS_DEST_DIR'])
+    if SCRIPTS_DEST_DIR_VARIABLE in os.environ:
+        return Path(os.environ[SCRIPTS_DEST_DIR_VARIABLE])
 
-    return SCRIPTS_DEST_DIR
+    return default
 
 
 # Script handling reboots, in restraint compatible fashion
 TMT_REBOOT_SCRIPT = ScriptCreatingFile(
-    path=effective_scripts_dest_dir() / 'tmt-reboot',
+    source_filename='tmt-reboot',
+    destination_path=None,
     aliases=[
-        effective_scripts_dest_dir() / 'rstrnt-reboot',
-        effective_scripts_dest_dir() / 'rhts-reboot'],
+        'rstrnt-reboot',
+        'rhts-reboot'],
     related_variables=[
         "TMT_REBOOT_COUNT",
         "REBOOTCOUNT",
         "RSTRNT_REBOOTCOUNT"],
-    created_file="reboot-request"
+    created_file="reboot-request",
+    enabled=lambda _: True
     )
 
 TMT_REBOOT_CORE_SCRIPT = Script(
-    path=effective_scripts_dest_dir() / 'tmt-reboot-core',
+    source_filename='tmt-reboot-core',
+    destination_path=None,
     aliases=[],
-    related_variables=[])
+    related_variables=[],
+    enabled=lambda _: True
+    )
 
 # Script handling result reporting, in restraint compatible fashion
 TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
-    path=effective_scripts_dest_dir() / 'tmt-report-result',
+    source_filename='tmt-report-result',
+    destination_path=None,
     aliases=[
-        effective_scripts_dest_dir() / 'rstrnt-report-result',
-        effective_scripts_dest_dir() / 'rhts-report-result'],
+        'rstrnt-report-result',
+        'rhts-report-result'],
     related_variables=[],
-    created_file="tmt-report-results.yaml"
+    created_file="tmt-report-results.yaml",
+    enabled=lambda _: True
     )
 
 # Script for archiving a file, usable for BEAKERLIB_COMMAND_SUBMIT_LOG
 TMT_FILE_SUBMIT_SCRIPT = Script(
-    path=effective_scripts_dest_dir() / 'tmt-file-submit',
+    source_filename='tmt-file-submit',
+    destination_path=None,
     aliases=[
-        effective_scripts_dest_dir() / 'rstrnt-report-log',
-        effective_scripts_dest_dir() / 'rhts-submit-log',
-        effective_scripts_dest_dir() / 'rhts_submit_log'],
-    related_variables=[]
+        'rstrnt-report-log',
+        'rhts-submit-log',
+        'rhts_submit_log'],
+    related_variables=[],
+    enabled=lambda _: True
     )
 
 # Script handling text execution abortion, in restraint compatible fashion
 TMT_ABORT_SCRIPT = ScriptCreatingFile(
-    path=effective_scripts_dest_dir() / 'tmt-abort',
+    source_filename='tmt-abort',
+    destination_path=None,
     aliases=[
-        effective_scripts_dest_dir() / 'rstrnt-abort',
-        effective_scripts_dest_dir() / 'rhts-abort'],
+        'rstrnt-abort',
+        'rhts-abort'],
     related_variables=[],
-    created_file="abort"
+    created_file="abort",
+    enabled=lambda _: True
     )
 
 # Profile script for adding SCRIPTS_DEST_DIR to executable paths system-wide
+# Used only for rpm-ostree based distributions
 TMT_ETC_PROFILE_D = ScriptTemplate(
-    path=Path("/etc/profile.d/tmt.sh"),
+    source_filename='tmt.sh',
+    destination_path=Path("/etc/profile.d/tmt.sh"),
     aliases=[],
     related_variables=[],
     context={
-        'SCRIPTS_DEST_DIR': str(effective_scripts_dest_dir())
-        })
+        'SCRIPTS_DEST_DIR': str(effective_scripts_dest_dir(default=SCRIPTS_DEST_DIR_OSTREE))
+        },
+    enabled=lambda guest: guest.facts.is_ostree is True)
 
 
 # List of all available scripts
@@ -679,18 +721,25 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """ Prepare additional scripts for testing """
+        # For rpm-ostree based distributions use a different default destination directory
+        scripts_dest_dir = effective_scripts_dest_dir(
+            default=SCRIPTS_DEST_DIR_OSTREE if guest.facts.is_ostree else SCRIPTS_DEST_DIR)
+
         # Create scripts directory
-        guest.execute(Command("mkdir", "-p", str(effective_scripts_dest_dir())))
+        guest.execute(Command("mkdir", "-p", str(scripts_dest_dir)))
 
         # Install all scripts on guest
         for script in self.scripts:
             with script as source:
-                for dest in [script.path, *script.aliases]:
-                    guest.push(
-                        source=source,
-                        destination=dest,
-                        options=["-p", "--chmod=755"],
-                        superuser=guest.facts.is_superuser is not True)
+                for dest in [script.source_filename, *script.aliases]:
+                    if script.enabled(guest):
+                        guest.push(
+                            source=source,
+                            destination=script.guest_path(guest, dest),
+                            options=[
+                                "-p",
+                                "--chmod=755"],
+                            superuser=guest.facts.is_superuser is not True)
 
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """ Create path to test's ``tmt-report-result`` file """
