@@ -1,0 +1,45 @@
+summary: Specify how check result should be interpreted
+
+story:
+    As a tester I want to control how the result of individual checks
+    affects the overall test result, allowing for expected failures
+    or informational checks.
+
+description: |
+    Checks can have different impacts on the overall test result.
+    The 'result' attribute allows testers to specify how each check's
+    result should be interpreted. The following values are supported:
+
+    respect
+        check result is respected and affects the overall test result
+        (default value)
+    xfail
+        expected fail (pass when check fails, fail when check passes)
+    info
+        check result is always treated as "INFO" and does not affect
+        the overall test result
+
+    .. versionadded:: 1.38.0
+
+example:
+  - |
+    # Use the default behavior (respect)
+    check:
+      - how: avc
+
+  - |
+    # Expect the AVC check to fail
+    check:
+      - how: avc
+        result: xfail
+
+  - |
+    # Treat the dmesg check as informational only
+    check:
+      - how: dmesg
+        result: info
+
+link:
+  - implemented-by: /tmt/checks/__init__.py
+  - implemented-by: /tmt/result.py
+  - verified-by: /tests/execute/result/check_results
