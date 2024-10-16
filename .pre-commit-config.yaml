@@ -1,10 +1,6 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.3.1'
-    hooks:
-      - id: autopep8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.6.0"
@@ -143,12 +139,16 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.6.4
+    rev: v0.6.9
     hooks:
       - id: ruff
         args:
           - '--fix'
           - '--show-fixes'
+      - id: ruff-format
+        args:
+          - '--diff'
+          - '--exclude=examples,docs,tests'
 
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.36.0

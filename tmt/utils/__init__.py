@@ -4164,7 +4164,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
             *args: Any,
             **kwargs: Any
             ) -> urllib3.util.retry.Retry:
-        error = cast(Optional[Exception], kwargs.get('error', None))
+        error = cast(Optional[Exception], kwargs.get('error'))
 
         # Detect a subset of exception we do not want to follow with a retry.
         # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
@@ -4180,7 +4180,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
                 # a better error message, but don't crash because of a missing attribute or
                 # something as dumb.
 
-                connection_pool = kwargs.get('_pool', None)
+                connection_pool = kwargs.get('_pool')
 
                 if connection_pool is not None and hasattr(connection_pool, 'host'):
                     message = f"Certificate verify failed for '{connection_pool.host}'."

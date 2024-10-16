@@ -290,7 +290,12 @@ max-line-length = "99"
 line-length = 99
 src = ["tmt", "tests"]
 target-version = "py39"
-lint.select = [
+
+[tool.ruff.format]
+quote-style = "preserve"  # TODO: Convert to a specific quote style
+
+[tool.ruff.lint]
+select = [
     "F",  # pyflakes
     "E",  # pycodestyle error
     "W",  # pycodestyle warning
@@ -308,14 +313,12 @@ lint.select = [
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
-    "ISC",  # flake8-implicit-str-concat
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
     "PIE",  # flake8-pie
     "PYI",  # flake8-pyi
     "PT",  # flake8-pytest-style
-    "Q003",  # avoidable-escaped-quote
     "Q004",  # unnecessary-escaped-quote
     "RSE",  # flake8-raise
     "RET",  # flake8-return
@@ -331,7 +334,7 @@ lint.select = [
     "RUF",  # ruff
     "D",    # pydocstyle
     ]
-lint.ignore = [
+ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     "G004",  # Logging statement uses f-string
@@ -371,10 +374,19 @@ lint.ignore = [
     "D400",  # First line should end with a period
     "D401",  # First line of docstring should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
+
+    # Conflicting format/lint rules https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "COM819",
     ]
 
-lint.logger-objects = ["tmt.log.Logger"]
-lint.typing-modules = ["tmt._compat.typing"]
+logger-objects = ["tmt.log.Logger"]
+typing-modules = ["tmt._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests
