@@ -4000,8 +4000,7 @@ class Clean(tmt.utils.Common):
     def guests(self, run_ids: tuple[str, ...]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = self.workdir_root
-        self.verbose('workdir root', root_path)
+        self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4009,7 +4008,7 @@ class Clean(tmt.utils.Common):
                 Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(root_path, run_ids):
+        for abs_path in tmt.utils.generate_runs(self.workdir_root, run_ids):
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
@@ -4035,8 +4034,7 @@ class Clean(tmt.utils.Common):
     def runs(self, id_: tuple[str, ...]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = self.workdir_root
-        self.verbose('workdir root', root_path)
+        self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4044,7 +4042,7 @@ class Clean(tmt.utils.Common):
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
-        all_workdirs = list(tmt.utils.generate_runs(root_path, id_))
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
         keep = self.opt('keep')
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
