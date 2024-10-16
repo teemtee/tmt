@@ -844,6 +844,17 @@ class Guest(tmt.utils.Common):
         return tmt.package_managers.find_package_manager(
             self.facts.package_manager)(guest=self, logger=self._logger)
 
+    @functools.cached_property
+    def scripts_path(self) -> Path:
+        """ Absolute path to tmt scripts directory """
+
+        import tmt.steps.execute
+
+        # For rpm-ostree based distributions use a different default destination directory
+        return tmt.steps.execute.effective_scripts_dest_dir(
+            default=tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
+            if self.facts.is_ostree else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR)
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """

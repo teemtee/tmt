@@ -108,19 +108,6 @@ class Script:
     def __exit__(self, *args: object) -> None:
         pass
 
-    def guest_path(self, guest: Guest, filename: Optional[str] = None) -> Path:
-        """ Return path of the script on the guest """
-        filename = filename or self.source_filename
-
-        if self.destination_path:
-            return self.destination_path
-
-        scripts_dest_dir = effective_scripts_dest_dir(
-            default=DEFAULT_SCRIPTS_DEST_DIR_OSTREE
-            if guest.facts.is_ostree else DEFAULT_SCRIPTS_DEST_DIR)
-
-        return scripts_dest_dir / filename
-
 
 @dataclass
 class ScriptCreatingFile(Script):
@@ -727,13 +714,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """ Prepare additional scripts for testing """
-        # For rpm-ostree based distributions use a different default destination directory
-        scripts_dest_dir = effective_scripts_dest_dir(
-            default=DEFAULT_SCRIPTS_DEST_DIR_OSTREE
-            if guest.facts.is_ostree else DEFAULT_SCRIPTS_DEST_DIR)
 
         # Make sure scripts directory exists
-        guest.execute(Command("mkdir", "-p", str(scripts_dest_dir)))
+        guest.execute(Command("sudo" if guest.facts.is_superuser else "",
+                      "mkdir", "-p", str(guest.scripts_path)))
 
         # Install all scripts on guest
         for script in self.scripts:
@@ -742,7 +726,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     if script.enabled(guest):
                         guest.push(
                             source=source,
-                            destination=script.guest_path(guest, filename),
+                            destination=(script.destination_path or guest.scripts_path) / filename,
                             options=[
                                 "-p",
                                 "--chmod=755"],
