@@ -1,0 +1,13 @@
+execute:
+    how: tmt
+discover:
+    how: shell
+    tests:
+    - name: booted image
+      test: bootc status | grep localhost/tmtmodified
+provision:
+    how: bootc
+    add-deps: true
+    containerfile: "$TMT_BOOTC_CONTAINERFILE_RUNDIR/needs_deps.containerfile"
+    containerfile-workdir: .
+    disk: 20
