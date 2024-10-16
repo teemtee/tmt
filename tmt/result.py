@@ -354,10 +354,17 @@ class Result(BaseResult):
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
+        if interpret not in (ResultInterpret):
+            raise tmt.utils.SpecificationError(
+                f"Invalid result '{interpret.value}' in test '{self.name}'."
+                )
+
         if interpret in (ResultInterpret.CUSTOM, ResultInterpret.RESTRAINT):
             # Interpret check results first, in case there is "info"
-            self.check = [check_result.interpret_check_result(
-                interpret_checks[check_result.name]) for check_result in self.check]
+            self.check = [
+                check_result.interpret_check_result(interpret_checks[check_result.name])
+                for check_result in self.check
+                ]
 
             return self
 
@@ -365,26 +372,22 @@ class Result(BaseResult):
         if interpret not in (ResultInterpret.XFAIL, ResultInterpret.RESPECT):
             return self
 
-        failed_checks = [check_result for check_result in self.check
-                         if check_result.result == ResultOutcome.FAIL]
+        failed_checks = [
+            check_result
+            for check_result in self.check
+            if check_result.result == ResultOutcome.FAIL
+            ]
 
         if failed_checks:
             self.result = ResultOutcome.FAIL
-            check_note = ', '.join([f"Check '{check.name}' failed" for check in failed_checks])
+            check_note = ", ".join([f"Check '{check.name}' failed" for check in failed_checks])
             self.note = f"{self.note}, {check_note}" if self.note else check_note
         if interpret == ResultInterpret.XFAIL:
             # Swap fail<-->pass
             self.result = {
                 ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL
+                ResultOutcome.PASS: ResultOutcome.FAIL,
                 }.get(self.result, self.result)
-
-        elif ResultInterpret.is_result_outcome(interpret):
-            self.result = ResultOutcome(interpret.value)
-
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
         return self
 
