@@ -311,6 +311,11 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
              Select image to be used. Provide a short name, full path to a local file
              or a complete url.
              """)
+    cpu_count: int = field(
+        default=DEFAULT_CPU_COUNT,
+        option=('--cpu-count'),
+        metavar='NUMBER',
+        help='Set available CPUs, 2 by default')
     memory: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
         option=('-m', '--memory'),
@@ -359,7 +364,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
             logger: tmt.log.Logger) -> None:
 
         keys = keys or list(self.keys())
-        super_keys = [key for key in keys if key not in ('memory', 'disk')]
+        super_keys = [key for key in keys if key not in ('memory', 'cpu_count', 'disk')]
 
         super().show(keys=super_keys, verbose=verbose, logger=logger)
 
@@ -440,6 +445,7 @@ class GuestTestcloud(tmt.GuestSsh):
         image ...... qcov image name or url
         user ....... user name to log in
         memory ..... memory size for vm
+        cpu_count .. number of CPUs for vm
         disk ....... disk size for vm
         connection . either session (default) or system, to be passed to qemu
         arch ....... architecture for the VM, host arch is the default
@@ -451,6 +457,7 @@ class GuestTestcloud(tmt.GuestSsh):
     image_url: Optional[str]
     instance_name: Optional[str]
     memory: Optional['Size']
+    cpu_count: Optional[int]
     disk: Optional['Size']
     connection: str
     arch: str
@@ -811,7 +818,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self._domain = DomainConfiguration(self.instance_name)
 
         # Process hardware and find a suitable HW properties
-        self._domain.cpu_count = DEFAULT_CPU_COUNT
+        self._domain.cpu_count = self.cpu_count
 
         self._combine_hw_memory()
         self._combine_hw_disk_size()
@@ -830,6 +837,7 @@ class GuestTestcloud(tmt.GuestSsh):
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
         self.debug('final domain memory', str(self._domain.memory_size))
+        self.debug('final domain cpu count', str(self._domain.cpu_count))
         self.debug('final domain disk size', str(storage_image.size))
 
         # Is this a CoreOS?

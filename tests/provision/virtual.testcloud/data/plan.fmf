@@ -10,6 +10,7 @@ provision:
     image: fedora
     disk: 10
     memory: 2048
+    cpu: 3
     #user: custom_user
     connection: system
     arch: x86_64
