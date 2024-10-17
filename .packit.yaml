@@ -108,7 +108,6 @@ jobs:
     require: *require-full-tests
     identifier: internal-plugins
     fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/tmt.git"
-    fmf_ref: "feeling-safe"
     # Tag cloud resources for tmt
     tf_extra_params:
       environments:

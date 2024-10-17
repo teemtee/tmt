@@ -190,8 +190,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        # FIXME: Temporarily lower the version to trigger failing tests
-        self.assert_feeling_safe("1.37", "The 'local' provision plugin")
+        self.assert_feeling_safe("1.38", "The 'local' provision plugin")
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
