@@ -713,7 +713,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """ Prepare additional scripts for testing """
 
         # Make sure scripts directory exists
-        command = Command("mkdir", "-p", "{guest.scripts_path}")
+        command = Command("mkdir", "-p", f"{guest.scripts_path}")
 
         if not guest.facts.is_superuser:
             command = Command("sudo") + command
@@ -727,7 +727,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     if script.enabled(guest):
                         guest.push(
                             source=source,
-                            destination=(script.destination_path or guest.scripts_path) / filename,
+                            destination=script.destination_path or guest.scripts_path / filename,
                             options=[
                                 "-p",
                                 "--chmod=755"],
