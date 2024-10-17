@@ -161,9 +161,11 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     # Edit discovered tests
     adjust_tests: Optional[list[_RawAdjustRule]] = field(
         default_factory=list,
-        normalize=lambda key_address, raw_value, logger: [] if raw_value is None
-        else ([raw_value] if not isinstance(raw_value, list) else raw_value),
-        help="Modify metadata of discovered tests from the plan itself.")
+        normalize=tmt.utils.normalize_adjust,
+        help="""
+             Modify metadata of discovered tests from the plan itself. Use the
+             same format as for adjust rules.
+             """)
 
     # Upgrade plan path so the plan is not pruned
     upgrade_path: Optional[str] = None
@@ -268,13 +270,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
-
+    \b
     Use the ``adjust-tests`` key to modify the discovered tests'
     metadata directly from the plan. For example, extend the test
     duration for slow hardware or modify the list of required packages
     when you do not have write access to the remote test repository.
     The value should follow the ``adjust`` rules syntax.
-
+    \b
     The following example adds an ``avc`` check for each discovered
     test, doubles its duration and replaces each occurrence of the word
     ``python3.11`` in the list of required packages.

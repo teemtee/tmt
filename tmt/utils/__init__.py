@@ -5413,6 +5413,18 @@ def normalize_shell_script(
     raise NormalizationError(key_address, value, 'a string')
 
 
+def normalize_adjust(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> Optional[list['tmt.base._RawAdjustRule']]:
+
+    if raw_value is None:
+        return []
+    if isinstance(raw_value, list):
+        return raw_value
+    return [raw_value]
+
+
 def normalize_string_dict(
         key_address: str,
         raw_value: Any,
