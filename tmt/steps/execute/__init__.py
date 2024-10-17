@@ -716,7 +716,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """ Prepare additional scripts for testing """
 
         # Make sure scripts directory exists
-        guest.execute(Command("sudo" if guest.facts.is_superuser else "",
+        guest.execute(Command("sudo" if not guest.facts.is_superuser else "",
                       "mkdir", "-p", str(guest.scripts_path)))
 
         # Install all scripts on guest
