@@ -10,7 +10,7 @@ import tmt.utils
 from tmt.package_managers import Package
 from tmt.result import PhaseResult
 from tmt.steps.prepare import PreparePlugin
-from tmt.steps.prepare.install import _RawPrepareInstallStepData
+from tmt.steps.prepare.install import PrepareInstallData
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript, field, uniq
 
@@ -55,30 +55,30 @@ def insert_to_prepare_step(
     prepare_step = discover_plugin.step.plan.prepare
     where = cast(tmt.steps.discover.DiscoverStepData, discover_plugin.data).where
     # Future install require
-    data_require: _RawPrepareInstallStepData = {
-        'how': 'install',
-        'name': 'requires (dist-git)',
-                'summary': 'Install required packages of tests detected by dist-git',
-                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                'where': where,
-                'package': []}
+    data_require = PrepareInstallData(
+        how='install',
+        name='requires (dist-git)',
+        summary='Install required packages of tests detected by dist-git',
+        order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
+        where=where,
+        package=[])
     future_requires: PreparePlugin[Any] = cast(
-        PreparePlugin[Any], PreparePlugin.delegate(
-            prepare_step, raw_data=data_require))
+        PreparePlugin[Any],
+        PreparePlugin.delegate(prepare_step, data=data_require))
     prepare_step._phases.append(future_requires)
 
     # Future install recommend
-    data_recommend: _RawPrepareInstallStepData = {
-        'how': 'install',
-        'name': 'recommends (dist-git)',
-                'summary': 'Install recommended packages of tests detected by dist-git',
-                'order': tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                'where': where,
-                'package': [],
-        'missing': 'skip'}
+    data_recommend = PrepareInstallData(
+        how='install',
+        name='recommends (dist-git)',
+        summary='Install recommended packages of tests detected by dist-git',
+        order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
+        where=where,
+        package=[],
+        missing='skip')
     future_recommends: PreparePlugin[Any] = cast(
-        PreparePlugin[Any], PreparePlugin.delegate(
-            prepare_step, raw_data=data_recommend))
+        PreparePlugin[Any],
+        PreparePlugin.delegate(prepare_step, data=data_recommend))
     prepare_step._phases.append(future_recommends)
 
     prepare_step._phases.append(

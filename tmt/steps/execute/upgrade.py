@@ -16,7 +16,7 @@ from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_r
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
-from tmt.steps.prepare.install import _RawPrepareInstallStepData
+from tmt.steps.prepare.install import PrepareInstallData
 from tmt.utils import Environment, EnvVarValue, Path, field
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
@@ -267,17 +267,14 @@ class ExecuteUpgrade(ExecuteInternal):
             recommends: bool = False) -> None:
         """ Install packages required/recommended for upgrade """
         phase_name = 'recommended' if recommends else 'required'
-        data: _RawPrepareInstallStepData = {
-            'how': 'install',
-            'name': f'{phase_name}-packages-upgrade',
-            'summary': f'Install packages {phase_name} by the upgrade',
-            'package': [
-                dependency.to_spec()
-                for dependency in tmt.utils.uniq(dependencies)
-                ],
-            'missing': 'skip' if recommends else 'fail'
-            }
-        PreparePlugin.delegate(self.step, raw_data=data).go(  # type:ignore[attr-defined]
+        data = PrepareInstallData(
+            how='install',
+            name=f'{phase_name}-packages-upgrade',
+            summary=f'Install packages {phase_name} by the upgrade',
+            package=tmt.utils.uniq(dependencies),
+            missing='skip' if recommends else 'fail')
+
+        PreparePlugin.delegate(self.step, data=data).go(  # type:ignore[attr-defined]
             guest=guest, logger=self._logger)
 
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
