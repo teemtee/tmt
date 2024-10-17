@@ -47,7 +47,7 @@ def _run_precommit() -> None:  # pyright: ignore[reportUnusedFunction] (used by 
             # ["tmt", "tests", "lint", "--fix", "--root", "/some/path", "some_file"]
             # - argv[0]: name of the program is always first
             #   ["tmt"]
-            # - argv[indx:indx+1+nargs]: args to move (pass to `tmt.cli.main`)
+            # - argv[indx:indx+1+nargs]: args to move (pass to `tmt.cli._root.main`)
             #   ["--root", "/some/path"]
             # - argv[1:indx]: all other keywords (`lint` keyword is in here)
             #   ["tests", "lint", "--fix"]
