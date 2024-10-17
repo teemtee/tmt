@@ -701,8 +701,8 @@ class FlagConstraint(Constraint[bool]):
             )
 
 
-class NumberConstraint(Constraint[int]):
-    """ A constraint representing a dimension-less number """
+class IntegerConstraint(Constraint[int]):
+    """ A constraint representing a dimension-less int number """
 
     @classmethod
     def from_specification(
@@ -713,7 +713,7 @@ class NumberConstraint(Constraint[int]):
             allowed_operators: Optional[list[Operator]] = None
             ) -> T:
 
-        def _cast_number(raw_value: Any) -> int:
+        def _cast_int(raw_value: Any) -> int:
             if isinstance(raw_value, int):
                 return raw_value
 
@@ -731,9 +731,47 @@ class NumberConstraint(Constraint[int]):
             name,
             raw_value,
             as_quantity=False,
-            as_cast=_cast_number,
+            as_cast=_cast_int,
             original_constraint=original_constraint,
             allowed_operators=allowed_operators
+            )
+
+
+class NumberConstraint(Constraint[float]):
+    """ A constraint representing a dimension-less float number """
+
+    @classmethod
+    def from_specification(
+            cls: type[T],
+            name: str,
+            raw_value: str,
+            original_constraint: Optional['Constraint[Any]'] = None,
+            allowed_operators: Optional[list[Operator]] = None,
+            default_unit: Optional[Any] = 'MHz'
+            ) -> T:
+
+        def _cast_number(raw_value: Any) -> float:
+            if isinstance(raw_value, float):
+                return raw_value
+
+            if isinstance(raw_value, str):
+                raw_value = raw_value.strip()
+
+                if raw_value.startswith('0x'):
+                    return float(raw_value, base=16)
+
+                return float(raw_value)
+
+            raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
+
+        return cls._from_specification(
+            name,
+            raw_value,
+            as_quantity=True,
+            as_cast=_cast_number,
+            original_constraint=original_constraint,
+            allowed_operators=allowed_operators,
+            default_unit=default_unit
             )
 
 
@@ -904,11 +942,28 @@ def ungroupify_indexed(
     return wrapper
 
 
-def _parse_number_constraints(
+def _parse_int_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
-    """ Parse number-like constraints defined by a given set of keys """
+    """ Parse number-like constraints defined by a given set of keys, to int """
+
+    return [
+        IntegerConstraint.from_specification(
+            f'{prefix}.{constraint_name.replace("-", "_")}',
+            str(spec[constraint_name]),
+            allowed_operators=[
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+        for constraint_name in constraint_keys
+        if constraint_name in spec
+        ]
+
+
+def _parse_float_constraints(
+        spec: Spec,
+        prefix: str,
+        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+    """ Parse number-like constraints defined by a given set of keys, to float """
 
     return [
         NumberConstraint.from_specification(
@@ -998,7 +1053,7 @@ def _parse_device_core(
     if include_driver:
         text_constraints = (*text_constraints, 'driver')
 
-    group.constraints += _parse_number_constraints(spec, device_prefix, number_constraints)
+    group.constraints += _parse_int_constraints(spec, device_prefix, number_constraints)
     group.constraints += _parse_text_constraints(spec, device_prefix, text_constraints)
 
     return group
@@ -1084,7 +1139,7 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_number_constraints(
+    group.constraints += _parse_int_constraints(
         spec,
         'cpu',
         (
@@ -1098,7 +1153,14 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             'family',
             'vendor',
             'stepping',
-            'speed'
+            )
+        )
+
+    group.constraints += _parse_float_constraints(
+        spec,
+        'cpu',
+        (
+            'frequency',
             )
         )
 
@@ -1259,7 +1321,7 @@ def _parse_system(spec: Spec) -> BaseConstraint:
         include_driver=False,
         include_device=False)
 
-    group.constraints += _parse_number_constraints(spec, 'system', ('model', 'numa-nodes'))
+    group.constraints += _parse_int_constraints(spec, 'system', ('model', 'numa-nodes'))
     group.constraints += _parse_text_constraints(spec, 'system', ('model-name',))
 
     return group
