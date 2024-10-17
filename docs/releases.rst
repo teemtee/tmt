@@ -29,6 +29,15 @@ A race condition in the
 thus multihost tests using this provision method should now work
 reliably without unexpected connection failures.
 
+Support for RHEL-like operating systems in `Image Mode`__ has been
+added. The destination directory of the scripts added by ``tmt``
+on these operating systems is ``/var/lib/tmt/scripts``. For
+all others the ``/usr/local/bin`` destination directory is used.
+A new environment variable ``TMT_SCRIPTS_DIR`` is available
+to override the default locations.
+
+__ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
