@@ -1179,7 +1179,7 @@ class Method:
         lines = self.doc.splitlines()
 
         self.summary: str = lines[0].strip()
-        self.description: str = '\n'.join(lines[1:])
+        self.description: str = '\n'.join(lines[1:]).strip()
 
     def __repr__(self) -> str:
         return f'<{self.name} from {self.class_.__module__}>'
