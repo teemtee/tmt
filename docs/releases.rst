@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.38.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`system.model-name</spec/hardware/system>`
+hardware requirement.
+
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
