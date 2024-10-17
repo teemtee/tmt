@@ -1097,7 +1097,8 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             'model',
             'family',
             'vendor',
-            'stepping'
+            'stepping',
+            'speed'
             )
         )
 
