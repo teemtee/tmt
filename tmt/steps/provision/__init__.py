@@ -885,6 +885,9 @@ class Guest(tmt.utils.Common):
 
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
+        pid_directory = '/var/tmp/pid'  # noqa: S108 insecure usage of temporary dir
+        self.execute(ShellScript(f"mkdir -p {pid_directory}"))
+        self.execute(ShellScript(f"chmod ugo+rwx {pid_directory}"))
 
     # A couple of requiremens for this field:
     #
