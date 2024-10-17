@@ -556,7 +556,7 @@ def _apply_hw_cpu_processors(
     cpu_processors_constraints = [
         constraint
         for constraint in variant
-        if isinstance(constraint, tmt.hardware.NumberConstraint)
+        if isinstance(constraint, tmt.hardware.IntegerConstraint)
         and constraint.expand_name().name == 'cpu'
         and constraint.expand_name().child_name == 'processors']
 
