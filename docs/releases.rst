@@ -18,6 +18,12 @@ option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
 
+The :ref:`/plugins/discover/fmf` discover plugin now supports
+a new ``adjust-tests`` key which allows modifying metadata of all
+discovered tests. This can be useful especially when fetching
+tests from remote repositories where the user does not have write
+access.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

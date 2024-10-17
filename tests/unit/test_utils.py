@@ -341,6 +341,11 @@ def test_duration_to_seconds():
     assert duration_to_seconds('*2 *3 1m4') == 384
     # Round up
     assert duration_to_seconds('1s *3.3') == 4
+    # Value might be just the multiplication
+    #   without the default it thus equals zero
+    assert duration_to_seconds('*2') == 0
+    #   however the supplied "default" can be used: (1m * 2)
+    assert duration_to_seconds('*2', injected_default="1m") == 120
 
 
 @pytest.mark.parametrize("duration", [

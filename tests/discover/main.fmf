@@ -72,3 +72,7 @@ tier: 3
 /exception:
     summary: Verify no color when throwing an exception if '--no-color' is specified
     test: ./exception.sh
+
+/adjust-tests:
+    summary: Change test metadata within discover phase
+    test: ./adjust-tests.sh
