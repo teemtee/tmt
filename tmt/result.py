@@ -372,19 +372,10 @@ class Result(BaseResult):
 
     def to_subresult(self) -> 'SubResult':
         """ Convert result to tmt subresult """
-
-        keys_to_keep = [
-            'name',
-            'result',
-            'note',
-            'log',
-            'start-time',
-            'end-time',
-            'duration',
-            'check']
+        options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
 
         return SubResult.from_serialized(
-            {key: value for key, value in self.to_serialized().items() if key in keys_to_keep})
+            {option: value for option, value in self.to_serialized().items() if option in options})
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
