@@ -2352,7 +2352,7 @@ class Plan(
         for env_file in env_files:
             env_file = Path(env_file).resolve()
             if not env_file.stat().st_size:
-                yield LinterOutcome.FAIL, f'the file "{env_file}" is empty'
+                yield LinterOutcome.FAIL, f"the environment file '{env_file}' is empty"
                 return
 
         yield LinterOutcome.PASS, 'no empty environment files'
