@@ -41,6 +41,9 @@ description: |
           # Number or string, an ID of CPU vendor.
           vendor: 1234|"> 1234"
 
+          # Integer or string, CPU speed.
+          speed: 2300|">= 2300"
+
           # Integer or string, CPU stepping.
           stepping: 10|">= 10"
 

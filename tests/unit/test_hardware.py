@@ -192,6 +192,7 @@ FULL_HARDWARE_REQUIREMENTS = """
             - "= avx2"
             - "!= smep"
         hyper-threading: true
+        speed: ">= 2300"
     device:
       device-name: '~ .*Thunderbolt.*'
       device: 79
@@ -260,6 +261,7 @@ def test_parse_maximal_constraint() -> None:
               - cpu.family: < 6
               - cpu.vendor: == 32902
               - cpu.stepping: '!= 10'
+              - cpu.speed: '>= 2300'
               - cpu.family-name: == Skylake
               - cpu.model-name: '!~ Haswell'
               - cpu.vendor-name: ~ Intel.*
