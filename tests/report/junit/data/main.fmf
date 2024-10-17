@@ -28,4 +28,4 @@
             test: sleep 10
             duration: 2s
         /escape"<speci&l>_chars:
-            test: "echo '<speci&l>\"chars'"
+            test: ./special_chars.sh

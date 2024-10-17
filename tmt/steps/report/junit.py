@@ -1,7 +1,9 @@
 import dataclasses
 import functools
+import re
+import sys
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -50,14 +52,14 @@ import_lxml: ModuleImporter['lxml'] = ModuleImporter(  # type: ignore[valid-type
 
 
 @overload
-def duration_to_seconds(duration: str) -> int: pass
+def _duration_to_seconds_filter(duration: str) -> int: pass
 
 
 @overload
-def duration_to_seconds(duration: None) -> None: pass
+def _duration_to_seconds_filter(duration: None) -> None: pass
 
 
-def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
+def _duration_to_seconds_filter(duration: Optional[str]) -> Optional[int]:
     """ Convert valid duration string in to seconds """
     if duration is None:
         return None
@@ -66,6 +68,51 @@ def duration_to_seconds(duration: Optional[str]) -> Optional[int]:
         return int(h) * 3600 + int(m) * 60 + int(s)
     except Exception as error:
         raise tmt.utils.ReportError(f"Malformed duration '{duration}'.") from error
+
+
+def _escape_control_chars_filter(func: Callable[[str], str]) -> Callable[[str], str]:
+    """ Wrap the escape filter function and escape ASCII chosen control characters """
+
+    def wrapper(value: str) -> str:
+        # Define unicode characters which are not allowed in the XML and need to be removed.
+        # - https://www.w3.org/TR/REC-xml/#NT-Char
+        # - https://github.com/kyrus/python-junit-xml/blob/4bd08a272f059998cedf9b7779f944d49eba13a6/junit_xml/__init__.py#L325
+        illegal_chars = [
+            (0x00, 0x08),
+            (0x0B, 0x1F),
+            (0x7F, 0x84),
+            (0x86, 0x9F),
+            (0xD800, 0xDFFF),
+            (0xFDD0, 0xFDDF),
+            (0xFFFE, 0xFFFF),
+            (0x1FFFE, 0x1FFFF),
+            (0x2FFFE, 0x2FFFF),
+            (0x3FFFE, 0x3FFFF),
+            (0x4FFFE, 0x4FFFF),
+            (0x5FFFE, 0x5FFFF),
+            (0x6FFFE, 0x6FFFF),
+            (0x7FFFE, 0x7FFFF),
+            (0x8FFFE, 0x8FFFF),
+            (0x9FFFE, 0x9FFFF),
+            (0xAFFFE, 0xAFFFF),
+            (0xBFFFE, 0xBFFFF),
+            (0xCFFFE, 0xCFFFF),
+            (0xDFFFE, 0xDFFFF),
+            (0xEFFFE, 0xEFFFF),
+            (0xFFFFE, 0xFFFFF),
+            (0x10FFFE, 0x10FFFF)]
+
+        illegal_ranges = [
+            f"{chr(low)}-{chr(high)}" for low, high in illegal_chars if low < sys.maxunicode]
+
+        illegal_regex = re.compile("[{}]".format("".join(illegal_ranges)))
+        escaped_value = illegal_regex.sub("", value)
+
+        # It's important to call the parent `func` at the end of the wrapper, otherwise the
+        # jinja autoescape doesn't work correctly (some chars like '&' are escaped two times).
+        return func(escaped_value)
+
+    return wrapper
 
 
 class ImplementProperties:
@@ -160,8 +207,8 @@ class ResultsContext(ImplementProperties):
         # cast: mypy does not understand the proxy-ness of `ResultWrapper`. `r.duration`
         # will exists, therefore adding a `cast` to convince mypy the list is pretty much
         # nothing but the list of results.
-        return sum(
-            duration_to_seconds(r.duration) or 0 for r in cast(list[tmt.Result], self._results))
+        return sum(_duration_to_seconds_filter(r.duration)
+                   or 0 for r in cast(list[tmt.Result], self._results))
 
 
 def make_junit_xml(
@@ -201,7 +248,7 @@ def make_junit_xml(
         environment.loader = FileSystemLoader(
             searchpath=tmt.utils.resource_files(DEFAULT_TEMPLATE_DIR))
 
-    def _read_log(log: Path) -> str:
+    def _read_log_filter(log: Path) -> str:
         """ Read the contents of a given result log """
         if not log:
             return ''
@@ -212,9 +259,12 @@ def make_junit_xml(
             return ''
 
     environment.filters.update({
-        'read_log': _read_log,
-        'duration_to_seconds': duration_to_seconds,
+        'read_log': _read_log_filter,
+        'duration_to_seconds': _duration_to_seconds_filter,
         'failures': tmt.result.Result.failures,
+
+        # Use a wrapper function to also _escape_control_chars.
+        'e': _escape_control_chars_filter(environment.filters['e']),
         })
 
     # Explicitly enable the autoescape because it's disabled by default by tmt.

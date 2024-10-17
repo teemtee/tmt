@@ -17,7 +17,7 @@ rlJournalStart
 
             # Test the escape of special characters
             rlAssertGrep '<testcase name="/test/shell/escape&quot;&lt;speci&amp;l&gt;_chars">' "junit.xml"
-            rlAssertGrep '<system-out>&lt;speci&amp;l&gt;"chars' "junit.xml"
+            rlAssertGrep '<system-out>&lt;speci&amp;l&gt;"chars and control chars</system-out>' "junit.xml"
 
             # Check there is no schema problem reported
             rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "output"
