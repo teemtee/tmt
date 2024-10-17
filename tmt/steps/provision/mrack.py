@@ -297,12 +297,12 @@ def _transform_cpu_model_name(
         children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
 
 
-def _transform_cpu_speed(
+def _transform_cpu_frequency(
         constraint: tmt.hardware.NumberConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
-        str(constraint.value))
+        str(float(constraint.value.to('MHz').magnitude)))
 
     return MrackHWGroup(
         'cpu',
@@ -598,11 +598,11 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
     'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
+    'cpu.frequency': _transform_cpu_frequency,  # type: ignore[dict-item]
     'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
     'cpu.model_name': _transform_cpu_model_name,  # type: ignore[dict-item]
     'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
-    'cpu.speed': _transform_cpu_speed,  # type: ignore[dict-item]
     'cpu.stepping': _transform_cpu_stepping,  # type: ignore[dict-item]
     'cpu.vendor_name': _transform_cpu_vendor_name,  # type: ignore[dict-item]
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]

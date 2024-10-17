@@ -112,7 +112,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                         'cpu': {
                             'speed': {
                                 '_op': '>=',
-                                '_value': '2300',
+                                '_value': '2300.0',
                                 },
                             },
                         },

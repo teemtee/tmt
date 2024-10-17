@@ -69,7 +69,7 @@ description: |
     are also useful resources.
 
     .. versionchanged:: 1.38
-       ``beaker`` plugins supports ``speed`` and ``stepping``
+       ``beaker`` plugins supports ``frequency`` and ``stepping``
 
     .. versionchanged:: 1.35
        ``beaker`` plugins supports ``vendor-name``
@@ -115,9 +115,9 @@ example:
         hyper-threading: true
 
   - |
-    # Request a CPU with specified speed.
+    # Request a CPU with specified frequency.
     cpu:
-        speed: ">= 2300"
+        frequency: ">= 2300.0"
 
   - |
     # Request a CPU with specified stepping.
@@ -126,6 +126,6 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
+    note: "``cpu.vendor``, ``cpu.vendor-name``, ``cpu.frequency`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``cpu.sockets``, ``cpu.threads``, ``cpu.cores-per-socket``, ``cpu.threads-per-core``, ``cpu.family`` not implemented yet"
