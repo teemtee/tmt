@@ -137,7 +137,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self.log_departure(str(node))
 
         # Top-level paragraphs should be followed by an empty line to
-        # prevent pargraphs sticking together. Only the top-level ones
+        # prevent paragraphs sticking together. Only the top-level ones
         # though, we do not want empty lines after every paragraph-like
         # string, because a lot of nodes are also paragraphs.
         if isinstance(node.parent, docutils.nodes.document):
