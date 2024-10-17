@@ -50,6 +50,10 @@ for example usage.
 The :ref:`/plugins/provision/beaker` provision plugin gains support
 for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`system.model-name</spec/hardware/system>`
+hardware requirement.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
