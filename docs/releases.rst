@@ -22,6 +22,12 @@ When plan discovers tests using :ref:`/plugins/discover/fmf` plugin
 it is possible to modify metadata of such discovered tests with the
 ``adjust-tests`` option specified in the plan itself.
 
+The :ref:`/plugins/discover/fmf` discover plugin now supports
+a new ``adjust-tests`` key which allows modifying metadata of all
+discovered tests. This can be useful especially when fetching
+tests from remote repositories where the user does not have write
+access.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

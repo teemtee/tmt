@@ -269,26 +269,28 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     specified via ``test``, so those tests will also be selected even if
     not modified.
 
-    To modify the discovered tests' metadata directly from the plan (for example if
-    it is an yet-to-be added package, special HW, or missing permissions to modify the tests repo),
-    you can use the ``adjust-tests``. Values are in the same form as the adjust rules, you can use
-    same functionality.
+    Use the ``adjust-tests`` key to modify the discovered tests'
+    metadata directly from the plan. For example, extend the test
+    duration for slow hardware or modify the list of required packages
+    when you do not have write access to the remote test repository.
+    The value should follow the ``adjust`` rules syntax.
 
-    Following example adds an 'avc' check for each discovered test, doubles its duration and
-    replaces each occurrence of the word 'python3.11' in the list of required packages.
+    The following example adds an ``avc`` check for each discovered
+    test, doubles its duration and replaces each occurrence of the word
+    ``python3.11`` in the list of required packages.
 
     .. code-block:: yaml
 
         discover:
             how: fmf
             adjust-tests:
-            - check+:
-                - how: avc
-            - duration+: '*2'
-              because: Slow system under test
-              when: arch == i286
-            - require~:
-                - '/python3.11/python3.12/'
+              - check+:
+                  - how: avc
+              - duration+: '*2'
+                because: Slow system under test
+                when: arch == i286
+              - require~:
+                  - '/python3.11/python3.12/'
     """
 
     _data_class = DiscoverFmfStepData
