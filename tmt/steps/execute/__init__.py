@@ -77,7 +77,7 @@ class Script:
     Represents a script provided by the internal executor.
 
     Must be used as a context manager. The context manager returns
-    the source file path.
+    the source filename.
 
     The source file is defined by the ``source_filename`` attribute and its
     location is relative to the directory specified via the :py:data:`SCRIPTS_SRC_DIR`
@@ -125,9 +125,6 @@ class ScriptTemplate(Script):
     """
     Represents a Jinja2 templated script.
 
-    Must be used as a context manager. The context manager returns
-    the source file path.
-
     The source filename is constructed from the name of the file specified
     via the ``source_filename`` attribute, with the ``.j2`` suffix appended.
     The template file must be located in the directory specified
@@ -158,7 +155,7 @@ def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path
 
     If the ``TMT_SCRIPTS_DEST_DIR`` environment variable is set, it is used
     as the scripts destination directory. Otherwise, the ``default``
-    is returned.
+    parameter path is returned.
     """
 
     return Path(os.environ.get(SCRIPTS_DEST_DIR_VARIABLE, default))
@@ -223,8 +220,8 @@ TMT_ABORT_SCRIPT = ScriptCreatingFile(
     enabled=lambda _: True
     )
 
-# Profile script for adding SCRIPTS_DEST_DIR to executable paths system-wide
-# Used only for rpm-ostree based distributions
+# Profile script for adding SCRIPTS_DEST_DIR to executable paths system-wide.
+# Used only for distributions using rpm-ostree.
 TMT_ETC_PROFILE_D = ScriptTemplate(
     source_filename='tmt.sh',
     destination_path=Path("/etc/profile.d/tmt.sh"),
