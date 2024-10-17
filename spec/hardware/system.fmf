@@ -20,11 +20,19 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
+    .. versionchanged:: 1.38
+       ``beaker`` plugins supports ``model-name``
+
 example:
   - |
     # Select any system by a given vendor
     system:
         vendor-name: "~ HPE"
+
+  - |
+    # Select any system by a given model name
+    system:
+        model-name: "~ PowerEdge R750"
 
   - |
     # Select any HPE system with enough NUMA nodes.
@@ -34,4 +42,4 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``system.numa-nodes`` only"
+    note: "``system.numa-nodes`` and ``system.model-name`` only"
