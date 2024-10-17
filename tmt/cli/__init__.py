@@ -16,6 +16,7 @@ import tmt.base
 import tmt.log
 import tmt.plugins
 import tmt.utils
+import tmt.utils.rest
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Concatenate, ParamSpec
@@ -231,7 +232,7 @@ class HelpFormatter(click.HelpFormatter):
             col_max: int = 30,
             col_spacing: int = 2) -> None:
         rows = [
-            (option, tmt.utils.render_rst(help, _BOOTSTRAP_LOGGER))
+            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER))
             for option, help in rows
             ]
 
