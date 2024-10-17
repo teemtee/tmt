@@ -7,8 +7,9 @@
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/plugins/provision/beaker` provision plugin gains support
-for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirements.
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`cpu.stepping</spec/hardware/cpu>` and
+:ref:`beaker.speed</spec/hardware/beaker>` hardware requirements.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.

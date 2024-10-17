@@ -297,6 +297,18 @@ def _transform_cpu_model_name(
         children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
 
 
+def _transform_cpu_speed(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('speed', beaker_operator, actual_value)])
+
+
 def _transform_cpu_stepping(
         constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -590,6 +602,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
     'cpu.model_name': _transform_cpu_model_name,  # type: ignore[dict-item]
     'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
+    'cpu.speed': _transform_cpu_speed,  # type: ignore[dict-item]
     'cpu.stepping': _transform_cpu_stepping,  # type: ignore[dict-item]
     'cpu.vendor_name': _transform_cpu_vendor_name,  # type: ignore[dict-item]
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
