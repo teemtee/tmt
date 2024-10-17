@@ -270,13 +270,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
-    \b
+
     Use the ``adjust-tests`` key to modify the discovered tests'
     metadata directly from the plan. For example, extend the test
     duration for slow hardware or modify the list of required packages
     when you do not have write access to the remote test repository.
     The value should follow the ``adjust`` rules syntax.
-    \b
+
     The following example adds an ``avc`` check for each discovered
     test, doubles its duration and replaces each occurrence of the word
     ``python3.11`` in the list of required packages.
