@@ -1787,6 +1787,8 @@ class TestJiraLink(unittest.TestCase):
 
 
 def test_render_command_report_output():
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 1) * '~'
+
     assert '\n'.join(tmt.utils.render_command_report(
         label='foo',
         command=ShellScript('/bar/baz'),
@@ -1794,23 +1796,25 @@ def test_render_command_report_output():
             stdout='This is some stdout',
             stderr='This is some stderr'
             )
-        )) == """## foo
+        )) == f"""## foo
 
 # /bar/baz
 
 # stdout (1 lines)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 This is some stdout
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 
 # stderr (1 lines)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 This is some stderr
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 """
 
 
 def test_render_command_report_exception():
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 1) * '~'
+
     assert '\n'.join(tmt.utils.render_command_report(
         label='foo',
         command=ShellScript('/bar/baz'),
@@ -1821,19 +1825,19 @@ def test_render_command_report_exception():
             stdout='This is some stdout',
             stderr='This is some stderr'
             )
-        )) == """## foo
+        )) == f"""## foo
 
 # /bar/baz
 
 # stdout (1 lines)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 This is some stdout
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 
 # stderr (1 lines)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 This is some stderr
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#{delimiter}
 """
 
 
