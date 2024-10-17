@@ -161,10 +161,7 @@ def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path
     is returned.
     """
 
-    if SCRIPTS_DEST_DIR_VARIABLE in os.environ:
-        return Path(os.environ[SCRIPTS_DEST_DIR_VARIABLE])
-
-    return default
+    return Path(os.environ.get(SCRIPTS_DEST_DIR_VARIABLE, default))
 
 
 # Script handling reboots, in restraint compatible fashion
@@ -716,10 +713,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """ Prepare additional scripts for testing """
 
         # Make sure scripts directory exists
-        guest.execute(Command(
-            ShellScript(
-                "sudo " if not guest.facts.is_superuser else ""
-                f"mkdir -p {guest.scripts_path!s}").to_element()))
+        command = Command("mkdir", "-p", "{guest.scripts_path}")
+
+        if not guest.facts.is_superuser:
+            command = Command("sudo") + command
+
+        guest.execute(command)
 
         # Install all scripts on guest
         for script in self.scripts:
