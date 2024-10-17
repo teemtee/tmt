@@ -229,6 +229,7 @@ FULL_HARDWARE_REQUIREMENTS = """
         model: 79
         model-name: "~ PowerEdge R750"
         numa-nodes: "< 4"
+        type: "!= Machine"
     tpm:
         version: "2.0"
     virtualization:
@@ -307,6 +308,7 @@ def test_parse_maximal_constraint() -> None:
               - system.model: == 79
               - system.numa-nodes: < 4
               - system.model-name: ~ PowerEdge R750
+              - system.type: '!= Machine'
           - tpm.version: == 2.0
           - and:
               - virtualization.is-virtualized: == False

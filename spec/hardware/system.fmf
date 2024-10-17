@@ -20,11 +20,18 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
+           # String, system type name.
+           type: "Machine"
+
 example:
   - |
     # Select any system by a given vendor
     system:
         vendor-name: "~ HPE"
+
+    # Select any system by a given type
+    system:
+        type: "Machine"
 
   - |
     # Select any HPE system with enough NUMA nodes.
