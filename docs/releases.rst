@@ -4,12 +4,19 @@
     Releases
 ======================
 
+
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
 
+In order to prevent dangerous commands to be unintentionally run
+on user's system, the :ref:`/plugins/provision/local` provision
+plugin now requires to be executed with the ``--feeling-safe``
+option or with the environment variable ``TMT_FEELING_SAFE`` set
+to ``True``. See the :ref:`/stories/features/feeling-safe` section
+for more details and motivation behind this change.
 
 
 tmt-1.37.0

@@ -225,7 +225,7 @@ class Phase(tmt.utils.Common):
                       f"from version {deprecated_in_version}.")
 
         else:
-            raise tmt.utils.GeneralError(f"{subject} requires '--feeling-safe' option")
+            raise tmt.utils.GeneralError(f"{subject} requires '--feeling-safe' option.")
 
 
 # A variable used to describe a generic type for all classes derived from Phase
