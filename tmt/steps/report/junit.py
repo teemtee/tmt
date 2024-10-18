@@ -332,9 +332,10 @@ def make_junit_xml(
         # Return the prettified XML without checking the XSD
         del xml_parser_kwargs['schema']
 
+        xml_parser = etree.XMLParser(**xml_parser_kwargs)
+
         try:
-            tree_root = etree.fromstring(  # noqa: S320
-                xml_data, etree.XMLParser(**xml_parser_kwargs))
+            tree_root = etree.fromstring(xml_data, xml_parser)  # noqa: S320
         except etree.XMLSyntaxError as error:
             phase.verbose('rendered XML', xml_data, 'red')
             raise tmt.utils.ReportError(
