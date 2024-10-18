@@ -10,7 +10,7 @@ import fmf.utils
 import tmt.identifier
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckEvent
+from tmt.checks import CheckEvent, CheckResultInterpret
 from tmt.utils import GeneralError, Path, SerializableContainer, field
 
 if TYPE_CHECKING:
@@ -187,7 +187,24 @@ class CheckResult(BaseResult):
     event: CheckEvent = field(
         default=CheckEvent.BEFORE_TEST,
         serialize=lambda event: event.value,
-        unserialize=CheckEvent.from_spec)
+        unserialize=CheckEvent.from_spec
+        )
+
+    def interpret_check_result(self, interpret: CheckResultInterpret) -> 'CheckResult':
+        """Interpret check result according to the check_result interpretation."""
+
+        if interpret == CheckResultInterpret.RESPECT:
+            return self
+        if interpret == CheckResultInterpret.INFO:
+            self.result = ResultOutcome.INFO
+
+        elif interpret == CheckResultInterpret.XFAIL and self.event != CheckEvent.BEFORE_TEST:
+            self.result = {
+                ResultOutcome.FAIL: ResultOutcome.PASS,
+                ResultOutcome.PASS: ResultOutcome.FAIL
+                }.get(self.result, self.result)
+
+        return self
 
 
 @dataclasses.dataclass
@@ -317,11 +334,18 @@ class Result(BaseResult):
             ids=ids,
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
-            data_path=invocation.relative_test_data_path)
+            data_path=invocation.relative_test_data_path,
+            check=invocation.check_results or [])
 
-        return _result.interpret_result(invocation.test.result)
+        interpret_checks = {check.how: check.result for check in invocation.test.check}
 
-    def interpret_result(self, interpret: ResultInterpret) -> 'Result':
+        return _result.interpret_result(invocation.test.result, interpret_checks)
+
+    def interpret_result(
+            self,
+            interpret: ResultInterpret,
+            interpret_checks: dict[str, CheckResultInterpret]
+            ) -> 'Result':
         """
         Interpret result according to a given interpretation instruction.
 
@@ -332,34 +356,51 @@ class Result(BaseResult):
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
-        if interpret in (ResultInterpret.RESPECT, ResultInterpret.CUSTOM):
-            return self
-
-        # Extend existing note or set a new one
-        if self.note:
-            self.note += f', original result: {self.result.value}'
-
-        elif self.note is None:
-            self.note = f'original result: {self.result.value}'
-
-        else:
+        if interpret not in ResultInterpret:
             raise tmt.utils.SpecificationError(
-                f"Test result note '{self.note}' must be a string.")
+                f"Invalid result '{interpret.value}' in test '{self.name}'."
+                )
 
-        if interpret == ResultInterpret.XFAIL:
-            # Swap just fail<-->pass, keep the rest as is (info, warn,
-            # error)
-            self.result = {
-                ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL
-                }.get(self.result, self.result)
+        original_result = self.result
 
-        elif ResultInterpret.is_result_outcome(interpret):
+        # Interpret check results
+        self.check = [
+            check_result.interpret_check_result(CheckResultInterpret(interpret_checks[check_result.name]))
+            for check_result in self.check
+            ]
+
+        if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
             self.result = ResultOutcome(interpret.value)
 
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Invalid result '{interpret.value}' in test '{self.name}'.")
+            # Add original result to note if the result has changed
+            if self.result != original_result:
+                orig_note = f"original result: {original_result.value}"
+                self.note = f"{self.note}, {orig_note}" if self.note else orig_note
+
+            return self
+
+        failed_checks = [
+            check_result
+            for check_result in self.check
+            if check_result.result == ResultOutcome.FAIL
+            ]
+
+        if failed_checks:
+            self.result = ResultOutcome.FAIL
+            check_note = ", ".join([f"Check '{check.name}' failed" for check in failed_checks])
+            self.note = f"{self.note}, {check_note}" if self.note else check_note
+
+        if interpret == ResultInterpret.XFAIL:
+            # Swap fail<-->pass
+            self.result = {
+                ResultOutcome.FAIL: ResultOutcome.PASS,
+                ResultOutcome.PASS: ResultOutcome.FAIL,
+                }.get(self.result, self.result)
+
+        # Add original result to note if the result has changed
+        if self.result != original_result:
+            orig_note = f"original result: {original_result.value}"
+            self.note = f"{self.note}, {orig_note}" if self.note else orig_note
 
         return self
 
