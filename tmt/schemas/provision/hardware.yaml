@@ -96,6 +96,10 @@ definitions:
           - type: integer
       model-name:
         type: string
+      frequency:
+        anyOf:
+          - type: string
+          - type: number
       stepping:
         anyOf:
           - type: string

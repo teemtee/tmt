@@ -4,9 +4,12 @@
     Releases
 ======================
 
-
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`cpu.stepping</spec/hardware/cpu>` and
+:ref:`cpu.frequency</spec/hardware/beaker>` hardware requirements.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
@@ -17,7 +20,6 @@ plugin now requires to be executed with the ``--feeling-safe``
 option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
-
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

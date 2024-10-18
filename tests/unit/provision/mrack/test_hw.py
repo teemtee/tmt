@@ -100,7 +100,22 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                         },
                     {'or': []},
                     {'or': []},
-                    {'or': []},
+                    {
+                        'cpu': {
+                            'stepping': {
+                                '_op': '!=',
+                                '_value': '10',
+                                },
+                            },
+                        },
+                    {
+                        'cpu': {
+                            'speed': {
+                                '_op': '>=',
+                                '_value': '2300.0',
+                                },
+                            },
+                        },
                     {'or': []},
                     {
                         'not':
@@ -381,6 +396,20 @@ def test_cpu_cores(root_logger: Logger) -> None:
             'cores': {
                 '_op': '==',
                 '_value': '2'
+                }
+            }
+        }
+
+
+def test_cpu_stepping(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.stepping'](
+        _parse_cpu({'stepping': '10'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'stepping': {
+                '_op': '==',
+                '_value': '10'
                 }
             }
         }
