@@ -44,6 +44,7 @@ from typing import (
 
 import click
 
+from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
 
 if TYPE_CHECKING:
@@ -280,8 +281,13 @@ class LogRecordDetails:
 
 
 class LogfileHandler(logging.FileHandler):
+    #: Paths of all log files to which ``LogfileHandler`` was attached.
+    emitting_to: list[Path] = []
+
     def __init__(self, filepath: 'tmt.utils.Path') -> None:
         super().__init__(filepath, mode='a')
+
+        LogfileHandler.emitting_to.append(filepath)
 
 
 # ignore[type-arg]: StreamHandler is a generic type, but such expression would be incompatible
@@ -497,6 +503,16 @@ class Logger:
                 f' apply_colors_output={self.apply_colors_output}'
                 f' apply_colors_logging={self.apply_colors_logging}'
                 f'>')
+
+    @property
+    def apply_colors_output(self) -> bool:
+        return self._apply_colors_output
+
+    @apply_colors_output.setter
+    def apply_colors_output(self, value: bool) -> None:
+        self._apply_colors_output = value
+
+        self._decolorize_output = create_decolorizer(self._apply_colors_output)
 
     @property
     def labels_span(self) -> int:
