@@ -4,7 +4,6 @@
     Releases
 ======================
 
-
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -23,6 +22,15 @@ a new ``adjust-tests`` key which allows modifying metadata of all
 discovered tests. This can be useful especially when fetching
 tests from remote repositories where the user does not have write
 access.
+
+Support for RHEL-like operating systems in `Image Mode`__ has been
+added. The destination directory of the scripts added by ``tmt``
+on these operating systems is ``/var/lib/tmt/scripts``. For
+all others the ``/usr/local/bin`` destination directory is used.
+A new environment variable ``TMT_SCRIPTS_DEST_DIR`` is available
+to override the default locations.
+
+__ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
 
 
 tmt-1.37.0
