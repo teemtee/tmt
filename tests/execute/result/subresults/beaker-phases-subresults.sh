@@ -6,7 +6,6 @@ rlJournalStart
     rlPhaseStartSetup "phase-setup"
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun "pushd $tmp"
-        rlRun "set -o pipefail"
     rlPhaseEnd
 
     rlPhaseStartTest "Internal test of environment variable values"
