@@ -747,7 +747,7 @@ class NumberConstraint(Constraint[float]):
             raw_value: str,
             original_constraint: Optional['Constraint[Any]'] = None,
             allowed_operators: Optional[list[Operator]] = None,
-            default_unit: Optional[Any] = 'MHz'
+            default_unit: Optional[Any] = None
             ) -> T:
 
         def _cast_number(raw_value: Any) -> float:
@@ -756,10 +756,6 @@ class NumberConstraint(Constraint[float]):
 
             if isinstance(raw_value, str):
                 raw_value = raw_value.strip()
-
-                if raw_value.startswith('0x'):
-                    return float(raw_value, base=16)
-
                 return float(raw_value)
 
             raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
@@ -959,10 +955,11 @@ def _parse_int_constraints(
         ]
 
 
-def _parse_float_constraints(
+def _parse_number_constraints(
         spec: Spec,
         prefix: str,
-        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+        constraint_keys: tuple[str, ...],
+        default_unit: Optional[Any] = None) -> list[BaseConstraint]:
     """ Parse number-like constraints defined by a given set of keys, to float """
 
     return [
@@ -970,7 +967,8 @@ def _parse_float_constraints(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE],
+            default_unit=default_unit)
         for constraint_name in constraint_keys
         if constraint_name in spec
         ]
@@ -1156,12 +1154,13 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             )
         )
 
-    group.constraints += _parse_float_constraints(
+    group.constraints += _parse_number_constraints(
         spec,
         'cpu',
         (
             'frequency',
-            )
+            ),
+        default_unit='MHz'
         )
 
     group.constraints += _parse_text_constraints(
