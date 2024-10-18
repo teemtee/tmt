@@ -4,7 +4,6 @@
     Releases
 ======================
 
-
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -23,6 +22,9 @@ a new ``adjust-tests`` key which allows modifying metadata of all
 discovered tests. This can be useful especially when fetching
 tests from remote repositories where the user does not have write
 access.
+
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
 
 
 tmt-1.37.0

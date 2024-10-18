@@ -65,6 +65,9 @@ description: |
     model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
     are also useful resources.
 
+    .. versionchanged:: 1.38
+       ``beaker`` plugins supports ``stepping``
+
     .. versionchanged:: 1.35
        ``beaker`` plugins supports ``vendor-name``
 
@@ -108,8 +111,13 @@ example:
     cpu:
         hyper-threading: true
 
+  - |
+    # Request a CPU with specified stepping.
+    cpu:
+        stepping: 9
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
     note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name``, ``cpu.hyper-threading`` and ``cpu.vendor-name`` only"
+    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name``, ``cpu.hyper-threading``, ``cpu.stepping`` and ``cpu.vendor-name`` only"
