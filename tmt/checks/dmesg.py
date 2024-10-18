@@ -106,7 +106,7 @@ class DmesgCheck(Check):
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
-            output = "\n".join(render_run_exception_streams(exc.stdout, exc.stderr, verbose=1))
+            output = "\n".join(render_run_exception_streams(exc.output, verbose=1))
 
         else:
             outcome = ResultOutcome.PASS
