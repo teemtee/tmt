@@ -3,7 +3,7 @@ import os
 import pytest
 from fmf import Tree
 
-import tmt.cli
+import tmt.cli._root
 from tests import CliRunner
 from tmt.identifier import ID_KEY
 
@@ -20,7 +20,7 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli.main, [
+        self.runner_output = runner.invoke(tmt.cli._root.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--create", "."])
         # Reload the node data to see if it appears there
@@ -34,7 +34,7 @@ class PolarionExport(Base):
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "polarion", "--create", "--dry", "."],
             catch_exceptions=False)
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
@@ -48,7 +48,7 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli.main, [
+        self.runner_output = runner.invoke(tmt.cli._root.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--create", "."])
 
@@ -62,7 +62,7 @@ class PolarionExport(Base):
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "polarion", "--debug", "--dry",
              "--bugzilla", "."],
             catch_exceptions=False)
@@ -74,7 +74,7 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli.main, [
+        self.runner_output = runner.invoke(tmt.cli._root.main, [
             "test", "export", "--how", "polarion", "--project-id",
             "RHIVOS", "--bugzilla", "."])
         assert self.runner_output.exit_code == 0
