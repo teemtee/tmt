@@ -98,7 +98,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 }
                             }
                         },
-                    {'or': []},
+                    {
+                        'cpu': {
+                            'family': {
+                                '_op': '<',
+                                '_value': '6'
+                                }
+                            }
+                        },
                     {'or': []},
                     {
                         'cpu': {

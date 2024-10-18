@@ -229,6 +229,18 @@ def _transform_beaker_pool(
         actual_value)
 
 
+def _transform_cpu_family(
+        constraint: tmt.hardware.IntegerConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('family', beaker_operator, actual_value)])
+
+
 def _transform_cpu_flag(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -619,6 +631,7 @@ ConstraintTransformer = Callable[[
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
     'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
+    'cpu.family': _transform_cpu_family,  # type: ignore[dict-item]
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
     'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
