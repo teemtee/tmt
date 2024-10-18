@@ -24,6 +24,11 @@ discovered tests. This can be useful especially when fetching
 tests from remote repositories where the user does not have write
 access.
 
+A race condition in the
+:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
+thus multihost tests using this provision method should now work
+reliably without unexpected connection failures.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
