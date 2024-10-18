@@ -1082,7 +1082,7 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Reboot the guest, return True if successful """
         # Use custom reboot command if provided
         if command:
-            return super().reboot(hard=hard, command=command)
+            return super().reboot(hard=hard, command=command, timeout=timeout)
         if not self._instance:
             raise tmt.utils.ProvisionError("No instance initialized.")
         self._instance.reboot(soft=not hard)
