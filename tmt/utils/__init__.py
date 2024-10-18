@@ -3344,8 +3344,13 @@ def shell_variables(
     return [f"{key}={shlex.quote(str(value))}" for key, value in data.items()]
 
 
-def duration_to_seconds(duration: str) -> int:
-    """ Convert extended sleep time format into seconds """
+def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:
+    """
+    Convert extended sleep time format into seconds
+
+    Optional 'injected_default' argument to evaluate 'duration' when
+    it contains only multiplication.
+    """
     units = {
         's': 1,
         'm': 60,
@@ -3389,6 +3394,9 @@ def duration_to_seconds(duration: str) -> int:
             multiply_by *= float(match['float'])
         else:
             total_time += int(match['digit']) * units.get(match['suffix'], 1)
+    # Inject value so we have something to multiply
+    if injected_default and total_time == 0:
+        total_time = duration_to_seconds(injected_default)
     # Multiply in the end and round up
     return ceil(total_time * multiply_by)
 
@@ -5403,6 +5411,18 @@ def normalize_shell_script(
         return ShellScript(value)
 
     raise NormalizationError(key_address, value, 'a string')
+
+
+def normalize_adjust(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> Optional[list['tmt.base._RawAdjustRule']]:
+
+    if raw_value is None:
+        return []
+    if isinstance(raw_value, list):
+        return raw_value
+    return [raw_value]
 
 
 def normalize_string_dict(

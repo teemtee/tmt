@@ -2857,6 +2857,7 @@ class Tree(tmt.utils.Common):
                  path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
                  fmf_context: Optional[FmfContext] = None,
+                 additional_rules: Optional[list[_RawAdjustRule]] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 
@@ -2866,6 +2867,7 @@ class Tree(tmt.utils.Common):
         self._path = path or Path.cwd()
         self._tree = tree
         self._custom_fmf_context = fmf_context or FmfContext()
+        self._additional_rules = additional_rules
 
     @classmethod
     def grow(
@@ -2980,7 +2982,8 @@ class Tree(tmt.utils.Common):
             self._tree.adjust(
                 fmf.context.Context(**self._fmf_context),
                 case_sensitive=False,
-                decision_callback=create_adjust_callback(self._logger))
+                decision_callback=create_adjust_callback(self._logger),
+                additional_rules=self._additional_rules)
         return self._tree
 
     @tree.setter
