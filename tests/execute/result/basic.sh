@@ -38,7 +38,7 @@ rlJournalStart
         run   "errr"   "/test/error"          ""         2
         run   "pass"   "/test/xfail-fail"     "fail"     0
         run   "fail"   "/test/xfail-pass"     "pass"     1
-        run   "errr"   "/test/xfail-error"    "error"    2
+        run   "errr"   "/test/xfail-error"    ""         2
         run   "pass"   "/test/always-pass"    "fail"     0
         run   "info"   "/test/always-info"    "pass"     0
         run   "warn"   "/test/always-warn"    "pass"     1
@@ -67,7 +67,7 @@ rlJournalStart
 00:00:01 errr /test/error-timeout (on default-0) (timeout) [7/12]
 00:00:00 fail /test/fail (on default-0) [8/12]
 00:00:00 pass /test/pass (on default-0) [9/12]
-00:00:00 errr /test/xfail-error (on default-0) (original result: error) [10/12]
+00:00:00 errr /test/xfail-error (on default-0) [10/12]
 00:00:00 pass /test/xfail-fail (on default-0) (original result: fail) [11/12]
 00:00:00 fail /test/xfail-pass (on default-0) (original result: pass) [12/12]
 EOF
