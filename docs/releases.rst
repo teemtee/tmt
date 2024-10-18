@@ -43,7 +43,7 @@ using the ``--link`` option. See the :ref:`link-issues` section
 for example usage.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains support
-for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirements.
+for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
 
 
 tmt-1.37.0
