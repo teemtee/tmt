@@ -3895,7 +3895,7 @@ class Status(tmt.utils.Common):
     def show(self) -> None:
         """ Display the current status """
         # Prepare absolute workdir path if --id was used
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         self.print_header()
         assert self._cli_context_object is not None  # narrow type
         assert self._cli_context_object.tree is not None  # narrow type
