@@ -203,7 +203,7 @@ description: |
         The scripts are hosted by default in the ``/usr/local/bin``
         directory, except for guests using ``rpm-ostree``, where
         ``/var/lib/tmt/scripts`` is used. The directory can be forced
-        using the ``TMT_SCRIPTS_DEST_DIR`` environment variable.
+        using the ``TMT_SCRIPTS_DIR`` environment variable.
         Note that for guests using ``rpm-ostree``, the directory is added
         to executable paths using the system-wide ``/etc/profile.d/tmt.sh``
         profile script.

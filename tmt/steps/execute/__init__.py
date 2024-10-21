@@ -68,7 +68,7 @@ DEFAULT_SCRIPTS_DEST_DIR = Path("/usr/local/bin")
 DEFAULT_SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
 
 #: The tmt environment variable name for forcing ``SCRIPTS_DEST_DIR``
-SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DEST_DIR'
+SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DIR'
 
 
 @dataclass
@@ -153,7 +153,7 @@ def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path
     """
     Find out what the actual scripts destination directory is.
 
-    If the ``TMT_SCRIPTS_DEST_DIR`` environment variable is set, it is used
+    If the ``TMT_SCRIPTS_DIR`` environment variable is set, it is used
     as the scripts destination directory. Otherwise, the ``default``
     parameter path is returned.
     """
