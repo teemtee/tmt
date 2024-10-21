@@ -10,9 +10,9 @@ rlJournalStart
     for method in tmt; do
         rlPhaseStartTest "[$method] Basic format checks"
             rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "3 tests passed, 2 tests failed and 2 errors" "output"
+            rlAssertGrep "5 tests passed, 5 tests failed and 2 errors" "output"
             rlAssertGrep '00:00:00 pass /test/shell/escape"<speci&l>_chars (on default-0)' "output"
-            rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="2" skipped="0" tests="7"' "junit.xml"
+            rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="5" skipped="0" tests="12"' "junit.xml"
             rlAssertGrep 'fail</failure>' "junit.xml"
 
             # Test the escape of special characters
@@ -25,7 +25,7 @@ rlJournalStart
 
         rlPhaseStartTest "[$method] Check the flavor argument is working"
             rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml --flavor default 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "3 tests passed, 2 tests failed and 2 errors" "output"
+            rlAssertGrep "5 tests passed, 5 tests failed and 2 errors" "output"
 
             # Check there is no schema problem reported
             rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "output"
@@ -58,10 +58,34 @@ rlJournalStart
 
             rlAssertGrep 'The generated XML output is not a valid XML file.' "output"
         rlPhaseEnd
+
+        rlPhaseStartTest "[$method] Check the 'custom' flavor and context for subresults"
+            rlRun "tmt run -avr execute -h $method report -h junit --file custom-subresults-template-out.xml --template-path custom-subresults.xml.j2 --flavor custom 2>&1 >/dev/null | tee output" 2
+
+            # Beakerlib subresults
+            rlAssertGrep '<subresult name="/Test" outcome="fail"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/Test" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/phase-setup" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/phase-test-pass" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/phase-test-fail" outcome="fail"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/extra-tmt-report-result/good" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/extra-tmt-report-result/bad" outcome="fail"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/extra-tmt-report-result/weird" outcome="warn"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/extra-tmt-report-result/skip" outcome="skip"/>' "custom-subresults-template-out.xml"
+
+            # Chosen shell subresults
+            rlAssertGrep '<subresult name="/fail-subtest/good" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/pass-subtest/good0" outcome="pass"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<subresult name="/skip-subtest/extra-skip" outcome="skip"/>' "custom-subresults-template-out.xml"
+            rlAssertGrep '<result name="/test/shell/subresults/skip" disabled="0" errors="0" failures="0" skipped="1" tests="2" time="0" outcome="pass"' "custom-subresults-template-out.xml"
+            rlAssertGrep '<result name="/test/shell/subresults/sleep" disabled="0" errors="0" failures="1" skipped="0" tests="2" time="5"' "custom-subresults-template-out.xml"
+
+            rlAssertGrep '<subresult name="/fail-subtest/good" outcome="pass"/>' "custom-subresults-template-out.xml"
+        rlPhaseEnd
     done
 
     rlPhaseStartCleanup
-        rlRun "rm output junit.xml custom-template-out.xml"
+        rlRun "rm output junit.xml custom-template-out.xml custom-subresults-template-out.xml"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
