@@ -14,10 +14,17 @@ description: |
     panic detection, core dump collection or collection of system
     logs.
     By default, the check results affect the overall test outcome.
-    To change this behaviour, use the 'result' key, which apart from
-    the default ``respect`` can be changed to ``xfail``, which
-    expects the check to fail, or ``info``, which changes the check
-    result to 'INFO'.
+    To change this behaviour, use the 'result' key, which accepts
+    the following values:
+
+    respect (default)
+        The check result is respected and affects the overall test result.
+    xfail
+        The check result is expected to fail (pass becomes fail and vice-versa).
+    info
+        The check result is always treated as "INFO" and does not affect the
+    overall test result.
+
     Note that running one check multiple times for the same test is
     not yet supported."
 
