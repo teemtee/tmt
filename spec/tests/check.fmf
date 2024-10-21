@@ -18,6 +18,8 @@ description: |
     the default ``respect`` can be changed to ``xfail``, which
     expects the check to fail, or ``info``, which changes the check
     result to 'INFO'.
+    Note that running one check multiple times for the same test is
+    not yet supported."
 
     .. versionchanged:: 1.38.0 ``result`` key added
 
