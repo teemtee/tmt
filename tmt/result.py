@@ -190,7 +190,7 @@ class CheckResult(BaseResult):
         unserialize=CheckEvent.from_spec)
 
     def interpret_check_result(self, interpret: CheckResultInterpret) -> 'CheckResult':
-        """Interpret check result according to the "check_result" interpretation."""
+        """Interpret check result according to the "check result" interpretation."""
 
         if interpret == CheckResultInterpret.RESPECT:
             return self
