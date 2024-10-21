@@ -466,7 +466,6 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
-
 TMT_SCRIPTS_DIR
     Destination directory for storing ``tmt`` scripts on the guest.
     By default ``/usr/local/bin`` is used, except for guests using
