@@ -191,6 +191,7 @@ class GuestFacts(SerializableContainer):
 
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
+    is_ostree: Optional[bool] = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
@@ -437,6 +438,20 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'root'
 
+    def _query_is_ostree(self, guest: 'Guest') -> Optional[bool]:
+        # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
+        output = self._execute(
+            guest,
+            Command(
+                tmt.utils.DEFAULT_SHELL,
+                '-c',
+                'if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo yes; else echo no; fi'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        return output.stdout.strip() == 'yes'
+
     def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
         # TODO: there must be a canonical way of getting permitted capabilities.
         # For now, we're interested in whether we can access kernel message buffer.
@@ -457,6 +472,7 @@ class GuestFacts(SerializableContainer):
         self.package_manager = self._query_package_manager(guest)
         self.has_selinux = self._query_has_selinux(guest)
         self.is_superuser = self._query_is_superuser(guest)
+        self.is_ostree = self._query_is_ostree(guest)
         self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True
@@ -827,6 +843,17 @@ class Guest(tmt.utils.Common):
 
         return tmt.package_managers.find_package_manager(
             self.facts.package_manager)(guest=self, logger=self._logger)
+
+    @functools.cached_property
+    def scripts_path(self) -> Path:
+        """ Absolute path to tmt scripts directory """
+
+        import tmt.steps.execute
+
+        # For rpm-ostree based distributions use a different default destination directory
+        return tmt.steps.execute.effective_scripts_dest_dir(
+            default=tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
+            if self.facts.is_ostree else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR)
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
@@ -1306,23 +1333,7 @@ class Guest(tmt.utils.Common):
         except tmt.utils.RunError:
             pass
 
-        # Install under '/root/pkg' for read-only distros
-        # (for now the check is based on 'rpm-ostree' presence)
-        # FIXME: Find a better way how to detect read-only distros
-        # self.debug("Check for a read-only distro.")
-        if self.facts.package_manager == 'rpm-ostree':
-            self.package_manager.install(
-                Package('rsync'),
-                options=tmt.package_managers.Options(
-                    install_root=Path('/root/pkg'),
-                    release_version='/'
-                    )
-                )
-
-            self.execute(Command('ln', '-sf', '/root/pkg/bin/rsync', '/usr/local/bin/rsync'))
-
-        else:
-            self.package_manager.install(Package('rsync'))
+        self.package_manager.install(Package('rsync'))
 
         return CheckRsyncOutcome.INSTALLED
 
