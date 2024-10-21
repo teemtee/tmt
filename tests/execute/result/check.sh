@@ -18,7 +18,7 @@ run()
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-        rlRun "pushd check_results"
+        rlRun "pushd check"
         rlRun "set -o pipefail"
     rlPhaseEnd
 
@@ -32,7 +32,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Verbose execute prints result"
-        rlRun -s "tmt run --id \${run} --scratch --until execute tests --filter tag:-cherry_pick provision --how local execute -v 2>&1 >/dev/null" "1"
+        rlRun -s "tmt run --id \${run} --scratch --until execute tests provision --how local execute -v 2>&1 >/dev/null" "1"
 
         while read -r line; do
             rlAssertGrep "$line" "$rlRun_LOG" -F
