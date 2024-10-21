@@ -93,8 +93,8 @@ class CheckResultInterpret(enum.Enum):
     def from_spec(cls, spec: str) -> 'CheckResultInterpret':
         try:
             return CheckResultInterpret(spec)
-        except ValueError:
-            raise ValueError(f"Invalid check result interpretation '{spec}'.")
+        except ValueError as err:
+            raise ValueError(f"Invalid check result interpretation '{spec}'.") from err
 
 
 @dataclasses.dataclass
@@ -118,8 +118,7 @@ class Check(
         default=CheckResultInterpret.RESPECT,
         help='How to interpret the check result.',
         serialize=lambda result: result.value,
-        unserialize=CheckResultInterpret.from_spec
-        )
+        unserialize=CheckResultInterpret.from_spec)
 
     @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
