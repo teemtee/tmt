@@ -740,12 +740,15 @@ class GuestTestcloud(tmt.GuestSsh):
         self._domain = DomainConfiguration(self.instance_name)
         self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
 
+        # Is this a CoreOS?
+        self._domain.coreos = self.is_coreos
+
         self._instance = testcloud.instance.Instance(
             domain_configuration=self._domain,
             image=self._image, desired_arch=self.arch,
             connection=f"qemu:///{self.connection}")
 
-    def prepare_ssh_key(self, key_type: Optional[str] = None) -> None:
+    def prepare_ssh_key(self, key_type: Optional[str] = None) -> str:
         """ Prepare ssh key for authentication """
         assert self.workdir is not None
 
@@ -754,6 +757,7 @@ class GuestTestcloud(tmt.GuestSsh):
             self.debug("Extract public key from the provided private one.")
             command = Command("ssh-keygen", "-f", self.key[0], "-y")
             public_key = self._run_guest_command(command, silent=True).stdout
+            assert public_key is not None
         # Generate new ssh key pair
         else:
             self.debug('Generating an ssh key.')
@@ -766,11 +770,7 @@ class GuestTestcloud(tmt.GuestSsh):
             self.verbose('key', self.key[0], 'green')
             public_key = (self.workdir / f'{key_name}.pub').read_text()
 
-        # Place public key content into the machine configuration
-        self.config.USER_DATA = Template(USER_DATA).safe_substitute(
-            user_name=self.user, public_key=public_key)
-        self.config.COREOS_DATA = Template(COREOS_DATA).safe_substitute(
-            user_name=self.user, public_key=public_key)
+        return public_key
 
     def prepare_config(self) -> None:
         """ Prepare common configuration """
@@ -1008,18 +1008,23 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare ssh key
         # TODO: Maybe... some better way to do this?
+        public_key = self.prepare_ssh_key(SSH_KEYGEN_TYPE)
         if self._domain.coreos:
             self._instance.coreos = True
             # prepare_ssh_key() writes key directly to COREOS_DATA
             self._instance.ssh_path = []
-        self.prepare_ssh_key(SSH_KEYGEN_TYPE)
+            data_tpl = Template(COREOS_DATA).safe_substitute(
+                user_name=self.user, public_key=public_key)
+        else:
+            data_tpl = Template(USER_DATA).safe_substitute(
+                user_name=self.user, public_key=public_key)
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
         assert libvirt is not None
 
         try:
-            self._instance.prepare()
+            self._instance.prepare(data_tpl=data_tpl)
             self._instance.spawn_vm()
             self._instance.start(BOOT_TIMEOUT * time_coeff)
         except (testcloud.exceptions.TestcloudInstanceError,
@@ -1077,7 +1082,7 @@ class GuestTestcloud(tmt.GuestSsh):
         """ Reboot the guest, return True if successful """
         # Use custom reboot command if provided
         if command:
-            return super().reboot(hard=hard, command=command)
+            return super().reboot(hard=hard, command=command, timeout=timeout)
         if not self._instance:
             raise tmt.utils.ProvisionError("No instance initialized.")
         self._instance.reboot(soft=not hard)
