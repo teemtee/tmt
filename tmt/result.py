@@ -367,6 +367,9 @@ class Result(BaseResult):
                 f"Invalid result '{interpret.value}' in test '{self.name}'."
                 )
 
+        if interpret == ResultInterpret.CUSTOM:
+            return self
+
         original_result = self.result
 
         # Interpret check results
