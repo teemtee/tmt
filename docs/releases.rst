@@ -31,7 +31,9 @@ reporting, which does take the outcomes of phases into account to
 determine the final test outcome. The subresults are always
 assigned under the main tmt result and can be easily showed e.g.
 by :ref:`/plugins/report/display` plugin when verbose mode is
-enabled.
+enabled. There is only one exception - if the
+``result: restraint`` option is set to a beakerlib test, the
+phase subresults get converted as normal tmt custom results.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
