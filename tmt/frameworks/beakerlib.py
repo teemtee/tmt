@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.base
 import tmt.log
@@ -56,7 +56,7 @@ class Beakerlib(TestFramework):
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """ Check result of a beakerlib test """
         # Initialize data, prepare log paths
-        note: Optional[str] = None
+        note: list[str] = []
         log: list[Path] = []
         for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']:
             if (invocation.path / filename).is_file():
@@ -69,7 +69,7 @@ class Beakerlib(TestFramework):
             results = invocation.phase.read(beakerlib_results_filepath, level=3)
         except tmt.utils.FileError:
             logger.debug(f"Unable to read '{beakerlib_results_filepath}'.", level=3)
-            note = 'beakerlib: TestResults FileError'
+            note.append('beakerlib: TestResults FileError')
 
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
@@ -93,7 +93,7 @@ class Beakerlib(TestFramework):
             logger.debug(
                 f"No '{missing_piece}' found in '{beakerlib_results_filepath}'{hint}.",
                 level=3)
-            note = 'beakerlib: Result/State missing'
+            note.append('beakerlib: Result/State missing')
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
                 result=ResultOutcome.ERROR,
@@ -106,15 +106,15 @@ class Beakerlib(TestFramework):
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
         if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-            note = 'timeout'
+            note.append('timeout')
             invocation.phase.timeout_hint(invocation)
 
         elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-            note = 'pidfile locking'
+            note.append('pidfile locking')
 
         # Test results should be in complete state
         elif state != 'complete':
-            note = f"beakerlib: State '{state}'"
+            note.append(f"beakerlib: State '{state}'")
         # Finally we have a valid result
         else:
             actual_result = ResultOutcome.from_spec(result.lower())
