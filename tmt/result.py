@@ -196,12 +196,15 @@ class CheckResult(BaseResult):
             return self
         if interpret == CheckResultInterpret.INFO:
             self.result = ResultOutcome.INFO
-
-        elif interpret == CheckResultInterpret.XFAIL and self.event != CheckEvent.BEFORE_TEST:
-            self.result = {
-                ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL
-                }.get(self.result, self.result)
+        elif interpret == CheckResultInterpret.XFAIL:
+            mapping = (
+                # if 'xfail' BEFORE_TEST check passed, use WARN, otherwise switch PASS<->FAIL
+                {ResultOutcome.FAIL: ResultOutcome.PASS, ResultOutcome.PASS: ResultOutcome.WARN}
+                if self.event == CheckEvent.BEFORE_TEST
+                else
+                {ResultOutcome.FAIL: ResultOutcome.PASS, ResultOutcome.PASS: ResultOutcome.FAIL}
+                )
+            self.result = mapping.get(self.result, self.result)
 
         return self
 

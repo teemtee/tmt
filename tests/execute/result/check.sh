@@ -46,6 +46,12 @@ rlJournalStart
 EOF
     rlPhaseEnd
 
+    rlPhaseStartTest "Verify before test check xfail fail is interpreted as pass"
+        rlRun "echo 'Fail Test Check Pattern' | sudo tee /dev/kmsg"
+        rlRun -s "tmt run -a --scratch test --name /test/check-xfail-fail provision --how local report -v 2>&1 >/dev/null | grep report -A3"
+        rlAssertGrep "pass dmesg (before-test check)" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r ${run}" 0 "Remove run directory"
