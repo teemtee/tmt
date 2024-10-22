@@ -4,6 +4,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "root=/var/tmp/tmt"
+        rlRun "test_root=/var/tmp/test_root"
         rlRun "pushd data"
     rlPhaseEnd
 
@@ -11,6 +12,13 @@ rlJournalStart
         for id in {001..004}; do
             rlRun "tmt --feeling-safe run --id clean-$id"
             rlAssertExists "$root/clean-$id"
+        done
+    rlPhaseEnd
+
+    rlPhaseStartTest "Create a couple of runs in non-default root workdir"
+        for id in {001..003}; do
+            rlRun "tmt --feeling-safe run --id clean-$id --workdir_root $test_root"
+            rlAssertExists "$test_root/clean-$id"
         done
     rlPhaseEnd
 
@@ -36,6 +44,14 @@ rlJournalStart
         rlAssertNotExists "$root/clean-002"
         rlAssertExists "$root/clean-003"
         rlAssertNotExists "$root/clean-004"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Remove plan in a non-default root wordkir"
+        rlRun "tmt clean -v --id clean-002 --workdir_root $test_root"
+        rlAssertNotExists "$test_root/clean-002"
+        rlAssertExists "$test_root/clean-001"
+        rlAssertExists "$test_root/clean-003"
+        rlAssertExists "$root/clean-002"
     rlPhaseEnd
 
     rlPhaseStartCleanup
