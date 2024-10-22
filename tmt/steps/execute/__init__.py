@@ -443,6 +443,15 @@ class TestInvocation:
         else:
             self._restart_count += 1
 
+            # Even though the reboot was not requested, it might have
+            # still happened! Imagine a test configuring autoreboot on
+            # kernel panic plus a test restart. The reboot would happen
+            # beyond tmt's control, and tmt would try to restart the
+            # test, but the guest may be still booting. Make sure it's
+            # alive.
+            if not self.guest.reconnect():
+                return False
+
         self.logger.debug(
             f"Test restart during test '{self.test}'"
             f" with reboot count {self._reboot_count}"
