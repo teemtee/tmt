@@ -186,7 +186,7 @@ class ResultsContext(ImplementProperties):
     """
 
     def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
-        """ Decorate/wrap all the ``tmt.Result`` instances with more attributes """
+        """ Decorate/wrap all the ``Result`` and ``SubResult`` instances with more attributes """
         super().__init__()
 
         # Decorate all the tmt.Results with more attributes
