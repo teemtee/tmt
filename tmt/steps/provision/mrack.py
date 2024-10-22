@@ -244,7 +244,7 @@ def _transform_cpu_flag(
 
 
 def _transform_cpu_model(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
