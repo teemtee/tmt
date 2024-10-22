@@ -41,7 +41,8 @@ class Beakerlib(TestFramework):
 
             # The command in this variable gets called with every `rlPhaseEnd` call in beakerlib.
             'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
-                invocation.guest.scripts_path / tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename),
+                invocation.guest.scripts_path /
+                tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename),
 
             # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
             # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
