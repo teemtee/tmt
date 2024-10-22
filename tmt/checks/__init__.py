@@ -118,7 +118,8 @@ class Check(
         default=CheckResultInterpret.RESPECT,
         help='How to interpret the check result.',
         serialize=lambda result: result.value,
-        unserialize=CheckResultInterpret.from_spec)
+        unserialize=CheckResultInterpret.from_spec,
+        choices=[value.value for value in CheckResultInterpret.__members__.values()])
 
     @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
