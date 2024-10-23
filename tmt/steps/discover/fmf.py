@@ -215,7 +215,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     If no ``ref`` is provided, the default branch from the origin is used.
 
     For DistGit repo one can extract sources first and discover
-    tests from it by using ``distgit-source: true`` later in Prepare step.
+    tests from it by using ``dist-git-source: true`` later in ``prepare`` step.
     It can be used together with ``ref``, ``path`` and ``url``,
     however ``ref`` is not possible without using ``url``.
 
@@ -224,17 +224,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             dist-git-source: true
-
-    Related config options (all optional):
-
-    * ``dist-git-merge`` - set to ``true`` if you want to copy in extracted
-      sources to the local repo
-    * ``dist-git-init`` - set to ``true`` and ``fmf init`` will be called inside
-      extracted sources (at ``dist-git-extract`` or top directory)
-    * ``dist-git-extract`` - directory (glob supported) to copy from
-      extracted sources (defaults to inner fmf root)
-    * ``dist-git-remove-fmf-root`` - set to ``true`` to remove fmf root from
-      extracted sources
 
     Selecting tests containing specified link is possible using ``link``
     key accepting ``RELATION:TARGET`` format of values. Regular
