@@ -18,15 +18,17 @@ description: |
     To change this behaviour, use the ``result`` key, which accepts
     the following values:
 
-        respect (default)
-            The check result is respected and affects the overall test result.
+        respect
+            The check result is respected and affects the overall
+            test result. This is the default.
 
         xfail
-            The check result is expected to fail (pass becomes fail and vice-versa).
+            The check result is expected to fail (pass becomes
+            fail and vice-versa).
 
         info
-            The check result is always treated as "INFO" and does not affect the
-            overall test result.
+            The check result is treated as an informational
+            message and does not affect the overall test result.
 
     Note that running one check multiple times for the same test is
     not yet supported.
