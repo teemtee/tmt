@@ -362,6 +362,7 @@ class Result(BaseResult):
         attributes, following the ``interpret`` value.
 
         :param interpret: how to interpret current result.
+        :param interpret_checks: mapping of check:how and it's result interpret
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
