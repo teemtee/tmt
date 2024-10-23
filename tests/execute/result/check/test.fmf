@@ -2,11 +2,6 @@ summary: Tests for check results behaviour
 description: Verify that check results are correctly interpreted and affect test results
 framework: shell
 duration: 1m
-tag+:
-  - provision-only
-  - provision-local
-  - provision-virtual
-
 
 /check-pass:
     summary: Test with passing checks
@@ -19,16 +14,15 @@ tag+:
 /check-fail-respect:
     summary: Test with failing dmesg check (respect)
     description: "Expected outcome: FAIL (test passes, but check fails and is respected)"
-    test: echo "Fail Test Check Pattern" | sudo tee /dev/kmsg
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
           failure-pattern: Fail Test Check Pattern
-          result: respect
 
 /check-fail-info:
     summary: Test with failing dmesg check (info)
     description: "Expected outcome: PASS (test passes, check fails, but should be just info)"
-    test: echo "Fail Test Check Pattern" | sudo tee /dev/kmsg
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
           failure-pattern: Fail Test Check Pattern
@@ -45,7 +39,7 @@ tag+:
 /check-xfail-fail:
     summary: Test with failing dmesg check (xfail)
     description: "Expected outcome: PASS (test passes, check fails but xfail expects it to fail)"
-    test: echo "Fail Test Check Pattern" | sudo tee /dev/kmsg
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
           failure-pattern: Fail Test Check Pattern
@@ -53,8 +47,10 @@ tag+:
 
 /check-multiple:
     summary: Test with multiple checks with different result interpretations
-    description: "Expected outcome: FAIL (first dmesg check fails and is respected, second dmesg check passes but xfail expects it to fail, third failing dmesg check is just info)"
-    test: echo "Fail Test Check Pattern" | sudo tee /dev/kmsg
+    description: |
+        Expected outcome: FAIL (first dmesg check fails and is respected, second dmesg check
+        passes but xfail expects it to fail, third failing dmesg check is just info)"
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
           failure-pattern: Fail Test Check Pattern
@@ -69,7 +65,7 @@ tag+:
 /check-override:
     summary: Test with failing dmesg check but overridden by test result
     description: "Expected outcome: PASS (test passes, check fails but is overridden by 'result: pass')"
-    test: echo "Fail Test Check Pattern" | sudo tee /dev/kmsg
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     result: pass
     check:
         - how: dmesg
