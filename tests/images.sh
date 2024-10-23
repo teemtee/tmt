@@ -28,7 +28,8 @@ $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/coreos:stable
 $TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
-$TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest}"
+$TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
+$TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 
 # Basic set of virtual images to test on.
 #
@@ -88,6 +89,13 @@ function is_centos_7 () {
 function is_ubuntu () {
     [[ "$1" =~ ^.*ubuntu/.* ]] && return 0
     [[ "$1" = "ubuntu" ]] && return 0
+
+    return 1
+}
+
+function is_debian () {
+    [[ "$1" =~ ^.*debian/.* ]] && return 0
+    [[ "$1" = "debian" ]] && return 0
 
     return 1
 }

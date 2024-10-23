@@ -2,7 +2,7 @@ summary: Do nothing in prepare, CLI will provide inputs
 prepare: []
 
 adjust:
-  - when: distro == ubuntu
+  - when: distro == ubuntu,debian
     prepare+:
       - how: shell
         script: apt-get update
