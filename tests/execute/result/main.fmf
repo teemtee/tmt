@@ -16,3 +16,7 @@
 /check:
     summary: Test check result interpretations
     test: ./check.sh
+    tag+:
+      - provision-only
+      - provision-local
+      - provision-virtual

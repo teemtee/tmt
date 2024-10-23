@@ -1,55 +1,40 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-run()
-{
-    res=$1  # expected final result of test
-    tn=$2   # test name
-    ret=$3  # tmt return code
-
-    rlRun -s "tmt run -a --scratch --id \${run} test --name ${tn} provision --how local report -v 2>&1 >/dev/null | grep report -A2 | tail -n 1" \
-        ${ret} "Result: ${res}, Test name: ${tn}, tmt return code: ${ret}"
-
-    rlAssertGrep "${res} ${tn}" $rlRun_LOG
-
-    echo
-}
-
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-virtual}"
         rlRun "pushd check"
         rlRun "set -o pipefail"
-    rlPhaseEnd
-
-    rlPhaseStartTest "Check Results Tests"
-        run "pass" "/test/check-pass" 0
-        run "fail" "/test/check-fail-respect" 1
-        run "pass" "/test/check-fail-info" 0
-        run "fail" "/test/check-xfail-pass" 1
-        run "pass" "/test/check-xfail-fail" 0
-        run "pass" "/test/check-override" 0
-    rlPhaseEnd
-
-    rlPhaseStartTest "Verbose execute prints result"
-        rlRun -s "tmt run --id \${run} --scratch --until execute tests provision --how local execute -v 2>&1 >/dev/null" "1"
-
-        while read -r line; do
-            rlAssertGrep "$line" "$rlRun_LOG" -F
-        done <<-EOF
-00:00:00 pass /test/check-fail-info (on default-0) [1/6]
-00:00:00 fail /test/check-fail-respect (on default-0) (Check 'dmesg' failed, original result: pass) [2/6]
-00:00:00 pass /test/check-override (on default-0) [3/6]
-00:00:00 pass /test/check-pass (on default-0) [4/6]
-00:00:00 pass /test/check-xfail-fail (on default-0) [5/6]
-00:00:00 fail /test/check-xfail-pass (on default-0) (Check 'dmesg' failed, original result: pass) [6/6]
-EOF
-    rlPhaseEnd
-
-    rlPhaseStartTest "Verify before test check xfail fail is interpreted as pass"
+        # Write pattern for tests that need pre-existing dmesg content
         rlRun "echo 'Fail Test Check Pattern' | sudo tee /dev/kmsg"
-        rlRun -s "tmt run -a --scratch test --name /test/check-xfail-fail provision --how local report -v 2>&1 >/dev/null | grep report -A3"
-        rlAssertGrep "pass dmesg (before-test check)" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Check Results"
+        rlRun -s "tmt run -a --id \${run} --scratch tests provision --how $PROVISION_HOW report -v 2>&1 >/dev/null | grep report -A19" "1"
+
+        rlAssertGrep "$(cat <<-EOF
+pass /test/check-fail-info
+    info dmesg (before-test check)
+    info dmesg (after-test check)
+fail /test/check-fail-respect (Check 'dmesg' failed, original result: pass)
+    pass dmesg (before-test check)
+    fail dmesg (after-test check)
+pass /test/check-override
+    pass dmesg (before-test check)
+    fail dmesg (after-test check)
+pass /test/check-pass
+    pass dmesg (before-test check)
+    pass dmesg (after-test check)
+pass /test/check-xfail-fail
+    warn dmesg (before-test check)
+    pass dmesg (after-test check)
+fail /test/check-xfail-pass (Check 'dmesg' failed, original result: pass)
+    warn dmesg (before-test check)
+    fail dmesg (after-test check)
+EOF
+)" "$rlRun_LOG" -F
     rlPhaseEnd
 
     rlPhaseStartCleanup
