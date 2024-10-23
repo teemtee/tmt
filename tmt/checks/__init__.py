@@ -96,6 +96,9 @@ class CheckResultInterpret(enum.Enum):
         except ValueError as err:
             raise ValueError(f"Invalid check result interpretation '{spec}'.") from err
 
+    def to_spec(self) -> str:
+        return self.value
+
 
 @dataclasses.dataclass
 class Check(
@@ -133,14 +136,18 @@ class Check(
             logger: tmt.log.Logger) -> 'Check':
         data = cls(how=raw_data['how'])
         data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
+        if raw_data.get("result"):
+            data.result = CheckResultInterpret.from_spec(raw_data["result"])
 
         return data
 
     def to_spec(self) -> _RawCheck:
-        return cast(_RawCheck, {
+        spec = cast(_RawCheck, {
             tmt.utils.key_to_option(key): value
             for key, value in self.items()
             })
+        spec["result"] = self.result.to_spec()
+        return spec
 
     def go(
             self,
