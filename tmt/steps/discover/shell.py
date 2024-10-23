@@ -225,8 +225,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     Use provided list of shell script tests.
 
     List of test cases to be executed can be defined manually directly
-    in the plan as a list of dictionaries containing test name, actual
-    test script and optionally a path to the test. Example config:
+    in the plan as a list of dictionaries containing ``test name``, actual
+    ``test script`` and optionally the ``duration`` or a ``path`` to the test.
+    The default duration for tests defined directly in the discover step is ``1h``.
+    Example config:
 
     .. code-block:: yaml
 
