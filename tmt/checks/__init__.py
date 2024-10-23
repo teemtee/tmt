@@ -149,6 +149,9 @@ class Check(
         spec["result"] = self.result.to_spec()
         return spec
 
+    def to_minimal_spec(self) -> _RawCheck:
+        return self.to_spec()
+
     def go(
             self,
             *,
