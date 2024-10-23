@@ -8,6 +8,11 @@
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+A new :ref:`test-runner` section has been added to the tmt
+:ref:`guide`. It describes some important differences between
+running tests on a :ref:`user-system` and scheduling test jobs in
+:ref:`testing-farm`.
+
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
 
