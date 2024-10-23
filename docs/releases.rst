@@ -38,6 +38,10 @@ to override the default locations.
 
 __ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
 
+The ``tmt link`` command now supports providing multiple links by
+using the ``--link`` option. See the :ref:`link-issues` section
+for example usage.
+
 
 tmt-1.37.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

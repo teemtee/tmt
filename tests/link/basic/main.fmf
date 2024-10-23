@@ -1,0 +1,4 @@
+summary: Check basic functionality of the tmt link command
+description:
+    Make sure that `tmt test create` and `tmt link` add provided
+    target link to the test metadata.

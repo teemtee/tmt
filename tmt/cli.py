@@ -2242,14 +2242,19 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
 
 @main.command(name='link')
 @pass_context
-@click.argument('link', nargs=1, metavar='[RELATION:]TARGET')
 @click.argument('names', nargs=-1, metavar='[TEST|PLAN|STORY]...')
+@option(
+    '--link', 'links', metavar='[RELATION:]TARGET', multiple=True,
+    help="""
+        Issue to which tests, plans or stories should be linked.
+        Can be provided multiple times.
+        """)
 @option(
     '--separate', is_flag=True,
     help="Create linking separately for multiple passed objects.")
 def link(context: Context,
          names: list[str],
-         link: str,
+         links: list[str],
          separate: bool,
          ) -> None:
     """
@@ -2268,8 +2273,12 @@ def link(context: Context,
     if not tmt_objects:
         raise tmt.utils.GeneralError("No test, plan or story found for linking.")
 
-    tmt.utils.jira.link(
-        tmt_objects=tmt_objects,
-        links=tmt.base.Links(data=link),
-        separate=separate,
-        logger=context.obj.logger)
+    if not links:
+        raise tmt.utils.GeneralError("Provide at least one link using the '--link' option.")
+
+    for link in links:
+        tmt.utils.jira.link(
+            tmt_objects=tmt_objects,
+            links=tmt.base.Links(data=link),
+            separate=separate,
+            logger=context.obj.logger)

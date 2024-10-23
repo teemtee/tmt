@@ -787,7 +787,7 @@ later using the ``tmt link`` command:
 
 .. code-block:: shell
 
-    tmt link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
+    tmt link --link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
 
 In order to enable this feature, create a configuration file
 ``.config/tmt/link.fmf`` and define an ``issue-tracker`` section
