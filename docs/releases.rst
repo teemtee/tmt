@@ -4,6 +4,7 @@
     Releases
 ======================
 
+
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,12 +72,12 @@ for example usage.
 The :ref:`/plugins/provision/beaker` provision plugin gains support
 for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
 
-
-The :ref:`/spec/tests/check` specification now supports a new ``result``
-key for individual checks. This attribute allows users to control how the
-result of each check affects the overall test result.
-Please note that tests, which were previously passing with failing checks
-will now fail by default, unless the 'xfail' or 'info' is added.
+The :ref:`/spec/tests/check` specification now supports a new
+``result`` key for individual checks. This attribute allows users
+to control how the result of each check affects the overall test
+result.  Please note that tests, which were previously passing
+with failing checks will now fail by default, unless the ``xfail``
+or ``info`` is added.
 
 
 tmt-1.37.0
