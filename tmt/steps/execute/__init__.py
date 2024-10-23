@@ -686,7 +686,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """
         invocations: list[TestInvocation] = []
 
-        for test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
+        for _, test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
             invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 
@@ -1301,8 +1301,8 @@ class Execute(tmt.steps.Step):
 
     def results_for_tests(
             self,
-            tests: list['tmt.base.Test']
-            ) -> list[tuple[Optional[Result], Optional['tmt.base.Test']]]:
+            tests: list['tmt.steps.discover.TestAddress']
+            ) -> list[tuple[Optional[Result], Optional['tmt.steps.discover.TestAddress']]]:
         """
         Collect results and corresponding tests.
 
@@ -1315,14 +1315,17 @@ class Execute(tmt.steps.Step):
             ``(None, test)``.
         """
 
-        known_serial_numbers = {test.serial_number: test for test in tests}
+        known_serial_numbers = {
+            test_address[1].serial_number: test_address
+            for test_address in tests
+            }
         referenced_serial_numbers = {result.serial_number for result in self._results}
 
         return [
             (result, known_serial_numbers.get(result.serial_number))
             for result in self._results
             ] + [
-            (None, test)
-            for test in tests
-            if test.serial_number not in referenced_serial_numbers
+            (None, test_address)
+            for test_address in tests
+            if test_address[1].serial_number not in referenced_serial_numbers
             ]
