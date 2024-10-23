@@ -250,17 +250,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             how: fmf
             dist-git-source: true
 
-    Related config options (all optional):
-
-    * ``dist-git-merge`` - set to ``true`` if you want to copy in extracted
-      sources to the local repo
-    * ``dist-git-init`` - set to ``true`` and ``fmf init`` will be called inside
-      extracted sources (at ``dist-git-extract`` or top directory)
-    * ``dist-git-extract`` - directory (glob supported) to copy from
-      extracted sources (defaults to inner fmf root)
-    * ``dist-git-remove-fmf-root`` - set to ``true`` to remove fmf root from
-      extracted sources
-
     Selecting tests containing specified link is possible using ``link``
     key accepting ``RELATION:TARGET`` format of values. Regular
     expressions are supported for both relation and target part of the
