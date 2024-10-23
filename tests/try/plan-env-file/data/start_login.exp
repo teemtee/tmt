@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+# Login to guest, run the test and quit
+
+# ord('D') % 32
+set ctrlD \x04
+
+spawn tmt try -l -p /plan
+
+expect "Starting interactive shell"
+sleep 3
+send -- $ctrlD
+
+expect "What do we do next?"
+send -- "t\r"
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof

@@ -1,0 +1,5 @@
+summary: Verify plan environment file gets sourced
+description:
+    Check that environment file inside TMT_PLAN_ENVIRONMENT_FILE are
+    sourced after prepare and execute steps when running tmt try.
+

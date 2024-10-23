@@ -1,0 +1,14 @@
+#!/usr/bin/expect -f
+# Run the prepare step, start the test and quit
+
+spawn tmt try -a -p /plan
+
+expect "What do we do next?"
+send -- "p\r"
+
+expect "What do we do next?"
+send -- "t\r"
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof
