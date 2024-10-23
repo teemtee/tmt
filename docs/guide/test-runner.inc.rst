@@ -10,6 +10,8 @@ care of the execution. This section covers some important details
 about common test runners.
 
 
+.. _user-system:
+
 User System
 ------------------------------------------------------------------
 
@@ -28,6 +30,8 @@ plugin. This can be much faster but also dangerous, be sure that
 you trust the project before executing tests on your system. See
 also the :ref:`/stories/features/feeling-safe` section.
 
+
+.. _testing-farm:
 
 Testing Farm
 ------------------------------------------------------------------
