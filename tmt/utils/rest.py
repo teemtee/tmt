@@ -18,10 +18,11 @@ import tmt.log
 from tmt.log import Logger
 from tmt.utils import GeneralError
 
+#: Special string representing a new-line in the stack of rendered
+#: paragraphs.
+NL = ''
 
-#
-# ReST rendering
-#
+
 class RestVisitor(docutils.nodes.NodeVisitor):
     """
     Custom renderer of docutils nodes.
@@ -63,6 +64,10 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     def rendered(self) -> str:
         """ Return the rendered document as a single string """
 
+        # Drop any trailing empty lines
+        while self._rendered_paragraphs and self._rendered_paragraphs[-1] == NL:
+            self._rendered_paragraphs.pop(-1)
+
         return '\n'.join(self._rendered_paragraphs)
 
     def _emit(self, s: str) -> None:
@@ -91,8 +96,8 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         # To simplify the implementation, this is merging of multiple
         # empty lines into one. Rendering of nodes than does not have
         # to worry about an empty line already being on the stack.
-        if self._rendered_paragraphs and self._rendered_paragraphs[-1] != '':
-            self._emit_paragraphs([''])
+        if self._rendered_paragraphs and self._rendered_paragraphs[-1] != NL:
+            self._emit_paragraphs([NL])
 
     # Simple logging for nodes that have no effect
     def _noop_visit(self, node: docutils.nodes.Node) -> None:
@@ -130,6 +135,13 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
     def depart_paragraph(self, node: docutils.nodes.paragraph) -> None:
         self.log_departure(str(node))
+
+        # Top-level paragraphs should be followed by an empty line to
+        # prevent paragraphs sticking together. Only the top-level ones
+        # though, we do not want empty lines after every paragraph-like
+        # string, because a lot of nodes are also paragraphs.
+        if isinstance(node.parent, docutils.nodes.document):
+            self.nl()
 
         self.flush()
 

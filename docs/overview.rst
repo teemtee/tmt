@@ -366,6 +366,13 @@ TMT_PLUGINS
     Path to a directory with additional plugins. Multiple paths
     separated with the ``:`` character can be provided as well.
 
+TMT_FEELING_SAFE
+    Set this variable to ``1`` to enable potentially dangerous
+    operations such as executing tests directly on the test runner
+    using the ``local`` provision method. Use with caution, only
+    when you can fully trust the ``tmt`` metadata or if you know
+    what you are doing.
+
 TMT_CONFIG_DIR
     Path to an alternative directory with config files. By default
     ``~/.config/tmt`` is used.
@@ -458,6 +465,17 @@ TMT_CONNECT_TIMEOUT
 TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
+
+TMT_SCRIPTS_DIR
+    Destination directory for storing ``tmt`` scripts on the guest.
+    By default ``/usr/local/bin`` is used, except for guests using
+    ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used. See the
+    `tmt internal test executor`__ documentation for more details
+    on the scripts installed on the guest.
+
+    .. versionadded:: 1.38
+
+__ https://tmt.readthedocs.io/en/stable/spec/plans.html#tmt
 
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
@@ -720,6 +738,9 @@ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
 PIP:
 https://pypi.org/project/tmt/
 
+Quay:
+https://quay.io/organization/teemtee
+
 Metadata Specification:
 https://tmt.readthedocs.io/en/stable/spec.html
 
@@ -755,7 +776,8 @@ Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez-Fernandez,
 James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
 Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
-Otto Šabart, Ismail Ibrahim Quwarah and Sergei Petrosian.
+Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
+Koscielniak and Han Han.
 
 
 Copyright

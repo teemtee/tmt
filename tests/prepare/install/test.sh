@@ -88,6 +88,10 @@ rlJournalStart
                 rlRun "distro=ubuntu"
                 rlRun "package_manager=apt"
 
+            elif is_debian "$image"; then
+                rlRun "distro=debian"
+                rlRun "package_manager=apt"
+
             elif is_fedora_coreos "$image"; then
                 rlRun "distro=fedora-coreos"
 
@@ -125,7 +129,7 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_ubuntu "$image"; then
+            if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -142,7 +146,7 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_ubuntu "$image"; then
+            if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -238,7 +242,7 @@ rlJournalStart
             elif is_fedora_39 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ubuntu "$image"; then
+            elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then
@@ -275,7 +279,7 @@ rlJournalStart
             elif is_fedora_39 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ubuntu "$image"; then
+            elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then

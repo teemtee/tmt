@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [              # F39 / PyPI
     "click>=8.0.3,!=8.1.4",   # 8.1.3 / 8.1.6 TODO type annotations tmt.cli.Context -> click.core.Context click/issues/2558
     "docutils>=0.16",         # 0.16 is the current one available for RHEL9
-    "fmf>=1.3.0",
+    "fmf>=1.4.0",
     "jinja2>=2.11.3",         # 3.1.2 / 3.1.2
     "packaging>=20",          # 20 seems to be available with RHEL8
     "pint>=0.16.1",           # 0.16.1
@@ -57,7 +57,7 @@ provision-beaker = [
     "mrack>=1.15.1",
     ]
 provision-virtual = [
-    "testcloud>=0.9.13",
+    "testcloud>=0.11.3",
     ]
 provision-container = []
 report-junit = [
@@ -87,7 +87,7 @@ docs = [
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
     "Sphinx==7.3.7",
-    "fmf>=1.3.0",
+    "fmf>=1.4.0",
     ]
 
 [project.scripts]
@@ -413,6 +413,8 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "warnings.deprecated".msg = "Use tmt._compat.warnings.deprecated instead."
 "os.path".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
+# Banning builtins is not yet supported: https://github.com/astral-sh/ruff/issues/10079
+# "builtins.open".msg = "Use Path.{write_text,append_text,read_text,write_bytes,read_bytes} instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]

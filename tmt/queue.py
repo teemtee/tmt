@@ -54,10 +54,10 @@ class Task(Generic[TaskResultT]):
     def __init__(self, logger: Logger, **kwargs: Any) -> None:
         self.logger = logger
 
-        self.result = kwargs.get('result', None)
-        self.guest = kwargs.get('guest', None)
-        self.exc = kwargs.get('exc', None)
-        self.requested_exit = kwargs.get('requested_exit', None)
+        self.result = kwargs.get('result')
+        self.guest = kwargs.get('guest')
+        self.exc = kwargs.get('exc')
+        self.requested_exit = kwargs.get('requested_exit')
 
     @property
     def name(self) -> str:

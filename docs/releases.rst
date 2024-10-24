@@ -7,6 +7,48 @@
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+A new :ref:`test-runner` section has been added to the tmt
+:ref:`guide`. It describes some important differences between
+running tests on a :ref:`user-system` and scheduling test jobs in
+:ref:`testing-farm`.
+
+The :ref:`/plugins/report/junit` report plugin now removes all
+invalid XML characters from the final JUnit XML.
+
+In order to prevent dangerous commands to be unintentionally run
+on user's system, the :ref:`/plugins/provision/local` provision
+plugin now requires to be executed with the ``--feeling-safe``
+option or with the environment variable ``TMT_FEELING_SAFE`` set
+to ``True``. See the :ref:`/stories/features/feeling-safe` section
+for more details and motivation behind this change.
+
+The :ref:`/plugins/discover/fmf` discover plugin now supports
+a new ``adjust-tests`` key which allows modifying metadata of all
+discovered tests. This can be useful especially when fetching
+tests from remote repositories where the user does not have write
+access.
+
+A race condition in the
+:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
+thus multihost tests using this provision method should now work
+reliably without unexpected connection failures.
+
+Support for RHEL-like operating systems in `Image Mode`__ has been
+added. The destination directory of the scripts added by ``tmt``
+on these operating systems is ``/var/lib/tmt/scripts``. For
+all others the ``/usr/local/bin`` destination directory is used.
+A new environment variable ``TMT_SCRIPTS_DIR`` is available
+to override the default locations.
+
+__ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
+
+The ``tmt link`` command now supports providing multiple links by
+using the ``--link`` option. See the :ref:`link-issues` section
+for example usage.
+
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
+
 ``tmt lint`` now reports a failure if empty environment files are found.
 
 
@@ -18,63 +60,66 @@ to gather early feedback from users about the way how issues are
 linked with newly created and existing tests and plans. See the
 :ref:`link-issues` section for details about the configuration.
 
-The :ref:`/plugins/report/polarion` report plugin now uses Jinja template to
-generate the XUnit file. It doesn't do any extra modifications to the XML tree
-using an ``ElementTree`` anymore. Also the schema is now validated against the
-XSD.
-
-The values in the generated ``tmt-report-results.yaml`` file are
-now wrapped in double quotes, and any double quotes within the
-values are escaped to ensure that the resulting file is always
-valid YAML.
-
-The :ref:`/plugins/report/junit` report plugin now validates all the XML
-flavors against their respective XSD schemas and tries to prettify the final
-XML output. These functionalities are always disabled for ``custom`` flavors.
-The prettify functionality can be controlled for non-custom templates by
-``--prettify`` and ``--no-prettify`` arguments.
-
-The :ref:`/plugins/report/junit` report plugin now uses Jinja instead of
-``junit-xml`` library to generate the JUnit XMLs. It also adds support for a
-new ``--flavor`` argument. Using this argument the user can choose between a
-``default`` flavor, which keeps the current behavior untouched, and a
-``custom`` flavor where user must provide a custom template using a
-``--template-path`` argument.
-
-The ``fmf-id.ref`` will now try to report the most human-readable committish
-reference, either branch, tag, git-describe, or if all fails the commit hash.
-You may encounter this in the verbose log of ``tmt tests show`` or plan/test
-imports.
-
-:ref:`Result specification</spec/plans/results>` now defines
-``original-result`` key holding the original outcome of a test, subtest
-or test checks. The effective outcome, stored in ``result`` key, is
-computed from the original outcome, and it is affected by inputs like
-:ref:`test result interpretation</spec/tests/result>` or
-:ref:`test checks</spec/tests/check>`.
-
-In verbose mode, the ``discover`` step now prints information
-about the beakerlib libraries which were fetched for the test
-execution. Use ``tmt run discover -vvv`` to see the details.
-
 The ``tmt try`` command now supports the new
 :ref:`/stories/cli/try/option/epel` option backed by the
 :ref:`prepare/feature</plugins/prepare/feature>` plugin and the
 new :ref:`/stories/cli/try/option/install` option backed by the
 :ref:`prepare/feature</plugins/prepare/install>` plugin.
 
-The new key :ref:`/spec/hardware/iommu` allowing to provision a
-guest with the `Input–output memory management unit` has been
-added into the :ref:`/spec/hardware` specification and implemented
-in the :ref:`/plugins/provision/beaker` provision plugin.
+In verbose mode, the ``discover`` step now prints information
+about the beakerlib libraries which were fetched for the test
+execution. Use ``tmt run discover -vvv`` to see the details.
 
 The :ref:`/plugins/provision/beaker` provision plugin now newly
 supports providing a custom :ref:`/spec/plans/provision/kickstart`
 configuration.
 
+The new key :ref:`/spec/hardware/iommu` allowing to provision a
+guest with the `Input–output memory management unit` has been
+added into the :ref:`/spec/hardware` specification and implemented
+in the :ref:`/plugins/provision/beaker` provision plugin.
+
+The :ref:`/plugins/report/junit` report plugin now validates all
+the XML flavors against their respective XSD schemas and tries to
+prettify the final XML output. These functionalities are always
+disabled for ``custom`` flavors.  The prettify functionality can
+be controlled for non-custom templates by ``--prettify`` and
+``--no-prettify`` arguments.
+
+The :ref:`/plugins/report/junit` report plugin now uses Jinja
+instead of ``junit-xml`` library to generate the JUnit XMLs. It
+also adds support for a new ``--flavor`` argument. Using this
+argument the user can choose between a ``default`` flavor, which
+keeps the current behavior untouched, and a ``custom`` flavor
+where user must provide a custom template using a
+``--template-path`` argument.
+
+The :ref:`/plugins/report/polarion` report plugin now uses Jinja
+template to generate the XUnit file. It doesn't do any extra
+modifications to the XML tree using an ``ElementTree`` anymore.
+Also the schema is now validated against the XSD.
+
 The :ref:`/plugins/report/reportportal` plugin now uploads the
 complete set of discovered tests, including those which have not
 been executed. These tests are marked as ``skipped``.
+
+The ``fmf-id.ref`` will now try to report the most human-readable
+committish reference, either branch, tag, git-describe, or if all
+fails the commit hash.  You may encounter this in the verbose log
+of ``tmt tests show`` or plan/test imports.
+
+:ref:`Result specification</spec/plans/results>` now defines
+``original-result`` key holding the original outcome of a test,
+subtest or test checks. The effective outcome, stored in
+``result`` key, is computed from the original outcome, and it is
+affected by inputs like :ref:`test result
+interpretation</spec/tests/result>` or :ref:`test
+checks</spec/tests/check>`.
+
+The values in the generated ``tmt-report-results.yaml`` file are
+now wrapped in double quotes, and any double quotes within the
+values are escaped to ensure that the resulting file is always
+valid YAML.
 
 
 tmt-1.36.1

@@ -36,7 +36,8 @@ class Beakerlib(TestFramework):
         return Environment({
             'BEAKERLIB_DIR': EnvVarValue(invocation.path),
             'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
-                f'bash {tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.path}')
+                invocation.guest.scripts_path /
+                tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.source_filename),
             })
 
     @classmethod

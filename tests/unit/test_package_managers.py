@@ -54,6 +54,8 @@ CONTAINER_UBI_8 = Container(
     url='containers-storage:localhost/tmt/tests/container/ubi/8/upstream:latest')
 CONTAINER_UBUNTU_2204 = Container(
     url='containers-storage:localhost/tmt/tests/container/ubuntu/22.04/upstream:latest')
+CONTAINER_DEBIAN_127 = Container(
+    url='containers-storage:localhost/tmt/tests/container/debian/12.7/upstream:latest')
 CONTAINER_FEDORA_COREOS = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/coreos:stable')
 CONTAINER_FEDORA_COREOS_OSTREE = Container(
@@ -136,7 +138,12 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF),
     (CONTAINER_FEDORA_40, PACKAGE_MANAGER_YUM),
 
-    (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
+    # Supported in theory, but in practice, dnf5 is not going to
+    # officially be part of Fedora 39, and we are seeing some strange
+    # and broken behavior ruining our tests. On top of that, Fedora 39
+    # is going to be EOL very soon, therefore disabling this particular
+    # combination.
+    # (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_DNF),
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_YUM),
 
@@ -153,6 +160,9 @@ CONTAINER_BASE_MATRIX = [
 
     # Ubuntu
     (CONTAINER_UBUNTU_2204, PACKAGE_MANAGER_APT),
+
+    # Debian
+    (CONTAINER_DEBIAN_127, PACKAGE_MANAGER_APT),
 
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),

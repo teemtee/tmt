@@ -26,6 +26,15 @@ rlJournalStart
         rlAssertGrep 'enabled\s+false' $output -E
         rlRun "tmt -c @context.yaml test show uptime | tee $output"
         rlAssertGrep 'duration\s+1m' $output -E
+        # uptime duration adjusted with combination
+        rlRun "tmt test show adjust-duration-combine | tee $output"
+        rlAssertGrep 'duration\s+1s1h1m' $output -E
+        # uptime duration adjusted with multiplication
+        rlRun "tmt test show adjust-duration-multi | tee $output"
+        rlAssertGrep 'duration\s+1m\*2\.5' $output -E
+        # uptime duration adjusted with sum
+        rlRun "tmt test show adjust-duration-sum | tee $output"
+        rlAssertGrep 'duration\s+1s\+10s' $output -E
     rlPhaseEnd
 
     rlPhaseStartTest "Show plans"

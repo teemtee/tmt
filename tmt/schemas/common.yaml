@@ -478,7 +478,6 @@ definitions:
       - warn
       - error
       - fail
-      - skip
       - custom
       - restraint
 

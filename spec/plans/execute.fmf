@@ -200,6 +200,21 @@ description: |
             For more information see the
             :ref:`/stories/features/abort` feature documentation.
 
+        The scripts are hosted by default in the ``/usr/local/bin``
+        directory, except for guests using ``rpm-ostree``, where
+        ``/var/lib/tmt/scripts`` is used. The directory can be forced
+        using the ``TMT_SCRIPTS_DIR`` environment variable.
+        Note that for guests using ``rpm-ostree``, the directory is added
+        to executable paths using the system-wide ``/etc/profile.d/tmt.sh``
+        profile script.
+
+        .. warning::
+
+            Please be aware that for guests using ``rpm-ostree``
+            the provided scripts will only be available in a shell that
+            loads the profile scripts. This is the default for
+            ``bash``-like shells, but might not work for others.
+
     example: |
         execute:
             how: tmt

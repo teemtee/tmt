@@ -57,7 +57,7 @@ import tmt.utils.git
 import tmt.utils.jira
 from tmt.checks import Check
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.result import Result
+from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
     Environment,
@@ -1074,7 +1074,12 @@ class Test(
         exporter=lambda environment: environment.to_fmf_spec())
 
     duration: str = DEFAULT_TEST_DURATION_L1
-    result: str = 'respect'
+    result: ResultInterpret = field(
+        default=ResultInterpret.RESPECT,
+        normalize=ResultInterpret.normalize,
+        serialize=lambda result: result.value,
+        unserialize=ResultInterpret.from_spec,
+        exporter=lambda result: result.value)
 
     where: list[str] = field(default_factory=list)
 
@@ -1352,6 +1357,9 @@ class Test(
                     key,
                     [check.to_spec() for check in cast(list[Check], value)]
                     ))
+                continue
+            if key == 'result':
+                echo(tmt.utils.format(key, value.value))
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
@@ -2866,6 +2874,7 @@ class Tree(tmt.utils.Common):
                  path: Optional[Path] = None,
                  tree: Optional[fmf.Tree] = None,
                  fmf_context: Optional[FmfContext] = None,
+                 additional_rules: Optional[list[_RawAdjustRule]] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tmt tree from directory path or given fmf tree """
 
@@ -2875,6 +2884,7 @@ class Tree(tmt.utils.Common):
         self._path = path or Path.cwd()
         self._tree = tree
         self._custom_fmf_context = fmf_context or FmfContext()
+        self._additional_rules = additional_rules
 
     @classmethod
     def grow(
@@ -2989,7 +2999,8 @@ class Tree(tmt.utils.Common):
             self._tree.adjust(
                 fmf.context.Context(**self._fmf_context),
                 case_sensitive=False,
-                decision_callback=create_adjust_callback(self._logger))
+                decision_callback=create_adjust_callback(self._logger),
+                additional_rules=self._additional_rules)
         return self._tree
 
     @tree.setter
@@ -4335,8 +4346,8 @@ def resolve_dynamic_ref(
 
     # Read it, process it and get the value of the attribute 'ref'
     try:
-        with open(ref_filepath, encoding='utf-8') as datafile:
-            data = tmt.utils.yaml_to_dict(datafile.read())
+        data = tmt.utils.yaml_to_dict(ref_filepath.read_text(encoding='utf-8'))
+
     except OSError as error:
         raise tmt.utils.FileError(f"Failed to read '{ref_filepath}'.") from error
     # Build a dynamic reference tree, adjust ref based on the context

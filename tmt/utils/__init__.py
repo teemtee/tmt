@@ -39,6 +39,7 @@ from typing import (
     Generic,
     Literal,
     Optional,
+    TextIO,
     TypeVar,
     Union,
     cast,
@@ -145,7 +146,22 @@ DEFAULT_PLUGIN_ORDER_REQUIRES = 70
 DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 # Config directory
-CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
+
+
+def effective_config_dir() -> Path:
+    """
+    Find out what the actual config directory is.
+
+    If ``TMT_CONFIG_DIR`` variable is set, it is used. Otherwise,
+    :py:const:`DEFAULT_CONFIG_DIR` is picked.
+    """
+
+    if 'TMT_CONFIG_DIR' in os.environ:
+        return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
+
+    return DEFAULT_CONFIG_DIR.expanduser()
+
 
 # Special process return codes
 
@@ -228,6 +244,9 @@ GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GI
 
 # A stand-in variable for generic use.
 T = TypeVar('T')
+
+
+WriteMode = Literal['w', 'a']
 
 
 def effective_workdir_root() -> Path:
@@ -854,14 +873,13 @@ class Config:
 
     def __init__(self) -> None:
         """ Initialize config directory path """
-        raw_path = os.getenv('TMT_CONFIG_DIR', None)
-        self.path = (Path(raw_path) if raw_path else CONFIG_DIR).expanduser()
+        self.path = effective_config_dir()
 
         try:
             self.path.mkdir(parents=True, exist_ok=True)
         except OSError as error:
             raise GeneralError(
-                f"Failed to create config '{self.path}'.\n{error}")
+                f"Failed to create config '{self.path}'.") from error
 
     @property
     def _last_run_symlink(self) -> Path:
@@ -1985,16 +2003,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             path = self.workdir / path
         self.debug(f"Read file '{path}'.", level=level)
         try:
-            with open(path, encoding='utf-8', errors='replace') as data:
-                return data.read()
+            return path.read_text(encoding='utf-8', errors='replace')
+
         except OSError as error:
-            raise FileError(f"Failed to read '{path}'.\n{error}")
+            raise FileError(f"Failed to read from '{path}'.") from error
 
     def write(
             self,
             path: Path,
             data: str,
-            mode: str = 'w',
+            mode: WriteMode = 'w',
             level: int = 2) -> None:
         """ Write a file to the workdir """
         if self.workdir:
@@ -2005,10 +2023,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         if self.is_dry_run:
             return
         try:
-            with open(path, mode, encoding='utf-8', errors='replace') as file:
-                file.write(data)
+            if mode == 'a':
+                path.append_text(data, encoding='utf-8', errors='replace')
+
+            else:
+                path.write_text(data, encoding='utf-8', errors='replace')
+
         except OSError as error:
-            raise FileError(f"Failed to write '{path}'.\n{error}")
+            raise FileError(f"Failed to write into '{path}' file.") from error
 
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         """
@@ -2399,6 +2421,29 @@ class FinishError(GeneralError):
     """ Finish step error """
 
 
+class TracebackVerbosity(enum.Enum):
+    """ Levels of logged traveback verbosity """
+
+    #: Render only exception and its causes.
+    DEFAULT = '0'
+    #: Render also call stack for exception and each of its causes.
+    VERBOSE = '1'
+    #: Render also call stack and local variables for exception and each of its causes.
+    FULL = 'full'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'TracebackVerbosity':
+        try:
+            return TracebackVerbosity(spec)
+
+        except ValueError:
+            raise SpecificationError(f"Invalid traceback verbosity '{spec}'.")
+
+    @classmethod
+    def from_env(cls) -> 'TracebackVerbosity':
+        return TracebackVerbosity.from_spec(os.getenv('TMT_SHOW_TRACEBACK', '0').lower())
+
+
 def render_run_exception_streams(
         stdout: Optional[str],
         stderr: Optional[str],
@@ -2437,7 +2482,9 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
     yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
 
 
-def render_exception_stack(exception: BaseException) -> Iterator[str]:
+def render_exception_stack(
+        exception: BaseException,
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
     """ Render traceback of the given exception """
 
     exception_traceback = traceback.TracebackException(
@@ -2459,7 +2506,7 @@ def render_exception_stack(exception: BaseException) -> Iterator[str]:
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
         yield f'  {B(frame.line)}'
 
-        if os.getenv('TMT_SHOW_TRACEBACK', '0').lower() == 'full' and frame.locals:
+        if traceback_verbosity is TracebackVerbosity.FULL and frame.locals:
             yield ''
 
             for k, v in frame.locals.items():
@@ -2468,7 +2515,9 @@ def render_exception_stack(exception: BaseException) -> Iterator[str]:
             yield ''
 
 
-def render_exception(exception: BaseException) -> Iterator[str]:
+def render_exception(
+        exception: BaseException,
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
     """ Render the exception and its causes for printing """
 
     def _indent(iterable: Iterable[str]) -> Iterator[str]:
@@ -2486,16 +2535,17 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield ''
         yield from render_run_exception(exception)
 
-    if os.getenv('TMT_SHOW_TRACEBACK', '0') != '0':
+    if traceback_verbosity is not TracebackVerbosity.DEFAULT:
         yield ''
-        yield from _indent(render_exception_stack(exception))
+        yield from _indent(render_exception_stack(
+            exception, traceback_verbosity=traceback_verbosity))
 
     # Follow the chain and render all causes
     def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
         yield ''
         yield f'Cause number {number}:'
         yield ''
-        yield from _indent(render_exception(cause))
+        yield from _indent(render_exception(cause, traceback_verbosity=traceback_verbosity))
 
     def _render_causes(causes: list[BaseException]) -> Iterator[str]:
         yield ''
@@ -2516,13 +2566,52 @@ def render_exception(exception: BaseException) -> Iterator[str]:
         yield from _render_causes(causes)
 
 
-def show_exception(exception: BaseException) -> None:
-    """ Display the exception and its causes """
+def show_exception(
+        exception: BaseException,
+        include_logfiles: bool = True) -> None:
+    """
+    Display the exception and its causes.
+
+    :param exception: exception to log.
+    :param include_logfiles: if set, exception will be logged into known
+        logfiles as well as to standard error output.
+    """
 
     from tmt.cli import EXCEPTION_LOGGER
 
-    EXCEPTION_LOGGER.print('', file=sys.stderr)
-    EXCEPTION_LOGGER.print('\n'.join(render_exception(exception)), file=sys.stderr)
+    traceback_verbosity = TracebackVerbosity.from_env()
+
+    def _render_exception(traceback_verbosity: TracebackVerbosity) -> Iterator[str]:
+        yield ''
+        yield from render_exception(exception, traceback_verbosity=traceback_verbosity)
+
+    for line in _render_exception(traceback_verbosity):
+        EXCEPTION_LOGGER.print(line, file=sys.stderr)
+
+    if include_logfiles:
+        logger = EXCEPTION_LOGGER.clone()
+        logger.apply_colors_output = False
+
+        logfile_streams: list[TextIO] = []
+
+        with contextlib.ExitStack() as stack:
+            for path in tmt.log.LogfileHandler.emitting_to:
+                try:
+                    # SIM115: all opened files are added on exit stack, and they
+                    # will get collected and closed properly.
+                    stream: TextIO = open(path, 'a')  # noqa: SIM115
+
+                    logfile_streams.append(stream)
+                    stack.enter_context(stream)
+
+                except Exception as exc:
+                    show_exception(
+                        GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
+                        include_logfiles=False)
+
+            for line in _render_exception(traceback_verbosity=TracebackVerbosity.FULL):
+                for stream in logfile_streams:
+                    logger.print(line, file=stream)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2703,7 +2792,7 @@ def json_to_list(data: Any) -> list[Any]:
     """ Convert json into list """
 
     try:
-        loaded_data = json.load(data)
+        loaded_data = json.loads(data)
     except json.decoder.JSONDecodeError as error:
         raise GeneralError(f"Invalid json syntax: {error}")
 
@@ -3292,12 +3381,10 @@ def markdown_to_html(filename: Path) -> str:
         raise ConvertError("Install tmt+test-convert to export tests.")
 
     try:
-        with open(filename) as file:
-            try:
-                text = file.read()
-            except UnicodeError:
-                raise MetadataError(f"Unable to read '{filename}'.")
-            return markdown.markdown(text)
+        try:
+            return markdown.markdown(filename.read_text())
+        except UnicodeError:
+            raise MetadataError(f"Unable to read '{filename}'.")
     except OSError:
         raise ConvertError(f"Unable to open '{filename}'.")
 
@@ -3325,8 +3412,13 @@ def shell_variables(
     return [f"{key}={shlex.quote(str(value))}" for key, value in data.items()]
 
 
-def duration_to_seconds(duration: str) -> int:
-    """ Convert extended sleep time format into seconds """
+def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:
+    """
+    Convert extended sleep time format into seconds
+
+    Optional 'injected_default' argument to evaluate 'duration' when
+    it contains only multiplication.
+    """
     units = {
         's': 1,
         'm': 60,
@@ -3370,6 +3462,9 @@ def duration_to_seconds(duration: str) -> int:
             multiply_by *= float(match['float'])
         else:
             total_time += int(match['digit']) * units.get(match['suffix'], 1)
+    # Inject value so we have something to multiply
+    if injected_default and total_time == 0:
+        total_time = duration_to_seconds(injected_default)
     # Multiply in the end and round up
     return ceil(total_time * multiply_by)
 
@@ -4145,7 +4240,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
             *args: Any,
             **kwargs: Any
             ) -> urllib3.util.retry.Retry:
-        error = cast(Optional[Exception], kwargs.get('error', None))
+        error = cast(Optional[Exception], kwargs.get('error'))
 
         # Detect a subset of exception we do not want to follow with a retry.
         # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
@@ -4161,7 +4256,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
                 # a better error message, but don't crash because of a missing attribute or
                 # something as dumb.
 
-                connection_pool = kwargs.get('_pool', None)
+                connection_pool = kwargs.get('_pool')
 
                 if connection_pool is not None and hasattr(connection_pool, 'host'):
                     message = f"Certificate verify failed for '{connection_pool.host}'."
@@ -4325,20 +4420,19 @@ class DistGitHandler:
         package = globbed[0].stem
         ret_values = []
         try:
-            with open(cwd / self.sources_file_name) as f:
-                for line in f:
-                    match = self.re_source.match(line)
-                    if match is None:
-                        raise GeneralError(
-                            f"Couldn't match '{self.sources_file_name}' "
-                            f"content with '{self.re_source.pattern}'.")
-                    used_hash, source_name, hash_value = match.groups()
-                    ret_values.append((self.lookaside_server + self.uri.format(
-                        name=package,
-                        filename=source_name,
-                        hash=hash_value,
-                        hashtype=used_hash.lower()
-                        ), source_name))
+            for line in (cwd / self.sources_file_name).splitlines():
+                match = self.re_source.match(line)
+                if match is None:
+                    raise GeneralError(
+                        f"Couldn't match '{self.sources_file_name}' "
+                        f"content with '{self.re_source.pattern}'.")
+                used_hash, source_name, hash_value = match.groups()
+                ret_values.append((self.lookaside_server + self.uri.format(
+                    name=package,
+                    filename=source_name,
+                    hash=hash_value,
+                    hashtype=used_hash.lower()
+                    ), source_name))
         except Exception as error:
             raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
         if not ret_values:
@@ -4425,18 +4519,17 @@ def distgit_download(
         if output.stdout is None:
             raise tmt.utils.GeneralError("Missing remote origin url.")
         remotes = output.stdout.split('\n')
-        handler = tmt.utils.get_distgit_handler(remotes=remotes)
+        handler = get_distgit_handler(remotes=remotes)
     else:
-        handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
+        handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
-        with tmt.utils.retry_session() as session:
+        with retry_session() as session:
             response = session.get(url)
         response.raise_for_status()
         target_dir.mkdir(exist_ok=True, parents=True)
-        with open(target_dir / source_name, 'wb') as tarball:
-            tarball.write(response.content)
+        (target_dir / source_name).write_bytes(response.content)
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
@@ -4649,8 +4742,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
         schema_filepath = resource_files('schemas') / schema_filepath
 
     try:
-        with open(schema_filepath, encoding='utf-8') as f:
-            return cast(Schema, yaml_to_dict(f.read()))
+        return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as exc:
         raise FileError(f"Failed to load schema file {schema_filepath}\n{exc}")
@@ -5387,6 +5479,18 @@ def normalize_shell_script(
         return ShellScript(value)
 
     raise NormalizationError(key_address, value, 'a string')
+
+
+def normalize_adjust(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> Optional[list['tmt.base._RawAdjustRule']]:
+
+    if raw_value is None:
+        return []
+    if isinstance(raw_value, list):
+        return raw_value
+    return [raw_value]
 
 
 def normalize_string_dict(

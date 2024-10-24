@@ -346,7 +346,7 @@ class PluginRegistry(Generic[RegisterableT]):
             # plugin discovery happens in import time, it's very hard to manage
             # it. For now, report a warning, but do not raise an exception yet.
             logger.warning(
-                f"Registering plugin '{plugin.__module__}' collides"
+                f"Registering plugin '{plugin}' collides"
                 f" with an already registered id '{plugin_id}'"
                 f" of plugin '{self._plugins[plugin_id]}'.")
 

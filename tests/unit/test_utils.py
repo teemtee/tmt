@@ -217,7 +217,7 @@ def test_last_run_race(tmppath: Path, monkeypatch):
     """ Race in last run symlink shouldn't be fatal """
     config_path = tmppath / 'config'
     config_path.mkdir()
-    monkeypatch.setattr(tmt.utils, 'CONFIG_DIR', config_path)
+    monkeypatch.setattr(tmt.utils, 'effective_config_dir', MagicMock(return_value=config_path))
     mock_logger = unittest.mock.MagicMock()
     monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
     config = tmt.utils.Config()
@@ -341,6 +341,11 @@ def test_duration_to_seconds():
     assert duration_to_seconds('*2 *3 1m4') == 384
     # Round up
     assert duration_to_seconds('1s *3.3') == 4
+    # Value might be just the multiplication
+    #   without the default it thus equals zero
+    assert duration_to_seconds('*2') == 0
+    #   however the supplied "default" can be used: (1m * 2)
+    assert duration_to_seconds('*2', injected_default="1m") == 120
 
 
 @pytest.mark.parametrize("duration", [

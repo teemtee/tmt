@@ -24,7 +24,7 @@ rlJournalStart
         # BASH_VERSION is not set unless in running in BASH
         # Reproducer plan uses 'local' provisioner.
         # as of now support for 'user' in virtual is not always working
-        rlRun "su -l -c 'cd data && TMT_TEST_PIDFILE_ROOT=/tmp tmt run -v --id /home/$USER/run_id plan --name /reproducer' $USER"
+        rlRun "su -l -c 'cd data && TMT_TEST_PIDFILE_ROOT=/tmp tmt --feeling-safe run -v --id /home/$USER/run_id plan --name /reproducer' $USER"
         rlBundleLogs "log_txt" "/home/$USER/run_id/log.txt"
     rlPhaseEnd
 

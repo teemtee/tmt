@@ -8,6 +8,7 @@ import pytest
 
 import tmt
 import tmt.cli
+import tmt.result
 from tests import CliRunner
 from tmt.base import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
@@ -41,7 +42,7 @@ def test_test_defaults(root_logger):
     assert test.environment == {}
     assert test.duration == '5m'
     assert test.enabled is True
-    assert test.result == 'respect'
+    assert test.result == tmt.result.ResultInterpret.RESPECT
     assert test.tag == []
 
 

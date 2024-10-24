@@ -61,11 +61,13 @@ directly on your localhost:
 
 .. code-block:: shell
 
-    tmt run --all provision --how local
+    tmt --feeling-safe run --all provision --how local
 
-If you're a bit afraid that the test could break your machine or
-just want to keep your environment clean, run it in a container
-instead:
+Note that the extra ``--feeling-safe`` option is needed for the
+:ref:`/plugins/provision/local` provision plugin as it can be
+dangerous to execute unknown code directly on your system. If
+you're afraid that the test could break your machine or just want
+to keep your environment clean, run it in a container instead:
 
 .. code-block:: shell
 
@@ -785,7 +787,7 @@ later using the ``tmt link`` command:
 
 .. code-block:: shell
 
-    tmt link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
+    tmt link --link verifies:https://issues.redhat.com/browse/YOUR-ISSUE tests/core/smoke
 
 In order to enable this feature, create a configuration file
 ``.config/tmt/link.fmf`` and define an ``issue-tracker`` section
@@ -1019,3 +1021,6 @@ Current Limits
 
 __ https://github.com/teemtee/tmt/labels/multihost
 __ https://github.com/teemtee/tmt/issues/2047
+
+
+.. include:: guide/test-runner.inc.rst

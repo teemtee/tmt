@@ -16,7 +16,6 @@ rlJournalStart
         rlAssertGrep 'name: "/0\.\.7 \\"special\\": \\" characters: \*\$@|&>< in: the: name"' "$RESULT_FILE"
         rlAssertGrep "result: \"pass\"" "$RESULT_FILE"
         rlAssertGrep "end-time: \".*\"" "$RESULT_FILE"
-        rlAssertGrep "data-path: \"/.*\"" "$RESULT_FILE"
     rlPhaseEnd
 
     rlPhaseStartCleanup
