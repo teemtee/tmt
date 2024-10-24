@@ -91,7 +91,7 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
 @pytest.mark.parametrize(
     ('check_results', 'interpret', 'expected_outcome'),
     [
-        # Empty check results should pass
+        # Empty results default to PASS
         ([], CheckResultInterpret.RESPECT, ResultOutcome.PASS),
         ([], CheckResultInterpret.INFO, ResultOutcome.PASS),
         ([], CheckResultInterpret.XFAIL, ResultOutcome.PASS),
@@ -151,15 +151,15 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
                 CheckResult(name="test1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST)
                 ],
             CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL
+            ResultOutcome.PASS
             ),
         (
             [
                 CheckResult(name="test1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-                CheckResult(name="test1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST)
+                CheckResult(name="test1", result=ResultOutcome.PASS, event=CheckEvent.AFTER_TEST)
                 ],
             CheckResultInterpret.XFAIL,
-            ResultOutcome.PASS
+            ResultOutcome.FAIL
             ),
 
         # Check with INFO interpretation
@@ -169,7 +169,15 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
                 CheckResult(name="test1", result=ResultOutcome.PASS, event=CheckEvent.AFTER_TEST)
                 ],
             CheckResultInterpret.INFO,
-            ResultOutcome.FAIL
+            ResultOutcome.INFO
+            ),
+        (
+            [
+                CheckResult(name="test1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
+                CheckResult(name="test1", result=ResultOutcome.PASS, event=CheckEvent.AFTER_TEST)
+                ],
+            CheckResultInterpret.INFO,
+            ResultOutcome.INFO
             ),
         ],
     ids=[
@@ -177,8 +185,8 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
         "single-phase-pass", "single-phase-fail",
         "both-phases-pass", "both-phases-mixed",
         "different-checks-pass", "different-checks-mixed",
-        "xfail-both-fail", "xfail-mixed",
-        "info-mixed"
+        "xfail-both-fail", "xfail-pass",
+        "info-mixed", "info-pass"
         ]
     )
 def test_aggregate_check_results(
@@ -327,6 +335,11 @@ def test_result_interpret_check_phases() -> None:
     assert interpreted.note is not None
     assert "check 'check1' failed" in interpreted.note
     assert "check 'check2'" not in interpreted.note  # check2 passed
+
+    # Verify individual check results were interpreted
+    assert interpreted.check[0].result == ResultOutcome.PASS  # check1 BEFORE_TEST
+    assert interpreted.check[1].result == ResultOutcome.FAIL  # check1 AFTER_TEST
+    assert interpreted.check[2].result == ResultOutcome.INFO  # check2 BEFORE_TEST (INFO)
 
 
 def test_result_interpret_edge_cases() -> None:
