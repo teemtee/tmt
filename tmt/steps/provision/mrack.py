@@ -580,7 +580,7 @@ def _transform_system_numa_nodes(
 
 
 def _transform_system_model_name(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator,
