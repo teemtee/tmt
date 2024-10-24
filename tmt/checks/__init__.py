@@ -67,6 +67,7 @@ def find_plugin(name: str) -> 'CheckPluginClass':
 class _RawCheck(TypedDict):
     how: str
     enabled: bool
+    result: str
 
 
 class CheckEvent(enum.Enum):
@@ -81,6 +82,22 @@ class CheckEvent(enum.Enum):
             return CheckEvent(spec)
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
+
+
+class CheckResultInterpret(enum.Enum):
+    INFO = 'info'
+    RESPECT = 'respect'
+    XFAIL = 'xfail'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'CheckResultInterpret':
+        try:
+            return CheckResultInterpret(spec)
+        except ValueError as err:
+            raise ValueError(f"Invalid check result interpretation '{spec}'.") from err
+
+    def to_spec(self) -> str:
+        return self.value
 
 
 @dataclasses.dataclass
@@ -100,6 +117,12 @@ class Check(
         default=True,
         is_flag=True,
         help='Whether the check is enabled or not.')
+    result: CheckResultInterpret = field(
+        default=CheckResultInterpret.RESPECT,
+        help='How to interpret the check result.',
+        serialize=lambda result: result.value,
+        unserialize=CheckResultInterpret.from_spec,
+        choices=[value.value for value in CheckResultInterpret.__members__.values()])
 
     @functools.cached_property
     def plugin(self) -> 'CheckPluginClass':
@@ -113,14 +136,21 @@ class Check(
             logger: tmt.log.Logger) -> 'Check':
         data = cls(how=raw_data['how'])
         data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
+        if raw_data.get("result"):
+            data.result = CheckResultInterpret.from_spec(raw_data["result"])
 
         return data
 
     def to_spec(self) -> _RawCheck:
-        return cast(_RawCheck, {
+        spec = cast(_RawCheck, {
             tmt.utils.key_to_option(key): value
             for key, value in self.items()
             })
+        spec["result"] = self.result.to_spec()
+        return spec
+
+    def to_minimal_spec(self) -> _RawCheck:
+        return self.to_spec()
 
     def go(
             self,
@@ -228,7 +258,7 @@ def normalize_test_check(
     if isinstance(raw_test_check, str):
         try:
             return CheckPlugin.delegate(
-                raw_data={'how': raw_test_check, 'enabled': True},
+                raw_data={'how': raw_test_check, 'enabled': True, 'result': 'respect'},
                 logger=logger)
 
         except Exception as exc:
