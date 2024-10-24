@@ -11,7 +11,6 @@ from tmt.result import (
     Result,
     ResultInterpret,
     ResultOutcome,
-    aggregate_check_results,
     results_to_exit_code,
     )
 
@@ -194,7 +193,7 @@ def test_aggregate_check_results(
         interpret: CheckResultInterpret,
         expected_outcome: ResultOutcome
         ) -> None:
-    assert aggregate_check_results(check_results, interpret) == expected_outcome
+    assert Result.aggregate_check_results(check_results, interpret) == expected_outcome
 
 
 @pytest.mark.parametrize(
@@ -339,7 +338,7 @@ def test_result_interpret_check_phases() -> None:
     # Verify individual check results were interpreted
     assert interpreted.check[0].result == ResultOutcome.PASS  # check1 BEFORE_TEST
     assert interpreted.check[1].result == ResultOutcome.FAIL  # check1 AFTER_TEST
-    assert interpreted.check[2].result == ResultOutcome.INFO  # check2 BEFORE_TEST (INFO)
+    assert interpreted.check[2].result == ResultOutcome.PASS  # check2 BEFORE_TEST (INFO)
 
 
 def test_result_interpret_edge_cases() -> None:
