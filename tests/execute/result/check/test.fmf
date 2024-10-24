@@ -5,7 +5,8 @@ duration: 1m
 
 /check-pass:
     summary: Test with passing checks
-    description: "Expected outcome: PASS (test passes, check passes)"
+    description: |
+        Expected outcome: PASS (test passes, check passes)
     test: echo "Test passed"
     check:
         - how: dmesg
@@ -13,7 +14,8 @@ duration: 1m
 
 /check-fail-respect:
     summary: Test with failing dmesg check (respect)
-    description: "Expected outcome: FAIL (test passes, but check fails and is respected)"
+    description: |
+        Expected outcome: FAIL (test passes, but check fails and is respected)
     test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
@@ -21,7 +23,8 @@ duration: 1m
 
 /check-fail-info:
     summary: Test with failing dmesg check (info)
-    description: "Expected outcome: PASS (test passes, check fails, but should be just info)"
+    description: |
+        Expected outcome: PASS (test passes, check fails, but should be just info)
     test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
@@ -30,7 +33,8 @@ duration: 1m
 
 /check-xfail-pass:
     summary: Test with passing dmesg check (xfail)
-    description: "Expected outcome: FAIL (test passes, check passes but xfail expects it to fail)"
+    description: |
+        Expected outcome: FAIL (test passes, check passes but xfail expects it to fail)
     test: echo "Test passed"
     check:
         - how: dmesg
@@ -38,7 +42,8 @@ duration: 1m
 
 /check-xfail-fail:
     summary: Test with failing dmesg check (xfail)
-    description: "Expected outcome: PASS (test passes, check fails but xfail expects it to fail)"
+    description: |
+        Expected outcome: PASS (test passes, check fails but xfail expects it to fail)
     test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     check:
         - how: dmesg
@@ -64,7 +69,8 @@ duration: 1m
 
 /check-override:
     summary: Test with failing dmesg check but overridden by test result
-    description: "Expected outcome: PASS (test passes, check fails but is overridden by 'result: pass')"
+    description: |
+        Expected outcome: PASS (test passes, check fails but is overridden by 'result: pass')
     test: echo "Fail Test Check Pattern" | tee /dev/kmsg
     result: pass
     check:
