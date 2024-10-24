@@ -190,21 +190,6 @@ class CheckResult(BaseResult):
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
 
-    def interpret_check_result(self, interpret: CheckResultInterpret) -> 'CheckResult':
-        """Interpret check result according to the check result interpretation."""
-
-        if interpret == CheckResultInterpret.RESPECT:
-            return self
-        if interpret == CheckResultInterpret.INFO:
-            self.result = ResultOutcome.INFO
-        elif interpret == CheckResultInterpret.XFAIL:
-            mapping = {
-                ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL}
-            self.result = mapping.get(self.result, self.result)
-
-        return self
-
     def to_subcheck(self) -> 'SubCheckResult':
         """ Convert check to a tmt SubCheckResult """
 
@@ -281,6 +266,33 @@ class Result(BaseResult):
         serialize=lambda path: None if path is None else str(path),
         unserialize=lambda value: None if value is None else Path(value)
         )
+
+    @staticmethod
+    def aggregate_check_results(results: list[CheckResult],
+                                interpret: CheckResultInterpret) -> ResultOutcome:
+        """
+        Reduce multiple check results to a single outcome based on interpretation.
+
+        This method aggregates multiple check results into a single outcome following
+        specific interpretation rules:
+        - For XFAIL: If any result is FAIL, returns PASS; otherwise returns FAIL
+        - For INFO: Always returns INFO
+        - For RESPECT: Returns FAIL if any check failed, otherwise PASS
+        """
+        if not results:
+            return ResultOutcome.PASS
+
+        # For xfail, if any result is FAIL, the overall result is PASS
+        if interpret == CheckResultInterpret.XFAIL:
+            return ResultOutcome.PASS if any(
+                r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.FAIL
+
+        if interpret == CheckResultInterpret.INFO:
+            return ResultOutcome.INFO
+
+        # For all other cases, if any result is FAIL, the overall result is FAIL
+        return ResultOutcome.FAIL if any(
+            r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.PASS
 
     @classmethod
     def from_test_invocation(
@@ -379,15 +391,9 @@ class Result(BaseResult):
         # Process each group of check results
         failed_checks: list[str] = []
         for how, group in check_groups.items():
-            reduced_outcome = aggregate_check_results(group, interpret_checks[how])
+            reduced_outcome = self.aggregate_check_results(group, interpret_checks[how])
             if reduced_outcome == ResultOutcome.FAIL:
                 failed_checks.append(how)
-
-        # Interpret individual checks
-        self.check = [
-            check_result.interpret_check_result(interpret_checks[check_result.name])
-            for check_result in self.check
-            ]
 
         # Check results are interpreted, deal with test results that are not affected by checks
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
@@ -563,28 +569,3 @@ def results_to_exit_code(results: list[Result]) -> int:
         return TmtExitCode.SUCCESS
 
     raise GeneralError("Unhandled combination of test result.")
-
-
-def aggregate_check_results(results: list['CheckResult'],
-                            interpret: CheckResultInterpret) -> ResultOutcome:
-    """
-    Reduce multiple check results to a single outcome based on interpretation.
-
-    :param results: List of check results to reduce
-    :param interpret: How to interpret the results
-    :returns: A single ResultOutcome representing the aggregated result
-    """
-    if not results:
-        return ResultOutcome.PASS
-
-    # For xfail, if any result is FAIL, the overall result is PASS
-    if interpret == CheckResultInterpret.XFAIL:
-        return ResultOutcome.PASS if any(
-            r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.FAIL
-
-    if interpret == CheckResultInterpret.INFO:
-        return ResultOutcome.INFO
-
-    # For all other cases, if any result is FAIL, the overall result is FAIL
-    return ResultOutcome.FAIL if any(
-        r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.PASS
