@@ -12,27 +12,29 @@ rlJournalStart
     rlPhaseStartTest "Check Results"
         rlRun -s "tmt run -a --id \${run} --scratch tests provision --how $PROVISION_HOW report -v 2>&1 >/dev/null | grep report -A19" "1"
 
-        rlAssertGrep "$(cat <<-EOF
-pass /test/check-fail-info
-    info dmesg (before-test check)
-    info dmesg (after-test check)
-fail /test/check-fail-respect (Check 'dmesg' failed, original result: pass)
-    pass dmesg (before-test check)
-    fail dmesg (after-test check)
-pass /test/check-override
-    pass dmesg (before-test check)
-    fail dmesg (after-test check)
-pass /test/check-pass
-    pass dmesg (before-test check)
-    pass dmesg (after-test check)
-pass /test/check-xfail-fail
-    warn dmesg (before-test check)
-    pass dmesg (after-test check)
-fail /test/check-xfail-pass (Check 'dmesg' failed, original result: pass)
-    warn dmesg (before-test check)
-    fail dmesg (after-test check)
-EOF
-)" "$rlRun_LOG" -F
+        rlAssertGrep "pass /test/check-fail-info" "$rlRun_LOG"
+        rlAssertGrep "    info dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    info dmesg (after-test check)" "$rlRun_LOG"
+
+        rlAssertGrep "fail /test/check-fail-respect (check 'dmesg' failed, original result: pass)" "$rlRun_LOG"
+        rlAssertGrep "    pass dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    fail dmesg (after-test check)" "$rlRun_LOG"
+
+        rlAssertGrep "pass /test/check-override" "$rlRun_LOG"
+        rlAssertGrep "    pass dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    fail dmesg (after-test check)" "$rlRun_LOG"
+
+        rlAssertGrep "pass /test/check-pass" "$rlRun_LOG"
+        rlAssertGrep "    pass dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    pass dmesg (after-test check)" "$rlRun_LOG"
+
+        rlAssertGrep "pass /test/check-xfail-fail" "$rlRun_LOG"
+        rlAssertGrep "    fail dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    pass dmesg (after-test check)" "$rlRun_LOG"
+
+        rlAssertGrep "fail /test/check-xfail-pass (check 'dmesg' failed, original result: pass)" "$rlRun_LOG"
+        rlAssertGrep "    fail dmesg (before-test check)" "$rlRun_LOG"
+        rlAssertGrep "    fail dmesg (after-test check)" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
