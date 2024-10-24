@@ -3,7 +3,7 @@ import functools
 import re
 import sys
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast, overload
 
 from jinja2 import FileSystemLoader, select_autoescape
 
@@ -148,13 +148,33 @@ class ResultWrapper(ImplementProperties):
     get available inside the template context.
     """
 
-    def __init__(self, wrapped: tmt.Result) -> None:
+    def __init__(
+            self,
+            wrapped: Union[tmt.Result, tmt.result.SubResult],
+            subresults_context_class: 'type[ResultsContext]') -> None:
+
         super().__init__()
         self._wrapped = wrapped
+        self._subresults_context_class = subresults_context_class
 
     def __getattr__(self, name: str) -> Any:
         """ Returns an attribute of a wrapped ``tmt.Result`` instance """
         return getattr(self._wrapped, name)
+
+    @property
+    def subresult(self) -> 'ResultsContext':
+        """
+        Override the ``tmt.Result.subresult`` and wrap all the ``tmt.result.SubResult`` instances
+        into the ``ResultsContext``.
+        """
+
+        # `tmt.result.SubResult.subresult` is not defined, just raise the AttributeError to silent
+        # the typing errors.
+        if isinstance(self._wrapped, tmt.result.SubResult):
+            raise AttributeError(
+                f"'{self._wrapped.__class__.__name__} object has no attribute 'subresult'")
+
+        return self._subresults_context_class(self._wrapped.subresult)
 
 
 class ResultsContext(ImplementProperties):
@@ -165,11 +185,13 @@ class ResultsContext(ImplementProperties):
     wraps all the :py:class:`tmt.Result` instances into the :py:class:`ResultWrapper`.
     """
 
-    def __init__(self, results: list[tmt.Result]) -> None:
+    def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
+        """ Decorate/wrap all the ``Result`` and ``SubResult`` instances with more attributes """
         super().__init__()
 
         # Decorate all the tmt.Results with more attributes
-        self._results: list[ResultWrapper] = [ResultWrapper(r) for r in results]
+        self._results: list[ResultWrapper] = [
+            ResultWrapper(r, subresults_context_class=self.__class__) for r in results]
 
     def __iter__(self) -> Iterator[ResultWrapper]:
         """ Possibility to iterate over results by iterating an instance """
@@ -187,7 +209,7 @@ class ResultsContext(ImplementProperties):
     @functools.cached_property
     def skipped(self) -> list[ResultWrapper]:
         """ Returns results of skipped tests """
-        return [r for r in self._results if r.result == ResultOutcome.INFO]
+        return [r for r in self._results if r.result in (ResultOutcome.SKIP, ResultOutcome.INFO)]
 
     @functools.cached_property
     def failed(self) -> list[ResultWrapper]:
@@ -197,9 +219,7 @@ class ResultsContext(ImplementProperties):
     @functools.cached_property
     def errored(self) -> list[ResultWrapper]:
         """ Returns results of tests with error/warn outcome """
-        return [r for r in self._results if r.result in [
-                ResultOutcome.ERROR,
-                ResultOutcome.WARN]]
+        return [r for r in self._results if r.result in (ResultOutcome.ERROR, ResultOutcome.WARN)]
 
     @functools.cached_property
     def duration(self) -> int:
