@@ -189,6 +189,11 @@ class CheckResult(BaseResult):
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
 
+    def to_subcheck(self) -> 'SubCheckResult':
+        """ Convert check to a tmt SubCheckResult """
+
+        return SubCheckResult.from_serialized(self.to_serialized())
+
 
 @dataclasses.dataclass
 class SubCheckResult(CheckResult):
@@ -269,7 +274,8 @@ class Result(BaseResult):
             result: ResultOutcome,
             note: Optional[str] = None,
             ids: Optional[ResultIds] = None,
-            log: Optional[list[Path]] = None) -> 'Result':
+            log: Optional[list[Path]] = None,
+            subresult: Optional[list[SubResult]] = None) -> 'Result':
         """
         Create a result from a test invocation.
 
@@ -317,7 +323,8 @@ class Result(BaseResult):
             ids=ids,
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
-            data_path=invocation.relative_test_data_path)
+            data_path=invocation.relative_test_data_path,
+            subresult=subresult or [])
 
         return _result.interpret_result(invocation.test.result)
 
@@ -362,6 +369,13 @@ class Result(BaseResult):
                 f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
         return self
+
+    def to_subresult(self) -> 'SubResult':
+        """ Convert result to tmt subresult """
+        options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
+
+        return SubResult.from_serialized(
+            {option: value for option, value in self.to_serialized().items() if option in options})
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:

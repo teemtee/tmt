@@ -11,7 +11,29 @@ tmt-1.38.0
 A new :ref:`test-runner` section has been added to the tmt
 :ref:`guide`. It describes some important differences between
 running tests on a :ref:`user-system` and scheduling test jobs in
-:ref:`testing-farm`.
+
+Each execution of ``tmt-report-result`` command inside a shell
+test will now create a tmt subresult. The main result outcome is
+reduced from all subresults outcomes. If ``tmt-report-result`` is
+not called during the test, the shell test framework behavior
+remains the same - the test script exit code still has an impact
+on the main test result. See also
+:ref:`/stories/features/report-result`.
+
+The beakerlib test framework tests now generate tmt subresults.
+The behavior is very similar to the shell test framework with
+``tmt-report-result`` command calls (see above). The
+``tmt-report-result`` now gets called with every ``rlPhaseEnd``
+macro and the tmt subresult gets created. The difference is that
+the subresults outcomes are not evaluated by tmt. The tmt only
+captures them and then relies on a beakerlib and its result
+reporting, which does take the outcomes of phases into account to
+determine the final test outcome. The subresults are always
+assigned under the main tmt result and can be easily showed e.g.
+by :ref:`/plugins/report/display` plugin when verbose mode is
+enabled. There is only one exception - if the
+``result: restraint`` option is set to a beakerlib test, the
+phase subresults get converted as normal tmt custom results.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.

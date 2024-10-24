@@ -112,11 +112,13 @@ class TestFramework:
     def extract_results(
             cls,
             invocation: 'TestInvocation',
+            results: list[tmt.result.Result],
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
         """
         Extract test results.
 
         :param invocation: test invocation to which the check belongs to.
+        :param results: current list of results as reported by a test
         :param logger: to use for logging.
         :returns: list of results produced by the given test.
         """

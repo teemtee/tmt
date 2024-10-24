@@ -1,0 +1,28 @@
+/shell/pass:
+    summary: Basic pass test of shell subresults
+    test: |
+        touch /tmp/good0_log; tmt-report-result -o /tmp/good0_log /pass-subtest/good0 PASS
+        touch /tmp/good1_log; tmt-report-result -o /tmp/good1_log /pass-subtest/good1 PASS
+        touch /tmp/good2_log; tmt-report-result -o /tmp/good2_log /pass-subtest/good2 PASS
+
+/shell/skip:
+    summary: Test with skipped and pass test should pass
+    test: |
+        tmt-report-result /skip-subtest/extra-pass PASS
+        tmt-report-result /skip-subtest/extra-skip SKIP
+
+/shell/fail:
+    summary: Reduced outcome of shell subresults must be fail
+    test: |
+        touch /tmp/good_log; tmt-report-result -o /tmp/good_log /fail-subtest/good PASS
+        touch /tmp/fail_log; tmt-report-result -o /tmp/fail_log /fail-subtest/fail FAIL
+        touch /tmp/weird_log; tmt-report-result -o /tmp/weird_log /fail-subtest/weird WARN
+        touch /tmp/skip_log; tmt-report-result -o /tmp/skip_log /fail-subtest/skip SKIP
+
+/beakerlib:
+    summary: Beakerlib rlPhaseEnd as a tmt subresult
+
+    # Explicitly set the test framework
+    framework: beakerlib
+
+    test: ./beaker-phases-subresults.sh
