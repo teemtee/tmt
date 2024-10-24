@@ -379,17 +379,15 @@ class Result(BaseResult):
         # Process each group of check results
         failed_checks: list[str] = []
         for how, group in check_groups.items():
-            # Apply interpretation to each check result in the group
-            interpreted_results = [
-                check_result.interpret_check_result(interpret_checks[how])
-                for check_result in group
-                ]
-
-            # Reduce the group to a single result
-            reduced_outcome = aggregate_check_results(interpreted_results, interpret_checks[how])
-
+            reduced_outcome = aggregate_check_results(group, interpret_checks[how])
             if reduced_outcome == ResultOutcome.FAIL:
                 failed_checks.append(how)
+
+        # Interpret individual checks
+        self.check = [
+            check_result.interpret_check_result(interpret_checks[check_result.name])
+            for check_result in self.check
+            ]
 
         # Check results are interpreted, deal with test results that are not affected by checks
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
@@ -579,10 +577,13 @@ def aggregate_check_results(results: list['CheckResult'],
     if not results:
         return ResultOutcome.PASS
 
-    # For xfail, if any result is PASS(i.e. failed), the overall result is PASS
+    # For xfail, if any result is FAIL, the overall result is PASS
     if interpret == CheckResultInterpret.XFAIL:
         return ResultOutcome.PASS if any(
-            r.result == ResultOutcome.PASS for r in results) else ResultOutcome.FAIL
+            r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.FAIL
+
+    if interpret == CheckResultInterpret.INFO:
+        return ResultOutcome.INFO
 
     # For all other cases, if any result is FAIL, the overall result is FAIL
     return ResultOutcome.FAIL if any(
