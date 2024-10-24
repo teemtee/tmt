@@ -180,8 +180,8 @@ OperatorHandlerType = Callable[[Any, Any], bool]
 Spec = Any
 
 #: A type of constraint values.
-ConstraintValue = Union[int, 'Size', str, bool]
-ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool)
+ConstraintValue = Union[int, 'Size', str, bool, float]
+ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool, float)
 
 # TODO: this was ported from Artemis but it's not used as of now. That should
 # change with future support for flavors aka instance types.
@@ -738,7 +738,7 @@ class IntegerConstraint(Constraint[int]):
 
 
 class NumberConstraint(Constraint[float]):
-    """ A constraint representing a dimension-less float number """
+    """ A constraint representing a float number """
 
     @classmethod
     def from_specification(
