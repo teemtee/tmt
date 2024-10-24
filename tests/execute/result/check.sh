@@ -7,8 +7,6 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-virtual}"
         rlRun "pushd check"
         rlRun "set -o pipefail"
-        # Write pattern for tests that need pre-existing dmesg content
-        rlRun "echo 'Fail Test Check Pattern' | sudo tee /dev/kmsg"
     rlPhaseEnd
 
     rlPhaseStartTest "Check Results"
