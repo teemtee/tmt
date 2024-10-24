@@ -244,7 +244,7 @@ def _transform_cpu_flag(
 
 
 def _transform_cpu_model(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -256,7 +256,7 @@ def _transform_cpu_model(
 
 
 def _transform_cpu_processors(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -268,7 +268,7 @@ def _transform_cpu_processors(
 
 
 def _transform_cpu_cores(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -298,7 +298,7 @@ def _transform_cpu_model_name(
 
 
 def _transform_cpu_stepping(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -568,7 +568,7 @@ def _transform_location_lab_controller(
 
 
 def _transform_system_numa_nodes(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
