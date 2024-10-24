@@ -374,11 +374,9 @@ class Result(BaseResult):
         if interpret == ResultInterpret.CUSTOM:
             return self
 
-        original_result = self.result
-
         # Interpret check results
         self.check = [
-            check_result.interpret_check_result(CheckResultInterpret(interpret_checks[check_result.name]))
+            check_result.interpret_check_result(interpret_checks[check_result.name])
             for check_result in self.check
             ]
 
@@ -386,8 +384,8 @@ class Result(BaseResult):
             self.result = ResultOutcome(interpret.value)
 
             # Add original result to note if the result has changed
-            if self.result != original_result:
-                orig_note = f"original result: {original_result.value}"
+            if self.result != self.original_result:
+                orig_note = f"original result: {self.original_result.value}"
                 self.note = f"{self.note}, {orig_note}" if self.note else orig_note
 
             return self
@@ -400,7 +398,7 @@ class Result(BaseResult):
 
         if failed_checks:
             self.result = ResultOutcome.FAIL
-            check_note = ", ".join([f"Check '{check.name}' failed" for check in failed_checks])
+            check_note = ", ".join([f"check '{check.name}' failed" for check in failed_checks])
             self.note = f"{self.note}, {check_note}" if self.note else check_note
 
         if interpret == ResultInterpret.XFAIL:
@@ -411,8 +409,8 @@ class Result(BaseResult):
                 }.get(self.result, self.result)
 
         # Add original result to note if the result has changed
-        if self.result != original_result:
-            orig_note = f"original result: {original_result.value}"
+        if self.result != self.original_result:
+            orig_note = f"original result: {self.original_result.value}"
             self.note = f"{self.note}, {orig_note}" if self.note else orig_note
 
         return self
