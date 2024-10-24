@@ -4,7 +4,6 @@
     Releases
 ======================
 
-
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,6 +48,8 @@ for example usage.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains support
 for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
+
+``tmt lint`` now reports a failure if empty environment files are found.
 
 
 tmt-1.37.0
