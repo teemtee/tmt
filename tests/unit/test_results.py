@@ -225,14 +225,14 @@ def test_aggregate_check_results(
             ResultInterpret.XFAIL,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.PASS,
-            "original result: fail"
+            "check 'check1' failed, test failed as expected, original test result: fail"
             ),
         (
             ResultOutcome.PASS,
             ResultInterpret.XFAIL,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.FAIL,
-            "original result: pass"
+            "test was expected to fail, original test result: pass"
             ),
 
         # Test INFO interpretation
@@ -241,14 +241,14 @@ def test_aggregate_check_results(
             ResultInterpret.INFO,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.INFO,
-            "original result: fail"
+            "check 'check1' failed, test result overridden: info, original test result: fail"
             ),
         (
             ResultOutcome.PASS,
             ResultInterpret.INFO,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.INFO,
-            "original result: pass"
+            "test result overridden: info, original test result: pass"
             ),
 
         # Test WARN interpretation
@@ -257,7 +257,7 @@ def test_aggregate_check_results(
             ResultInterpret.WARN,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.WARN,
-            "original result: pass"
+            "test result overridden: warn, original test result: pass"
             ),
 
         # Test ERROR interpretation
@@ -266,7 +266,7 @@ def test_aggregate_check_results(
             ResultInterpret.ERROR,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.ERROR,
-            "original result: pass"
+            "test result overridden: error, original test result: pass"
             ),
 
         # Test CUSTOM interpretation (should not modify result)
@@ -333,7 +333,7 @@ def test_result_interpret_check_phases() -> None:
     interpreted = result.interpret_result(ResultInterpret.RESPECT, interpret_checks)
     assert interpreted.note is not None
     assert "check 'check1' failed" in interpreted.note
-    assert "check 'check2'" not in interpreted.note  # check2 passed
+    assert "check 'check2' is informational" in interpreted.note
 
     # Verify individual check results were interpreted
     assert interpreted.check[0].result == ResultOutcome.PASS  # check1 BEFORE_TEST

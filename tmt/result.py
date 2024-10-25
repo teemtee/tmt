@@ -62,10 +62,9 @@ class ResultOutcome(enum.Enum):
 
         raise GeneralError("No result outcome found to reduce.")
 
+
 # Cannot subclass enums :/
 # https://docs.python.org/3/library/enum.html#restricted-enum-subclassing
-
-
 class ResultInterpret(enum.Enum):
     # These are "inherited" from ResultOutcome
     PASS = 'pass'
@@ -480,7 +479,7 @@ class Result(BaseResult):
                 self.result = ResultOutcome.FAIL
                 self.append_note("test was expected to fail")
 
-            if self.result == ResultOutcome.FAIL:
+            elif self.result == ResultOutcome.FAIL:
                 self.result = ResultOutcome.PASS
                 self.append_note("test failed as expected")
 

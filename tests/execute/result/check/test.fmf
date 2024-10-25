@@ -12,6 +12,16 @@ duration: 1m
         - how: dmesg
           result: respect
 
+/check-pass-test-xfail:
+    summary: Everything passing but failure expected
+    description: |
+        Expected outcome: FAIL (test passes, check passes, but fail is expected)
+    test: echo "Test passed"
+    check:
+        - how: dmesg
+          result: respect
+    result: xfail
+
 /check-fail-respect:
     summary: Test with failing dmesg check (respect)
     description: |
