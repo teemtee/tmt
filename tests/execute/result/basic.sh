@@ -15,7 +15,7 @@ run()
     if [ -z "${orig}" ]; then # No original result provided
         rlAssertGrep "${res} ${tn}$" $rlRun_LOG
     else
-        rlAssertGrep "${res} ${tn} (original result: ${orig})$" $rlRun_LOG
+        rlAssertGrep "${res} ${tn} (.*original test result: ${orig}.*)$" $rlRun_LOG
     fi
 
     echo
@@ -58,18 +58,18 @@ rlJournalStart
                 rlAssertGrep "$line" "$rlRun_LOG" -F
             fi
         done <<-EOF
-00:00:00 errr /test/always-error (on default-0) (original result: pass) [1/12]
-00:00:00 fail /test/always-fail (on default-0) (original result: pass) [2/12]
-00:00:00 info /test/always-info (on default-0) (original result: pass) [3/12]
-00:00:00 pass /test/always-pass (on default-0) (original result: fail) [4/12]
-00:00:00 warn /test/always-warn (on default-0) (original result: pass) [5/12]
+00:00:00 errr /test/always-error (on default-0) (test result overridden: error, original test result: pass) [1/12]
+00:00:00 fail /test/always-fail (on default-0) (test result overridden: fail, original test result: pass) [2/12]
+00:00:00 info /test/always-info (on default-0) (test result overridden: info, original test result: pass) [3/12]
+00:00:00 pass /test/always-pass (on default-0) (test result overridden: pass, original test result: fail) [4/12]
+00:00:00 warn /test/always-warn (on default-0) (test result overridden: warn, original test result: pass) [5/12]
 00:00:00 errr /test/error (on default-0) [6/12]
 00:00:01 errr /test/error-timeout (on default-0) (timeout) [7/12]
 00:00:00 fail /test/fail (on default-0) [8/12]
 00:00:00 pass /test/pass (on default-0) [9/12]
 00:00:00 errr /test/xfail-error (on default-0) [10/12]
-00:00:00 pass /test/xfail-fail (on default-0) (original result: fail) [11/12]
-00:00:00 fail /test/xfail-pass (on default-0) (original result: pass) [12/12]
+00:00:00 pass /test/xfail-fail (on default-0) (test failed as expected, original test result: fail) [11/12]
+00:00:00 fail /test/xfail-pass (on default-0) (test was expected to fail, original test result: pass) [12/12]
 EOF
     rlPhaseEnd
 
@@ -78,7 +78,8 @@ EOF
         rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /xfail-with-reboot provision --how container execute -v 2>&1 >/dev/null"
         EXPECTED=$(cat <<EOF
             00:00:00 /test/xfail-with-reboot [1/1]
-            00:00:00 pass /test/xfail-with-reboot (on default-0) (original result: fail) [1/1]
+            00:00:00 pass /test/xfail-with-reboot (on default-0) (test failed as expected, original test result: fail) [1/1]
+
 EOF
 )
     rlAssertEquals "Output matches the expectation" "$EXPECTED" "$(grep /test/xfail-with-reboot $rlRun_LOG)"

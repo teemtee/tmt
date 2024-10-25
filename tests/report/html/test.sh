@@ -43,7 +43,7 @@ rlJournalStart
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
             rlAssertGrep 'class="result pass">pass</td>' $tmp/$test_name_suffix -F
             sed -e "/name\">\/test\/$test_name_suffix/,/\/tr/!d" $HTML | tee $tmp/$test_name_suffix-note
-            rlAssertGrep '<td class="note">original result: fail</td>' $tmp/$test_name_suffix-note -F
+            rlAssertGrep '<td class="note">test failed as expected, original test result: fail</td>' $tmp/$test_name_suffix-note -F
         rlPhaseEnd
 
         if [ "$option" = "" ]; then
