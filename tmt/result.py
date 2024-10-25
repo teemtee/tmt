@@ -291,33 +291,6 @@ class Result(BaseResult):
         unserialize=lambda value: None if value is None else Path(value)
         )
 
-    @staticmethod
-    def aggregate_check_results(results: list[CheckResult],
-                                interpret: CheckResultInterpret) -> ResultOutcome:
-        """
-        Reduce multiple check results to a single outcome based on interpretation.
-
-        This method aggregates multiple check results into a single outcome following
-        specific interpretation rules:
-        - For XFAIL: If any result is FAIL, returns PASS; otherwise returns FAIL
-        - For INFO: Always returns INFO
-        - For RESPECT: Returns FAIL if any check failed, otherwise PASS
-        """
-        if not results:
-            return ResultOutcome.PASS
-
-        # For xfail, if any result is FAIL, the overall result is PASS
-        if interpret == CheckResultInterpret.XFAIL:
-            return ResultOutcome.PASS if any(
-                r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.FAIL
-
-        if interpret == CheckResultInterpret.INFO:
-            return ResultOutcome.INFO
-
-        # For all other cases, if any result is FAIL, the overall result is FAIL
-        return ResultOutcome.FAIL if any(
-            r.result == ResultOutcome.FAIL for r in results) else ResultOutcome.PASS
-
     @classmethod
     def from_test_invocation(
             cls,
