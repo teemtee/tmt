@@ -10,14 +10,15 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check Results"
-        rlRun -s "tmt run -a --id \${run} --scratch tests provision --how $PROVISION_HOW report -v 2>&1 >/dev/null | grep report -A19" "1"
+        rlRun "tmt run -av --id $run provision --how $PROVISION_HOW" 1
+        rlRun -s "tmt run --id $run report -v" 1
 
-        rlAssertGrep "pass /test/check-fail-info" "$rlRun_LOG"
-        rlAssertGrep "fail /test/check-fail-respect (check 'dmesg' failed, original result: pass)" "$rlRun_LOG"
-        rlAssertGrep "pass /test/check-override" "$rlRun_LOG"
+        rlAssertGrep "pass /test/check-fail-info (check 'dmesg' is informational)" "$rlRun_LOG"
+        rlAssertGrep "fail /test/check-fail-respect (check 'dmesg' failed, original test result: pass)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/check-override (check 'dmesg' failed, test result overridden: pass)" "$rlRun_LOG"
         rlAssertGrep "pass /test/check-pass" "$rlRun_LOG"
-        rlAssertGrep "pass /test/check-xfail-fail" "$rlRun_LOG"
-        rlAssertGrep "fail /test/check-xfail-pass (check 'dmesg' failed, original result: pass)" "$rlRun_LOG"
+        rlAssertGrep "pass /test/check-xfail-fail (check 'dmesg' failed as expected)" "$rlRun_LOG"
+        rlAssertGrep "fail /test/check-xfail-pass (check 'dmesg' did not fail as expected, original test result: pass)" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
