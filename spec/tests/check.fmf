@@ -30,8 +30,10 @@ description: |
             The check result is treated as an informational
             message and does not affect the overall test result.
 
-    Note that running one check multiple times for the same test is
-    not yet supported.
+    .. warning::
+
+        Note that running one check multiple times for the same
+        test is not yet supported.
 
     .. versionchanged:: 1.38.0 the ``result`` key added
 

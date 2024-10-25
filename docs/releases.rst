@@ -12,6 +12,14 @@ A new :ref:`test-runner` section has been added to the tmt
 :ref:`guide`. It describes some important differences between
 running tests on a :ref:`user-system` and scheduling test jobs in
 
+Test checks affect the overall test result by default. The
+:ref:`/spec/tests/check` specification now supports a new
+``result`` key for individual checks. This attribute allows users
+to control how the result of each check affects the overall test
+result. Please note that tests, which were previously passing
+with failing checks will now fail by default, unless the ``xfail``
+or ``info`` is added.
+
 Each execution of ``tmt-report-result`` command inside a shell
 test will now create a tmt subresult. The main result outcome is
 reduced from all subresults outcomes. If ``tmt-report-result`` is
@@ -71,13 +79,6 @@ for example usage.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains support
 for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
-
-The :ref:`/spec/tests/check` specification now supports a new
-``result`` key for individual checks. This attribute allows users
-to control how the result of each check affects the overall test
-result.  Please note that tests, which were previously passing
-with failing checks will now fail by default, unless the ``xfail``
-or ``info`` is added.
 
 
 tmt-1.37.0

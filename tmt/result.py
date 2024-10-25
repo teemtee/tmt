@@ -371,7 +371,7 @@ class Result(BaseResult):
         Aggregate all checks of given name and interpret the outcome
 
         :param check_name: name of the check to be aggregated
-        :param interpret_checks: mapping of check:how and it's result interpret
+        :param interpret_checks: mapping of check:how and its result interpret
         :returns: :py:class:`ResultOutcome` instance with the interpreted result
         """
 
@@ -415,7 +415,7 @@ class Result(BaseResult):
         attributes, following the ``interpret`` value.
 
         :param interpret: how to interpret current result.
-        :param interpret_checks: mapping of check:how and it's result interpret
+        :param interpret_checks: mapping of check:how and its result interpret
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
