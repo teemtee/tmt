@@ -41,6 +41,10 @@ description: |
           # Number or string, an ID of CPU vendor.
           vendor: 1234|"> 1234"
 
+          # Float or string, CPU frequency.
+          # MHz are assumed when no unit is specified.
+          frequency: 2300.0|">= 2300.0"
+
           # Integer or string, CPU stepping.
           stepping: 10|">= 10"
 
