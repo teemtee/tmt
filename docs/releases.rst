@@ -8,10 +8,6 @@
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A new :ref:`test-runner` section has been added to the tmt
-:ref:`guide`. It describes some important differences between
-running tests on a :ref:`user-system` and scheduling test jobs in
-
 Test checks affect the overall test result by default. The
 :ref:`/spec/tests/check` specification now supports a new
 ``result`` key for individual checks. This attribute allows users
@@ -20,13 +16,12 @@ result. Please note that tests, which were previously passing
 with failing checks will now fail by default, unless the ``xfail``
 or ``info`` is added.
 
-Each execution of ``tmt-report-result`` command inside a shell
-test will now create a tmt subresult. The main result outcome is
-reduced from all subresults outcomes. If ``tmt-report-result`` is
-not called during the test, the shell test framework behavior
-remains the same - the test script exit code still has an impact
-on the main test result. See also
-:ref:`/stories/features/report-result`.
+In order to prevent dangerous commands to be unintentionally run
+on user's system, the :ref:`/plugins/provision/local` provision
+plugin now requires to be executed with the ``--feeling-safe``
+option or with the environment variable ``TMT_FEELING_SAFE`` set
+to ``True``. See the :ref:`/stories/features/feeling-safe` section
+for more details and motivation behind this change.
 
 The beakerlib test framework tests now generate tmt subresults.
 The behavior is very similar to the shell test framework with
@@ -43,26 +38,13 @@ enabled. There is only one exception - if the
 ``result: restraint`` option is set to a beakerlib test, the
 phase subresults get converted as normal tmt custom results.
 
-The :ref:`/plugins/report/junit` report plugin now removes all
-invalid XML characters from the final JUnit XML.
-
-In order to prevent dangerous commands to be unintentionally run
-on user's system, the :ref:`/plugins/provision/local` provision
-plugin now requires to be executed with the ``--feeling-safe``
-option or with the environment variable ``TMT_FEELING_SAFE`` set
-to ``True``. See the :ref:`/stories/features/feeling-safe` section
-for more details and motivation behind this change.
-
-The :ref:`/plugins/discover/fmf` discover plugin now supports
-a new ``adjust-tests`` key which allows modifying metadata of all
-discovered tests. This can be useful especially when fetching
-tests from remote repositories where the user does not have write
-access.
-
-A race condition in the
-:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
-thus multihost tests using this provision method should now work
-reliably without unexpected connection failures.
+Each execution of ``tmt-report-result`` command inside a shell
+test will now create a tmt subresult. The main result outcome is
+reduced from all subresults outcomes. If ``tmt-report-result`` is
+not called during the test, the shell test framework behavior
+remains the same - the test script exit code still has an impact
+on the main test result. See also
+:ref:`/stories/features/report-result`.
 
 Support for RHEL-like operating systems in `Image Mode`__ has been
 added. The destination directory of the scripts added by ``tmt``
@@ -70,6 +52,12 @@ on these operating systems is ``/var/lib/tmt/scripts``. For
 all others the ``/usr/local/bin`` destination directory is used.
 A new environment variable ``TMT_SCRIPTS_DIR`` is available
 to override the default locations.
+
+The :ref:`/plugins/discover/fmf` discover plugin now supports
+a new ``adjust-tests`` key which allows modifying metadata of all
+discovered tests. This can be useful especially when fetching
+tests from remote repositories where the user does not have write
+access.
 
 __ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
 
@@ -79,6 +67,18 @@ for example usage.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains support
 for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
+
+The :ref:`/plugins/report/junit` report plugin now removes all
+invalid XML characters from the final JUnit XML.
+
+A new :ref:`test-runner` section has been added to the tmt
+:ref:`guide`. It describes some important differences between
+running tests on a :ref:`user-system` and scheduling test jobs in
+
+A race condition in the
+:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
+thus multihost tests using this provision method should now work
+reliably without unexpected connection failures.
 
 
 tmt-1.37.0
