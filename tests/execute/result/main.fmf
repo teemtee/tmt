@@ -13,3 +13,10 @@
 /subresults:
     summary: Multiple calls to tmt-report-result should generate tmt subresults
     test: ./subresults.sh
+/check:
+    summary: Test check result interpretations
+    test: ./check.sh
+    tag+:
+      - provision-only
+      - provision-local
+      - provision-virtual

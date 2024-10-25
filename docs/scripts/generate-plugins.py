@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import dataclasses
+import enum
 import sys
 import textwrap
 from typing import Any
@@ -56,7 +57,7 @@ def _is_inherited(
 
     # TODO: for now, it's a list, but inspecting the actual tree of classes
     # would be more generic. It's good enough for now.
-    return field.name in ('name', 'where', 'order', 'summary', 'enabled')
+    return field.name in ('name', 'where', 'order', 'summary', 'enabled', 'result')
 
 
 def container_ignored_fields(container: ContainerClass) -> list[str]:
@@ -104,6 +105,12 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
         field_names.append(field.name)
 
     return field_names
+
+
+def is_enum(value: Any) -> bool:
+    """ Find out whether a given value is an enum member """
+
+    return isinstance(value, enum.Enum)
 
 
 def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
@@ -184,6 +191,7 @@ def main() -> None:
         STEP=step_name,
         PLUGINS=plugin_generator,
         REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+        is_enum=is_enum,
         container_fields=tmt.utils.container_fields,
         container_field=tmt.utils.container_field,
         container_ignored_fields=container_ignored_fields,

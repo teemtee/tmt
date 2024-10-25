@@ -1,0 +1,89 @@
+summary: Tests for check results behaviour
+description: Verify that check results are correctly interpreted and affect test results
+framework: shell
+duration: 1m
+
+/check-pass:
+    summary: Test with passing checks
+    description: |
+        Expected outcome: PASS (test passes, check passes)
+    test: echo "Test passed"
+    check:
+        - how: dmesg
+          result: respect
+
+/check-pass-test-xfail:
+    summary: Everything passing but failure expected
+    description: |
+        Expected outcome: FAIL (test passes, check passes, but fail is expected)
+    test: echo "Test passed"
+    check:
+        - how: dmesg
+          result: respect
+    result: xfail
+
+/check-fail-respect:
+    summary: Test with failing dmesg check (respect)
+    description: |
+        Expected outcome: FAIL (test passes, but check fails and is respected)
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
+    check:
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+
+/check-fail-info:
+    summary: Test with failing dmesg check (info)
+    description: |
+        Expected outcome: PASS (test passes, check fails, but should be just info)
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
+    check:
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+          result: info
+
+/check-xfail-pass:
+    summary: Test with passing dmesg check (xfail)
+    description: |
+        Expected outcome: FAIL (test passes, check passes but xfail expects it to fail)
+    test: echo "Test passed"
+    check:
+        - how: dmesg
+          result: xfail
+
+/check-xfail-fail:
+    summary: Test with failing dmesg check (xfail)
+    description: |
+        Expected outcome: PASS (test passes, check fails but xfail expects it to fail)
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
+    check:
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+          result: xfail
+
+/check-multiple:
+    summary: Test with multiple checks with different result interpretations
+    description: |
+        Expected outcome: FAIL (first dmesg check fails and is respected, second dmesg check
+        passes but xfail expects it to fail, third failing dmesg check is just info)"
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
+    check:
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+          result: respect
+        - how: dmesg
+          result: xfail
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+          result: info
+    enabled: false  # TODO: handle multiple checks with same 'name'/'how'
+
+/check-override:
+    summary: Test with failing dmesg check but overridden by test result
+    description: |
+        Expected outcome: PASS (test passes, check fails but is overridden by 'result: pass')
+    test: echo "Fail Test Check Pattern" | tee /dev/kmsg
+    result: pass
+    check:
+        - how: dmesg
+          failure-pattern: Fail Test Check Pattern
+          result: respect

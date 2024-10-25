@@ -454,16 +454,17 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
 
-        # Extract test results and store them in the invocation. Note
-        # that these results will be overwritten with a fresh set of
-        # results after a successful reboot in the middle of a test.
-        invocation.results = self.extract_results(invocation, logger)
-
+        # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
             invocation=invocation,
             environment=environment,
             logger=logger
             )
+
+        # Extract test results and store them in the invocation. Note
+        # that these results will be overwritten with a fresh set of
+        # results after a successful reboot in the middle of a test.
+        invocation.results = self.extract_results(invocation, logger)
 
         if invocation.is_guest_healthy:
             # Fetch #2: after-test checks might have produced remote files as well,

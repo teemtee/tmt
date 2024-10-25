@@ -65,7 +65,7 @@ rlJournalStart
             rlRun "dump_before=$segfault/checks/dmesg-before-test.txt"
             rlRun "dump_after=$segfault/checks/dmesg-after-test.txt"
 
-            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /dmesg/segfault"
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /dmesg/segfault" "1"
             rlRun "cat $results"
 
             assert_check_result "dmesg as a before-test should pass" "pass" "before-test" "segfault"
@@ -84,7 +84,7 @@ rlJournalStart
             rlRun "dump_before=$custom_patterns/checks/dmesg-before-test.txt"
             rlRun "dump_after=$custom_patterns/checks/dmesg-after-test.txt"
 
-            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /dmesg/custom-patterns"
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /dmesg/custom-patterns" "1"
             rlRun "cat $results"
 
             assert_check_result "dmesg as a before-test should fail" "fail" "before-test" "custom-patterns"

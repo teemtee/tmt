@@ -7,6 +7,8 @@
 {{ option }}: ``{{ metadata.metavar }}``
     {% elif metadata.default is boolean %}
 {{ option }}: ``true|false``
+    {% elif metadata.choices %}
+{{ option }}: ``{{ metadata.choices }}``
     {% else %}
 {{ option }}:
     {% endif %}
@@ -27,11 +29,13 @@
         {% elif actual_default is sequence %}
             {% if not actual_default %}
     Default: *not set*
-            {% else %}
+        {% else %}
     Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor %}
             {% endif %}
+        {% elif is_enum(actual_default) %}
+    Default: ``{{ actual_default.value }}``
         {% else %}
-            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default)) %}
+            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default), shift=0) %}
     Default: *could not render default value correctly*
         {% endif %}
     {% endif %}
@@ -71,7 +75,7 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
     Please, be aware that the documentation below is a work in progress. We are
     working on fixing it, adding missing bits and generally making it better.
     Also, it was originally used for command line help only, therefore the
-    formatting is often suboptional.
+    formatting is often suboptimal.
 {% endif %}
 
 {% if PLUGIN.__doc__ %}
