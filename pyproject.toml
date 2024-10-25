@@ -60,6 +60,7 @@ provision-virtual = [
     "testcloud>=0.11.3",
     ]
 provision-container = []
+provision-bootc = []
 report-junit = [
     # Required to support XML parsing and checking the XSD schemas.
     "lxml>=4.6.5",
@@ -75,6 +76,7 @@ all = [
     "tmt[test-convert]",
     "tmt[export-polarion]",
     "tmt[provision-container]",
+    "tmt[provision-bootc]",
     "tmt[provision-virtual]",
     "tmt[provision-beaker]",
     "tmt[report-junit]",
