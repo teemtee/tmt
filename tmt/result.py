@@ -1,7 +1,6 @@
 import dataclasses
 import enum
 import re
-from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import click
@@ -38,9 +37,35 @@ class ResultOutcome(enum.Enum):
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid partial custom result '{spec}'.")
 
+    @staticmethod
+    def reduce(outcomes: list['ResultOutcome']) -> 'ResultOutcome':
+        """
+        Reduce several result outcomes into a single outcome
+
+        Convert multiple outcomes into a single one by picking the
+        worst. This is used when aggregating several test or check
+        results to present a single value to the user.
+        """
+
+        outcomes_by_severity = (
+            ResultOutcome.ERROR,
+            ResultOutcome.FAIL,
+            ResultOutcome.WARN,
+            ResultOutcome.PASS,
+            ResultOutcome.INFO,
+            ResultOutcome.SKIP,
+            )
+
+        for outcome in outcomes_by_severity:
+            if outcome in outcomes:
+                return outcome
+
+        raise GeneralError("No result outcome found to reduce.")
 
 # Cannot subclass enums :/
 # https://docs.python.org/3/library/enum.html#restricted-enum-subclassing
+
+
 class ResultInterpret(enum.Enum):
     # These are "inherited" from ResultOutcome
     PASS = 'pass'
@@ -359,6 +384,53 @@ class Result(BaseResult):
 
         return _result.interpret_result(invocation.test.result, interpret_checks)
 
+    def append_note(self, note: str) -> None:
+        """ Append text to result note """
+        if self.note:
+            self.note += f", {note}"
+        else:
+            self.note = note
+
+    def interpret_check_result(
+            self,
+            check_name: str,
+            interpret_checks: dict[str, CheckResultInterpret]) -> ResultOutcome:
+        """
+        Aggregate all checks of given name and interpret the outcome
+
+        :param check_name: name of the check to be aggregated
+        :param interpret_checks: mapping of check:how and it's result interpret
+        :returns: :py:class:`ResultOutcome` instance with the interpreted result
+        """
+
+        # Reduce all check outcomes into a single worst outcome
+        reduced_outcome = ResultOutcome.reduce(
+            [check.result for check in self.check if check.name == check_name])
+
+        # Now let's handle the interpretation
+        interpret = interpret_checks[check_name]
+        interpreted_outcome = reduced_outcome
+
+        if interpret == CheckResultInterpret.RESPECT:
+            if interpreted_outcome == ResultOutcome.FAIL:
+                self.append_note(f"check '{check_name}' failed")
+
+        elif interpret == CheckResultInterpret.INFO:
+            interpreted_outcome = ResultOutcome.INFO
+            self.append_note(f"check '{check_name}' is informational")
+
+        elif interpret == CheckResultInterpret.XFAIL:
+
+            if reduced_outcome == ResultOutcome.PASS:
+                interpreted_outcome = ResultOutcome.FAIL
+                self.append_note(f"check '{check_name}' did not fail as expected")
+
+            if reduced_outcome == ResultOutcome.FAIL:
+                interpreted_outcome = ResultOutcome.PASS
+                self.append_note(f"check '{check_name}' failed as expected")
+
+        return interpreted_outcome
+
     def interpret_result(
             self,
             interpret: ResultInterpret,
@@ -377,51 +449,44 @@ class Result(BaseResult):
 
         if interpret not in ResultInterpret:
             raise tmt.utils.SpecificationError(
-                f"Invalid result '{interpret.value}' in test '{self.name}'."
-                )
+                f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
         if interpret == ResultInterpret.CUSTOM:
             return self
 
-        # Group check phases by the check name (how)
-        check_groups: dict[str, list[CheckResult]] = defaultdict(list)
-        for check_result in self.check:
-            check_groups[check_result.name].append(check_result)
+        # Interpret check results (aggregated by the check name)
+        check_outcomes: list[ResultOutcome] = []
+        for check_name in tmt.utils.uniq([check.name for check in self.check]):
+            check_outcomes.append(self.interpret_check_result(check_name, interpret_checks))
 
-        # Process each group of check results
-        failed_checks: list[str] = []
-        for how, group in check_groups.items():
-            reduced_outcome = self.aggregate_check_results(group, interpret_checks[how])
-            if reduced_outcome == ResultOutcome.FAIL:
-                failed_checks.append(how)
+        # Aggregate check results with the main test result
+        self.result = ResultOutcome.reduce([self.result, *check_outcomes])
 
-        # Check results are interpreted, deal with test results that are not affected by checks
+        # Override result with result outcome provided by user
         if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
             self.result = ResultOutcome(interpret.value)
+            self.append_note(f"test result overridden: {self.result.value}")
 
             # Add original result to note if the result has changed
             if self.result != self.original_result:
-                orig_note = f"original result: {self.original_result.value}"
-                self.note = f"{self.note}, {orig_note}" if self.note else orig_note
+                self.append_note(f"original test result: {self.original_result.value}")
 
             return self
 
-        if failed_checks:
-            self.result = ResultOutcome.FAIL
-            check_note = ", ".join([f"check '{check}' failed" for check in failed_checks])
-            self.note = f"{self.note}, {check_note}" if self.note else check_note
-
+        # Handle the expected fail
         if interpret == ResultInterpret.XFAIL:
-            # Swap fail<-->pass
-            self.result = {
-                ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL,
-                }.get(self.result, self.result)
+
+            if self.result == ResultOutcome.PASS:
+                self.result = ResultOutcome.FAIL
+                self.append_note("test was expected to fail")
+
+            if self.result == ResultOutcome.FAIL:
+                self.result = ResultOutcome.PASS
+                self.append_note("test failed as expected")
 
         # Add original result to note if the result has changed
         if self.result != self.original_result:
-            orig_note = f"original result: {self.original_result.value}"
-            self.note = f"{self.note}, {orig_note}" if self.note else orig_note
+            self.append_note(f"original test result: {self.original_result.value}")
 
         return self
 
