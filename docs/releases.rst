@@ -74,6 +74,7 @@ invalid XML characters from the final JUnit XML.
 A new :ref:`test-runner` section has been added to the tmt
 :ref:`guide`. It describes some important differences between
 running tests on a :ref:`user-system` and scheduling test jobs in
+Testing Farm.
 
 A race condition in the
 :ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
