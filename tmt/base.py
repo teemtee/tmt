@@ -775,7 +775,7 @@ class Core(
     # TODO: cached_property candidates
     @property
     def fmf_root(self) -> Optional[Path]:
-        # Check if fmf root exists
+        # Check if fmf root is defined
         if self.node.root is not None:
             return Path(self.node.root)
         return None
