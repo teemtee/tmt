@@ -777,11 +777,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             assert hw.constraint
 
-            transformed = MrackHWAndGroup(
-                children=[
-                    constraint_to_beaker_filter(constraint, logger)
-                    for constraint in hw.constraint.variant()
-                    ])
+            transformed = constraint_to_beaker_filter(hw.constraint, logger)
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
 
