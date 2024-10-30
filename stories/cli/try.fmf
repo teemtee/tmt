@@ -161,3 +161,17 @@ link:
         link:
           - implemented-by: /tmt/trying.py
           - implemented-by: /tmt/steps/prepare/install.py
+
+    /arch:
+        story:
+            As a user I want an easy way to specify CPU architecture on the guest.
+        description: |
+            Specify CPU architecture on the guest.
+
+            .. versionadded:: 1.39
+
+        example:
+            - tmt try fedora@virtual --arch aarch64
+
+        link:
+          - implemented-by: /tmt/cli.py
