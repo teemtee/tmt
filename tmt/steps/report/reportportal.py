@@ -351,15 +351,18 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("Unexpected option combination: '--launch-rerun' "
                       "may cause an unexpected behaviour with launch-per-plan structure")
 
+    @property
     def time(self) -> str:
         return str(int(time() * 1000))
 
-    def get_headers(self) -> dict[str, str]:
+    @property
+    def headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.data.token}",
                 "Accept": "*/*",
                 "Content-Type": "application/json"}
 
-    def get_url(self) -> str:
+    @property
+    def url(self) -> str:
         return f"{self.data.url}/api/{self.data.api_version}/{self.data.project}"
 
     def construct_launch_attributes(self, suite_per_plan: bool,
@@ -405,21 +408,21 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return str(dt_locator)
 
     def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
-        response = session.get(url=f"{self.get_url()}/{path}",
-                               headers=self.get_headers())
+        response = session.get(url=f"{self.url}/{path}",
+                               headers=self.headers)
         self.handle_response(response)
         return response
 
     def rp_api_post(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.post(url=f"{self.get_url()}/{path}",
-                                headers=self.get_headers(),
+        response = session.post(url=f"{self.url}/{path}",
+                                headers=self.headers,
                                 json=json)
         self.handle_response(response)
         return response
 
     def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.put(url=f"{self.get_url()}/{path}",
-                               headers=self.get_headers(),
+        response = session.put(url=f"{self.url}/{path}",
+                               headers=self.headers,
                                json=json)
         self.handle_response(response)
         return response
@@ -464,13 +467,13 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("SSL verification is disabled for all requests being made to ReportPortal "
                       f"instance ({self.data.url}).")
 
-        launch_time = self.time()
+        launch_time = self.time
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
             # launch time should be the earliest start time of all plans
-            launch_time = min([r.start_time or self.time()
+            launch_time = min([r.start_time or self.time
                                for r in self.step.plan.execute.results()])
 
         # Create launch, suites (if "--suite_per_plan") and tests;
@@ -601,7 +604,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             for result, test in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
-                test_time = self.time()
+                test_time = self.time
                 test_name = None
                 test_description = ''
                 test_link = None
@@ -612,7 +615,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
-                    test_time = result.start_time or self.time()
+                    test_time = result.start_time or self.time
                     # for guests, save their primary address
                     if result.guest.primary_address:
                         item_attributes.append({
@@ -715,7 +718,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                       "level": "ERROR",
                                       "time": result.end_time})
 
-                    test_time = result.end_time or self.time()
+                    test_time = result.end_time or self.time
 
                 # Finish the test item
                 response = self.rp_api_put(
