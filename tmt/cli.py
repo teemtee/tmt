@@ -1763,11 +1763,14 @@ def init(
     "--install", default=[], metavar="PACKAGE", multiple=True,
     help="Install package on the guest.")
 @option(
+    "--arch", default="", metavar="ARCH", multiple=False,
+    help="Specify guest CPU architecture.")
+@option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")
 @verbosity_options
 @force_dry_options
-def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
+def try_command(context: Context, image_and_how: str, arch: str, **kwargs: Any) -> None:
     """
     Try tests or experiment with guests.
 
@@ -1807,6 +1810,10 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
             options = {"image": matched.group(1), "how": matched.group(2)}
         else:
             options = {"image": image_and_how}
+
+        # Add guest architecture if provided
+        if arch:
+            options['arch'] = arch
 
         # For 'connect' rename 'image' to 'guest'
         if options.get('how') == 'connect':
