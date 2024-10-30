@@ -32,6 +32,9 @@ prepare+:
             virt-customize --add $image --run-command 'dnf --refresh install -y beakerlib'
         done
 
+context+:
+  provision_how: virtual
+
 environment:
     PROVISION_HOW: virtual
 
