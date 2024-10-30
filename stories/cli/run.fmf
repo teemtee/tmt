@@ -43,7 +43,7 @@ story: 'As a user I want to execute tests easily'
                 discover:
                     how: fmf
                 execute:
-                    how: shell
+                    how: tmt
 
             /default/plan:
                 summary:
@@ -51,7 +51,7 @@ story: 'As a user I want to execute tests easily'
                 discover:
                     how: shell
                 execute:
-                    how: shell
+                    how: tmt
         link:
           - implemented-by: /tmt/base.py
           - verified-by: /tests/run/default

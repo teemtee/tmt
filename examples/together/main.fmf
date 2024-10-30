@@ -5,15 +5,13 @@
     discover:
         how: fmf
     prepare:
-        how: ansible
-        playbook: packages.yaml
+        how: install
+        package: [python3, make]
     execute:
-        how: shell
+        how: tmt
 
 /tests:
     /smoke:
         test: python3 -c "import time"
-        path: /
     /full:
         test: make check
-        path: /
