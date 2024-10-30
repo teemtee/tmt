@@ -5,6 +5,7 @@ from time import time
 from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
+import urllib3
 
 import tmt.hardware
 import tmt.log
@@ -12,6 +13,7 @@ import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
+
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -238,6 +240,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
                                     os.getenv('TMT_REPORT_ARTIFACTS_URL')),
         help="Link to test artifacts provided for report plugins.")
 
+    ssl_verify: bool = field(
+        default=True,
+        option=('--ssl-verify / --no-ssl-verify'),
+        is_flag=True,
+        show_default=True,
+        help="Enable/disable the SSL verification for communication with ReportPortal.")
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -449,6 +458,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         self.check_options()
 
+        # If SSL verification is disabled, do not print warnings with urllib3
+        if not self.data.ssl_verify:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            self.warn("SSL verification is disabled for all requests being made to ReportPortal "
+                      f"instance ({self.data.url}).")
+
         launch_time = self.time()
 
         # Support for idle tests
@@ -515,6 +530,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 503,   # Service Unavailable
                 504,   # Gateway Timeout
                 )) as session:
+
+            session.verify = self.data.ssl_verify
 
             if create_launch:
 
