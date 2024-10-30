@@ -318,10 +318,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     TMT_TO_RP_RESULT_STATUS = {
         ResultOutcome.PASS: "PASSED",
         ResultOutcome.FAIL: "FAILED",
-        ResultOutcome.ERROR: "FAILED",
+        ResultOutcome.INFO: "SKIPPED",
         ResultOutcome.WARN: "FAILED",
-        ResultOutcome.INFO: "SKIPPED"
-        }
+        ResultOutcome.ERROR: "FAILED",
+        ResultOutcome.SKIP: "SKIPPED"}
 
     def handle_response(self, response: requests.Response) -> None:
         """ Check the endpoint response and raise an exception if needed """
