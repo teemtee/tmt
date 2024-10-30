@@ -1,7 +1,7 @@
 import dataclasses
+import datetime
 import os
 import re
-from time import time
 from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
@@ -13,7 +13,6 @@ import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
-
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -352,8 +351,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                       "may cause an unexpected behaviour with launch-per-plan structure")
 
     @property
-    def time(self) -> str:
-        return str(int(time() * 1000))
+    def datetime(self) -> str:
+        return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     @property
     def headers(self) -> dict[str, str]:
@@ -467,13 +466,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("SSL verification is disabled for all requests being made to ReportPortal "
                       f"instance ({self.data.url}).")
 
-        launch_time = self.time
+        launch_time = self.datetime
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
             # launch time should be the earliest start time of all plans
-            launch_time = min([r.start_time or self.time
+            # TODO: Does the 'min' work with datetime isoformat correctly?
+            launch_time = min([r.start_time or self.datetime
                                for r in self.step.plan.execute.results()])
 
         # Create launch, suites (if "--suite_per_plan") and tests;
@@ -604,7 +604,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             for result, test in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
-                test_time = self.time
+                test_time = self.datetime
                 test_name = None
                 test_description = ''
                 test_link = None
@@ -615,7 +615,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
-                    test_time = result.start_time or self.time
+                    test_time = result.start_time or self.datetime
                     # for guests, save their primary address
                     if result.guest.primary_address:
                         item_attributes.append({
@@ -666,12 +666,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                               "type": "step",
                               "testCaseId": test_id,
                               "startTime": test_time})
+
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
                     self.verbose("uuid", item_uuid, "yellow", shift=1)
                     self.data.test_uuids[serial_number] = item_uuid
                 else:
                     item_uuid = self.data.test_uuids[serial_number]
+
                 # Support for idle tests
                 status = "SKIPPED"
                 if result:
@@ -718,7 +720,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                       "level": "ERROR",
                                       "time": result.end_time})
 
-                    test_time = result.end_time or self.time
+                    test_time = result.end_time or self.datetime
 
                 # Finish the test item
                 response = self.rp_api_put(
@@ -730,6 +732,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "status": status,
                         "issue": {
                             "issueType": self.get_defect_type_locator(session, defect_type)}})
+
                 launch_time = test_time
 
             if create_suite:
