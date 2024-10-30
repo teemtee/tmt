@@ -20,6 +20,9 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
+    .. versionchanged:: 1.39
+       ``beaker`` plugins supports ``vendor-name``
+
     .. versionchanged:: 1.38
        ``beaker`` plugins supports ``model-name``
 
