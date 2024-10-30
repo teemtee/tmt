@@ -355,8 +355,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return str(int(time() * 1000))
 
     def get_headers(self) -> dict[str, str]:
-        return {"Authorization": "bearer " + str(self.data.token),
-                "accept": "*/*",
+        return {"Authorization": f"Bearer {self.data.token}",
+                "Accept": "*/*",
                 "Content-Type": "application/json"}
 
     def get_url(self) -> str:
