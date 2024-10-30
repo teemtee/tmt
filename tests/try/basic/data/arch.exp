@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+# Try arch
+
+set timeout 180
+spawn tmt try fedora@virtual --arch aarch64 -p /plans/basic
+expect "What do we do next?"
+send -- "q\r"
+expect eof
