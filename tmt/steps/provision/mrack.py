@@ -776,7 +776,10 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             """ Return hw requirements from given hw dictionary """
 
             assert hw.constraint
-
+            # Beaker,unlike instance-type-based infrastructures like AWS, does
+            # have the actual filtering, and can express `or` and `and`
+            # groups. And our `constraint_to_beaker_filter()` does that,
+            # even for groups nested deeper in the tree.
             transformed = constraint_to_beaker_filter(hw.constraint, logger)
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
