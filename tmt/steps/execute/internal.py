@@ -561,7 +561,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     else:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'crashed too many times'
+                            result.note = ('crashed too many times, '
+                                           'you may want to set restart-max-count larger')
 
                 # Handle reboot, abort, exit-first
                 if invocation.reboot_requested:
