@@ -11,7 +11,7 @@ prepare:
     how: shell
     script: systemctl start httpd
 execute:
-    how: shell
+    how: tmt
     script:
       - echo foo > /var/www/html/index.html
       - curl http://localhost/ | grep foo
