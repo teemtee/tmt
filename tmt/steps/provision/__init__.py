@@ -141,6 +141,17 @@ DEFAULT_REBOOT_COMMAND = Command('reboot')
 STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
 
 
+# Note: returns a static list, but we cannot make it a mere list,
+# because `tmt.base` needs to be imported and that creates a circular
+# import loop.
+def essential_ansible_requires() -> list['tmt.base.Dependency']:
+    """ Return essential requirements for running Ansible modules """
+
+    return [
+        tmt.base.DependencySimple('/usr/bin/python3')
+        ]
+
+
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
     """ Render guest's full name, i.e. name and its role """
 

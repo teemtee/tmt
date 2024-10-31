@@ -7,6 +7,7 @@ import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.prepare
+import tmt.steps.provision
 import tmt.utils
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
@@ -144,3 +145,15 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
                 raise tmt.utils.GeneralError(f"Unsupported feature '{feature_key}'.")
 
         return results
+
+    def essential_requires(self) -> list[tmt.base.Dependency]:
+        """
+        Collect all essential requirements of the plugin.
+
+        Essential requirements of a plugin are necessary for the plugin to
+        perform its basic functionality.
+
+        :returns: a list of requirements.
+        """
+
+        return tmt.steps.provision.essential_ansible_requires()
