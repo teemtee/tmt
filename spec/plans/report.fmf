@@ -4,6 +4,7 @@ story:
     the testing is finished.
 description:
     Report test results according to user preferences.
+example:
 
 /display:
     summary: Show results in the terminal window
@@ -202,38 +203,12 @@ description:
 /file:
     description: |
 
-        Save the report into a ``report.yaml`` file with the
-        following format:
+        Save the report into a ``report.yaml`` file.
 
-        .. code-block:: yaml
-
-            result: OVERALL_RESULT
-            plans:
-                /plan/one:
-                    result: PLAN_RESULT
-                    tests:
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
-
-                        /test/two:
-                            result: TEST_RESULT
-                            log:
-                                - LOG_PATH
-                                - LOG_PATH
-                                - LOG_PATH
-                /plan/two:
-                    result: PLAN_RESULT
-                        /test/one:
-                            result: TEST_RESULT
-                            log:
-                              - LOG_PATH
-
-        Where ``OVERALL_RESULT`` is the overall result of all plan
+        The ``OVERALL_RESULT`` is the overall result of all plan
         results. It is counted the same way as ``PLAN_RESULT``.
 
-        Where ``TEST_RESULT`` is the same as in `execute`_ step
+        The ``TEST_RESULT`` is the same as in `execute`_ step
         definition:
 
             * info - test finished and produced only information
@@ -246,7 +221,7 @@ description:
         with ``info`` having the lowest priority and ``error`` has
         the highest. This is important for ``PLAN_RESULT``.
 
-        Where ``PLAN_RESULT`` is the overall result or all test
+        The ``PLAN_RESULT`` is the overall result or all test
         results for the plan run. It has the same values as
         ``TEST_RESULT``. Plan result is counted according to the
         priority of the test outcome values. For example:
@@ -258,7 +233,31 @@ description:
             * if the test results are failed, error, passed - the
               plan result will be error
 
-        Where ``LOG_PATH`` is the test log output path, relative
+        The ``LOG_PATH`` is the test log output path, relative
         to the execute step plan run directory. The ``log`` key
         will be a list of such paths, even if there is just a single
         log.
+
+    example: |
+        result: OVERALL_RESULT
+        plans:
+            /plan/one:
+                result: PLAN_RESULT
+                tests:
+                    /test/one:
+                        result: TEST_RESULT
+                        log:
+                          - LOG_PATH
+
+                    /test/two:
+                        result: TEST_RESULT
+                        log:
+                            - LOG_PATH
+                            - LOG_PATH
+                            - LOG_PATH
+            /plan/two:
+                result: PLAN_RESULT
+                    /test/one:
+                        result: TEST_RESULT
+                        log:
+                          - LOG_PATH
