@@ -26,7 +26,7 @@ rlJournalStart
 
         rlPhaseStartTest "Require an available package ($image)"
             rlRun -s "$tmt plan --name available"
-            rlAssertGrep '1 preparation applied' $rlRun_LOG
+            rlAssertGrep '2 preparations applied' $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "Require a missing package ($image)"
