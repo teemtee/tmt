@@ -4,7 +4,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "root=/var/tmp/tmt"
-        rlRun "test_root=/var/tmp/test_root"
+        rlRun "test_root=\$(mktemp -d)" 0 "Creating tmp root workdir"
         rlRun "pushd data"
     rlPhaseEnd
 

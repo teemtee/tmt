@@ -1670,8 +1670,7 @@ def status(
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     status_obj = tmt.Status(
-        logger=context.obj.logger.clone().
-        apply_verbosity_options(**kwargs),
+        logger=context.obj.logger.clone().apply_verbosity_options(**kwargs),
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root))
     status_obj.show()
