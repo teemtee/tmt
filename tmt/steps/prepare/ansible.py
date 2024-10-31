@@ -10,6 +10,7 @@ import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.prepare
+import tmt.steps.provision
 import tmt.utils
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
@@ -183,6 +184,4 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         :returns: a list of requirements.
         """
 
-        return [
-            tmt.base.DependencySimple('/usr/bin/python3')
-            ]
+        return tmt.steps.provision.essential_ansible_requires()

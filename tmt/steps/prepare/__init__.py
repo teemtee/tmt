@@ -1,6 +1,6 @@
 import copy
 import dataclasses
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -100,6 +100,34 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
         return []
 
 
+# Required & recommended packages
+#
+# Structures and code for collecting requirements for different guests
+# or their groups to avoid installing all test requirements on all
+# guests. For example, a test running on the "server" guest might
+# require package `foo` while the test running on the "client" might
+# require package `bar`, and `foo` and `bar` cannot be installed at the
+# sametime.
+
+
+@dataclasses.dataclass
+class DependencyCollection:
+    """ Bundle guests and packages to install on them """
+
+    # Guest*s*, not a guest. The list will start with just one guest at
+    # first, but when grouping guests by same requirements, we'd start
+    # adding guests to the list when spotting same set of dependencies.
+    guests: list[Guest]
+    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)
+
+    @property
+    def as_key(self) -> 'DependencyCollectionKey':
+        return frozenset(self.dependencies)
+
+
+DependencyCollectionKey = frozenset['tmt.base.DependencySimple']
+
+
 class Prepare(tmt.steps.Step):
     """
     Prepare the environment for testing.
@@ -169,31 +197,6 @@ class Prepare(tmt.steps.Step):
 
         import tmt.base
 
-        # Required & recommended packages
-        #
-        # Take care of collecting requirements for different guests or their
-        # groups to avoid installing all test requirements on all guests. For
-        # example, a test running on the "server" guest might require
-        # package `foo` while the test running on the "client" might require
-        # package `bar`, and `foo` and `bar` cannot be installed at the same
-        # time.
-        @dataclasses.dataclass
-        class DependencyCollection:
-            """ Bundle guests and packages to install on them """
-
-            # Guest*s*, not a guest. The list will start with just one guest in
-            # `collected_* dicts, but when grouping guests by same requirements,
-            # we'd start adding guests to the list when spotting same set of
-            # dependencies.
-            guests: list[Guest]
-            dependencies: list['tmt.base.DependencySimple'] \
-                = dataclasses.field(default_factory=list)
-
-            @property
-            def as_key(self) -> frozenset['tmt.base.DependencySimple']:
-                # ignore[attr-defined]: mypy doesn't seem to understand collection as `frozenset`
-                return frozenset(collection.dependencies)  # type: ignore[has-type]
-
         # All phases from all steps.
         phases = [
             phase
@@ -209,30 +212,42 @@ class Prepare(tmt.steps.Step):
         # All provisioned guests.
         guests = self.plan.provision.guests()
 
+        # 1. collect all requirements, per guest. For each phase, test,
+        # check and so on, find out on which guest it needs to run, and
+        # add its requirements to a guest-specific collection.
+
+        # Collecting all essential requirements, per guest.
+        collected_essential_requires = {
+            guest: DependencyCollection(guests=[guest]) for guest in guests
+            }
+
         # Collecting all required packages, per guest.
-        collected_requires: dict[Guest, DependencyCollection] = {
+        collected_requires = {
             guest: DependencyCollection(guests=[guest]) for guest in guests
             }
 
         # Collecting all recommended packages, per guest.
-        collected_recommends: dict[Guest, DependencyCollection] = {
+        collected_recommends = {
             guest: DependencyCollection(guests=[guest]) for guest in guests
             }
 
-        # For each guest and phase pair, check whether the phase is supposed to
-        # run on the guest. If so, just add its requirements on top of the
-        # guest's pile of requirements.
+        # For each guest, check everything that can run, and if enabled
+        # for the given guest, add requirements into the correct
+        # collection.
         for guest in guests:
+            # First, check phases - plugins have their own requirements,
+            # the essential requirements.
             for phase in phases:
                 if not phase.enabled_on_guest(guest):
                     continue
 
-                collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
-                    # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
-                    # actually PluginClass
-                    phase.essential_requires(),  # type: ignore[attr-defined]
-                    'After beakerlib processing, tests may have only simple requirements',
-                    self._logger)
+                collected_essential_requires[guest].dependencies \
+                    += tmt.base.assert_simple_dependencies(
+                        # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
+                        # actually PluginClass
+                        phase.essential_requires(),  # type: ignore[attr-defined]
+                        'After beakerlib processing, tests may have only simple requirements',
+                        self._logger)
 
             # The `discover` step is different: no phases, just query tests
             # collected by the step itself. Maybe we could iterate over
@@ -254,17 +269,19 @@ class Prepare(tmt.steps.Step):
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger)
 
-                collected_requires[guest].dependencies += test.test_framework.get_requirements(
-                    test,
-                    self._logger)
-
-                for check in test.check:
-                    collected_requires[guest].dependencies += check.plugin.essential_requires(
-                        guest,
+                collected_essential_requires[guest].dependencies \
+                    += test.test_framework.get_requirements(
                         test,
                         self._logger)
 
-        # Now we have guests and all their requirements. There can be
+                for check in test.check:
+                    collected_essential_requires[guest].dependencies \
+                        += check.plugin.essential_requires(
+                            guest,
+                            test,
+                            self._logger)
+
+        # 2. Now we have guests and all their requirements. There can be
         # duplicities, multiple tests requesting the same package, but also
         # some guests may share the set of packages to be installed on them.
         # Let's say N guests share a `role`, all their tests would add the same
@@ -274,58 +291,70 @@ class Prepare(tmt.steps.Step):
         #
         # 1. make the list of requirements unique,
         # 2. group guests with same requirements.
-        from tmt.steps.prepare.install import PrepareInstallData
+        def _prune_collections(
+                collections: dict[Guest, DependencyCollection]) -> list[DependencyCollection]:
 
-        pruned_requires: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
-        pruned_recommends: dict[frozenset[tmt.base.DependencySimple], DependencyCollection] = {}
+            pruned: dict[DependencyCollectionKey, DependencyCollection] = {}
 
-        for guest, collection in collected_requires.items():
-            collection.dependencies = uniq(collection.dependencies)
+            for guest, collection in collections.items():
+                collection.dependencies = uniq(collection.dependencies)
 
-            if collection.as_key in pruned_requires:
-                pruned_requires[collection.as_key].guests.append(guest)
+                if collection.as_key in pruned:
+                    pruned[collection.as_key].guests.append(guest)
 
-            else:
-                pruned_requires[collection.as_key] = collection
+                else:
+                    pruned[collection.as_key] = collection
 
-        for guest, collection in collected_recommends.items():
-            collection.dependencies = uniq(collection.dependencies)
+            return list(pruned.values())
 
-            if collection.as_key in pruned_recommends:
-                pruned_recommends[collection.as_key].guests.append(guest)
+        pruned_essential_requires = _prune_collections(collected_essential_requires)
+        pruned_requires = _prune_collections(collected_requires)
+        pruned_recommends = _prune_collections(collected_recommends)
 
-            else:
-                pruned_recommends[collection.as_key] = collection
+        # 3. for each collection, which now groups a set of packages and
+        # all guests they need to be installed on, add new phase that
+        # would take care of installation.
+        def _emit_phase(
+                pruned_collections: list[DependencyCollection],
+                name: str,
+                summary: str,
+                order: int,
+                missing: Literal['skip', 'fail'] = 'fail') -> None:
+            from tmt.steps.prepare.install import PrepareInstallData
 
-        for collection in pruned_requires.values():
-            if not collection.dependencies:
-                continue
+            for collection in pruned_collections:
+                if not collection.dependencies:
+                    continue
 
-            data = PrepareInstallData(
-                name='requires',
-                how='install',
-                summary='Install required packages',
-                order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
-                where=[guest.name for guest in collection.guests],
-                package=collection.dependencies
-                )
+                data = PrepareInstallData(
+                    name=name,
+                    how='install',
+                    summary=summary,
+                    order=order,
+                    where=[guest.name for guest in collection.guests],
+                    package=collection.dependencies,
+                    missing=missing)
 
-            self._phases.append(PreparePlugin.delegate(self, data=data))
+                self._phases.append(PreparePlugin.delegate(self, data=data))
 
-        for collection in pruned_recommends.values():
-            if not collection.dependencies:
-                continue
+        _emit_phase(
+            pruned_essential_requires,
+            'essential-requires',
+            'Install essential required packages',
+            tmt.utils.DEFAULT_PLUGIN_ORDER_ESSENTIAL_REQUIRES)
 
-            data = PrepareInstallData(
-                how='install',
-                name='recommends',
-                summary='Install recommended packages',
-                order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
-                where=[guest.name for guest in collection.guests],
-                package=collection.dependencies,
-                missing='skip')
+        _emit_phase(
+            pruned_requires,
+            'requires',
+            'Install required packages',
+            tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES)
 
-            self._phases.append(PreparePlugin.delegate(self, data=data))
+        _emit_phase(
+            pruned_recommends,
+            'recommends',
+            'Install recommended packages',
+            tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
+            missing='skip')
 
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
