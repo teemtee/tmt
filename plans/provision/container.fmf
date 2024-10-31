@@ -18,6 +18,9 @@ prepare+:
     summary: Fetch dnf cache to speed up the test execution
     script: prepare/podman-images.sh
 
+context+:
+  provision_how: container
+
 environment:
     PROVISION_HOW: container
 
