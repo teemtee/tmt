@@ -20,6 +20,7 @@ from click import echo, style
 import tmt
 import tmt.base
 import tmt.cli
+import tmt.config
 import tmt.convert
 import tmt.export
 import tmt.identifier
@@ -1933,7 +1934,7 @@ COMPLETE_SCRIPT = 'tmt-complete'
 
 def setup_completion(shell: str, install: bool, context: Context) -> None:
     """ Setup completion based on the shell """
-    config = tmt.utils.Config()
+    config = tmt.config.Config()
     # Fish gets installed into its special location where it is automatically
     # loaded.
     if shell == 'fish':
