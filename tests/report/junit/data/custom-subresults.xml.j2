@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+
+<tests disabled="0" errors="{{ RESULTS.errored | length }}" failures="{{ RESULTS.failed | length }}" tests="{{ RESULTS | length }}" time="{{ RESULTS.duration }}">
+    {% for result in RESULTS %}
+        {% set main_test_duration = result.duration | duration_to_seconds %}
+        <result name="{{ result.name | trim | e }}" disabled="0" errors="{{ result.subresult.errored | length }}" failures="{{ result.subresult.failed | length }}" skipped="{{ result.subresult.skipped | length }}" tests="{{ result.subresult | length }}" time="{{ main_test_duration }}" outcome="{{ result.result.value }}" timestamp="{{ result.start_time }}">
+            {% for subresult in result.subresult %}
+                {% set subresult_test_duration = subresult.duration | duration_to_seconds %}
+                <subresult name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %} outcome="{{ subresult.result.value }}"></subresult>
+            {% endfor %}
+        </result>
+
+    {% endfor %}
+</tests>
