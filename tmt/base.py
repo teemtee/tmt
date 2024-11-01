@@ -148,12 +148,11 @@ class FmfId(
 
     #: Keys that are present, might be set, but shall not be exported.
     NONEXPORTABLE_KEYS: ClassVar[list[str]] = [
-        'fmf_root', 'anchor_path', 'git_root', 'default_branch']
+        'fmf_root', 'git_root', 'default_branch']
 
     # Save context of the ID for later - there are places where it matters,
     # e.g. to not display `ref` under some conditions.
     fmf_root: Optional[Path] = None
-    anchor_path: Optional[Path] = None
     git_root: Optional[Path] = None
     default_branch: Optional[str] = None
 
