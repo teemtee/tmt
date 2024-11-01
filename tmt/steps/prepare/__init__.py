@@ -107,7 +107,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
 # guests. For example, a test running on the "server" guest might
 # require package `foo` while the test running on the "client" might
 # require package `bar`, and `foo` and `bar` cannot be installed at the
-# sametime.
+# same time.
 
 
 @dataclasses.dataclass
