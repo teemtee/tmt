@@ -4,7 +4,7 @@ story:
     the testing is finished.
 description:
     Report test results according to user preferences.
-example:
+example: []
 
 /display:
     summary: Show results in the terminal window
