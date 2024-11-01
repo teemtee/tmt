@@ -147,8 +147,7 @@ class FmfId(
     VALID_KEYS: ClassVar[list[str]] = ['url', 'ref', 'path', 'name']
 
     #: Keys that are present, might be set, but shall not be exported.
-    NONEXPORTABLE_KEYS: ClassVar[list[str]] = [
-        'fmf_root', 'git_root', 'default_branch']
+    NONEXPORTABLE_KEYS: ClassVar[list[str]] = ['fmf_root', 'git_root', 'default_branch']
 
     # Save context of the ID for later - there are places where it matters,
     # e.g. to not display `ref` under some conditions.
