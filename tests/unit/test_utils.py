@@ -1792,7 +1792,7 @@ class TestJiraLink(unittest.TestCase):
 
 
 def test_render_command_report_output():
-    delimiter = (tmt.utils.OUTPUT_WIDTH - 1) * '~'
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
 
     assert '\n'.join(tmt.utils.render_command_report(
         label='foo',
@@ -1806,19 +1806,19 @@ def test_render_command_report_output():
 # /bar/baz
 
 # stdout (1 lines)
-#{delimiter}
+# {delimiter}
 This is some stdout
-#{delimiter}
+# {delimiter}
 
 # stderr (1 lines)
-#{delimiter}
+# {delimiter}
 This is some stderr
-#{delimiter}
+# {delimiter}
 """
 
 
 def test_render_command_report_exception():
-    delimiter = (tmt.utils.OUTPUT_WIDTH - 1) * '~'
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
 
     assert '\n'.join(tmt.utils.render_command_report(
         label='foo',
@@ -1835,14 +1835,14 @@ def test_render_command_report_exception():
 # /bar/baz
 
 # stdout (1 lines)
-#{delimiter}
+# {delimiter}
 This is some stdout
-#{delimiter}
+# {delimiter}
 
 # stderr (1 lines)
-#{delimiter}
+# {delimiter}
 This is some stderr
-#{delimiter}
+# {delimiter}
 """
 
 

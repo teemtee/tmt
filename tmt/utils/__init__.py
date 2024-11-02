@@ -2477,10 +2477,12 @@ def render_run_exception_streams(
             line_summary = f"{min(len(content_lines), OUTPUT_LINES)}/{len(content_lines)}"
             content_lines = content_lines[-OUTPUT_LINES:]
 
-        yield f'{comment_sign} {name} ({line_summary} lines)'
-        yield comment_sign + (OUTPUT_WIDTH - 1) * '~'
+        line_intro = f'{comment_sign} '
+
+        yield line_intro + f'{name} ({line_summary} lines)'
+        yield line_intro + (OUTPUT_WIDTH - 2) * '~'
         yield from content_lines
-        yield comment_sign + (OUTPUT_WIDTH - 1) * '~'
+        yield line_intro + (OUTPUT_WIDTH - 2) * '~'
         yield ''
 
 
