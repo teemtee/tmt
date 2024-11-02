@@ -1789,3 +1789,68 @@ class TestJiraLink(unittest.TestCase):
         # Load the test object again with the link present
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         assert test.link.get('verifies')[0].target == 'https://issues.redhat.com/browse/TT-262'
+
+
+def test_render_command_report_output():
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
+
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo',
+        command=ShellScript('/bar/baz'),
+        output=tmt.utils.CommandOutput(
+            stdout='This is some stdout',
+            stderr='This is some stderr'
+            )
+        )) == f"""## foo
+
+# /bar/baz
+
+# stdout (1 lines)
+# {delimiter}
+This is some stdout
+# {delimiter}
+
+# stderr (1 lines)
+# {delimiter}
+This is some stderr
+# {delimiter}
+"""
+
+
+def test_render_command_report_exception():
+    delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
+
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo',
+        command=ShellScript('/bar/baz'),
+        exc=tmt.utils.RunError(
+            'foo failed',
+            ShellScript('/bar/baz').to_shell_command(),
+            1,
+            stdout='This is some stdout',
+            stderr='This is some stderr'
+            )
+        )) == f"""## foo
+
+# /bar/baz
+
+# stdout (1 lines)
+# {delimiter}
+This is some stdout
+# {delimiter}
+
+# stderr (1 lines)
+# {delimiter}
+This is some stderr
+# {delimiter}
+"""
+
+
+def test_render_command_report_minimal():
+    print(list(tmt.utils.render_command_report(
+        label='foo'
+        )))
+    assert '\n'.join(tmt.utils.render_command_report(
+        label='foo'
+        )) == """## foo
+"""
