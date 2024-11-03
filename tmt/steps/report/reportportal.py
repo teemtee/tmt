@@ -244,7 +244,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         }
 
     def handle_response(self, response: requests.Response) -> None:
-        """ Check the endpoint response and raise an exception if needed """
+        """
+        Check the endpoint response and raise an exception if needed
+        """
 
         self.debug("Response code from the endpoint", response.status_code)
         self.debug("Message from the endpoint", response.text)
@@ -255,7 +257,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 f"from ReportPortal: {response.text}")
 
     def check_options(self) -> None:
-        """ Check options for known troublesome combinations """
+        """
+        Check options for known troublesome combinations
+        """
 
         if self.data.launch_per_plan and self.data.suite_per_plan:
             self.warn(
@@ -345,7 +349,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return response
 
     def append_description(self, curr_description: str) -> str:
-        """ Extend text with the launch description (if provided) """
+        """
+        Extend text with the launch description (if provided)
+        """
         if self.data.launch_description:
             if curr_description:
                 curr_description += "<br>" + self.data.launch_description

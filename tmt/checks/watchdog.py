@@ -48,7 +48,9 @@ REPORT_FILENAME = 'tmt-watchdog.txt'
 
 
 def render_report_path(invocation: 'TestInvocation') -> Path:
-    """ Render path to a watchdog report file from necessary components """
+    """
+    Render path to a watchdog report file from necessary components
+    """
 
     return invocation.check_files_path / REPORT_FILENAME
 
@@ -86,7 +88,9 @@ def report_progress(
 
 @dataclasses.dataclass
 class GuestContext:
-    """ Per-guest watchdog context """
+    """
+    Per-guest watchdog context
+    """
 
     #: Current number of failed watchdog checks.
     ping_failures: int = 0
@@ -132,7 +136,9 @@ class WatchdogCheck(Check):
         help='How many failed SSH connections before taking any further action.')
 
     def notify(self, invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
-        """ Notify invocation that hard reboot is required """
+        """
+        Notify invocation that hard reboot is required
+        """
 
         if not self.reboot:
             return
@@ -145,14 +151,18 @@ class WatchdogCheck(Check):
             invocation: 'TestInvocation',
             guest_context: GuestContext,
             logger: tmt.log.Logger) -> None:
-        """ Perform a ping check """
+        """
+        Perform a ping check
+        """
 
         logger.debug('pinging', level=4)
 
         log = render_report_path(invocation)
 
         def _fail_parse_error(ping_output: str) -> None:
-            """ Handle unparsable ``ping`` output """
+            """
+            Handle unparsable ``ping`` output
+            """
 
             logger.fail('failed to parse ping output')
 
@@ -169,7 +179,9 @@ class WatchdogCheck(Check):
                 )
 
         def _fail_lost_packets(ping_output: str, transmitted: int, received: int) -> None:
-            """ Handle missing response packets """
+            """
+            Handle missing response packets
+            """
 
             logger.fail(f'not all packets returned: {transmitted=} {received=}')
 
@@ -186,7 +198,9 @@ class WatchdogCheck(Check):
                 )
 
         def _success(ping_output: str) -> None:
-            """ Handle successful response """
+            """
+            Handle successful response
+            """
 
             logger.verbose('Received successful response to ping.', level=2)
 
@@ -207,7 +221,9 @@ class WatchdogCheck(Check):
                 )
 
         def _handle_output(ping_output: str) -> None:
-            """ Process ``ping`` output and decide on its outcome """
+            """
+            Process ``ping`` output and decide on its outcome
+            """
 
             match = PING_OUTPUT_PATTERN.search(ping_output)
 
@@ -259,7 +275,9 @@ class WatchdogCheck(Check):
             invocation: 'TestInvocation',
             guest_context: GuestContext,
             logger: tmt.log.Logger) -> None:
-        """ Perform a "SSH ping" check """
+        """
+        Perform a "SSH ping" check
+        """
 
         assert isinstance(invocation.guest, tmt.steps.provision.GuestSsh)
 
@@ -268,7 +286,9 @@ class WatchdogCheck(Check):
         log = render_report_path(invocation)
 
         def _fail_unknown(ncat_output: str) -> None:
-            """ Handle unknown failures """
+            """
+            Handle unknown failures
+            """
 
             logger.fail('unknown error')
 
@@ -284,7 +304,9 @@ class WatchdogCheck(Check):
                             command_output=ncat_output)
 
         def _fail_connection_refused(ncat_output: str) -> None:
-            """ Handle failed connection """
+            """
+            Handle failed connection
+            """
 
             logger.fail('connection refused')
 
@@ -300,7 +322,9 @@ class WatchdogCheck(Check):
                             command_output=ncat_output)
 
         def _success(ncat_output: str) -> None:
-            """ Handle successful response """
+            """
+            Handle successful response
+            """
 
             logger.verbose('Received successful response to SSH ping.', level=2)
 
@@ -434,7 +458,9 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
             check.ssh_ping = False
 
         def watchdog(guest_context: GuestContext) -> None:
-            """ Watchdog thread code """
+            """
+            Watchdog thread code
+            """
 
             tid = threading.get_ident()
 

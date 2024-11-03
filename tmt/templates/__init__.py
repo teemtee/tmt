@@ -56,7 +56,9 @@ def _get_templates(root_dir: Path) -> TemplatesType:
 
 
 def _append_newline_if_missing(input_string: str) -> str:
-    """ Append newline to the input if it doesn't end with one. """
+    """
+    Append newline to the input if it doesn't end with one.
+    """
     return input_string if input_string.endswith('\n') else input_string + '\n'
 
 
@@ -74,12 +76,16 @@ class TemplateManager:
 
     @functools.cached_property
     def templates(self) -> TemplatesType:
-        """ Return all available templates (default and optional). """
+        """
+        Return all available templates (default and optional).
+        """
         return _combine(self.default_templates, self.custom_templates)
 
     @functools.cached_property
     def default_templates(self) -> TemplatesType:
-        """ Return all default templates. """
+        """
+        Return all default templates.
+        """
         templates_dir = tmt.utils.resource_files('templates/')
         templates = _get_templates(templates_dir)
         if not templates:
@@ -88,11 +94,15 @@ class TemplateManager:
 
     @functools.cached_property
     def custom_templates(self) -> TemplatesType:
-        """ Return all custom templates. """
+        """
+        Return all custom templates.
+        """
         return _get_templates(self.custom_template_path)
 
     def render_default_plan(self) -> str:
-        """ Return default plan template. """
+        """
+        Return default plan template.
+        """
         try:
             path = self.default_templates['default']['plan']
         except KeyError:
@@ -121,7 +131,9 @@ class TemplateManager:
         return _append_newline_if_missing(template)
 
     def _init_custom_templates_folder(self) -> None:
-        """ Create custom template folders if they don't exist. """
+        """
+        Create custom template folders if they don't exist.
+        """
         for key in TEMPLATE_TYPES:
             path = self.custom_template_path / key
             try:

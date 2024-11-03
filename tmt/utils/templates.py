@@ -349,7 +349,9 @@ def render_template(
     environment = environment or default_template_environment()
 
     def raise_error(message: str) -> None:
-        """ An in-template helper for raising exceptions """
+        """
+        An in-template helper for raising exceptions
+        """
 
         raise Exception(message)
 

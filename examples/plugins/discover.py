@@ -17,7 +17,9 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
     """
 
     def show(self):
-        """ Show plugin details for given or all available keys """
+        """
+        Show plugin details for given or all available keys
+        """
         super().show([])
         print("show() called")
 

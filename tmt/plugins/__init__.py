@@ -1,4 +1,6 @@
-""" Handle Plugins """
+"""
+Handle Plugins
+"""
 
 import importlib
 import os
@@ -30,7 +32,9 @@ _TMT_ROOT = Path(tmt.__file__).resolve().parent
 
 
 def discover(path: Path) -> Iterator[str]:
-    """ Discover available plugins for given paths """
+    """
+    Discover available plugins for given paths
+    """
     for _, name, package in pkgutil.iter_modules([str(path)]):
         if not package:
             yield name
@@ -77,7 +81,9 @@ def _discover_packages() -> list[tuple[str, Path]]:
 
 
 def _explore_package(package: str, path: Path, logger: Logger) -> None:
-    """ Import plugins from a given Python package """
+    """
+    Import plugins from a given Python package
+    """
 
     logger.debug(f"Import plugins from the '{package}' package.")
     logger = logger.descend()
@@ -87,7 +93,9 @@ def _explore_package(package: str, path: Path, logger: Logger) -> None:
 
 
 def _explore_directory(path: Path, logger: Logger) -> None:
-    """ Import plugins dropped into a directory """
+    """
+    Import plugins dropped into a directory
+    """
 
     logger.debug(f"Import plugins from the '{path}' directory.")
     logger = logger.descend()
@@ -102,7 +110,9 @@ def _explore_directory(path: Path, logger: Logger) -> None:
 
 
 def _explore_custom_directories(logger: Logger) -> None:
-    """ Import plugins from directories listed in ``TMT_PLUGINS`` envvar """
+    """
+    Import plugins from directories listed in ``TMT_PLUGINS`` envvar
+    """
 
     logger.debug('Import plugins from custom directories.')
     logger = logger.descend()
@@ -122,7 +132,9 @@ def _explore_custom_directories(logger: Logger) -> None:
 
 
 def _explore_entry_point(entry_point: str, logger: Logger) -> None:
-    """ Import all plugins hooked to an entry points """
+    """
+    Import all plugins hooked to an entry points
+    """
 
     logger.debug(f"Import plugins from the '{entry_point}' entry point.")
     logger = logger.descend()
@@ -143,7 +155,9 @@ def _explore_entry_point(entry_point: str, logger: Logger) -> None:
 
 
 def _explore_packages(logger: Logger) -> None:
-    """ Import all plugins bundled into tmt package """
+    """
+    Import all plugins bundled into tmt package
+    """
 
     logger.debug('Import plugins from tmt packages.')
 
@@ -152,7 +166,9 @@ def _explore_packages(logger: Logger) -> None:
 
 
 def _explore_directories(logger: Logger) -> None:
-    """ Import all plugins from various directories """
+    """
+    Import all plugins from various directories
+    """
 
     logger.debug('Import plugins from custom directories.')
 
@@ -160,7 +176,9 @@ def _explore_directories(logger: Logger) -> None:
 
 
 def _explore_entry_points(logger: Logger) -> None:
-    """ Import all plugins hooked to entry points """
+    """
+    Import all plugins hooked to entry points
+    """
 
     logger.debug('Import plugins from entry points.')
 
@@ -282,7 +300,9 @@ def import_member(
         module: str,
         member: str,
         logger: Logger) -> tuple[ModuleT, Any]:
-    """ Import member from given module, handle errors nicely """
+    """
+    Import member from given module, handle errors nicely
+    """
 
     imported: ModuleT = import_module(module=module, logger=logger)
 
@@ -296,7 +316,9 @@ def import_member(
 # Small helper for one specific package - export plugins are needed when
 # generating docs.
 def explore_export_package(logger: Logger) -> None:
-    """ Import all plugins bundled into tmt.export package """
+    """
+    Import all plugins bundled into tmt.export package
+    """
 
     _explore_package('tmt.export', _TMT_ROOT / 'export', logger.descend())
 

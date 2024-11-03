@@ -79,7 +79,9 @@ RECONNECT_WAIT_TICK_INCREASE = 1.0
 
 
 def configure_ssh_options() -> tmt.utils.RawCommand:
-    """ Extract custom SSH options from environment variables """
+    """
+    Extract custom SSH options from environment variables
+    """
 
     options: tmt.utils.RawCommand = []
 
@@ -145,7 +147,9 @@ STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
 # because `tmt.base` needs to be imported and that creates a circular
 # import loop.
 def essential_ansible_requires() -> list['tmt.base.Dependency']:
-    """ Return essential requirements for running Ansible modules """
+    """
+    Return essential requirements for running Ansible modules
+    """
 
     return [
         tmt.base.DependencySimple('/usr/bin/python3')
@@ -153,7 +157,9 @@ def essential_ansible_requires() -> list['tmt.base.Dependency']:
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
-    """ Render guest's full name, i.e. name and its role """
+    """
+    Render guest's full name, i.e. name and its role
+    """
 
     if role is None:
         return name
@@ -170,7 +176,9 @@ T = TypeVar('T')
 
 
 class GuestCapability(enum.Enum):
-    """ Various Linux capabilities """
+    """
+    Various Linux capabilities
+    """
 
     # See man 2 syslog:
     #: Read all messages remaining in the ring buffer.
@@ -472,7 +480,9 @@ class GuestFacts(SerializableContainer):
             }
 
     def sync(self, guest: 'Guest') -> None:
-        """ Update stored facts to reflect the given guest """
+        """
+        Update stored facts to reflect the given guest
+        """
 
         self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
         self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
@@ -699,7 +709,9 @@ class GuestData(SerializableContainer):
     def from_plugin(
             cls: type[GuestDataT],
             container: 'ProvisionPlugin[ProvisionStepDataT]') -> GuestDataT:
-        """ Create guest data from plugin and its current configuration """
+        """
+        Create guest data from plugin and its current configuration
+        """
 
         return cls(**{
             key: container.get(option)
@@ -811,12 +823,16 @@ class Guest(tmt.utils.Common):
                  name: Optional[str] = None,
                  parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger) -> None:
-        """ Initialize guest data """
+        """
+        Initialize guest data
+        """
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
 
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
-        """ Generate a random name """
+        """
+        Generate a random name
+        """
         # Append at least 5 random characters
         min_random_part = max(5, length - len(prefix))
         name = prefix + ''.join(
@@ -825,7 +841,9 @@ class Guest(tmt.utils.Common):
         return name[-length:]
 
     def _tmt_name(self) -> str:
-        """ Generate a name prefixed with tmt run id """
+        """
+        Generate a name prefixed with tmt run id
+        """
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
@@ -836,13 +854,17 @@ class Guest(tmt.utils.Common):
 
     @functools.cached_property
     def multihost_name(self) -> str:
-        """ Return guest's multihost name, i.e. name and its role """
+        """
+        Return guest's multihost name, i.e. name and its role
+        """
 
         return format_guest_full_name(self.name, self.role)
 
     @property
     def is_ready(self) -> bool:
-        """ Detect guest is ready or not """
+        """
+        Detect guest is ready or not
+        """
 
         raise NotImplementedError
 
@@ -857,7 +879,9 @@ class Guest(tmt.utils.Common):
 
     @functools.cached_property
     def scripts_path(self) -> Path:
-        """ Absolute path to tmt scripts directory """
+        """
+        Absolute path to tmt scripts directory
+        """
 
         import tmt.steps.execute
 
@@ -868,7 +892,9 @@ class Guest(tmt.utils.Common):
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options related to guests """
+        """
+        Prepare command line options related to guests
+        """
         return []
 
     def load(self, data: GuestData) -> None:
@@ -964,7 +990,9 @@ class Guest(tmt.utils.Common):
             self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
     def show(self, show_multihost_name: bool = True) -> None:
-        """ Show guest details such as distro and kernel """
+        """
+        Show guest details such as distro and kernel
+        """
 
         if show_multihost_name:
             self.info('multihost name', self.multihost_name, color='green')
@@ -981,7 +1009,9 @@ class Guest(tmt.utils.Common):
                 self.verbose(key_formatted, value_formatted, color='green')
 
     def _ansible_verbosity(self) -> list[str]:
-        """ Prepare verbose level based on the --debug option count """
+        """
+        Prepare verbose level based on the --debug option count
+        """
         if self.debug_level < 3:
             return []
         return ['-' + (self.debug_level - 2) * 'v']
@@ -994,7 +1024,9 @@ class Guest(tmt.utils.Common):
         return shlex.split(str(extra_args))
 
     def _ansible_summary(self, output: Optional[str]) -> None:
-        """ Check the output for ansible result summary numbers """
+        """
+        Check the output for ansible result summary numbers
+        """
         if not output:
             return
         keys = 'ok changed unreachable failed skipped rescued ignored'.split()
@@ -1040,7 +1072,9 @@ class Guest(tmt.utils.Common):
         self,
         execute_environment: Optional[tmt.utils.Environment] = None
             ) -> tmt.utils.Environment:
-        """ Prepare dict of environment variables """
+        """
+        Prepare dict of environment variables
+        """
         # Prepare environment variables so they can be correctly passed
         # to shell. Create a copy to prevent modifying source.
         environment = tmt.utils.Environment()
@@ -1055,7 +1089,9 @@ class Guest(tmt.utils.Common):
 
     @staticmethod
     def _export_environment(environment: tmt.utils.Environment) -> list[ShellScript]:
-        """ Prepare shell export of environment variables """
+        """
+        Prepare shell export of environment variables
+        """
         if not environment:
             return []
         return [
@@ -1235,7 +1271,9 @@ class Guest(tmt.utils.Common):
              destination: Optional[Path] = None,
              options: Optional[list[str]] = None,
              superuser: bool = False) -> None:
-        """ Push files to the guest """
+        """
+        Push files to the guest
+        """
 
         raise NotImplementedError
 
@@ -1244,7 +1282,9 @@ class Guest(tmt.utils.Common):
              destination: Optional[Path] = None,
              options: Optional[list[str]] = None,
              extend_options: Optional[list[str]] = None) -> None:
-        """ Pull files from the guest """
+        """
+        Pull files from the guest
+        """
 
         raise NotImplementedError
 
@@ -1447,12 +1487,16 @@ class GuestSsh(Guest):
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
-        """ Return user@guest """
+        """
+        Return user@guest
+        """
         return f'{self.user}@{self.primary_address}'
 
     @functools.cached_property
     def _is_ssh_master_socket_path_acceptable(self) -> bool:
-        """ Whether the SSH master socket path we create is acceptable by SSH """
+        """
+        Whether the SSH master socket path we create is acceptable by SSH
+        """
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             self.warn("SSH multiplexing will not be used because the SSH socket path "
@@ -1463,7 +1507,9 @@ class GuestSsh(Guest):
 
     @property
     def is_ssh_multiplexing_enabled(self) -> bool:
-        """ Whether SSH multiplexing should be used """
+        """
+        Whether SSH multiplexing should be used
+        """
 
         if self.primary_address is None:
             return False
@@ -1475,7 +1521,9 @@ class GuestSsh(Guest):
 
     @functools.cached_property
     def _ssh_master_socket_path(self) -> Path:
-        """ Return path to the SSH master socket """
+        """
+        Return path to the SSH master socket
+        """
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
         assert self.parent.plan.my_run is not None
@@ -1527,7 +1575,9 @@ class GuestSsh(Guest):
 
     @property
     def _ssh_options(self) -> Command:
-        """ Return common SSH options """
+        """
+        Return common SSH options
+        """
 
         options = BASE_SSH_OPTIONS[:]
 
@@ -1559,7 +1609,9 @@ class GuestSsh(Guest):
 
     @property
     def _base_ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
+        """
+        A base SSH command shared by all SSH processes
+        """
 
         command = Command(
             *(["sshpass", "-p", self.password] if self.password else []),
@@ -1569,7 +1621,9 @@ class GuestSsh(Guest):
         return command + self._ssh_options
 
     def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
-        """ Spawn the SSH master process """
+        """
+        Spawn the SSH master process
+        """
 
         # NOTE: do not modify `command`, it might be re-used by the caller. To
         # be safe, include it in our own command.
@@ -1624,7 +1678,9 @@ class GuestSsh(Guest):
 
     @property
     def _ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
+        """
+        A base SSH command shared by all SSH processes
+        """
 
         if self.is_ssh_multiplexing_enabled:
             with self._ssh_master_process_lock:
@@ -1703,7 +1759,9 @@ class GuestSsh(Guest):
 
     @property
     def is_ready(self) -> bool:
-        """ Detect guest is ready or not """
+        """
+        Detect guest is ready or not
+        """
 
         # Enough for now, ssh connection can be created later
         return self.primary_address is not None
@@ -1843,7 +1901,9 @@ class GuestSsh(Guest):
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
         def rsync() -> None:
-            """ Run the rsync command """
+            """
+            Run the rsync command
+            """
             # In closure, mypy has hard times to reason about the state of used variables.
             assert options
             assert source
@@ -1912,7 +1972,9 @@ class GuestSsh(Guest):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         def rsync() -> None:
-            """ Run the rsync command """
+            """
+            Run the rsync command
+            """
             # In closure, mypy has hard times to reason about the state of used variables.
             assert options
             assert source
@@ -1978,7 +2040,9 @@ class GuestSsh(Guest):
         """
 
         def get_boot_time() -> int:
-            """ Reads btime from /proc/stat """
+            """
+            Reads btime from /proc/stat
+            """
             stdout = self.execute(Command("cat", "/proc/stat")).stdout
             assert stdout
 
@@ -2101,7 +2165,9 @@ ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
 class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
-    """ Common parent of provision plugins """
+    """
+    Common parent of provision plugins
+    """
 
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
     # ProvisionStepDataT.
@@ -2127,7 +2193,9 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             cls,
             usage: str,
             method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all provision plugins) """
+        """
+        Create base click command (common for all provision plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -2147,13 +2215,17 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return provision
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         self.go_prolog(logger or self._logger)
 
     # TODO: this might be needed until https://github.com/teemtee/tmt/issues/1696 is resolved
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
-        """ Get an option from the command line options """
+        """
+        Get an option from the command line options
+        """
 
         if option == 'ssh-option':
             value = super().opt(option, default=default)
@@ -2210,12 +2282,16 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
-        """ Return list of options. """
+        """
+        Return list of options.
+        """
         return super().options(how) + cls._guest_class.options(how)
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """ Remove the images of one particular plugin """
+        """
+        Remove the images of one particular plugin
+        """
         return True
 
     def show(self, keys: Optional[list[str]] = None) -> None:
@@ -2237,7 +2313,9 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
 @dataclasses.dataclass
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
-    """ A task to run provisioning of multiple guests """
+    """
+    A task to run provisioning of multiple guests
+    """
 
     #: Phases describing guests to provision. In the ``provision`` step,
     #: each phase describes one guest.
@@ -2330,7 +2408,9 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
 
 
 class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
-    """ Queue class for running provisioning tasks """
+    """
+    Queue class for running provisioning tasks
+    """
 
     def enqueue(
             self,
@@ -2348,7 +2428,9 @@ class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
 
 
 class Provision(tmt.steps.Step):
-    """ Provision an environment for testing or use localhost. """
+    """
+    Provision an environment for testing or use localhost.
+    """
 
     # Default implementation for provision is a virtual machine
     DEFAULT_HOW = 'virtual'
@@ -2363,7 +2445,9 @@ class Provision(tmt.steps.Step):
             plan: 'tmt.Plan',
             data: tmt.steps.RawStepDataArgument,
             logger: tmt.log.Logger) -> None:
-        """ Initialize provision step data """
+        """
+        Initialize provision step data
+        """
         super().__init__(plan=plan, data=data, logger=logger)
 
         # List of provisioned guests and loaded guest data
@@ -2375,7 +2459,9 @@ class Provision(tmt.steps.Step):
         return len(self.data) > 1
 
     def load(self) -> None:
-        """ Load guest data from the workdir """
+        """
+        Load guest data from the workdir
+        """
         super().load()
         try:
             raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
@@ -2389,7 +2475,9 @@ class Provision(tmt.steps.Step):
             self.debug('Provisioned guests not found.', level=2)
 
     def save(self) -> None:
-        """ Save guest data to the workdir """
+        """
+        Save guest data to the workdir
+        """
         super().save()
         try:
             raw_guest_data = {guest.name: guest.save().to_serialized()
@@ -2400,7 +2488,9 @@ class Provision(tmt.steps.Step):
             self.debug('Failed to save provisioned guests.')
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
         super().wake()
 
         # Choose the right plugin and wake it up
@@ -2427,7 +2517,9 @@ class Provision(tmt.steps.Step):
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise summary of the provisioning """
+        """
+        Give a concise summary of the provisioning
+        """
         # Summary of provisioned guests
         guests = fmf.utils.listed(self.guests(), 'guest')
         self.info('summary', f'{guests} provisioned', 'green', shift=1)
@@ -2437,7 +2529,9 @@ class Provision(tmt.steps.Step):
                 self.verbose(guest.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
-        """ Provision all guests """
+        """
+        Provision all guests
+        """
         super().go(force=force)
 
         # Nothing more to do if already done
@@ -2610,5 +2704,7 @@ class Provision(tmt.steps.Step):
         self.save()
 
     def guests(self) -> list[Guest]:
-        """ Return the list of all provisioned guests """
+        """
+        Return the list of all provisioned guests
+        """
         return self._guests

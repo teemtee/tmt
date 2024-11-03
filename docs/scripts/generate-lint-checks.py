@@ -16,7 +16,9 @@ Generate docs for all known lint checks.
 
 
 def _sort_linters(linters: list[Linter]) -> list[Linter]:
-    """ Sort a list of linters by their ID """
+    """
+    Sort a list of linters by their ID
+    """
     return sorted(linters, key=lambda x: x.id)
 
 
