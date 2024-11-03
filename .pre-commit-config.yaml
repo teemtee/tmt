@@ -146,6 +146,8 @@ repos:
           - '--fix'
           - '--show-fixes'
       - id: ruff-format
+        args:
+          - '--diff'
 
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.42.1
