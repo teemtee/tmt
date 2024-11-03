@@ -21,10 +21,10 @@ description: |
            numa-nodes: 2|">= 2"
 
     .. versionchanged:: 1.39
-       ``beaker`` plugins supports ``vendor-name``
+       ``beaker`` plugin supports ``vendor-name``
 
     .. versionchanged:: 1.38
-       ``beaker`` plugins supports ``model-name``
+       ``beaker`` plugin supports ``model-name``
 
 example:
   - |
