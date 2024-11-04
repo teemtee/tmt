@@ -33,7 +33,7 @@ TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
 #: The default directory for storing test pid file.
-TEST_PIDFILE_ROOT = Path('/var/tmp/pid')  # noqa: S108 insecure usage of temporary dir
+TEST_PIDFILE_ROOT = Path('/var/tmp/tmt/pid')  # noqa: S108 insecure usage of temporary dir
 
 
 def effective_pidfile_root() -> Path:

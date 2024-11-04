@@ -1176,7 +1176,9 @@ class Guest(tmt.utils.Common):
         """
         from tmt.steps.execute.internal import effective_pidfile_root
         pid_directory = effective_pidfile_root()
-        self.execute(ShellScript(f"mkdir -p {pid_directory} && chmod ugo+rwx {pid_directory}"))
+        command = f"if [ ! -d {pid_directory} ]; then mkdir -p {pid_directory} \
+            && chmod ugo+rwx {pid_directory}; fi"
+        self.execute(ShellScript(command))
 
     # A couple of requiremens for this field:
     #
