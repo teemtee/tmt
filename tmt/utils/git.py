@@ -19,6 +19,7 @@ from tmt.utils import (
     Environment,
     GeneralError,
     GitUrlError,
+    MetadataError,
     Path,
     RunError,
     )
@@ -446,6 +447,11 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
     When all checks pass returns (True, '').
     """
+
+    # There has to be an fmf tree root defined
+    if not test.fmf_root:
+        raise MetadataError(f"Test '{test.name}' does not have fmf root defined.")
+
     sources = [
         *test.fmf_sources,
         test.fmf_root / '.fmf' / 'version'

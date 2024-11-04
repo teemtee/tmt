@@ -71,8 +71,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     .. warning::
 
-        When specifying playbooks with paths, all paths must be
-        relative to the metadata tree root.
+        When specifying playbooks with paths:
+
+        * If a metadata tree root exists, all paths must be relative to
+          the metadata tree root.
+        * If the metadata tree root does not exist,
+          all paths must be relative to the current working directory.
 
     Run a single playbook on the guest:
 
@@ -169,7 +173,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
             guest.ansible(
                 playbook_path,
-                playbook_root=self.step.plan.fmf_root,
+                playbook_root=self.step.plan.anchor_path,
                 extra_args=self.data.extra_args)
 
         return results

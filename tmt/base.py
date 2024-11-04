@@ -772,12 +772,19 @@ class Core(
 
     # TODO: cached_property candidates
     @property
-    def fmf_root(self) -> Path:
-        return Path(self.node.root)
+    def fmf_root(self) -> Optional[Path]:
+        # Check if fmf root is defined
+        if self.node.root is not None:
+            return Path(self.node.root)
+        return None
+
+    @property
+    def anchor_path(self) -> Path:
+        return self.fmf_root or Path.cwd()
 
     @property
     def git_root(self) -> Optional[Path]:
-        return tmt.utils.git.git_root(fmf_root=self.fmf_root, logger=self._logger)
+        return tmt.utils.git.git_root(fmf_root=self.anchor_path, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
     # and constructing a workaround would be hard because of support of
@@ -795,7 +802,7 @@ class Core(
 
         return tmt.utils.fmf_id(
             name=self.name,
-            fmf_root=self.fmf_root,
+            fmf_root=self.anchor_path,
             logger=self._logger)
 
     @functools.cached_property
