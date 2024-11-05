@@ -19,6 +19,7 @@ rlJournalStart
 
         # use /var/tmp/tmt so the temp directories are accessible
         # in the podman machine mount
+        rlRun "mkdir -p /var/tmp/tmt"
         rlRun "tmp=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create tmp directory"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
         rlRun "pushd $tmp"
