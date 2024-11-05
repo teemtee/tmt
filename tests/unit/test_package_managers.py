@@ -440,6 +440,87 @@ def test_install(
     assert_output(expected_output, output.stdout, output.stderr)
 
 
+def _parametrize_test_refresh_metadata() -> \
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            str,
+            Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Yum:
+            yield container, \
+                package_manager_class, \
+                r"yum makecache", \
+                'Metadata'
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield container, \
+                package_manager_class, \
+                r"dnf makecache -y --refresh", \
+                'Metadata cache created'
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                r"dnf5 makecache -y --refresh", \
+                'Metadata cache created'
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            yield container, \
+                package_manager_class, \
+                r"export DEBIAN_FRONTEND=noninteractive; apt update", \
+                'packages'
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                r"rpm-ostree refresh-md --force",
+                'Available',
+                marks=pytest.mark.skip(reason="refresh-md does not work with how tmt runs ostree container")  # noqa: E501
+                )
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk update", \
+                'OK:'
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'expected_command',
+                          'expected_output'),
+                         list(_parametrize_test_refresh_metadata()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_refresh_metadata(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        expected_command: str,
+        expected_output: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.refresh_metadata()
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    assert_output(expected_output, output.stdout, output.stderr)
+
+
 def _parametrize_test_install_nonexistent() -> \
         Iterator[tuple[Container, PackageManagerClass, str, Optional[str]]]:
 

@@ -155,6 +155,13 @@ class Dnf(tmt.package_managers.PackageManager):
             f'{self.options.to_script()} {extra_options} '
             f'{" ".join(escape_installables(*installables))}')
 
+    def refresh_metadata(self) -> CommandOutput:
+        script = ShellScript(
+            f'{self.command.to_script()} makecache '
+            f'{self.options.to_script()} --refresh')
+
+        return self.guest.execute(script)
+
     def install(
             self,
             *installables: Installable,
@@ -275,5 +282,11 @@ class Yum(Dnf):
                 ShellScript,
                 self._construct_presence_script(  # type: ignore[reportGeneralIssues,unused-ignore]
                     *installables))
+
+        return self.guest.execute(script)
+
+    def refresh_metadata(self) -> CommandOutput:
+        script = ShellScript(
+            f'{self.command.to_script()} makecache')
 
         return self.guest.execute(script)

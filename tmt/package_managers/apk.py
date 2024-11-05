@@ -122,6 +122,12 @@ class Apk(tmt.package_managers.PackageManager):
 
         return results
 
+    def refresh_metadata(self) -> CommandOutput:
+        script = ShellScript(
+            f'{self.command.to_script()} update')
+
+        return self.guest.execute(script)
+
     def install(
             self,
             *installables: Installable,
