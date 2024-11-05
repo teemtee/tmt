@@ -5,10 +5,10 @@ from typing import Optional, cast
 
 import fmf
 import fmf.utils
-from pydantic import ValidationError
 
 import tmt.utils
 from tmt._compat.pathlib import Path
+from tmt._compat.pydantic import ValidationError
 from tmt.config.models.link import LinkConfig
 
 # Config directory

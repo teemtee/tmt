@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Extra
+from tmt._compat.pydantic import BaseModel, Extra
 
 
 def create_alias(name: str) -> str:

@@ -89,7 +89,7 @@ class JiraInstance:
                 continue
 
             # Issue url must match
-            if issue_url.startswith(issue_tracker.url):
+            if issue_url.startswith(str(issue_tracker.url)):
                 return JiraInstance(issue_tracker, logger=logger)
 
         return None

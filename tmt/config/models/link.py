@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import HttpUrl
+from tmt._compat.pydantic import HttpUrl
 
 from . import BaseConfig
 
