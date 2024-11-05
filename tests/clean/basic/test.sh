@@ -17,7 +17,7 @@ rlJournalStart
 
     rlPhaseStartTest "Create a couple of runs in non-default root workdir"
         for id in {001..003}; do
-            rlRun "tmt --feeling-safe run --id clean-$id --workdir_root $test_root"
+            rlRun "tmt run --id clean-$id --workdir_root $test_root"
             rlAssertExists "$test_root/clean-$id"
         done
     rlPhaseEnd
