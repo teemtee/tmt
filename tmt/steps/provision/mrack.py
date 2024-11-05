@@ -596,6 +596,23 @@ def _transform_system_model_name(
                         children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+def _transform_system_vendor_name(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup('system',
+                         children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+            ])
+
+    return MrackHWGroup('system',
+                        children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
@@ -626,6 +643,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
     'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
+    'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
     'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
     }
 

@@ -20,8 +20,11 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
+    .. versionchanged:: 1.39
+       ``beaker`` plugin supports ``vendor-name``
+
     .. versionchanged:: 1.38
-       ``beaker`` plugins supports ``model-name``
+       ``beaker`` plugin supports ``model-name``
 
 example:
   - |
@@ -42,4 +45,4 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``system.numa-nodes`` and ``system.model-name`` only"
+    note: "``system.vendor`` and ``system.model`` not implemented yet"

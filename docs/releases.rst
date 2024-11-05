@@ -9,8 +9,8 @@ tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`system.model-name</spec/hardware/system>`
-hardware requirement.
+support for :ref:`system.model-name</spec/hardware/system>` and
+:ref:`system.vendor-name</spec/hardware/system>` hardware requirements.
 
 
 tmt-1.38.0
