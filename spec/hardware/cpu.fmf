@@ -69,6 +69,9 @@ description: |
     model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
     are also useful resources.
 
+    .. versionchanged:: 1.39
+       ``beaker`` plugins supports ``family``
+
     .. versionchanged:: 1.38
        ``beaker`` plugins supports ``stepping``
 
@@ -119,6 +122,11 @@ example:
     # Request a CPU with specified stepping.
     cpu:
         stepping: 9
+
+  - |
+    # Request a CPU with specified family.
+    cpu:
+        family: 6
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
