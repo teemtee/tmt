@@ -16,8 +16,7 @@ support for :ref:`system.model-name</spec/hardware/system>`,
 The ``tmt lint`` command now reports a failure if empty
 environment files are found.
 
-The ``tmt try`` command now supports the new :ref:`/stories/cli/try/option/arch` option
-backed by :ref:`hardware/arch</spec/hardware/arch>`.
+The ``tmt try`` command now supports the new :ref:`/stories/cli/try/option/arch` option.
 
 
 tmt-1.38.0
