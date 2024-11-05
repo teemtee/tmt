@@ -6,7 +6,8 @@ import os
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Callable, Optional, TypedDict, Union, cast
+from threading import Lock
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cast
 
 import tmt
 import tmt.hardware
@@ -15,6 +16,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.plugins import ModuleImporter
 from tmt.utils import (
     Command,
     Path,
@@ -24,16 +26,45 @@ from tmt.utils import (
     field,
     )
 
-mrack: Any
-providers: Any
-ProvisioningError: Any
-NotAuthenticatedError: Any
-BEAKER: Any
-BeakerProvider: Any
-BeakerTransformer: Any
-TmtBeakerTransformer: Any
+if TYPE_CHECKING:
+    import mrack
+    import mrack.context
+    import mrack.errors
+    import mrack.providers
+    import mrack.providers.beaker
+    import mrack.transformers.beaker
 
-_MRACK_IMPORTED: bool = False
+# lazy initialization of mrack module via ModuleImporter plugin
+import_mrack: ModuleImporter['mrack'] = ModuleImporter(
+    'mrack',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
+import_mrack_context: ModuleImporter['mrack.context'] = ModuleImporter(
+    'mrack.context',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
+import_mrack_errors: ModuleImporter['mrack.errors'] = ModuleImporter(
+    'mrack.errors',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
+import_mrack_providers: ModuleImporter['mrack.providers'] = ModuleImporter(
+    'mrack.providers',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
+import_mrack_providers_beaker: ModuleImporter['mrack.providers.beaker'] = ModuleImporter(
+    'mrack.providers.beaker',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
+import_mrack_transformers_beaker: ModuleImporter['mrack.transformers.beaker'] = ModuleImporter(
+    'mrack.transformers.beaker',
+    tmt.utils.ProvisionError,
+    "Install 'tmt+provision-beaker' to provision using this method.")
+
 
 DEFAULT_USER = 'root'
 DEFAULT_ARCH = 'x86_64'
@@ -44,6 +75,101 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: How often Beaker session should be refreshed to pick up up-to-date
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
+
+
+class SingletonMeta(type):
+    _instances = {}
+    _lock: Lock = Lock()
+
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__(*args, **kwargs)
+                cls._instances[cls] = instance
+        return cls._instances[cls]
+
+
+class MrackModule(metaclass=SingletonMeta):
+    _logger = None
+    _is_mrack_fixed = False
+    _lock: Lock = Lock()
+
+    mrack = None
+    providers = None
+    providers_beaker = None
+    errors = None
+    context = None
+    transformers_beaker = None
+
+    def init(self, logger: tmt.log.Logger) -> None:
+        self._logger = logger
+        self.mrack: mrack = import_mrack(logger=logger)
+        self.context: mrack.context = import_mrack_context(logger=logger)
+        self.errors: mrack.errors = import_mrack_errors(logger=logger)
+        self.providers: mrack.providers = import_mrack_providers(logger=logger)
+        self.providers_beaker = import_mrack_providers_beaker(logger=logger)
+        self.transformers_beaker = import_mrack_transformers_beaker(logger=logger)
+
+    def fix_handlers(self, workdir: Any, name: str) -> None:
+        # hack: remove mrack stdout and move the logfile to /tmp
+        with self._lock:
+            if not self._is_mrack_fixed:
+                self._is_mrack_fixed = True
+                self.mrack.logger.removeHandler(self.mrack.console_handler)
+                self.mrack.logger.removeHandler(self.mrack.file_handler)
+                with suppress(OSError):
+                    os.remove("mrack.log")
+
+                logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
+                providers = self.providers.providers
+                providers.register(
+                    self.providers_beaker.PROVISIONER_KEY,
+                    self.providers_beaker.BeakerProvider)
+
+
+def get_bkr_transformer_cls(logger: tmt.log.Logger) -> Callable:
+    MrackModule().transformers_beaker
+    class TmtBeakerTransformer(MrackModule().transformers_beaker.BeakerTransformer):
+        def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> dict[str, Any]:
+            """ Return hw requirements from given hw dictionary """
+
+            assert hw.constraint
+
+            transformed = MrackHWAndGroup(
+                children=[
+                    constraint_to_beaker_filter(constraint, logger)
+                    for constraint in hw.constraint.variant()
+                    ])
+
+            logger.debug(
+                'Transformed hardware',
+                tmt.utils.dict_to_yaml(
+                    transformed.to_mrack()))
+
+            return {
+                'hostRequires': transformed.to_mrack()
+                }
+
+        def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
+            """ Create single input for Beaker provisioner """
+            req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
+
+            if host.hardware and host.hardware.constraint:
+                req.update(self._translate_tmt_hw(host.hardware))
+
+            if host.beaker_job_owner:
+                req['job_owner'] = host.beaker_job_owner
+
+            # Whiteboard must be added *after* request preparation, to overwrite the
+            # default one.
+            req['whiteboard'] = host.whiteboard
+
+            logger.debug('mrack request', req, level=4)
+
+            logger.info('whiteboard', host.whiteboard, 'green')
+
+            return req
+    return TmtBeakerTransformer
 
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
@@ -698,88 +824,6 @@ def constraint_to_beaker_filter(
     return _transform_unsupported(constraint, logger)
 
 
-def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
-    """ Import mrack module only when needed """
-    global _MRACK_IMPORTED
-
-    if _MRACK_IMPORTED:
-        return
-
-    global mrack
-    global providers
-    global ProvisioningError
-    global NotAuthenticatedError
-    global BEAKER
-    global BeakerProvider
-    global BeakerTransformer
-    global TmtBeakerTransformer
-
-    try:
-        import mrack
-        from mrack.errors import NotAuthenticatedError, ProvisioningError
-        from mrack.providers import providers
-        from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
-        from mrack.providers.beaker import BeakerProvider
-        from mrack.transformers.beaker import BeakerTransformer
-
-        # hack: remove mrack stdout and move the logfile to /tmp
-        mrack.logger.removeHandler(mrack.console_handler)
-        mrack.logger.removeHandler(mrack.file_handler)
-
-        with suppress(OSError):
-            os.remove("mrack.log")
-
-        logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
-
-        providers.register(BEAKER, BeakerProvider)
-
-    except ImportError:
-        raise ProvisionError(
-            "Install 'tmt+provision-beaker' to provision using this method.")
-
-    # ignore the misc because mrack sources are not typed and result into
-    # error: Class cannot subclass "BeakerTransformer" (has type "Any")
-    # as mypy does not have type information for the BeakerTransformer class
-    class TmtBeakerTransformer(BeakerTransformer):  # type: ignore[misc]
-        def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> dict[str, Any]:
-            """ Return hw requirements from given hw dictionary """
-
-            assert hw.constraint
-
-            transformed = MrackHWAndGroup(
-                children=[
-                    constraint_to_beaker_filter(constraint, logger)
-                    for constraint in hw.constraint.variant()
-                    ])
-
-            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
-
-            return {
-                'hostRequires': transformed.to_mrack()
-                }
-
-        def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
-            """ Create single input for Beaker provisioner """
-            req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
-
-            if host.hardware and host.hardware.constraint:
-                req.update(self._translate_tmt_hw(host.hardware))
-
-            if host.beaker_job_owner:
-                req['job_owner'] = host.beaker_job_owner
-
-            # Whiteboard must be added *after* request preparation, to overwrite the default one.
-            req['whiteboard'] = host.whiteboard
-
-            logger.debug('mrack request', req, level=4)
-
-            logger.info('whiteboard', host.whiteboard, 'green')
-
-            return req
-
-    _MRACK_IMPORTED = True
-
-
 def async_run(func: Any) -> Any:
     """ Decorate click actions to run as async """
     @wraps(func)
@@ -919,24 +963,24 @@ class BeakerAPI:
     # req is a requirement passed to Beaker mrack provisioner
     mrack_requirement: dict[str, Any] = {}
     dsp_name: str = "Beaker"
-
+    mrack_module = MrackModule()
     # wrapping around the __init__ with async wrapper does mangle the method
     # and mypy complains as it no longer returns None but the coroutine
+
     @async_run
-    async def __init__(self, guest: 'GuestBeaker') -> None:  # type: ignore[misc]
+    # type: ignore[misc]
+    async def __init__(self, guest: 'GuestBeaker', logger: tmt.log.Logger) -> None:
         """ Initialize the API class with defaults and load the config """
         self._guest = guest
-
         # use global context class
-        global_context = mrack.context.global_context
-
+        global_context = self.mrack_module.context.global_context
+        erorrs = self.mrack_module.errors
         mrack_config_locations = [
             Path(__file__).parent / "mrack/mrack.conf",
             Path("/etc/tmt/mrack.conf"),
             Path("~/.mrack/mrack.conf").expanduser(),
             Path.cwd() / "mrack.conf"
             ]
-
         mrack_config: Optional[Path] = None
 
         for potential_location in mrack_config_locations:
@@ -948,13 +992,13 @@ class BeakerAPI:
 
         try:
             global_context.init(str(mrack_config))
-        except mrack.errors.ConfigError as mrack_conf_err:
+        except erorrs.ConfigError as mrack_conf_err:
             raise ProvisionError(mrack_conf_err)
 
-        self._mrack_transformer = TmtBeakerTransformer()
+        self._mrack_transformer = get_bkr_transformer_cls(logger)()
         try:
             await self._mrack_transformer.init(global_context.PROV_CONFIG, {})
-        except NotAuthenticatedError as kinit_err:
+        except erorrs.NotAuthenticatedError as kinit_err:
             raise ProvisionError(kinit_err) from kinit_err
         except AttributeError as hub_err:
             raise ProvisionError(
@@ -1033,10 +1077,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
             assert self.parent is not None
-
-            import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
-
-            return BeakerAPI(self), datetime.datetime.now(datetime.timezone.utc)
+            MrackModule().fix_handlers(self.parent.workdir, self.parent.name)
+            return BeakerAPI(self, self._logger), datetime.datetime.now(datetime.timezone.utc)
 
         if self._api is None:
             self._api, self._api_timestamp = _construct_api()
@@ -1059,8 +1101,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         if self.job_id is None:
             return False
 
-        assert mrack is not None
-
         try:
             response = self.api.inspect()
 
@@ -1076,7 +1116,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 return True
             return False
 
-        except mrack.errors.MrackError:
+        except MrackModule().errors.MrackError:
             return False
 
     def _create(self, tmt_name: str) -> None:
@@ -1091,11 +1131,13 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner)
-
+        mrack_module = MrackModule()
+        # initialize module and logger inside mrack module as this is fist usage
+        mrack_module.init(self._logger)
+        provisioning_error = mrack_module.errors.ProvisioningError
         try:
             response = self.api.create(data)
-
-        except ProvisioningError as exc:
+        except provisioning_error as exc:
             import xmlrpc.client
 
             cause = exc.__cause__
