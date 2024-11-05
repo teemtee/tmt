@@ -68,8 +68,8 @@ def _filter_log_per_size(data: str,
             variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
             option = "--log-size-limit"
         header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
-                  f"exceeds tmt reportportal plugin limit of {settings.size} bytes."
-                  f"The limit is controlled with {option} plugin option or"
+                  f"exceeds tmt reportportal plugin limit of {settings.size} bytes. "
+                  f"The limit is controlled with {option} plugin option or "
                   f"{variable} environment variable.\n\n")
         return f"{header}{data[:settings.size]}"
     return data
