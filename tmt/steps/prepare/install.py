@@ -165,6 +165,24 @@ class InstallBase(tmt.utils.Common):
 
     def install(self) -> None:
         """ Perform the actual installation """
+        try:
+            self._install()
+
+        except Exception as exc1:
+            # We do not have any special handling for exceptions raised by the following code.
+            # Wrapping them with try/except gives us a chance to attach the original exception
+            # to whatever the code may raise, and therefore preserve the information attached
+            # to the original exception.
+            try:
+                # Refresh cache in case of recent but not updated change do repodata
+                self.guest.package_manager.refresh_metadata()
+                self._install()
+
+            except Exception as exc2:
+                raise exc2 from exc1
+
+    def _install(self) -> None:
+        """ Helper method to perform the actual installation steps """
         if self.local_packages:
             self.prepare_install_local()
             self.install_local()

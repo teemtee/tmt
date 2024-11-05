@@ -186,3 +186,6 @@ class PackageManager(tmt.utils.Common):
             *installables: Installable,
             options: Optional[Options] = None) -> CommandOutput:
         raise NotImplementedError
+
+    def refresh_metadata(self) -> CommandOutput:
+        raise NotImplementedError
