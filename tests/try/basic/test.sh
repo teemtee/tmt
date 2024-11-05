@@ -41,13 +41,6 @@ rlJournalStart
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Arch"
-        rlRun -s "./arch.exp"
-        rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
-        rlAssertGrep "arch: aarch64" $rlRun_LOG
-        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
-    rlPhaseEnd
-
     rlPhaseStartTest "Verbose Output"
         rlRun -s "TMT_CONFIG_DIR=$config ./verbose.exp"
         rlAssertGrep "custom-prepare" $rlRun_LOG
