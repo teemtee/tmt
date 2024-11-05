@@ -119,11 +119,6 @@ example:
         hyper-threading: true
 
   - |
-    # Request a CPU with specified frequency.
-    cpu:
-        frequency: ">= 2300.0"
-
-  - |
     # Request a CPU with specified stepping.
     cpu:
         stepping: 9
