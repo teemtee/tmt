@@ -2347,6 +2347,23 @@ class Plan(
         yield from _lint_step('execute')
         yield from _lint_step('finish')
 
+    def lint_empty_env_files(self) -> LinterReturn:
+        """ P008: environment files are not empty """
+
+        env_files = self.node.get("environment-file") or []
+
+        if not env_files:
+            yield LinterOutcome.SKIP, 'no environment files found'
+            return
+
+        for env_file in env_files:
+            env_file = (self.anchor_path / Path(env_file)).resolve()
+            if not env_file.stat().st_size:
+                yield LinterOutcome.FAIL, f"the environment file '{env_file}' is empty"
+                return
+
+        yield LinterOutcome.PASS, 'no empty environment files'
+
     def wake(self) -> None:
         """ Wake up all steps """
 

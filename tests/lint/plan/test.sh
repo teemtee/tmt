@@ -50,6 +50,7 @@ rlJournalStart
 
         rlRun -s "$tmt plan lint invalid_url" 1
         rlAssertGrep "fail P005 remote fmf id in \"default-0\" is invalid, repo 'http://invalid-url' cannot be cloned" $rlRun_LOG
+        rlAssertGrep "skip P008 no environment files found" $rlRun_LOG
 
         rlRun -s "$tmt plan lint invalid_ref" 1
         rlAssertGrep "fail P005 remote fmf id in \"default-0\" is invalid, git ref 'invalid-ref-123456' is invalid" $rlRun_LOG
@@ -71,6 +72,9 @@ rlJournalStart
         rlRun -s "$tmt plan lint invalid-plugin-key" 0
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
+
+        rlRun -s "$tmt plan lint empty_env_file" 1
+        rlAssertGrep "fail P008 the environment file '.*/tests/lint/plan/data/empty_env' is empty" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "P007: step phases require existing guests and roles"

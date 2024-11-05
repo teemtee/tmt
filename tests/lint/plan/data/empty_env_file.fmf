@@ -1,0 +1,5 @@
+summary: Empty environment file plan
+environment-file:
+  - empty_env
+execute:
+    script: tmt --help
