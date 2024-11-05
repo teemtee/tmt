@@ -74,7 +74,7 @@ rlJournalStart
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
 
         rlRun -s "$tmt plan lint empty_env_file" 1
-        rlAssertGrep "fail P008 the environment file '$(pwd)/empty_env' is empty" $rlRun_LOG
+        rlAssertGrep "fail P008 the environment file '.*/tests/lint/plan/data/empty_env' is empty" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "P007: step phases require existing guests and roles"
