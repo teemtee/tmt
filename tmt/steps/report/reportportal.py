@@ -1,7 +1,7 @@
 import dataclasses
+import datetime
 import os
 import re
-from time import time
 from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
@@ -9,7 +9,7 @@ import requests
 import tmt.log
 import tmt.steps.report
 from tmt.result import ResultOutcome
-from tmt.utils import field, yaml_to_dict
+from tmt.utils import field, format_timestamp, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -272,7 +272,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                       "may cause an unexpected behaviour with launch-per-plan structure")
 
     def time(self) -> str:
-        return str(int(time() * 1000))
+        # use the same format as tmt does
+        return format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
     def get_headers(self) -> dict[str, str]:
         return {"Authorization": "bearer " + str(self.data.token),
@@ -378,13 +379,17 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         self.check_options()
 
+        # use the current time as a default but this is the worst case scenario
+        # and we should use timestamps from results log as much as possible
         launch_time = self.time()
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
             # launch time should be the earliest start time of all plans
-            launch_time = min([r.start_time or self.time()
+            # we are in fact sorting strings here but due to ISO format
+            # it should work as well
+            launch_time = min([r.start_time or launch_time
                                for r in self.step.plan.execute.results()])
 
         # Create launch, suites (if "--suite_per_plan") and tests;
@@ -511,9 +516,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
+            # 1st test starts with the launch (at worst case)
+            test_time = launch_time
+
             for result, test in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
-                test_time = self.time()
                 test_name = None
                 test_description = ''
                 test_link = None
@@ -524,7 +531,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
-                    test_time = result.start_time or self.time()
+                    # use actual timestamp or reuse the old one if missing
+                    test_time = result.start_time or test_time
                     # for guests, save their primary address
                     if result.guest.primary_address:
                         item_attributes.append({
@@ -584,6 +592,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 # Support for idle tests
                 status = "SKIPPED"
                 if result:
+                    # shift timestamp to the end of a test
+                    test_time = result.end_time or test_time
                     # For each log
                     for index, log_path in enumerate(result.log):
                         try:
@@ -602,7 +612,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                   "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
                                   "level": level,
-                                  "time": result.end_time})
+                                  "time": test_time})
 
                         # Write out failures
                         if index == 0 and status == "FAILED":
@@ -614,9 +624,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": "ERROR",
-                                      "time": result.end_time})
-
-                    test_time = result.end_time or self.time()
+                                      "time": test_time})
 
                 # Finish the test item
                 response = self.rp_api_put(
@@ -628,6 +636,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "status": status,
                         "issue": {
                             "issueType": self.get_defect_type_locator(session, defect_type)}})
+
+                # launch ends with the last test
                 launch_time = test_time
 
             if create_suite:
