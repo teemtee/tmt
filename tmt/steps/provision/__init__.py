@@ -1175,12 +1175,13 @@ class Guest(tmt.utils.Common):
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
         from tmt.steps.execute.internal import effective_pidfile_root
+        sudo = 'sudo' if not self.facts.is_superuser and self.become else ''
         pid_directory = effective_pidfile_root()
         self.execute(ShellScript(
             f"""
             if [ ! -d {pid_directory} ]; then \
-                   mkdir -p {pid_directory} \
-                && chmod ugo+rwx {pid_directory}; \
+                   {sudo} mkdir -p {pid_directory} \
+                && {sudo} chmod ugo+rwx {pid_directory}; \
             fi
             """
             ))
@@ -2133,6 +2134,7 @@ class GuestSsh(Guest):
         return self.primary_address is not None
 
     def setup(self) -> None:
+        super().setup()
         if self.is_dry_run:
             return
         if not self.facts.is_superuser and self.become:
