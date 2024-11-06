@@ -13,27 +13,27 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, test with become=true"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /test/root"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /test/root"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, test with become=false"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /test/user"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /test/user"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, prepare/finish inline with become=true"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/root/inline"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/root/inline"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, prepare/finish inline with become=false"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/user/inline"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/user/inline"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, prepare/finish scripts with become=true"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/root/scripts"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/root/scripts"
     rlPhaseEnd
 
     rlPhaseStartTest "$PROVISION_HOW, prepare/finish scripts with become=false"
-        rlRun "sudo tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/user/scripts"
+        rlRun "tmt --context provisiontest=$PROVISION_HOW run -rvvv plan --name /prepare-finish/user/scripts"
     rlPhaseEnd
 
     if [[ "$PROVISION_HOW" == "virtual" ]]; then
