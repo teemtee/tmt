@@ -38,6 +38,22 @@ def provides_feature(
     return _provides_feature
 
 
+def find_plugin(name: str) -> 'FeatureClass':
+    """
+    Find a plugin by its name.
+
+    :raises GeneralError: when the plugin does not exist.
+    """
+
+    plugin = _FEATURE_PLUGIN_REGISTRY.get_plugin(name)
+
+    if plugin is None:
+        raise tmt.utils.GeneralError(
+            f"Feature plugin '{name}' was not found in feature registry.")
+
+    return plugin
+
+
 class Feature(tmt.utils.Common):
     """ Base class for ``feature`` prepare plugin implementations """
 
@@ -54,28 +70,37 @@ class Feature(tmt.utils.Common):
 
         self.guest = guest
 
-    def enable(self) -> None:
+    @classmethod
+    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
         raise NotImplementedError
 
-    def disable(self) -> None:
+    @classmethod
+    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
         raise NotImplementedError
 
-    def _find_playbook(self, filename: str) -> Optional[Path]:
+    @classmethod
+    def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
         if filepath.exists():
             return filepath
 
-        self.warn(f"Cannot find any suitable playbook for '{filename}'.")
+        logger.warning(f"Cannot find any suitable playbook for '{filename}'.", 0)
         return None
 
-    def _run_playbook(self, op: str, playbook_filename: str) -> None:
-        playbook_path = self._find_playbook(playbook_filename)
+    @classmethod
+    def _run_playbook(
+            cls,
+            op: str,
+            playbook_filename: str,
+            guest: Guest,
+            logger: tmt.log.Logger) -> None:
+        playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(
-                f"{op.capitalize()} {self.NAME.upper()} is not supported on this guest.")
+                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest.")
 
-        self.info(f'{op.capitalize()} {self.NAME.upper()}')
-        self.guest.ansible(playbook_path)
+        logger.info(f'{op.capitalize()} {cls.NAME.upper()}')
+        guest.ansible(playbook_path)
 
 
 @dataclasses.dataclass
@@ -138,27 +163,20 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return []
 
-        print("### DEBUG IZMI ###")
-        print(f"obsah registru: {list(_FEATURE_PLUGIN_REGISTRY.iter_plugins())}")
-        print_value = cast(Optional[str], getattr(self.data, "epel", None))
-        print(f"obsah value: {print_value}")
-
         for feature_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
-            feature = _FEATURE_PLUGIN_REGISTRY.get_plugin(feature_id)
-
-            assert feature is not None  # narrow type
+            feature = find_plugin(feature_id)
 
             value = cast(Optional[str], getattr(self.data, feature.NAME, None))
             if value is None:
                 continue
-            if isinstance(feature, Feature):
-                value = value.lower()
-                if value == 'enabled':
-                    feature.enable()
-                elif value == 'disabled':
-                    feature.disable()
-                else:
-                    raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
+
+            value = value.lower()
+            if value == 'enabled':
+                feature.enable(guest, logger)
+            elif value == 'disabled':
+                feature.disable(guest, logger)
+            else:
+                raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
 
         return results
 
