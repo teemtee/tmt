@@ -9,8 +9,9 @@ tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`system.model-name</spec/hardware/system>` and
-:ref:`system.vendor-name</spec/hardware/system>` hardware requirements.
+support for :ref:`system.model-name</spec/hardware/system>`,
+:ref:`system.vendor-name</spec/hardware/system>` and
+:ref:`cpu.family</spec/hardware/system>` hardware requirements.
 
 The ``tmt lint`` command now reports a failure if empty
 environment files are found.
