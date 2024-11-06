@@ -6,9 +6,9 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
 
         # To allow running the test outside of tmt.
-        rlRun "TMT_TEST_PIDFILE_ROOT=${TMT_TEST_PIDFILE_ROOT:-/var/tmp/tmt/pid}"
-        rlRun "TMT_TEST_PIDFILE=${TMT_TEST_PIDFILE:-$TMT_TEST_PIDFILE_ROOT/tmt-test.pid}"
-        rlRun "TMT_TEST_PIDFILE_LOCK=${TMT_TEST_PIDFILE_LOCK:-$TMT_TEST_PIDFILE.lock}"
+        rlRun "TMT_TEST_PIDFILE_ROOT=/var/tmp/tmt/pid"
+        rlRun "TMT_TEST_PIDFILE=$TMT_TEST_PIDFILE_ROOT/tmt-test.pid"
+        rlRun "TMT_TEST_PIDFILE_LOCK=$TMT_TEST_PIDFILE.lock"
 
         rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "set -o pipefail"
