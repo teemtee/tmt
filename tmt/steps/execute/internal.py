@@ -29,6 +29,8 @@ from tmt.utils import (
     format_timestamp,
 )
 
+# Note: if modified, pidfile root, filename, and lock filename must be
+# also changed in `tmt-reboot` and `tmt-reboot-core` scripts.
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
@@ -396,6 +398,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         assert isinstance(self.parent, tmt.steps.execute.Execute)
         assert self.parent.plan.my_run is not None
 
+        environment['TMT_TEST_PIDFILE_ROOT'] = EnvVarValue(
+            effective_pidfile_root())
         environment['TMT_TEST_PIDFILE'] = EnvVarValue(
             effective_pidfile_root() / TEST_PIDFILE_FILENAME
         )
