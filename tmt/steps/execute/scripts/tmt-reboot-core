@@ -2,7 +2,9 @@
 
 [ -n "$TMT_DEBUG" ] && set -x
 
-TMT_TEST_PIDFILE="${TMT_TEST_PIDFILE:-/var/tmp/tmt-test.pid}"
+TMT_TEST_PIDFILE_ROOT="${TMT_TEST_PIDFILE_ROOT:-/var/tmp/tmt/pid}"
+TMT_TEST_PIDFILE="${TMT_TEST_PIDFILE:-$TMT_TEST_PIDFILE_ROOT/tmt-test.pid}"
+TMT_TEST_PIDFILE_LOCK="${TMT_TEST_PIDFILE_LOCK:-$TMT_TEST_PIDFILE.lock}"
 
 if [ ! -e "$TMT_TEST_PIDFILE" ]; then
     echo "There is no running test to signal the reboot to!"
