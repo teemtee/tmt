@@ -1797,9 +1797,10 @@ def try_command(context: Context, **kwargs: Any) -> None:
 
     tmt.trying.Try.store_cli_invocation(context)
     # Inject custom image and provision method to the Provision options
-    if context.params['image_and_how']:
+    options = _construct_trying_provision_options(context.params)
+    if options:
         tmt.steps.provision.Provision.store_cli_invocation(
-            context=None, options=_construct_trying_provision_options(context.params))
+            context=None, options=options)
 
     # Finally, let's start trying!
     trying = tmt.trying.Try(
@@ -1811,17 +1812,18 @@ def try_command(context: Context, **kwargs: Any) -> None:
 
 def _construct_trying_provision_options(
         params: Any) -> dict[str, Any]:
+    options: dict[str, Any] = {}
 
-    # TODO: For now just pick the first image-how pair, let's allow
-    # specifying multiple images and provision methods as well
-    image_and_how = params['image_and_how'][0]
-
-    # We expect the 'image' or 'image@how' syntax
-    matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
-    if matched:
-        options = {"image": matched.group(1), "how": matched.group(2)}
-    else:
-        options = {"image": image_and_how}
+    if params['image_and_how']:
+        # TODO: For now just pick the first image-how pair, let's allow
+        # specifying multiple images and provision methods as well
+        image_and_how = params['image_and_how'][0]
+        # We expect the 'image' or 'image@how' syntax
+        matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
+        if matched:
+            options = {"image": matched.group(1), "how": matched.group(2)}
+        else:
+            options = {"image": image_and_how}
 
     # Add guest architecture if provided
     if params['arch']:
