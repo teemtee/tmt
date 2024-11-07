@@ -88,6 +88,8 @@ docs = [
     "docutils>=0.18.1",
     "Sphinx==7.3.7",
     "fmf>=1.4.0",
+    # Pin the flexparser version until pint fix is released
+    # https://github.com/hgrecco/pint/issues/1969
     "flexparser<0.4",
     ]
 
