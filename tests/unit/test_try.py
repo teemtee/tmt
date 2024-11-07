@@ -12,6 +12,8 @@ import tmt.cli
          {'image': 'fedora', 'how': 'virtual'}),
         ({'image_and_how': ('fedora@virtual',), 'arch': 'aarch64'},
          {'image': 'fedora', 'how': 'virtual', 'arch': 'aarch64'}),
+        ({'image_and_how': (), 'arch': 'aarch64'},
+         {'arch': 'aarch64'}),
         ]
     )
 def test_options_arch(params: dict[str, Any], expected: dict[str, Any]):

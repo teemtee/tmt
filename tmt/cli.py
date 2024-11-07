@@ -1796,6 +1796,7 @@ def try_command(context: Context, **kwargs: Any) -> None:
     """
 
     tmt.trying.Try.store_cli_invocation(context)
+
     # Inject custom image and provision method to the Provision options
     options = _construct_trying_provision_options(context.params)
     if options:
@@ -1810,8 +1811,8 @@ def try_command(context: Context, **kwargs: Any) -> None:
     trying.go()
 
 
-def _construct_trying_provision_options(
-        params: Any) -> dict[str, Any]:
+def _construct_trying_provision_options(params: Any) -> dict[str, Any]:
+    """ Convert try-specific options into generic option format """
     options: dict[str, Any] = {}
 
     if params['image_and_how']:
