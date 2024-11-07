@@ -1175,7 +1175,7 @@ class Guest(tmt.utils.Common):
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
         from tmt.steps.execute.internal import effective_pidfile_root
-        sudo = 'sudo' if not self.facts.is_superuser and self.become else ''
+        sudo = 'sudo' if not self.facts.is_superuser else ''
         pid_directory = effective_pidfile_root()
         self.execute(ShellScript(
             f"""
