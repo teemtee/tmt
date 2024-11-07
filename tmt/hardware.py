@@ -737,7 +737,7 @@ class IntegerConstraint(Constraint[int]):
             )
 
 
-class NumberConstraint(Constraint['Size']):
+class NumberConstraint(Constraint['Quantity']):
     """ A constraint representing a float number """
 
     @classmethod
