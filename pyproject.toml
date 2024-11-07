@@ -88,6 +88,7 @@ docs = [
     "docutils>=0.18.1",
     "Sphinx==7.3.7",
     "fmf>=1.4.0",
+    "flexparser<0.4",
     ]
 
 [project.scripts]

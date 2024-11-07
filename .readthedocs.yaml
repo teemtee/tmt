@@ -9,6 +9,4 @@ python:
 build:
   os: ubuntu-22.04
   tools:
-    # Pin python version to 3.12 until pint fix is released
-    # https://github.com/hgrecco/pint/issues/1969
-    python: "3.12"
+    python: "3"
