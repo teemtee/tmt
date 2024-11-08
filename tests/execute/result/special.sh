@@ -25,18 +25,7 @@ rlJournalStart
             '/usr-sbin-ldconfig' \
             '/01-some-phase-na-me' \
             '/02-so-me-phase-na-me' \
-            '/03-some' \
-            '/04-some' \
-            '/05-some' \
-            '/06-some' \
-            '/07-some' \
-            '/08-some' \
-            '/09-some' \
-            '/10-some' \
-            '/11-some' \
-            '/12-some' \
-            '/13-some' \
-            '/14-some'
+            /{03..14}-some
         do
             rlAssertGrep "name: \"${phase_name}\"" "$RESULT_FILE_BKRLIB"
             rlAssertGrep "result: \"pass\"" "$RESULT_FILE_BKRLIB"
