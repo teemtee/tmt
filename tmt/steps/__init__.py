@@ -198,7 +198,8 @@ class Phase(tmt.utils.Common):
         """ Phases are enabled across all guests by default """
         return True
 
-    def enabled_when(self) -> bool:
+    @functools.cached_property
+    def enabled_by_when(self) -> bool:
         return True
 
     @property
@@ -1610,7 +1611,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         for key in keys:
             _emit_key(key)
 
-    def enabled_when(self) -> bool:
+    @functools.cached_property
+    def enabled_by_when(self) -> bool:
         """ Check if the plugin is enabled by 'when' keyword """
         fmf_context = Context(**self.step.plan._fmf_context)
         when_rules = self.get('when', [])

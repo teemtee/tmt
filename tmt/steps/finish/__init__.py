@@ -164,7 +164,7 @@ class Finish(tmt.steps.Step):
             if isinstance(phase, Action):
                 queue.enqueue_action(phase=phase)
 
-            elif phase.enabled_when():
+            elif phase.enabled_by_when:
                 queue.enqueue_plugin(
                     phase=phase,  # type: ignore[arg-type]
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]

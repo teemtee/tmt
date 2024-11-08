@@ -2537,7 +2537,7 @@ class Provision(tmt.steps.Step):
                     Action,
                     ProvisionPlugin)) if isinstance(
                 p,
-                Action) or p.enabled_when()]
+                Action) or p.enabled_by_when]
         all_phases.sort(key=lambda x: x.order)
 
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
