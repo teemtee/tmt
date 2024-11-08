@@ -347,7 +347,7 @@ class Discover(tmt.steps.Step):
 
             elif isinstance(phase, DiscoverPlugin):
 
-                if not phase.enabled_when():
+                if not phase.enabled_by_when:
                     continue
 
                 # Go and discover tests

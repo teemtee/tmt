@@ -119,7 +119,7 @@ class Report(tmt.steps.Step):
             # since `classes` is clearly not `None`. Adding `cast()` to overcome this
             # because I can't find the actual error :/
             phase = cast(Union[Action, ReportPlugin[ReportStepData]], phase)
-            if phase.enabled_when():
+            if phase.enabled_by_when:
                 phase.go()
 
         # Give a summary, update status and save
