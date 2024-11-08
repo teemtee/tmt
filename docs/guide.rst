@@ -899,6 +899,12 @@ The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
       - name: Runs always
         how: shell
         script: ./setup.sh
+      - name: More rules in 'when' key
+        how: shell
+        script: ./something.sh
+        when:
+        - arch != x86_64
+        - initiator == human && distro == fedora
 
 
 .. _multihost-testing:

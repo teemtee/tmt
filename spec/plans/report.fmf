@@ -272,7 +272,9 @@ example: []
     example: |
         report:
           - name: Open html report
-            when: trigger is not defined
+            when:
+            - trigger is not defined
+            - initiator == human
             how: html
             open: true
           - how: display

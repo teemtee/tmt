@@ -296,7 +296,7 @@ class StepData(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
         metavar='RULE',
-        help='If used, phase is run only if some rule matches.'
+        help='If specified, phase is run only if any rule matches plan context.'
         )
     summary: Optional[str] = field(
         default=None,
