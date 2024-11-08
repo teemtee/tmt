@@ -21,7 +21,9 @@ prepare:
 finish:
   - how: shell
     script: touch $TMT_PLAN_DATA/when-finish-no-distro
-    when: distro is not defined
+    when:
+    - initiator == human
+    - distro is not defined
 
 report:
   - how: junit

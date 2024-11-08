@@ -224,6 +224,12 @@ example: |
           - name: Runs always
             how: shell
             script: ./setup.sh
+          - name: Just a demo of more rules in the 'when' key
+            how: shell
+            script: ./something.sh
+            when:
+            - initiator == konflux && distro == fedora
+            - initiator == human && distro == fedora
     link:
       - implemented-by: /tmt/steps
       - verified-by: /tests/steps/when
