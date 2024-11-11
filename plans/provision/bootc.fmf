@@ -7,6 +7,11 @@ discover:
     how: fmf
     filter: 'tag:provision-bootc'
 
+prepare+:
+  - name: start-libvirtd
+    script: |
+        systemctl start libvirtd
+        systemctl status libvirtd
 
 environment:
     PROVISION_HOW: virtual
