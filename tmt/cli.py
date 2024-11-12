@@ -1763,11 +1763,14 @@ def init(
     "--install", default=[], metavar="PACKAGE", multiple=True,
     help="Install package on the guest.")
 @option(
+    "--arch", default=None, metavar="ARCH", multiple=False,
+    help="Specify guest CPU architecture.")
+@option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")
 @verbosity_options
 @force_dry_options
-def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
+def try_command(context: Context, **kwargs: Any) -> None:
     """
     Try tests or experiment with guests.
 
@@ -1795,24 +1798,10 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
     tmt.trying.Try.store_cli_invocation(context)
 
     # Inject custom image and provision method to the Provision options
-    if image_and_how:
-
-        # TODO: For now just pick the first image-how pair, let's allow
-        # specifying multiple images and provision methods as well
-        image_and_how = image_and_how[0]
-
-        # We expect the 'image' or 'image@how' syntax
-        matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
-        if matched:
-            options = {"image": matched.group(1), "how": matched.group(2)}
-        else:
-            options = {"image": image_and_how}
-
-        # For 'connect' rename 'image' to 'guest'
-        if options.get('how') == 'connect':
-            options['guest'] = options.pop('image')
-
-        tmt.steps.provision.Provision.store_cli_invocation(context=None, options=options)
+    options = _construct_trying_provision_options(context.params)
+    if options:
+        tmt.steps.provision.Provision.store_cli_invocation(
+            context=None, options=options)
 
     # Finally, let's start trying!
     trying = tmt.trying.Try(
@@ -1820,6 +1809,32 @@ def try_command(context: Context, image_and_how: str, **kwargs: Any) -> None:
         logger=context.obj.logger)
 
     trying.go()
+
+
+def _construct_trying_provision_options(params: Any) -> dict[str, Any]:
+    """ Convert try-specific options into generic option format """
+    options: dict[str, Any] = {}
+
+    if params['image_and_how']:
+        # TODO: For now just pick the first image-how pair, let's allow
+        # specifying multiple images and provision methods as well
+        image_and_how = params['image_and_how'][0]
+        # We expect the 'image' or 'image@how' syntax
+        matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
+        if matched:
+            options = {"image": matched.group(1), "how": matched.group(2)}
+        else:
+            options = {"image": image_and_how}
+
+    # Add guest architecture if provided
+    if params['arch']:
+        options['arch'] = params['arch']
+
+    # For 'connect' rename 'image' to 'guest'
+    if options.get('how') == 'connect':
+        options['guest'] = options.pop('image')
+
+    return options
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
