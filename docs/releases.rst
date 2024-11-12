@@ -30,6 +30,13 @@ current working directory is set to the path of the last
 executed test, so that users can easily investigate the test
 code there and experiment with it directly on the guest.
 
+The :ref:`/plugins/report/reportportal` plugin now handles the
+timestamps for ``custom`` and ``restraint`` results correctly. It
+should never happen that the result's ``end-time`` will be higher
+then the ``start-time``. It should be also ensured that the start
+time of all launch items is the same or higher then the start time
+of a parent item/launch.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
