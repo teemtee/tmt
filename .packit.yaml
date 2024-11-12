@@ -25,7 +25,8 @@ targets: &all-targets
   - fedora-all
   - epel-9
 
-osh_diff_scan_after_copr_build: false
+# Uncomment below line if OpenScanHub scans are failing
+# osh_diff_scan_after_copr_build: false
 
 jobs:
   # Build pull requests
