@@ -1958,7 +1958,16 @@ class Login(Action):
             # Attempt to push the workdir to the guest
             try:
                 guest.push()
-                cwd = cwd or self.parent.plan.worktree
+                worktree = self.parent.plan.worktree
+                test_path = self.parent.plan.discover.tests(
+                    )[-1].path if self.parent.plan.discover.tests() else None
+
+                if worktree and test_path:
+                    test_path = worktree.parent / "discover" / test_path.unrooted()
+                else:
+                    test_path = worktree
+
+                cwd = cwd or test_path
             except tmt.utils.GeneralError:
                 self.warn("Failed to push workdir to the guest.")
                 cwd = None
