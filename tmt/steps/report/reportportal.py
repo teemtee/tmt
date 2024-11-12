@@ -12,7 +12,7 @@ import tmt.log
 import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
-from tmt.utils import field, yaml_to_dict
+from tmt.utils import field, format_timestamp, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -352,7 +352,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     @property
     def datetime(self) -> str:
-        return datetime.datetime.now(datetime.timezone.utc).isoformat()
+        # Use the same format of timestramp as tmt does
+        return format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
     @property
     def headers(self) -> dict[str, str]:
@@ -466,14 +467,17 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("SSL verification is disabled for all requests being made to ReportPortal "
                       f"instance ({self.data.url}).")
 
+        # Use the current datetime as a default, but this is the worst case scenario
+        # and we should use timestamps from results log as much as possible.
         launch_time = self.datetime
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
-            # Launch time should be the earliest start time of all plans. The minimum over datetime
-            # strings will work, because the datetime in ISO format is designed to be
-            # lexicographically sortable.
+            # Launch time should be the earliest start time of all plans.
+            #
+            # The datetime *strings* are in fact sorted here, but finding the minimum will work,
+            # because the datetime in ISO format is designed to be lexicographically sortable.
             launch_time = min([r.start_time or self.datetime
                                for r in self.step.plan.execute.results()])
 
@@ -603,9 +607,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
+            # The first test starts with the launch (at the worst case)
+            test_time = launch_time
+
             for result, test in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
-                test_time = self.datetime
                 test_name = None
                 test_description = ''
                 test_link = None
@@ -616,7 +622,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
-                    test_time = result.start_time or self.datetime
+
+                    # Use the actual timestamp or reuse the old one if missing
+                    test_time = result.start_time or test_time
+
                     # for guests, save their primary address
                     if result.guest.primary_address:
                         item_attributes.append({
@@ -678,6 +687,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 # Support for idle tests
                 status = "SKIPPED"
                 if result:
+                    # Shift the timestamp to the end of a test
+                    test_time = result.end_time or test_time
+
                     # For each log
                     for index, log_path in enumerate(result.log):
                         try:
@@ -702,7 +714,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                   "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
                                   "level": level,
-                                  "time": result.end_time})
+                                  "time": test_time})
 
                         # Write out failures
                         if index == 0 and status == "FAILED":
@@ -719,9 +731,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": "ERROR",
-                                      "time": result.end_time})
-
-                    test_time = result.end_time or self.datetime
+                                      "time": test_time})
 
                 # Finish the test item
                 response = self.rp_api_put(
@@ -734,6 +744,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "issue": {
                             "issueType": self.get_defect_type_locator(session, defect_type)}})
 
+                # The launch ends with the last test
                 launch_time = test_time
 
             if create_suite:
