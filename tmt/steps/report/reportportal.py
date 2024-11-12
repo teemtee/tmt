@@ -471,8 +471,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
-            # launch time should be the earliest start time of all plans
-            # TODO: Does the 'min' work with datetime isoformat correctly?
+            # Launch time should be the earliest start time of all plans. The minimum over datetime
+            # strings will work, because the datetime in ISO format is designed to be
+            # lexicographically sortable.
             launch_time = min([r.start_time or self.datetime
                                for r in self.step.plan.execute.results()])
 
