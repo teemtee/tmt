@@ -94,7 +94,7 @@ summary: Verify correct location of tmt scripts
       /usr/local/bin/tmt-reboot-core
       /usr/local/bin/tmt-report-result
   adjust:
-    result: xfail
+    result: info
     when: distro == fedora-39
     because: there is an irrelevant avc
 
@@ -149,6 +149,6 @@ summary: Verify correct location of tmt scripts
       /var/lib/tmt/scripts/tmt-reboot-core
       /var/lib/tmt/scripts/tmt-report-result
   adjust:
-    result: xfail
+    result: info
     when: distro == fedora-39
     because: there is an irrelevant avc
