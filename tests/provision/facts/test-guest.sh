@@ -2,6 +2,8 @@
 # vim: dict+=/usr/share/beakerlib/dictionary.vim cpt=.,w,b,u,t,i,k
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
+TEST_IMAGE_PREFIX="localhost/tmt/tests/container"
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
@@ -40,8 +42,8 @@ rlJournalStart
             fi
 
         elif [ "$PROVISION_HOW" = "container" ]; then
-            provision_options="--image fedora:39"
-            bfu_provision_options="$provision_options --user=nobody"
+            provision_options="--image $TEST_IMAGE_PREFIX/fedora/39:latest"
+            bfu_provision_options="--image $TEST_IMAGE_PREFIX/fedora/39/unprivileged:latest --user=fedora"
 
             arch="$(arch)"
             distro="Fedora Linux 39 (Container Image)"
