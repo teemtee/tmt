@@ -3,12 +3,13 @@ summary: Testing the integration of tmt and Report Portal via its API
 discover:
     how: fmf
 provision:
-    how: local
+    how: container
 execute:
     how: tmt
 report:
     how: reportportal
     project: test_tmt
+    upload-subresults: true
 
 context:
     component: tmt
