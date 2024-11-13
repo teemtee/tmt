@@ -1,5 +1,7 @@
 
-""" Command line interface for the Test Management Tool """
+"""
+Command line interface for the Test Management Tool
+"""
 
 import collections
 import dataclasses
@@ -182,7 +184,9 @@ class CliInvocation:
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> 'CliInvocation':
-        """ Inject custom options coming from the command line """
+        """
+        Inject custom options coming from the command line
+        """
         invocation = CliInvocation(context=None, options=options)
 
         # ignore[reportGeneralTypeIssues]: pyright has troubles understanding it
@@ -209,12 +213,16 @@ class CliInvocation:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class CustomGroup(click.Group):
-    """ Custom Click Group """
+    """
+    Custom Click Group
+    """
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
     def list_commands(self, context: Context) -> list[str]:  # type: ignore[override]
-        """ Prevent alphabetical sorting """
+        """
+        Prevent alphabetical sorting
+        """
         return list(self.commands.keys())
 
     # ignore[override]: expected, we want to use more specific `Context`
@@ -224,7 +232,9 @@ class CustomGroup(click.Group):
             context: Context,
             cmd_name: str
             ) -> Optional[click.Command]:
-        """ Allow command shortening """
+        """
+        Allow command shortening
+        """
         # Backward-compatible 'test convert' (just temporary for now FIXME)
         cmd_name = cmd_name.replace('convert', 'import')
         # Support both story & stories
@@ -243,7 +253,9 @@ class CustomGroup(click.Group):
 
 
 class HelpFormatter(click.HelpFormatter):
-    """ Custom help formatter capable of rendering ReST syntax """
+    """
+    Custom help formatter capable of rendering ReST syntax
+    """
 
     # Override parent implementation
     def write_dl(
@@ -327,7 +339,9 @@ def main(
         show_time: bool,
         pre_check: bool,
         **kwargs: Any) -> None:
-    """ Test Management Tool """
+    """
+    Test Management Tool
+    """
 
     # Let Click know about the output width - this affects mostly --help output.
     click_contex.max_content_width = tmt.utils.OUTPUT_WIDTH
@@ -447,7 +461,9 @@ def main(
 @force_dry_options
 @again_option
 def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
-    """ Run test steps. """
+    """
+    Run test steps.
+    """
     # Initialize
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
@@ -541,7 +557,9 @@ def finito(
         commands: Any,
         *args: Any,
         **kwargs: Any) -> None:
-    """ Run tests if run defined """
+    """
+    Run tests if run defined
+    """
     if click_context.obj.run:
         click_context.obj.run.go()
 
@@ -587,7 +605,9 @@ def _lint_class(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Lint a single class of objects """
+    """
+    Lint a single class of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -626,7 +646,9 @@ def _lint_collection(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Lint a collection of objects """
+    """
+    Lint a collection of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -673,7 +695,9 @@ def do_lint(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Core of all ``lint`` commands """
+    """
+    Core of all ``lint`` commands
+    """
 
     if list_checks:
         for klass in klasses:
@@ -1284,7 +1308,9 @@ def plans_create(
         template: str,
         force: bool,
         **kwargs: Any) -> None:
-    """ Create a new plan based on given template. """
+    """
+    Create a new plan based on given template.
+    """
     assert context.obj.tree.root is not None  # narrow type
     tmt.Plan.store_cli_invocation(context)
     tmt.Plan.create(
@@ -1472,7 +1498,9 @@ def stories_create(
         template: str,
         force: bool,
         **kwargs: Any) -> None:
-    """ Create a new story based on given template. """
+    """
+    Create a new story based on given template.
+    """
     assert context.obj.tree.root is not None  # narrow type
     tmt.Story.store_cli_invocation(context)
     tmt.Story.create(
@@ -1519,7 +1547,9 @@ def stories_coverage(
     tmt.Story.store_cli_invocation(context)
 
     def headfoot(text: str) -> None:
-        """ Format simple header/footer """
+        """
+        Format simple header/footer
+        """
         echo(style(text.rjust(4) + ' ', fg='blue'), nl=False)
 
     header = False
@@ -2165,7 +2195,9 @@ def lint(
 
 @main.group(cls=CustomGroup)
 def setup(**kwargs: Any) -> None:
-    """ Setup the environment for working with tmt """
+    """
+    Setup the environment for working with tmt
+    """
 
 
 @setup.group(cls=CustomGroup)
@@ -2185,7 +2217,9 @@ COMPLETE_SCRIPT = 'tmt-complete'
 
 
 def setup_completion(shell: str, install: bool, context: Context) -> None:
-    """ Setup completion based on the shell """
+    """
+    Setup completion based on the shell
+    """
     config = tmt.utils.Config()
     # Fish gets installed into its special location where it is automatically
     # loaded.
@@ -2228,7 +2262,9 @@ def setup_completion(shell: str, install: bool, context: Context) -> None:
          '~/.bashrc'.
          """)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for bash """
+    """
+    Setup shell completions for bash
+    """
     setup_completion('bash', install, context)
 
 
@@ -2241,7 +2277,9 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
          '~/.zshrc'.
          """)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for zsh """
+    """
+    Setup shell completions for zsh
+    """
     setup_completion('zsh', install, context)
 
 
@@ -2251,7 +2289,9 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for fish """
+    """
+    Setup shell completions for fish
+    """
     setup_completion('fish', install, context)
 
 

@@ -31,7 +31,9 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
 
     @classmethod
     def options(cls, how=None):
-        """ Prepare command line options for example """
+        """
+        Prepare command line options for example
+        """
         return [
             option(
                 '-w', '--what', metavar='WHAT',
@@ -42,7 +44,9 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
             *super().options(how)]
 
     def default(self, option, default=None):
-        """ Return the default value for the given option """
+        """
+        Return the default value for the given option
+        """
         defaults = {
             'what': 'default value',
             'switch': False,
@@ -50,7 +54,9 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
         return defaults.get(option, default)
 
     def show(self):
-        """ Show provision details """
+        """
+        Show provision details
+        """
         super().show(['what', 'switch'])
 
     def wake(self, data=None):
@@ -72,7 +78,9 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
             self._guest.wake()
 
     def go(self):
-        """ Provision the container """
+        """
+        Provision the container
+        """
         super().go()
         print("go() called")
 
@@ -167,7 +175,9 @@ class GuestExample(tmt.Guest):
         return data
 
     def _some_your_internal_stuff(self):
-        """ Do some heavy lifting """
+        """
+        Do some heavy lifting
+        """
         return True
 
     def start(self):
@@ -225,11 +235,15 @@ class GuestExample(tmt.Guest):
         return ["Fedora", "whatever"]
 
     def delete(self):
-        """ Remove the example instance """
+        """
+        Remove the example instance
+        """
         self.debug("You should place code for cleanup here.")
 
     def remove(self):
-        """ Remove the guest """
+        """
+        Remove the guest
+        """
         if self.what:
             self.info('guest', 'removed', 'green')
             self.delete()

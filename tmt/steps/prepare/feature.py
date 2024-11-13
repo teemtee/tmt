@@ -17,7 +17,9 @@ FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
 
 class Feature(tmt.utils.Common):
-    """ Base class for ``feature`` prepare plugin implementations """
+    """
+    Base class for ``feature`` prepare plugin implementations
+    """
 
     NAME: str
 
@@ -27,7 +29,9 @@ class Feature(tmt.utils.Common):
             parent: 'PrepareFeature',
             guest: Guest,
             logger: tmt.log.Logger) -> None:
-        """ Initialize feature data """
+        """
+        Initialize feature data
+        """
         super().__init__(logger=logger, parent=parent, relative_indent=0)
 
         self.guest = guest
@@ -119,7 +123,9 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guests """
+        """
+        Prepare the guests
+        """
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode

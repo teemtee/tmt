@@ -1,4 +1,6 @@
-""" Test Metadata Utilities """
+"""
+Test Metadata Utilities
+"""
 
 
 import dataclasses
@@ -30,7 +32,9 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class GitInfo:
-    """ Data container for commonly queried git data. """
+    """
+    Data container for commonly queried git data.
+    """
 
     #: Path to the git root.
     git_root: Path
@@ -143,7 +147,9 @@ class GitInfo:
 # Avoid multiple subprocess calls for the same url
 @functools.cache
 def check_git_url(url: str, logger: tmt.log.Logger) -> str:
-    """ Check that a remote git url is accessible """
+    """
+    Check that a remote git url is accessible
+    """
     try:
         logger.debug(f"Check git url '{url}'.")
         subprocess.check_call(
@@ -271,7 +277,9 @@ CLONABLE_GIT_URL_PATTERNS: list[tuple[str, str]] = [
 
 
 def clonable_git_url(url: str) -> str:
-    """ Modify the git repo url so it can be cloned """
+    """
+    Modify the git repo url so it can be cloned
+    """
     url = rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
     return inject_auth_git_url(url)
 
@@ -395,7 +403,9 @@ def default_branch(
         repository: Path,
         remote: str = 'origin',
         logger: tmt.log.Logger) -> Optional[str]:
-    """ Detect default branch from given local git repository """
+    """
+    Detect default branch from given local git repository
+    """
     # Make sure '.git' is present and it is a file or a directory
     dot_git = repository / '.git'
     if not dot_git.exists():
@@ -531,7 +541,9 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
 
 class DistGitHandler:
-    """ Common functionality for DistGit handlers """
+    """
+    Common functionality for DistGit handlers
+    """
 
     sources_file_name = 'sources'
     uri = "/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
@@ -579,12 +591,16 @@ class DistGitHandler:
         return ret_values
 
     def its_me(self, remotes: list[str]) -> bool:
-        """ True if self can work with remotes """
+        """
+        True if self can work with remotes
+        """
         return any(self.remote_substring.search(item) for item in remotes)
 
 
 class FedoraDistGit(DistGitHandler):
-    """ Fedora Handler """
+    """
+    Fedora Handler
+    """
 
     usage_name = "fedora"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -593,7 +609,9 @@ class FedoraDistGit(DistGitHandler):
 
 
 class CentOSDistGit(DistGitHandler):
-    """ CentOS Handler """
+    """
+    CentOS Handler
+    """
 
     usage_name = "centos"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -602,7 +620,9 @@ class CentOSDistGit(DistGitHandler):
 
 
 class RedHatGitlab(DistGitHandler):
-    """ Red Hat on Gitlab """
+    """
+    Red Hat on Gitlab
+    """
 
     usage_name = "redhatgitlab"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -631,7 +651,9 @@ def get_distgit_handler(
 
 
 def get_distgit_handler_names() -> list[str]:
-    """ All known distgit handlers """
+    """
+    All known distgit handlers
+    """
     return [i.usage_name for i in DistGitHandler.__subclasses__()]
 
 
@@ -705,7 +727,9 @@ def git_clone(
             shallow: bool = False,
             env: Optional[Environment] = None,
             timeout: Optional[int] = None) -> CommandOutput:
-        """ Clone the repo, handle history depth """
+        """
+        Clone the repo, handle history depth
+        """
 
         depth = ['--depth=1'] if shallow else []
         return Command('git', 'clone', *depth, url, destination).run(

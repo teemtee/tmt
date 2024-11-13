@@ -1,4 +1,6 @@
-""" Easily try tests and experiment with guests """
+"""
+Easily try tests and experiment with guests
+"""
 
 import enum
 import re
@@ -27,7 +29,9 @@ USER_PLAN_NAME = "/user/plan"
 
 
 class Action(enum.Enum):
-    """ Available actions and their keyboard shortcuts """
+    """
+    Available actions and their keyboard shortcuts
+    """
 
     TEST = "t", "rediscover tests and execute them again"
     LOGIN = "l", "log into the guest for experimenting"
@@ -49,22 +53,30 @@ class Action(enum.Enum):
 
     @property
     def key(self) -> str:
-        """ Keyboard shortcut """
+        """
+        Keyboard shortcut
+        """
         return self.value[0]
 
     @property
     def description(self) -> str:
-        """ Action description """
+        """
+        Action description
+        """
         return self.value[1]
 
     @property
     def action(self) -> str:
-        """ Action name in lower case """
+        """
+        Action name in lower case
+        """
         return self.name.lower()
 
     @property
     def menu(self) -> str:
-        """ Show menu with the keyboard shortcut highlighted """
+        """
+        Show menu with the keyboard shortcut highlighted
+        """
 
         index = self.action.index(self.key)
 
@@ -79,7 +91,9 @@ class Action(enum.Enum):
 
     @classmethod
     def find(cls, key: str) -> "Action":
-        """ Return action for given keyboard shortcut """
+        """
+        Return action for given keyboard shortcut
+        """
 
         for action in cls:
             if action.key == key:
@@ -96,7 +110,9 @@ class Try(tmt.utils.Common):
             tree: tmt.Tree,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
-        """ Just store the tree """
+        """
+        Just store the tree
+        """
 
         super().__init__(logger=logger, **kwargs)
 
@@ -116,7 +132,9 @@ class Try(tmt.utils.Common):
             context=None, options={"interactive": True})
 
     def check_tree(self) -> None:
-        """ Make sure there is a sane metadata tree """
+        """
+        Make sure there is a sane metadata tree
+        """
 
         # Both tree and root should be defined
         try:
@@ -128,7 +146,9 @@ class Try(tmt.utils.Common):
             self.tree.tree = fmf.Tree({"nothing": "here"})
 
     def check_tests(self) -> None:
-        """ Check for available tests """
+        """
+        Check for available tests
+        """
 
         # Search for tests according to provided names
         test_names = list(self.opt("test"))
@@ -158,7 +178,9 @@ class Try(tmt.utils.Common):
         tmt.Test.store_cli_invocation(context=None, options=options)
 
     def get_default_plans(self, run: tmt.base.Run) -> list[Plan]:
-        """ Get default plan from user config or the standard template """
+        """
+        Get default plan from user config or the standard template
+        """
 
         # Check user config for custom default plans. Search for all
         # plans starting with the default user plan name (there might be
@@ -186,7 +208,9 @@ class Try(tmt.utils.Common):
         return self.tree.plans(names=[f"^{plan_name}"], run=run)
 
     def check_plans(self, run: tmt.base.Run) -> None:
-        """ Check for plans to be used for testing """
+        """
+        Check for plans to be used for testing
+        """
 
         # Search for matching plans if plan names provided
         plan_names = list(self.opt("plan"))
@@ -211,7 +235,9 @@ class Try(tmt.utils.Common):
                 order=tmt.steps.PHASE_END)
 
     def welcome(self) -> None:
-        """ Welcome message with summary of what we're going to try """
+        """
+        Welcome message with summary of what we're going to try
+        """
 
         parts = ["Let's try"]
 
@@ -238,7 +264,9 @@ class Try(tmt.utils.Common):
         self.print(" ".join(parts) + ".")
 
     def save(self) -> None:
-        """ Save list of selected plans and enabled steps """
+        """
+        Save list of selected plans and enabled steps
+        """
         assert self.tree is not None  # narrow type
         assert self._cli_context_object is not None  # narrow type
         data = RunData(
@@ -251,7 +279,9 @@ class Try(tmt.utils.Common):
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
     def choose_action(self) -> Action:
-        """ Print menu, get next action """
+        """
+        Print menu, get next action
+        """
 
         while True:
             self.print(textwrap.dedent(f"""
@@ -284,11 +314,15 @@ class Try(tmt.utils.Common):
                 self.print(click.style(f"Invalid action '{answer}'.", fg="red"))
 
     def action_start(self, plan: Plan) -> None:
-        """ Common start actions """
+        """
+        Common start actions
+        """
         plan.wake()
 
     def action_start_test(self, plan: Plan) -> None:
-        """ Start with testing """
+        """
+        Start with testing
+        """
         self.action_start(plan)
 
         plan.discover.go()
@@ -297,7 +331,9 @@ class Try(tmt.utils.Common):
         plan.execute.go()
 
     def action_start_login(self, plan: Plan) -> None:
-        """ Start with login """
+        """
+        Start with login
+        """
         self.action_start(plan)
 
         plan.provision.go()
@@ -306,23 +342,31 @@ class Try(tmt.utils.Common):
         plan.login.go(force=True)
 
     def action_start_ask(self, plan: Plan) -> None:
-        """ Ask what to do """
+        """
+        Ask what to do
+        """
         self.action_start(plan)
 
         plan.provision.go()
 
     def action_test(self, plan: Plan) -> None:
-        """ Test again """
+        """
+        Test again
+        """
         plan.discover.go(force=True)
         plan.execute.go(force=True)
 
     def action_login(self, plan: Plan) -> None:
-        """ Log into the guest """
+        """
+        Log into the guest
+        """
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
     def prompt_verbose(self) -> None:
-        """ Ask for the desired verbosity level """
+        """
+        Ask for the desired verbosity level
+        """
         self.print("What verbose level do you need?")
         answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
 
@@ -337,14 +381,18 @@ class Try(tmt.utils.Common):
             self.print(f"Invalid level '{answer}'.")
 
     def action_verbose(self, plan: Plan) -> None:
-        """ Set verbosity level of all loggers in given plan """
+        """
+        Set verbosity level of all loggers in given plan
+        """
         for step in plan.steps(enabled_only=False):
             step.verbosity_level = self.verbosity_level
             for phase in step.phases():
                 phase.verbosity_level = self.verbosity_level
 
     def prompt_debug(self) -> None:
-        """ Choose the right debug level """
+        """
+        Choose the right debug level
+        """
 
         self.print("Which debug level would you like?")
         answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
@@ -360,40 +408,56 @@ class Try(tmt.utils.Common):
             self.print(f"Invalid level '{answer}'.")
 
     def action_debug(self, plan: Plan) -> None:
-        """ Set verbosity level of all loggers in given plan """
+        """
+        Set verbosity level of all loggers in given plan
+        """
         for step in plan.steps(enabled_only=False):
             step.debug_level = self.debug_level
             for phase in step.phases():
                 phase.debug_level = self.debug_level
 
     def action_discover(self, plan: Plan) -> None:
-        """ Discover tests """
+        """
+        Discover tests
+        """
         plan.discover.go(force=True)
 
     def action_prepare(self, plan: Plan) -> None:
-        """ Prepare the guest """
+        """
+        Prepare the guest
+        """
         plan.prepare.go(force=True)
 
     def action_execute(self, plan: Plan) -> None:
-        """ Execute tests """
+        """
+        Execute tests
+        """
         plan.execute.go(force=True)
 
     def action_report(self, plan: Plan) -> None:
-        """ Report results """
+        """
+        Report results
+        """
         plan.report.go(force=True)
 
     def action_finish(self, plan: Plan) -> None:
-        """ Clean up guests and finish """
+        """
+        Clean up guests and finish
+        """
         plan.finish.go()
 
     def action_keep(self, plan: Plan) -> None:
-        """ Keep run and exit the session """
+        """
+        Keep run and exit the session
+        """
         assert plan.my_run is not None  # Narrow type
         run_id = click.style(plan.my_run.workdir, fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
     def action_quit(self, plan: Plan) -> None:
-        """ Clean up the run and quit the session """
+        """
+        Clean up the run and quit the session
+        """
 
         # Finish the run unless already done
         if plan.finish.status() != "done":
@@ -405,14 +469,18 @@ class Try(tmt.utils.Common):
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
     def handle_options(self, plan: Plan) -> None:
-        """ Choose requested cli option """
+        """
+        Choose requested cli option
+        """
 
         for option in self.cli_options:
             if self.opt(option):
                 getattr(self, f"handle_{option}")(plan)
 
     def handle_epel(self, plan: Plan) -> None:
-        """ Enable EPEL repository """
+        """
+        Enable EPEL repository
+        """
 
         # tmt run prepare --how feature --epel enabled
         from tmt.steps.prepare.feature import PrepareFeatureData
@@ -429,7 +497,9 @@ class Try(tmt.utils.Common):
         plan.prepare._phases.append(phase)
 
     def handle_install(self, plan: Plan) -> None:
-        """ Install local rpm package on the guest. """
+        """
+        Install local rpm package on the guest.
+        """
 
         # tmt run prepare --how install --package PACKAGE
         from tmt.steps.prepare.install import PrepareInstallData
@@ -446,7 +516,9 @@ class Try(tmt.utils.Common):
         plan.prepare._phases.append(phase)
 
     def go(self) -> None:
-        """ Run the interactive session """
+        """
+        Run the interactive session
+        """
 
         # Create run, prepare it for testing
         run = tmt.base.Run(tree=self.tree, logger=self._logger, parent=self)

@@ -106,14 +106,18 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[
 # its components into dictionaries.
 @dataclasses.dataclass
 class MrackBaseHWElement:
-    """ Base for Mrack hardware requirement elements """
+    """
+    Base for Mrack hardware requirement elements
+    """
 
     # Only a name is defined, as it's the only property shared across all element
     # types.
     name: str
 
     def to_mrack(self) -> dict[str, Any]:
-        """ Convert the element to Mrack-compatible dictionary tree """
+        """
+        Convert the element to Mrack-compatible dictionary tree
+        """
         raise NotImplementedError
 
 
@@ -135,7 +139,9 @@ class MrackHWElement(MrackBaseHWElement):
 
 @dataclasses.dataclass(init=False)
 class MrackHWBinOp(MrackHWElement):
-    """ An element describing a binary operation, a "check" """
+    """
+    An element describing a binary operation, a "check"
+    """
 
     def __init__(self, name: str, operator: str, value: str) -> None:
         super().__init__(name)
@@ -148,7 +154,9 @@ class MrackHWBinOp(MrackHWElement):
 
 @dataclasses.dataclass(init=False)
 class MrackHWKeyValue(MrackHWElement):
-    """ A key-value element """
+    """
+    A key-value element
+    """
 
     def __init__(self, name: str, operator: str, value: str) -> None:
         super().__init__('key_value')
@@ -185,21 +193,27 @@ class MrackHWGroup(MrackBaseHWElement):
 
 @dataclasses.dataclass
 class MrackHWAndGroup(MrackHWGroup):
-    """ Represents ``<and/>`` element """
+    """
+    Represents ``<and/>`` element
+    """
 
     name: str = 'and'
 
 
 @dataclasses.dataclass
 class MrackHWOrGroup(MrackHWGroup):
-    """ Represents ``<or/>`` element """
+    """
+    Represents ``<or/>`` element
+    """
 
     name: str = 'or'
 
 
 @dataclasses.dataclass
 class MrackHWNotGroup(MrackHWGroup):
-    """ Represents ``<not/>`` element """
+    """
+    Represents ``<not/>`` element
+    """
 
     name: str = 'not'
 
@@ -664,7 +678,9 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
 def constraint_to_beaker_filter(
         constraint: tmt.hardware.BaseConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
-    """ Convert a hardware constraint into a Mrack-compatible filter """
+    """
+    Convert a hardware constraint into a Mrack-compatible filter
+    """
 
     if isinstance(constraint, tmt.hardware.And):
         return MrackHWAndGroup(
@@ -699,7 +715,9 @@ def constraint_to_beaker_filter(
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
-    """ Import mrack module only when needed """
+    """
+    Import mrack module only when needed
+    """
     global _MRACK_IMPORTED
 
     if _MRACK_IMPORTED:
@@ -742,7 +760,9 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
     # as mypy does not have type information for the BeakerTransformer class
     class TmtBeakerTransformer(BeakerTransformer):  # type: ignore[misc]
         def _translate_tmt_hw(self, hw: tmt.hardware.Hardware) -> dict[str, Any]:
-            """ Return hw requirements from given hw dictionary """
+            """
+            Return hw requirements from given hw dictionary
+            """
 
             assert hw.constraint
 
@@ -759,7 +779,9 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
                 }
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
-            """ Create single input for Beaker provisioner """
+            """
+            Create single input for Beaker provisioner
+            """
             req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
             if host.hardware and host.hardware.constraint:
@@ -781,7 +803,9 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
 
 def async_run(func: Any) -> Any:
-    """ Decorate click actions to run as async """
+    """
+    Decorate click actions to run as async
+    """
     @wraps(func)
     def update_wrapper(*args: Any, **kwargs: Any) -> Any:
         return asyncio.run(func(*args, **kwargs))
@@ -891,7 +915,9 @@ GUEST_STATE_COLORS = {
 
 @dataclasses.dataclass
 class CreateJobParameters:
-    """ Collect all parameters for a future Beaker job """
+    """
+    Collect all parameters for a future Beaker job
+    """
 
     tmt_name: str
     name: str
@@ -924,7 +950,9 @@ class BeakerAPI:
     # and mypy complains as it no longer returns None but the coroutine
     @async_run
     async def __init__(self, guest: 'GuestBeaker') -> None:  # type: ignore[misc]
-        """ Initialize the API class with defaults and load the config """
+        """
+        Initialize the API class with defaults and load the config
+        """
         self._guest = guest
 
         # use global context class
@@ -990,7 +1018,9 @@ class BeakerAPI:
     async def inspect(
             self,
             ) -> Any:
-        """ Inspect a resource (kinda wait till provisioned) """
+        """
+        Inspect a resource (kinda wait till provisioned)
+        """
         log_msg_start = f"{self.dsp_name} [{self.mrack_requirement.get('name')}]"
         return self._mrack_provider._get_recipe_info(self._bkr_job_id, log_msg_start)
 
@@ -998,12 +1028,16 @@ class BeakerAPI:
     async def delete(  # destroy
             self,
             ) -> Any:
-        """ Delete - or request removal of - a resource """
+        """
+        Delete - or request removal of - a resource
+        """
         return await self._mrack_provider.delete_host(self._bkr_job_id, None)
 
 
 class GuestBeaker(tmt.steps.provision.GuestSsh):
-    """ Beaker guest instance """
+    """
+    Beaker guest instance
+    """
 
     _data_class = BeakerGuestData
 
@@ -1029,7 +1063,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
     @property
     def api(self) -> BeakerAPI:
-        """ Create BeakerAPI leveraging mrack """
+        """
+        Create BeakerAPI leveraging mrack
+        """
 
         def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
             assert self.parent is not None
@@ -1055,7 +1091,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
     @property
     def is_ready(self) -> bool:
-        """ Check if provisioning of machine is done """
+        """
+        Check if provisioning of machine is done
+        """
         if self.job_id is None:
             return False
 
@@ -1080,7 +1118,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             return False
 
     def _create(self, tmt_name: str) -> None:
-        """ Create beaker job xml request and submit it to Beaker hub """
+        """
+        Create beaker job xml request and submit it to Beaker hub
+        """
 
         data = CreateJobParameters(
             tmt_name=tmt_name,
@@ -1184,12 +1224,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.verbose('topology address', self.topology_address, 'green')
 
     def stop(self) -> None:
-        """ Stop the guest """
+        """
+        Stop the guest
+        """
         # do nothing
         return
 
     def remove(self) -> None:
-        """ Remove the guest """
+        """
+        Remove the guest
+        """
 
         if self.job_id is None:
             return
@@ -1267,7 +1311,9 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     # data argument should be a "Optional[GuestData]" type but we would like to use
     # BeakerGuestData created here ignoring the override will make mypy calm
     def wake(self, data: Optional[BeakerGuestData] = None) -> None:  # type: ignore[override]
-        """ Wake up the plugin, process data, apply options """
+        """
+        Wake up the plugin, process data, apply options
+        """
         super().wake(data=data)
 
         if data:
@@ -1279,7 +1325,9 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 )
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Provision the guest """
+        """
+        Provision the guest
+        """
         super().go(logger=logger)
 
         data = BeakerGuestData.from_plugin(self)
@@ -1301,5 +1349,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         self._guest.setup()
 
     def guest(self) -> Optional[GuestBeaker]:
-        """ Return the provisioned guest """
+        """
+        Return the provisioned guest
+        """
         return self._guest

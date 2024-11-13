@@ -51,7 +51,9 @@ class Path(pathlib.PosixPath):
             encoding: Optional[str] = None,
             errors: Optional[str] = None,
             newline: Optional[str] = None) -> int:
-        """ Open the file pointed to in text mode, append data to it, and close the file """
+        """
+        Open the file pointed to in text mode, append data to it, and close the file
+        """
 
         with self.open('a', encoding=encoding, errors=errors, newline=newline) as f:
             return f.write(data)
@@ -61,7 +63,9 @@ class Path(pathlib.PosixPath):
             encoding: Optional[str] = None,
             errors: Optional[str] = None,
             keepends: bool = False) -> Iterator[str]:
-        """ Yield decoded lines of the pointed-to file as a sequence of strings """
+        """
+        Yield decoded lines of the pointed-to file as a sequence of strings
+        """
 
         yield from self \
             .read_text(encoding=encoding, errors=errors) \

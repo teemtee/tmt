@@ -42,7 +42,9 @@ def report_fix(tmppath: Path, root_logger):
 # with Python 3.6, changing order or attributes from time to time. Therefore
 # taking the longer, more verbose approach.
 def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.dom.Node) -> None:
-    """ Assert two XML nodes have the same content """
+    """
+    Assert two XML nodes have the same content
+    """
 
     # All of this would be doable in a much, much simpler, condensed manner,
     # but being more verbose allows for way more specific error message when
