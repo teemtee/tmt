@@ -4,6 +4,11 @@
     Releases
 ======================
 
+
+The :ref:`/plugins/report/reportportal` plugin now supports
+importing of tmt subresults as child test items.
+
+
 tmt-1.42.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
