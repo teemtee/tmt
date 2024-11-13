@@ -37,8 +37,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "popd"
         rlRun "rm subresult.out" 0 "Remove subresult temporary file"
+
+        rlRun "popd"
         rlRun "rm -r ${run}" 0 "Remove run directory"
     rlPhaseEnd
 rlJournalEnd
