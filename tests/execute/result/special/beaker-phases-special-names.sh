@@ -24,7 +24,7 @@ rlJournalStart
         '=14=some='
     do
         rlPhaseStartTest "$i"
-            rlRun "phase-name: ${i}"
+            rlRun "echo \"phase-name: ${i}\""
         rlPhaseEnd
     done
 rlJournalEnd
