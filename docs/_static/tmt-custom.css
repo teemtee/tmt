@@ -4,3 +4,6 @@
 /* Used for HW requirement support matrix */
 .supported   { color: green; }
 .unsupported { color: red; }
+.logo {
+    padding: 10px 50px !important;
+}

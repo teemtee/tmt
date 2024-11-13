@@ -20,6 +20,10 @@ calling the ``tmt-report-result`` or by calling beakerlib's
 ``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
 ``execute`` directory.
 
+Documentation pages now use the `new tmt logo`__ designed by Maria Leonova.
+
+__ https://github.com/teemtee/docs/tree/main/logo
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
