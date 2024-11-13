@@ -217,7 +217,7 @@ html_theme = HTML_THEME
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = 'https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-transparent-175x175.png'
+html_logo = 'https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-logo-dark-background.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
