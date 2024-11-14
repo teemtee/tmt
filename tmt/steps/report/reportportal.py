@@ -779,6 +779,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     # map it under the parent test item
                     for subresult in result.subresult:
                         # Create a child item
+                        self.info("sub-test", subresult.name, color="cyan", shift=1)
                         response = self.rp_api_post(
                             session=session,
                             path=f"item/{item_uuid}",
@@ -800,7 +801,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 "status": self.TMT_TO_RP_RESULT_STATUS[subresult.result],
                                 "endTime": subresult.end_time or test_end_time})
 
-                        self.verbose("child uuid", child_item_uuid, "yellow", shift=2)
+                        self.verbose("uuid", child_item_uuid, "yellow", shift=2)
 
                 # Finish the parent test item
                 response = self.rp_api_put(
