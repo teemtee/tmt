@@ -482,7 +482,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         # Use the current datetime as a default, but this is the worst case scenario
         # and we should use timestamps from results log as much as possible.
-        launch_time = self.datetime
+        launch_start_time = self.datetime
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
@@ -566,7 +566,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": launch_name,
                         "description": launch_description,
                         "attributes": launch_attributes,
-                        "startTime": launch_time,
+                        "startTime": launch_start_time,
                         "rerun": launch_rerun,
                     },
                 )
@@ -611,7 +611,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": suite_name,
                         "description": suite_description,
                         "attributes": attributes,
-                        "startTime": launch_time,
+                        "startTime": launch_start_time,
                         "launchUuid": launch_uuid,
                         "type": "suite",
                     },
@@ -628,7 +628,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.data.suite_uuid = suite_uuid
 
             # The first test starts with the launch (at the worst case)
-            test_time = launch_time
+            test_start_time = launch_start_time
 
             for result, test_origin in self.step.plan.execute.results_for_tests(
                 self.step.plan.discover.tests()
@@ -647,7 +647,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     test_name = result.name
 
                     # Use the actual timestamp or reuse the old one if missing
-                    test_time = result.start_time or test_time
+                    test_start_time = result.start_time or test_start_time
 
                     # for guests, save their primary address
                     if result.guest.primary_address:
@@ -679,6 +679,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         test_link = test.web_link()
                     if test.id:
                         test_id = test.id
+
                     env_vars = [
                         {'key': key, 'value': value}
                         for key, value in test.environment.items()
@@ -705,7 +706,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             "launchUuid": launch_uuid,
                             "type": "step",
                             "testCaseId": test_id,
-                            "startTime": test_time,
+                            "startTime": test_start_time,
                         },
                     )
 
@@ -719,8 +720,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 # Support for idle tests
                 status = "SKIPPED"
                 if result:
-                    # Shift the timestamp to the end of a test
-                    test_time = result.end_time or test_time
+                    # Shift the timestamp to the end of a test. If the result end-time is not
+                    # defined, use the latest result start-time as default.
+                    test_end_time = result.end_time or test_start_time
 
                     # For each log
                     # TODO: Try to save logs for subresults?
@@ -746,7 +748,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 "itemUuid": item_uuid,
                                 "launchUuid": launch_uuid,
                                 "level": level,
-                                "time": test_time,
+                                "time": test_end_time,
                             },
                         )
 
@@ -766,12 +768,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                     "itemUuid": item_uuid,
                                     "launchUuid": launch_uuid,
                                     "level": "ERROR",
-                                    "time": test_time,
+                                    "time": test_end_time,
                                 },
                             )
 
-                    # Also create (and *finish*) the child test item for every tmt subresult and
-                    # map it under parent test item
+                    # Use the parent test start-time as a default
+                    subresult_start_time = test_start_time
+
+                    # Create (and *finish*) the child test item for every tmt subresult and
+                    # map it under the parent test item
                     for subresult in result.subresult:
                         # Create a child item
                         response = self.rp_api_post(
@@ -779,18 +784,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             path=f"item/{item_uuid}",
                             json={
                                 "name": subresult.name,
-                                # TODO: Decide which attributes we want to set for subresults
-                                # "description": test_description,
-                                # "attributes": item_attributes,
-                                # "parameters": env_vars,
-                                # "codeRef": test_link,
                                 "launchUuid": launch_uuid,
                                 "type": "step",
-                                # "testCaseId": test_id,
-                                # TODO: Use subresult.start_time or use a parent test start time as
-                                # default? Or use the minimum start_time of all subresults and if
-                                # not defined, use the parent start_time
-                                "startTime": subresult.start_time or self.datetime})
+                                "startTime": subresult.start_time or subresult_start_time})
 
                         child_item_uuid = yaml_to_dict(response.text).get("id")
                         assert child_item_uuid is not None
@@ -819,21 +815,21 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     path=f"item/{item_uuid}",
                     json={
                         "launchUuid": launch_uuid,
-                        "endTime": test_time,
+                        "endTime": test_end_time,
                         "status": status,
                         "issue": {"issueType": self.get_defect_type_locator(session, defect_type)},
                     },
                 )
 
                 # The launch ends with the last test
-                launch_time = test_time
+                launch_end_time = test_end_time
 
             if create_suite:
                 # Finish the test suite
                 response = self.rp_api_put(
                     session=session,
                     path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
-                    json={"launchUuid": launch_uuid, "endTime": launch_time},
+                    json={"launchUuid": launch_uuid, "endTime": launch_end_time},
                 )
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
@@ -847,7 +843,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 response = self.rp_api_put(
                     session=session,
                     path=f"launch/{launch_uuid}/finish",
-                    json={"endTime": launch_time},
+                    json={"endTime": launch_end_time},
                 )
                 launch_url = str(yaml_to_dict(response.text).get("link"))
 
