@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
 
+import tmt.hardware
 import tmt.log
 import tmt.steps.report
 from tmt.result import ResultOutcome
@@ -13,10 +14,11 @@ from tmt.utils import field, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+    from tmt.hardware import Size
 
 JSON: 'TypeAlias' = Any
-DEFAULT_LOG_SIZE_LIMIT: int = 1024 * 1024
-DEFAULT_TRACEBACK_SIZE_LIMIT: int = 50 * 1024
+DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
+DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
@@ -43,9 +45,16 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
+def _size_env_to_default(option: str, default: 'Size') -> 'Size':
+    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
+    if env_var not in os.environ or os.getenv(env_var) is None:
+        return default
+    return tmt.hardware.UNITS(os.getenv(env_var, str(default)))
+
+
 @dataclasses.dataclass
 class LogFilterSettings:
-    size: int = DEFAULT_LOG_SIZE_LIMIT
+    size: 'Size' = DEFAULT_LOG_SIZE_LIMIT
     is_traceback: bool = False
 
 
@@ -59,7 +68,7 @@ def _filter_invalid_chars(data: str,
 
 def _filter_log_per_size(data: str,
                          settings: LogFilterSettings) -> str:
-    size = len(data)
+    size = tmt.hardware.UNITS(f'{len(data)} bytes')
     if size > settings.size:
         if settings.is_traceback:
             variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_TRACEBACK_SIZE_LIMIT"
@@ -67,11 +76,11 @@ def _filter_log_per_size(data: str,
         else:
             variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
             option = "--log-size-limit"
-        header = (f"WARNING: Uploaded log has been truncated because its size {size} bytes "
-                  f"exceeds tmt reportportal plugin limit of {settings.size} bytes. "
+        header = (f"WARNING: Uploaded log has been truncated because its size {size} "
+                  f"exceeds tmt reportportal plugin limit of {settings.size}. "
                   f"The limit is controlled with {option} plugin option or "
                   f"{variable} environment variable.\n\n")
-        return f"{header}{data[:settings.size]}"
+        return f"{header}{data[:settings.size.to('bytes').magnitude]}"
     return data
 
 
@@ -182,26 +191,22 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              (e.g. 'Idle'). 'To Investigate' is used by default.
              """)
 
-    log_size_limit: int = field(
+    log_size_limit: 'Size' = field(
         option="--log-size-limit",
-        metavar="LOG_SIZE_LIMIT",
-        default=int(
-            _str_env_to_default('log_size_limit', str(DEFAULT_LOG_SIZE_LIMIT))),
+        metavar="SIZE",
+        default=_size_env_to_default('log_size_limit', DEFAULT_LOG_SIZE_LIMIT),
         help=f"""
               Size limit in bytes for log upload to ReportPortal.
-              The default limit is {DEFAULT_LOG_SIZE_LIMIT} bytes
-              ({DEFAULT_LOG_SIZE_LIMIT / 1024 / 1024} MB).
+              The default limit is {DEFAULT_LOG_SIZE_LIMIT}.
               """)
 
-    traceback_size_limit: int = field(
+    traceback_size_limit: 'Size' = field(
         option="--traceback-size-limit",
-        metavar="TRACEBACK_SIZE_LIMIT",
-        default=int(
-            _str_env_to_default('traceback_size_limit', str(DEFAULT_TRACEBACK_SIZE_LIMIT))),
+        metavar="SIZE",
+        default=_size_env_to_default('traceback_size_limit', DEFAULT_TRACEBACK_SIZE_LIMIT),
         help=f"""
               Size limit in bytes for traceback log upload to ReportPortal.
-              The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT} bytes
-              ({DEFAULT_TRACEBACK_SIZE_LIMIT / 1024} kB).
+              The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
               """)
 
     exclude_variables: str = field(
