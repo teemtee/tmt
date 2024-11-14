@@ -9,6 +9,7 @@ import requests
 import tmt.hardware
 import tmt.log
 import tmt.steps.report
+import tmt.utils
 from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
@@ -46,10 +47,7 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
 
 
 def _size_env_to_default(option: str, default: 'Size') -> 'Size':
-    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
-    if env_var not in os.environ or os.getenv(env_var) is None:
-        return default
-    return tmt.hardware.UNITS(os.getenv(env_var, str(default)))
+    return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
 
 
 @dataclasses.dataclass
@@ -198,7 +196,10 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help=f"""
               Size limit in bytes for log upload to ReportPortal.
               The default limit is {DEFAULT_LOG_SIZE_LIMIT}.
-              """)
+              """,
+        normalize=tmt.utils.normalize_data_amount,
+        serialize=lambda limit: str(limit),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized))
 
     traceback_size_limit: 'Size' = field(
         option="--traceback-size-limit",
@@ -207,7 +208,10 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help=f"""
               Size limit in bytes for traceback log upload to ReportPortal.
               The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
-              """)
+              """,
+        normalize=tmt.utils.normalize_data_amount,
+        serialize=lambda limit: str(limit),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized))
 
     exclude_variables: str = field(
         option="--exclude-variables",
