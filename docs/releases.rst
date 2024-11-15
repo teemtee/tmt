@@ -35,6 +35,9 @@ Limits can be controlled using the newly introduced
 ``--traceback-size-limit`` or the respective environment
 variables.
 
+Add the ``--workdir-root`` option for the ``tmt clean`` command so
+that users can specify the directory they want to clean.
+
 
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,9 +114,6 @@ A race condition in the
 :ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
 thus multihost tests using this provision method should now work
 reliably without unexpected connection failures.
-
-Add support ``--workdir-root`` for clean function, users can specify
-the directory they want to clean things for.
 
 
 tmt-1.37.0
