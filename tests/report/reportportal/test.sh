@@ -82,7 +82,7 @@ function identify_tests(){
 #   request_url
 function rest_api(){
     rlLog "REST API request (GET $1)"
-    response=$(curl --write-out "$DIV%{http_code}" --silent -X GET "$1" -H  "Accept: */*" -H  "Authorization: bearer $TOKEN")
+    response=$(curl --write-out "$DIV%{http_code}" --silent -X GET "$1" -H  "Accept: */*" -H  "Authorization: Bearer $TOKEN")
 
     response_code=${response##*"$DIV"}
     response=${response%"$DIV"*}
@@ -252,15 +252,15 @@ rlJournalStart
         response=$(rest_api "$URL/api/v1/$PROJECT/item?filter.eq.launchId=$launch_id")
         length=$(echo $response | jq -r ".content | length")
         for ((content_index=0; content_index<$length; content_index++ )); do
-            parent_test_json=$(echo $response | jq -r .content[$content_index])
-            parent_test_name=$(echo $parent_test_json | jq -r .name)
+            parent_item_json=$(echo $response | jq -r .content[$content_index])
+            parent_item_name=$(echo $parent_item_json | jq -r .name)
 
-            if jq -e '.name == "/test/subresults"' <<< "$parent_test_json" > /dev/null; then
+            if jq -e '.name == "/test/subresults"' <<< "$parent_item_json" > /dev/null; then
                 # All parent tests with subresults must have child subresult items
-                rlAssertEquals "Assert the item ($parent_test_name) has child items" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
+                rlAssertEquals "Assert the item ($parent_item_name) has child items" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
             else
                 # Tests with no subresults must not have any child items
-                rlAssertEquals "Assert the item ($parent_test_name) has no child items" "$(echo $parent_test_json | jq -r .hasChildren)" "false"
+                rlAssertEquals "Assert the item ($parent_item_name) has no child items" "$(echo $parent_item_json | jq -r .hasChildren)" "false"
             fi
         done
     rlPhaseEnd
@@ -309,11 +309,23 @@ rlJournalStart
         length=$(echo $response | jq -r ".content | length")
         for ((content_index=0; content_index<$length; content_index++ )); do
             echo ""
+
+            parent_item_json=$(echo $response | jq -r .content[$content_index])
+            parent_item_name=$(echo $parent_item_json | jq -r .name)
+
             if [[ $content_index -eq 0 ]]; then
-                rlAssertEquals "Assert the item is a suite" "$(echo $response | jq -r .content[$content_index].hasChildren)" "true"
-                rlAssertEquals "Assert the name of suite item ${suite_name}" "$(echo $response | jq -r .content[$content_index].name)" "${suite_name}"
-                rlAssertEquals "Assert the description of suite item ${suite_name}" "$(echo $response | jq -r .content[$content_index].description)" "$plan_summary"
+                # Check the suite item
+                rlAssertEquals "Assert the item is a suite" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
+                rlAssertEquals "Assert the name of suite item ${suite_name}" "$(echo $parent_item_json | jq -r .name)" "${suite_name}"
+                rlAssertEquals "Assert the description of suite item ${suite_name}" "$(echo $parent_item_json | jq -r .description)" "${plan_summary}<br>${launch_description}"
             else
+                if jq -e '.name == "/test/subresults"' <<< "$parent_item_json" > /dev/null; then
+                    # All parent tests with subresults must have child subresult items
+                    rlAssertEquals "Assert the item (${parent_item_name}) has child items" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
+                else
+                    # Tests with no subresults must not have any child items
+                    rlAssertEquals "Assert the item (${parent_item_name}) has no child items" "$(echo $parent_item_json | jq -r .hasChildren)" "false"
+                fi
                 i=$content_index
                 rlAssertEquals "Assert the item is no suite" "$(echo $response | jq -r .content[$content_index].hasChildren)" "false"
                 rlAssertEquals "Assert the name of test item ${test_name[$i]}" "$(echo $response | jq -r .content[$content_index].name)" "${test_fullname[$i]}"
