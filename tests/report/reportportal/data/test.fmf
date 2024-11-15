@@ -21,7 +21,6 @@
         tmt-report-result /subtest/weird WARN
 
 /subresults-restraint:
-    summary: Test the tmt subresults as restraint type of result
     result: restraint
     test: |
         tmt-report-result /subtest-restraint/good PASS
