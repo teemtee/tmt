@@ -311,6 +311,7 @@ def make_junit_xml(
 
     xml_parser_kwargs: dict[str, Any] = {
         'remove_blank_text': prettify,
+        'huge_tree': True,
         'schema': None,
         }
 
