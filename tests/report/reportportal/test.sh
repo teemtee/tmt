@@ -213,7 +213,9 @@ rlJournalStart
             level=("INFO" "ERROR")
             for ((content_index=0; content_index<$length; content_index++ )); do
                 rlAssertEquals "Assert the level of the info log is correct" "$(echo $response | jq -r .content[$content_index].level)" "${level[$content_index]}"
-                if [[ $i -ne 3 ]]; then
+
+                # Check the log message is correct (except the weird parent test)
+                if [[ $i -ne 7 ]]; then
                     log_message=$(yq -r ".\"$test_name\".test" test.fmf | awk -F '"' '{print $2}' )
                     rlAssertEquals "Assert the message of the info log is correct" "$(echo $response | jq -r .content[$content_index].message)" "$log_message"
                 fi
@@ -241,9 +243,17 @@ rlJournalStart
         response=$(rest_api "$URL/api/v1/$PROJECT/item?filter.eq.launchId=$launch_id")
         length=$(echo $response | jq -r ".content | length")
         for ((content_index=0; content_index<$length; content_index++ )); do
-            rlAssertEquals "Assert the item is no suite" "$(echo $response | jq -r .content[$content_index].hasChildren)" "false"
-        done
+            parent_test_json=$(echo $response | jq -r .content[$content_index])
+            parent_test_name=$(echo $parent_test_json | jq -r .name)
 
+            if jq -e '.name == "/test/subresults"' <<< "$parent_test_json" > /dev/null; then
+                # All parent tests with subresults must have child subresult items
+                rlAssertEquals "Assert the item ($parent_test_name) has child items" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
+            else
+                # Tests with no subresults must not have any child items
+                rlAssertEquals "Assert the item ($parent_test_name) has no child items" "$(echo $parent_test_json | jq -r .hasChildren)" "false"
+            fi
+        done
     rlPhaseEnd
 
     # Testing suite-per-plan mapping with launch-suite-test structure
