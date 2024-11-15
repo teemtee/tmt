@@ -716,7 +716,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     subresult_start_time = test_start_time
 
                     # Create (and *finish*) the child test item for every tmt subresult and
-                    # map it under the parent test item
+                    # map it under the parent test item.
                     for subresult in result.subresult:
                         # Create a child item
                         self.info("sub-test", subresult.name, color="cyan", shift=1)

@@ -9,9 +9,13 @@ ARTIFACTS=$TMT_REPORT_ARTIFACTS_URL
 PLAN_PREFIX='/plan'
 PLAN_STATUS='FAILED'
 TEST_PREFIX='/test'
-declare -A test=([1,'uuid']="" [1,'name']='/bad'   [1,'status']='FAILED'
-                 [2,'uuid']="" [2,'name']='/good'  [2,'status']='PASSED'
-                 [3,'uuid']="" [3,'name']='/weird' [3,'status']='FAILED')
+declare -A test=([1,'uuid']="" [1,'name']='/bad'        [1,'status']='FAILED'
+                 [2,'uuid']="" [2,'name']='/good'       [2,'status']='PASSED'
+                 [3,'uuid']="" [3,'name']='/subresults' [3,'status']='FAILED'
+                 [4,'uuid']="" [4,'name']='/subresults-restraint/subtest-restraint/good' [4,'status']='PASSED'
+                 [5,'uuid']="" [5,'name']='/subresults-restraint/subtest-restraint/fail' [5,'status']='FAILED'
+                 [6,'uuid']="" [6,'name']='/subresults-restraint/subtest-restraint/weird' [6,'status']='FAILED'
+                 [7,'uuid']="" [7,'name']='/weird'      [7,'status']='FAILED')
 DIV="|"
 
 
@@ -56,15 +60,15 @@ function identify_suite(){
 # Read and verify reported test names and uuids from $rlRun_LOG
 #
 # GLOBALS:
-# >> $test_uuid[1..3], $test_fullname[1..3]
+# >> $test_uuid[1..7], $test_fullname[1..7]
 function identify_tests(){
     rlLog "Verify and get test data"
 
-    for i in {1..3}; do
+    for i in {1..7}; do
         test_fullname[$i]=${TEST_PREFIX}${test[$i,'name']}
 
-        rlAssertGrep "test: ${test_fullname[$i]}" $rlRun_LOG
-        test_uuid[$i]=$(rlRun "grep -m$i -A1 'test:' $rlRun_LOG | tail -n1 | awk '{print \$NF}' ")
+        rlAssertGrep " test: ${test_fullname[$i]}" $rlRun_LOG
+        test_uuid[$i]=$(rlRun "grep -m$i -A1 ' test:' $rlRun_LOG | tail -n1 | awk '{print \$NF}' ")
         rlAssertNotEquals "Assert the test$i UUID is not empty" "${test_uuid[$i]}" ""
         test[$i,'uuid']=${test_uuid[$i]}
     done
@@ -77,9 +81,8 @@ function identify_tests(){
 # ARGUMENT:
 #   request_url
 function rest_api(){
-
     rlLog "REST API request (GET $1)"
-    response=$(curl --write-out "$DIV%{http_code}" --silent -X GET "$1" -H  "accept: */*" -H  "Authorization: bearer $TOKEN")
+    response=$(curl --write-out "$DIV%{http_code}" --silent -X GET "$1" -H  "Accept: */*" -H  "Authorization: bearer $TOKEN")
 
     response_code=${response##*"$DIV"}
     response=${response%"$DIV"*}
@@ -102,7 +105,6 @@ rlJournalStart
         fi
     rlPhaseEnd
 
-
     echo -e "\n\n\n::   PART 1\n"
 
     rlPhaseStartTest "Core Functionality"
@@ -112,9 +114,9 @@ rlJournalStart
         # TMT RUN
         rlLogInfo "A run with default setup"
         rlRun -s "tmt run --id $run --verbose --all" 2
-        rlAssertGrep "url: http.*redhat.com.ui/#${PROJECT}/launches/all/[0-9]{4}" $rlRun_LOG -Eq
+        rlAssertGrep "url: https?://.*\.redhat\.com/ui/#${PROJECT}/launches/all/[0-9]+" $rlRun_LOG -Eq
         identify_launch  # >> $launch_uuid, $launch_id
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
     rlPhaseEnd
 
 
@@ -150,7 +152,7 @@ rlJournalStart
         done
         rm tmp_attributes*
 
-        for i in {1..3}; do
+        for i in {1..7}; do
             echo ""
             test_name[$i]=${test[$i,'name']}
             test_name=${test_name[$i]}
@@ -166,7 +168,7 @@ rlJournalStart
             rlAssertNotEquals "Assert the test id is not empty" "$test_id" ""
             rlAssertEquals "Assert the name is correct" "$(echo $response | jq -r '.name')" "$test_fullname"
             rlAssertEquals "Assert the status is correct" "$(echo $response | jq -r '.status')" "$test_status"
-            test_description=$(yq -r ".\"$test_name\".summary" test.fmf)
+            test_description=$(yq -er ".\"$test_name\".summary" test.fmf) || test_description=''
             rlAssertEquals "Assert the description is correct" "$(echo $response | jq -r '.description')" "$test_description"
             test_case_id=$(yq -r ".\"$test_name\".id" test.fmf)
             [[ $test_case_id != null ]] && rlAssertEquals "Assert the testCaseId is correct" "$(echo $response | jq -r '.testCaseId')" "$test_case_id"
@@ -241,7 +243,7 @@ rlJournalStart
         rlRun -s "tmt run --verbose --all report --how reportportal --launch-per-plan --launch '$launch_name' " 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         rlAssertNotGrep "suite:" $rlRun_LOG
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
 
         # REST API | [GET] test-item-controller | launch_id
         rlLogInfo "Get info about all launch items"
@@ -266,7 +268,7 @@ rlJournalStart
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '$launch_name' --launch-description '$launch_description'" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         identify_suite   # >> $suite_uuid, $suite_id
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
         echo ""
 
         # REST API | [GET] launch-controller | uuid
@@ -319,7 +321,7 @@ rlJournalStart
         # TMT RUN [0]
         rlLogInfo "Initial run that creates a launch for history"
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '${launch_name}_1'" 2 "" 1>/dev/null
-        for i in {1..3}; do
+        for i in {1..7}; do
             echo ""
             test_fullname=${TEST_PREFIX}${test[$i,'name']}
             test_uuid=$(rlRun "grep -m$i -A1 'test:' $rlRun_LOG | tail -n1 | awk '{print \$NF}' ")
@@ -337,7 +339,7 @@ rlJournalStart
         # TMT RUN [1]
         rlLogInfo "A run that creates a launch with filtered environment variables (by default)"
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '${launch_name}_2'" 2 "" 1>/dev/null
-        for i in {1..3}; do
+        for i in {1..7}; do
             echo ""
             test_name=${test[$i,'name']}
             test_fullname=${TEST_PREFIX}${test_name}
@@ -361,7 +363,7 @@ rlJournalStart
         # TMT RUN [2]
         rlLogInfo "A run that creates a launch without filtering the environment variables that break history aggregation"
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '${launch_name}_3' --exclude-variables ''" 2 "" 1>/dev/null
-        for i in {1..3}; do
+        for i in {1..7}; do
             echo ""
             test_name=${test[$i,'name']}
             test_fullname=${TEST_PREFIX}${test_name}
@@ -399,7 +401,7 @@ rlJournalStart
         # TMT RUN [0]
         rlLogInfo "Initial run that creates a launch"
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '$launch_name'" 2 "" 1>/dev/null
-        for i in {1..3}; do
+        for i in {1..7}; do
             core_test_uuid[$i]=$(rlRun "grep -m$i -A1 'test:' $rlRun_LOG | tail -n1 | awk '{print \$NF}' ")
             rlAssertNotEquals "Assert the test$i UUID is not empty" "{$core_test_uuid[$i]}" ""
         done
@@ -410,7 +412,7 @@ rlJournalStart
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '$launch_name' --launch-rerun" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         identify_suite   # >> $suite_uuid
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
         rlAssertGrep "suite: $suite_name" $rlRun_LOG
 
         # REST API | [GET] launch-controller | uuid
@@ -439,7 +441,7 @@ rlJournalStart
         # TMT RUN [0]
         rlLogInfo "Initial run that creates a launch"
         rlRun -s "tmt run --verbose --all report --how reportportal --suite-per-plan --launch '$launch_name'" 2 "" 1>/dev/null
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
         echo ""
 
         # TMT RE-RUN [1]
@@ -488,7 +490,7 @@ rlJournalStart
         rlLogInfo "Initial run that only creates an empty launch (with empty suite and empty test items within) with defect type 'Idle' (pre-defined in the project within 'To Investigate' category)"
         rlRun -s "tmt run discover report --verbose --how reportportal --suite-per-plan --launch '$launch_name' --defect-type 'IDLE'" 3  "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
-        identify_tests   # >> $test_uuid[1..3], $test_fullname[1..3]
+        identify_tests   # >> $test_uuid[1..7], $test_fullname[1..7]
 
         # REST API | [GET] test-item-controller | launch_id
         rlLogInfo "Get info about all launch items"
@@ -528,7 +530,7 @@ rlJournalStart
         suite_name=$PLAN_PREFIX
 
         # TMT RUN [0]
-        rlLogInfo "Initial run that creates a launch (with suite item and 3 test items within)"
+        rlLogInfo "Initial run that creates a launch (with suite item and 7 test items within)"
         rlRun -s "tmt run --all report --verbose --how reportportal --suite-per-plan --launch '$launch_name'" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         init_launch_uuid=$launch_uuid
@@ -536,11 +538,11 @@ rlJournalStart
         # REST API | [GET] test-item-controller | launch_id
         rlLogInfo "Get info about all launch items (1)"
         response=$(rest_api "$URL/api/v1/$PROJECT/item?filter.eq.launchId=$launch_id")
-        rlAssertEquals "Assert launch contains suite and 3 test items" "$(echo $response | jq -r .page.totalElements)" "4"
+        rlAssertEquals "Assert launch contains suite and 7 test items" "$(echo $response | jq -r .page.totalElements)" "7"
         echo ""
 
         # TMT RUN [1]
-        rlLogInfo "Additional run for an upload (of a suite item with 3 test items) to the launch"
+        rlLogInfo "Additional run for an upload (of a suite item with 7 test items) to the launch"
         rlRun -s "tmt run --all report --verbose --how reportportal --suite-per-plan --upload-to-launch '$launch_id'" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         rlAssertEquals "Assert the launch UUID is the same as the initial one" "$init_launch_uuid" "$launch_uuid"
@@ -548,19 +550,19 @@ rlJournalStart
         # REST API | [GET] test-item-controller | launch_id
         rlLogInfo "Get info about all launch items (2)"
         response=$(rest_api "$URL/api/v1/$PROJECT/item?filter.eq.launchId=$launch_id")
-        rlAssertEquals "Assert launch contains another suite and 3 test items" "$(echo $response | jq -r .page.totalElements)" "8"
+        rlAssertEquals "Assert launch contains another suite and 7 test items" "$(echo $response | jq -r .page.totalElements)" "8"
         echo ""
 
         # TMT RUN [2]
-        rlLogInfo "Additional run for an upload (of 3 test items) to the launch"
+        rlLogInfo "Additional run for an upload (of 7 test items) to the launch"
         rlRun -s "tmt run --all report --verbose --how reportportal --launch-per-plan --upload-to-launch '$launch_id'" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         rlAssertEquals "Assert the launch UUID is the same as the initial one" "$init_launch_uuid" "$launch_uuid"
 
         # REST API | [GET] test-item-controller | launch_id
-        rlLogInfo "Get info about all launch items (3)"
+        rlLogInfo "Get info about all launch items (7)"
         response=$(rest_api "$URL/api/v1/$PROJECT/item?filter.eq.launchId=$launch_id")
-        rlAssertEquals "Assert launch contains another 3 test items" "$(echo $response | jq -r .page.totalElements)" "11"
+        rlAssertEquals "Assert launch contains another 7 test items" "$(echo $response | jq -r .page.totalElements)" "11"
     rlPhaseEnd
 
 
@@ -570,7 +572,7 @@ rlJournalStart
         suite_name=$PLAN_PREFIX
 
         # TMT RUN [0]
-        rlLogInfo "Initial run that creates a suite item (with 3 test items)"
+        rlLogInfo "Initial run that creates a suite item (with 7 test items)"
         rlRun -s "tmt run --all report --verbose --how reportportal --suite-per-plan --launch '$launch_name'" 2 "" 1>/dev/null
         identify_launch  # >> $launch_uuid, $launch_id
         identify_suite   # >> $suite_uuid
