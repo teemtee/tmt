@@ -4,3 +4,9 @@ tag+:
   - provision-bootc
 require:
   - tmt+provision-virtual
+
+# As for now there is an expected AVC failure:
+# https://github.com/osbuild/bootc-image-builder/issues/645
+check:
+  - how: avc
+    result: xfail
