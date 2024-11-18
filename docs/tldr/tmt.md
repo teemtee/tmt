@@ -20,13 +20,13 @@
 
 `tmt <test|plan|story> ls {{pattern}}`
 
+- Show detailed test metadata in the given context:
+
+`tmt --context arch=aarch64 test show`
+
 - Validate tmt files against the specification:
 
 `tmt lint`
-
-- Show docs, test & implementation coverage for selected stories:
-
-`tmt story coverage {{pattern}}`
 
 - Use filter:
 
