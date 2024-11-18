@@ -174,4 +174,4 @@ link:
             - tmt try fedora@virtual --arch aarch64
 
         link:
-          - implemented-by: /tmt/cli.py
+          - implemented-by: /tmt/cli
