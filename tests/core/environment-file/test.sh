@@ -49,8 +49,8 @@ rlJournalStart
         rlAssertGrep "INT: 0"  $rlRun_LOG
         # Bad
         rlRun -s "tmt plan show fetch/bad" 2
-        rlAssertGrep "Failed to extract variables from URL '.*/tests/core/env/data/wrong.yaml'."  $rlRun_LOG -E
-        rlAssertGrep "404 Client Error: Not Found for url: .*/tests/core/env/data/wrong.yaml" $rlRun_LOG -E
+        rlAssertGrep "Failed to extract variables from URL 'http://localhost:8000/wrong.yaml'."  $rlRun_LOG
+        rlAssertGrep "404 Client Error: Not Found for url: http://localhost:8000/wrong.yaml" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

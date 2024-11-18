@@ -53,6 +53,7 @@ import jsonschema
 import requests
 import requests.adapters
 import urllib3
+import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, style, wrap_text
@@ -60,6 +61,7 @@ from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
+from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
@@ -227,6 +229,16 @@ DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 0.1
 # Retry with exponential backoff, maximum duration ~511 seconds
 ENVFILE_RETRY_SESSION_RETRIES: int = 10
 ENVFILE_RETRY_SESSION_BACKOFF_FACTOR: float = 1
+
+# Defaults for HTTP/HTTPS codes that are considered retriable
+DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
+    403,  # Forbidden (but Github uses it for rate limiting)
+    429,  # Too Many Requests
+    500,  # Internal Server Error
+    502,  # Bad Gateway
+    503,  # Service Unavailable
+    504   # Gateway Timeout
+    )
 
 # Default for wait()-related options
 DEFAULT_WAIT_TICK: float = 30.0
@@ -563,13 +575,8 @@ class Environment(dict[str, EnvVarValue]):
                 retries=ENVFILE_RETRY_SESSION_RETRIES,
                 backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
                 allowed_methods=('GET',),
-                status_forcelist=(
-                    429,  # Too Many Requests
-                    500,  # Internal Server Error
-                    502,  # Bad Gateway
-                    503,  # Service Unavailable
-                    504   # Gateway Timeout
-                    ),
+                status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
+                logger=logger,
                 )
             try:
                 response = session.get(filename)
@@ -4328,6 +4335,34 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 
 
 class RetryStrategy(urllib3.util.retry.Retry):
+    def __init__(self, *args: Any, logger: Optional[tmt.log.Logger] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.logger = logger
+
+    def new(self, **kw: Any) -> 'Self':
+        new_retry = super().new(**kw)
+        new_retry.logger = self.logger
+        return new_retry
+
+    def _log_rate_limit_info(self, headers: urllib3._collections.HTTPHeaderDict) -> None:
+        """Log current GitHub rate limit information"""
+        if not self.logger:
+            return
+
+        self.logger.debug("Limit", headers.get('X-RateLimit-Limit', 'unknown'))
+        self.logger.debug("Remaining", headers.get('X-RateLimit-Remaining', 'unknown'))
+        self.logger.debug("Reset", headers.get('X-RateLimit-Reset', 'unknown'))
+        self.logger.debug("Resource", headers.get('X-RateLimit-Resource', 'unknown'))
+
+    def _log_response_info(self, response: HTTPResponse) -> None:
+        """Log detailed response information for debugging"""
+        if not self.logger:
+            return
+
+        self.logger.debug("Response status", response.status)
+        self.logger.debug("Response headers", dict(response.headers))
+        self.logger.debug("Response text", response.data.decode('utf-8'))
+
     def increment(
             self,
             *args: Any,
@@ -4358,7 +4393,89 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
                 raise GeneralError(message) from error
 
+        # Handle GitHub-specific responses
+        # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit
+        response = cast(Optional[urllib3.response.HTTPResponse], kwargs.get('response'))
+        if response is None or 'X-GitHub-Request-Id' not in response.headers:
+            return super().increment(*args, **kwargs)
+
+        headers = response.headers
+
+        # Log rate limit information if available
+        if any(key.startswith('X-RateLimit-') for key in list(headers.keys())):
+            # mypy complains without converting headers keys to list
+            self._log_rate_limit_info(headers)
+
+        if response.status not in (403, 429):
+            return super().increment(*args, **kwargs)
+        # Log response info for problematic responses
+        self._log_response_info(response)
+
+        # Check if this is actually a rate limit issue
+        if 'X-RateLimit-Resource' in headers:
+            # Primary rate limit exceeded
+            if ('X-RateLimit-Remaining' in headers and
+                    int(headers['X-RateLimit-Remaining']) == 0):
+                reset_time = int(headers['X-RateLimit-Reset'])
+                wait_time = reset_time - int(time.time())
+                if wait_time > 0:
+                    # Add 1 second buffer
+                    wait_time += 1
+
+                    if self.logger:
+                        self.logger.info("Primary rate limit exceeded. Waiting "
+                                         f"{wait_time + 1} seconds.")
+                    time.sleep(wait_time)
+
+            if 'Retry-After' in headers:
+                retry_after = int(headers['Retry-After'])
+                retry_after += 1
+                if self.logger:
+                    self.logger.info(
+                        f"Secondary rate limit hit. Waiting {retry_after} seconds."
+                        )
+                time.sleep(retry_after)
+
+            # Exponential backoff for unclear rate limit cases
+            if self.total is not None:
+                wait_time = min(2 ** self.total, 60)
+                if self.logger:
+                    self.logger.info(
+                        "Rate limit detected but no wait time specified. "
+                        f"Using exponential backoff: {wait_time} seconds"
+                        )
+                time.sleep(wait_time)
+
+        # Handle other 403 cases
+        elif 'X-GitHub-Request-Id' in headers:
+            try:
+                error_msg = json.loads(response.data.decode('utf-8')
+                                       ).get('message', '').lower()
+                if self.logger:
+                    self.logger.warning(f"GitHub API error: {error_msg}")
+            except (ValueError, AttributeError) as e:
+                if self.logger:
+                    self.logger.warning(
+                        f"Failed to parse error message from response: {e}")
+
         return super().increment(*args, **kwargs)
+
+    def _is_rate_limit_error(self, response: requests.Response) -> bool:
+        if not response or 'X-GitHub-Request-Id' not in response.headers:
+            return False
+
+        try:
+            error_msg = response.json().get('message', '').lower()
+            is_rate_limit = ('rate limit exceeded' in error_msg or
+                             'secondary rate limit' in error_msg)
+            if self.logger:
+                self.logger.debug(
+                    f"Rate limit error detection: {is_rate_limit} (message: {error_msg})")
+            return is_rate_limit
+        except (ValueError, AttributeError) as e:
+            if self.logger:
+                self.logger.warning(f"Failed to check rate limit error: {e}")
+            return False
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list
@@ -4372,7 +4489,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
             allowed_methods: Optional[tuple[str, ...]] = None,
             status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            logger: Optional[tmt.log.Logger] = None
             ) -> requests.Session:
 
         # `method_whitelist`` has been renamed to `allowed_methods` since
@@ -4385,14 +4503,16 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 total=retries,
                 status_forcelist=status_forcelist,
                 method_whitelist=allowed_methods,
-                backoff_factor=backoff_factor)
+                backoff_factor=backoff_factor,
+                logger=logger)
 
         else:
             retry_strategy = RetryStrategy(
                 total=retries,
                 status_forcelist=status_forcelist,
                 allowed_methods=allowed_methods,
-                backoff_factor=backoff_factor)
+                backoff_factor=backoff_factor,
+                logger=logger)
 
         if timeout is not None:
             http_adapter: requests.adapters.HTTPAdapter = TimeoutHTTPAdapter(
@@ -4413,7 +4533,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
             allowed_methods: Optional[tuple[str, ...]] = None,
             status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            logger: Optional[tmt.log.Logger] = None
             ) -> None:
         self.retries = retries
         self.backoff_factor = backoff_factor
