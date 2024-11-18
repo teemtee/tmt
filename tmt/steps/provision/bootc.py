@@ -81,45 +81,45 @@ class GuestBootc(GuestTestcloud):
                 ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
         except BaseException:
             self._logger.debug(
-                "Unable to remove podman machine {PODMAN_MACHINE_NAME}, it might not exist")
+                "Unable to remove podman machine '{PODMAN_MACHINE_NAME}', it might not exist.")
 
         super().remove()
 
 
 @dataclasses.dataclass
 class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
-    containerfile: Optional[str] = field(
+    container_file: Optional[str] = field(
         default=None,
-        option='--containerfile',
-        metavar='CONTAINERFILE',
+        option='--container-file',
+        metavar='CONTAINER_FILE',
         help="""
              Select container file to be used to build a container image
              that is then used by bootc image builder to create a disk image.
 
-             Cannot be used with containerimage.
+             Cannot be used with container-image.
              """)
 
-    containerfile_workdir: str = field(
+    container_file_workdir: str = field(
         default=".",
-        option=('--containerfile-workdir'),
-        metavar='CONTAINERFILE_WORKDIR',
+        option=('--container-file-workdir'),
+        metavar='CONTAINER_FILE_WORKDIR',
         help="""
              Select working directory for the podman build invocation.
              """)
 
-    containerimage: Optional[str] = field(
+    container_image: Optional[str] = field(
         default=None,
-        option=('--containerimage'),
-        metavar='CONTAINERIMAGE',
+        option=('--container-image'),
+        metavar='CONTAINER_IMAGE',
         help="""
              Select container image to be used to build a bootc disk.
              This takes priority over containerfile.
              """)
 
-    add_deps: bool = field(
+    add_tmt_dependencies: bool = field(
         default=True,
         is_flag=True,
-        option=('--add-deps'),
+        option=('--add-tmt-dependencies'),
         help="""
              Add tmt dependencies to the supplied container image or image built
              from the supplied Containerfile.
@@ -129,7 +129,7 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
     image_builder: str = field(
         default=DEFAULT_IMAGE_BUILDER,
         option=('--image-builder'),
-        metavar='IMAGEBUILDER',
+        metavar='IMAGE_BUILDER',
         help="""
              The full repo:tag url of the bootc image builder image to use for
              building the bootc disk image.
@@ -155,9 +155,9 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         provision:
             how: bootc
-            containerfile: "./my-custom-image.containerfile"
-            containerfile-workdir: .
-            image_builder: quay.io/centos-bootc/bootc-image-builder:stream9
+            container-file: "./my-custom-image.containerfile"
+            container-file-workdir: .
+            image-builder: quay.io/centos-bootc/bootc-image-builder:stream9
             disk: 100
 
     Another config example using an image that includes tmt dependencies:
@@ -166,8 +166,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         provision:
             how: bootc
-            add_deps: false
-            containerimage: localhost/my-image-with-deps
+            add-deps: false
+            container-image: localhost/my-image-with-deps
 
     This plugin is an extension of the virtual.testcloud plugin.
     Essentially, it takes a container image as input, builds a
@@ -320,19 +320,20 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         if self._rootless:
             self._init_podman_machine()
 
-        if data.containerimage is not None:
-            containerimage = data.containerimage
-            if data.add_deps:
-                containerimage = self._build_derived_image(data.containerimage)
+        if data.container_image is not None:
+            containerimage = data.container_image
+            if data.add_tmt_dependencies:
+                containerimage = self._build_derived_image(data.container_image)
             self._build_bootc_disk(containerimage, data.image_builder)
-        elif data.containerfile is not None:
-            containerimage = self._build_base_image(data.containerfile, data.containerfile_workdir)
-            if data.add_deps:
+        elif data.container_file is not None:
+            containerimage = self._build_base_image(
+                data.container_file, data.container_file_workdir)
+            if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(containerimage)
             self._build_bootc_disk(containerimage, data.image_builder)
         else:
             raise tmt.utils.ProvisionError(
-                "Either containerfile or containerimage must be specified.")
+                "Either container-file or container-image must be specified.")
 
         self._guest = GuestBootc(
             logger=self._logger,

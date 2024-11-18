@@ -7,6 +7,6 @@ discover:
       test: bootc status | grep localhost/tmt-bootc-includes-deps
 provision:
     how: bootc
-    add-deps: false
-    containerimage: localhost/tmt-bootc-includes-deps
+    add-tmt-dependencies: false
+    container-image: localhost/tmt-bootc-includes-deps
     disk: 20

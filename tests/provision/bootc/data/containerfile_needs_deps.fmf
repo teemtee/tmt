@@ -7,7 +7,7 @@ discover:
       test: bootc status | grep localhost/tmtmodified
 provision:
     how: bootc
-    add-deps: true
-    containerfile: "$TMT_BOOTC_CONTAINERFILE_RUNDIR/needs_deps.containerfile"
-    containerfile-workdir: .
+    add-tmt-dependencies: true
+    container-file: "$TMT_BOOTC_CONTAINERFILE_RUNDIR/needs_deps.containerfile"
+    container-file-workdir: .
     disk: 20

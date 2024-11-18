@@ -52,16 +52,16 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
-  containerfile:
+  container-file:
     type: string
 
-  containerfile-workdir:
+  container-file-workdir:
     type: string
 
-  containerimage:
+  container-image:
     type: string
 
-  add-deps:
+  add-tmt-dependencies:
     type: boolean
 
   image-builder:
