@@ -73,6 +73,9 @@ properties:
   fips:
     type: boolean
 
+  prettify:
+    type: boolean
+
   include-output-log:
     type: boolean
 
