@@ -10,11 +10,15 @@
 
 - Run selected plans and tests:
 
-`tmt run plan -n {{plan name}} test -n {{test name}}`
+`tmt run plan -n {{/plan/name}} test -n {{/test/name}}`
 
 - Show what tests a specific plan would run:
 
-`tmt run -vv discover plan -n {{plan name}}`
+`tmt run -v discover plan --name {{plan name}}`
+
+- Select or adjust the provisioning step:
+
+`tmt run -a provision --how=container --image={{fedora:rawhide}}`
 
 - Show results from the last run in a web browser:
 
@@ -22,11 +26,7 @@
 
 - Add context to a run:
 
-`tmt run --context {{key}}={{value}} -c distro={{fedora}}`
-
-- Select or adjust the provisioning step:
-
-`tmt run -a provision --how=container --image={{fedora:rawhide}}`
+`tmt run --context {{key=value}} -c distro={{fedora}}`
 
 - Run test interactively:
 

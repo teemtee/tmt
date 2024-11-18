@@ -4,7 +4,11 @@
 > See also: `tmt`, `tmt-run`.
 > More information: <https://tmt.readthedocs.io/en/stable/stories/cli.html#try>.
 
-- Run a test in current directory:
+- Quickly experiment with the default provision method (no tests in cwd)
+
+`tmt try`
+
+- Run a test in the current working directory:
 
 `{{cd path/to/test &&}} tmt try`
 
@@ -12,7 +16,7 @@
 
 `tmt try {{fedora-41}}`
 
-- Start an interactive session:
+- Select both custom image and provision method:
 
 `tmt try fedora@container`
 
@@ -24,7 +28,7 @@
 
 `tmt try --ask`
 
-- Request login if tests are present:
+- Directly log into the guest without asking:
 
 `tmt try --login`
 
