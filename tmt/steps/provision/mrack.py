@@ -913,6 +913,16 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Submitting user must be a submission delegate for the ``USERNAME``.
              """)
 
+    public_keys: Optional[list[str]] = field(
+        default=None,
+        option='--public-keys',
+        metavar='PUBLICKEYS',
+        help="""
+             If set, Beaker jobs will be submitted on behalf of ``USERNAME``.
+             Submitting user must be a submission delegate for the ``USERNAME``.
+             """,
+        normalize=tmt.utils.normalize_string_list)
+
 
 @dataclasses.dataclass
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -948,6 +958,7 @@ class CreateJobParameters:
     kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
+    public_keys: Optional[list[str]]
     group: str = 'linux'
 
     def to_mrack(self) -> dict[str, Any]:
@@ -966,6 +977,8 @@ class CreateJobParameters:
             # see kickstart if it was just metadata.
             if kickstart:
                 data['beaker']['ks_append'] = kickstart
+        if self.public_key:
+            data['beaker']['pubkeys'] = self.public_key
 
         return data
 
@@ -1145,7 +1158,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             os=self.image,
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner)
+            beaker_job_owner=self.beaker_job_owner,
+            public_keys=self.public_keys)
 
         try:
             response = self.api.create(data)
