@@ -731,7 +731,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         # Finish the child item
                         response = self.rp_api_put(
                             session=session,
-                            path=f"item/{item_uuid}",
+                            path=f"item/{child_item_uuid}",
                             json={
                                 "launchUuid": launch_uuid,
                                 "status": self.TMT_TO_RP_RESULT_STATUS[subresult.result],
