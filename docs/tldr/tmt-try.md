@@ -4,7 +4,7 @@
 > See also: `tmt`, `tmt-run`.
 > More information: <https://tmt.readthedocs.io/en/stable/stories/cli.html#try>.
 
-- Quickly experiment with the default provision method (no tests in cwd)
+- Quickly experiment with the default provision method (no tests in cwd):
 
 `tmt try`
 
