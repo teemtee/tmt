@@ -791,6 +791,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         collection.file_exists = True
         collection.results = tmt.utils.yaml_to_list(results_path.read_text())
 
+        # Fix log paths created by `tmt-report-result` on the guest the same way as it's done for
+        # partial results
+        for result in collection.results:
+            result["log"] = [str(invocation.relative_test_data_path / log)
+                             for log in result.get("log", [])]
+
         return collection
 
     def _process_results_partials(
