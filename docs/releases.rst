@@ -11,6 +11,10 @@ tmt-1.40.0
 Add the ``--workdir-root`` option for the ``tmt clean`` command so
 that users can specify the directory they want to clean.
 
+Add the ``--keep`` option for the ``tmt clean guests`` command.
+Users can now choose to keep the selected number of latest guests
+and clean the rest to release the resources.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
