@@ -21,7 +21,7 @@ rlJournalStart
             rlAssertGrep "ls: cannot access '$NOT_FOUND_PATH': No such file or directory" $rlRun_LOG
         done
 
-        TMT_SCRIPTS_DIR=${TMT_SCRIPTS_DIR:-/var/lib/tmt/scripts}
+        TMT_SCRIPTS_DIR=${TMT_SCRIPTS_DIR:-$DEFAULT_TMT_SCRIPTS_DIR}
         rlAssertGrep "PATH=.*$TMT_SCRIPTS_DIR.*" $rlRun_LOG
     rlPhaseEnd
 
