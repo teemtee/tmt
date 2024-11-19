@@ -778,9 +778,6 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
 
-            if host.beaker_job_owner:
-                req['job_owner'] = host.beaker_job_owner
-
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
 
@@ -924,6 +921,8 @@ class CreateJobParameters:
         if self.kickstart:
             data['beaker']['ks_meta'] = self.kickstart.get('metadata')
             data['beaker']['ks_append'] = self.kickstart
+            data['beaker']['kernel_options'] = self.kickstart.get('kernel_options')
+            data['beaker']['kernel_options_post'] = self.kickstart.get('kernel_options_post')
 
         return data
 
