@@ -18,8 +18,8 @@ story:
         - tmt test show -vvv
         - tmt test show --verbose
     link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
+      - documented-by: /tmt/cli
       - verified-by: /tests/core/dry
 
 /quiet:
@@ -28,8 +28,8 @@ story:
         - tmt test show -q
         - tmt test show --quiet
     link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
+      - documented-by: /tmt/cli
 
 /force:
     summary: Force dangerous operations like overwriting files
@@ -37,8 +37,8 @@ story:
         - tmt test create -f
         - tmt test create --force
     link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
+      - documented-by: /tmt/cli
       - relates: /stories/cli/test/create
 
 /format:
@@ -48,9 +48,9 @@ story:
         - tmt plan export --how yaml
         - tmt story export --how rst
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - implemented-by: /tmt/base.py
-      - documented-by: /tmt/cli.py
+      - documented-by: /tmt/cli
 
 /debug:
     summary: Print additional information for debugging
@@ -68,8 +68,8 @@ story:
         - tmt run -ddd
         - tmt run --debug
     link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
+      - documented-by: /tmt/cli
       - verified-by: /tests/core/dry
 
 /dry:
@@ -82,6 +82,6 @@ story:
         - tmt run -n
         - tmt run --dry
     link:
-      - implemented-by: /tmt/cli.py
-      - documented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
+      - documented-by: /tmt/cli
       - verified-by: /tests/core/dry

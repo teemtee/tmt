@@ -4,7 +4,7 @@ story: 'As a user I want to comfortably work with tests'
     story: 'List available tests'
     example: tmt test ls
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
       - documented-by: /docs/examples.rst#explore-tests
 
@@ -12,7 +12,7 @@ story: 'As a user I want to comfortably work with tests'
     story: 'Show test metadata'
     example: tmt test show
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#explore-tests
 
 /lint:
@@ -23,7 +23,7 @@ story: 'As a user I want to comfortably work with tests'
         present and that all attributes have correct type.
     example: tmt test lint
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#lint-tests
 
 /create:
@@ -40,7 +40,7 @@ story: 'As a user I want to comfortably work with tests'
         - tmt test create /tests/area/feature --skeleton beakerlib
         - tmt test create /tests/area/feature --duration=1h
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#create-tests
 
 /import:

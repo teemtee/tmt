@@ -4,7 +4,7 @@ story: 'As a user I want to comfortably work with plans'
     story: 'List available plans'
     example: tmt plan ls
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
       - documented-by: /docs/examples.rst#explore-plans
 
@@ -12,7 +12,7 @@ story: 'As a user I want to comfortably work with plans'
     story: 'Show plan configuration'
     example: tmt plan show
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#explore-plans
       - verified-by: /tests/plan/select
 
@@ -41,7 +41,7 @@ story: 'As a user I want to comfortably work with plans'
         present and that all attributes have correct type.
     example: tmt plan lint
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - verified-by: /tests/lint/plan
 
 /create:
@@ -54,6 +54,6 @@ story: 'As a user I want to comfortably work with plans'
         - tmt plan create /plans/smoke --template=mini
         - tmt plan create /plans/features --template=full
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#create-plans
       - verified-by: /tests/plan/create

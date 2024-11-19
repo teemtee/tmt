@@ -6,7 +6,7 @@ from unittest import TestCase
 import fmf
 
 import tmt
-import tmt.cli
+import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.identifier import ID_KEY
@@ -66,10 +66,10 @@ class TestGeneratorDefined(TestCase):
 
     def test_test_dry(self):
         result = runner.invoke(
-            tmt.cli.main, ["test", "id", "--dry", "^/no"])
+            tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
         assert "added to test '/no" in result.output
         result = runner.invoke(
-            tmt.cli.main, ["test", "id", "--dry", "^/no"])
+            tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
         assert "added to test '/no" in result.output
 
     def test_test_real(self):
@@ -78,9 +78,9 @@ class TestGeneratorDefined(TestCase):
         assert node.get(ID_KEY) is None
 
         # Generate only when called for the first time
-        result = runner.invoke(tmt.cli.main, ["test", "id", "^/no"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "^/no"])
         assert "added to test '/no" in result.output
-        result = runner.invoke(tmt.cli.main, ["test", "id", "^/no"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "^/no"])
         assert "added to test '/no" not in result.output
 
         # Defined after
@@ -102,17 +102,17 @@ class TestGeneratorEmpty(TestCase):
 
     def test_test_dry(self):
         result = runner.invoke(
-            tmt.cli.main, ["test", "id", "--dry"])
+            tmt.cli._root.main, ["test", "id", "--dry"])
         assert "added to test '/some/structure'" in result.output
         result = runner.invoke(
-            tmt.cli.main, ["test", "id", "--dry"])
+            tmt.cli._root.main, ["test", "id", "--dry"])
         assert "added to test '/some/structure'" in result.output
 
     def test_test_real(self):
-        result = runner.invoke(tmt.cli.main, ["test", "id"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id"])
         assert "added to test '/some/structure'" in result.output
 
-        result = runner.invoke(tmt.cli.main, ["test", "id"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id"])
         assert "added to test '/some/structure'" not in result.output
 
         base_tree = fmf.Tree(self.path)

@@ -18,4 +18,4 @@ import tmt.cli
     )
 def test_options_arch(params: dict[str, Any], expected: dict[str, Any]):
 
-    assert tmt.cli._construct_trying_provision_options(params) == expected
+    assert tmt.cli._root._construct_trying_provision_options(params) == expected
