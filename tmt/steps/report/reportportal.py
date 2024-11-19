@@ -433,7 +433,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def upload_result_logs(
             self,
-            result: tmt.Result,
+            result: tmt.result.BaseResult,
             session: requests.Session,
             item_uuid: str,
             launch_uuid: str,
@@ -460,9 +460,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                       "level": level,
                       "time": timestamp})
 
-            # Write out failures
-            if index == 0 and write_out_failures:
-                message = _filter_log(result.failures(log), settings=LogFilterSettings(size=self.data.traceback_size_limit, is_traceback=True))
+            # Optionally write out failures only for results which implement the failures callable
+            if hasattr(result, "failures") and index == 0 and write_out_failures:
+                message = _filter_log(result.failures(log), settings=LogFilterSettings(
+                    size=self.data.traceback_size_limit,
+                    is_traceback=True))
 
                 self.rp_api_post(
                     session=session,
@@ -736,6 +738,16 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         child_item_uuid = yaml_to_dict(response.text).get("id")
                         assert child_item_uuid is not None
 
+                        subtest_end_time = subresult.end_time or test_end_time
+
+                        # Upload the subtest (child) logs
+                        self.upload_result_logs(
+                            result=subresult,
+                            session=session,
+                            item_uuid=child_item_uuid,
+                            launch_uuid=launch_uuid,
+                            timestamp=subtest_end_time)
+
                         # Finish the child item
                         response = self.rp_api_put(
                             session=session,
@@ -743,7 +755,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             json={
                                 "launchUuid": launch_uuid,
                                 "status": self.TMT_TO_RP_RESULT_STATUS[subresult.result],
-                                "endTime": subresult.end_time or test_end_time})
+                                "endTime": subtest_end_time})
 
                         self.verbose("uuid", child_item_uuid, "yellow", shift=2)
 
