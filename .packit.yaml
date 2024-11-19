@@ -93,7 +93,7 @@ jobs:
     tf_extra_params:
       test:
         tmt:
-          name: /plans/provision/virtual
+          name: /plans/provision/(bootc|virtual)
       environments:
         - tmt:
             context:

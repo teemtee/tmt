@@ -1,7 +1,7 @@
 summary: Bootc virtual machine via testcloud
 
 description: |
-    bootc tests
+    Verify functionality of the bootc provision plugin.
 
 discover:
     how: fmf
@@ -12,9 +12,6 @@ prepare+:
     script: |
         systemctl start libvirtd
         systemctl status libvirtd
-
-environment:
-    PROVISION_HOW: virtual
 
 adjust+:
   - enabled: true
@@ -35,5 +32,3 @@ adjust+:
           - sysctl -w net.ipv6.conf.default.disable_ipv6=1
     because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
     when: trigger == commit
-
-enabled: true
