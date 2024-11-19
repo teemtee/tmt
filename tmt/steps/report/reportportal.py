@@ -87,7 +87,6 @@ _LOG_FILTERS = [
     _filter_invalid_chars,
 ]
 
-
 def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
     settings = settings or LogFilterSettings()
     for log_filter in _LOG_FILTERS:
@@ -473,13 +472,54 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
+    def upload_result_logs(
+            self,
+            result: tmt.Result,
+            session: requests.Session,
+            item_uuid: str,
+            launch_uuid: str,
+            timestamp: str,
+            write_out_failures: bool = True) -> None:
+        """ Upload all result log files into the ReportPortal instance """
+
+        for index, log_path in enumerate(result.log):
+            try:
+                log = self.step.plan.execute.read(log_path)
+            except tmt.utils.FileError:
+                continue
+
+            level = "INFO" if log_path == result.log[0] else "TRACE"
+            message = _filter_log(log, settings=LogFilterSettings(size=self.data.log_size_limit))
+
+            # Upload log
+            self.rp_api_post(
+                session=session,
+                path="log/entry",
+                json={"message": message,
+                      "itemUuid": item_uuid,
+                      "launchUuid": launch_uuid,
+                      "level": level,
+                      "time": timestamp})
+
+            # Write out failures
+            if index == 0 and write_out_failures:
+                message = _filter_log(result.failures(log), settings=LogFilterSettings(size=self.data.traceback_size_limit, is_traceback=True))
+
+                self.rp_api_post(
+                    session=session,
+                    path="log/entry",
+                    json={"message": message,
+                          "itemUuid": item_uuid,
+                          "launchUuid": launch_uuid,
+                          "level": "ERROR",
+                          "time": timestamp})
+
     def execute_rp_import(self) -> None:
         """
         Execute the import of test, results and subresults into ReportPortal
         """
 
         assert self.step.plan.my_run is not None
-
         # Use the current datetime as a default, but this is the worst case scenario
         # and we should use timestamps from results log as much as possible.
         launch_start_time = self.datetime
@@ -718,59 +758,22 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     item_uuid = self.data.test_uuids[serial_number]
 
                 # Support for idle tests
-                status = "SKIPPED"
+                item_status = "SKIPPED"
                 if result:
                     # Shift the timestamp to the end of a test. If the result end-time is not
                     # defined, use the latest result start-time as default.
                     test_end_time = result.end_time or test_start_time
 
-                    # For each log
-                    # TODO: Try to save logs for subresults?
-                    for index, log_path in enumerate(result.log):
-                        try:
-                            log = self.step.plan.execute.read(log_path)
-                        except tmt.utils.FileError:
-                            continue
+                    item_status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
-                        level = "INFO" if log_path == result.log[0] else "TRACE"
-                        status = self.TMT_TO_RP_RESULT_STATUS[result.result]
-
-                        # Upload log
-
-                        message = _filter_log(
-                            log, settings=LogFilterSettings(size=self.data.log_size_limit)
-                        )
-                        response = self.rp_api_post(
-                            session=session,
-                            path="log/entry",
-                            json={
-                                "message": message,
-                                "itemUuid": item_uuid,
-                                "launchUuid": launch_uuid,
-                                "level": level,
-                                "time": test_end_time,
-                            },
-                        )
-
-                        # Write out failures
-                        if index == 0 and status == "FAILED":
-                            message = _filter_log(
-                                result.failures(log),
-                                settings=LogFilterSettings(
-                                    size=self.data.traceback_size_limit, is_traceback=True
-                                ),
-                            )
-                            response = self.rp_api_post(
-                                session=session,
-                                path="log/entry",
-                                json={
-                                    "message": message,
-                                    "itemUuid": item_uuid,
-                                    "launchUuid": launch_uuid,
-                                    "level": "ERROR",
-                                    "time": test_end_time,
-                                },
-                            )
+                    self.upload_result_logs(
+                        result=result,
+                        session=session,
+                        item_uuid=item_uuid,
+                        launch_uuid=launch_uuid,
+                        timestamp=test_end_time,
+                        write_out_failures=bool(item_status == "FAILED"),
+                    )
 
                     # Use the parent test start-time as a default
                     subresult_start_time = test_start_time
