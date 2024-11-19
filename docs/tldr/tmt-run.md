@@ -8,29 +8,29 @@
 
 `tmt run`
 
-- Run selected plans and tests:
+- Run only the discover step to show what tests would be run:
 
-`tmt run plan -n {{/plan/name}} test -n {{/test/name}}`
+`tmt run discover -v`
 
-- Show what tests a specific plan would run:
+- Run all steps, adjust the provision step options:
 
-`tmt run -v discover plan --name {{plan name}}`
+`tmt run --all provision --how {{container}} --image {{fedora:rawhide}}`
 
-- Select or adjust the provisioning step:
+- Run only selected plans and tests:
 
-`tmt run -a provision --how=container --image={{fedora:rawhide}}`
+`tmt run plan --name {{/plan/name}} test --name {{/test/name}}`
 
 - Show results from the last run in a web browser:
 
-`tmt run -l report --how html --open`
+`tmt run --last report --how {{html}} --open`
 
-- Add context to a run:
+- Run tests with the provided context:
 
-`tmt run --context {{key=value}} -c distro={{fedora}}`
+`tmt run --context {{key=value}} -c {{distro=fedora}}`
 
-- Run test interactively:
+- Run tests interactively (debug test code in the middle of a test):
 
-`tmt run --all execute --how tmt --interactive`
+`tmt run --all execute --how {{tmt}} --interactive`
 
 - Use dry mode to see what actions would happen and use highest verbosity:
 

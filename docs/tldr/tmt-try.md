@@ -18,7 +18,7 @@
 
 - Select both custom image and provision method:
 
-`tmt try fedora@container`
+`tmt try {{fedora@container}}`
 
 - Select tests with custom filter:
 
