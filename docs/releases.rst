@@ -15,6 +15,9 @@ Add the ``--keep`` option for the ``tmt clean guests`` command.
 Users can now choose to keep the selected number of latest guests
 and clean the rest to release the resources.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for adding pubkeys to instance by populating the kickstart file.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
