@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+# Run all the steps manually and quit
+
+spawn tmt try -a -p /plan
+
+expect "What do we do next?"
+send -- "d\r"
+
+expect "What do we do next?"
+send -- "p\r"
+
+expect "What do we do next?"
+send -- "e\r"
+
+expect "What do we do next?"
+send -- "r\r"
+
+expect "What do we do next?"
+send -- "f\r"
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof
