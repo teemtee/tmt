@@ -49,7 +49,7 @@ properties:
   beaker-job-owner:
     type: string
 
-  public-keys:
+  public-key:
     type: array
     items:
       type: string
