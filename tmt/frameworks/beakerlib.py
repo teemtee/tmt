@@ -33,6 +33,21 @@ class Beakerlib(TestFramework):
             invocation: 'TestInvocation',
             logger: tmt.log.Logger) -> tmt.utils.Environment:
 
+        # The beakerlib calls the command in this variable in the following way:
+        # $BEAKERLIB_COMMAND_REPORT_RESULT "$testname" "$result" "$logfile" "$score"
+        # - https://github.com/beakerlib/beakerlib/blob/5a85937f557b735f32996eb55cd6b9a33f3fe653/src/testing.sh#L1076
+        #
+        # If we use the `tmt-report-result` value here, the script will not be compatible
+        # with the third `$logfile` positional argument - it will just ignore it because it
+        # accepts the logfile provided only by `-o/--outputFile` option be default.
+        #
+        # The reason the `rhts-report-result` alias is used here is a compatibility layer
+        # implemented by the script itself. If the script gets called with this name, it
+        # will *accept* the third positional argument as a `logfile`.
+        # - https://github.com/teemtee/tmt/blob/e7cf41d1fe5a4dcbb3270758586f41313e9462ec/tmt/steps/execute/scripts/tmt-report-result#L101
+        bkrlib_report_result_cmd = tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.aliases[1]
+        assert bkrlib_report_result_cmd == "rhts-report-result"
+
         return Environment({
             'BEAKERLIB_DIR': EnvVarValue(invocation.path),
             'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
@@ -41,8 +56,7 @@ class Beakerlib(TestFramework):
 
             # The command in this variable gets called with every `rlPhaseEnd` call in beakerlib.
             'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
-                invocation.guest.scripts_path /
-                tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename),
+                invocation.guest.scripts_path / bkrlib_report_result_cmd),
 
             # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
             # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
