@@ -111,6 +111,10 @@ TEST_WRAPPER_FILENAME_TEMPLATE = \
 #   and simulation of tty not available for output is not run.
 #
 TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+if ! grep -q "{{ GUEST_SCRIPTS_PATH }}" <<< "${PATH}"; then
+    export PATH={{ GUEST_SCRIPTS_PATH }}:${PATH}
+fi
+
 {% macro enter() %}
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
 {%- endmacro %}
@@ -354,7 +358,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
             INTERACTIVE=self.data.interactive,
             TTY=test.tty,
-            REMOTE_COMMAND=ShellScript(command)
+            REMOTE_COMMAND=ShellScript(command),
+            GUEST_SCRIPTS_PATH=guest.scripts_path
             ).strip())
 
         def _test_output_logger(
