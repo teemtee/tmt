@@ -8,11 +8,14 @@ import tmt.steps.execute
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome
-from tmt.utils import Environment, EnvVarValue, Path
+from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
     from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
+
+
+BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
 
 
 @provides_framework('beakerlib')
@@ -45,8 +48,12 @@ class Beakerlib(TestFramework):
         # implemented by the script itself. If the script gets called with this name, it
         # will *accept* the third positional argument as a `logfile`.
         # - https://github.com/teemtee/tmt/blob/e7cf41d1fe5a4dcbb3270758586f41313e9462ec/tmt/steps/execute/scripts/tmt-report-result#L101
-        bkrlib_report_result_cmd = tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.aliases[1]
-        assert bkrlib_report_result_cmd == "rhts-report-result"
+        if BEAKERLIB_REPORT_RESULT_COMMAND not in [
+                tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename,
+                *tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.aliases]:
+            raise GeneralError("Beakerlib framework requires the "
+                               f"'{BEAKERLIB_REPORT_RESULT_COMMAND}' script to be available "
+                               "on a guest.")
 
         return Environment({
             'BEAKERLIB_DIR': EnvVarValue(invocation.path),
@@ -56,7 +63,7 @@ class Beakerlib(TestFramework):
 
             # The command in this variable gets called with every `rlPhaseEnd` call in beakerlib.
             'BEAKERLIB_COMMAND_REPORT_RESULT': EnvVarValue(
-                invocation.guest.scripts_path / bkrlib_report_result_cmd),
+                invocation.guest.scripts_path / BEAKERLIB_REPORT_RESULT_COMMAND),
 
             # This variables must be set explicitly, otherwise the beakerlib `rlPhaseEnd` macro
             # will not call the the command in `BEAKERLIB_COMMAND_REPORT_RESULT`.
