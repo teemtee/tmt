@@ -113,7 +113,7 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
         metavar='CONTAINER_IMAGE',
         help="""
              Select container image to be used to build a bootc disk.
-             This takes priority over containerfile.
+             This takes priority over container-file.
              """)
 
     add_tmt_dependencies: bool = field(
@@ -141,13 +141,13 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     """
     Provision a local virtual machine using a bootc container image
 
-    Minimal config which uses the Fedora bootc image:
+    Minimal config which uses the CentOS Stream 9 bootc image:
 
     .. code-block:: yaml
 
         provision:
             how: bootc
-            containerimage: quay.io/fedora/fedora-bootc:40
+            container-image: quay.io/centos-bootc/centos-bootc:stream9
 
     Here's a config example using a containerfile:
 
@@ -160,13 +160,14 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             image-builder: quay.io/centos-bootc/bootc-image-builder:stream9
             disk: 100
 
-    Another config example using an image that includes tmt dependencies:
+    Another config example using an image that already includes tmt
+    dependencies:
 
     .. code-block:: yaml
 
         provision:
             how: bootc
-            add-deps: false
+            add-tmt-dependencies: false
             container-image: localhost/my-image-with-deps
 
     This plugin is an extension of the virtual.testcloud plugin.
@@ -202,7 +203,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """ Build a "derived" container image from the base image with tmt dependencies added """
         assert self.workdir is not None  # narrow type
 
-        self._logger.debug("Building modified container image with necessary tmt packages/config")
+        self._logger.debug("Build modified container image with necessary tmt packages/config.")
         containerfile_template = '''
             FROM {{ base_image }}
 
@@ -236,7 +237,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     def _build_base_image(self, containerfile: str, workdir: str) -> str:
         """ Build the "base" or user supplied container image """
         image_tag = f'localhost/tmtbase-{self._get_id()}'
-        self._logger.debug("Building container image")
+        self._logger.debug("Build container image.")
         tmt.utils.Command(
             "podman",
             "build",
@@ -253,7 +254,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
     def _build_bootc_disk(self, containerimage: str, image_builder: str) -> None:
         """ Build the bootc disk from a container image using bootc image builder """
-        self._logger.debug("Building bootc disk image")
+        self._logger.debug("Build bootc disk image.")
 
         tmt.utils.Command(
             "podman",
@@ -283,9 +284,9 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
                 "podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME
                 ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
         except BaseException:
-            self._logger.debug("Unable to remove existing podman machine (it might not exist)")
+            self._logger.debug("Unable to remove existing podman machine (it might not exist).")
 
-        self._logger.debug("Initializing podman machine")
+        self._logger.debug("Initialize podman machine.")
         tmt.utils.Command(
             "podman", "machine", "init", "--rootful",
             "--disk-size", f"{DEFAULT_PODMAN_MACHINE_DISK_SIZE.magnitude}",
@@ -296,7 +297,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             PODMAN_MACHINE_NAME
             ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
 
-        self._logger.debug("Starting podman machine")
+        self._logger.debug("Start podman machine.")
         tmt.utils.Command(
             "podman", "machine", "start", PODMAN_MACHINE_NAME
             ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
@@ -320,20 +321,25 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         if self._rootless:
             self._init_podman_machine()
 
+        # Use provided container image
         if data.container_image is not None:
             containerimage = data.container_image
             if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(data.container_image)
             self._build_bootc_disk(containerimage, data.image_builder)
+
+        # Build image according to the container file
         elif data.container_file is not None:
             containerimage = self._build_base_image(
                 data.container_file, data.container_file_workdir)
             if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(containerimage)
             self._build_bootc_disk(containerimage, data.image_builder)
+
+        # Image of file have to provided
         else:
             raise tmt.utils.ProvisionError(
-                "Either container-file or container-image must be specified.")
+                "Either 'container-file' or 'container-image' must be specified.")
 
         self._guest = GuestBootc(
             logger=self._logger,

@@ -1,0 +1,45 @@
+discover:
+    how: fmf
+provision:
+    how: bootc
+    disk: 20
+execute:
+    how: tmt
+
+
+/image:
+
+    /needs-deps:
+        summary: "Image that needs dependencies"
+        provision+:
+            add-tmt-dependencies: true
+            container-image: localhost/tmt-bootc-needs-deps
+        environment:
+            PATTERN: localhost/tmtmodified
+
+    /includes-deps:
+        summary: "Image that already includes dependencies"
+        provision+:
+            add-tmt-dependencies: false
+            container-image: localhost/tmt-bootc-includes-deps
+        environment:
+            PATTERN: localhost/tmt-bootc-includes-deps
+
+/containerfile:
+
+    /needs-deps:
+        summary: "Containerfile that needs dependencies"
+        provision+:
+            add-tmt-dependencies: true
+            container-file: needs-deps.containerfile
+        environment:
+            PATTERN: localhost/tmtmodified
+
+    /includes-deps:
+        summary: "Containerfile that already includes dependencies"
+        provision:
+            how: bootc
+            add-tmt-dependencies: false
+            container-file: includes-deps.containerfile
+        environment:
+            PATTERN: localhost/tmtbase
