@@ -5,11 +5,13 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "pushd data"
         rlRun "set -o pipefail"
+        rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory"
+        rlRun "run_dir=$tmp/run-subresults"
     rlPhaseEnd
 
     for method in tmt; do
         rlPhaseStartTest "[$method] Basic format checks"
-            rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run -av --id $run_dir execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null | tee output" 2
             rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
             rlAssertGrep '00:00:00 pass /test/shell/escape"<speci&l>_chars (on default-0)' "output"
             rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="5" skipped="0" tests="13"' "junit.xml"
@@ -24,7 +26,7 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the flavor argument is working"
-            rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml --flavor default 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor default --force 2>&1 >/dev/null | tee output" 2
             rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
 
             # Check there is no schema problem reported
@@ -32,16 +34,16 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the mutually exclusive arguments"
-            rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml --flavor custom 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor custom --force 2>&1 >/dev/null | tee output" 2
             rlAssertGrep "The 'custom' flavor requires the '--template-path' argument." "output"
 
-            rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml --template-path custom.xml.j2 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v execute -h $method report -h junit --file junit.xml --template-path custom.xml.j2 --force 2>&1 >/dev/null | tee output" 2
             rlAssertGrep "The '--template-path' can be used only with '--flavor=custom'." "output"
 
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor with a custom XML template"
-            rlRun "tmt run -avr execute -h $method report -h junit --file custom-template-out.xml --template-path custom.xml.j2 --flavor custom 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file custom-template-out.xml --template-path custom.xml.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
 
             # There must not be a schema check when using a custom flavor
             rlAssertGrep "The 'custom' JUnit flavor is used, you are solely responsible for the validity of the XML schema\." "output"
@@ -54,13 +56,13 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] The 'custom' flavor with a custom **non-XML** template must not work"
-            rlRun "tmt run -avr execute -h $method report -h junit --file custom-template-out.xml --template-path non-xml-custom.j2 --flavor custom 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v execute -h $method report -h junit --file custom-template-out.xml --template-path non-xml-custom.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
 
             rlAssertGrep 'The generated XML output is not a valid XML file.' "output"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor and context for subresults"
-            rlRun "tmt run -avr execute -h $method report -h junit --file custom-subresults-template-out.xml --template-path custom-subresults.xml.j2 --flavor custom 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v execute -h $method report -h junit --file custom-subresults-template-out.xml --template-path custom-subresults.xml.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
 
             # Beakerlib subresults
             rlAssertGrep '<subresult name="/Test" outcome="fail"/>' "custom-subresults-template-out.xml"
@@ -87,5 +89,6 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "rm output junit.xml custom-template-out.xml custom-subresults-template-out.xml"
         rlRun "popd"
+        rlRun "rm -rf $tmp"
     rlPhaseEnd
 rlJournalEnd
