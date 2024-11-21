@@ -10,4 +10,4 @@ duration: 40m
 # https://github.com/osbuild/bootc-image-builder/issues/645
 check:
   - how: avc
-    enabled: false
+    result: xfail
