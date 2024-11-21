@@ -53,8 +53,8 @@ def main() -> None:
     logger = tmt.Logger.create()
     logger.add_console_handler()
 
-    # Explore available *export* plugins - do not import other plugins, we don't need them.
-    tmt.plugins.explore_export_package(logger)
+    # Explore available plugins
+    tmt.plugins.explore(logger)
 
     # Generate stories
     tree = tmt.Tree(logger=logger, path=Path.cwd())

@@ -293,14 +293,6 @@ def import_member(
     return (imported, getattr(imported, member))
 
 
-# Small helper for one specific package - export plugins are needed when
-# generating docs.
-def explore_export_package(logger: Logger) -> None:
-    """ Import all plugins bundled into tmt.export package """
-
-    _explore_package('tmt.export', _TMT_ROOT / 'export', logger.descend())
-
-
 RegisterableT = TypeVar('RegisterableT')
 
 
