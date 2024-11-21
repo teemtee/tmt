@@ -19,6 +19,9 @@ and maybe also runs, clean the rest to release the resources.
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The log file paths of tmt subresults saved in ``results.yaml`` are
+now relative to the ``execute`` directory.
+
 The :ref:`/plugins/provision/beaker` provision plugin gains
 support for :ref:`system.model-name</spec/hardware/system>`,
 :ref:`system.vendor-name</spec/hardware/system>`,
