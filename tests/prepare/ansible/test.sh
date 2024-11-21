@@ -20,6 +20,9 @@ rlJournalStart
 
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        # Start local server in current directory (data)
+        python3 ../../../utils/http_server.py &
+        server_pid=$!
     rlPhaseEnd
 
     while IFS= read -r image; do
@@ -55,6 +58,8 @@ rlJournalStart
     done <<< "$IMAGES"
 
     rlPhaseStartCleanup
+        # Kill the server
+        kill $server_pid
         rlRun "rm -rf $run" 0 "Removing run directory"
         rlRun "popd"
     rlPhaseEnd

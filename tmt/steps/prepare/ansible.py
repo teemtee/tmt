@@ -14,7 +14,15 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Path, PrepareError, field, normalize_string_list, retry_session
+from tmt.utils import (
+    DEFAULT_RETRIABLE_HTTP_CODES,
+    ENVFILE_RETRY_SESSION_RETRIES,
+    Path,
+    PrepareError,
+    field,
+    normalize_string_list,
+    retry_session,
+    )
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -147,7 +155,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 root_path = self.step.plan.my_run.tree.root
 
                 try:
-                    with retry_session() as session:
+                    with retry_session(
+                            retries=ENVFILE_RETRY_SESSION_RETRIES,
+                            status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES) as session:
                         response = session.get(playbook)
 
                     if not response.ok:
