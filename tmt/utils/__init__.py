@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     import tmt.options
     import tmt.steps
     from tmt._compat.typing import Self, TypeAlias
+    from tmt.hardware import Size
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -5752,6 +5753,24 @@ def normalize_string_dict(
 
     raise tmt.utils.NormalizationError(
         key_address, value, 'a dictionary or a list of KEY=VALUE strings')
+
+
+def normalize_data_amount(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> 'Size':
+
+    from pint import Quantity
+
+    if isinstance(raw_value, Quantity):
+        return raw_value
+
+    if isinstance(raw_value, str):
+        import tmt.hardware
+
+        return tmt.hardware.UNITS(raw_value)
+
+    raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
 
 class NormalizeKeysMixin(_CommonBase):

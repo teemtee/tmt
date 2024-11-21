@@ -64,6 +64,12 @@ properties:
   api-version:
     type: string
 
+  log-size-limit:
+    type: integer
+
+  traceback-size-limit:
+    type: integer
+
 required:
   - how
   - project

@@ -6,15 +6,20 @@ from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
 
+import tmt.hardware
 import tmt.log
 import tmt.steps.report
+import tmt.utils
 from tmt.result import ResultOutcome
 from tmt.utils import field, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+    from tmt.hardware import Size
 
 JSON: 'TypeAlias' = Any
+DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
+DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
@@ -41,11 +46,53 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
-def _filter_invalid_chars(data: str) -> str:
+def _size_env_to_default(option: str, default: 'Size') -> 'Size':
+    return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
+
+
+@dataclasses.dataclass
+class LogFilterSettings:
+    size: 'Size' = DEFAULT_LOG_SIZE_LIMIT
+    is_traceback: bool = False
+
+
+def _filter_invalid_chars(data: str,
+                          settings: LogFilterSettings) -> str:
     return re.sub(
         '[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+',
         '',
         data)
+
+
+def _filter_log_per_size(data: str,
+                         settings: LogFilterSettings) -> str:
+    size = tmt.hardware.UNITS(f'{len(data)} bytes')
+    if size > settings.size:
+        if settings.is_traceback:
+            variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_TRACEBACK_SIZE_LIMIT"
+            option = "--traceback-size-limit"
+        else:
+            variable = "TMT_PLUGIN_REPORT_REPORTPORTAL_LOG_SIZE_LIMIT"
+            option = "--log-size-limit"
+        header = (f"WARNING: Uploaded log has been truncated because its size {size} "
+                  f"exceeds tmt reportportal plugin limit of {settings.size}. "
+                  f"The limit is controlled with {option} plugin option or "
+                  f"{variable} environment variable.\n\n")
+        return f"{header}{data[:settings.size.to('bytes').magnitude]}"
+    return data
+
+
+_LOG_FILTERS = [
+    _filter_log_per_size,
+    _filter_invalid_chars,
+    ]
+
+
+def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
+    settings = settings or LogFilterSettings()
+    for log_filter in _LOG_FILTERS:
+        log = log_filter(log, settings=settings)
+    return log
 
 
 @dataclasses.dataclass
@@ -141,6 +188,30 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              Pass the defect type to be used for failed test, which is defined in the project
              (e.g. 'Idle'). 'To Investigate' is used by default.
              """)
+
+    log_size_limit: 'Size' = field(
+        option="--log-size-limit",
+        metavar="SIZE",
+        default=_size_env_to_default('log_size_limit', DEFAULT_LOG_SIZE_LIMIT),
+        help=f"""
+              Size limit in bytes for log upload to ReportPortal.
+              The default limit is {DEFAULT_LOG_SIZE_LIMIT}.
+              """,
+        normalize=tmt.utils.normalize_data_amount,
+        serialize=lambda limit: str(limit),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized))
+
+    traceback_size_limit: 'Size' = field(
+        option="--traceback-size-limit",
+        metavar="SIZE",
+        default=_size_env_to_default('traceback_size_limit', DEFAULT_TRACEBACK_SIZE_LIMIT),
+        help=f"""
+              Size limit in bytes for traceback log upload to ReportPortal.
+              The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
+              """,
+        normalize=tmt.utils.normalize_data_amount,
+        serialize=lambda limit: str(limit),
+        unserialize=lambda serialized: tmt.hardware.UNITS(serialized))
 
     exclude_variables: str = field(
         option="--exclude-variables",
@@ -595,10 +666,16 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
                         # Upload log
+
+                        message = _filter_log(log,
+                                              settings=LogFilterSettings(
+                                                  size=self.data.log_size_limit
+                                                  )
+                                              )
                         response = self.rp_api_post(
                             session=session,
                             path="log/entry",
-                            json={"message": _filter_invalid_chars(log),
+                            json={"message": message,
                                   "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
                                   "level": level,
@@ -606,7 +683,12 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
                         # Write out failures
                         if index == 0 and status == "FAILED":
-                            message = _filter_invalid_chars(result.failures(log))
+                            message = _filter_log(result.failures(log),
+                                                  settings=LogFilterSettings(
+                                                      size=self.data.traceback_size_limit,
+                                                      is_traceback=True
+                                                      )
+                                                  )
                             response = self.rp_api_post(
                                 session=session,
                                 path="log/entry",
