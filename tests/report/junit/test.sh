@@ -11,9 +11,9 @@ rlJournalStart
 
     for method in tmt; do
         rlPhaseStartTest "[$method] Basic format checks"
-            rlRun "tmt run -av --id $run_dir execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
-            rlAssertGrep '00:00:00 pass /test/shell/escape"<speci&l>_chars (on default-0)' "output"
+            rlRun -s "tmt run -av --id $run_dir execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null" 2
+            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "$rlRun_LOG"
+            rlAssertGrep '00:00:00 pass /test/shell/escape"<speci&l>_chars (on default-0)' "$rlRun_LOG"
             rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="5" skipped="0" tests="13"' "junit.xml"
             rlAssertGrep 'fail</failure>' "junit.xml"
 
@@ -22,31 +22,31 @@ rlJournalStart
             rlAssertGrep '<system-out>&lt;speci&amp;l&gt;"chars and control chars</system-out>' "junit.xml"
 
             # Check there is no schema problem reported
-            rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "output"
+            rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "$rlRun_LOG"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the flavor argument is working"
-            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor default --force 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
+            rlRun -s "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor default --force 2>&1 >/dev/null" 2
+            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "$rlRun_LOG"
 
             # Check there is no schema problem reported
-            rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "output"
+            rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "$rlRun_LOG"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the mutually exclusive arguments"
-            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor custom --force 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "The 'custom' flavor requires the '--template-path' argument." "output"
+            rlRun -s "tmt run --last -v --id $run_dir execute -h $method report -h junit --file junit.xml --flavor custom --force 2>&1 >/dev/null" 2
+            rlAssertGrep "The 'custom' flavor requires the '--template-path' argument." "$rlRun_LOG"
 
-            rlRun "tmt run --last -v execute -h $method report -h junit --file junit.xml --template-path custom.xml.j2 --force 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "The '--template-path' can be used only with '--flavor=custom'." "output"
+            rlRun -s "tmt run --last -v execute -h $method report -h junit --file junit.xml --template-path custom.xml.j2 --force 2>&1 >/dev/null" 2
+            rlAssertGrep "The '--template-path' can be used only with '--flavor=custom'." "$rlRun_LOG"
 
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor with a custom XML template"
-            rlRun "tmt run --last -v --id $run_dir execute -h $method report -h junit --file custom-template-out.xml --template-path custom.xml.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
+            rlRun -s "tmt run --last -v --id $run_dir execute -h $method report -h junit --file custom-template-out.xml --template-path custom.xml.j2 --flavor custom --force 2>&1 >/dev/null" 2
 
             # There must not be a schema check when using a custom flavor
-            rlAssertGrep "The 'custom' JUnit flavor is used, you are solely responsible for the validity of the XML schema\." "output"
+            rlAssertGrep "The 'custom' JUnit flavor is used, you are solely responsible for the validity of the XML schema\." "$rlRun_LOG"
 
             rlAssertGrep '<test name="/test/beakerlib/fail" value="fail"/>' "custom-template-out.xml"
             rlAssertGrep '<test name="/test/beakerlib/pass" value="pass"/>' "custom-template-out.xml"
@@ -56,13 +56,13 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] The 'custom' flavor with a custom **non-XML** template must not work"
-            rlRun "tmt run --last -v execute -h $method report -h junit --file custom-template-out.xml --template-path non-xml-custom.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
+            rlRun -s "tmt run --last -v execute -h $method report -h junit --file custom-template-out.xml --template-path non-xml-custom.j2 --flavor custom --force 2>&1 >/dev/null" 2
 
-            rlAssertGrep 'The generated XML output is not a valid XML file.' "output"
+            rlAssertGrep 'The generated XML output is not a valid XML file.' "$rlRun_LOG"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor and context for subresults"
-            rlRun "tmt run --last -v execute -h $method report -h junit --file custom-subresults-template-out.xml --template-path custom-subresults.xml.j2 --flavor custom --force 2>&1 >/dev/null | tee output" 2
+            rlRun "tmt run --last -v execute -h $method report -h junit --file custom-subresults-template-out.xml --template-path custom-subresults.xml.j2 --flavor custom --force 2>&1 >/dev/null" 2
 
             # Beakerlib subresults
             rlAssertGrep '<subresult name="/Test" outcome="fail"/>' "custom-subresults-template-out.xml"
@@ -87,7 +87,7 @@ rlJournalStart
     done
 
     rlPhaseStartCleanup
-        rlRun "rm output junit.xml custom-template-out.xml custom-subresults-template-out.xml"
+        rlRun "rm junit.xml custom-template-out.xml custom-subresults-template-out.xml"
         rlRun "popd"
         rlRun "rm -rf $tmp"
     rlPhaseEnd
