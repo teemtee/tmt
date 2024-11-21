@@ -10,9 +10,9 @@ rlJournalStart
     for method in tmt; do
         rlPhaseStartTest "[$method] Basic format checks"
             rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "5 tests passed, 5 tests failed and 2 errors" "output"
+            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
             rlAssertGrep '00:00:00 pass /test/shell/escape"<speci&l>_chars (on default-0)' "output"
-            rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="5" skipped="0" tests="12"' "junit.xml"
+            rlAssertGrep '<testsuite name="/plan" disabled="0" errors="2" failures="5" skipped="0" tests="13"' "junit.xml"
             rlAssertGrep 'fail</failure>' "junit.xml"
 
             # Test the escape of special characters
@@ -25,7 +25,7 @@ rlJournalStart
 
         rlPhaseStartTest "[$method] Check the flavor argument is working"
             rlRun "tmt run -avr execute -h $method report -h junit --file junit.xml --flavor default 2>&1 >/dev/null | tee output" 2
-            rlAssertGrep "5 tests passed, 5 tests failed and 2 errors" "output"
+            rlAssertGrep "6 tests passed, 5 tests failed and 2 errors" "output"
 
             # Check there is no schema problem reported
             rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "output"

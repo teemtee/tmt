@@ -38,13 +38,7 @@
               - verifies: https://github.com/teemtee/tmt/issues/3363
             require:
               - python
-
-            # The test must fail to generate output into a <system-out> tag
-            result: fail
-            test: python -c "print('a' * (10 * 1024 * 1024 + 1))"
-
-            # Do not enable the test by default to not waste the CI resources
-            enabled: false
+            test: python -c "print((('a' * 1023) + '\n') * 1024 * 10)"
 
         /subresults/pass:
             summary: Basic pass test of shell subresults
