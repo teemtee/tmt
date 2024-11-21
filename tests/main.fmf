@@ -3,10 +3,14 @@ framework: beakerlib
 contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 require: [tmt]
+check: [avc]
 duration: 10m
 environment:
     TMT_FEELING_SAFE: 1
 
 adjust:
-  - check: [avc]
-    when: initiator == packit
+  - check: []
+    when: initiator is not defined or initiator != packit
+    because:
+        we don't want to run the avc check for local testing as it
+        needs root and we're executing tests under a regular user
