@@ -113,13 +113,13 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
         metavar='CONTAINER_IMAGE',
         help="""
              Select container image to be used to build a bootc disk.
-             This takes priority over container-file.
+             This takes priority over Containerfile.
              """)
 
     add_tmt_dependencies: bool = field(
         default=True,
         is_flag=True,
-        option=('--add-tmt-dependencies'),
+        option=('--add-tmt-dependencies/--no-add-tmt-dependencies'),
         help="""
              Add tmt dependencies to the supplied container image or image built
              from the supplied Containerfile.
@@ -149,7 +149,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             how: bootc
             container-image: quay.io/centos-bootc/centos-bootc:stream9
 
-    Here's a config example using a containerfile:
+    Here's a config example using a Containerfile:
 
     .. code-block:: yaml
 
