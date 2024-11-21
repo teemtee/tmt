@@ -20,6 +20,12 @@ environment files are found.
 The ``tmt try`` command now supports the new
 :ref:`/stories/cli/try/option/arch` option.
 
+As a tech preview, a new :ref:`/plugins/provision/bootc` provision
+plugin has been implemented. It takes a container image as input,
+builds a bootc disk image from the container image, then uses the
+:ref:`/plugins/provision/virtual.testcloud` plugin to create a
+virtual machine using the bootc disk image.
+
 
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

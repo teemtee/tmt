@@ -1,0 +1,13 @@
+summary: Make sure that bootc provision method works
+tag+:
+  - provision-only
+  - provision-bootc
+require:
+  - tmt+provision-virtual
+duration: 40m
+
+# As for now there is an expected AVC failure:
+# https://github.com/osbuild/bootc-image-builder/issues/645
+check:
+  - how: avc
+    result: xfail
