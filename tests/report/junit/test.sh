@@ -93,7 +93,7 @@ rlJournalStart
     done
 
     rlPhaseStartCleanup
-        rlRun "rm junit.xml custom-template-out.xml custom-deep-tree-template-out.xml custom-subresults-template-out.xml"
+        rlRun "rm *.xml"
         rlRun "popd"
         rlRun "rm -rf $tmp"
     rlPhaseEnd
