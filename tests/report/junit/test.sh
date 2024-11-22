@@ -55,6 +55,12 @@ rlJournalStart
             rlAssertGrep '<test name="/test/shell/escape&quot;&lt;speci&amp;l&gt;_chars" value="pass"/>' "custom-template-out.xml"
         rlPhaseEnd
 
+        rlPhaseStartTest "[$method] Check the 'custom' flavor with very deep XML trees"
+            rlRun -s "tmt run --last -v --id $run_dir execute -h $method report -h junit --file custom-deep-tree-template-out.xml --template-path custom-deep-tree.xml.j2 --flavor custom --force 2>&1 >/dev/null" 2
+
+            rlAssertNotGrep 'Excessive depth in document' "$rlRun_LOG"
+        rlPhaseEnd
+
         rlPhaseStartTest "[$method] The 'custom' flavor with a custom **non-XML** template must not work"
             rlRun -s "tmt run --last -v execute -h $method report -h junit --file custom-template-out.xml --template-path non-xml-custom.j2 --flavor custom --force 2>&1 >/dev/null" 2
 
@@ -87,7 +93,7 @@ rlJournalStart
     done
 
     rlPhaseStartCleanup
-        rlRun "rm junit.xml custom-template-out.xml custom-subresults-template-out.xml"
+        rlRun "rm junit.xml custom-template-out.xml custom-deep-tree-template-out.xml custom-subresults-template-out.xml"
         rlRun "popd"
         rlRun "rm -rf $tmp"
     rlPhaseEnd
