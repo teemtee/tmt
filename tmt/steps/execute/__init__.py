@@ -791,12 +791,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         collection.file_exists = True
         collection.results = tmt.utils.yaml_to_list(results_path.read_text())
 
-        # Fix log paths created by `tmt-report-result` on the guest, which are by default relative
-        # to the `TMT_TEST_DATA`, to be relative to the `execute` directory.
-        for result in collection.results:
-            result["log"] = [str(invocation.relative_test_data_path / log)
-                             for log in result.get("log", [])]
-
         return collection
 
     def _process_results_partials(
@@ -836,6 +830,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                         partial_result.note = "custom test result name should start with '/'"
                     partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
+
+            # Fix log paths as user provides relative path to `TMT_TEST_DATA`, but Result has to
+            # point relative to the execute workdir
+            partial_result.log = [
+                invocation.relative_test_data_path / log for log in partial_result.log]
 
             # Include the default output log if no log provided
             if not partial_result.log and default_log is not None:
@@ -911,6 +910,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 f"Test results not found in result file '{results_path}'.")
 
         collection.validate()
+
+        # Fix log paths created by `tmt-report-result` on the guest, which are by default relative
+        # to the `TMT_TEST_DATA`, to be relative to the `execute` directory.
+        for result in collection.results:
+            result["log"] = [
+                str(invocation.relative_test_data_path / log) for log in result.get("log", [])]
 
         return [tmt.Result.from_serialized(result) for result in collection.results]
 
