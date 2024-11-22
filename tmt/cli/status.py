@@ -1,12 +1,12 @@
 """ ``tmt status`` implementation """
 
-from typing import Any
+from typing import Any, Optional
 
 import tmt.utils
 from tmt.cli import CliInvocation, Context, pass_context
 from tmt.cli._root import main, verbosity_options, workdir_root_options
 from tmt.options import option
-from tmt.utils import Path
+from tmt.utils import Path, effective_workdir_root
 
 
 @main.command()
@@ -27,7 +27,7 @@ from tmt.utils import Path
 @verbosity_options
 def status(
         context: Context,
-        workdir_root: str,
+        _workdir_root: Optional[str],
         abandoned: bool,
         active: bool,
         finished: bool,
@@ -49,10 +49,13 @@ def status(
         raise tmt.utils.GeneralError(
             "Options --abandoned, --active and --finished cannot be "
             "used together.")
-    if not Path(workdir_root).exists():
-        raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+    if workdir_root and not workdir_root.exists():
+        raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
     status_obj = tmt.Status(
-        logger=context.obj.logger.clone().apply_verbosity_options(**kwargs),
-        cli_invocation=CliInvocation.from_context(context))
+        logger=context.obj.logger.clone().
+        apply_verbosity_options(**kwargs),
+        cli_invocation=CliInvocation.from_context(context),
+        workdir_root=effective_workdir_root(workdir_root))
     status_obj.show()
