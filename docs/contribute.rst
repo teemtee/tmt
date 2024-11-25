@@ -499,6 +499,21 @@ variable to include additional file:
     override theme CSS, it is recommended to add ``!important`` flag.
 
 
+TLDR pages
+------------------------------------------------------------------
+
+tmt's tldr pages are maintained in the central `tldr-pages repository <https://github.com/tldr-pages/tldr>`_.
+To modify existing pages or add new ones, submit your changes directly to the `tldr-pages/tldr repository <https://github.com/tldr-pages/tldr>`_
+by following their `contribution guidelines <https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md>`_.
+
+Translations of existing pages into other languages are welcomed.
+If you'd like to help translate pages, please follow the same contribution process described above.
+
+.. note::
+
+   Changes made directly to documentation in this repository will not be reflected in the tldr pages collection.
+
+
 Pull Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
