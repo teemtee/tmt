@@ -1477,7 +1477,8 @@ class GuestSsh(Guest):
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
-        assert isinstance(self.parent, tmt.steps.provision.Provision)
+        # Can be any step opening the connection
+        assert isinstance(self.parent, tmt.steps.Step)
         assert self.parent.plan.my_run is not None
         assert self.parent.plan.my_run.workdir is not None
 

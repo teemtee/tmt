@@ -1,0 +1,5 @@
+summary: Already provisioned machine can be reused if the rundir is kept
+test: ./test.sh
+tag+:
+  - provision-only
+  - provision-virtual
