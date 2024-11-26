@@ -19,6 +19,7 @@ RUN    rpm-ostree install dnf5 \
     # or any other dnf4-ish command.
     && rpm-ostree uninstall diffutils \
                             # Removing diffutils, these need to be removed too.
+                            bootc \
                             containers-common-extra \
                             passt \
                             passt-selinux \
