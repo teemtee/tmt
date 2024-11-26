@@ -23,6 +23,9 @@ rlJournalStart
 
             # Check there is no schema problem reported
             rlAssertNotGrep 'The generated XML output is not a valid XML file or it is not valid against the XSD schema\.' "$rlRun_LOG"
+
+            # Check the junit plugin prints the warning about huge test output (/test/shell/big-output)
+            rlAssertGrep 'There are huge test outputs or deep XML trees in the generated XML' "$rlRun_LOG"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the flavor argument is working"
@@ -53,12 +56,14 @@ rlJournalStart
             rlAssertGrep '<test name="/test/shell/pass" value="pass"/>' "custom-template-out.xml"
             rlAssertGrep '<test name="/test/shell/timeout" value="error"/>' "custom-template-out.xml"
             rlAssertGrep '<test name="/test/shell/escape&quot;&lt;speci&amp;l&gt;_chars" value="pass"/>' "custom-template-out.xml"
+            rlAssertGrep '<test name="/test/shell/big-output" value="pass"/>' "custom-template-out.xml"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor with very deep XML trees"
             rlRun -s "tmt run --last -v --id $run_dir execute -h $method report -h junit --file custom-deep-tree-template-out.xml --template-path custom-deep-tree.xml.j2 --flavor custom --force 2>&1 >/dev/null" 2
 
             rlAssertNotGrep 'Excessive depth in document' "$rlRun_LOG"
+            rlAssertGrep 'There are huge test outputs or deep XML trees in the generated XML' "$rlRun_LOG"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] The 'custom' flavor with a custom **non-XML** template must not work"
