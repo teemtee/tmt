@@ -158,6 +158,8 @@ Metadata Specification and are supposed to be synced temporarily
 to keep backward compatibility.
 
 
+.. _restraint-compatibility:
+
 Restraint Compatibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -13,19 +13,8 @@ description: |
 
     Although implementation of the full execute step plugin has
     been deferred, backward compatibility scripts have been
-    provided for several most commonly used restraint commands:
-
-    rstrnt-abort
-        :ref:`/stories/features/abort`
-
-    rstrnt-reboot
-        :ref:`/stories/features/reboot`
-
-    rstrnt-report-log
-        :ref:`/stories/features/report-log`
-
-    rstrnt-report-result
-        :ref:`/stories/features/report-result`
+    provided for several most commonly used restraint commands.
+    See the :ref:`restraint-compatibility` section for details.
 
 example:
   - tmt run --all execute --how restraint
