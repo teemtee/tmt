@@ -158,6 +158,25 @@ Metadata Specification and are supposed to be synced temporarily
 to keep backward compatibility.
 
 
+Restraint Compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For backward-compatibility ``tmt`` provides selected commands
+of the `restraint`__ framework so that existing tests can be more
+easily migrated. Currently the following scripts are supported:
+
+* ``rhts-abort`` and ``rhts-abort`` — :ref:`/stories/features/abort`
+* ``rhts-reboot`` and ``rhts-reboot`` — :ref:`/stories/features/reboot`
+* ``rhts-submit-log`` and ``rhts-submit-log`` — :ref:`/stories/features/report-log`
+* ``rhts-report-result`` and ``rhts-report-result`` — :ref:`/stories/features/report-result`
+
+Note that these scripts cover only the common use cases and some
+of their irrelevant options, such as ``--server`` used for the
+restraint server, are ignored.
+
+__ https://restraint.readthedocs.io/
+
+
 Why is the 'id' key added to my test during export?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
