@@ -79,7 +79,7 @@ def _filter_log_per_size(data: str,
                   f"exceeds tmt reportportal plugin limit of {settings.size}. "
                   f"The limit is controlled with {option} plugin option or "
                   f"{variable} environment variable.\n\n")
-        return f"{header}{data[:settings.size.to('bytes').magnitude]}"
+        return f"{header}{data[:int(settings.size.to('bytes').magnitude)]}"
     return data
 
 
