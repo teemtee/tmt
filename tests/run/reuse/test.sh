@@ -4,11 +4,10 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run_dir=\$(mktemp -d -p /var/tmp/tmt)" 0 "Create run directory"
-        rlRun "set -o pipefail"
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest ""
+    rlPhaseStartTest
         rlRun "tmt run --id $run_dir provision -h virtual"
         rlRun "tmt run --id $run_dir discover prepare"
     rlPhaseEnd
