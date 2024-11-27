@@ -53,6 +53,7 @@ rlJournalStart
             rlAssertGrep '<test name="/test/shell/pass" value="pass"/>' "custom-template-out.xml"
             rlAssertGrep '<test name="/test/shell/timeout" value="error"/>' "custom-template-out.xml"
             rlAssertGrep '<test name="/test/shell/escape&quot;&lt;speci&amp;l&gt;_chars" value="pass"/>' "custom-template-out.xml"
+            rlAssertGrep '<test name="/test/shell/big-output" value="pass"/>' "custom-template-out.xml"
         rlPhaseEnd
 
         rlPhaseStartTest "[$method] Check the 'custom' flavor with very deep XML trees"
