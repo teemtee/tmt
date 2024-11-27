@@ -18,6 +18,7 @@ while getopts "c:t:e" flag; do
         c) command="${OPTARG}";;
         t) timeout="${OPTARG}";;
         e) efi=False;;
+        *) exit 1;;
     esac
 done
 
