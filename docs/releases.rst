@@ -5,6 +5,13 @@
 ======================
 
 
+tmt-1.40.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add the ``--workdir-root`` option for the ``tmt clean`` command so
+that users can specify the directory they want to clean.
+
+
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
