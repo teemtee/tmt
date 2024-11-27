@@ -311,7 +311,9 @@ def make_junit_xml(
 
     xml_parser_kwargs: dict[str, Any] = {
         'remove_blank_text': prettify,
-        'schema': None}
+        'huge_tree': True,
+        'schema': None,
+        }
 
     # The schema check must be done only for a non-custom JUnit flavors
     if flavor != CUSTOM_FLAVOR_NAME:
@@ -336,42 +338,30 @@ def make_junit_xml(
         # S320: Parsing of untrusted data is known to be vulnerable to XML
         # attacks.
         tree_root: XMLElement = etree.fromstring(xml_data, xml_parser)  # noqa: S320
-    except etree.XMLSyntaxError as error:
-        if any(
-            err_msg in error.msg for err_msg in [
-                'xmlSAX2Characters: huge text node',
-                'Excessive depth in document']):
 
-            phase.warn('There are huge test outputs or deep XML trees in the generated XML, '
-                       "trying again with 'huge_tree' option enabled which allows to use more of "
-                       'the system resources. For more info, please see: '
-                       'https://lxml.de/FAQ.html#is-lxml-vulnerable-to-xml-bombs')
+    except etree.XMLSyntaxError as e:
+        phase.warn(
+            'The generated XML output is not a valid XML file or it is not valid against the '
+            'XSD schema.')
 
-            xml_parser_kwargs['huge_tree'] = True
-        else:
-            phase.warn('The generated XML output is not a valid XML file or it is not valid '
-                       'against the XSD schema.')
+        if flavor != CUSTOM_FLAVOR_NAME:
+            phase.warn('Please, report this problem to project maintainers.')
 
-            if flavor != CUSTOM_FLAVOR_NAME:
-                phase.warn('Please, report this problem to project maintainers.')
+        for err in e.error_log:
+            phase.warn(str(err))
 
-            for err_log in error.error_log:
-                phase.warn(str(err_log))
-
-            # Disable the checking of XSD schema
-            del xml_parser_kwargs['schema']
+        # Return the prettified XML without checking the XSD
+        del xml_parser_kwargs['schema']
 
         xml_parser = etree.XMLParser(**xml_parser_kwargs)
+
         try:
             tree_root = etree.fromstring(xml_data, xml_parser)  # noqa: S320
         except etree.XMLSyntaxError as error:
-            for err_log in error.error_log:
-                phase.warn(str(err_log))
-
             phase.verbose('rendered XML', xml_data, 'red')
             raise tmt.utils.ReportError(
-                'The generated XML output is not a valid XML file (SyntaxError). Use `--verbose` '
-                'argument to show the output.') from error
+                'The generated XML output is not a valid XML file. Use `--verbose` argument '
+                'to show the output.') from error
 
     # Do not be fooled by the `encoding` parameter: even with `utf-8`,
     # `tostring()` will still return bytes. `unicode`, on the other
