@@ -312,8 +312,7 @@ def make_junit_xml(
     xml_parser_kwargs: dict[str, Any] = {
         'remove_blank_text': prettify,
         'huge_tree': True,
-        'schema': None,
-        }
+        'schema': None}
 
     # The schema check must be done only for a non-custom JUnit flavors
     if flavor != CUSTOM_FLAVOR_NAME:
@@ -335,10 +334,8 @@ def make_junit_xml(
 
     xml_parser = etree.XMLParser(**xml_parser_kwargs)
     try:
-        # S320: Parsing of untrusted data is known to be vulnerable to XML
-        # attacks.
+        # S320: Parsing of untrusted data is known to be vulnerable to XML attacks.
         tree_root: XMLElement = etree.fromstring(xml_data, xml_parser)  # noqa: S320
-
     except etree.XMLSyntaxError as e:
         phase.warn(
             'The generated XML output is not a valid XML file or it is not valid against the '
@@ -363,16 +360,16 @@ def make_junit_xml(
                 'The generated XML output is not a valid XML file. Use `--verbose` argument '
                 'to show the output.') from error
 
-    # Do not be fooled by the `encoding` parameter: even with `utf-8`,
-    # `tostring()` will still return bytes. `unicode`, on the other
-    # hand, would give us a string, but then, no XML declaration.
-    # So, we get bytes, and we need to apply `decode()` on our own.
+    # Do not be fooled by the `encoding` parameter: even with `utf-8`, `tostring()` will still
+    # return bytes. `unicode`, on the other hand, would give us a string, but then, no XML
+    # declaration.  So, we get bytes, and we need to apply `decode()` on our own.
     xml_output: bytes = etree.tostring(
         tree_root,
         xml_declaration=True,
         pretty_print=prettify,
-        # The 'utf-8' encoding must be used instead of 'unicode', otherwise
-        # the XML declaration is not included in the output.
+
+        # The 'utf-8' encoding must be used instead of 'unicode', otherwise the XML declaration is
+        # not included in the output.
         encoding='utf-8')
 
     return str(xml_output.decode('utf-8'))
