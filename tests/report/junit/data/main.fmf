@@ -32,6 +32,14 @@
         /escape"<speci&l>_chars:
             test: ./special_chars.sh
 
+        /big-output:
+            summary: Generate huge text data into <system-out> JUnit tag
+            link:
+              - verifies: https://github.com/teemtee/tmt/issues/3363
+            require:
+              - python
+            test: python -c "print((('a' * 1023) + '\n') * 1024 * 10)"
+
         /subresults/pass:
             summary: Basic pass test of shell subresults
             test: |

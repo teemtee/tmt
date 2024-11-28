@@ -311,8 +311,8 @@ def make_junit_xml(
 
     xml_parser_kwargs: dict[str, Any] = {
         'remove_blank_text': prettify,
-        'schema': None,
-        }
+        'huge_tree': True,
+        'schema': None}
 
     # The schema check must be done only for a non-custom JUnit flavors
     if flavor != CUSTOM_FLAVOR_NAME:
@@ -334,8 +334,7 @@ def make_junit_xml(
 
     xml_parser = etree.XMLParser(**xml_parser_kwargs)
     try:
-        # S320: Parsing of untrusted data is known to be vulnerable to XML
-        # attacks.
+        # S320: Parsing of untrusted data is known to be vulnerable to XML attacks.
         tree_root: XMLElement = etree.fromstring(xml_data, xml_parser)  # noqa: S320
 
     except etree.XMLSyntaxError as e:

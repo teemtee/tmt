@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+{#
+Test that very deep trees are correctly handled by junit plugin.
+
+Refs.:
+- [PR#3365](https://github.com/teemtee/tmt/pull/3365)
+- [`huge_tree` option](https://lxml.de/api/lxml.etree.XMLParser-class.html)
+#}
+
+{% set DEPTH = 257 %}
+<root>
+{% for i in range(1, DEPTH + 1) %}
+    {{ "  " * i }}<tag{{ i }}>
+{% endfor %}
+
+{% for i in range(DEPTH, 0, -1) %}
+    {{ "  " * i }}</tag{{ i }}>
+{% endfor %}
+</root>
