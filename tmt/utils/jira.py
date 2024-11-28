@@ -77,6 +77,8 @@ class JiraInstance:
         # Check for the 'link' config section, exit if config missing
         try:
             link_config = tmt.config.Config().link
+        except tmt.utils.SpecificationError:
+            raise
         except tmt.utils.MetadataError:
             return None
         if not link_config:
