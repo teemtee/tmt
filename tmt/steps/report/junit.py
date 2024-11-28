@@ -358,8 +358,8 @@ def make_junit_xml(
         except etree.XMLSyntaxError as error:
             phase.verbose('rendered XML', xml_data, 'red')
             raise tmt.utils.ReportError(
-                'The generated XML output is not a valid XML file (SyntaxError). Use `--verbose` '
-                'argument to show the output.') from error
+                'The generated XML output is not a valid XML file. Use `--verbose` argument '
+                'to show the output.') from error
 
     # Do not be fooled by the `encoding` parameter: even with `utf-8`,
     # `tostring()` will still return bytes. `unicode`, on the other
