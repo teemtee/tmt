@@ -3385,6 +3385,7 @@ class Run(tmt.utils.Common):
                  tree: Optional[Tree] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  parent: Optional[tmt.utils.Common] = None,
+                 workdir_root: Optional[Path] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
@@ -3405,7 +3406,11 @@ class Run(tmt.utils.Common):
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(cli_invocation=cli_invocation, logger=logger, parent=parent)
+        super().__init__(
+            cli_invocation=cli_invocation,
+            logger=logger,
+            parent=parent,
+            workdir_root=workdir_root)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
