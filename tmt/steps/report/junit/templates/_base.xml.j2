@@ -16,7 +16,7 @@
                         <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</skipped>
                     {% endif %}
 
-                    {% if INCLUDE_OUTPUT_LOG %}
+                    {% if INCLUDE_OUTPUT_LOG and result.log %}
                         <system-out>{{ result.log | first | read_log | e }}</system-out>
                     {% endif %}
 
