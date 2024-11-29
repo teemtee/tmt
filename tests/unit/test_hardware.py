@@ -241,6 +241,16 @@ FULL_HARDWARE_REQUIREMENTS = """
         mode: "CCA"
 """
 
+OR_HARDWARE_REQUIREMENTS = """
+    or:
+      - hostname: == dummy1.redhat.com
+      - or:
+        - hostname: == dummy2.redhat.com
+        - or:
+          - hostname: == dummy3.redhat.com
+          - hostname: == dummy4.redhat.com
+"""
+
 
 def test_parse_maximal_constraint() -> None:
     hw_spec_out = """
@@ -329,17 +339,18 @@ def test_parse_maximal_constraint() -> None:
 
     assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
 
-    def test_parse_or_constraint() -> None:
-        hw_spec_out = """
-         or:
-           - hostname: == dummy1.redhat.com
+
+def test_parse_or_constraint() -> None:
+    hw_spec_out = """
+     or:
+       - hostname: == dummy1.redhat.com
+       - or:
            - hostname: == dummy2.redhat.com
-        """
-        or_hardware_requirements = """
-            or:
-              - hostname: dummy1.redhat.com
-              - hostname: dummy2.redhat.com
-        """
-        hw = parse_hw(or_hardware_requirements)
-        assert tmt.utils.dict_to_yaml(
-            hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+           - or:
+               - hostname: == dummy3.redhat.com
+               - hostname: == dummy4.redhat.com
+    """
+
+    hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
+    assert tmt.utils.dict_to_yaml(
+        hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
