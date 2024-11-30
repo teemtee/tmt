@@ -5,21 +5,19 @@
     <testsuite name="{{ PLAN.name | trim | e }}" disabled="0" errors="{{ RESULTS.errored | length }}" failures="{{ RESULTS.failed | length }}" skipped="{{ RESULTS.skipped | length }}" tests="{{ RESULTS | length }}" time="{{ RESULTS.duration | float }}">
         {% block testcases %}
             {% for result in RESULTS %}
-                {% set main_log = result.log | first | read_log %}
-                {% set log_failures = main_log | failures | e %}
                 {% set test_duration = result.duration | duration_to_seconds | float %}
 
                 <testcase name="{{ result.name | e }}" {% if test_duration %}time="{{ test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
-                        <error type="error" message="{{ result.result.value | e }}">{{ log_failures }}</error>
+                        <error type="error" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</error>
                     {% elif result.result.value == 'fail' %}
-                        <failure type="failure" message="{{ result.result.value | e }}">{{ log_failures }}</failure>
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</failure>
                     {% elif result.result.value == 'info' %}
-                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ log_failures }}</skipped>
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</skipped>
                     {% endif %}
 
-                    {% if INCLUDE_OUTPUT_LOG and main_log %}
-                        <system-out>{{ main_log | e }}</system-out>
+                    {% if INCLUDE_OUTPUT_LOG and result.log %}
+                        <system-out>{{ result.log | first | read_log | e }}</system-out>
                     {% endif %}
 
                     {# Optionally add the result properties #}
