@@ -19,12 +19,12 @@ Runner vs guest compatibility matrix
 
 {% for runner, guests in MATRIX.items() %}
    * - {{ runner }}
-    {% for state, note_id in guests %}
+    {% for state, note in guests %}
         {% if state == 'supported' %}
      - ✅
 
         {% elif state == 'supported-with-caveats' %}
-     - ❗{% if note_id %} [{{ note_id }}]_{% endif %}
+     - ❗{% if note %} See :ref:`note{# djlint:off H025 #}<note-{{ note.title | urlencode }}>{# djlint:on H025 #}`{% endif %}
 
         {% elif state == 'unknown' %}
      - ❓
@@ -38,5 +38,11 @@ Runner vs guest compatibility matrix
 {% endfor %}
 
 {% for note in NOTES %}
-.. [{{ loop.index }}] {{ note }}
+.. _note-{{ note.title | urlencode }}:
+
+{{ note.title }}
+{{ '-' * (note.title | length) }}
+
+{{ note.text | dedent }}
+
 {% endfor %}

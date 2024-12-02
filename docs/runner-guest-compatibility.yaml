@@ -32,14 +32,18 @@ unknown:
   - 'Debian .*'
 
 notes:
-  'Fedora Rawhide \+ (CentOS 7|Centos Stream 8)': >
-    :ref:`prepare/ansible</plugins/prepare/ansible>`,
-    :ref:`prepare/feature</plugins/prepare/feature>`
-    and :ref:`finish/ansible</plugins/finish/ansible>` will not work
-    out of the box. See their documentation for details and possible
-    workarounds.
+  - pattern: 'Fedora Rawhide \+ (CentOS 7|Centos Stream 8)'
+    title: Fedora Rawhide and Ansible 2.17+
+    text: >
+      :ref:`prepare/ansible</plugins/prepare/ansible>`,
+      :ref:`prepare/feature</plugins/prepare/feature>`
+      and :ref:`finish/ansible</plugins/finish/ansible>` will not work
+      out of the box. See their documentation for details and possible
+      workarounds.
 
-  '.*? \+ (Alpine|Debian|Ubuntu)': >
-    :ref:`beakerlib</spec/tests/framework>` will not work because it
-    requires an installable ``beakerlib`` package. At this moment,
-    ``beakerlib`` is not available for these distributions.
+  - pattern: '.*? \+ (Alpine|Debian|Ubuntu)'
+    title: Beakerlib not being packaged for non-RHEL OS
+    text: >
+      :ref:`beakerlib</spec/tests/framework>` will not work because it
+      requires an installable ``beakerlib`` package. At this moment,
+      ``beakerlib`` is not available for these distributions.

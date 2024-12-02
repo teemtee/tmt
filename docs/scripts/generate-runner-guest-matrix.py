@@ -4,6 +4,7 @@ import re
 import sys
 import textwrap
 from re import Pattern
+from typing import Any
 
 import tmt.plugins
 import tmt.steps.provision
@@ -57,15 +58,14 @@ def main() -> None:
         raise GeneralError(f"Invalid 'unknown' pattern '{exc.pattern}'.") from exc
 
     try:
-        raw_notes: dict[Pattern[str], str] = {
-            re.compile(pattern): note for pattern, note in definitions['notes'].items()
+        notes: dict[Pattern[str], Any] = {
+            re.compile(note['pattern']): note for note in definitions['notes']
             }
 
     except re.error as exc:
         raise GeneralError(f"Invalid 'notes' pattern '{exc.pattern}'.") from exc
 
     matrix: dict[str, list[tuple[str, str]]] = {}
-    notes: list[str] = []
 
     for runner in environment_names:
         matrix[runner] = []
@@ -73,14 +73,11 @@ def main() -> None:
         for guest in environment_names:
             combination_key = f'{runner} + {guest}'
 
-            for pattern, note in raw_notes.items():
+            for pattern, note in notes.items():
                 if not pattern.match(combination_key):
                     continue
 
-                notes.append(f'**{runner}** runner + **{guest}** guest: '
-                             + textwrap.dedent(note).replace('\n', ' '))
-
-                matrix[runner].append(('supported-with-caveats', len(notes)))
+                matrix[runner].append(('supported-with-caveats', note))
 
                 break
 
@@ -98,7 +95,7 @@ def main() -> None:
         template_filepath,
         LOGGER=logger,
         MATRIX=matrix,
-        NOTES=notes))
+        NOTES=notes.values()))
 
 
 if __name__ == '__main__':
