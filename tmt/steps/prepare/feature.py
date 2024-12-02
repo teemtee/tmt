@@ -94,6 +94,19 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
     Enable or disable common features like repositories on the guest.
 
+    .. warning::
+
+       The plugin may be a subject of various limitations, imposed by
+       the fact it uses Ansible to implement some of the features:
+
+       * Ansible 2.17+ no longer supports Python 3.6 and older. Guests
+         where Python 3.7+ is not available cannot be prepared with the
+         ``feature`` plugin. This has been observed when Fedora Rawhide
+         runner is used with CentOS 7 or CentOS Stream 8 guests. Possible
+         workarounds: downgrade Ansible tmt uses, or install Python 3.7+
+         before using ``feature`` plugin from an alternative repository
+         or local build.
+
     Example config:
 
     .. code-block:: yaml

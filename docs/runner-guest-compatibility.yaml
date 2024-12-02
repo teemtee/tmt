@@ -1,0 +1,45 @@
+---
+
+# A list of known, recognized environments for runners and guests
+environments:
+  - CentOS 7
+  - CentOS Stream 8
+  - CentOS Stream 9
+  - CentOS Stream 10
+  - Fedora 39
+  - Fedora 40
+  - Fedora 41
+  - Fedora Rawhide
+  - Alpine 3
+  - Debian 12
+  - Ubuntu 22
+
+#
+# Keys and list entries below are treated as regular expressions tested
+# against a "{runner} + {guest}" string.
+#
+
+# A list of patterns matching unsupported runner/guest combinations.
+unsupported: []
+
+# A list of patterns matching runner/guest combinations where the state
+# of support is unknown.
+unknown:
+  # The following should work as runners, with tmt installed from PyPI,
+  # but we do not know for sure.
+  - 'Alpine .*'
+  - 'Ubuntu .*'
+  - 'Debian .*'
+
+notes:
+  'Fedora Rawhide \+ (CentOS 7|Centos Stream 8)': >
+    :ref:`prepare/ansible</plugins/prepare/ansible>`,
+    :ref:`prepare/feature</plugins/prepare/feature>`
+    and :ref:`finish/ansible</plugins/finish/ansible>` will not work
+    out of the box. See their documentation for details and possible
+    workarounds.
+
+  '.*? \+ (Alpine|Debian|Ubuntu)': >
+    :ref:`beakerlib</spec/tests/framework>` will not work because it
+    requires an installable ``beakerlib`` package. At this moment,
+    ``beakerlib`` is not available for these distributions.
