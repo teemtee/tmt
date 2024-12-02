@@ -12,7 +12,7 @@ import tmt.log
 import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
-from tmt.utils import field, format_timestamp, yaml_to_dict
+from tmt.utils import field, format_timestamp, suppress_warning, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -436,36 +436,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """
-        Report test results to the endpoint
-
-        Create a ReportPortal launch and its test items,
-        fill it with all parts needed and report the logs.
-        """
-
-        super().go(logger=logger)
-
-        if not self.data.url:
-            raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
-        self.data.url = self.data.url.rstrip("/")
-
-        if not self.data.project:
-            raise tmt.utils.ReportError("No ReportPortal project provided.")
-
-        if not self.data.token:
-            raise tmt.utils.ReportError("No ReportPortal token provided.")
-
-        if not self.step.plan.my_run:
-            raise tmt.utils.ReportError("No run data available.")
-
-        self.check_options()
-
-        # If SSL verification is disabled, do not print warnings with urllib3
-        if not self.data.ssl_verify:
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.warn("SSL verification is disabled for all requests being made to ReportPortal "
-                      f"instance ({self.data.url}).")
+    def execute_rp_import(self) -> None:
+        """ Execute the import of test, results and subresults into ReportPortal """
+        assert self.step.plan.my_run is not None
 
         # Use the current datetime as a default, but this is the worst case scenario
         # and we should use timestamps from results log as much as possible.
@@ -772,3 +745,38 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             assert launch_url is not None
             self.info("url", launch_url, "magenta")
             self.data.launch_url = launch_url
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Report test results to the endpoint
+
+        Create a ReportPortal launch and its test items,
+        fill it with all parts needed and report the logs.
+        """
+
+        super().go(logger=logger)
+
+        if not self.data.url:
+            raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
+        self.data.url = self.data.url.rstrip("/")
+
+        if not self.data.project:
+            raise tmt.utils.ReportError("No ReportPortal project provided.")
+
+        if not self.data.token:
+            raise tmt.utils.ReportError("No ReportPortal token provided.")
+
+        if not self.step.plan.my_run:
+            raise tmt.utils.ReportError("No run data available.")
+
+        self.check_options()
+
+        # If SSL verification is disabled, do not print warnings with urllib3
+        suppress_category = None
+        if not self.data.ssl_verify:
+            suppress_category = urllib3.exceptions.InsecureRequestWarning
+            self.warn("SSL verification is disabled for all requests being made to ReportPortal "
+                      f"instance ({self.data.url}).")
+
+        with suppress_warning(suppress_category):
+            self.execute_rp_import()
