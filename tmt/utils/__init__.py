@@ -24,6 +24,7 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
+import warnings
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from math import ceil
@@ -6280,3 +6281,30 @@ def is_url(url: str) -> bool:
     """ Check if the given string is a valid URL """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
+
+
+@contextlib.contextmanager
+def suppress_warning(category: Optional[type[Warning]]) -> Iterator[None]:
+    """
+    Optionally disable the given warning.
+
+    Using this context manager you can suppress a warning. This warning gets re-enabled with an
+    exit from this context manager.
+
+    The example can be suppressing of the urllib insecure request warning:
+
+    .. code-block:: python
+
+        with suppress_warning(urllib3.exceptions.InsecureRequestWarning):
+            ...
+
+    """
+    if category is not None:
+        try:
+            warnings.simplefilter('ignore', category)
+            yield
+        finally:
+            # Reset the warning to its default for a specific category
+            warnings.simplefilter('default', category)
+    else:
+        yield
