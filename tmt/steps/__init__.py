@@ -1962,10 +1962,13 @@ class Login(Action):
                     worktree = self.parent.plan.worktree
                     tests = self.parent.plan.discover.tests()
                     test_path = tests[-1].path if tests else None
-
-                    if worktree and test_path:
-                        cwd = worktree.parent / "discover" / test_path.unrooted()
-                    else:
+                    try:
+                        cwd = worktree
+                        if worktree and test_path:
+                            cwd = worktree.parent / "discover" / test_path.unrooted()
+                        guest.execute(tmt.utils.ShellScript("/bin/true"),
+                                      interactive=True, cwd=cwd, env=env)
+                    except RunError:
                         cwd = worktree
 
             except tmt.utils.GeneralError:
