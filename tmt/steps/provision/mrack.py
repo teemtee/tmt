@@ -918,7 +918,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option='--public-key',
         metavar='PUBLICKEY',
         help="""
-             If set, the public keys will be put under ssh authorized_keys.
+             Public keys to add among authorized SSH keys.
              """,
         multiple=True,
         normalize=tmt.utils.normalize_string_list)
