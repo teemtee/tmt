@@ -138,10 +138,10 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
     rootfs: str = field(
         default="xfs",
         option=('--rootfs'),
-        metavar='ROOTFS',
+        choices=['ext4', 'xfs', 'btrfs'],
         help="""
-             Select root filesystem type. Overrides the default from the source 
-             container. Supported value: ext4, xfs, and btrfs
+             Select root filesystem type. Overrides the default from the source
+             container.
              """)
 
 
@@ -340,7 +340,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             containerimage = data.container_image
             if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(data.container_image)
-            self._build_bootc_disk(containerimage, data.image_builder)
+            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Build image according to the container file
         elif data.container_file is not None:
