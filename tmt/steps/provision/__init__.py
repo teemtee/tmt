@@ -2144,10 +2144,8 @@ class GuestSsh(Guest):
                 ShellScript(
                     f"""
                     mkdir -p {workdir_root};
-                    setfacl -d -m o:rX {workdir_root}
-                    """
-                )
-            )
+                    sudo setfacl -d -m o:rX {workdir_root}
+                    """))
 
     def execute(
         self,
