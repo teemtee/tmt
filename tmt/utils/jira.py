@@ -196,7 +196,7 @@ def link(
     """
 
     # TODO: Shall we cover all relations instead?
-    for link in links.get("verifies"):
+    for link in (links.get("verifies") or links.get("relates")):
         # Save the link to test/plan/story metadata on disk
         for tmt_object in tmt_objects:
             save_link_to_metadata(tmt_object, link, logger)
