@@ -11,7 +11,12 @@ import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
-from tmt.utils import Path, field, format_timestamp, render_run_exception_streams
+from tmt.utils import (
+    Path,
+    field,
+    format_timestamp,
+    render_command_report,
+    )
 
 if TYPE_CHECKING:
     import tmt.base
@@ -102,21 +107,22 @@ class DmesgCheck(Check):
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
         try:
-            dmesg_output = self._fetch_dmesg(invocation.guest, logger)
+            output = self._fetch_dmesg(invocation.guest, logger)
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
-            output = "\n".join(render_run_exception_streams(exc.output, verbose=1))
+            output = exc.output
 
         else:
             outcome = ResultOutcome.PASS
-            output = dmesg_output.stdout or ''
-            if any(pattern.search(output) for pattern in self.failure_pattern):
+
+            if any(pattern.search(output.stdout or '') for pattern in self.failure_pattern):
                 outcome = ResultOutcome.FAIL
 
         invocation.phase.write(
             path,
-            f'# Acquired at {timestamp}\n{output}')
+            '\n'.join(render_command_report(label=f'Acquired at {timestamp}', output=output)),
+            mode='a')
 
         return outcome, path.relative_to(invocation.phase.step.workdir)
 
