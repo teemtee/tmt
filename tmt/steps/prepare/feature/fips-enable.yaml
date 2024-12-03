@@ -1,0 +1,11 @@
+- hosts: all
+  tasks:
+    # CentOS Stream N or RHEL N, where N >= 8
+    - when: ansible_distribution_major_version | int >= 8
+      block:
+        - name: Install package 'crypto-policies-scripts'
+          ansible.builtin.yum:
+            name: crypto-policies-scripts
+            state: present
+        - name: Enable FIPS on RHEL or CentOS Stream 8+
+          command: fips-mode-setup --enable
