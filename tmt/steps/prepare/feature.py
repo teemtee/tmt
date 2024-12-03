@@ -8,6 +8,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
+import tmt.steps.provision.podman
 import tmt.utils
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
@@ -77,6 +78,16 @@ class EPEL(ToggleableFeature):
 _FEATURES: dict[str, type[Feature]] = {
     EPEL.NAME: EPEL
     }
+
+
+class FIPS(ToggleableFeature):
+    NAME = 'fips'
+
+    def enable(self) -> None:
+        self._enable('fips-enable.yaml')
+
+    def disable(self) -> None:
+        self.warn(f"Unsupported feature '{self.NAME.upper()}'.")
 
 
 @dataclasses.dataclass
