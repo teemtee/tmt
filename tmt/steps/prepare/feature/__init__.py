@@ -163,20 +163,20 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return []
 
-        for feature_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
-            feature = find_plugin(feature_id)
+        for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
+            plugin = find_plugin(plugin_id)
 
-            value = cast(Optional[str], getattr(self.data, feature.NAME, None))
+            value = cast(Optional[str], getattr(self.data, plugin.NAME, None))
             if value is None:
                 continue
 
             value = value.lower()
             if value == 'enabled':
-                feature.enable(guest, logger)
+                plugin.enable(guest, logger)
             elif value == 'disabled':
-                feature.disable(guest, logger)
+                plugin.disable(guest, logger)
             else:
-                raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
+                raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
 
         return results
 
