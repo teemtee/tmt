@@ -271,6 +271,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "build",
             "--type",
             "qcow2",
+            "--rootfs",
+            "xfs",
             "--local",
             containerimage).run(
             cwd=self.workdir,
