@@ -30,7 +30,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from math import ceil
 from re import Pattern
-from threading import Thread
+from threading import RLock, Thread
 from types import ModuleType
 from typing import (
     IO,
@@ -77,6 +77,9 @@ if TYPE_CHECKING:
     import tmt.steps
     from tmt._compat.typing import Self, TypeAlias
     from tmt.hardware import Size
+
+# Handle the thread synchronization for the `suppress_warning(...)` context manager
+_suppress_warning_lock = RLock()
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -6367,11 +6370,12 @@ def suppress_warning(category: Optional[type[Warning]]) -> Iterator[None]:
 
     """
     if category is not None:
-        try:
-            warnings.simplefilter('ignore', category)
-            yield
-        finally:
-            # Reset the warning to its default for a specific category
-            warnings.simplefilter('default', category)
+        with _suppress_warning_lock:
+            try:
+                warnings.simplefilter('ignore', category)
+                yield
+            finally:
+                # Reset the warning to its default for a specific category
+                warnings.simplefilter('default', category)
     else:
         yield
