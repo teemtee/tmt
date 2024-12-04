@@ -5,17 +5,18 @@ import importlib.metadata
 __version__ = importlib.metadata.version(__name__)
 
 __all__ = [
-    'Tree',
-    'Test',
-    'Plan',
-    'Story',
-    'Run',
+    'Clean',
     'Guest',
     'GuestSsh',
+    'Logger',
+    'Plan',
     'Result',
+    'Run',
     'Status',
-    'Clean',
-    'Logger']
+    'Story',
+    'Test',
+    'Tree',
+    ]
 
 from tmt.base import Clean, Plan, Run, Status, Story, Test, Tree
 from tmt.log import Logger
