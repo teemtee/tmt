@@ -54,5 +54,8 @@ properties:
     items:
       type: string
 
+  job-group:
+    type: string
+
 required:
   - how

@@ -63,6 +63,11 @@ Leonova.
 
 __ https://github.com/teemtee/docs/tree/main/logo
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through
+``job-group`` key. The submitting user must be a member of
+the given job group.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

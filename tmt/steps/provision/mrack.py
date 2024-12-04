@@ -930,6 +930,14 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         multiple=True,
         normalize=tmt.utils.normalize_string_list)
 
+    job_group: Optional[str] = field(
+        default=None,
+        option='--job-group',
+        metavar='GROUPNAME',
+        help="""
+             If set, Beaker jobs will be submitted on behalf of ``GROUPNAME``.
+             """)
+
 
 @dataclasses.dataclass
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -966,7 +974,7 @@ class CreateJobParameters:
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
     public_key: list[str]
-    group: str = 'linux'
+    group: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1090,6 +1098,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
+    job_group: Optional[str] = None
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -1167,7 +1176,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner,
-            public_key=self.public_key)
+            public_key=self.public_key,
+            group=self.job_group)
 
         try:
             response = self.api.create(data)
@@ -1187,6 +1197,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     raise ProvisionError(
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
                         "is not a valid submission delegate.") from exc
+
+                if 'is not a valid group' in cause.faultString:
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job group '{self.job_group}' "
+                        "was refused as unknown.") from exc
+
+                if 'is not a member of group' in cause.faultString:
+                    raise ProvisionError(
+                        "Failed to create Beaker job, submitting user is not "
+                        "a member of group '{self.job_group}'") from exc
 
             raise ProvisionError('Failed to create Beaker job') from exc
 
