@@ -54,7 +54,7 @@ properties:
     items:
       type: string
 
-  job-group:
+  beaker-job-group:
     type: string
 
 required:
