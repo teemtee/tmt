@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import click
 from ruamel.yaml import YAML
 
@@ -30,11 +31,11 @@ def find_value(data, key):
     try:
         return data[key]
     except KeyError:
-        for value in data.values():
-            try:
+        try:
+            for value in data.values():
                 return find_value(value, key)
-            except ValueError:
-                pass
+        except ValueError:
+            pass
     return None
 
 

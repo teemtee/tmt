@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt run --id $run --remove discover -vvv"
+        rlRun -s "tmt run --id $run --remove discover -dddvvvv"
 
         rlAssertGrep "url: https://github.com/beakerlib/httpd" $rlRun_LOG
         rlAssertGrep "url: https://github.com/beakerlib/openssl" $rlRun_LOG
