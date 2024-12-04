@@ -914,9 +914,9 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Submitting user must be a submission delegate for the ``USERNAME``.
              """)
 
-    job_group: Optional[str] = field(
+    beaker_job_group: Optional[str] = field(
         default=None,
-        option='--job-group',
+        option='--beaker-job-group',
         metavar='GROUPNAME',
         help="""
              If set, Beaker jobs will be submitted on behalf of ``GROUPNAME``.
@@ -1079,7 +1079,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
-    job_group: Optional[str] = None
+    beaker_job_group: Optional[str] = None
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -1156,7 +1156,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner,
-            group=self.job_group)
+            group=self.beaker_job_group)
 
         try:
             response = self.api.create(data)
@@ -1179,13 +1179,13 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
                 if 'is not a valid group' in cause.faultString:
                     raise ProvisionError(
-                        f"Failed to create Beaker job, job group '{self.job_group}' "
+                        f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
                         "was refused as unknown.") from exc
 
                 if 'is not a member of group' in cause.faultString:
                     raise ProvisionError(
                         "Failed to create Beaker job, submitting user is not "
-                        "a member of group '{self.job_group}'") from exc
+                        "a member of group '{self.beaker_job_group}'") from exc
 
             raise ProvisionError('Failed to create Beaker job') from exc
 
