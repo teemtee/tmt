@@ -32,9 +32,9 @@ code there and experiment with it directly on the guest.
 
 The :ref:`/plugins/report/reportportal` plugin now handles the
 timestamps for ``custom`` and ``restraint`` results correctly. It
-should never happen that the result's ``end-time`` will be higher
-then the ``start-time``. It should be also ensured that the start
-time of all launch items is the same or higher then the start time
+should never happen that the result's ``start-time`` will be higher
+than the ``end-time``. It should be also ensured that the end
+time of all launch items is the same or higher than the start time
 of a parent item/launch.
 
 
