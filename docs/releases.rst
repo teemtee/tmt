@@ -15,6 +15,11 @@ Add the ``--keep`` option for the ``tmt clean guests`` command.
 Users can now choose to keep the selected number of latest guests
 and clean the rest to release the resources.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through
+``job-group`` key. The submitting user must be a member of
+the given job group.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
