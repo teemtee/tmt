@@ -127,12 +127,12 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             return []
 
         # Enable or disable epel
-        for feature_key in _FEATURES:
+        for feature_key, feature_class in _FEATURES.items():
             value = cast(Optional[str], getattr(self.data, feature_key, None))
             if value is None:
                 continue
 
-            feature = _FEATURES[feature_key](parent=self, guest=guest, logger=logger)
+            feature = feature_class(parent=self, guest=guest, logger=logger)
             if isinstance(feature, ToggleableFeature):
                 value = value.lower()
                 if value == 'enabled':
