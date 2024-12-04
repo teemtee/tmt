@@ -482,10 +482,7 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
     not_committed: list[str] = []
     assert result.stdout is not None
-    for line in result.stdout.split('\n'):
-        if line:
-            # XY PATH or XY ORIG -> PATH. XY and PATH are separated by space
-            not_committed.append(line[3:])
+    not_committed.extend(line[3:] for line in result.stdout.split('\n') if line)
 
     if not_committed:
         return (False, "Uncommitted changes in " + " ".join(not_committed))

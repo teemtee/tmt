@@ -233,9 +233,7 @@ def test_last_run_race(tmppath: Path, monkeypatch):
         except Exception as err:
             results.put(err)
 
-    total = 20
-    for i in range(total):
-        threads.append(threading.Thread(target=create_last_run, args=(config, i)))
+    threads = [threading.Thread(target=create_last_run, args=(config, i)) for i in range(20)]
     for t in threads:
         t.start()
     for t in threads:
@@ -299,8 +297,7 @@ def test_workdir_root_race(tmppath, monkeypatch, root_logger):
             results.put(err)
 
     total = 30
-    for _ in range(total):
-        threads.append(threading.Thread(target=create_workdir))
+    threads = [threading.Thread(target=create_workdir) for _ in range(total)]
     for t in threads:
         t.start()
     for t in threads:

@@ -25,11 +25,11 @@ from tmt.steps.provision.testcloud import TPM_CONFIG_ALLOWS_VERSIONS, \
 
 
 if TPM_CONFIG_ALLOWS_VERSIONS:
-    allowed_combinations: list[tuple[str, Operator]] = []
-
-    for version in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]:
-        for op in virtual_TPM_VERSION_ALLOWED_OPERATORS:
-            allowed_combinations.append((version, op))
+    allowed_combinations: list[tuple[str, Operator]] = [
+        (version, op)
+        for version in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]
+        for op in virtual_TPM_VERSION_ALLOWED_OPERATORS
+        ]
 
     @pytest.mark.parametrize(
         ('version', 'op'),

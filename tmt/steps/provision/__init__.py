@@ -410,10 +410,11 @@ class GuestFacts(SerializableContainer):
 
         discovered_package_managers: list[PackageManagerClass] = []
 
-        for _, package_manager_class \
-                in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
-            if self._execute(guest, package_manager_class.probe_command):
-                discovered_package_managers.append(package_manager_class)
+        discovered_package_managers.extend(
+            package_manager_class for package_manager_class in
+            tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.values()
+            if self._execute(guest, package_manager_class.probe_command)
+            )
 
         discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
 

@@ -329,6 +329,7 @@ lint.select = [
     "PLE",  # pylint-error
     "PLR",  # pylint-refactor
     "FLY",  # flynt
+    "PERF",  # perflint
     "FURB",  # refurb
     "RUF",  # ruff
     "D",    # pydocstyle
@@ -344,12 +345,14 @@ lint.ignore = [
     "PLR2004",  # Magic value used in comparison
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013",  # PEP 484 prohibits implicit `Optional`
+    "SIM103",  # Return the condition directly - can hurt readability
+    "PERF203",  # `try`-`except` within a loop incurs performance overhead
+
     # flake8-bandit (S) https://docs.astral.sh/ruff/rules/#flake8-bandit-s
     "S101",  # Use of `assert` detected
     "S603",  # `subprocess` call: check for execution of untrusted input
     "S607",  # Starting a process with a partial executable path
     "S105",  # Possible hardcoded password assigned to: "PASS"
-    "SIM103",  # Return the condition directly - can hurt readability
 
     # pydocstyle
     # TODO: the permanent list (drop this comment once the temporary list

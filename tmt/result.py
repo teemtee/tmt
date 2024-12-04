@@ -428,8 +428,10 @@ class Result(BaseResult):
 
         # Interpret check results (aggregated by the check name)
         check_outcomes: list[ResultOutcome] = []
-        for check_name in tmt.utils.uniq([check.name for check in self.check]):
-            check_outcomes.append(self.interpret_check_result(check_name, interpret_checks))
+        check_outcomes.extend(
+            self.interpret_check_result(check_name, interpret_checks)
+            for check_name in tmt.utils.uniq([check.name for check in self.check])
+            )
 
         # Aggregate check results with the main test result
         self.result = ResultOutcome.reduce([self.result, *check_outcomes])

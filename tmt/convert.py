@@ -1215,7 +1215,7 @@ def relevancy_to_adjust(
                     f"Invalid test case relevancy decision '{decision}'.")
 
         # Adjust condition syntax
-        expressions = []
+        expressions: list[str] = []
         for expression in re.split(r'\s*&&?\s*', condition):
             search_result = re.search(RELEVANCY_EXPRESSION, expression)
             if search_result is None:
@@ -1247,8 +1247,7 @@ def relevancy_to_adjust(
             # values (in relevancy this was treated as 'no value equals')
             values = re.split(r'\s*,\s*', right)
             if operator == '!=' and len(values) > 1:
-                for value in values:
-                    expressions.append(f"{left} != {value}")
+                expressions.extend(f"{left} != {value}" for value in values)
                 continue
             # Join 'left operator right' with spaces
             expressions.append(

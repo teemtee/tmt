@@ -369,6 +369,9 @@ class PluginRegistry(Generic[RegisterableT]):
     def items(self) -> Iterator[tuple[str, RegisterableT]]:
         yield from self._plugins.items()
 
+    def values(self) -> Iterator[RegisterableT]:
+        yield from self._plugins.values()
+
 
 class ModuleImporter(Generic[ModuleT]):
     """
