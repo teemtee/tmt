@@ -20,6 +20,9 @@ calling the ``tmt-report-result`` or by calling beakerlib's
 ``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
 ``execute`` directory.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for adding pubkeys to instance by populating the kickstart file.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
