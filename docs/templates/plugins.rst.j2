@@ -37,8 +37,8 @@
         {% elif is_enum(actual_default) %}
     Default: ``{{ actual_default.value }}``
         {% else %}
-            {% set _ = LOGGER.warn("%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default), shift=0) %}
-    Default: *could not render default value correctly*
+            {% set error_message = "%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default) %}
+            {{ raise_error(error_message) }}
         {% endif %}
     {% endif %}
 {% endmacro %}
