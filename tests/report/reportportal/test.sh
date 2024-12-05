@@ -9,6 +9,8 @@ ARTIFACTS=$TMT_REPORT_ARTIFACTS_URL
 PLAN_PREFIX='/plan'
 PLAN_STATUS='FAILED'
 TEST_PREFIX='/test'
+
+# TODO: Subresults for beakerlib
 declare -A test=([1,'uuid']="" [1,'name']='/bad'        [1,'status']='FAILED'
                  [2,'uuid']="" [2,'name']='/good'       [2,'status']='PASSED'
                  [3,'uuid']="" [3,'name']='/subresults' [3,'status']='FAILED'

@@ -26,3 +26,9 @@
         tmt-report-result /subtest-restraint/good PASS
         tmt-report-result /subtest-restraint/fail FAIL
         tmt-report-result /subtest-restraint/weird WARN
+
+# TODO: Enable test of subresults for beakerlib phases
+#/subresults-beakerlib:
+#    summary: Test the Beakerlib phases are propagated as tmt subresults
+#    framework: beakerlib
+#    test: ./beaker-phases-subresults.sh
