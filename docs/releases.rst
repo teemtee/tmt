@@ -15,6 +15,11 @@ Add the ``--keep`` option for the ``tmt clean guests`` and ``tmt clean``
 commands. Users can now choose to keep the selected number of latest guests,
 and maybe also runs, clean the rest to release the resources.
 
+The log file paths of tmt subresults created by shell tests by
+calling the ``tmt-report-result`` or by calling beakerlib's
+``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
+``execute`` directory.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

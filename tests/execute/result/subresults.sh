@@ -84,19 +84,19 @@ rlJournalStart
         rlAssertNotGrep "original-result: \(fail\|skip\|warn\)" "subresults_pass.yaml"
 
         # Check the subresults log entries are set in results.yaml
-        rlAssertGrep "- extra-tmt-report-result_good_bkr_good_log" "subresults_beakerlib.yaml"
-        rlAssertGrep "- extra-tmt-report-result_bad_bkr_bad_log" "subresults_beakerlib.yaml"
-        rlAssertGrep "- extra-tmt-report-result_weird_bkr_weird_log" "subresults_beakerlib.yaml"
-        rlAssertGrep "- extra-tmt-report-result_skip_bkr_skip_log" "subresults_beakerlib.yaml"
+        rlAssertGrep "- data/.*/extra-tmt-report-result_good_bkr_good_log$" "subresults_beakerlib.yaml"
+        rlAssertGrep "- data/.*/extra-tmt-report-result_bad_bkr_bad_log$" "subresults_beakerlib.yaml"
+        rlAssertGrep "- data/.*/extra-tmt-report-result_weird_bkr_weird_log$" "subresults_beakerlib.yaml"
+        rlAssertGrep "- data/.*/extra-tmt-report-result_skip_bkr_skip_log$" "subresults_beakerlib.yaml"
 
-        rlAssertGrep "- fail-subtest_good_good_log" "subresults_fail.yaml"
-        rlAssertGrep "- fail-subtest_fail_fail_log" "subresults_fail.yaml"
-        rlAssertGrep "- fail-subtest_weird_weird_log" "subresults_fail.yaml"
-        rlAssertGrep "- fail-subtest_skip_skip_log" "subresults_fail.yaml"
+        rlAssertGrep "- data/.*/fail-subtest_good_good_log$" "subresults_fail.yaml"
+        rlAssertGrep "- data/.*/fail-subtest_fail_fail_log$" "subresults_fail.yaml"
+        rlAssertGrep "- data/.*/fail-subtest_weird_weird_log$" "subresults_fail.yaml"
+        rlAssertGrep "- data/.*/fail-subtest_skip_skip_log$" "subresults_fail.yaml"
 
-        rlAssertGrep "- pass-subtest_good0_good0_log" "subresults_pass.yaml"
-        rlAssertGrep "- pass-subtest_good1_good1_log" "subresults_pass.yaml"
-        rlAssertGrep "- pass-subtest_good2_good2_log" "subresults_pass.yaml"
+        rlAssertGrep "- data/.*/pass-subtest_good0_good0_log$" "subresults_pass.yaml"
+        rlAssertGrep "- data/.*/pass-subtest_good1_good1_log$" "subresults_pass.yaml"
+        rlAssertGrep "- data/.*/pass-subtest_good2_good2_log$" "subresults_pass.yaml"
 
         # Check the subresults log files actually exist
         rlRun "log_dir=$run_dir/plan/execute/data/guest/default-0/test"
