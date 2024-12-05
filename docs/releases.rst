@@ -27,6 +27,9 @@ higher than the ``end-time``. It should be also ensured that the
 end time of all launch items is the same or higher than the start
 time of a parent item/launch.
 
+The :ref:`/plugins/report/reportportal` plugin now supports
+importing of tmt subresults as child test items.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
