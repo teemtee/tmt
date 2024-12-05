@@ -512,6 +512,12 @@ commits with your changes on the top of the branch instead of
 amending the original commit and doing a force push. This will
 make it easier for the reviewers to see what has recently changed.
 
+It's good to keep the pull request up-to-date with the ``main``
+branch. Rebase regularly or use ``/packit build`` command in the
+pull request comment if there were significant changes on the
+default branch otherwise newly added tests might cause unexpected
+and irrelevant failures in your test jobs.
+
 Once the pull request has been successfully reviewed and all tests
 passed, please rebase on the latest ``main`` branch content and
 squash the changes into a single commit. Use multiple commits to
