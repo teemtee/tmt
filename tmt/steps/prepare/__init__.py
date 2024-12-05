@@ -12,6 +12,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from tmt.base import Plan
 
 
-@dataclasses.dataclass
+@container
 class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 
@@ -110,7 +111,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
 # same time.
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class DependencyCollection:
     """ Bundle guests and packages to install on them """
 
@@ -118,7 +119,7 @@ class DependencyCollection:
     # first, but when grouping guests by same requirements, we'd start
     # adding guests to the list when spotting same set of dependencies.
     guests: list[Guest]
-    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)
+    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     @property
     def as_key(self) -> 'DependencyCollectionKey':

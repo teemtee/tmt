@@ -10,8 +10,9 @@ import tmt.hardware
 import tmt.log
 import tmt.steps.report
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import ResultOutcome
-from tmt.utils import field, yaml_to_dict
+from tmt.utils import yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -50,7 +51,7 @@ def _size_env_to_default(option: str, default: 'Size') -> 'Size':
     return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass  # noqa: TID251
 class LogFilterSettings:
     size: 'Size' = DEFAULT_LOG_SIZE_LIMIT
     is_traceback: bool = False
@@ -95,7 +96,7 @@ def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
     return log
 
 
-@dataclasses.dataclass
+@container
 class ReportReportPortalData(tmt.steps.report.ReportStepData):
 
     url: Optional[str] = field(
