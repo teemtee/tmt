@@ -20,6 +20,11 @@ calling the ``tmt-report-result`` or by calling beakerlib's
 ``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
 ``execute`` directory.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through
+``beaker-job-group`` key. The submitting user must be a member of
+the given job group.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
