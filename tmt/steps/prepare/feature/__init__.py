@@ -105,6 +105,7 @@ class Feature(tmt.utils.Common):
 
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
+    # TODO: Change it to be able to create and discover custom fields to feature step data
     epel: Optional[str] = field(
         default=None,
         option='--epel',
