@@ -1637,6 +1637,9 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
     '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Identifier (name or directory path) of the run to be cleaned.')
 @option(
+    '-k', '--keep', type=int, default=None,
+    help='The number of latest workdirs to keep, clean the rest.')
+@option(
     '-s', '--skip', choices=CLEAN_RESOURCES,
     help='The resources which should be kept on the disk.', multiple=True)
 @workdir_root_options
@@ -1645,6 +1648,7 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 def clean(context: Context,
           last: bool,
           id_: tuple[str, ...],
+          keep: Optional[int],
           skip: list[str],
           _workdir_root: Optional[str],
           **kwargs: Any) -> None:
@@ -1691,9 +1695,9 @@ def clean(context: Context,
             cli_invocation=CliInvocation.from_context(context),
             workdir_root=workdir_root)
         if workdir_root.exists():
-            if 'guests' not in skip and not clean_obj.guests(id_):
+            if 'guests' not in skip and not clean_obj.guests(id_, keep):
                 exit_code = 1
-            if 'runs' not in skip and not clean_obj.runs(id_):
+            if 'runs' not in skip and not clean_obj.runs(id_, keep):
                 exit_code = 1
         else:
             clean_obj.warn(
@@ -1774,7 +1778,8 @@ def clean_runs(
         workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["runs"].append(
         lambda: clean_obj.runs(
-            (context.parent and context.parent.params.get('id_', [])) or id_))
+            (context.parent and context.parent.params.get('id_', [])) or id_,
+            (context.parent and context.parent.params.get('keep', [])) or keep))
 
 
 @clean.command(name='guests')
@@ -1822,7 +1827,8 @@ def clean_guests(
         workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
-            (context.parent and context.parent.params.get('id_', [])) or id_))
+            (context.parent and context.parent.params.get('id_', [])) or id_,
+            (context.parent and context.parent.params.get('keep', [])) or keep))
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
