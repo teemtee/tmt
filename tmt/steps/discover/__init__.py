@@ -395,11 +395,12 @@ class Discover(tmt.steps.Step):
             assert isinstance(self.parent, tmt.base.Plan)  # narrow type
 
             # Get failed results from previous run execute
-            for result in self.parent.execute._results:
+            failed_results.extend(
+                result for result in self.parent.execute._results
                 if (
-                        result.result is not tmt.result.ResultOutcome.PASS and
-                        result.result is not tmt.result.ResultOutcome.INFO):
-                    failed_results.append(result)
+                    result.result is not tmt.result.ResultOutcome.PASS and
+                    result.result is not tmt.result.ResultOutcome.INFO)
+                )
 
             # Filter existing tests into another variable which is then used by tests() method
             for test_phase in self._tests:

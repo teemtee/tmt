@@ -1963,14 +1963,14 @@ class Login(Action):
                 self.warn("Failed to push workdir to the guest.")
                 cwd = None
             # Execute all requested commands
-            for script in scripts:
-                try:
+            try:
+                for script in scripts:
                     guest.execute(script, interactive=True, cwd=cwd, env=env)
 
-                except RunError as exc:
-                    # Interactive mode can return non-zero if the last command failed,
-                    # ignore errors here.
-                    self.warn(f'Command exited with non-zero exit code {exc.returncode}.')
+            except RunError as exc:
+                # Interactive mode can return non-zero if the last command failed,
+                # ignore errors here.
+                self.warn(f'Command exited with non-zero exit code {exc.returncode}.')
         self.info('login', 'Interactive shell finished', color='yellow')
 
     def after_test(

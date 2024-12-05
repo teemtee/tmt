@@ -84,11 +84,11 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
     """
     import tmt.base
     assert nitrate
-    for component in test.component:
-        try:
+    try:
+        for component in test.component:
             for testcase in find_general_plan(component).testcases:
                 struct_field = StructuredField(testcase.notes)
-                try:
+                with suppress(tmt.utils.StructuredFieldError):
                     fmf_id = tmt.base.FmfId.from_spec(
                         cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf'))))
                     if fmf_id == test.fmf_id:
@@ -96,10 +96,8 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
                             f"Existing test case '{testcase.identifier}' "
                             f"found for given fmf id.", fg='magenta'))
                         yield testcase
-                except tmt.utils.StructuredFieldError:
-                    pass
-        except nitrate.NitrateError:
-            pass
+    except nitrate.NitrateError:
+        pass
 
 
 def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
@@ -217,19 +215,14 @@ def enabled_somewhere(test: 'tmt.Test') -> bool:
         return True
 
     # Some rule in adjust enables the test
-    try:
+    with suppress(KeyError):
         adjust_rules = test.node.original_data['adjust']
         # TODO: Should not be necessary once we normalize data
         if isinstance(adjust_rules, dict):
             adjust_rules = [adjust_rules]
         for rule in adjust_rules:
-            try:
-                if rule['enabled']:
-                    return True
-            except KeyError:
-                pass
-    except KeyError:
-        pass
+            if rule['enabled']:
+                return True
     # At this point nothing enables the test
     return False
 
@@ -240,12 +233,10 @@ def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
     context_dict = {}
     try:
         for line in cast(str, field.get('environment')).split('\n'):
-            try:
+            with suppress(ValueError):
                 dimension, values = line.split('=', maxsplit=2)
                 context_dict[dimension.strip()] = [
                     value.strip() for value in re.split(",|and", values)]
-            except ValueError:
-                pass
     except tmt.utils.StructuredFieldError:
         pass
 

@@ -811,7 +811,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
                     for ks_section in ('pre-install', 'script', 'post-install'):
                         if ks_section in host.kickstart:
-                            ks_components.append(host.kickstart[ks_section])
+                            ks_components.extend(host.kickstart[ks_section])
 
                     if ks_components:
                         req['ks_append'] = ['\n'.join(ks_components)]

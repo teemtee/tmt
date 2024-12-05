@@ -59,13 +59,13 @@ def main() -> None:
     # Generate stories
     tree = tmt.Tree(logger=logger, path=Path.cwd())
 
-    for area in AREA_TITLES:
+    for area, title in AREA_TITLES.items():
         logger.info(f'Generating rst files from {area}')
 
         with open(f"{area.lstrip('/')}.rst", 'w') as doc:
             # Anchor and title
             doc.write(f'.. _{area}:\n\n')
-            doc.write(f"{AREA_TITLES[area]}\n{'=' * len(AREA_TITLES[area])}\n")
+            doc.write(f"{title}\n{'=' * len(title)}\n")
             # Included stories
             for story in tree.stories(names=[area], whole=True):
                 if not story.enabled:
