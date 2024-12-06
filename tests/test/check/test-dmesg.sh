@@ -20,6 +20,7 @@ rlJournalStart
         rlRun "harmless=$run/plan/execute/data/guest/default-0/dmesg/harmless-1"
         rlRun "segfault=$run/plan/execute/data/guest/default-0/dmesg/segfault-1"
         rlRun "custom_patterns=$run/plan/execute/data/guest/default-0/dmesg/custom-patterns-1"
+        rlRun "multiple_reports=$run/plan/execute/data/guest/default-0/dmesg/multiple-reports-1"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"
@@ -96,6 +97,22 @@ rlJournalStart
 
             rlAssertExists "$dump_after"
             rlLogInfo "$(cat $dump_after)"
+        rlPhaseEnd
+
+        rlPhaseStartTest "Test multiple dmesg reports with $PROVISION_HOW"
+            rlRun "dump_before=$multiple_reports/checks/dmesg-before-test.txt"
+            rlRun "dump_after=$multiple_reports/checks/dmesg-after-test.txt"
+
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /dmesg/multiple-reports"
+            rlRun "cat $results"
+
+            rlLogInfo "$(cat $dump_before)"
+            rlAssertEquals "There should be 3 reports before the test" \
+                           "$(grep 'Acquired at' $dump_before | wc -l)" "3"
+
+            rlLogInfo "$(cat $dump_after)"
+            rlAssertEquals "There should be 3 reports after the test" \
+                           "$(grep 'Acquired at' $dump_after | wc -l)" "3"
         rlPhaseEnd
     fi
 

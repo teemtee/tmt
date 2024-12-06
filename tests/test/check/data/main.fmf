@@ -13,6 +13,15 @@
             failure-pattern:
               - 'Hypervisor detected'
 
+    /multiple-reports:
+        check:
+          - how: dmesg
+            result: respect
+          - how: dmesg
+            result: respect
+          - how: dmesg
+            result: respect
+
 /avc:
   check:
     - how: avc
