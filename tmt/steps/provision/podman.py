@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 import os
 from shlex import quote
 from typing import Any, Optional, Union, cast
@@ -283,6 +284,33 @@ class GuestContainer(tmt.Guest):
             log=log,
             silent=silent)
 
+    @functools.cached_property
+    def _is_toolbox(self) -> bool:
+        """ Return ``True`` if running in toolbox, ``False`` otherwise. """
+        if os.path.exists('/run/.toolboxenv'):
+            return True
+
+        return False
+
+    @functools.cached_property
+    def _toolbox_container_name(self) -> Optional[str]:
+        """ Returns toolbox container name if running in toolbox, ``None`` otherwise. """
+        if not self._is_toolbox:
+            return None
+
+        if not os.path.exists('/run/.containerenv'):
+            self.logger.warning(
+                "Unable to detect toolbox container name, '/run/.containerenv' not found."
+                )
+            return None
+
+        with open('/run/.containerenv') as envfile:
+            for line in envfile.readline():
+                if line.startswith('name="'):
+                    return line[6:-1]
+
+        return None
+
     def podman(
             self,
             command: Command,
@@ -376,10 +404,19 @@ class GuestContainer(tmt.Guest):
             self._run_guest_command(Command(
                 "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
                 ), shell=False, silent=True)
+
         # In case explicit destination is given, use `podman cp` to copy data
-        # to the container
+        # to the container. If running in toolbox, make sure to copy from the toolbox
+        # container instead of localhost.
         if source and destination:
-            self.podman(Command("cp", source, f"{self.container}:{destination}"))
+            self.podman(
+                Command(
+                    "cp",
+                    f"{self._toolbox_container_name}:{source}"
+                    if self._toolbox_container_name else source,
+                    f"{self.container}:{destination}"
+                    )
+                )
 
     def pull(
             self,
