@@ -124,15 +124,6 @@
 {% endmacro %}
 
 
-{# --- The real template body --- #}
-
-{#
-    Explicit URL for "Edit on GitHub" links.
-#}
-.. meta::
-
-   :github_url: https://github.com/teemtee/tmt/blob/main/docs/scripts/generate-plugins.py
-
 {% if INCLUDE_TITLE %}
 {% set depth = STORY.name | regex_findall('/') | length - 1 %}
 {% set title_underline = '=~^:-><'[depth] %}
