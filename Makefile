@@ -65,10 +65,8 @@ rpm: tarball ver2spec  ## Build RPMs
 srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
 
-_deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
-	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build
-
-build-deps: _deps tarball ver2spec  ## Install build dependencies
+build-deps: tarball ver2spec  ## Install build dependencies
+	scripts/bootstrap
 	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
@@ -258,7 +256,8 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/1
 ##
 ## Development
 ##
-develop: _deps  ## Install development requirements
+develop: ## Install development requirements
+	scripts/bootstrap
 	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah hadolint /usr/bin/python3.9
 
 # Git vim tags and cleanup
