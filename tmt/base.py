@@ -36,6 +36,7 @@ from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.base
 import tmt.checks
+import tmt.config
 import tmt.convert
 import tmt.export
 import tmt.frameworks
@@ -3387,7 +3388,7 @@ class Run(tmt.utils.Common):
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
-        self.config = tmt.utils.Config()
+        self.config = tmt.config.Config()
 
         if cli_invocation is not None:
             if cli_invocation.options.get('last'):

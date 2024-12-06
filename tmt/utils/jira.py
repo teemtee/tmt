@@ -5,15 +5,14 @@ from typing import TYPE_CHECKING, Any, Optional, Union, cast
 import fmf.utils
 
 import tmt.base
+import tmt.config
 import tmt.log
 import tmt.utils
+from tmt.config.models.link import IssueTracker, IssueTrackerType
 from tmt.plugins import ModuleImporter
 
 if TYPE_CHECKING:
     import jira
-
-# Config section item for issue trackers
-IssueTracker = dict[Any, Any]
 
 # Test, plan or story
 TmtObject = Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']
@@ -55,16 +54,9 @@ class JiraInstance:
     def __init__(self, issue_tracker: IssueTracker, logger: tmt.log.Logger):
         """ Initialize Jira instance from the issue tracker config """
 
-        def assert_string(key: str) -> str:
-            value = issue_tracker.get(key)
-            if not isinstance(value, str):
-                raise tmt.utils.GeneralError(
-                    f"Invalid '{key}' value '{value}' in issue tracker config.")
-            return value
-
-        self.url: str = assert_string("url")
-        self.tmt_web_url: str = assert_string("tmt-web-url")
-        self.token: str = assert_string("token")
+        self.url = str(issue_tracker.url)
+        self.tmt_web_url = str(issue_tracker.tmt_web_url)
+        self.token = issue_tracker.token
 
         self.logger = logger
         jira_module = import_jira(logger)
@@ -84,44 +76,23 @@ class JiraInstance:
 
         # Check for the 'link' config section, exit if config missing
         try:
-            config_tree = tmt.utils.Config().fmf_tree
-            link_config = cast(Optional[fmf.Tree], config_tree.find('/link'))
+            link_config = tmt.config.Config().link
+        except tmt.utils.SpecificationError:
+            raise
         except tmt.utils.MetadataError:
             return None
         if not link_config:
             return None
 
-        # Check the list of configured issues trackers
-        issue_trackers: Any = link_config.data.get('issue-tracker')
-
-        if not issue_trackers:
-            raise tmt.utils.GeneralError(
-                "No 'issue-tracker' section found in the 'link' config.")
-
-        if not isinstance(issue_trackers, list):
-            raise tmt.utils.GeneralError(
-                "The 'issue-tracker' section should be a 'list'.")
-
         # Find Jira instance matching the issue url
-        issue_tracker: Any
-        for issue_tracker in issue_trackers:
-            if not isinstance(issue_tracker, dict):
-                raise tmt.utils.GeneralError(
-                    "Issue tracker config should be a 'dict'.")
-
+        for issue_tracker in link_config.issue_tracker:
             # Tracker type must match
-            issue_tracker_type: Any = issue_tracker.get("type")
-            if not isinstance(issue_tracker_type, str) or issue_tracker_type != "jira":
+            if issue_tracker.type != IssueTrackerType.jira:
                 continue
 
             # Issue url must match
-            jira_server_url: Any = issue_tracker.get("url")
-            if not isinstance(jira_server_url, str):
-                raise tmt.utils.GeneralError(
-                    "Issue tracker 'url' should be a string.")
-
-            if issue_url.startswith(jira_server_url):
-                return JiraInstance(cast(IssueTracker, issue_tracker), logger=logger)
+            if issue_url.startswith(str(issue_tracker.url)):
+                return JiraInstance(issue_tracker, logger=logger)
 
         return None
 

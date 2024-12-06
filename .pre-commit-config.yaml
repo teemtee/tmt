@@ -38,6 +38,7 @@ repos:
           - "jinja2>=2.11.3"         # 3.1.2 / 3.1.2
           - "packaging>=20"          # 20 seems to be available with RHEL8
           - "pint>=0.16.1"           # 0.16.1
+          - "pydantic>=1.10.14"
           - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
@@ -86,6 +87,7 @@ repos:
           - "jinja2>=2.11.3"         # 3.1.2 / 3.1.2
           - "packaging>=20"          # 20 seems to be available with RHEL8
           - "pint>=0.16.1"           # 0.16.1 / 0.19.x  TODO: Pint 0.20 requires larger changes to tmt.hardware
+          - "pydantic>=1.10.14"
           - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
@@ -158,6 +160,7 @@ repos:
         - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
         - "packaging>=20"          # 20 seems to be available with RHEL8
         - "pint<0.20"
+        - "pydantic>=1.10.14"
         - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
         # Help installation by reducing the set of inspected botocore release.
         # There is *a lot* of them, and hatch might fetch many of them.

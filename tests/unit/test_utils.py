@@ -17,6 +17,7 @@ import fmf
 import pytest
 
 import tmt
+import tmt.config
 import tmt.log
 import tmt.plugins
 import tmt.steps.discover
@@ -202,56 +203,6 @@ def test_inject_auth_git_url(monkeypatch) -> None:
 
     with pytest.raises(tmt.utils.GitUrlError):
         inject_auth_git_url('https://example.com/broken/something')
-
-
-def test_config():
-    """ Config smoke test """
-    run = Path('/var/tmp/tmt/test')
-    config1 = tmt.utils.Config()
-    config1.last_run = run
-    config2 = tmt.utils.Config()
-    assert config2.last_run.resolve() == run.resolve()
-
-
-def test_last_run_race(tmppath: Path, monkeypatch):
-    """ Race in last run symlink shouldn't be fatal """
-    config_path = tmppath / 'config'
-    config_path.mkdir()
-    monkeypatch.setattr(tmt.utils, 'effective_config_dir', MagicMock(return_value=config_path))
-    mock_logger = unittest.mock.MagicMock()
-    monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
-    config = tmt.utils.Config()
-    results = queue.Queue()
-    threads = []
-
-    def create_last_run(config, counter):
-        try:
-            last_run_path = tmppath / f"run-{counter}"
-            last_run_path.mkdir()
-            val = config.last_run = last_run_path
-            results.put(val)
-        except Exception as err:
-            results.put(err)
-
-    total = 20
-    for i in range(total):
-        threads.append(threading.Thread(target=create_last_run, args=(config, i)))
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    all_good = True
-    for _ in threads:
-        value = results.get()
-        if isinstance(value, Exception):
-            # Print exception for logging
-            print(value)
-            all_good = False
-    assert all_good
-    # Getting into race is not certain, do not assert
-    # assert mock_logger.called
-    assert config.last_run, "Some run was stored as last run"
 
 
 def test_workdir_env_var(tmppath: Path, monkeypatch, root_logger):
@@ -1737,9 +1688,9 @@ class TestJiraLink(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.utils.Config')
+    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
     def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
-        mock_config_tree.return_value.fmf_tree = self.config_tree
+        mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],
@@ -1752,9 +1703,9 @@ class TestJiraLink(unittest.TestCase):
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.utils.Config')
+    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
     def test_jira_link_test_plan_story(self, mock_config_tree, mock_add_simple_link) -> None:
-        mock_config_tree.return_value.fmf_tree = self.config_tree
+        mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         plan = tmt.Tree(logger=self.logger, path=self.tmp).plans(names=['tmp'])[0]
         story = tmt.Tree(logger=self.logger, path=self.tmp).stories(names=['tmp'])[0]
@@ -1778,9 +1729,9 @@ class TestJiraLink(unittest.TestCase):
         assert '&story-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
     @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.utils.Config')
+    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
     def test_create_link_relation(self, mock_config_tree, mock_add_simple_link) -> None:
-        mock_config_tree.return_value.fmf_tree = self.config_tree
+        mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],

@@ -12,6 +12,7 @@ import fmf.utils
 
 import tmt
 import tmt.base
+import tmt.config
 import tmt.log
 import tmt.steps
 import tmt.steps.execute
@@ -164,7 +165,7 @@ class Try(tmt.utils.Common):
         # plans starting with the default user plan name (there might be
         # more than just one).
         try:
-            config_tree = tmt.utils.Config().fmf_tree
+            config_tree = tmt.config.Config().fmf_tree
             plan_name = re.escape(USER_PLAN_NAME)
             # cast: once fmf is properly annotated, cast() would not be needed.
             # pyright isn't able to infer the type.
