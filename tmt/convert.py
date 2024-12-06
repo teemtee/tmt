@@ -626,8 +626,8 @@ def filter_common_data(
                 if key in histogram:
                     histogram[key] += 1
 
-    for key in histogram:
-        if key in common_candidates and histogram[key] < len(individual_data):
+    for key, count in histogram.items():
+        if key in common_candidates and count < len(individual_data):
             common_candidates.pop(key)
 
     # Add common data to main.fmf
@@ -842,10 +842,10 @@ def read_polarion_case(
     if isinstance(data, list):
         for testcase in data:
             if (
-                    polarion_case.tcmscaseid and
-                    polarion_case.tcmscaseid in testcase.get('extra-nitrate', '') or
-                    testcase.get('extra-task') and
-                    testcase.get('extra-task') in polarion_case.description):
+                    (polarion_case.tcmscaseid and
+                     polarion_case.tcmscaseid in testcase.get('extra-nitrate', '')) or
+                    (testcase.get('extra-task') and
+                     testcase.get('extra-task') in polarion_case.description)):
                 current_data = testcase
                 break
         else:

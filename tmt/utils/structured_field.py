@@ -324,12 +324,12 @@ class StructuredField:
     def _write_section(self, dictionary: dict[str, SFSectionValueType]) -> str:
         """ Convert dictionary into a config section format """
         section = ""
-        for key in dictionary:
-            if isinstance(dictionary[key], list):
-                for value in dictionary[key]:
-                    section += f"{key} = {value}\n"
+        for key, value in dictionary.items():
+            if isinstance(value, list):
+                for item in value:
+                    section += f"{key} = {item}\n"
             else:
-                section += f"{key} = {dictionary[key]}\n"
+                section += f"{key} = {value}\n"
         return section
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
