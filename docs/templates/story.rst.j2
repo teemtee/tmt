@@ -129,7 +129,9 @@
 {#
     Explicit URL for "Edit on GitHub" links.
 #}
-{% set github_url = 'https://github.com/teemtee/tmt/blob/main/docs/scripts/generate-plugins.py' %}
+.. meta::
+
+   :github_url: https://github.com/teemtee/tmt/blob/main/docs/scripts/generate-plugins.py
 
 {% if INCLUDE_TITLE %}
 {% set depth = STORY.name | regex_findall('/') | length - 1 %}
