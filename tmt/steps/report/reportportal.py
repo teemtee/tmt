@@ -12,7 +12,7 @@ import tmt.log
 import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
-from tmt.utils import field, format_timestamp, suppress_warning, yaml_to_dict
+from tmt.utils import ActionType, catch_warnings, field, format_timestamp, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -772,11 +772,13 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         self.check_options()
 
         # If SSL verification is disabled, do not print warnings with urllib3
-        suppress_category = None
+        warning_filter_action: ActionType = 'default'
         if not self.data.ssl_verify:
-            suppress_category = urllib3.exceptions.InsecureRequestWarning
+            warning_filter_action = 'ignore'
             self.warn("SSL verification is disabled for all requests being made to ReportPortal "
                       f"instance ({self.data.url}).")
 
-        with suppress_warning(suppress_category):
+        with catch_warnings(
+                action=warning_filter_action,
+                category=urllib3.exceptions.InsecureRequestWarning):
             self.execute_rp_import()
