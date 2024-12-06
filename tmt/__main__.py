@@ -18,7 +18,9 @@ def run_cli() -> None:
         # Import CLI commands.
         # TODO: some kind of `import tmt.cli.*` would be nice
         import tmt.cli._root
+        import tmt.cli._init
         import tmt.cli.status
+        import tmt.cli._try
 
         tmt.cli._root.main()
 
