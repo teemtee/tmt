@@ -139,6 +139,14 @@ class Apt(tmt.package_managers.PackageManager):
 
         return extra_options
 
+    def refresh_metadata(self) -> CommandOutput:
+        script = ShellScript(
+            f'{self.command.to_script()} update')
+
+        return self.guest.execute(script, env=Environment({
+            'DEBIAN_FRONTEND': EnvVarValue('noninteractive')
+            }))
+
     def install(
             self,
             *installables: Installable,
