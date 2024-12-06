@@ -26,12 +26,6 @@ STEPS = discover provision prepare execute finish report
 # A list of `plugins/*.rst` files to generate
 PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/test-checks.rst
 
-# A source of logo picture for Sphinx docs favicon
-LOGO_SRC = https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-small.png
-
-# Local filepath to fetched logo
-LOGO_DST = _static/tmt-small.png
-
 .DEFAULT_GOAL := help
 
 .PHONY: help \
@@ -45,7 +39,7 @@ LOGO_DST = _static/tmt-small.png
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -71,11 +65,6 @@ endef
 define plugins-checks-dependencies =
 $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/checks/*.py
 endef
-
-# We can ignore the error: later, during the build, if the logo is
-# missing, Sphinx will complain.
-$(LOGO_DST):
-	-curl -f $(LOGO_SRC) -o $(LOGO_DST)
 
 # Generate plugin documentation sources for a given step
 define build-plugins =
@@ -136,7 +125,7 @@ generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentatio
 generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS)
 
 ##
 ## Help!
