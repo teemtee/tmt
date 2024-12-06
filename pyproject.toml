@@ -235,6 +235,11 @@ module = [
     ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# Workaround for https://github.com/python/mypy/issues/12664
+module = "ruamel.*"
+cache_dir = "/dev/null"
+
 [tool.pyright]
 include = [
     "tmt/**/*.py",
