@@ -116,10 +116,10 @@ plugins/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
                           $(shell find $(REPODIR)/spec/hardware -name '*.fmf')
 	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
 
-runner-guest-compatibility-matrix.rst: $(SCRIPTSDIR)/generate-runner-guest-matrix.py \
-                                       $(TEMPLATESDIR)/runner-guest-compatibility-matrix.rst.j2 \
-                                       $(DOCSDIR)/runner-guest-compatibility.yaml
-	$(SCRIPTSDIR)/generate-runner-guest-matrix.py $(TEMPLATESDIR)/runner-guest-compatibility-matrix.rst.j2 $(DOCSDIR)/runner-guest-compatibility.yaml $@
+guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-test-runner-guest-matrix.py \
+                                                      $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
+                                                      $(DOCSDIR)/test-runner-guest-compatibility.yaml
+	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
 
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
                $(TEMPLATESDIR)/lint-checks.rst.j2 \
@@ -138,7 +138,7 @@ generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate docume
 
 generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requirement support matrix
 
-generate-runner-guest-matrix: runner-guest-compatibility-matrix.rst  ## Generate runner vs. guest compatibility matrix
+generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.rst  ## Generate runner vs. guest compatibility matrix
 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
@@ -146,7 +146,7 @@ generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentatio
 generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst runner-guest-compatibility-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS) $(LOGO_DST)
 
 ##
 ## Help!

@@ -26,7 +26,6 @@ Table of Contents
 .. toctree::
     :maxdepth: 2
 
-    Runner vs guest compatibility matrix <runner-guest-compatibility-matrix>
     Overview <overview>
     Guide <guide>
     Specification <spec>

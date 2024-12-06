@@ -11,7 +11,7 @@ docs/plugins/provision.rst
 docs/plugins/report.rst
 docs/plugins/test-checks.rst
 docs/plugins/hardware-matrix.rst
-docs/runner-guest-compatibility-matrix.rst
+docs/guide/test-runner-guest-compatibility-matrix.inc.rst
 docs/_build
 docs/spec
 docs/stories

@@ -62,3 +62,5 @@ __ https://docs.testing-farm.io/Testing%20Farm/0.1/cli.html
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/onboarding.html
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_composes
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/test-runner.html#_supported_ansible_collections
+
+.. include:: guide/test-runner-guest-compatibility-matrix.inc.rst
