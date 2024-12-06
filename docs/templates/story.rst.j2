@@ -123,7 +123,6 @@
 * {{ printable_relation(link) }} :ref:`{{ matched.group(1) }}{# {% if matched.group(2) %}:{{ matched.group(2).replace('-', ' ') }}{% endif %} #}`
 {% endmacro %}
 
-
 {% if INCLUDE_TITLE %}
 {% set depth = STORY.name | regex_findall('/') | length - 1 %}
 {% set title_underline = '=~^:-><'[depth] %}
