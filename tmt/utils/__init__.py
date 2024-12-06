@@ -77,9 +77,6 @@ if TYPE_CHECKING:
     from tmt._compat.typing import Self, TypeAlias
     from tmt.hardware import Size
 
-# Handle the thread synchronization for the `suppress_warning(...)` context manager
-_suppress_warning_lock = RLock()
-
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
     """
@@ -6286,29 +6283,31 @@ def is_url(url: str) -> bool:
     return bool(parsed.scheme and parsed.netloc)
 
 
-@contextlib.contextmanager
-def suppress_warning(category: Optional[type[Warning]]) -> Iterator[None]:
-    """
-    Optionally disable the given warning.
+# Handle the thread synchronization for the `catch_warnings(...)` context manager
+_catch_warning_lock = RLock()
+ActionType = Literal['default', 'error', 'ignore', 'always', 'all', 'module', 'once']
 
-    Using this context manager you can suppress a warning. This warning gets re-enabled with an
-    exit from this context manager.
+
+@contextlib.contextmanager
+def catch_warnings(
+        action: ActionType,
+        category: type[Warning] = Warning) -> Iterator[None]:
+    """
+    Optionally catch the given warning category.
+
+    Using this context manager you can catch/suppress given warnings category. These warnings gets
+    re-enabled/reset with an exit from this context manager.
+
+    This function uses a reentrant lock for thread synchronization to be a thread-safe. That's why
+    it's wrapping :py:meth:`warnings.catch_warnings` instead of using it directly.
 
     The example can be suppressing of the urllib insecure request warning:
 
     .. code-block:: python
 
-        with suppress_warning(urllib3.exceptions.InsecureRequestWarning):
+        with catch_warnings('ignore', urllib3.exceptions.InsecureRequestWarning):
             ...
-
     """
-    if category is not None:
-        with _suppress_warning_lock:
-            try:
-                warnings.simplefilter('ignore', category)
-                yield
-            finally:
-                # Reset the warning to its default for a specific category
-                warnings.simplefilter('default', category)
-    else:
+    with _catch_warning_lock, warnings.catch_warnings():
+        warnings.simplefilter(action=action, category=category)
         yield
