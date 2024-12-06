@@ -39,13 +39,13 @@ LOGO_DST = _static/tmt-small.png
         generate-plugins \
         $(PLUGIN_TARGETS) \
         generate-stories \
-        generate-template-filters \
+        generate-template-extensions \
         generate-autodocs clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-lint-checks generate-template-extensions generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -82,10 +82,10 @@ define build-plugins =
 $(SCRIPTSDIR)/generate-plugins.py $(call plugins-to-step,$@) $(PLUGINS_TEMPLATE) $@
 endef
 
-code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py \
-                           $(TEMPLATESDIR)/template-filters.rst.j2 \
-                           $(TMTDIR)/utils/templates.py
-	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
+code/template-extensions.rst: $(SCRIPTSDIR)/generate-template-extensions.py \
+                              $(TEMPLATESDIR)/template-extensions.rst.j2 \
+                              $(TMTDIR)/utils/templates.py
+	$(SCRIPTSDIR)/generate-template-extensions.py $(TEMPLATESDIR)/template-extensions.rst.j2 $@
 
 plugins/discover.rst: $(call plugins-dependencies)
 	$(call build-plugins)
@@ -133,10 +133,10 @@ generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requiremen
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
+generate-template-extensions: code/template-extensions.rst  ## Generate documentation sources for Jinja2 template extensions
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-extensions.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
 
 ##
 ## Help!
