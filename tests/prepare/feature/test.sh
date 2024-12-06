@@ -17,8 +17,7 @@ rlJournalStart
     # EPEL
     for image in $images; do
         if rlIsFedora ">=42" && (is_centos_7 "$image" || is_ubi_8 "$image"); then
-                rlLogInfo "Skipping because Ansible shipped with Fedora does not support Python 3.6"
-            rlPhaseEnd
+            rlLogInfo "Skipping because Ansible shipped with Fedora does not support Python 3.6"
 
             continue
         fi
