@@ -1,0 +1,52 @@
+---
+
+# A list of known, recognized environments for runners and guests
+environments:
+  - CentOS 7
+  - CentOS Stream 8
+  - CentOS Stream 9
+  - CentOS Stream 10
+  - Fedora 39
+  - Fedora 40
+  - Fedora 41
+  - Fedora Rawhide
+  - Alpine 3
+  - Debian 12
+  - Ubuntu 22
+
+#
+# Keys and list entries below are treated as regular expressions tested
+# against a "{runner} + {guest}" string.
+#
+
+# A list of patterns matching unsupported runner/guest combinations.
+unsupported: []
+
+# A list of patterns matching runner/guest combinations where the state
+# of support is unknown.
+unknown:
+  # The following should work as runners, with tmt installed from PyPI,
+  # but we do not know for sure.
+  - 'Alpine .*'
+  - 'Ubuntu .*'
+  - 'Debian .*'
+
+notes:
+  - pattern: 'Fedora Rawhide \+ (CentOS 7|Centos Stream 8)'
+    title: Fedora Rawhide and Ansible 2.17+
+    text: >
+      The :ref:`prepare/ansible</plugins/prepare/ansible>`,
+      :ref:`prepare/feature</plugins/prepare/feature>`
+      and :ref:`finish/ansible</plugins/finish/ansible>` plugins will
+      not work out of the box. See their documentation for details and
+      possible workarounds.
+
+  - pattern: '.*? \+ (Alpine|Debian|Ubuntu)'
+    title: Beakerlib not packaged for Linux distributions outside of Fedora family
+    text: >
+      Tests using the :ref:`beakerlib</spec/tests/framework>` framework
+      will not work because it requires ``beakerlib`` package that can
+      be installed from repositories available on the guest. At this
+      moment, ``beakerlib`` is available as RPM packages, and it is not
+      installable by a package manager beyond the Fedora family (Fedora,
+      CentOS, CentOS Stream, RHEL).

@@ -8,6 +8,9 @@ REPODIR = ..
 # Path to tmt source directory
 TMTDIR = $(REPODIR)/tmt
 
+# Path to docs source directory
+DOCSDIR = $(REPODIR)/docs
+
 # Path to directory with scripts generating documentation sources
 SCRIPTSDIR = scripts
 
@@ -45,7 +48,7 @@ LOGO_DST = _static/tmt-small.png
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -113,6 +116,11 @@ plugins/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
                           $(shell find $(REPODIR)/spec/hardware -name '*.fmf')
 	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
 
+guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-test-runner-guest-matrix.py \
+                                                      $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
+                                                      $(DOCSDIR)/test-runner-guest-compatibility.yaml
+	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
+
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
                $(TEMPLATESDIR)/lint-checks.rst.j2 \
                $(TMTDIR)/base.py
@@ -130,13 +138,15 @@ generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate docume
 
 generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requirement support matrix
 
+generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.rst  ## Generate runner vs. guest compatibility matrix
+
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
 generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS) $(LOGO_DST)
 
 ##
 ## Help!
