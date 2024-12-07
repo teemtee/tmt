@@ -6285,7 +6285,7 @@ def is_url(url: str) -> bool:
 
 # Handle the thread synchronization for the `catch_warnings(...)` context manager
 _catch_warning_lock = RLock()
-ActionType = Literal['default', 'error', 'ignore', 'always', 'all', 'module', 'once']
+ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
 
 
 @contextlib.contextmanager
