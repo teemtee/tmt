@@ -6289,7 +6289,7 @@ ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
 
 
 @contextlib.contextmanager
-def catch_warnings(
+def catch_warnings_safe(
         action: ActionType,
         category: type[Warning] = Warning) -> Iterator[None]:
     """
@@ -6305,7 +6305,7 @@ def catch_warnings(
 
     .. code-block:: python
 
-        with catch_warnings('ignore', urllib3.exceptions.InsecureRequestWarning):
+        with catch_warnings_safe('ignore', urllib3.exceptions.InsecureRequestWarning):
             ...
     """
     with _catch_warning_lock, warnings.catch_warnings():

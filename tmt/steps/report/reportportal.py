@@ -12,7 +12,7 @@ import tmt.log
 import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
-from tmt.utils import ActionType, catch_warnings, field, format_timestamp, yaml_to_dict
+from tmt.utils import ActionType, catch_warnings_safe, field, format_timestamp, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -778,7 +778,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("SSL verification is disabled for all requests being made to ReportPortal "
                       f"instance ({self.data.url}).")
 
-        with catch_warnings(
+        with catch_warnings_safe(
                 action=warning_filter_action,
                 category=urllib3.exceptions.InsecureRequestWarning):
             self.execute_rp_import()
