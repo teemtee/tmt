@@ -24,11 +24,12 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
+import warnings
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from math import ceil
 from re import Pattern
-from threading import Thread
+from threading import RLock, Thread
 from types import ModuleType
 from typing import (
     IO,
@@ -6280,3 +6281,33 @@ def is_url(url: str) -> bool:
     """ Check if the given string is a valid URL """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
+
+
+# Handle the thread synchronization for the `catch_warnings(...)` context manager
+_catch_warning_lock = RLock()
+ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
+
+
+@contextlib.contextmanager
+def catch_warnings_safe(
+        action: ActionType,
+        category: type[Warning] = Warning) -> Iterator[None]:
+    """
+    Optionally catch the given warning category.
+
+    Using this context manager you can catch/suppress given warnings category. These warnings gets
+    re-enabled/reset with an exit from this context manager.
+
+    This function uses a reentrant lock for thread synchronization to be a thread-safe. That's why
+    it's wrapping :py:meth:`warnings.catch_warnings` instead of using it directly.
+
+    The example can be suppressing of the urllib insecure request warning:
+
+    .. code-block:: python
+
+        with catch_warnings_safe('ignore', urllib3.exceptions.InsecureRequestWarning):
+            ...
+    """
+    with _catch_warning_lock, warnings.catch_warnings():
+        warnings.simplefilter(action=action, category=category)
+        yield
