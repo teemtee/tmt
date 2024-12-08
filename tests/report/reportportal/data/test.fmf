@@ -1,11 +1,13 @@
 /bad:
     summary: Failing test
-    contact: tester@redhat.com
+    contact:
+      - tester1@redhat.com
+      - tester2@redhat.com
     test: echo "Something bad happened!"; false
 
 /good:
     summary: Passing test
-    contact: tester_2@redhat.com
+    contact: tester3@redhat.com
     test: echo "Everything's fine!"
     id: 63f26fb7-69c4-4781-a06e-098e2b58129f
 
