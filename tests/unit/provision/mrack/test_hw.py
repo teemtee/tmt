@@ -3,7 +3,7 @@ import textwrap
 import pytest
 
 import tmt.utils
-from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS
+from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS, OR_HARDWARE_REQUIREMENTS
 from tmt.hardware import (
     Hardware,
     Operator,
@@ -929,4 +929,47 @@ def test_system_model_name(root_logger: Logger) -> None:
                     }
                 }
             }
+        }
+
+
+def test_or_constraint(root_logger: Logger) -> None:
+    hw = Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(OR_HARDWARE_REQUIREMENTS)))
+    assert hw.constraint is not None
+
+    result = constraint_to_beaker_filter(hw.constraint, root_logger)
+    assert result.to_mrack() == {
+        'or': [
+            {
+                'hostname': {
+                    '_op': '==',
+                    '_value': 'dummy1.redhat.com',
+                    },
+                },
+            {
+                'or': [
+                    {
+                        'hostname': {
+                            '_op': '==',
+                            '_value': 'dummy2.redhat.com',
+                            },
+                        },
+                    {
+                        'or': [
+                            {
+                                'hostname': {
+                                    '_op': '==',
+                                    '_value': 'dummy3.redhat.com',
+                                    },
+                                },
+                            {
+                                'hostname': {
+                                    '_op': '==',
+                                    '_value': 'dummy4.redhat.com',
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
         }
