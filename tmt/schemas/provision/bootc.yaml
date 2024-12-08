@@ -67,5 +67,12 @@ properties:
   image-builder:
     type: string
 
+  rootfs:
+    type: string
+    enum:
+      - ext4
+      - xfs
+      - btrfs
+
 required:
   - how
