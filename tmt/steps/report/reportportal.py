@@ -618,7 +618,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     if not test_name:
                         test_name = test.name
                     if test.contact:
-                        item_attributes.append({"key": "contact", "value": test.contact[0]})
+                        item_attributes += [
+                            {'key': 'contact', 'value': contact} for contact in test.contact]
                     if test.summary:
                         test_description = test.summary
                     if test.web_link():
