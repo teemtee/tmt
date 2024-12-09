@@ -131,9 +131,9 @@ SSH_MASTER_SOCKET_LENGTH_LIMIT = 104 - 20
 #: A minimal number of characters of guest ID hash used by
 #: :py:func:`_socket_path_hash` when looking for a free SSH socket
 #: filename.
-SSH_MASTER_SOCKET_MIN_HASH_LENGTH = 8
+SSH_MASTER_SOCKET_MIN_HASH_LENGTH = 4
 
-#: A minimal number of characters of guest ID hash used by
+#: A maximal number of characters of guest ID hash used by
 #: :py:func:`_socket_path_hash` when looking for a free SSH socket
 #: filename.
 SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
