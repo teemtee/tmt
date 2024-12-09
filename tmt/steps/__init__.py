@@ -1958,7 +1958,22 @@ class Login(Action):
             # Attempt to push the workdir to the guest
             try:
                 guest.push()
-                cwd = cwd or self.parent.plan.worktree
+                if not cwd:
+                    # Use path of the last executed test as the default
+                    # current working directory
+                    worktree = self.parent.plan.worktree
+                    tests = self.parent.plan.discover.tests()
+                    test_path = tests[-1].path if tests else None
+                    if test_path is None or worktree is None:
+                        cwd = worktree
+                    else:
+                        try:
+                            cwd = worktree.parent / "discover" / test_path.unrooted()
+                            guest.execute(tmt.utils.ShellScript("/bin/true"),
+                                          interactive=True, cwd=cwd, env=env)
+                        except RunError:
+                            cwd = worktree
+
             except tmt.utils.GeneralError:
                 self.warn("Failed to push workdir to the guest.")
                 cwd = None

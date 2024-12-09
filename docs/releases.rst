@@ -24,6 +24,12 @@ Documentation pages now use the `new tmt logo`__ designed by Maria Leonova.
 
 __ https://github.com/teemtee/docs/tree/main/logo
 
+When the ``login`` command is used to enter an interactive session
+on the guest, for example during the ``tmt try`` command, the
+current working directory is set to the path of the last
+executed test, so that users can easily investigate the test
+code there and experiment with it directly on the guest.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
