@@ -446,13 +446,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / TEST_OUTPUT_FILENAME,
             stdout or '', mode='a', level=3)
 
-        # Make sure that all test and plan data are accessible &
-        # readable when user is not root (this is needed when regular
-        # user is using 'become: true' to execute tests under root)
-        if invocation.is_guest_healthy and guest.become and not guest.facts.is_superuser:
-            guest.execute(ShellScript(
-                f"sudo chmod -R ugo+rX '{invocation.path}' '{self.step.plan.data_directory}'"))
-
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
         if invocation.is_guest_healthy:
