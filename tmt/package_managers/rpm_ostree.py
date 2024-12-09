@@ -100,6 +100,12 @@ class RpmOstree(tmt.package_managers.PackageManager):
 
         return extra_options
 
+    def refresh_metadata(self) -> CommandOutput:
+        script = ShellScript(
+            f'{self.command.to_script()} upgrade --check')
+
+        return self.guest.execute(script)
+
     def install(
             self,
             *installables: Installable,
