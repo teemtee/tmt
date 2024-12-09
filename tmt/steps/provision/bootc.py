@@ -135,6 +135,15 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
              building the bootc disk image.
              """)
 
+    rootfs: str = field(
+        default="xfs",
+        option=('--rootfs'),
+        choices=['ext4', 'xfs', 'btrfs'],
+        help="""
+             Select root filesystem type. Overrides the default from the source
+             container.
+             """)
+
 
 @tmt.steps.provides_method('bootc')
 class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
@@ -148,6 +157,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         provision:
             how: bootc
             container-image: quay.io/centos-bootc/centos-bootc:stream9
+            rootfs: xfs
 
     Here's a config example using a Containerfile:
 
@@ -158,6 +168,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             container-file: "./my-custom-image.containerfile"
             container-file-workdir: .
             image-builder: quay.io/centos-bootc/bootc-image-builder:stream9
+            rootfs: ext4
             disk: 100
 
     Another config example using an image that already includes tmt
@@ -169,6 +180,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             how: bootc
             add-tmt-dependencies: false
             container-image: localhost/my-image-with-deps
+            rootfs: btrfs
 
     This plugin is an extension of the virtual.testcloud plugin.
     Essentially, it takes a container image as input, builds a
@@ -252,7 +264,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             env=PODMAN_ENV if self._rootless else None)
         return image_tag
 
-    def _build_bootc_disk(self, containerimage: str, image_builder: str) -> None:
+    def _build_bootc_disk(self, containerimage: str, image_builder: str, rootfs: str) -> None:
         """ Build the bootc disk from a container image using bootc image builder """
         self._logger.debug("Build bootc disk image.")
 
@@ -271,6 +283,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "build",
             "--type",
             "qcow2",
+            "--rootfs",
+            rootfs,
             "--local",
             containerimage).run(
             cwd=self.workdir,
@@ -326,7 +340,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             containerimage = data.container_image
             if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(data.container_image)
-            self._build_bootc_disk(containerimage, data.image_builder)
+            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Build image according to the container file
         elif data.container_file is not None:
@@ -334,7 +348,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
                 data.container_file, data.container_file_workdir)
             if data.add_tmt_dependencies:
                 containerimage = self._build_derived_image(containerimage)
-            self._build_bootc_disk(containerimage, data.image_builder)
+            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Image of file have to provided
         else:
