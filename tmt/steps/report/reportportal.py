@@ -1,17 +1,18 @@
 import dataclasses
+import datetime
 import os
 import re
-from time import time
 from typing import TYPE_CHECKING, Any, Optional, overload
 
 import requests
+import urllib3
 
 import tmt.hardware
 import tmt.log
 import tmt.steps.report
 import tmt.utils
 from tmt.result import ResultOutcome
-from tmt.utils import field, yaml_to_dict
+from tmt.utils import ActionType, catch_warnings_safe, field, format_timestamp, yaml_to_dict
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -78,7 +79,7 @@ def _filter_log_per_size(data: str,
                   f"exceeds tmt reportportal plugin limit of {settings.size}. "
                   f"The limit is controlled with {option} plugin option or "
                   f"{variable} environment variable.\n\n")
-        return f"{header}{data[:settings.size.to('bytes').magnitude]}"
+        return f"{header}{data[:int(settings.size.to('bytes').magnitude)]}"
     return data
 
 
@@ -238,6 +239,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
                                     os.getenv('TMT_REPORT_ARTIFACTS_URL')),
         help="Link to test artifacts provided for report plugins.")
 
+    ssl_verify: bool = field(
+        default=True,
+        option=('--ssl-verify / --no-ssl-verify'),
+        is_flag=True,
+        show_default=True,
+        help="Enable/disable the SSL verification for communication with ReportPortal.")
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -309,10 +317,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     TMT_TO_RP_RESULT_STATUS = {
         ResultOutcome.PASS: "PASSED",
         ResultOutcome.FAIL: "FAILED",
-        ResultOutcome.ERROR: "FAILED",
+        ResultOutcome.INFO: "SKIPPED",
         ResultOutcome.WARN: "FAILED",
-        ResultOutcome.INFO: "SKIPPED"
-        }
+        ResultOutcome.ERROR: "FAILED",
+        ResultOutcome.SKIP: "SKIPPED"}
 
     def handle_response(self, response: requests.Response) -> None:
         """ Check the endpoint response and raise an exception if needed """
@@ -342,15 +350,19 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.warn("Unexpected option combination: '--launch-rerun' "
                       "may cause an unexpected behaviour with launch-per-plan structure")
 
-    def time(self) -> str:
-        return str(int(time() * 1000))
+    @property
+    def datetime(self) -> str:
+        # Use the same format of timestramp as tmt does
+        return format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
-    def get_headers(self) -> dict[str, str]:
-        return {"Authorization": "bearer " + str(self.data.token),
-                "accept": "*/*",
+    @property
+    def headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.data.token}",
+                "Accept": "*/*",
                 "Content-Type": "application/json"}
 
-    def get_url(self) -> str:
+    @property
+    def url(self) -> str:
         return f"{self.data.url}/api/{self.data.api_version}/{self.data.project}"
 
     def construct_launch_attributes(self, suite_per_plan: bool,
@@ -396,21 +408,21 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return str(dt_locator)
 
     def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
-        response = session.get(url=f"{self.get_url()}/{path}",
-                               headers=self.get_headers())
+        response = session.get(url=f"{self.url}/{path}",
+                               headers=self.headers)
         self.handle_response(response)
         return response
 
     def rp_api_post(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.post(url=f"{self.get_url()}/{path}",
-                                headers=self.get_headers(),
+        response = session.post(url=f"{self.url}/{path}",
+                                headers=self.headers,
                                 json=json)
         self.handle_response(response)
         return response
 
     def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.put(url=f"{self.get_url()}/{path}",
-                               headers=self.get_headers(),
+        response = session.put(url=f"{self.url}/{path}",
+                               headers=self.headers,
                                json=json)
         self.handle_response(response)
         return response
@@ -424,38 +436,22 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """
-        Report test results to the endpoint
+    def execute_rp_import(self) -> None:
+        """ Execute the import of test, results and subresults into ReportPortal """
+        assert self.step.plan.my_run is not None
 
-        Create a ReportPortal launch and its test items,
-        fill it with all parts needed and report the logs.
-        """
-
-        super().go(logger=logger)
-
-        if not self.data.url:
-            raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
-        self.data.url = self.data.url.rstrip("/")
-
-        if not self.data.project:
-            raise tmt.utils.ReportError("No ReportPortal project provided.")
-
-        if not self.data.token:
-            raise tmt.utils.ReportError("No ReportPortal token provided.")
-
-        if not self.step.plan.my_run:
-            raise tmt.utils.ReportError("No run data available.")
-
-        self.check_options()
-
-        launch_time = self.time()
+        # Use the current datetime as a default, but this is the worst case scenario
+        # and we should use timestamps from results log as much as possible.
+        launch_time = self.datetime
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
         if executed:
-            # launch time should be the earliest start time of all plans
-            launch_time = min([r.start_time or self.time()
+            # Launch time should be the earliest start time of all plans.
+            #
+            # The datetime *strings* are in fact sorted here, but finding the minimum will work,
+            # because the datetime in ISO format is designed to be lexicographically sortable.
+            launch_time = min([r.start_time or self.datetime
                                for r in self.step.plan.execute.results()])
 
         # Create launch, suites (if "--suite_per_plan") and tests;
@@ -515,6 +511,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 503,   # Service Unavailable
                 504,   # Gateway Timeout
                 )) as session:
+
+            session.verify = self.data.ssl_verify
 
             if create_launch:
 
@@ -582,9 +580,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.verbose("uuid", suite_uuid, "yellow", shift=1)
                 self.data.suite_uuid = suite_uuid
 
+            # The first test starts with the launch (at the worst case)
+            test_time = launch_time
+
             for result, test in self.step.plan.execute.results_for_tests(
                     self.step.plan.discover.tests()):
-                test_time = self.time()
                 test_name = None
                 test_description = ''
                 test_link = None
@@ -595,7 +595,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
-                    test_time = result.start_time or self.time()
+
+                    # Use the actual timestamp or reuse the old one if missing
+                    test_time = result.start_time or test_time
+
                     # for guests, save their primary address
                     if result.guest.primary_address:
                         item_attributes.append({
@@ -646,15 +649,20 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                               "type": "step",
                               "testCaseId": test_id,
                               "startTime": test_time})
+
                     item_uuid = yaml_to_dict(response.text).get("id")
                     assert item_uuid is not None
                     self.verbose("uuid", item_uuid, "yellow", shift=1)
                     self.data.test_uuids[serial_number] = item_uuid
                 else:
                     item_uuid = self.data.test_uuids[serial_number]
+
                 # Support for idle tests
                 status = "SKIPPED"
                 if result:
+                    # Shift the timestamp to the end of a test
+                    test_time = result.end_time or test_time
+
                     # For each log
                     for index, log_path in enumerate(result.log):
                         try:
@@ -679,7 +687,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                   "itemUuid": item_uuid,
                                   "launchUuid": launch_uuid,
                                   "level": level,
-                                  "time": result.end_time})
+                                  "time": test_time})
 
                         # Write out failures
                         if index == 0 and status == "FAILED":
@@ -696,9 +704,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                       "itemUuid": item_uuid,
                                       "launchUuid": launch_uuid,
                                       "level": "ERROR",
-                                      "time": result.end_time})
-
-                    test_time = result.end_time or self.time()
+                                      "time": test_time})
 
                 # Finish the test item
                 response = self.rp_api_put(
@@ -710,6 +716,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "status": status,
                         "issue": {
                             "issueType": self.get_defect_type_locator(session, defect_type)}})
+
+                # The launch ends with the last test
                 launch_time = test_time
 
             if create_suite:
@@ -737,3 +745,40 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             assert launch_url is not None
             self.info("url", launch_url, "magenta")
             self.data.launch_url = launch_url
+
+    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Report test results to the endpoint
+
+        Create a ReportPortal launch and its test items,
+        fill it with all parts needed and report the logs.
+        """
+
+        super().go(logger=logger)
+
+        if not self.data.url:
+            raise tmt.utils.ReportError("No ReportPortal endpoint url provided.")
+        self.data.url = self.data.url.rstrip("/")
+
+        if not self.data.project:
+            raise tmt.utils.ReportError("No ReportPortal project provided.")
+
+        if not self.data.token:
+            raise tmt.utils.ReportError("No ReportPortal token provided.")
+
+        if not self.step.plan.my_run:
+            raise tmt.utils.ReportError("No run data available.")
+
+        self.check_options()
+
+        # If SSL verification is disabled, do not print warnings with urllib3
+        warning_filter_action: ActionType = 'default'
+        if not self.data.ssl_verify:
+            warning_filter_action = 'ignore'
+            self.warn("SSL verification is disabled for all requests being made to ReportPortal "
+                      f"instance ({self.data.url}).")
+
+        with catch_warnings_safe(
+                action=warning_filter_action,
+                category=urllib3.exceptions.InsecureRequestWarning):
+            self.execute_rp_import()
