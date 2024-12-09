@@ -149,7 +149,6 @@ jobs:
   - job: koji_build
     trigger: commit
     allowed_pr_authors: ["packit", "all_committers"]
-    allowed_committers: ["packit", "all_committers"]
     dist_git_branches: *all-targets
 
   # Create bodhi updates
