@@ -49,7 +49,7 @@ def find_plugin(name: str) -> 'FeatureClass':
 
     if plugin is None:
         raise tmt.utils.GeneralError(
-            f"Feature plugin '{name}' was not found in feature registry.")
+            f"Feature plugin '{name}' was not found in the feature registry.")
 
     return plugin
 
