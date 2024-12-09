@@ -238,8 +238,6 @@ def run(context: Context, id_: Optional[str], _workdir_root: Optional[str], **kw
     logger.apply_verbosity_options(**kwargs)
 
     workdir_root = Path(_workdir_root) if _workdir_root is not None else None
-    if workdir_root and not workdir_root.exists():
-        raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
