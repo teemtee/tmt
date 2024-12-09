@@ -72,6 +72,15 @@ rlJournalStart
         rlRun "popd"
     rlPhaseEnd
 
+    rlPhaseStartTest "Tests directory after login"
+        rlRun "pushd tests/core/bad"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ../../../test-dir.exp" 0 "Try with container"
+        rlAssertGrep "Let's try /tests/core/bad with /default/plan" $rlRun_LOG
+        rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlAssertGrep "bad-file.txt" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
     rlPhaseStartTest "Three Tests (user plan, verbose)"
         rlRun "pushd tests/core"
         rlRun -s "TMT_CONFIG_DIR=$config ../../verbose.exp" 0 "Try with local"
