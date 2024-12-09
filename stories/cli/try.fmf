@@ -145,7 +145,7 @@ link:
 
         link:
           - implemented-by: /tmt/trying.py
-          - implemented-by: /tmt/steps/prepare/feature/__init__.py
+          - implemented-by: /tmt/steps/prepare/feature/epel.py
 
     /install:
         story:
