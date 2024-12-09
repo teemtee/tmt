@@ -163,11 +163,15 @@ def _socket_path_trivial(
         *,
         socket_dir: Path,
         guest_id: str,
-        limit_size: bool = False,
+        limit_size: bool = True,
         logger: tmt.log.Logger) -> Optional[Path]:
     """ Generate SSH socket path using guest IDs """
 
     socket_path = socket_dir / f'{guest_id}.socket'
+
+    logger.debug(
+        f"Possible SSH master socket path '{socket_path}' (trivial method).",
+        level=4)
 
     if not limit_size:
         return socket_path
@@ -212,6 +216,10 @@ def _socket_path_hash(
 
         socket_path = socket_dir / f'{digest}.socket'
         socket_reservation_path = f'{socket_path}.reservation'
+
+        logger.debug(
+            f"Possible SSH master socket path '{socket_path}' (hash method).",
+            level=4)
 
         if limit_size and len(str(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             return None
@@ -1563,7 +1571,7 @@ class GuestSsh(Guest):
         """ Whether the SSH master socket path we create is acceptable by SSH """
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            self.warn("SSH multiplexing will not be used because the SSH socket path "
+            self.warn("SSH multiplexing will not be used because the SSH master socket path "
                       f"'{self._ssh_master_socket_path}' is too long.")
             return False
 
@@ -1627,7 +1635,9 @@ class GuestSsh(Guest):
             logger=self._logger)
 
         if socket_path is not None:
-            self.debug(f"SSH master socket path will be '{socket_path}'.", level=4)
+            self.debug(
+                f"SSH master socket path will be '{socket_path}' (trivial method).",
+                level=4)
 
             return socket_path
 
@@ -1642,7 +1652,9 @@ class GuestSsh(Guest):
             logger=self._logger)
 
         if socket_path is not None:
-            self.debug(f"SSH master socket path will be '{socket_path}'.", level=4)
+            self.debug(
+                f"SSH master socket path will be '{socket_path}' (hash method).",
+                level=4)
 
             return socket_path
 
@@ -1655,7 +1667,9 @@ class GuestSsh(Guest):
             limit_size=False,
             logger=self._logger)
 
-        self.debug(f"SSH master socket path will be '{socket_path}'.", level=4)
+        self.debug(
+            f"SSH master socket path will be '{socket_path}' (trivial method, no size limit).",
+            level=4)
 
         return socket_path
 
