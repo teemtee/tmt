@@ -37,6 +37,11 @@ the ``end-time``. It should be also ensured that the end time of
 all launch items is the same or higher than the start time of a
 parent item/launch.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through
+``beaker-job-group`` key. The submitting user must be a member of
+the given job group.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
