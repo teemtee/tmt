@@ -24,6 +24,9 @@ Documentation pages now use the `new tmt logo`__ designed by Maria Leonova.
 
 __ https://github.com/teemtee/docs/tree/main/logo
 
+After logging to machine with discovered tests,
+go to the directory of last discovered test.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
