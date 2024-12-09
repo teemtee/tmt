@@ -22,6 +22,7 @@ actions: &base-actions
 targets: &all-targets
   - fedora-all
   - epel-9
+  - epel-10
 
 # Uncomment below line if OpenScanHub scans are failing
 # osh_diff_scan_after_copr_build: false
@@ -85,6 +86,13 @@ jobs:
   # Build pull requests
   - <<: *copr_on_packit
     trigger: pull_request
+    targets:
+        fedora-all: {}
+        epel-9: {}
+        epel-10:
+            additional_repos:
+              - "https://download.copr.fedorainfracloud.org/results/@teemtee/stable/epel-10-x86_64/"
+
     actions:
       <<: *base-actions
       get-current-version:
