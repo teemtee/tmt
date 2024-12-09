@@ -1,12 +1,8 @@
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import tmt.log
-from tmt.steps.provision import Guest
-
-if TYPE_CHECKING:
-    pass
-
 from tmt.steps.prepare.feature import Feature, provides_feature
+from tmt.steps.provision import Guest
 
 
 @provides_feature('epel')
