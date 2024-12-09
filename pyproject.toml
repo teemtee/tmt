@@ -255,7 +255,7 @@ ignore = [
     "tmt/steps/discover/*.py",
     "tmt/steps/execute/*.py",
     "tmt/steps/finish/*.py",
-    "tmt/steps/prepare/feature.py",
+    "tmt/steps/prepare/feature/__init__.py",
     "tmt/steps/prepare/__init__.py",
     "tmt/steps/prepare/install.py",
     "tmt/steps/provision/*.py",

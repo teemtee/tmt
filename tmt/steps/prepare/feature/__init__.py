@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, cast
+from typing import Callable, Optional, cast
 
 import tmt
 import tmt.base
@@ -9,11 +9,49 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
+from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Path, field
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
+
+FeatureClass = type['Feature']
+_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
+
+
+def provides_feature(
+        feature: str) -> Callable[[FeatureClass], FeatureClass]:
+    """
+    A decorator for registering feature plugins.
+    Decorate a feature plugin class to register a feature.
+    """
+
+    def _provides_feature(feature_cls: FeatureClass) -> FeatureClass:
+        _FEATURE_PLUGIN_REGISTRY.register_plugin(
+            plugin_id=feature,
+            plugin=feature_cls,
+            logger=tmt.log.Logger.get_bootstrap_logger())
+
+        return feature_cls
+
+    return _provides_feature
+
+
+def find_plugin(name: str) -> 'FeatureClass':
+    """
+    Find a plugin by its name.
+
+    :raises GeneralError: when the plugin does not exist.
+    """
+
+    plugin = _FEATURE_PLUGIN_REGISTRY.get_plugin(name)
+
+    if plugin is None:
+        raise tmt.utils.GeneralError(
+            f"Feature plugin '{name}' was not found in the feature registry.")
+
+    return plugin
 
 
 class Feature(tmt.utils.Common):
@@ -32,55 +70,42 @@ class Feature(tmt.utils.Common):
 
         self.guest = guest
 
-    def _find_playbook(self, filename: str) -> Optional[Path]:
+    @classmethod
+    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
         if filepath.exists():
             return filepath
 
-        self.warn(f"Cannot find any suitable playbook for '{filename}'.")
+        logger.warning(f"Cannot find any suitable playbook for '{filename}'.", 0)
         return None
 
-
-class ToggleableFeature(Feature):
-    def _run_playbook(self, op: str, playbook_filename: str) -> None:
-        playbook_path = self._find_playbook(playbook_filename)
+    @classmethod
+    def _run_playbook(
+            cls,
+            op: str,
+            playbook_filename: str,
+            guest: Guest,
+            logger: tmt.log.Logger) -> None:
+        playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(
-                f"{op.capitalize()} {self.NAME.upper()} is not supported on this guest.")
+                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest.")
 
-        self.info(f'{op.capitalize()} {self.NAME.upper()}')
-        self.guest.ansible(playbook_path)
-
-    def _enable(self, playbook_filename: str) -> None:
-        self._run_playbook('enable', playbook_filename)
-
-    def _disable(self, playbook_filename: str) -> None:
-        self._run_playbook('disable', playbook_filename)
-
-    def enable(self) -> None:
-        raise NotImplementedError
-
-    def disable(self) -> None:
-        raise NotImplementedError
-
-
-class EPEL(ToggleableFeature):
-    NAME = 'epel'
-
-    def enable(self) -> None:
-        self._enable('epel-enable.yaml')
-
-    def disable(self) -> None:
-        self._disable('epel-disable.yaml')
-
-
-_FEATURES: dict[str, type[Feature]] = {
-    EPEL.NAME: EPEL
-    }
+        logger.info(f'{op.capitalize()} {cls.NAME.upper()}')
+        guest.ansible(playbook_path)
 
 
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
+    # TODO: Change it to be able to create and discover custom fields to feature step data
     epel: Optional[str] = field(
         default=None,
         option='--epel',
@@ -139,23 +164,20 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         if self.opt('dry'):
             return []
 
-        # Enable or disable epel
-        for feature_key, feature_class in _FEATURES.items():
-            value = cast(Optional[str], getattr(self.data, feature_key, None))
+        for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
+            plugin = find_plugin(plugin_id)
+
+            value = cast(Optional[str], getattr(self.data, plugin.NAME, None))
             if value is None:
                 continue
 
-            feature = feature_class(parent=self, guest=guest, logger=logger)
-            if isinstance(feature, ToggleableFeature):
-                value = value.lower()
-                if value == 'enabled':
-                    feature.enable()
-                elif value == 'disabled':
-                    feature.disable()
-                else:
-                    raise tmt.utils.GeneralError(f"Unknown feature setting '{value}'.")
+            value = value.lower()
+            if value == 'enabled':
+                plugin.enable(guest, logger)
+            elif value == 'disabled':
+                plugin.disable(guest, logger)
             else:
-                raise tmt.utils.GeneralError(f"Unsupported feature '{feature_key}'.")
+                raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
 
         return results
 
