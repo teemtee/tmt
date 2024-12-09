@@ -259,11 +259,15 @@ Then you can install either everything or only those you need::
     sudo dnf install tmt-redhat-all
     sudo dnf install tmt-redhat-*
 
-Impatient to try the fresh features as soon as possible? Install
-the latest greatest version from the ``copr`` repository::
+Do you like to check the released bits as soon as they are out?
+Enable the ``stable`` copr repository and install from there::
 
-    sudo dnf copr enable @teemtee/tmt
-    sudo dnf install tmt
+    sudo dnf copr enable @teemtee/stable
+
+Impatient to try the fresh features as soon as they are merged
+into the ``main`` branch? Enable the ``latest`` copr repository::
+
+    sudo dnf copr enable @teemtee/latest
 
 Not sure, just want to try out how it works? Experiment safely and
 easily inside a container::
