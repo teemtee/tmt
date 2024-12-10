@@ -22,5 +22,8 @@ properties:
   name:
     type: string
 
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
 required:
   - how

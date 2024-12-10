@@ -79,6 +79,9 @@ properties:
   include-output-log:
     type: boolean
 
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
 required:
   - how
   - project-id
