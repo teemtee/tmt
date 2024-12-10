@@ -25,11 +25,11 @@ from typing import (
     )
 
 import click
+import fmf.context
 import fmf.utils
 import packaging.version
 from click import echo
 from click.core import ParameterSource
-from fmf.context import CannotDecide, Context
 
 import tmt.export
 import tmt.log
@@ -1614,13 +1614,13 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     @functools.cached_property
     def enabled_by_when(self) -> bool:
         """ Check if the plugin is enabled by 'when' keyword """
-        fmf_context = Context(**self.step.plan._fmf_context)
+        fmf_context = fmf.context.Context(**self.step.plan._fmf_context)
         when_rules = self.get('when', [])
         if not when_rules:
             # No 'when' -> enabled everywhere
             return True
         for when in when_rules:
-            with suppress(CannotDecide):
+            with suppress(fmf.context.CannotDecide):
                 if fmf_context.matches(when):
                     return True
         # No 'when' ruled matched -> disabled
