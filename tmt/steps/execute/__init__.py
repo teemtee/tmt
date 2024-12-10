@@ -565,8 +565,8 @@ class TestInvocation:
 
             self.process.send_signal(signal)
 
-            if isinstance(self.guest, tmt.steps.provision.GuestSsh):
-                self.guest._cleanup_ssh_master_process(signal, logger)
+            # if isinstance(self.guest, tmt.steps.provision.GuestSsh):
+            #    self.guest._cleanup_ssh_master_process(signal, logger)
 
 
 @dataclasses.dataclass

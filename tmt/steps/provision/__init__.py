@@ -3,15 +3,11 @@ import dataclasses
 import datetime
 import enum
 import functools
-import hashlib
 import os
 import re
 import secrets
 import shlex
-import signal as _signal
 import string
-import subprocess
-import threading
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
@@ -30,6 +26,8 @@ import click
 import fmf
 import fmf.utils
 from click import echo
+from pylibsshext.session import AutoAddPolicy
+from pylibsshext.session import Session as PylibsshSession
 
 import tmt
 import tmt.hardware
@@ -42,18 +40,16 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
 from tmt.options import option
-from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
+from tmt.package_managers import Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
     OnProcessStartCallback,
     Path,
-    ProvisionError,
     SerializableContainer,
     ShellScript,
     configure_constant,
-    effective_workdir_root,
     field,
     key_to_option,
     )
@@ -1431,295 +1427,57 @@ class GuestSsh(Guest):
     password: Optional[str]
     ssh_option: list[str]
 
-    # Master ssh connection process and socket path
-    _ssh_master_process_lock: threading.Lock
-    _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
-
     def __init__(self,
                  *,
                  data: GuestData,
                  name: Optional[str] = None,
                  parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger) -> None:
-        self._ssh_master_process_lock = threading.Lock()
-
         super().__init__(data=data, logger=logger, parent=parent, name=name)
+        self._ssh_session: Optional[PylibsshSession] = None
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
         """ Return user@guest """
         return f'{self.user}@{self.primary_address}'
 
-    @functools.cached_property
-    def _is_ssh_master_socket_path_acceptable(self) -> bool:
-        """ Whether the SSH master socket path we create is acceptable by SSH """
-
-        if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            self.warn("SSH multiplexing will not be used because the SSH socket path "
-                      f"'{self._ssh_master_socket_path}' is too long.")
-            return False
-
-        return True
-
-    @property
-    def is_ssh_multiplexing_enabled(self) -> bool:
-        """ Whether SSH multiplexing should be used """
-
-        if self.primary_address is None:
-            return False
-
-        if not self._is_ssh_master_socket_path_acceptable:
-            return False
-
-        return True
-
-    @functools.cached_property
-    def _ssh_master_socket_path(self) -> Path:
-        """ Return path to the SSH master socket """
-
-        # Can be any step opening the connection
-        assert isinstance(self.parent, tmt.steps.Step)
-        assert self.parent.plan.my_run is not None
-        assert self.parent.plan.my_run.workdir is not None
-
-        socket_dir = self.parent.plan.my_run.workdir / 'ssh-sockets'
-
-        try:
-            socket_dir.mkdir(parents=True, exist_ok=True)
-
-        except Exception as exc:
-            raise ProvisionError(f"Failed to create SSH socket directory '{socket_dir}'.") from exc
-
-        # Try more informative, but possibly too long path, constructed from pieces
-        # humans can easily understand and follow.
-        #
-        # The template is what seems to be a common template in general SSH discussions,
-        # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
-        # name is meaningless outside of its plan, it might be too ambiguous. Starting with
-        # what SSH folk uses, we may amend it later.
-
-        # This should be true, otherwise `is_ssh_multiplexing_enabled` would return `False`
-        # and nobody would need to use SSH master socket path.
-        assert self.primary_address
-
-        guest_id_components: list[str] = [self.primary_address]
-
-        if self.port:
-            guest_id_components.append(str(self.port))
-
-        if self.user:
-            guest_id_components.append(self.user)
-
-        guest_id = '-'.join(guest_id_components)
-
-        socket_path = socket_dir / f'{guest_id}.socket'
-
-        if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            return socket_path
-
-        # Fall back to a less readable, but hopefully shorter and therefore acceptable filename.
-        # Note that we don't check the length anymore: giving up, this is the path, take it
-        # or leave it. And callers may very well leave it, we tried our best.
-        digest = hashlib \
-            .shake_128(guest_id.encode()) \
-            .hexdigest(16)
-
-        return socket_dir / f'{digest}.socket'
-
-    @property
-    def _ssh_options(self) -> Command:
-        """ Return common SSH options """
-
-        options = BASE_SSH_OPTIONS[:]
-
-        if self.key or self.password:
-            # Skip ssh-agent (it adds additional identities)
-            options.append('-oIdentitiesOnly=yes')
-        if self.port:
-            options.append(f'-p{self.port}')
-        if self.key:
-            for key in self.key:
-                options.extend(['-i', key])
-        if self.password:
-            options.extend(['-oPasswordAuthentication=yes'])
-        else:
-            # Make sure the connection is rejected when we want key-
-            # based authentication only instead of presenting a prompt.
-            # Prevents issues like https://github.com/teemtee/tmt/issues/2687
-            # from happening and makes the ssh connection more robust
-            # by allowing proper re-try mechanisms to kick-in.
-            options.extend(['-oPasswordAuthentication=no'])
-
-        # Include the SSH master process
-        if self.is_ssh_multiplexing_enabled:
-            options.append(f'-S{self._ssh_master_socket_path}')
-
-        options.extend([f'-o{option}' for option in self.ssh_option])
-
-        return Command(*options)
-
-    @property
-    def _base_ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
-
-        command = Command(
-            *(["sshpass", "-p", self.password] if self.password else []),
-            "ssh"
-            )
-
-        return command + self._ssh_options
-
-    def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
-        """ Spawn the SSH master process """
-
-        # NOTE: do not modify `command`, it might be re-used by the caller. To
-        # be safe, include it in our own command.
-        ssh_master_command = self._base_ssh_command \
-            + self._ssh_options \
-            + Command("-MNnT", self._ssh_guest)
-
-        self.debug(f"Spawning the SSH master process: {ssh_master_command}")
-
-        return subprocess.Popen(
-            ssh_master_command.to_popen(),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-
-    def _cleanup_ssh_master_process(
-            self,
-            signal: _signal.Signals = _signal.SIGTERM,
-            logger: Optional[tmt.log.Logger] = None) -> None:
-        logger = logger or self._logger
-
-        if not self.is_ssh_multiplexing_enabled:
-            logger.debug('The SSH master process cannot be terminated because it is disabled.',
-                         level=3)
-
-            return
-
-        with self._ssh_master_process_lock:
-            if self._ssh_master_process is None:
-                logger.debug('The SSH master process cannot be terminated because it is unset.',
-                             level=3)
-
-                return
-
-            logger.debug(
-                f'Terminating the SSH master process {self._ssh_master_process.pid}'
-                f' with {signal.name}.',
-                level=3)
-
-            self._ssh_master_process.send_signal(signal)
-
-            try:
-                # TODO: make the deadline configurable
-                self._ssh_master_process.wait(timeout=3)
-
-            except subprocess.TimeoutExpired:
-                logger.warning(
-                    f'Terminating the SSH master process {self._ssh_master_process.pid}'
-                    ' timed out.')
-
-            self._ssh_master_process = None
-
-    @property
-    def _ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
-
-        if self.is_ssh_multiplexing_enabled:
-            with self._ssh_master_process_lock:
-                if self._ssh_master_process is None:
-                    self._ssh_master_process = self._spawn_ssh_master_process()
-
-        return self._base_ssh_command
-
-    def _unlink_ssh_master_socket_path(self) -> None:
-        if not self.is_ssh_multiplexing_enabled:
-            return
-
-        with self._ssh_master_process_lock:
-            if not self._ssh_master_socket_path:
-                return
-
-            self.debug(f"Remove SSH master socket '{self._ssh_master_socket_path}'.", level=3)
-
-            try:
-                self._ssh_master_socket_path.unlink(missing_ok=True)
-
-            except OSError as error:
-                self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
-
-            del self._ssh_master_socket_path
-
-    def _run_ansible(
-            self,
-            playbook: Path,
-            playbook_root: Optional[Path] = None,
-            extra_args: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False) -> tmt.utils.CommandOutput:
-        """
-        Run an Ansible playbook on the guest.
-
-        This is a main workhorse for :py:meth:`ansible`. It shall run the
-        playbook in whatever way is fitting for the guest and infrastructure.
-
-        :param playbook: path to the playbook to run.
-        :param playbook_root: if set, ``playbook`` path must be located
-            under the given root path.
-        :param extra_args: additional arguments to be passed to ``ansible-playbook``
-            via ``--extra-args``.
-        :param friendly_command: if set, it would be logged instead of the
-            command itself, to improve visibility of the command in logging output.
-        :param log: a logging function to use for logging of command output. By
-            default, ``logger.debug`` is used.
-        :param silent: if set, logging of steps taken by this function would be
-            reduced.
-        """
-
-        playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
-
-        ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
-
-        if extra_args:
-            ansible_command += self._ansible_extra_args(extra_args)
-
-        ansible_command += Command(
-            '--ssh-common-args', self._ssh_options.to_element(),
-            '-i', f'{self._ssh_guest},',
-            playbook)
-
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
-
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
-
-    @property
-    def is_ready(self) -> bool:
-        """ Detect guest is ready or not """
-
-        # Enough for now, ssh connection can be created later
-        return self.primary_address is not None
-
-    def setup(self) -> None:
-        if self.is_dry_run:
-            return
-        if not self.facts.is_superuser and self.become:
-            self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
-            workdir_root = effective_workdir_root()
-            self.execute(ShellScript(
-                f"""
-                    mkdir -p {workdir_root};
-                    setfacl -d -m o:rX {workdir_root}
-                    """))
+    def _get_ssh_session(self) -> PylibsshSession:
+        """Get or create a pylibssh session"""
+        if self._ssh_session is None or not self._ssh_session.is_connected:
+            session = PylibsshSession()
+            session.set_missing_host_key_policy(AutoAddPolicy())
+
+            # Convert SSH options to pylibssh format
+            ssh_opts: dict[str, Any] = {
+                'compression': True,  # Enable compression for better performance
+                'timeout': 60,  # Default timeout
+                'server_alive_interval': 5,  # Keep connection alive
+                'server_alive_count_max': 60
+                }
+
+            if self.port:
+                ssh_opts['port'] = self.port
+            if self.user:
+                ssh_opts['user'] = self.user
+            if self.primary_address:
+                ssh_opts['host'] = self.primary_address
+
+            # Add custom SSH options
+            for option in self.ssh_option:
+                key, value = option.split('=', 1)
+                ssh_opts[key.lower()] = value
+
+            # Connect with the options
+            session.connect(
+                **ssh_opts,
+                password=self.password if self.password else None,
+                private_key=self.key[0].read_bytes() if self.key else None,
+                look_for_keys=not bool(self.password or self.key),
+                host_key_checking=False
+                )
+            self._ssh_session = session
+
+        return self._ssh_session
 
     def execute(self,
                 command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -1734,79 +1492,79 @@ class GuestSsh(Guest):
                 on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
         """
-        Execute a command on the guest.
+        Execute a command on the guest using pylibssh.
 
         :param command: either a command or a shell script to execute.
         :param cwd: execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         """
-
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        ssh_command: tmt.utils.Command = self._ssh_command
-
-        # Run in interactive mode if requested
-        if interactive:
-            ssh_command += Command('-t')
-
-        # Force ssh to allocate pseudo-terminal if requested. Without a pseudo-terminal,
-        # remote processes spawned by SSH would keep running after SSH process death, e.g.
-        # in the case of a timeout.
-        #
-        # Note that polite request, `-t`, is not enough since `ssh` itself has no pseudo-terminal,
-        # and a single `-t` wouldn't have the necessary effect.
-        if test_session or tty:
-            ssh_command += Command('-tt')
-
-        # Accumulate all necessary commands - they will form a "shell" script, a single
-        # string passed to SSH to execute on the remote machine.
+        # Prepare the complete command with environment and cwd
         remote_commands: ShellScript = ShellScript.from_scripts(
             self._export_environment(self._prepare_environment(env))
             )
 
-        # Change to given directory on guest if cwd provided
         if cwd:
             remote_commands += ShellScript(f'cd {quote(str(cwd))}')
 
         if isinstance(command, Command):
             remote_commands += command.to_script()
-
         else:
             remote_commands += command
 
         remote_command = remote_commands.to_element()
 
-        ssh_command += [
-            self._ssh_guest,
-            remote_command
-            ]
-
         self.debug(f"Execute command '{remote_command}' on guest '{self.primary_address}'.")
 
-        output = self._run_guest_command(
-            ssh_command,
-            log=log,
-            friendly_command=friendly_command or str(command),
-            silent=silent,
-            cwd=cwd,
-            interactive=interactive,
-            on_process_start=on_process_start,
-            **kwargs)
+        # Get a pylibssh session and create a channel
+        session = self._get_ssh_session()
+        channel = session.new_channel()
 
-        # Drop ssh connection closed messages, #2524
-        if test_session and output.stdout:
-            # Get last line index
-            last_line_index = output.stdout.rfind(os.linesep, 0, -2)
-            # Drop the connection closed message line, keep the ending lineseparator
-            if 'Shared connection to ' in output.stdout[last_line_index:] \
-                    or 'Connection to ' in output.stdout[last_line_index:]:
-                output = dataclasses.replace(
-                    output, stdout=output.stdout[:last_line_index + len(os.linesep)])
+        try:
+            # Request a PTY if needed
+            if test_session or tty or interactive:
+                channel.request_pty()
 
-        return output
+            # Execute the command
+            channel.exec_command(remote_command)
+
+            # Read output until the channel is closed
+            stdout = []
+            stderr = []
+
+            # Use larger buffer size for better performance
+            buffer_size = 32768  # 32KB buffer
+
+            while not channel.eof():
+                if channel.poll():
+                    stdout_data = channel.read(buffer_size)
+                    if stdout_data:
+                        stdout.append(stdout_data.decode())
+                    stderr_data = channel.read_stderr(buffer_size)
+                    if stderr_data:
+                        stderr.append(stderr_data.decode())
+
+            exit_status = channel.get_exit_status()
+
+            stdout_str = ''.join(stdout)
+            stderr_str = ''.join(stderr)
+
+            if exit_status != 0:
+                raise tmt.utils.RunError(
+                    message=f"Command '{remote_command}' failed.",
+                    command=Command(remote_command),
+                    returncode=exit_status,
+                    stdout=stdout_str,
+                    stderr=stderr_str)
+
+            return tmt.utils.CommandOutput(stdout=stdout_str, stderr=stderr_str)
+
+        finally:
+            channel.close()
 
     def push(self,
              source: Optional[Path] = None,
@@ -1814,68 +1572,51 @@ class GuestSsh(Guest):
              options: Optional[list[str]] = None,
              superuser: bool = False) -> None:
         """
-        Push files to the guest
+        Push files to the guest using pylibssh SCP.
 
         By default the whole plan workdir is synced to the same location
         on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parameter to modify default options
-        which are '-Rrz --links --safe-links --delete'.
-
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
+        location.
         """
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        # Prepare options and the push command
-        options = options or DEFAULT_RSYNC_PUSH_OPTIONS
         if destination is None:
             destination = Path("/")
         if source is None:
-            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
-
             assert parent.plan.workdir is not None
-
             source = parent.plan.workdir
             self.debug(f"Push workdir to guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
-        def rsync() -> None:
-            """ Run the rsync command """
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
+        # Get a pylibssh session and create an SCP instance
+        session = self._get_ssh_session()
+        scp = session.scp()
 
-            cmd = ['rsync']
-            if superuser and self.user != 'root':
-                cmd += ['--rsync-path', 'sudo rsync']
-
-            self._run_guest_command(Command(
-                *cmd,
-                *options,
-                "-e", self._ssh_command.to_element(),
-                source,
-                f"{self._ssh_guest}:{destination}"
-                ), silent=True)
-
-        # Try to push twice, check for rsync after the first failure
         try:
-            rsync()
-        except tmt.utils.RunError:
-            try:
-                if self._check_rsync() == CheckRsyncOutcome.ALREADY_INSTALLED:
-                    raise
-                rsync()
-            except tmt.utils.RunError:
-                # Provide a reasonable error to the user
-                self.fail(
-                    f"Failed to push workdir to the guest. This usually means "
-                    f"that login as '{self.user}' to the guest does not work.")
-                raise
+            # If superuser is needed, we need to execute the command with sudo
+            if superuser and self.user != 'root':
+                # Create a temporary directory for the files
+                temp_dest = Path('/var/tmp/tmt/scp-' + secrets.token_hex(8))  # noqa: S108
+                self.execute(Command('mkdir', '-p', temp_dest))
+
+                # First copy to temp location
+                scp.put(str(source), str(temp_dest))
+
+                # Then move to final destination with sudo
+                self.execute(Command('sudo', 'cp', '-r', temp_dest, destination))
+                self.execute(Command('sudo', 'rm', '-rf', temp_dest))
+            else:
+                # Direct copy if no superuser needed
+                scp.put(str(source), str(destination))
+
+        except Exception as exc:
+            self.fail(
+                f"Failed to push files to the guest: {exc}")
+            raise
 
     def pull(self,
              source: Optional[Path] = None,
@@ -1883,80 +1624,46 @@ class GuestSsh(Guest):
              options: Optional[list[str]] = None,
              extend_options: Optional[list[str]] = None) -> None:
         """
-        Pull files from the guest
+        Pull files from the guest using pylibssh SCP.
 
         By default the whole plan workdir is synced from the same
         location on the guest. Use the 'source' and 'destination' to
-        sync custom location, the 'options' parameter to modify
-        default options :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`
-        and 'extend_options' to extend them (e.g. by exclude).
+        sync custom location.
         """
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
 
-        # Prepare options and the pull command
-        options = options or DEFAULT_RSYNC_PULL_OPTIONS
-        if extend_options is not None:
-            options.extend(extend_options)
         if destination is None:
             destination = Path("/")
         if source is None:
-            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
-
             assert parent.plan.workdir is not None
-
             source = parent.plan.workdir
             self.debug(f"Pull workdir from guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
-        def rsync() -> None:
-            """ Run the rsync command """
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
+        # Get a pylibssh session and create an SCP instance
+        session = self._get_ssh_session()
+        scp = session.scp()
 
-            self._run_guest_command(Command(
-                "rsync",
-                *options,
-                "-e", self._ssh_command.to_element(),
-                f"{self._ssh_guest}:{source}",
-                destination
-                ), silent=True)
-
-        # Try to pull twice, check for rsync after the first failure
         try:
-            rsync()
-        except tmt.utils.RunError:
-            try:
-                if self._check_rsync() == CheckRsyncOutcome.ALREADY_INSTALLED:
-                    raise
-                rsync()
-            except tmt.utils.RunError:
-                # Provide a reasonable error to the user
-                self.fail(
-                    f"Failed to pull workdir from the guest. "
-                    f"This usually means that login as '{self.user}' "
-                    f"to the guest does not work.")
-                raise
+            scp.get(str(source), str(destination))
+        except Exception as exc:
+            self.fail(
+                f"Failed to pull files from the guest: {exc}")
+            raise
 
     def stop(self) -> None:
         """
         Stop the guest
 
-        Shut down a running guest instance so that it does not consume
-        any memory or cpu resources. If needed, perform any actions
-        necessary to store the instance status to disk.
+        Close the SSH session and clean up.
         """
-
-        # Close the master ssh connection
-        self._cleanup_ssh_master_process()
-
-        # Remove the ssh socket
-        self._unlink_ssh_master_socket_path()
+        if self._ssh_session:
+            self._ssh_session.close()
+            self._ssh_session = None
 
     def perform_reboot(self,
                        command: Callable[[], tmt.utils.CommandOutput],
@@ -2003,6 +1710,11 @@ class GuestSsh(Guest):
                     "Seems the connection was closed too fast, ignoring.")
             else:
                 raise
+
+        # Close the SSH session since we're rebooting
+        if self._ssh_session:
+            self._ssh_session.close()
+            self._ssh_session = None
 
         # Wait until we get new boot time, connection will drop and will be
         # unreachable for some time
@@ -2079,9 +1791,9 @@ class GuestSsh(Guest):
         """
         Remove the guest
 
-        Completely remove all guest instance data so that it does not
-        consume any disk resources.
+        Close the SSH session and clean up.
         """
+        self.stop()
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
 
