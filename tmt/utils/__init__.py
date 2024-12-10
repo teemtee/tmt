@@ -2003,8 +2003,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             """ If created workdir_root has to be 1777 for multi-user"""
             if not self.workdir_root.is_dir():
                 try:
-                    self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    self.workdir_root.chmod(0o1777)
+                    workdir_root.mkdir(exist_ok=True, parents=True)
+                    acl_command = ["setfacl", "-d -m", "u::rwX,g::rwX,o::rwX", str(workdir_root)]
+                    subprocess.run(acl_command, check=True)
+                    workdir_root.chmod(0o1777)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
 
