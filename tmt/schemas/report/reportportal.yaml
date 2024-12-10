@@ -73,6 +73,9 @@ properties:
   ssl-verify:
     type: boolean
 
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
 required:
   - how
   - project
