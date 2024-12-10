@@ -36,13 +36,13 @@ PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/test-c
         generate-plugins \
         $(PLUGIN_TARGETS) \
         generate-stories \
-        generate-template-filters \
+        generate-template-extensions \
         generate-autodocs clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-extensions generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -74,10 +74,10 @@ define build-plugins =
 $(SCRIPTSDIR)/generate-plugins.py $(call plugins-to-step,$@) $(PLUGINS_TEMPLATE) $@
 endef
 
-code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py \
-                           $(TEMPLATESDIR)/template-filters.rst.j2 \
-                           $(TMTDIR)/utils/templates.py
-	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
+code/template-extensions.rst: $(SCRIPTSDIR)/generate-template-extensions.py \
+                              $(TEMPLATESDIR)/template-extensions.rst.j2 \
+                              $(TMTDIR)/utils/templates.py
+	$(SCRIPTSDIR)/generate-template-extensions.py $(TEMPLATESDIR)/template-extensions.rst.j2 $@
 
 plugins/discover.rst: $(call plugins-dependencies)
 	$(call build-plugins)
@@ -132,10 +132,10 @@ generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.r
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
+generate-template-extensions: code/template-extensions.rst  ## Generate documentation sources for Jinja2 template extensions
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-extensions.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS)
 
 ##
 ## Help!
