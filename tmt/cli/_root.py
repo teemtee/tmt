@@ -227,19 +227,23 @@ def main(
          What to do when plan fails to finish. Quit by default, or continue with the next plan.
          """)
 @environment_options
+@workdir_root_options
 @verbosity_options
 @force_dry_options
 @again_option
-def run(context: Context, id_: Optional[str], **kwargs: Any) -> None:
+def run(context: Context, id_: Optional[str], _workdir_root: Optional[str], **kwargs: Any) -> None:
     """ Run test steps. """
     # Initialize
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+
     run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
         cli_invocation=CliInvocation.from_context(context),
+        workdir_root=effective_workdir_root(workdir_root),
         logger=logger
         )
     context.obj.run = run
