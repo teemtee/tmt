@@ -1,6 +1,16 @@
 import sys
 
 
+def import_cli_commands() -> None:
+    """ Import CLI commands from their packages """
+
+    # TODO: some kind of `import tmt.cli.*` would be nice
+    import tmt.cli._root  # type: ignore[reportUnusedImport,unused-ignore]
+    import tmt.cli.init  # noqa: F401,I001,RUF100
+    import tmt.cli.status  # noqa: F401,I001,RUF100
+    import tmt.cli.trying  # noqa: F401,I001,RUF100
+
+
 def run_cli() -> None:
     """
     Entry point to tmt command.
@@ -13,14 +23,11 @@ def run_cli() -> None:
     tmt.utils, we would not be able to intercept the exception below.
     """
     try:
-        import tmt.utils  # noqa: I001
+        import tmt.utils  # noqa: F401,I001,RUF100
 
-        # Import CLI commands.
-        # TODO: some kind of `import tmt.cli.*` would be nice
+        import_cli_commands()
+
         import tmt.cli._root
-        import tmt.cli._init
-        import tmt.cli.status
-        import tmt.cli._try
 
         tmt.cli._root.main()
 

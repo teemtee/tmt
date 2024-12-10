@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-import tmt.cli
+import tmt.cli.trying
 
 
 @pytest.mark.parametrize(
@@ -18,4 +18,4 @@ import tmt.cli
     )
 def test_options_arch(params: dict[str, Any], expected: dict[str, Any]):
 
-    assert tmt.cli._root._construct_trying_provision_options(params) == expected
+    assert tmt.cli.trying._root._construct_trying_provision_options(params) == expected

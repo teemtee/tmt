@@ -41,6 +41,9 @@ class CliRunner(click.testing.CliRunner):
             **extra: Any) -> click.testing.Result:
         reset_common()
 
+        from tmt.__main__ import import_cli_commands
+        import_cli_commands()
+
         return super().invoke(
             cli,
             args=args,
