@@ -82,9 +82,6 @@ class ExecuteUpgrade(ExecuteInternal):
     """
     Perform system upgrade during testing.
 
-    As a tester I want to verify that a configured application or service still
-    correctly works after the system upgrade.
-
     In order to enable developing tests for upgrade testing, we need to provide
     a way how to execute these tests easily. This does not cover unit tests for
     individual actors but rather system tests which verify

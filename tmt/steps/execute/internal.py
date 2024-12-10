@@ -288,8 +288,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     """
     Use the internal tmt executor to execute tests.
 
-    As a user I want to execute tests directly from tmt.
-
     The internal tmt executor runs tests on the guest one by one directly
     from the tmt code which shows testing progress and supports interactive
     debugging as well. This is the default execute step implementation.
