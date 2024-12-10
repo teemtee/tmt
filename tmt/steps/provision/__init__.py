@@ -1184,6 +1184,7 @@ class Guest(tmt.utils.Common):
             f"""
             if [ ! -d {pid_directory} ]; then \
                    {sudo} mkdir -p {pid_directory} \
+                && {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX \
                 && {sudo} chmod ugo+rwx {pid_directory}; \
             fi
             """
@@ -2147,7 +2148,7 @@ class GuestSsh(Guest):
                 ShellScript(
                     f"""
                     mkdir -p {workdir_root};
-                    sudo setfacl -d -m o:rX {workdir_root}
+                    sudo setfacl -d -m u::rwX,g::rwX,o::rwX {workdir_root}
                     """))
 
     def execute(
