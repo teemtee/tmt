@@ -1,16 +1,16 @@
 Name:           tmt
-Version:        0.0.0
-Release:        %autorelease
+Version:        1.40.0.dev27+g1ef32d7a.d20241210
+Release:        1.20241210132608070114.libssh.27.g1ef32d7a%{?dist}
 Summary:        Test Management Tool
 
 License:        MIT
 URL:            https://github.com/teemtee/tmt
-Source0:        %{pypi_source tmt}
+Source0:        tmt-1.40.0.dev27+g1ef32d7a.d20241210.tar.gz
 
 BuildArch:      noarch
-BuildRequires:  python3-devel
+BuildRequires:  python3-devel gcc libssh-devel
 
-Requires:       git-core rsync sshpass
+Requires:       git-core python3-ansible-pylibssh
 
 %if 0%{?fedora} < 40
 Obsoletes:      python3-tmt < %{version}-%{release}
@@ -131,7 +131,7 @@ All extra dependencies of the Test Management Tool. Install this
 package to have all available plugins ready for testing.
 
 %prep
-%autosetup -p1 -n tmt-%{version}
+%autosetup -p1 -n tmt-1.40.0.dev27+g1ef32d7a.d20241210
 
 %generate_buildrequires
 %pyproject_buildrequires
@@ -169,3 +169,60 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
+* Tue Dec 10 2024 Martin Hoyer <mhoyer@redhat.com> - 1.40.0.dev27+g1ef32d7a.d20241210-1.20241210132608070114.libssh.27.g1ef32d7a
+- Playing with ansible-pylibssh (Martin Hoyer)
+- Rewrite the `feature` implementation to plugins (#3276) (Izmi)
+- Multiple reportportal plugin improvements and fixes (#3356) (Sabart Otto)
+- Go to discover tests directory after login (#3357) (Izmi)
+- Switch to the new tmt logo (#3361) (Martin Hoyer)
+- Split copr project into `stable` and `latest` (#3375) (Cristian Le)
+- Translate the `or` constraint properly for `mrack` (#3327) (skycastlelily)
+- Mark the two known `avc` failures with `xfail` (#3411) (Petr Šplíchal)
+- Document runner vs guest compatibility (#3388) (Miloš Prchlík)
+- Simplify the packit configuration (#3374) (Cristian Le)
+- Update contribution doc with `tldr` pages info (#3377) (Martin Hoyer)
+- Encourage contributors to keep pull requests up-to-date (#3408) (Petr Šplíchal)
+- Do not use `mypy` cache for `ruamel.yaml` (#3404) (Martin Hoyer)
+- Store multiple invocations of dmesg check for the same test in one file (#3393) (Miloš Prchlík)
+- Add `link` config validation using `pydantic` (#3339) (Filip Vágner)
+- Pre-commit hooks version bump (#3402) (Martin Hoyer)
+- Fix log paths for subresults loaded from tmt-report-results.yaml (#3370) (Sabart Otto)
+- Implement the `--keep` option for `tmt clean` (#3183) (#3183) (skycastlelily)
+- Update the `actions/upload-artifact` version (#3389) (Petr Šplíchal)
+- Do not save the logs into memory using an auxiliary variable (#3382) (Sabart Otto)
+- Enable the `huge_tree` option for the `lxml` parser (#3365) (Sabart Otto)
+- Implement the `--keep` option for `tmt clean guests` (#3182) (skycastlelily)
+- Fix reuse of already provisioned machine (#3381) (Lukáš Zachar)
+- Support `--workdir-root` in the `tmt clean` command (#2850) (skycastlelily)
+- Uninstall bootc in Fedora CoreOS testing image (#3380) (Miloš Prchlík)
+- Document overview of supported `restraint` scripts (#3379) (Petr Šplíchal)
+- Handle invalid option in the `tmt-reboot` script (#3358) (Petr Šplíchal)
+
+* Tue Dec 10 2024 Martin Hoyer <mhoyer@redhat.com> - 1.40.0.dev27+g1ef32d7a-1.20241210132440182633.libssh.27.g1ef32d7a
+- Playing with ansible-pylibssh (Martin Hoyer)
+- Rewrite the `feature` implementation to plugins (#3276) (Izmi)
+- Multiple reportportal plugin improvements and fixes (#3356) (Sabart Otto)
+- Go to discover tests directory after login (#3357) (Izmi)
+- Switch to the new tmt logo (#3361) (Martin Hoyer)
+- Split copr project into `stable` and `latest` (#3375) (Cristian Le)
+- Translate the `or` constraint properly for `mrack` (#3327) (skycastlelily)
+- Mark the two known `avc` failures with `xfail` (#3411) (Petr Šplíchal)
+- Document runner vs guest compatibility (#3388) (Miloš Prchlík)
+- Simplify the packit configuration (#3374) (Cristian Le)
+- Update contribution doc with `tldr` pages info (#3377) (Martin Hoyer)
+- Encourage contributors to keep pull requests up-to-date (#3408) (Petr Šplíchal)
+- Do not use `mypy` cache for `ruamel.yaml` (#3404) (Martin Hoyer)
+- Store multiple invocations of dmesg check for the same test in one file (#3393) (Miloš Prchlík)
+- Add `link` config validation using `pydantic` (#3339) (Filip Vágner)
+- Pre-commit hooks version bump (#3402) (Martin Hoyer)
+- Fix log paths for subresults loaded from tmt-report-results.yaml (#3370) (Sabart Otto)
+- Implement the `--keep` option for `tmt clean` (#3183) (#3183) (skycastlelily)
+- Update the `actions/upload-artifact` version (#3389) (Petr Šplíchal)
+- Do not save the logs into memory using an auxiliary variable (#3382) (Sabart Otto)
+- Enable the `huge_tree` option for the `lxml` parser (#3365) (Sabart Otto)
+- Implement the `--keep` option for `tmt clean guests` (#3182) (skycastlelily)
+- Fix reuse of already provisioned machine (#3381) (Lukáš Zachar)
+- Support `--workdir-root` in the `tmt clean` command (#2850) (skycastlelily)
+- Uninstall bootc in Fedora CoreOS testing image (#3380) (Miloš Prchlík)
+- Document overview of supported `restraint` scripts (#3379) (Petr Šplíchal)
+- Handle invalid option in the `tmt-reboot` script (#3358) (Petr Šplíchal)
