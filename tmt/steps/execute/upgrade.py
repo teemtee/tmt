@@ -82,6 +82,14 @@ class ExecuteUpgrade(ExecuteInternal):
     """
     Perform system upgrade during testing.
 
+    As a tester I want to verify that a configured application or service still
+    correctly works after the system upgrade.
+
+    In order to enable developing tests for upgrade testing, we need to provide
+    a way how to execute these tests easily. This does not cover unit tests for
+    individual actors but rather system tests which verify
+    the whole upgrade story.
+
     The upgrade executor runs the discovered tests (using the internal
     executor), then performs a set of upgrade tasks from a remote
     repository, and finally, re-runs the tests on the upgraded guest.
@@ -93,12 +101,17 @@ class ExecuteUpgrade(ExecuteInternal):
     unique.
 
     The upgrade tasks performing the actual system upgrade are taken
-    from a remote repository either based on an upgrade path
-    (e.g. ``fedora35to36``) or filters. The upgrade path must correspond to
-    a plan name in the remote repository whose discover step selects
-    tests (upgrade tasks) performing the upgrade. Currently, selection
-    of upgrade tasks in the remote repository can be done using both fmf
-    and shell discover method. The supported keys in discover are:
+    from a remote repository (specified by the ``url`` key) based on an upgrade
+    path (e.g. ``fedora35to36``) or other filters (e.g. specified by the
+    ``filter`` key). If both ``upgrade-path`` and extra filters are specified,
+    the discover keys in the remote upgrade path plan are overridden by the
+    filters specified in the local plan.
+
+    The upgrade path must correspond to a plan name in the
+    remote repository whose discover step selects tests (upgrade tasks)
+    performing the upgrade. Currently, selection of upgrade tasks in the remote
+    repository can be done using both fmf and shell discover method.
+    The supported keys in discover are:
 
     * ``ref``
     * ``filter``

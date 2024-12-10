@@ -246,7 +246,12 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         option=('-s', '--script'),
         metavar='SCRIPT',
         multiple=True,
-        help='Shell script to be executed as a test.',
+        help="""
+             Shell script to be executed as a test. The exit code is used
+             as a test result and the default duration for tests defined
+             directly under the execute step is ``1h``. Use the ``duration``
+             attribute to modify the default limit.
+             """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
@@ -281,12 +286,23 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 @tmt.steps.provides_method('tmt')
 class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     """
-    Use the internal tmt executor to execute tests
+    Use the internal tmt executor to execute tests.
 
-    The internal tmt executor runs tests on the guest one by one, shows
-    testing progress and supports interactive debugging as well. Test
-    result is based on the script exit code (for shell tests) or the
+    As a user I want to execute tests directly from tmt.
+
+    The internal tmt executor runs tests on the guest one by one directly
+    from the tmt code which shows testing progress and supports interactive
+    debugging as well. This is the default execute step implementation.
+    Test result is based on the script exit code (for shell tests) or the
     results file (for beakerlib tests).
+
+    For each test, a separate directory is created for storing
+    artifacts related to the test execution. Its path is
+    constructed from the test name and it's stored under the
+    ``execute/data`` directory. It contains a ``metadata.yaml``
+    file with the aggregated L1 metadata which can be used by the
+    test framework. In addition to supported tests attributes it also
+    contains fmf ``name`` of the test.
     """
 
     _data_class = ExecuteInternalData
