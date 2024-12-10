@@ -37,6 +37,9 @@ the ``end-time``. It should be also ensured that the end time of
 all launch items is the same or higher than the start time of a
 parent item/launch.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for adding pubkeys to instance by populating the kickstart file.
+
 
 tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

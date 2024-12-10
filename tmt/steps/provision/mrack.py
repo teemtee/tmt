@@ -913,6 +913,16 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Submitting user must be a submission delegate for the ``USERNAME``.
              """)
 
+    public_key: list[str] = field(
+        default_factory=list,
+        option='--public-key',
+        metavar='PUBKEY',
+        help="""
+             Public keys to add among authorized SSH keys.
+             """,
+        multiple=True,
+        normalize=tmt.utils.normalize_string_list)
+
 
 @dataclasses.dataclass
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -948,6 +958,7 @@ class CreateJobParameters:
     kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
+    public_key: list[str]
     group: str = 'linux'
 
     def to_mrack(self) -> dict[str, Any]:
@@ -966,6 +977,8 @@ class CreateJobParameters:
             # see kickstart if it was just metadata.
             if kickstart:
                 data['beaker']['ks_append'] = kickstart
+        if self.public_key:
+            data['beaker']['pubkeys'] = self.public_key
 
         return data
 
@@ -1077,6 +1090,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     # Timeouts and deadlines
     provision_timeout: int
     provision_tick: int
+    public_key: list[str]
     api_session_refresh_tick: int
 
     _api: Optional[BeakerAPI] = None
@@ -1145,7 +1159,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             os=self.image,
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner)
+            beaker_job_owner=self.beaker_job_owner,
+            public_key=self.public_key)
 
         try:
             response = self.api.create(data)
