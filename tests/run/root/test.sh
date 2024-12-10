@@ -17,8 +17,19 @@ rlJournalStart
         rlRun "cd .. && tmt run -vvvdddr --last --since report"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test create runs in non-default workdir-root"
+        rlRun "popd"
+        rlRun "pushd data"
+        rlRun "test_root=\$(mktemp -d)"
+        for id in {001..003}; do
+            rlRun "tmt --feeling-safe run --workdir-root $test_root --id run-$id"
+            rlAssertExists "$test_root/run-$id"
+        done
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
+        rlRun "rm -r $test_root" 0 "Removing tmp directory"
     rlPhaseEnd
 rlJournalEnd

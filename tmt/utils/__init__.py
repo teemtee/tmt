@@ -1984,18 +1984,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Initialize the work directory
 
-        The workdir root is acquired by calling :py:func:`effective_workdir_root`.
-
         If 'id' is a path, that directory is used instead. Otherwise a
         new workdir is created under the workdir root directory.
         """
 
-        workdir_root = effective_workdir_root()
-
         # Prepare the workdir name from given id or path
         if isinstance(id_, Path):
             # Use provided directory if full path given
-            workdir = id_ if '/' in str(id_) else workdir_root / id_
+            workdir = id_ if '/' in str(id_) else self.workdir_root / id_
             # Resolve any relative paths
             workdir = workdir.resolve()
         # Weird workdir id
@@ -2005,12 +2001,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         def _check_or_create_workdir_root_with_perms() -> None:
             """ If created workdir_root has to be 1777 for multi-user"""
-            if not workdir_root.is_dir():
+            if not self.workdir_root.is_dir():
                 try:
-                    workdir_root.mkdir(exist_ok=True, parents=True)
-                    workdir_root.chmod(0o1777)
+                    self.workdir_root.mkdir(exist_ok=True, parents=True)
+                    self.workdir_root.chmod(0o1777)
                 except OSError as error:
-                    raise FileError(f"Failed to prepare workdir '{workdir_root}': {error}")
+                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
 
         if id_ is None:
             # Prepare workdir_root first
@@ -2019,7 +2015,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             # Generated unique id or fail, has to be atomic call
             for id_bit in range(1, WORKDIR_MAX + 1):
                 directory = f"run-{str(id_bit).rjust(3, '0')}"
-                workdir = workdir_root / directory
+                workdir = self.workdir_root / directory
                 try:
                     # Call is atomic, no race possible
                     workdir.mkdir(parents=True)
@@ -2028,13 +2024,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     pass
             else:
                 raise GeneralError(
-                    f"Workdir full. Cleanup the '{workdir_root}' directory.")
+                    f"Workdir full. Cleanup the '{self.workdir_root}' directory.")
         else:
             # Cleanup possible old workdir if called with --scratch
             if self.opt('scratch'):
                 self._workdir_cleanup(workdir)
 
-            if workdir.is_relative_to(workdir_root):
+            if workdir.is_relative_to(self.workdir_root):
                 _check_or_create_workdir_root_with_perms()
 
             # Create the workdir
