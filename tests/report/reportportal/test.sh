@@ -189,18 +189,19 @@ rlJournalStart
                 # Check the rarities in the test attributes/parameters
                 if [[ $jq_element == attributes ]]; then
                     key="contact"
+
                     value="$(yq -r ".\"$test_name\".$key" test.fmf)"
                     if [[ $value != null ]]; then
-                        # TODO: Fix the test here! The output of yq is list of
-                        # contact in the case of multiple contacts (test==/bad)
-                        # and a string in a case when one contact is provided
-                        # for the test (test==/good). We must somehow handle
-                        # both situations.
-                        #
-                        # If yq returns list, we must check both contacts in the response JSON
-                        # If yq returns just a string value, we must check only one contact in the response JSON
+                        if [[ "$value" == *","* ]]; then
+                          # Get the contact items as CSV (separated by a comma)
+                          value="$(yq -r ". | @csv" <<< $value)"
+                        fi
                         rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
-                        rlAssertGrep "$value" tmp_attributes_selection
+
+                        IFS=, read -r -a contact_items <<< "$value"
+                        for contact_item in "${contact_items[@]}"; do
+                            rlAssertGrep "$contact_item" tmp_attributes_selection
+                        done
                     else
                         rlAssertNotGrep "$key" tmp_attributes.json
                     fi
@@ -208,10 +209,6 @@ rlJournalStart
                     key="TMT_TREE"
                     rlAssertNotGrep "$key" tmp_attributes.json
                 fi
-
-                # REMOVE ME: just for testing
-                #echo "EXITING OMG"
-                #exit 99
 
                 rm tmp_attributes*
             done
