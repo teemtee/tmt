@@ -502,4 +502,4 @@ definitions:
   timestamp:
     type: string
     # yamllint disable-line rule:line-length
-    pattern: "^\\d{2,}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2}:\\d{2}$"
+    pattern: "^\\d{2,}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+(?:(?:\\+\\d{2}:\\d{2})|Z)$"
