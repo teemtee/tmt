@@ -49,5 +49,8 @@ properties:
   beaker-job-owner:
     type: string
 
+  beaker-job-group:
+    type: string
+
 required:
   - how
