@@ -68,6 +68,8 @@ Limits can be controlled using the newly introduced
 ``--traceback-size-limit`` or the respective environment
 variables.
 
+The execution of individual step configurations can be controlled
+using the :ref:`when-config` key.
 
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

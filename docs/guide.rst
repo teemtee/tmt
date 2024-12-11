@@ -873,6 +873,40 @@ copied to the guest.
     ``finish`` steps yet.
 
 
+.. _when-config:
+
+Conditional step configuration
+------------------------------
+
+.. versionadded:: 1.39
+
+Sometimes, the plan is expected to cover a broad set of environments;
+however, some step configurations may not be applicable everywhere.
+While :ref:`/spec/core/adjust` can be used to construct the plan
+in this way, it soon becomes difficult to read.
+
+Using the ``when`` key makes it easier to restrict a step configuration
+to run only if any of the specified rules matches.
+The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+
+.. code-block:: yaml
+
+    prepare:
+      - name: Prepare config to run only on Fedora
+        when: distro == fedora
+        how: shell
+        script: ./fedora_specific.sh
+      - name: Runs always
+        how: shell
+        script: ./setup.sh
+      - name: More rules in 'when' key
+        how: shell
+        script: ./something.sh
+        when:
+        - arch != x86_64
+        - initiator == human && distro == fedora
+
+
 .. _multihost-testing:
 
 Multihost Testing

@@ -31,5 +31,8 @@ properties:
   display-guest:
     type: boolean
 
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
 required:
   - how
