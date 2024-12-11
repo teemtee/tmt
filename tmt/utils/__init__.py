@@ -2136,7 +2136,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    acl_command = ["setfacl", "-d -m", "u::rwX,g::rwX,o::rwX", str(self.workdir_root)]
+                    acl_command = ["setfacl", "-d -m", "o:rwX", str(self.workdir_root)]
                     subprocess.run(acl_command, check=True)
                     self.workdir_root.chmod(0o1777)
                 except OSError as error:

@@ -2135,7 +2135,7 @@ class GuestSsh(Guest):
                     f"""
                     mkdir -p {workdir_root};
                     {sudo} chmod o+rwX {workdir_root};
-                    {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX {workdir_root}
+                    {sudo} setfacl -d -m o:rwX {workdir_root}
                     """))
         pid_directory = effective_pidfile_root()
         self.execute(ShellScript(
