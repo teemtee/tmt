@@ -1174,18 +1174,6 @@ class Guest(tmt.utils.Common):
 
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
-        from tmt.steps.execute.internal import effective_pidfile_root
-        sudo = 'sudo' if not self.facts.is_superuser else ''
-        pid_directory = effective_pidfile_root()
-        self.execute(ShellScript(
-            f"""
-            if [ ! -d {pid_directory} ]; then \
-                   {sudo} mkdir -p {pid_directory} \
-                && {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX {pid_directory} \
-                && {sudo} chmod ugo+rwx {pid_directory}; \
-            fi
-            """
-            ))
 
     # A couple of requiremens for this field:
     #
@@ -2135,7 +2123,8 @@ class GuestSsh(Guest):
         return self.primary_address is not None
 
     def setup(self) -> None:
-        super().setup()
+        from tmt.steps.execute.internal import effective_pidfile_root
+        sudo = 'sudo' if not self.facts.is_superuser else ''
         if self.is_dry_run:
             return
         if not self.facts.is_superuser and self.become:
@@ -2145,8 +2134,17 @@ class GuestSsh(Guest):
                 ShellScript(
                     f"""
                     mkdir -p {workdir_root};
-                    sudo setfacl -d -m u::rwX,g::rwX,o::rwX {workdir_root}
+                    {sudo} chmod o+rwX {workdir_root};
+                    {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX {workdir_root}
                     """))
+        pid_directory = effective_pidfile_root()
+        self.execute(ShellScript(
+            f"""
+            if [ ! -d {pid_directory} ]; then \
+                mkdir -p {pid_directory}
+            fi
+            """
+            ))
 
     def execute(
         self,
