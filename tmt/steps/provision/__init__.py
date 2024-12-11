@@ -1181,7 +1181,7 @@ class Guest(tmt.utils.Common):
             f"""
             if [ ! -d {pid_directory} ]; then \
                    {sudo} mkdir -p {pid_directory} \
-                && {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX \
+                && {sudo} setfacl -d -m u::rwX,g::rwX,o::rwX {pid_directory} \
                 && {sudo} chmod ugo+rwx {pid_directory}; \
             fi
             """
