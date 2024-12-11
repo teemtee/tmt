@@ -1,6 +1,6 @@
-summary: Define format of on-disk storage of results
-title: Results Format
-order: 90
+story:
+    To integrate tmt with other tools, tmt should standardize and
+    document the format in which test results are saved on storage.
 
 description: |
     The following text defines a YAML file structure tmt uses for storing
@@ -153,7 +153,7 @@ description: |
           check:
             ...
 
-    .. _/spec/plans/results/outcomes:
+    .. _/spec/results/outcomes:
 
     The ``result`` key can have the following values:
 
