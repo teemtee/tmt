@@ -20,6 +20,11 @@ calling the ``tmt-report-result`` or by calling beakerlib's
 ``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
 ``execute`` directory.
 
+The ``container`` executor now works in `Fedora Toolbx`__ when Podman is run
+using ``flatpak-spawn --host`` on the host system.
+
+__ https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/
+
 Documentation pages now use the `new tmt logo`__ designed by Maria Leonova.
 
 __ https://github.com/teemtee/docs/tree/main/logo
