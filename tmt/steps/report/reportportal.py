@@ -62,7 +62,7 @@ def _filter_invalid_chars(data: str,
     return re.sub(
         '[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+',
         '',
-        data)
+        data).encode("utf-8", errors="ignore").decode("utf-8")
 
 
 def _filter_log_per_size(data: str,
