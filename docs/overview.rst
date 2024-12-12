@@ -781,8 +781,8 @@ James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
 Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
-Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht and
-Chris Kyrouac.
+Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
+Chris Kyrouac and Xiaofeng Wang.
 
 
 Copyright
