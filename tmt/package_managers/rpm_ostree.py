@@ -100,6 +100,22 @@ class RpmOstree(tmt.package_managers.PackageManager):
 
         return extra_options
 
+    def refresh_metadata(self) -> CommandOutput:
+        self.guest.warn("Metadata refresh is not supported with rpm-ostree.")
+
+        return CommandOutput(stdout=None, stderr=None)
+
+        # The following should work, but it hits some ostree issue:
+        #
+        #   System has not been booted with systemd as init system (PID 1). Can't operate.
+        #   Failed to connect to bus: Host is down
+        #   System has not been booted with systemd as init system (PID 1). Can't operate.
+        #   Failed to connect to bus: Host is down
+        #   error: Loading sysroot: exit status: 1
+        #
+        # script = ShellScript(f'{self.command.to_script()} refresh-md --force')
+        # return self.guest.execute(script)
+
     def install(
             self,
             *installables: Installable,
