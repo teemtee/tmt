@@ -1362,7 +1362,8 @@ def _parse_memory(spec: Spec) -> BaseConstraint:
         'memory',
         str(spec['memory']),
         allowed_operators=[
-            Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+            Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE],
+        default_unit='MiB')
 
 
 def _parse_hostname(spec: Spec) -> BaseConstraint:
