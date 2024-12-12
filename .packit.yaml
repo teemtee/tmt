@@ -91,26 +91,80 @@ jobs:
   - <<: *copr-under-packit
     trigger: pull_request
 
-  # Test core
+  # Test core with default copytree
   - <<: *test-base
     targets: *latest-targets
-    identifier: core
+    identifier: core-default
     tmt_plan: '/plans/features/(core|basic)'
+    env:
+      TMT_COPYTREE_METHOD: default
 
-  # Test full
+  # Test core with rsync copytree
+  - <<: *test-base
+    targets: *latest-targets
+    identifier: core-rsync
+    tmt_plan: '/plans/features/(core|basic)'
+    env:
+      TMT_COPYTREE_METHOD: rsync
+
+  # Test core with tar copytree
+  - <<: *test-base
+    targets: *latest-targets
+    identifier: core-tar
+    tmt_plan: '/plans/features/(core|basic)'
+    env:
+      TMT_COPYTREE_METHOD: tar
+
+  # Test full with default copytree
   - <<: *test-base
     <<: *require-full-tests
-    identifier: full
-    # Do not run extended unit tests. That plan gets its own job
-    # because of podman vs systemd-resolved flakiness.
+    identifier: full-default
     tmt_plan: '^(?!/plans/features/extended-unit-tests).*$'
+    env:
+      TMT_COPYTREE_METHOD: default
 
-  # Extended unit tests
+  # Test full with rsync copytree
+  - <<: *test-base
+    <<: *require-full-tests
+    identifier: full-rsync
+    tmt_plan: '^(?!/plans/features/extended-unit-tests).*$'
+    env:
+      TMT_COPYTREE_METHOD: rsync
+
+  # Test full with tar copytree
+  - <<: *test-base
+    <<: *require-full-tests
+    identifier: full-tar
+    tmt_plan: '^(?!/plans/features/extended-unit-tests).*$'
+    env:
+      TMT_COPYTREE_METHOD: tar
+
+  # Extended unit tests with default copytree
   - <<: *test-base
     <<: *require-full-tests
     targets: [ fedora-latest-stable ]
-    identifier: extended-unit-tests
+    identifier: extended-unit-tests-default
     tmt_plan: '/plans/features/extended-unit-tests$'
+    env:
+      TMT_COPYTREE_METHOD: default
+
+  # Extended unit tests with rsync copytree
+  - <<: *test-base
+    <<: *require-full-tests
+    targets: [ fedora-latest-stable ]
+    identifier: extended-unit-tests-rsync
+    tmt_plan: '/plans/features/extended-unit-tests$'
+    env:
+      TMT_COPYTREE_METHOD: rsync
+
+  # Extended unit tests with tar copytree
+  - <<: *test-base
+    <<: *require-full-tests
+    targets: [ fedora-latest-stable ]
+    identifier: extended-unit-tests-tar
+    tmt_plan: '/plans/features/extended-unit-tests$'
+    env:
+      TMT_COPYTREE_METHOD: tar
 
   # Test virtual & bootc provision plugins
   - <<: *test-base
