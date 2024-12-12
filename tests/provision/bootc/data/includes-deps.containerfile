@@ -1,4 +1,4 @@
-FROM quay.io/centos-bootc/centos-bootc:stream9
+FROM quay.io/fedora/fedora-bootc:41
 
 RUN dnf -y install cloud-init rsync && \
     ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants && \
