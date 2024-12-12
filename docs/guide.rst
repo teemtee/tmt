@@ -878,7 +878,7 @@ copied to the guest.
 Conditional step configuration
 ------------------------------
 
-.. versionadded:: 1.39
+.. versionadded:: 1.40
 
 Sometimes, the plan is expected to cover a broad set of environments;
 however, some step configurations may not be applicable everywhere.

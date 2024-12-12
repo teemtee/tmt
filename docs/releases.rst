@@ -8,27 +8,31 @@
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add the ``--workdir-root`` option for the ``tmt clean`` and ``tmt run``
-commands so that users can specify the directory they want.
+The execution of individual step configurations can be controlled
+using the new :ref:`when<when-config>` key. Enable and disable
+selected step phase easily with the same syntax as used for the
+context :ref:`/spec/core/adjust` rules.
 
-Add the ``--keep`` option for the ``tmt clean guests`` and ``tmt clean``
-commands. Users can now choose to keep the selected number of latest guests,
-and maybe also runs, clean the rest to release the resources.
+When the ``login`` command is used to enter an interactive session
+on the guest, for example during a ``tmt try`` session, the
+current working directory is set to the path of the last executed
+test, so that users can easily investigate the test code there and
+experiment with it directly on the guest.
+
+A new ``--workdir-root`` option is now supported in the ``tmt
+clean`` and ``tmt run`` commands so that users can specify the
+directory which should be cleaned up and where new test runs
+should be stored.
+
+New ``--keep`` option has been implemented for the ``tmt clean
+guests`` and ``tmt clean`` commands. Users can now choose to keep
+the selected number of latest guests, and maybe also runs, clean
+the rest to release the resources.
 
 The log file paths of tmt subresults created by shell tests by
 calling the ``tmt-report-result`` or by calling beakerlib's
 ``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
 ``execute`` directory.
-
-Documentation pages now use the `new tmt logo`__ designed by Maria Leonova.
-
-__ https://github.com/teemtee/docs/tree/main/logo
-
-When the ``login`` command is used to enter an interactive session
-on the guest, for example during the ``tmt try`` command, the
-current working directory is set to the path of the last
-executed test, so that users can easily investigate the test
-code there and experiment with it directly on the guest.
 
 The :ref:`/plugins/report/reportportal` plugin now handles the
 timestamps for ``custom`` and ``restraint`` results correctly. It
@@ -37,8 +41,14 @@ the ``end-time``. It should be also ensured that the end time of
 all launch items is the same or higher than the start time of a
 parent item/launch.
 
-The :ref:`/plugins/provision/beaker` provision plugin gains support
-for adding pubkeys to instance by populating the kickstart file.
+The :ref:`/plugins/provision/beaker` provision plugin gained
+support for adding public keys to the guest instance by populating
+the kickstart file.
+
+Documentation pages now use the `new tmt logo`__ designed by Maria
+Leonova.
+
+__ https://github.com/teemtee/docs/tree/main/logo
 
 
 tmt-1.39.0
@@ -71,8 +81,6 @@ Limits can be controlled using the newly introduced
 ``--traceback-size-limit`` or the respective environment
 variables.
 
-The execution of individual step configurations can be controlled
-using the :ref:`when-config` key.
 
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
