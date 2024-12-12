@@ -5,6 +5,21 @@
 ==================
 
 
+TL;DR
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have `tmt` installed:
+
+.. code-block:: shell
+
+    git clone https://github.com/teemtee/tmt
+    cd tmt
+    python -m tmt
+
+This will run `tmt` from repository code, which should be enough
+for quick start. For proper development setup, read below.
+
+
 Introduction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
