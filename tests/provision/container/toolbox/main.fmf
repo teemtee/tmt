@@ -3,5 +3,7 @@ description:
     Make sure that container provisioner works well
     in a toolbox container.
 tag+:
-    - provision-only
-    - provision-container
+  - provision-only
+  - provision-container
+require+:
+  - toolbox
