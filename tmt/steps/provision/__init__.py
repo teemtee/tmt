@@ -902,6 +902,17 @@ class Guest(tmt.utils.Common):
     # Used by save() to construct the correct container for keys.
     _data_class: type[GuestData] = GuestData
 
+    @classmethod
+    def get_data_class(cls) -> type[GuestData]:
+        """
+        Return step data class for this plugin.
+
+        By default, :py:attr:`_data_class` is returned, but plugin may
+        override this method to provide different class.
+        """
+
+        return cls._data_class
+
     role: Optional[str]
 
     #: Primary hostname or IP address for tmt/guest communication.
@@ -922,7 +933,7 @@ class Guest(tmt.utils.Common):
     # (used for import/export to/from attributes during load and save)
     @property
     def _keys(self) -> list[str]:
-        return list(self._data_class.keys())
+        return list(self.get_data_class().keys())
 
     def __init__(self,
                  *,
@@ -1014,7 +1025,7 @@ class Guest(tmt.utils.Common):
         the guest. Everything needed to attach to a running instance
         should be added into the data dictionary by child classes.
         """
-        return self._data_class.extract_from(self)
+        return self.get_data_class().extract_from(self)
 
     def wake(self) -> None:
         """
