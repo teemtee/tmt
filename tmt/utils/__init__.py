@@ -2136,9 +2136,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    acl_command = f"setfacl -d -m o:rwX {self.workdir_root!s}"
-                    subprocess.run(acl_command, check=True)
                     self.workdir_root.chmod(0o1777)
+                    command = Command('setfacl', '-d', '-m', 'o:rwX', str(self.workdir_root))
+                    self.run(command)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
 
