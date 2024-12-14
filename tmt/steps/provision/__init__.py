@@ -624,7 +624,7 @@ class GuestFacts(SerializableContainer):
         For detection we check if systemctl exists and is executable.
         """
         try:
-            guest.execute(Command('which', 'systemctl'), silent=True)
+            guest.execute(Command('systemctl', '--version'), silent=True)
             return True
         except tmt.utils.RunError:
             return False
