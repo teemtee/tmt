@@ -17,6 +17,9 @@ The :ref:`/plugins/report/reportportal` plugin now exports all
 test contact information, rather than just the first contact
 instance.
 
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
