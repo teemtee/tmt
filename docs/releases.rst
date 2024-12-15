@@ -11,6 +11,9 @@ tmt-1.42.0
 The ``tmt show`` command now prints in verbose mode manual test
 instructions as well.
 
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
 
 tmt-1.41.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
