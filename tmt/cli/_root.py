@@ -1850,9 +1850,10 @@ def clean_guests(
 # inference. See Context and ContextObjects above.
 @clean.command(name='images')  # type: ignore[arg-type]
 @pass_context
+@workdir_root_options
 @verbosity_options
 @dry_options
-def clean_images(context: Context, **kwargs: Any) -> None:
+def clean_images(context: Context, _workdir_root: Optional[str], **kwargs: Any) -> None:
     """
     Remove images of supported provision methods.
 
@@ -1865,13 +1866,17 @@ def clean_images(context: Context, **kwargs: Any) -> None:
     #        cleaned, similarly to guests.
     assert context.obj.clean_logger is not None  # narrow type
 
+    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
+    if workdir_root and not workdir_root.exists():
+        raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
+
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger.descend(
             logger_name='clean-images', extra_shift=0
         ).apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-    )
+        workdir_root=effective_workdir_root(workdir_root))
     context.obj.clean_partials["images"].append(clean_obj.images)
 
 

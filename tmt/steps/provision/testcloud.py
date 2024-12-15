@@ -1270,18 +1270,17 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             click.echo(f"{TESTCLOUD_IMAGES / filename}")
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """
-        Remove the testcloud images
-        """
+    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+        """ Remove the testcloud images """
 
+        testcloud_images = workdir_root / 'testcloud/images'
         clean.info('testcloud', shift=1, color='green')
-        if not TESTCLOUD_IMAGES.exists():
+        if not testcloud_images.exists():
             clean.warn(
-                f"Directory '{TESTCLOUD_IMAGES}' does not exist.", shift=2)
+                f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
-        for image in TESTCLOUD_IMAGES.iterdir():
+        for image in testcloud_images.iterdir():
             if dry:
                 clean.verbose(f"Would remove '{image}'.", shift=2)
             else:

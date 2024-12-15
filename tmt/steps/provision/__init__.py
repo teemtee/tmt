@@ -2558,11 +2558,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return super().options(how) + cls._guest_class.options(how)
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """
-        Remove the images of one particular plugin
-        """
-
+    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+        """ Remove the images of one particular plugin """
         return True
 
     def show(self, keys: Optional[list[str]] = None) -> None:
