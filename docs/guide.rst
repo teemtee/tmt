@@ -971,7 +971,7 @@ to their services, synchronization, etc.
 
 tmt fully supports one test being executed multiple times. This is
 especially visible in the format of results, see
-:ref:`/spec/plans/results`. Every test is assigned a "serial
+:ref:`/spec/results`. Every test is assigned a "serial
 number", if the same test appears in multiple discover phases, each
 instance would be given a different serial number. The serial number
 and the guest from which a result comes from are then saved for each
