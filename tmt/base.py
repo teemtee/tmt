@@ -4054,7 +4054,7 @@ class Clean(tmt.utils.Common):
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
-        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
             all_workdirs.sort(
