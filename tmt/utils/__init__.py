@@ -4518,6 +4518,9 @@ def generate_runs(
             run_path = Path(id_name)
             if '/' not in id_name:
                 run_path = path / run_path
+            if not run_path.exists():
+                raise tmt.utils.GeneralError(
+                    f"Directory '{run_path}' does not exist, ")
             if run_path.is_absolute() and run_path.exists():
                 yield run_path
         else:
