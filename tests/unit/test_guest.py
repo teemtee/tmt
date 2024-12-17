@@ -58,12 +58,12 @@ def test_guest_facts_capability_checking(root_logger: Logger) -> None:
     facts = GuestFacts()
 
     # No capabilities set
-    assert facts.has_capability(GuestCapability.CAP_SYS_ADMIN) is False
+    assert facts.has_capabilities(GuestCapability.CAP_SYS_ADMIN) is False
 
     # Single capability
     facts.capabilities = [GuestCapability.CAP_SYS_ADMIN]
-    assert facts.has_capability(GuestCapability.CAP_SYS_ADMIN) is True
-    assert facts.has_capability(GuestCapability.CAP_CHOWN) is False
+    assert facts.has_capabilities(GuestCapability.CAP_SYS_ADMIN) is True
+    assert facts.has_capabilities(GuestCapability.CAP_CHOWN) is False
 
     # Multiple capabilities
     facts.capabilities = [
@@ -71,10 +71,10 @@ def test_guest_facts_capability_checking(root_logger: Logger) -> None:
         GuestCapability.CAP_DAC_OVERRIDE,
         GuestCapability.CAP_SETUID
         ]
-    assert facts.has_capability(GuestCapability.CAP_CHOWN) is True
-    assert facts.has_capability(GuestCapability.CAP_DAC_OVERRIDE) is True
-    assert facts.has_capability(GuestCapability.CAP_SETUID) is True
-    assert facts.has_capability(GuestCapability.CAP_SYS_ADMIN) is False
+    assert facts.has_capabilities(GuestCapability.CAP_CHOWN) is True
+    assert facts.has_capabilities(GuestCapability.CAP_DAC_OVERRIDE) is True
+    assert facts.has_capabilities(GuestCapability.CAP_SETUID) is True
+    assert facts.has_capabilities(GuestCapability.CAP_SYS_ADMIN) is False
 
 
 def test_guest_facts_serialization(root_logger: Logger) -> None:
@@ -94,10 +94,10 @@ def test_guest_facts_serialization(root_logger: Logger) -> None:
     # Deserialize
     new_facts = GuestFacts.from_serialized(serialized)
     assert new_facts.capabilities == facts.capabilities
-    assert new_facts.has_capability(GuestCapability.CAP_CHOWN) is True
-    assert new_facts.has_capability(GuestCapability.CAP_DAC_OVERRIDE) is True
-    assert new_facts.has_capability(GuestCapability.CAP_SETUID) is True
-    assert new_facts.has_capability(GuestCapability.CAP_SYS_ADMIN) is False
+    assert new_facts.has_capabilities(GuestCapability.CAP_CHOWN) is True
+    assert new_facts.has_capabilities(GuestCapability.CAP_DAC_OVERRIDE) is True
+    assert new_facts.has_capabilities(GuestCapability.CAP_SETUID) is True
+    assert new_facts.has_capabilities(GuestCapability.CAP_SYS_ADMIN) is False
 
 
 @pytest.mark.parametrize(('stdout', 'expected'), [
