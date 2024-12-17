@@ -3,16 +3,11 @@
 
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence
-*                                   @psss @lukaszachy @happz @thrix @janhavlin
-
-# Packaging
-/pyproject.toml                     @psss @lukaszachy @happz @thrix @janhavlin @martinhoyer
-/tmt.spec                           @psss @lukaszachy @happz @thrix @janhavlin @martinhoyer
+*                                   @psss @lukaszachy @happz @thrix @janhavlin @martinhoyer
 
 # Provision plugins
 /tmt/steps/provision/artemis.py     @happz
 /tmt/steps/provision/testcloud.py   @frantisekz
-/tmt/steps/provision/mrack*         @dav-pascual
 
 # Report plugins
 /tmt/steps/report/polarion.py       @KwisatzHaderach
