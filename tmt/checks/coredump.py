@@ -1,6 +1,7 @@
 import dataclasses
 import re
 from re import Pattern
+from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
@@ -9,15 +10,25 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.result import CheckResult, ResultOutcome
-from tmt.steps.provision import GuestCapability
-from tmt.utils import Command, field
+from tmt.utils import Command, ShellScript, field
 
 if TYPE_CHECKING:
     import tmt.base
     from tmt.steps.execute import TestInvocation
     from tmt.steps.provision import Guest
 
-DEFAULT_TMP_PATH = "/var/tmp/tmt"  # noqa: S108
+
+COREDUMP_TIMESTAMP_FILENAME = "coredump-timestamp"
+
+# Can be set in /etc/coredumpct.conf.d/
+# See `man coredump.conf`
+COREDUMP_CONFIG = """[Coredump]
+Storage=external
+Compress=yes
+"""
+
+# Can be set in /proc/sys/kernel/core_pattern
+# CORE_PATTERN = '|/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h'
 
 
 @dataclasses.dataclass
@@ -40,8 +51,8 @@ class CoredumpCheck(Check):
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
         )
 
-    # Internal flag to track if we have required capabilities
-    _has_capabilities: bool = True
+    # Internal flag to track if we can run coredumpctl on the host
+    is_available: bool = True
 
     def to_spec(self) -> _RawCheck:
         """Convert to raw specification."""
@@ -58,44 +69,19 @@ class CoredumpCheck(Check):
         return self.to_spec()
 
     def _configure_coredump(
-            self, guest: "Guest", logger: tmt.log.Logger, check_files_path: str
-            ) -> bool:
-        """Configure coredump storage."""
+            self, guest: "Guest", logger: tmt.log.Logger) -> None:
+        """Try configure coredump storage.
+
+        Non-privilidged users might not have permission to change the config,
+        while being able to use coredumpctl
+        """
         try:
-            # This should be default anyway
-            config = """[Coredump]
-Storage=external
-Compress=yes
-ProcessSizeMax=32G
-ExternalSizeMax=32G
-JournalSizeMax=767M
-MaxUse=0
-KeepFree=0
-"""
-            guest.execute(
-                Command(
-                    "sh",
-                    "-c",
-                    f"mkdir -p /etc/systemd/coredump.conf.d && "
-                    f"echo '{config}' > /etc/systemd/coredump.conf.d/50-tmt.conf",
-                    )
-                )
+            guest.execute(ShellScript("mkdir -p /etc/systemd/coredump.conf.d")
+                          and ShellScript(
+                f"echo '{COREDUMP_CONFIG}' > /etc/systemd/coredump.conf.d/50-tmt.conf"))
 
-            # TODO: check if we need non-default config here
-            # Configure kernel core pattern to use systemd-coredump
-            # guest.execute(
-            #    Command(
-            #        "sh",
-            #        "-c",
-            #        "echo '|/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h' > /proc/sys/kernel/core_pattern"  # noqa: E501
-            #    )
-            # )
-
-            return True
-
-        except tmt.utils.RunError as exc:
-            logger.debug(f"Failed to configure coredump: {exc}")
-            return False
+        except tmt.utils.RunError:
+            logger.debug("Unable to configure coredump, continuing with default settings")
 
     def _check_coredump_available(self, guest: "Guest", logger: tmt.log.Logger) -> bool:
         """
@@ -106,31 +92,19 @@ KeepFree=0
         """
         # Check if coredumpctl is present
         try:
-            guest.execute(Command('coredumpctl', '--version'), silent=True)
+            guest.execute(ShellScript("coredumpctl --version"), silent=True)
         except tmt.utils.RunError:
             logger.debug("coredumpctl command not found")
             return False
 
         # Check if systemd-coredump.socket is active
         try:
-            guest.execute(
-                Command('systemctl', 'is-active', 'systemd-coredump.socket'), silent=True)
+            guest.execute(ShellScript("systemctl is-active systemd-coredump.socket")
+                          or ShellScript("systemctl is-active systemd-coredump.socket"))
         except tmt.utils.RunError:
-            logger.debug("systemd-coredump.socket is not active")
+            logger.debug("Unable to start systemd-coredump.socket")
             return False
 
-        # Check if we can write config
-        try:
-            guest.execute(
-                Command(
-                    "sh",
-                    "-c",
-                    "mkdir -p /etc/systemd/coredump.conf.d && touch /etc/systemd/coredump.conf.d/.tmt-test"  # noqa: E501
-                    ),
-                silent=True)
-        except tmt.utils.RunError:
-            logger.debug("Cannot write to /etc/systemd/coredump.conf.d")
-            return False
         return True
 
     def _check_for_crashes(
@@ -140,10 +114,9 @@ KeepFree=0
         try:
             # Get list of all crashes since test start
             # Not using `--json` as it's not available on el8.
-            output = guest.execute(
-                Command(
-                    "coredumpctl", "list", "--no-legend", "--no-pager", f"--since={start_time}"
-                    )
+            output = guest.execute(Command(
+                "coredumpctl", "list", "--no-legend", "--no-pager", f"--since={start_time}"
+                )
                 ).stdout
 
             if not output:
@@ -184,7 +157,7 @@ KeepFree=0
                 # Save the crash info
                 info_file = f"{check_files_path}/dump.{exe}_{sig}_{pid}.txt"
                 guest.execute(
-                    Command("sh", "-c", f"coredumpctl info --no-pager {pid} > {info_file}")
+                    ShellScript(f"sh -c coredumpctl info --no-pager {pid} > {info_file}")
                     )
                 logger.debug(f"Saved crash info to {info_file}")
 
@@ -193,7 +166,7 @@ KeepFree=0
                     dump_file = f"{check_files_path}/dump.{exe}_{sig}_{pid}.core"
                     try:
                         guest.execute(
-                            Command("coredumpctl", "dump", "--no-pager", "-o", dump_file, pid)
+                            ShellScript(f"coredumpctl dump --no-pager -o {dump_file} {pid}")
                             )
                         logger.debug(f"Saved coredump to {dump_file}")
                     except tmt.utils.RunError as exc:
@@ -214,28 +187,10 @@ KeepFree=0
             self, invocation: "TestInvocation", event: CheckEvent, logger: tmt.log.Logger
             ) -> ResultOutcome:
         """Check coredump status and return appropriate result."""
-        # Only configure coredump in before_test
-        if event == CheckEvent.BEFORE_TEST:
-            # Configure coredump
-            if not self._configure_coredump(
-                    invocation.guest, logger, str(invocation.check_files_path)):
-                return ResultOutcome.ERROR
-
-            # Create timestamp directory and store current time for --since filtering
-            invocation.guest.execute(
-                Command(
-                    "sh",
-                    "-c",
-                    f"mkdir -p {DEFAULT_TMP_PATH} && "
-                    f"date '+%Y-%m-%d %H:%M:%S' > {DEFAULT_TMP_PATH}/coredump-timestamp"
-                    )
-                )
-            return ResultOutcome.PASS
 
         # Check for crash reports in after_test
         output = invocation.guest.execute(
-            Command("cat", f"{DEFAULT_TMP_PATH}/coredump-timestamp")
-            ).stdout
+            Command("cat", self.coredump_timestamp_filepath)).stdout
 
         if not output:
             logger.debug("Failed to read timestamp file")
@@ -249,6 +204,17 @@ KeepFree=0
             return ResultOutcome.FAIL
 
         return ResultOutcome.PASS
+
+    def _create_coredump_timestamp(
+            self, invocation: "TestInvocation") -> bool:
+
+        self.coredump_timestamp_filepath = invocation.check_files_path / COREDUMP_TIMESTAMP_FILENAME  # noqa: E501
+        # Create timestamp directory and store current time for --since filtering
+        if not invocation.guest.execute(
+                ShellScript(f"mkdir -p {invocation.check_files_path}") and
+                ShellScript(f"date '+%Y-%m-%d %H:%M:%S' > {self.coredump_timestamp_filepath}")):
+            return False
+        return True
 
 
 @provides_check("coredump")
@@ -280,25 +246,6 @@ class Coredump(CheckPlugin[CoredumpCheck]):
     _check_class = CoredumpCheck
 
     @classmethod
-    def essential_requires(
-            cls, guest: "Guest", test: "tmt.base.Test", logger: tmt.log.Logger
-            ) -> list["tmt.base.DependencySimple"]:
-        # Avoid circular imports
-        import tmt.base
-
-        # Only require systemd-udev if we have necessary capabilities
-        required_capabilities: list[GuestCapability] = [
-            GuestCapability.CAP_SYS_ADMIN,    # Configure coredump
-            GuestCapability.CAP_SYSLOG,       # Read journal
-            ]
-
-        if not guest.facts.has_systemd and not guest.facts.has_capabilities(required_capabilities):
-            logger.debug("Missing required capabilities, skipping coredump dependencies")
-            return []
-
-        return [tmt.base.DependencySimple("systemd-udev")]  # includes coredumpctl
-
-    @classmethod
     def before_test(
             cls,
             *,
@@ -308,27 +255,17 @@ class Coredump(CheckPlugin[CoredumpCheck]):
             logger: tmt.log.Logger,
             ) -> list[CheckResult]:
         """Check for crashes before the test starts."""
-        # Required capabilities for full coredump functionality
-        required_capabilities = [
-            GuestCapability.CAP_SYS_ADMIN,    # Configure coredump
-            GuestCapability.CAP_SYSLOG,       # Read journal
-            GuestCapability.CAP_DAC_READ_SEARCH,  # Access coredump files
-            GuestCapability.CAP_DAC_OVERRIDE  # Access protected files
-            ]
 
-        # Check if all required capabilities are available
-        if not invocation.guest.facts.has_systemd and not invocation.guest.facts.has_capabilities(
-                required_capabilities):
-            logger.debug("Missing required capabilities for coredump functionality")
-            check._has_capabilities = False
-            return [CheckResult(name='coredump', result=ResultOutcome.SKIP)]
+        if not invocation.guest.facts.has_systemd or not check._check_coredump_available(
+                invocation.guest, logger):
+            logger.debug("coredump not available, skipping..")
+            check.is_available = False
+            return [CheckResult(name="coredump", result=ResultOutcome.SKIP)]
 
-        # Check if coredump is available
-        if not check._check_coredump_available(invocation.guest, logger):
-            logger.debug("Coredump functionality not available")
-            check._has_capabilities = False
-            return [CheckResult(name='coredump', result=ResultOutcome.SKIP)]
+        if not check._create_coredump_timestamp(invocation):
+            outcome = ResultOutcome.ERROR
 
+        check._configure_coredump(invocation.guest, logger)
         outcome = check._check_coredump(invocation, CheckEvent.BEFORE_TEST, logger)
         return [CheckResult(name="coredump", result=outcome)]
 
@@ -342,9 +279,10 @@ class Coredump(CheckPlugin[CoredumpCheck]):
             logger: tmt.log.Logger,
             ) -> list[CheckResult]:
         """Check for crashes after the test finishes."""
-        # Skip if we didn't have required capabilities in before_test
-        if not check._has_capabilities:
-            return [CheckResult(name='coredump', result=ResultOutcome.SKIP)]
+        # Skip if coredumpctl is not available, as detected in before-test
+        sleep(1)
+        if not check.is_available:
+            return [CheckResult(name="coredump", result=ResultOutcome.SKIP)]
 
         outcome = check._check_coredump(invocation, CheckEvent.AFTER_TEST, logger)
         return [CheckResult(name="coredump", result=outcome)]
