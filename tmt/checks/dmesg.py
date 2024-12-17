@@ -83,7 +83,7 @@ class DmesgCheck(Check):
                 level=level,
                 topic=topic)
 
-        if guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_CLEAR):
+        if guest.facts.has_capabilities(GuestCapability.CAP_SYSLOG):
             script = tmt.utils.ShellScript('dmesg -c')
 
         else:
@@ -170,7 +170,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             guest: 'Guest',
             test: 'tmt.base.Test',
             logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
-        if not guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+        if not guest.facts.has_capabilities(GuestCapability.CAP_SYSLOG):
             return []
 
         # Avoid circular imports
@@ -186,7 +186,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+        if not invocation.guest.facts.has_capabilities(GuestCapability.CAP_SYSLOG):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
@@ -201,7 +201,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             invocation: 'TestInvocation',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
-        if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
+        if not invocation.guest.facts.has_capabilities(GuestCapability.CAP_SYSLOG):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
         if not invocation.is_guest_healthy:
