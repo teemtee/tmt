@@ -5,6 +5,11 @@
 ======================
 
 
+The :ref:`/plugins/report/reportportal` plugin now exports all
+test contact information, rather than just the first contact
+instance.
+
+
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
