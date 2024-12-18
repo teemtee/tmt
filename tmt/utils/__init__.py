@@ -2001,14 +2001,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         def _check_or_create_workdir_root_with_perms() -> None:
             """ If created workdir_root has to be 1777 for multi-user"""
-            if not self.workdir_root.is_dir():
-                try:
-                    self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    self.workdir_root.chmod(0o1777)
-                    command = Command('setfacl', '-d', '-m', 'o:rwX', str(self.workdir_root))
-                    self.run(command)
-                except OSError as error:
-                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
+            try:
+                self.workdir_root.mkdir(exist_ok=True, parents=True)
+                self.workdir_root.chmod(0o1777)
+                command = Command('setfacl', '-d', '-m', 'o:rwX', str(self.workdir_root))
+                self.run(command)
+            except OSError as error:
+                raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
 
         if id_ is None:
             # Prepare workdir_root first
