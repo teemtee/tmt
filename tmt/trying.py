@@ -79,11 +79,13 @@ class Action(enum.Enum):
         return before + key + after + padding + self.description
 
     @classmethod
-    def find(cls, key: str) -> "Action":
-        """ Return action for given keyboard shortcut """
+    def find(cls, answer: str) -> "Action":
+        """ Return action for given keyboard input (shortcut or whole word) """
+
+        answer = answer.lower()
 
         for action in cls:
-            if action.key == key:
+            if answer in (action.key, action.action):
                 return action
 
         raise KeyError
