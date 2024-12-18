@@ -86,6 +86,7 @@ jobs:
     trigger: commit
     branch: main
     project: latest
+    release_suffix: "{PACKIT_PROJECT_BRANCH}"
 
   # Build pull requests
   - <<: *copr-under-packit
