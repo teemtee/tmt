@@ -14,12 +14,28 @@ rlJournalStart
         rlRun "set -o pipefail"
         rlRun "output=\$(mktemp)"
         rlRun "show_tmp=\$(mktemp)"
+        rlRun "show_dir0=\$(mktemp -d)"
         rlRun "show_dir1=\$(mktemp -d)"
         rlRun "show_dir2=\$(mktemp -d)"
         rlRun "show_dir3=\$(mktemp -d)"
+        rlRun "export LOCAL_GIT_ROOT=$(git rev-parse --show-toplevel)"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in a normal git repo"
+        rlRun -s "tmt plans show -vvv mini"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertGrep "url:" $show_tmp
+        # Cannot assert 'ref' here as it could run on the default branch'
+        rlAssertGrep "path:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        rlAssertGrep "web" $show_tmp
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in a normal, branched git repo"
+        rlRun "cp -r \"$LOCAL_GIT_ROOT\" \"$show_dir0\""
+        rlRun "pushd $show_dir0/tmt/tests/plan/show/data"
+        rlRun "git checkout -b THIS_BRANCH"
         rlRun -s "tmt plans show -vvv mini"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
@@ -28,6 +44,7 @@ rlJournalStart
         rlAssertGrep "path:" $show_tmp
         rlAssertGrep "name:" $show_tmp
         rlAssertGrep "web" $show_tmp
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in an empty git repo"
