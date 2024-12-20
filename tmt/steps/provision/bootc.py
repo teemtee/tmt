@@ -75,6 +75,12 @@ class GuestBootc(GuestTestcloud):
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None)
 
+        # plan with bootc provision should build its own qcow2 before test run
+        # test qcow2 image should be removed when plan is done
+        tmt.utils.Command(
+            "rm", "-vf", f"{DEFAULT_TMP_PATH}/images/disk.qcow2"
+            ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
+
         try:
             tmt.utils.Command(
                 "podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME
