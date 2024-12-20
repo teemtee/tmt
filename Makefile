@@ -205,7 +205,7 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/1
 ## Development
 ##
 develop: _deps  ## Install development requirements
-	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
+	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
 
 # Git vim tags and cleanup
 tags:
