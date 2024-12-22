@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Order in which the object should be handled
 
 description:
@@ -14,3 +17,26 @@ example: |
 link:
   - implemented-by: /tmt/base.py
   - verified-by: /tests/core/order
+
+/predefined-order:
+    title: Predefined order values
+
+    summary: Predefined order values - summary
+
+    description: |
+        30
+            Installation of essential plugin and check requirements.
+
+        50
+            The default order of any object.
+
+        60
+            Application of patches by ``rpm-build`` command invoked by
+            :ref:`discover/fmf</plugins/discover/fmf>` plugin when
+            ``dist-git-source`` key is used.
+
+        70
+            Installation of packages :ref:`required</spec/tests/require>` by tests.
+
+        75
+            Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.

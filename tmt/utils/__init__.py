@@ -141,13 +141,8 @@ OUTPUT_WIDTH: int = configure_constant(DEFAULT_OUTPUT_WIDTH, 'TMT_OUTPUT_WIDTH')
 # Hierarchy indent
 INDENT = 4
 
-# Default name and order for step plugins
+# Default name for step plugins
 DEFAULT_NAME = 'default'
-DEFAULT_PLUGIN_ORDER = 50
-DEFAULT_PLUGIN_ORDER_MULTIHOST = 10
-DEFAULT_PLUGIN_ORDER_ESSENTIAL_REQUIRES = 30
-DEFAULT_PLUGIN_ORDER_REQUIRES = 70
-DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 
 # Special process return codes

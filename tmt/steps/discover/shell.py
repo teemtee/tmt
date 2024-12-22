@@ -60,7 +60,7 @@ class TestDescription(
     description: Optional[str] = None
     enabled: bool = True
     order: int = field(
-        # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
+        # TODO: ugly circular dependency (see tmt.steps.PHASE_ORDER_DEFAULT)
         default=50,
         normalize=lambda key_address, raw_value, logger:
             50 if raw_value is None else int(raw_value)
