@@ -45,7 +45,7 @@
 
 .. _/plugins/{{ STEP }}:
 
-{{ STEP | replace('-', ' ') | capitalize }} Plugins
+{% if STEP == 'prepare-feature' %}prepare/feature{% else %}{{ STEP | replace('-', ' ') | capitalize }}{% endif %} Plugins
 {{ '~' * (8 + (STEP | length)) }}
 
 .. include:: {{ STEP }}-header.inc.rst
