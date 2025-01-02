@@ -25,6 +25,9 @@ properties:
       - enabled
       - disabled
 
+  profile:
+    type: string
+
   name:
     type: string
 
