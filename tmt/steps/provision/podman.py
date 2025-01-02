@@ -236,7 +236,7 @@ class GuestContainer(tmt.Guest):
 
     def _run_ansible(
             self,
-            playbook: Path,
+            playbook: tmt.steps.provision.AnsibleApplicable,
             playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
