@@ -80,6 +80,10 @@ rlJournalStart
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
 
+            elif is_centos_stream_10 "$image"; then
+                rlRun "distro=centos-stream-10"
+                rlRun "package_manager=dnf"
+
             elif is_centos_7 "$image"; then
                 rlRun "distro=centos-7"
                 rlRun "package_manager=yum"

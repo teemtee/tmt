@@ -46,6 +46,8 @@ CONTAINER_FEDORA_40 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/40/upstream:latest')
 CONTAINER_FEDORA_39 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/39/upstream:latest')
+CONTAINER_CENTOS_STREAM_10 = Container(
+    url='containers-storage:localhost/tmt/tests/container/centos/stream10/upstream:latest')
 CONTAINER_CENTOS_STREAM_9 = Container(
     url='containers-storage:localhost/tmt/tests/container/centos/stream9/upstream:latest')
 CONTAINER_CENTOS_7 = Container(
@@ -148,6 +150,8 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_YUM),
 
     # CentOS Stream
+    (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),
+    (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_YUM),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_YUM),
 
