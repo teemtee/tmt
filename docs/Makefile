@@ -27,7 +27,7 @@ GENERATED_DIRECTORIES = spec stories
 STEPS = discover provision prepare execute finish report
 
 # A list of `plugins/*.rst` files to generate
-PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/test-checks.rst
+PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepare-feature.rst plugins/test-checks.rst
 
 .DEFAULT_GOAL := help
 
@@ -64,6 +64,11 @@ define plugins-dependencies =
 $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/steps/$(call plugins-to-step,$@)/*.py
 endef
 
+# Render a list of dependencies of a `plugins/feature.rst` target
+define plugins-feature-dependencies =
+$(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/steps/prepare/__init__.py $(TMTDIR)/steps/prepare/feature/*.py
+endef
+
 # Render a list of dependencies of a `plugins/test-checks.rst` target
 define plugins-checks-dependencies =
 $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/checks/*.py
@@ -95,6 +100,9 @@ plugins/provision.rst: $(call plugins-dependencies)
 	$(call build-plugins)
 
 plugins/report.rst: $(call plugins-dependencies)
+	$(call build-plugins)
+
+plugins/prepare-feature.rst: $(call plugins-feature-dependencies)
 	$(call build-plugins)
 
 plugins/test-checks.rst: $(call plugins-checks-dependencies)
