@@ -6,12 +6,15 @@ help texts.
 """
 
 import functools
-from typing import Optional
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional
 
 import click
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
+import docutils.parsers.rst.roles
+import docutils.parsers.rst.states
 import docutils.utils
 
 import tmt.log
@@ -259,8 +262,38 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         raise GeneralError(f"Unhandled ReST node '{node}'.")
 
 
+# Role handling works out of the box when building docs with Sphinx, but
+# for CLI rendering, we use docutils directly, and we need to provide
+# handlers for roles supported by Sphinx.
+#
+# It might be possible to reuse Sphinx implementation, but a brief
+# reading of Sphinx source gives an impression of pretty complex code.
+# And we don't need anything fancy, how hard could it be, right? See
+# https://docutils.sourceforge.io/docs/howto/rst-roles.html
+def role_ref(
+    name: str,
+    rawtext: str,
+    text: str,
+    lineno: int,
+    inliner: docutils.parsers.rst.states.Inliner,
+    options: Mapping[str, Any],
+    content: Sequence[str]) \
+        -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
+    """
+    A handler for ``:ref:`` role.
+
+    :returns: a simple :py:class:`docutils.nodes.Text` node with text of
+        the "link": ``foo`` for both ``:ref:`foo``` and
+        ``:ref:`foo</bar>```.
+    """
+
+    return ([docutils.nodes.reference(rawtext, text)], [])
+
+
 def parse_rst(text: str) -> docutils.nodes.document:
     """ Parse a ReST document into docutils tree of nodes """
+
+    docutils.parsers.rst.roles.register_local_role('ref', role_ref)
 
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
