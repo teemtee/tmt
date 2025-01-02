@@ -1,12 +1,12 @@
 from typing import Any
 
 import tmt.log
-from tmt.steps.prepare.feature import Feature, provides_feature
+from tmt.steps.prepare.feature import ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
 
 
 @provides_feature('epel')
-class Epel(Feature):
+class Epel(ToggleableFeature):
     NAME = "epel"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

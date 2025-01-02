@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Callable, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 import tmt
 import tmt.base
@@ -16,7 +16,7 @@ from tmt.utils import Path, field
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
-FeatureClass = type['Feature']
+FeatureClass = type['FeatureBase']
 _FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
 
 
@@ -54,29 +54,13 @@ def find_plugin(name: str) -> 'FeatureClass':
     return plugin
 
 
-class Feature(tmt.utils.Common):
-    """ Base class for ``feature`` prepare plugin implementations """
+class FeatureBase(tmt.utils.Common):
+    """ Base class for ``feature`` plugins """
 
     NAME: str
 
-    def __init__(
-            self,
-            *,
-            parent: 'PrepareFeature',
-            guest: Guest,
-            logger: tmt.log.Logger) -> None:
-        """ Initialize feature data """
-        super().__init__(logger=logger, parent=parent, relative_indent=0)
-
-        self.guest = guest
-
-    @classmethod
-    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        raise NotImplementedError
-
-    @classmethod
-    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        raise NotImplementedError
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
@@ -103,6 +87,36 @@ class Feature(tmt.utils.Common):
         guest.ansible(playbook_path)
 
 
+class ToggleableFeature(FeatureBase):
+    """ Base class for ``feature`` plugins that enable/disable a feature """
+
+    NAME: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+
+class Feature(FeatureBase):
+    """ Base class for ``feature`` plugins that enable a feature """
+
+    NAME: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def enable(cls, guest: Guest, value: str, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+
 @dataclasses.dataclass
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     # TODO: Change it to be able to create and discover custom fields to feature step data
@@ -111,6 +125,13 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
         option='--epel',
         metavar='enabled|disabled',
         help='Whether EPEL repository should be installed & enabled or disabled.'
+        )
+
+    profile: Optional[str] = field(
+        default=None,
+        option='--profile',
+        metavar='NAME',
+        help='Apply guest profile.'
         )
 
 
@@ -165,19 +186,27 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             return []
 
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
-            plugin = find_plugin(plugin_id)
+            plugin_class = find_plugin(plugin_id)
 
-            value = cast(Optional[str], getattr(self.data, plugin.NAME, None))
+            value = cast(Optional[str], getattr(self.data, plugin_class.NAME, None))
             if value is None:
                 continue
 
-            value = value.lower()
-            if value == 'enabled':
-                plugin.enable(guest, logger)
-            elif value == 'disabled':
-                plugin.disable(guest, logger)
+            if issubclass(plugin_class, ToggleableFeature):
+                value = value.lower()
+
+                if value == 'enabled':
+                    plugin_class.enable(guest, logger)
+                elif value == 'disabled':
+                    plugin_class.disable(guest, logger)
+                else:
+                    raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
+
+            elif issubclass(plugin_class, Feature):
+                plugin_class.enable(guest, value, logger)
+
             else:
-                raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
+                raise tmt.utils.GeneralError(f"Unknown plugin implementation '{plugin_class}'.")
 
         return results
 
