@@ -65,9 +65,9 @@ description: |
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
 
-    See e.g. https://www.cpu-world.com/index.html for information on family,
-    model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
-    are also useful resources.
+    See e.g. https://www.cpu-world.com/ for information on family, model,
+    stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu`` are
+    also useful resources.
 
     .. versionchanged:: 1.39
        ``beaker`` plugins supports ``family`` and ``frequency``
