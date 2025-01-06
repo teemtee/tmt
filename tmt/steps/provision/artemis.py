@@ -494,7 +494,7 @@ class GuestArtemis(tmt.GuestSsh):
         return self.primary_address is not None
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
         return []
 

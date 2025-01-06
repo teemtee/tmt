@@ -1187,7 +1187,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             return False
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
         return []
 
