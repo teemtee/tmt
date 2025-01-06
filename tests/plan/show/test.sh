@@ -203,6 +203,20 @@ rlJournalStart
         rlAssertEquals "script shall be an replaced" "$(grep ' script ' $rlRun_LOG | awk '{print $2}')" "dummy-script"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test whether 'tmt', 'plans' and 'show' accept verbosity option"
+        rlRun -s "tmt    plans    show    /plans/full"
+        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    plans    show -v /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    plans -v show    /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt -v plans    show    /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"

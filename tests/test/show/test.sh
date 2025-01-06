@@ -145,6 +145,20 @@ rlJournalStart
         rlAssertGrep    "/tests/disabled02" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test whether 'tmt', 'tests' and 'show' accept verbosity option"
+        rlRun -s "tmt    tests    show    /tests/full"
+        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    tests    show -v /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    tests -v show    /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt -v tests    show    /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd

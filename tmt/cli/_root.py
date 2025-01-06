@@ -349,6 +349,9 @@ def tests(context: Context, **kwargs: Any) -> None:
     Convert old metadata into the new fmf format.
     """
 
+    context.obj.logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
     # Show overview of available tests
     if context.invoked_subcommand is None:
         tmt.Test.overview(context.obj.tree)
@@ -386,7 +389,11 @@ def tests_show(context: Context, **kwargs: Any) -> None:
     Use '.' to select tests under the current working directory.
     """
     tmt.Test.store_cli_invocation(context)
-    for test in context.obj.tree.tests():
+
+    logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
+    for test in context.obj.tree.tests(logger=logger):
         test.show()
         echo()
 
@@ -746,6 +753,9 @@ def plans(context: Context, **kwargs: Any) -> None:
     Explore detailed test step configuration.
     """
 
+    context.obj.logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
     # Show overview of available plans
     if context.invoked_subcommand is None:
         tmt.Plan.overview(context.obj.tree)
@@ -786,7 +796,11 @@ def plans_show(context: Context, **kwargs: Any) -> None:
     Use '.' to select plans under the current working directory.
     """
     tmt.Plan.store_cli_invocation(context)
-    for plan in context.obj.tree.plans():
+
+    logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
+    for plan in context.obj.tree.plans(logger=logger):
         plan.show()
         echo()
 
@@ -929,6 +943,10 @@ def stories(context: Context, **kwargs: Any) -> None:
     Check available user stories.
     Explore coverage (test, implementation, documentation).
     """
+
+    context.obj.logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
     # Show overview of available stories
     if context.invoked_subcommand is None:
         tmt.Story.overview(context.obj.tree)
@@ -990,7 +1008,11 @@ def stories_show(
     Use '.' to select stories under the current working directory.
     """
     tmt.Story.store_cli_invocation(context)
-    for story in context.obj.tree.stories():
+
+    logger = context.obj.logger.clone() \
+        .apply_verbosity_options(**kwargs)
+
+    for story in context.obj.tree.stories(logger=logger):
         if story._match(implemented, verified, documented, covered,
                         unimplemented, unverified, undocumented, uncovered):
             story.show()
