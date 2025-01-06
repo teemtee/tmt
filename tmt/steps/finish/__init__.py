@@ -226,7 +226,7 @@ class Finish(tmt.steps.Step):
 
         # Stop and remove provisioned guests
         for guest in self.plan.provision.guests():
-            guest.handle_guest_logs(log_names=guest.log_names)
+            guest.fetch_logs(lognames=guest.lognames)
             guest.stop()
             guest.remove()
 

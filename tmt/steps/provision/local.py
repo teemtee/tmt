@@ -33,9 +33,9 @@ class GuestLocal(tmt.Guest):
         return True
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
-        return ['dmesg']
+        return []
 
     def _run_ansible(
         self,
@@ -184,14 +184,14 @@ class GuestLocal(tmt.Guest):
         Nothing to be done to pull workdir
         """
 
-    def acquire_log(self, log_name: str) -> Optional[str]:
+    def acquire_log(self, logname: str) -> Optional[str]:
         """
         Fetch and return content of a log.
 
-        :param log_name: name of the log.
+        :param logname: name of the log.
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
-        if log_name == 'dmesg':
+        if logname == 'dmesg':
             return self.execute(Command('dmesg')).stdout
         return None
 

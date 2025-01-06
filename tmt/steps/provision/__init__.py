@@ -1114,7 +1114,7 @@ class Guest(tmt.utils.Common):
         )
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
 
         return []
@@ -1708,58 +1708,58 @@ class Guest(tmt.utils.Common):
 
         return []
 
-    def acquire_log(self, log_name: str) -> Optional[str]:
+    def acquire_log(self, logname: str) -> Optional[str]:
         """
         Fetch and return content of a log.
 
-        :param log_name: name of the log.
+        :param logname: name of the log.
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         raise NotImplementedError
 
     def store_log(
             self,
-            log_path: Path,
-            log_content: str,
-            log_name: Optional[str] = None) -> None:
+            path: Path,
+            content: str,
+            logname: Optional[str] = None) -> None:
         """
         Save log content to a file.
 
-        :param log_path: a path to save into, could be a directory
+        :param path: a path to save into, could be a directory
             or a file path.
-        :param log_content: content of the log.
-        :param log_name: name of the log, if not set, log_path
+        :param content: content of the log.
+        :param logname: name of the log, if not set, logpath
             is supposed to be a file path.
         """
-        # if log_path is file path
-        if not log_path.is_dir():
-            log_path.write_text(log_content)
-        # log_path is a directory
-        elif log_name:
-            (log_path / log_name).write_text(log_content)
+        # if path is file path
+        if not path.is_dir():
+            path.write_text(content)
+        # if path is a directory
+        elif logname:
+            (path / logname).write_text(content)
         else:
             raise tmt.utils.GeneralError(
                 'Log path is a directory but log name is not defined.')
 
-    def handle_guest_logs(self,
-                          log_path: Optional[Path] = None,
-                          log_names: Optional[list[str]] = None) -> None:
+    def fetch_logs(self,
+                   dirpath: Optional[Path] = None,
+                   lognames: Optional[list[str]] = None) -> None:
         """
         Get log content and save it to a directory.
 
-        :param log_path: a directory to save into. If not set, step's working directory
+        :param dirpath: a directory to save into. If not set, step's working directory
             (:py:attr:`workdir`) or current working directory will be used.
-        :param log_names: name list of logs need to be handled. If not set, all guest logs
-            would be collected, as reported by :py:attr:`log_names`.
+        :param lognames: name list of logs need to be handled. If not set, all guest logs
+            would be collected, as reported by :py:attr:`lognames`.
         """
-        log_names = log_names or self.log_names
-        log_path = log_path or self.workdir or Path.cwd()
-        for log_name in log_names:
-            log_content = self.acquire_log(log_name)
-            if log_content:
-                self.store_log(log_path, log_content, log_name)
+        lognames = lognames or self.lognames
+        dirpath = dirpath or self.workdir or Path.cwd()
+        for logname in lognames:
+            content = self.acquire_log(logname)
+            if content:
+                self.store_log(dirpath, content, logname)
             else:
-                self.debug(f'no content in {log_name}')
+                self.store_log(dirpath, '', logname)
 
 
 @container
