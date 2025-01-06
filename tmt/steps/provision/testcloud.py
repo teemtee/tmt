@@ -716,7 +716,7 @@ class GuestTestcloud(tmt.GuestSsh):
         return bool(re.search('coreos|rhcos', self.image.lower()))
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
         return []
 
