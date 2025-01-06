@@ -86,7 +86,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
     hard_reboot: Optional[ShellScript]
 
     @property
-    def log_names(self) -> list[str]:
+    def lognames(self) -> list[str]:
         """ Return name list of logs the guest could provide. """
         return []
 
