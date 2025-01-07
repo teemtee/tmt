@@ -1,8 +1,12 @@
+---
+
 - name: Disable EPEL repositories
   hosts: all
   tasks:
     - name: Disable EPEL repos on RHEL 7 or CentOS 7
-      when: ansible_distribution in ["RedHat", "CentOS"] and ansible_distribution_major_version | int == 7
+      when:
+        - ansible_distribution in ["RedHat", "CentOS"]
+        - ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'yum-utils'
           ansible.builtin.dnf:
@@ -22,7 +26,9 @@
           changed_when: output.rc != 0
 
     - name: Disable EPEL and EPEL-Next repos on RHEL 8+ or CentOS Stream 8+
-      when: ansible_distribution in ["RedHat", "CentOS"] and ansible_distribution_major_version | int >= 8
+      when:
+        - ansible_distribution in ["RedHat", "CentOS"]
+        - ansible_distribution_major_version | int >= 8
       block:
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -49,6 +55,7 @@
 
         - name: Disable EPEL-Next repos
           when: result.rc == 0
-          ansible.builtin.command: dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
+          ansible.builtin.command: |
+            dnf config-manager --disable epel-next epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0

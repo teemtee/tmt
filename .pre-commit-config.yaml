@@ -125,7 +125,7 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
-        files: ^tmt/schemas/.*\.yaml
+        files: ^tmt/(?:schemas|steps/prepare/feature)/.*\.yaml
 
   - repo: https://github.com/ansible-community/ansible-lint.git
     rev: v24.10.0

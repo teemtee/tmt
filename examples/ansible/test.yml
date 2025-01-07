@@ -1,3 +1,5 @@
+---
+
 - name: A simple test
   hosts: localhost
   tasks:
