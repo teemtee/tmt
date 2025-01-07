@@ -50,31 +50,36 @@ def effective_pidfile_root() -> Path:
     return TEST_PIDFILE_ROOT
 
 
-#: A template for the shell wrapper in which the test script is
-#: saved.
-#:
-#: It is passed to :py:func:`tmt.utils.safe_filename`, but
-#: includes also test name and serial number to make it unique
-#: even among all test wrappers. See https://github.com/teemtee/tmt/issues/2997
-#: for issue motivating the inclusion, it seems to be a good idea
-#: to prevent accidental reuse in general.
-TEST_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
-
-# tmt test wrapper is getting complex. Besides honoring the timeout
-# and interactivity request, it also must play nicely with reboots
-# and `tmt-reboot`. The wrapper must present consistent info on what
-# is the PID to kill from `tmt-reboot`, and where to save additional
-# reboot info.
 #
-# For the duration of the test, the wrapper creates so-called "test
-# pidfile". The pidfile contains test wrapper PID and path to the
+# Shell wrappers for the test script.
+#
+# tmt must make sure running a test must allow for multiple external
+# factors: the test timeout, interactivity, reboots and `tmt-reboot`
+# invocations. tmt must present consistent info on what is the PID to
+# kill from `tmt-reboot`, and where to save additional reboot info.
+#
+# To achieve these goals, tmt uses two wrappers, the inner and the outer
+# one. The inner one wraps the actual test script as defined in test
+# metadata, the outer one then runs the inner wrapper while performing
+# other necessary steps. tmt invokes the outer wrapper which then
+# invokes the inner wrapper which then invokes the test script.
+#
+# The inner wrapper exists to give tmt a single command to run to invoke
+# the test. Test script may be a single command, but also a multiline,
+# complicated shell script. To avoid issues with quotes and escaping
+# things here and there, tmt saves the test script into the inner
+# wrapper, and then the outer wrapper can work with just a single a
+# single executable shell script.
+#
+# For the duration of the test, the outer wrapper creates so-called
+# "test pidfile". The pidfile contains outer wrapper PID and path to the
 # reboot-request file corresponding to the test being run. All actions
 # against the pidfile must be taken while holding the pidfile lock,
 # to serialize access between the wrapper and `tmt-reboot`. The file
 # might be missing, that's allowed, but if it exists, it must contain
 # correct info.
 #
-# Before quitting the wrapper, the pidfile is removed. There seems
+# Before quitting the outer wrapper, the pidfile is removed. There seems
 # to be an apparent race condition: test quits -> `tmt-reboot` is
 # called from a parallel session, grabs a pidfile lock, inspects
 # pidfile, updates reboot-request, and sends signal to designed PID
@@ -97,7 +102,7 @@ TEST_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper.sh-{{ INVOCATION.test.pathles
 # tty is required (#2381), the tty can be kept on request with
 # the `tty: true` test attribute.
 #
-# The wrapper script handles 3 execution modes for REMOTE_COMMAND:
+# The outer wrapper handles 3 execution modes for the test command:
 #
 # * In `tmt` interactive mode, stdin and stdout are unhandled, it is expected
 #   user interacts with the executed command.
@@ -108,46 +113,90 @@ TEST_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper.sh-{{ INVOCATION.test.pathles
 # * In non-interactive mode with a tty, stdin is available to the tests
 #   and simulation of tty not available for output is not run.
 #
-TEST_WRAPPER_TEMPLATE = jinja2.Template(
-    textwrap.dedent(
-        """
-if ! grep -q "{{ GUEST_SCRIPTS_PATH }}" <<< "${PATH}"; then
-    export PATH={{ GUEST_SCRIPTS_PATH }}:${PATH}
-fi
 
+#: A template for the inner test wrapper filename.
+#:
+#: .. note::
+#:
+#:    It is passed to :py:func:`tmt.utils.safe_filename`, but includes
+#:    also test name and serial number to make it unique even among all
+#:    test wrappers. See #2997 for issue motivating the inclusion, it
+#:    seems to be a good idea to prevent accidental reuse in general.
+TEST_INNER_WRAPPER_FILENAME_TEMPLATE = \
+    'tmt-test-wrapper-inner.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+
+#: A template for the outer test wrapper filename.
+#:
+#: .. note::
+#:
+#:    It is passed to :py:func:`tmt.utils.safe_filename`, but includes
+#:    also test name and serial number to make it unique even among all
+#:    test wrappers. See #2997 for issue motivating the inclusion, it
+#:    seems to be a good idea to prevent accidental reuse in general.
+TEST_OUTER_WRAPPER_FILENAME_TEMPLATE = \
+    'tmt-test-wrapper-outer.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+
+#: A template for the inner test wrapper which invokes the test script.
+TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+{{ INVOCATION.test.test_framework.get_test_command(INVOCATION, LOGGER) }}
+"""
+                                                              ))
+
+#: A template for the outer test wrapper which handles most of the
+#: orchestration and invokes the inner wrapper.
+TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
 {% macro enter() %}
+# Updating the tmt test pid file
+mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
 {%- endmacro %}
 
 {% macro exit() %}
+# Updating the tmt test pid file
+mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
 {%- endmacro %}
 
+# Make sure guest scripts path is searched by shell
+if ! grep -q "{{ INVOCATION.guest.scripts_path }}" <<< "${PATH}"; then
+    export PATH={{ INVOCATION.guest.scripts_path }}:${PATH}
+fi
+
 [ ! -z "$TMT_DEBUG" ] && set -x
 
-test_pid="$$";
+test_pid="$$"
 
-mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
+{% if INVOCATION.phase.data.interactive %}
+{{ enter() }}
 
-{% if INTERACTIVE %}
-    {{ enter() }};
-    {{ REMOTE_COMMAND }};
-    _exit_code="$?";
-    {{ exit() }};
-{% elif TTY %}
-    set -o pipefail;
-    {{ enter() }};
-    {{ REMOTE_COMMAND }} 2>&1;
-    _exit_code="$?";
-    {{ exit () }};
+{{ TEST_COMMAND }}
+_exit_code="$?"
+
+{{ exit() }}
+
+{% elif INVOCATION.test.tty %}
+set -o pipefail
+
+{{ enter() }}
+
+{{ TEST_COMMAND }} 2>&1
+_exit_code="$?"
+
+{{ exit () }}
+
 {% else %}
-    set -o pipefail;
-    {{ enter() }};
-    {{ REMOTE_COMMAND }} </dev/null |& cat;
-    _exit_code="$?";
-    {{ exit () }};
+set -o pipefail
+
+{{ enter() }}
+
+{{ TEST_COMMAND }} </dev/null |& cat
+_exit_code="$?"
+
+{{ exit () }}
 {% endif %}
-exit $_exit_code;
+
+# Return the original exit code of the test script
+exit $_exit_code
 """  # noqa: E501
     )
 )
@@ -337,29 +386,50 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation=invocation, extra_environment=extra_environment, logger=logger
         )
 
-        # tmt wrapper filename *must* be "unique" - the plugin might be handling
-        # the same `discover` phase for different guests at the same time, and
-        # must keep them isolated. The wrapper script, while being prepared, is
-        # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = safe_filename(
-            TEST_WRAPPER_FILENAME_TEMPLATE, self, guest, INVOCATION=invocation
-        )
-        test_wrapper_filepath = workdir / test_wrapper_filename
+        def _prepare_test_wrapper(
+                label: str,
+                filename_template: str,
+                template: jinja2.Template,
+                **variables: Any) -> Path:
+            # tmt wrapper filenames *must* be "unique" - the plugin might be handling
+            # the same `discover` phase for different guests at the same time, and
+            # must keep them isolated. The wrapper scripts, while being prepared, are
+            # a shared global state, and we must prevent race conditions.
+            test_wrapper_filename = safe_filename(
+                filename_template, self, guest, INVOCATION=invocation)
 
-        logger.debug('test wrapper', test_wrapper_filepath)
+            test_wrapper_filepath = workdir / test_wrapper_filename
+            logger.debug(f'test {label} wrapper', test_wrapper_filepath)
 
-        # Prepare the test command
-        test_command = test.test_framework.get_test_command(invocation, logger)
-        self.debug('Test script', test_command, level=3)
+            test_wrapper = ShellScript(template.render(
+                LOGGER=logger,
+                INVOCATION=invocation,
+                **variables).strip())
+            self.debug(f'Test {label} wrapper', test_wrapper, level=3)
 
-        # Prepare the wrapper, push to guest
-        self.write(test_wrapper_filepath, str(test_command), 'w')
-        test_wrapper_filepath.chmod(0o755)
-        guest.push(
-            source=test_wrapper_filepath,
-            destination=test_wrapper_filepath,
-            options=["-s", "-p", "--chmod=755"],
-        )
+            self.write(test_wrapper_filepath, str(test_wrapper), 'w')
+            test_wrapper_filepath.chmod(0o755)
+            guest.push(
+                source=test_wrapper_filepath,
+                destination=test_wrapper_filepath,
+                options=["-s", "-p", "--chmod=755"])
+
+            return test_wrapper_filepath
+
+        # The inner test wrapper envelops the test script...
+        test_inner_wrapper_filepath = _prepare_test_wrapper(
+            'inner',
+            TEST_INNER_WRAPPER_FILENAME_TEMPLATE,
+            TEST_INNER_WRAPPER_TEMPLATE
+            )
+
+        # ... and it's a command the outer plugin invoke execute.
+        test_outer_wrapper_filepath = _prepare_test_wrapper(
+            'outer',
+            TEST_OUTER_WRAPPER_FILENAME_TEMPLATE,
+            TEST_OUTER_WRAPPER_TEMPLATE,
+            TEST_COMMAND=ShellScript(f'./{test_inner_wrapper_filepath.name}'),
+            )
 
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
@@ -367,20 +437,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         environment.update(topology.push(dirpath=invocation.path, guest=guest, logger=logger))
 
-        command: str
-        if guest.become and not guest.facts.is_superuser:
-            command = f'sudo -E ./{test_wrapper_filename}'
-        else:
-            command = f'./{test_wrapper_filename}'
         # Prepare the actual remote command
-        remote_command = ShellScript(
-            TEST_WRAPPER_TEMPLATE.render(
-                INTERACTIVE=self.data.interactive,
-                TTY=test.tty,
-                REMOTE_COMMAND=ShellScript(command),
-                GUEST_SCRIPTS_PATH=guest.scripts_path,
-            ).strip()
-        )
+        remote_command: ShellScript
+        if guest.become and not guest.facts.is_superuser:
+            remote_command = ShellScript(f'sudo -E ./{test_outer_wrapper_filepath.name}')
+        else:
+            remote_command = ShellScript(f'./{test_outer_wrapper_filepath.name}')
 
         def _test_output_logger(
             key: str,
