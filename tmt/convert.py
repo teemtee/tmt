@@ -336,7 +336,7 @@ def read_datafile(
     if requires:
         data['require'] = [
             sanitize_name(require.strip()) for line in requires
-            for require in line.split(rec_separator)]
+            for require in line.split(rec_separator) if require.strip()]
         echo(style('require: ', fg='green') + ' '.join(data['require']))
 
     # Requires or softDependencies (optional) goes to recommend
@@ -344,7 +344,7 @@ def read_datafile(
     if recommends:
         data['recommend'] = [
             sanitize_name(recommend.strip()) for line in recommends
-            for recommend in line.split(rec_separator)]
+            for recommend in line.split(rec_separator) if recommend.strip()]
         echo(
             style('recommend: ', fg='green') + ' '.join(data['recommend']))
 
