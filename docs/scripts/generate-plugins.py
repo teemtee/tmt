@@ -57,7 +57,7 @@ def _is_inherited(
 
     # TODO: for now, it's a list, but inspecting the actual tree of classes
     # would be more generic. It's good enough for now.
-    return field.name in ('name', 'where', 'order', 'summary', 'enabled', 'result')
+    return field.name in ('name', 'where', 'when', 'order', 'summary', 'enabled', 'result')
 
 
 def container_ignored_fields(container: ContainerClass) -> list[str]:
