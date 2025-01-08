@@ -17,6 +17,11 @@ The :ref:`/plugins/report/reportportal` plugin now exports all
 test contact information, rather than just the first contact
 instance.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through the
+``beaker-job-group`` key. The submitting user must be a member of
+the given job group.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,11 +67,6 @@ Documentation pages now use the `new tmt logo`__ designed by Maria
 Leonova.
 
 __ https://github.com/teemtee/docs/tree/main/logo
-
-The :ref:`/plugins/provision/beaker` provision plugin gains
-support for submitting jobs on behalf of a group through
-``beaker-job-group`` key. The submitting user must be a member of
-the given job group.
 
 
 tmt-1.39.0
