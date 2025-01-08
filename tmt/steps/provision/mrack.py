@@ -784,8 +784,15 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
 
+            # Mrack does not handle well situation when the filter
+            # consists of just a single filtering element, e.g. just
+            # `hostname`. In that case, the element is converted into
+            # XML element incorrectly. Therefore wrapping our filter
+            # with `<and/>` group, even if it has just a single child,
+            # it works around the problem.
+            # See https://github.com/teemtee/tmt/issues/3442
             return {
-                'hostRequires': transformed.to_mrack()
+                'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()
                 }
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
