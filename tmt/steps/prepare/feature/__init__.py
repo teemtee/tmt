@@ -1,4 +1,5 @@
 import dataclasses
+import inspect
 from typing import Callable, Optional, cast
 
 import tmt
@@ -81,6 +82,10 @@ class Feature(tmt.utils.Common):
     @classmethod
     def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
+        if filepath.exists():
+            return filepath
+
+        filepath = Path(inspect.getfile(cls)).parent / filename
         if filepath.exists():
             return filepath
 
