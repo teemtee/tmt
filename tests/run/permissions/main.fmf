@@ -13,8 +13,3 @@ adjust+:
   - enabled: true
     when: how == full or trigger == commit
     because: it needs to be executed with root permissions
-  - check:
-      - how: avc
-        result: xfail
-    when: distro == fedora-rawhide
-    because: https://bugzilla.redhat.com/show_bug.cgi?id=2330476
