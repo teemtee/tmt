@@ -310,6 +310,23 @@ definitions:
           - type: string
           - type: integer
 
+      management-interface:
+        type: object
+
+        properties:
+          protocol:
+            type: string
+
+          product:
+            anyOf:
+              - type: string
+              - type: integer
+
+          vendor:
+            anyOf:
+              - type: string
+              - type: integer
+
     additionalProperties: false
 
     # enforce at least one property
