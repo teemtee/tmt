@@ -37,13 +37,14 @@ rlJournalStart
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
             rlAssertGrep 'class="result error">error</td>' $tmp/$test_name_suffix -F
             sed -e "/name\">\/test\/$test_name_suffix/,/\/tr/!d" $HTML | tee $tmp/$test_name_suffix-note
-            rlAssertGrep '<td class="note">timeout</td>' $tmp/$test_name_suffix-note -F
+            rlAssertGrep '<li class="note">timeout</li>' $tmp/$test_name_suffix-note -F
 
             test_name_suffix=xfail
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
             rlAssertGrep 'class="result pass">pass</td>' $tmp/$test_name_suffix -F
             sed -e "/name\">\/test\/$test_name_suffix/,/\/tr/!d" $HTML | tee $tmp/$test_name_suffix-note
-            rlAssertGrep '<td class="note">test failed as expected, original test result: fail</td>' $tmp/$test_name_suffix-note -F
+            rlAssertGrep '<li class="note">test failed as expected</li>' $tmp/$test_name_suffix-note -F
+            rlAssertGrep '<li class="note">original test result: fail</li>' $tmp/$test_name_suffix-note -F
         rlPhaseEnd
 
         if [ "$option" = "" ]; then
