@@ -3033,7 +3033,8 @@ class Tree(tmt.utils.Common):
             unique: bool = True,
             links: Optional[list['LinkNeedle']] = None,
             excludes: Optional[list[str]] = None,
-            apply_command_line: bool = True
+            apply_command_line: bool = True,
+            sort: bool = True
             ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
@@ -3076,8 +3077,8 @@ class Tree(tmt.utils.Common):
 
         if Test._opt('source'):
             tests = [
-                Test(node=test, logger=self._logger.descend()) for test in self.tree.prune(
-                    keys=keys, sources=cmd_line_names)]
+                Test(node=test, logger=self._logger.descend())
+                for test in self.tree.prune(keys=keys, sources=cmd_line_names, sort=sort)]
 
         elif not unique and names:
             # First let's build the list of test objects based on keys & names.
@@ -3092,7 +3093,9 @@ class Tree(tmt.utils.Common):
                         logger=logger.descend(
                             logger_name=test.get('name', None)
                             )  # .apply_verbosity_options(**self._options),
-                        ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
+                        ) for test in name_filter(
+                            self.tree.prune(keys=keys, names=[name], sort=sort))
+                    ]
                 tests.extend(sorted(selected_tests, key=lambda test: test.order))
         # Otherwise just perform a regular key/name filtering
         else:
@@ -3103,7 +3106,8 @@ class Tree(tmt.utils.Common):
                     logger=logger.descend(
                         logger_name=test.get('name', None)
                         )  # .apply_verbosity_options(**self._options),
-                    ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
+                    ) for test in name_filter(
+                        self.tree.prune(keys=keys, names=names, sort=sort))]
             tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions

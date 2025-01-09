@@ -438,7 +438,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         self._tests = tmt.Tree(
             logger=self._logger,
             tree=tests).tests(
-                conditions=["manual is False"])
+                conditions=["manual is False"],
+                sort=False)
 
         # Propagate `where` key and TMT_SOURCE_DIR
         for test in self._tests:
