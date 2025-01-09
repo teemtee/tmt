@@ -38,7 +38,7 @@ rlJournalStart
         rlLog "There should be the heading and one run"
         rlAssertGrep "2" "lines"
 
-        rlRun "tmt status -i /not/a/valid/runid | tee output" 0 "Invalid ID"
+        rlRun "tmt status -i /not/a/valid/runid | tee output" 2 "Invalid ID"
         rlRun "wc -l output | tee lines" 0 "Get the number of lines"
         rlLog "There should only be the heading"
         rlAssertGrep "1" "lines"
