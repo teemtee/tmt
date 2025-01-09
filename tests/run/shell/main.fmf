@@ -6,9 +6,3 @@ tag+:
   - as_root
   - provision-only
   - provision-local
-adjust+:
-  - check:
-      - how: avc
-        result: xfail
-    when: distro == fedora-rawhide
-    because: https://bugzilla.redhat.com/show_bug.cgi?id=2330476
