@@ -9,8 +9,10 @@ Source0:        %{pypi_source tmt}
 
 BuildArch:      noarch
 BuildRequires:  python3-devel
+BuildRequires:  dyd >= 0.22
 
 Requires:       git-core rsync sshpass
+Requires:       dyd >= 0.22
 
 %if 0%{?fedora} < 40
 Obsoletes:      python3-tmt < %{version}-%{release}
