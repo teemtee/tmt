@@ -146,6 +146,16 @@ rlJournalStart
         rlRun 'popd'
     rlPhaseEnd
 
+    rlPhaseStartTest "Empty dependencies (Restraint)"
+        rlRun 'pushd $tmp/data/parent/empty-dependencies'
+        rlRun -s 'tmt test import --restraint --no-nitrate --no-purpose' '0'
+        rlAssertExists "main.fmf"
+        rlRun 'cat main.fmf'
+        rlAssertGrep 'require:\s*\[\]' "main.fmf"
+        rlAssertGrep 'recommend:\s*\[\]' "main.fmf"
+        rlRun 'popd'
+    rlPhaseEnd
+
     rlPhaseStartTest "Target run having a single line"
         rlRun 'pushd $tmp/data/parent/single-line-run'
         rlRun -s 'tmt test import --makefile --no-nitrate --no-purpose' '0'
