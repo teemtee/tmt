@@ -189,10 +189,19 @@ rlJournalStart
                 # Check the rarities in the test attributes/parameters
                 if [[ $jq_element == attributes ]]; then
                     key="contact"
+
                     value="$(yq -r ".\"$test_name\".$key" test.fmf)"
                     if [[ $value != null ]]; then
+                        if [[ "$value" == *","* ]]; then
+                          # Get the contact items as CSV (separated by a comma)
+                          value="$(yq -r ". | @csv" <<< $value)"
+                        fi
                         rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
-                        rlAssertGrep "$value" tmp_attributes_selection
+
+                        IFS=, read -r -a contact_items <<< "$value"
+                        for contact_item in "${contact_items[@]}"; do
+                            rlAssertGrep "$contact_item" tmp_attributes_selection
+                        done
                     else
                         rlAssertNotGrep "$key" tmp_attributes.json
                     fi

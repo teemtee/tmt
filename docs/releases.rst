@@ -13,6 +13,10 @@ method are now executed in the exact order as listed in the config
 file. This fixes a problem which has been introduced in the recent
 ``fmf`` update.
 
+The :ref:`/plugins/report/reportportal` plugin now exports all
+test contact information, rather than just the first contact
+instance.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
