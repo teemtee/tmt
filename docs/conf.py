@@ -312,7 +312,10 @@ linkcheck_ignore = [
     # Github "source code line" anchors are apparently too dynamic for linkcheck
     # to detect correctly. The link exists, a browser can open it, but linkcheck
     # reports a broken link.
-    r'https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10'
+    r'https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10',
+
+    # The site repeatedly refuses to serve pages to github
+    r'https://www.cpu-world.com.*',
     ]
 
 
