@@ -21,8 +21,6 @@ link:
 /predefined-order:
     title: Predefined order values
 
-    summary: Predefined order values - summary
-
     description: |
         30
             Installation of essential plugin and check requirements.

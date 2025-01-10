@@ -343,19 +343,19 @@ class Prepare(tmt.steps.Step):
             pruned_essential_requires,
             'essential-requires',
             'Install essential required packages',
-            tmt.steps.PHASE_ORDER_INSTALL_ESSENTIAL_REQUIRES)
+            tmt.steps.PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES)
 
         _emit_phase(
             pruned_requires,
             'requires',
             'Install required packages',
-            tmt.steps.PHASE_ORDER_INSTALL_REQUIRES)
+            tmt.steps.PHASE_ORDER_PREPARE_INSTALL_REQUIRES)
 
         _emit_phase(
             pruned_recommends,
             'recommends',
             'Install recommended packages',
-            tmt.steps.PHASE_ORDER_INSTALL_RECOMMENDS,
+            tmt.steps.PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS,
             missing='skip')
 
         # Prepare guests (including workdir sync)

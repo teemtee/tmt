@@ -64,7 +64,7 @@ def insert_to_prepare_step(
         how='install',
         name='requires (dist-git)',
         summary='Install required packages of tests detected by dist-git',
-        order=tmt.steps.PHASE_ORDER_INSTALL_REQUIRES,
+        order=tmt.steps.PHASE_ORDER_PREPARE_INSTALL_REQUIRES,
         where=where,
         package=[])
     future_requires: PreparePlugin[Any] = cast(
@@ -77,7 +77,7 @@ def insert_to_prepare_step(
         how='install',
         name='recommends (dist-git)',
         summary='Install recommended packages of tests detected by dist-git',
-        order=tmt.steps.PHASE_ORDER_INSTALL_RECOMMENDS,
+        order=tmt.steps.PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS,
         where=where,
         package=[],
         missing='skip')

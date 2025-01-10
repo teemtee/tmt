@@ -82,11 +82,11 @@ DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
 # `PHASE_ORDER_DEFAULT = tmt.base.DEFAULT_ORDER` would be way better.
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
-PHASE_ORDER_INSTALL_ESSENTIAL_REQUIRES = 30
+PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
 #: Installation of packages :ref:`required</spec/tests/require>` by tests.
-PHASE_ORDER_INSTALL_REQUIRES = 70
+PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 #: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
-PHASE_ORDER_INSTALL_RECOMMENDS = 75
+PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
