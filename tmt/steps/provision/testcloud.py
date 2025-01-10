@@ -29,7 +29,6 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
-    effective_workdir_root,
     field,
     retry_session,
     )
@@ -781,9 +780,14 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
+        data_dir = self.workdir_root / 'testcloud'
+        store_dir = data_dir / 'images'
+        # Make sure required directories exist
+        os.makedirs(data_dir, exist_ok=True)
+        os.makedirs(store_dir, exist_ok=True)
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = effective_workdir_root(self.workdir_root) / 'testcloud'
-        self.config.STORE_DIR = self.config.DATA_DIR / 'images'
+        self.config.DATA_DIR = data_dir
+        self.config.STORE_DIR = store_dir
 
     def _combine_hw_memory(self) -> None:
         """ Combine ``hardware`` with ``--memory`` option """
@@ -891,10 +895,6 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare config
         self.prepare_config()
-
-        # Make sure required directories exist
-        os.makedirs(self.config.DATA_DIR, exist_ok=True)
-        os.makedirs(self.config.STORE_DIR, exist_ok=True)
 
         # Kick off image URL with the given image
         self.image_url = self.image
@@ -1210,7 +1210,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     def _print_local_images(self) -> None:
         """ Print images which are already cached """
         self.info("Locally available images")
-        store_dir = effective_workdir_root(self.workdir_root) / 'testcloud/images'
+        store_dir = self.workdir_root / 'testcloud/images'
 
         for filename in sorted(store_dir.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
