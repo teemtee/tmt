@@ -1179,6 +1179,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             public_key=self.public_key,
             group=self.beaker_job_group)
 
+        mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
+        if self.is_dry_run:
+            job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
+            self.info(f"beaker job xml: '{job.toxml()}'")
+            return
         try:
             response = self.api.create(data)
 
