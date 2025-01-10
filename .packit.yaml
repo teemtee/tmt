@@ -135,7 +135,7 @@ jobs:
         - tmt:
             context:
               how: provision
-        - *tmt-cloud-resources
+          <<: *tmt-cloud-resources
 
   # Test internal plugins
   - <<: *test-base
