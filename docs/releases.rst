@@ -25,6 +25,9 @@ the given job group.
 The ``note`` field of tmt :ref:`/spec/plans/results` changes from
 a string to a list of strings, to better accommodate multiple notes.
 
+The ``Node`` alias for the ``Core`` class has been dropped as it
+has been deprecated a long time ago.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

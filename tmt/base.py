@@ -1035,9 +1035,6 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
-Node = Core
-
-
 @dataclasses.dataclass(repr=False)
 class Test(
         Core,
