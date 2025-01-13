@@ -2446,10 +2446,13 @@ class Plan(
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
                     self._source_plan_environment_file()
-        # Make sure we run 'finish' step always if enabled
+        # Make sure we run 'report' and 'finish' steps always if enabled
         finally:
-            if not abort and self.finish.enabled:
-                self.finish.go()
+            if not abort:
+                if self.report.enabled and self.report.status() != "done":
+                    self.report.go()
+                if self.finish.enabled:
+                    self.finish.go()
 
     def _export(
             self,
