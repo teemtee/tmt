@@ -4,8 +4,6 @@
 IMAGE_NEEDS_DEPS="localhost/tmt-bootc-needs-deps"
 IMAGE_INCLUDES_DEPS="localhost/tmt-bootc-includes-deps"
 
-TESTCLOUD_IMAGE="/var/tmp/tmt/testcloud/images/disk.qcow2"
-
 
 rlJournalStart
     rlPhaseStartSetup
@@ -19,23 +17,19 @@ rlJournalStart
     rlPhaseStartTest "Image that needs dependencies"
         rlRun "podman build . -f needs-deps.containerfile -t $IMAGE_NEEDS_DEPS"
         rlRun "tmt -vvv run --scratch -i $run plan --name /plans/image/needs-deps"
-        rlRun "rm -rf $TESTCLOUD_IMAGE"
     rlPhaseEnd
 
     rlPhaseStartTest "Image that already includes dependencies"
         rlRun "podman build . -f includes-deps.containerfile -t $IMAGE_INCLUDES_DEPS"
         rlRun "tmt -vvv run --scratch -i $run plan --name /plans/image/includes-deps"
-        rlRun "rm -rf $TESTCLOUD_IMAGE"
     rlPhaseEnd
 
     rlPhaseStartTest "Containerfile that needs dependencies"
         rlRun "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/needs-deps"
-        rlRun "rm -rf $TESTCLOUD_IMAGE"
     rlPhaseEnd
 
     rlPhaseStartTest "Containerfile that already includes dependencies"
         rlRun "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/includes-deps"
-        rlRun "rm -rf $TESTCLOUD_IMAGE"
     rlPhaseEnd
 
     rlPhaseStartCleanup

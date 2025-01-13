@@ -11,7 +11,7 @@ import tmt.steps.provision
 import tmt.steps.provision.testcloud
 import tmt.utils
 from tmt.steps.provision.testcloud import GuestTestcloud
-from tmt.utils import field
+from tmt.utils import Path, field
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -329,7 +329,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         self._check_if_podman_is_rootless()
 
         data = BootcData.from_plugin(self)
-        data.image = f"file://{self.workdir}/qcow2/disk.qcow2"
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
         if self._rootless:
@@ -354,6 +353,24 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         else:
             raise tmt.utils.ProvisionError(
                 "Either 'container-file' or 'container-image' must be specified.")
+
+        # Set unique disk file name, each plan will have its own disk file
+        disk_file_name = Path(render_template(
+            'disk-{{ PHASE.parent.plan.my_run.unique_id }}'
+            '-{{ PHASE.parent.plan.pathless_safe_name }}'
+            '-{{ PHASE.safe_name }}.qcow2',
+            PHASE=self))
+
+        assert self.workdir is not None
+
+        image_dir = self.workdir / 'qcow2'
+
+        # Rename disk file name to unique file name
+        built_image = image_dir / 'disk.qcow2'
+        renamed_image = image_dir / disk_file_name
+
+        built_image.rename(renamed_image)
+        data.image = f"file://{renamed_image}"
 
         self._guest = GuestBootc(
             logger=self._logger,
