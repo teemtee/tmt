@@ -492,7 +492,9 @@ definitions:
       - restraint
 
   result_note:
-    type: string
+    type: array
+    items:
+      type: string
 
   result_log:
     type: array

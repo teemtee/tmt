@@ -1,6 +1,7 @@
 - name: /test/passing
   result: pass
-  note: good result
+  note:
+    - good result
   log:
     - pass_log
   ids:
@@ -20,7 +21,8 @@
     some-id: foo2
     another-id: bar2
   duration: 00:22:33
-  note: fail result
+  note:
+    - fail result
   serial-number: 2
   guest:
     name: client-1

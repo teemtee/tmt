@@ -85,7 +85,7 @@ class Shell(TestFramework):
             invocation=invocation,
             result=actual_outcome,
             log=test_logs,
-            note=note,
+            note=[note] if note else [],
             subresult=[result.to_subresult() for result in results])]
 
     @classmethod
@@ -108,7 +108,7 @@ class Shell(TestFramework):
         :returns: list of results.
         """
         assert invocation.return_code is not None
-        note = None
+        note: list[str] = []
 
         # Handle the `tmt-report-result` command results as a single test with assigned tmt
         # subresults.
@@ -124,11 +124,11 @@ class Shell(TestFramework):
             result = ResultOutcome.ERROR
             # Add note about the exceeded duration
             if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                note = 'timeout'
+                note.append('timeout')
                 invocation.phase.timeout_hint(invocation)
 
             elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                note = 'pidfile locking'
+                note.append('pidfile locking')
 
         return [tmt.Result.from_test_invocation(
             invocation=invocation,
