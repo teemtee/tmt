@@ -632,7 +632,7 @@ GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
 
 def normalize_hardware(
         key_address: str,
-        raw_hardware: Optional[tmt.hardware.Spec],
+        raw_hardware: Union[None, tmt.hardware.Spec, tmt.hardware.Hardware],
         logger: tmt.log.Logger) -> Optional[tmt.hardware.Hardware]:
     """
     Normalize a ``hardware`` key value.
@@ -644,6 +644,9 @@ def normalize_hardware(
 
     if raw_hardware is None:
         return None
+
+    if isinstance(raw_hardware, tmt.hardware.Hardware):
+        return raw_hardware
 
     # From command line
     if isinstance(raw_hardware, (list, tuple)):
