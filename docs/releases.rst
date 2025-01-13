@@ -34,6 +34,10 @@ and no results would be reported. Now the report step is performed
 always so that users can access results of those tests which were
 successfully executed.
 
+The ``tmt try`` command now accepts the whole action word in
+addition to just a first letter, i.e. ``l`` and ``login`` now
+both work.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
