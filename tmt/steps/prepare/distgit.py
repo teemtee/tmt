@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 #: Application of patches by ``rpm-build`` command invoked by
 #: :ref:`discover/fmf</plugins/discover/fmf>` plugin when
 #: ``dist-git-source`` key is used.
-PHASE_ORDER_RPMBUILD_BP = 30
+PHASE_ORDER_RPMBUILD_BP = 60
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
