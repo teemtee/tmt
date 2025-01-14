@@ -1,0 +1,8 @@
+summary: Make sure that report is performed on error
+description:
+    If the run is interrupted in the middle of the test execution,
+    the report step should still be performed in order to provide
+    at least partial test results to the user.
+tag+:
+  - provision-only
+  - provision-virtual

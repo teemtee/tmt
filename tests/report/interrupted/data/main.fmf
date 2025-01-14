@@ -1,0 +1,23 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: virtual
+    execute:
+        how: tmt
+    report:
+        how: html
+
+/test:
+    /good:
+        order: 0
+        test: exit 0
+    /bad:
+        order: 1
+        test: exit 1
+    /weird:
+        order: 2
+        test: rm -f /bin/bash
+    /missed:
+        order: 3
+        test: /bin/true
