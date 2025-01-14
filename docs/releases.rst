@@ -28,6 +28,12 @@ a string to a list of strings, to better accommodate multiple notes.
 The ``Node`` alias for the ``Core`` class has been dropped as it
 has been deprecated a long time ago.
 
+Previously when the test run was interrupted in the middle of the
+test execution the :ref:`/spec/plans/report` step would be skipped
+and no results would be reported. Now the report step is performed
+always so that users can access results of those tests which were
+successfully executed.
+
 
 tmt-1.40.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

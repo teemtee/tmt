@@ -17,7 +17,7 @@
         test: exit 1
     /weird:
         order: 2
-        test: poweroff
+        test: rm -f /bin/bash
     /missed:
         order: 3
         test: /bin/true
