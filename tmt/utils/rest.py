@@ -276,8 +276,8 @@ def role_ref(
     text: str,
     lineno: int,
     inliner: docutils.parsers.rst.states.Inliner,
-    options: Mapping[str, Any],
-    content: Sequence[str]) \
+    options: Optional[Mapping[str, Any]] = None,
+    content: Optional[Sequence[str]] = None) \
         -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
     """
     A handler for ``:ref:`` role.
