@@ -122,6 +122,10 @@ def configure_constant(default: int, envvar: str) -> int:
 log = fmf.utils.Logging('tmt').logger
 
 
+#: How many leading characters to display in tracebacks with
+#: ``TMT_SHOW_TRACEBACK=2``.
+TRACEBACK_LOCALS_TRIM = 1024
+
 # Default workdir root and max
 WORKDIR_ROOT = Path('/var/tmp/tmt')  # noqa: S108 insecure usage of temporary dir
 WORKDIR_MAX = 1000
@@ -2394,7 +2398,12 @@ class TracebackVerbosity(enum.Enum):
     DEFAULT = '0'
     #: Render also call stack for exception and each of its causes.
     VERBOSE = '1'
-    #: Render also call stack and local variables for exception and each of its causes.
+    #: Render also call stack for exception and each of its causes,
+    #: plus all local variables in each frame, trimmed to first 1024
+    #: characters of their values.
+    LOCALS = '2'
+    #: Render everything that can be show: all causes, their call
+    #: stacks, all frames and all locals in their completeness.
     FULL = 'full'
 
     @classmethod
@@ -2549,11 +2558,19 @@ def render_exception_stack(
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
         yield f'  {B(frame.line)}'
 
-        if traceback_verbosity is TracebackVerbosity.FULL and frame.locals:
+        if frame.locals:
             yield ''
 
-            for k, v in frame.locals.items():
-                yield f'  {B(k)} = {Y(v)}'
+            if traceback_verbosity is TracebackVerbosity.LOCALS:
+                for k, v in frame.locals.items():
+                    v_formatted = (v[:TRACEBACK_LOCALS_TRIM] + '...') \
+                        if len(v) > TRACEBACK_LOCALS_TRIM else v
+
+                    yield f'  {B(k)} = {Y(v_formatted)}'
+
+            elif traceback_verbosity is TracebackVerbosity.FULL:
+                for k, v in frame.locals.items():
+                    yield f'  {B(k)} = {Y(v)}'
 
             yield ''
 
@@ -2652,7 +2669,7 @@ def show_exception(
                         GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
                         include_logfiles=False)
 
-            for line in _render_exception(traceback_verbosity=TracebackVerbosity.FULL):
+            for line in _render_exception(traceback_verbosity=TracebackVerbosity.LOCALS):
                 for stream in logfile_streams:
                     logger.print(line, file=stream)
 
