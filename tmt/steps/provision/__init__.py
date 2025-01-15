@@ -2666,7 +2666,6 @@ class GuestSsh(Guest):
         self.debug("Connection to guest succeeded after reboot.")
         return True
 
-    @overload
     def reboot(
         self,
         hard: Literal[True] = True,

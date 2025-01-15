@@ -134,12 +134,12 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
-                lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
+                lambda: self._run_guest_command(
+                    self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                fetch_boot_time=False,
-            )
+                fetch_boot_time=False)
 
         if command is not None:
             return super().reboot(
@@ -147,8 +147,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
                 command=command,
                 timeout=timeout,
                 tick=tick,
-                tick_increase=tick_increase,
-            )
+                tick_increase=tick_increase)
 
         if self.soft_reboot is not None:
             self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
@@ -156,13 +155,17 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
-                lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                lambda: self._run_guest_command(
+                    self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
                 timeout=timeout,
                 tick=tick,
-                tick_increase=tick_increase,
-            )
+                tick_increase=tick_increase)
 
-        return super().reboot(hard=False, timeout=timeout, tick=tick, tick_increase=tick_increase)
+        return super().reboot(
+            hard=False,
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase)
 
     def start(self) -> None:
         """
@@ -220,7 +223,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         provision:
           how: connect
           hard-reboot: virsh reboot my-example-vm
-          soft-reboot: ssh root@my-example-vm 'shutdown -r now'
+          soft-reboot: shutdown -r now
 
     .. warning::
 

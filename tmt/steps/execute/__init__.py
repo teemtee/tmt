@@ -581,7 +581,8 @@ class TestInvocation:
                 raise
 
             except tmt.steps.provision.RebootModeNotSupportedError:
-                self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
+                self.logger.warning(
+                    "Guest does not support soft reboot, trying hard reboot.")
 
                 rebooted = self.guest.reboot(hard=True, timeout=timeout)
 
