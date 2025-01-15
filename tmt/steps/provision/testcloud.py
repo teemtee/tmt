@@ -1135,16 +1135,60 @@ class GuestTestcloud(tmt.GuestSsh):
         tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
     ) -> bool:
         """
-        Reboot the guest, return True if successful
+        Reboot the guest, and wait for the guest to recover.
+
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        # Use custom reboot command if provided
+        if hard:
+            if self._instance is None:
+                raise tmt.utils.ProvisionError("No instance initialized.")
+
+            self.debug("Hard reboot using the testcloud API.")
+
+            # ignore[union-attr]: mypy still considers `self._instance` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+                fetch_boot_time=False)
+
         if command:
-            return super().reboot(hard=hard, command=command, timeout=timeout)
-        if not self._instance:
+            return super().reboot(
+                command=command,
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase)
+
+        if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
-        self._instance.reboot(soft=not hard)
-        return self.reconnect(timeout=timeout)
+
+        # ignore[union-attr]: mypy still considers `self._instance` as possibly
+        # being `None`, missing the explicit check above.
+        return self.perform_reboot(
+            lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase)
 
 
 @tmt.steps.provides_method('virtual.testcloud')
@@ -1200,6 +1244,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
+
+    To trigger hard reboot of a guest, plugin uses testcloud API. It is
+    also used to trigger soft reboot unless a custom reboot command was
+    specified via ``tmt-reboot -c ...``.
     """
 
     _data_class = ProvisionTestcloudData
