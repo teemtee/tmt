@@ -243,28 +243,59 @@ class GuestContainer(tmt.Guest):
             )
         )
 
-    def reboot(
-        self,
-        hard: bool = False,
-        command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-    ) -> bool:
+    def reboot(self,
+               hard: bool = False,
+               command: Optional[Union[Command, ShellScript]] = None,
+               timeout: Optional[int] = None,
+               tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+               tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
         """
-        Restart the container, return True if successful
+        Reboot the guest, and wait for the guest to recover.
+
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+           However, only hard reboots are supported by this guest class,
+           soft reboot and/or custom reboot command will result in an
+           exception.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
+
+        if hard:
+            if self.container is None:
+                raise tmt.utils.ProvisionError("No container initialized.")
+
+            self.debug("Hard reboot using the reboot command 'container restart'.")
+
+            self.podman(Command('container', 'restart', self.container))
+
+            return self.reconnect(
+                timeout=timeout or CONNECTION_TIMEOUT,
+                tick=tick,
+                tick_increase=tick_increase)
 
         if command:
             raise tmt.utils.ProvisionError(
-                "Custom reboot command not supported in podman provision."
-            )
-        if not hard:
-            raise tmt.utils.ProvisionError(
-                "Containers do not support soft reboot, they can only be "
-                "stopped and started again (hard reboot)."
-            )
-        assert self.container is not None
-        self.podman(Command('container', 'restart', self.container))
-        return self.reconnect(timeout=timeout or CONNECTION_TIMEOUT)
+                "Custom reboot command not supported in podman provision.")
+
+        raise tmt.steps.provision.RebootModeNotSupportedError(
+            f"Guest '{self.multihost_name}' does not support soft reboot."
+            " Containers can only be stopped and started again (hard reboot).")
 
     def _run_ansible(
         self,
@@ -527,6 +558,10 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
     In order to run the container with different user as the default ``root``,
     use ``user: USER``.
+
+    Container-backed guests do not support soft reboots or custom reboot
+    commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
+    error.
     """
 
     _data_class = ProvisionPodmanData
