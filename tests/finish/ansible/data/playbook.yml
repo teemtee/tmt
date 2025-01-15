@@ -1,3 +1,5 @@
+---
+
 - name: A simple playbook in finish phase
   hosts: all
   vars:
