@@ -939,6 +939,8 @@ class GuestTestcloud(tmt.GuestSsh):
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
 
+        self._domain.console_log_file = f"{self.parent.plan.workdir}/{self.name}_console.log"
+
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
         for cmd in TESTCLOUD_WORKAROUNDS:
