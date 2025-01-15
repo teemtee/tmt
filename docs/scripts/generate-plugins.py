@@ -120,7 +120,11 @@ def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.
         for plugin_id in registry.iter_plugin_ids():
             plugin = registry.get_plugin(plugin_id).class_
 
-            yield plugin_id, plugin, plugin._data_class
+            if hasattr(plugin, 'get_data_class'):
+                yield plugin_id, plugin, plugin.get_data_class()
+
+            else:
+                yield plugin_id, plugin, plugin._data_class
 
     return plugin_iterator
 

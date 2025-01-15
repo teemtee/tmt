@@ -13,7 +13,7 @@ import tmt.utils
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Path, field
+from tmt.utils import Path
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
@@ -55,10 +55,31 @@ def find_plugin(name: str) -> 'FeatureClass':
     return plugin
 
 
+@dataclasses.dataclass
+class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
+    pass
+
+
 class Feature(tmt.utils.Common):
     """ Base class for ``feature`` prepare plugin implementations """
 
     NAME: str
+
+    #: Plugin's data class listing keys this feature plugin accepts.
+    #: It is eventually composed together with other feature plugins
+    #: into a single class, :py:class:`PrepareFeatureData`.
+    _data_class: type[PrepareFeatureData] = PrepareFeatureData
+
+    @classmethod
+    def get_data_class(cls) -> type[PrepareFeatureData]:
+        """
+        Return step data class for this plugin.
+
+        By default, :py:attr:`_data_class` is returned, but plugin may
+        override this method to provide different class.
+        """
+
+        return cls._data_class
 
     def __init__(
             self,
@@ -108,17 +129,6 @@ class Feature(tmt.utils.Common):
         guest.ansible(playbook_path)
 
 
-@dataclasses.dataclass
-class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
-    # TODO: Change it to be able to create and discover custom fields to feature step data
-    epel: Optional[str] = field(
-        default=None,
-        option='--epel',
-        metavar='enabled|disabled',
-        help='Whether EPEL repository should be installed & enabled or disabled.'
-        )
-
-
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
@@ -155,6 +165,47 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
 
     _data_class = PrepareFeatureData
+
+    @classmethod
+    def get_data_class(cls) -> type[PrepareFeatureData]:
+        """
+        Return step data class for this plugin.
+
+        ``prepare/feature`` builds the class in a dynamic way: class'
+        fields are defined by discovered feature plugins. Plugins define
+        their own data classes, these are collected, their fields
+        extracted and merged together with the base data class fields
+        (``name``, ``order``, ...) into the final data class of
+        ``prepare/feature`` plugin.
+        """
+
+        # If this class' data class is not `PrepareFeatureData` anymore,
+        # it means this method already constructed the dynamic class.
+        if cls._data_class == PrepareFeatureData:
+            # Collect fields in the base class, we must filter them out
+            # from classes returned by plugins. These fields will be
+            # provided by the base class, and repeating them would raise
+            # an exception.
+            baseclass_fields = list(tmt.utils.container_fields(PrepareFeatureData))
+            baseclass_field_names = [field.name for field in baseclass_fields]
+
+            component_fields = [
+                field
+                for plugin in _FEATURE_PLUGIN_REGISTRY.iter_plugins()
+                for field in tmt.utils.container_fields(plugin.get_data_class())
+                if field.name not in baseclass_field_names
+                ]
+
+            cls._data_class = cast(
+                type[PrepareFeatureData],
+                dataclasses.make_dataclass(
+                    'PrepareFeatureData',
+                    [
+                        (field.name, field.type, field)
+                        for field in component_fields],
+                    bases=(PrepareFeatureData,)))
+
+        return cls._data_class
 
     def go(
             self,
