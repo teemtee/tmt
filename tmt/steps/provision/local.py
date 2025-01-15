@@ -145,15 +145,13 @@ class GuestLocal(tmt.Guest):
         self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(
-        self,
-        hard: bool = False,
-        command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-    ) -> bool:
-        """
-        Reboot the guest, return True if successful
-        """
-
+            self,
+            hard: bool = False,
+            command: Optional[Union[Command, ShellScript]] = None,
+            timeout: Optional[int] = None,
+            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
 
         return False
@@ -206,6 +204,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     Note that ``tmt run`` is expected to be executed under a regular user.
     If there are admin rights required (for example in the prepare step)
     you might be asked for a ``sudo`` password.
+
+    .. note:
+
+        Neither hard nor soft reboot is supported.
     """
 
     _data_class = ProvisionLocalData

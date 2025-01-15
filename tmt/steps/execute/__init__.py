@@ -524,15 +524,17 @@ class TestInvocation:
             f" and test restart count {self._restart_count}."
         )
 
-        reboot_command: Optional[ShellScript] = None
-        timeout: Optional[int] = None
+        rebooted = False
 
         if self.hard_reboot_requested:
-            pass
+            rebooted = self.guest.reboot(hard=True)
 
         elif self.soft_reboot_requested:
             # Extract custom hints from the file, and reset it.
             reboot_data = json.loads(self.reboot_request_path.read_text())
+
+            reboot_command: Optional[ShellScript] = None
+            timeout: Optional[int] = None
 
             if reboot_data.get('command'):
                 with suppress(TypeError):
@@ -546,26 +548,24 @@ class TestInvocation:
             os.remove(self.reboot_request_path)
             self.guest.push(self.test_data_path)
 
-        rebooted = False
+            try:
+                rebooted = self.guest.reboot(
+                    hard=False,
+                    command=reboot_command,
+                    timeout=timeout)
 
-        try:
-            rebooted = self.guest.reboot(
-                hard=self.hard_reboot_requested,
-                command=reboot_command,
-                timeout=timeout,
-            )
+            except tmt.utils.RunError:
+                if reboot_command is not None:
+                    self.logger.fail(
+                        f"Failed to reboot guest using the custom command '{reboot_command}'.")
 
-        except tmt.utils.RunError:
-            self.logger.fail(
-                f"Failed to reboot guest using the custom command '{reboot_command}'."
-            )
+                raise
 
-            raise
+            except tmt.steps.provision.RebootModeNotSupportedError:
+                self.logger.warning(
+                    "Guest does not support soft reboot, trying hard reboot.")
 
-        except tmt.utils.ProvisionError:
-            self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
-
-            rebooted = self.guest.reboot(hard=True, timeout=timeout)
+                rebooted = self.guest.reboot(hard=True, timeout=timeout)
 
         if not rebooted:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")
