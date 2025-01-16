@@ -29,7 +29,7 @@ support for submitting jobs on behalf of a group through the
 ``beaker-job-group`` key. The submitting user must be a member of
 the given job group.
 
-The ``note`` field of tmt :ref:`/spec/plans/results` changes from
+The ``note`` field of tmt :ref:`/spec/results` changes from
 a string to a list of strings, to better accommodate multiple notes.
 
 The ``Node`` alias for the ``Core`` class has been dropped as it
@@ -256,7 +256,7 @@ committish reference, either branch, tag, git-describe, or if all
 fails the commit hash.  You may encounter this in the verbose log
 of ``tmt tests show`` or plan/test imports.
 
-:ref:`Result specification</spec/plans/results>` now defines
+:ref:`Result specification</spec/results>` now defines
 ``original-result`` key holding the original outcome of a test,
 subtest or test checks. The effective outcome, stored in
 ``result`` key, is computed from the original outcome, and it is
@@ -286,7 +286,7 @@ tmt-1.36.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
-file does not follow the :ref:`result specification</spec/plans/results>`.
+file does not follow the :ref:`result specification</spec/results>`.
 
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
@@ -621,7 +621,7 @@ The **avc** :ref:`/spec/tests/check` allows to detect avc denials
 which appear during the test execution.
 
 A new ``skip`` custom result outcome has been added to the
-:ref:`/spec/plans/results` specification.
+:ref:`/spec/results` specification.
 
 All context :ref:`/spec/context/dimension` values are now handled
 in a case insensitive way.

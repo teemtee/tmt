@@ -38,6 +38,7 @@ AREA_TITLES = {
     '/spec/stories': 'Stories',
     '/spec/context': 'Context',
     '/spec/hardware': 'Hardware',
+    '/spec/results': 'Results'
     }
 
 

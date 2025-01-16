@@ -20,7 +20,7 @@ description: |
 
     In each plan, the execute step must produce a ``results.yaml`` file
     with results for executed tests. The format of the file is described
-    at :ref:`/spec/plans/results`.
+    at :ref:`/spec/results`.
 
 /upgrade:
     summary: Perform system upgrades during testing
