@@ -1336,6 +1336,27 @@ class Test(
 
         return any(destination in (guest.name, guest.role) for destination in self.where)
 
+    def show_manual(self) -> None:
+        """ Show manual test instructions """
+
+        if self.tree is None or self.tree.root is None:
+            return
+
+        if self.test is None or self.test._script is None:
+            return
+
+        if self.path is not None:
+            instructions_path = self.tree.root / self.path.unrooted() / self.test._script
+        else:
+            instructions_path = self.tree.root / self.test._script
+
+        try:
+            instructions = instructions_path.read_text()
+            echo(tmt.utils.format('instructions', instructions))
+
+        except FileNotFoundError:
+            self.warn(f"Manual test instructions file '{instructions_path}' not found.")
+
     def show(self) -> None:
         """ Show test details """
         self.ls()
@@ -1368,6 +1389,11 @@ class Test(
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
+
+            # Show test instructions for manual tests in verbose mode
+            if key == "manual" and self.manual and self.verbosity_level:
+                self.show_manual()
+
         if self.verbosity_level:
             self._show_additional_keys()
         if self.verbosity_level >= 2:
