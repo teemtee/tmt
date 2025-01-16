@@ -29,7 +29,7 @@ support for submitting jobs on behalf of a group through the
 ``beaker-job-group`` key. The submitting user must be a member of
 the given job group.
 
-The ``note`` field of tmt :ref:`/spec/plans/results` changes from
+The ``note`` field of tmt :ref:`/spec/results` changes from
 a string to a list of strings, to better accommodate multiple notes.
 
 The ``Node`` alias for the ``Core`` class has been dropped as it
