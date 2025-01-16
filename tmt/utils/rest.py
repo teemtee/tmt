@@ -19,6 +19,7 @@ import docutils.parsers.rst.states
 import docutils.utils
 
 import tmt.log
+import tmt.utils
 from tmt.log import Logger
 from tmt.utils import GeneralError
 
@@ -285,6 +286,15 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self.in_warning = False
         self.nl()
 
+    def visit_transition(self, node: docutils.nodes.transition) -> None:
+        self.log_visit(str(node))
+
+        self._emit('-' * tmt.utils.OUTPUT_WIDTH)
+        self.flush()
+
+    def depart_transition(self, node: docutils.nodes.transition) -> None:
+        pass
+
     def unknown_visit(self, node: docutils.nodes.Node) -> None:
         raise GeneralError(f"Unhandled ReST node '{node}'.")
 
@@ -341,6 +351,8 @@ def render_rst(text: str, logger: Logger) -> str:
     """
     Render a ReST document
     """
+
+    logger.debug('text', text, level=4, topic=tmt.log.Topic.HELP_RENDERING)
 
     document = parse_rst(text)
     visitor = RestVisitor(document, logger)
