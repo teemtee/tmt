@@ -1345,7 +1345,10 @@ class Test(
         if self.test is None or self.test._script is None:
             return
 
-        instructions_path = self.tree.root / self.test._script
+        if self.path is not None:
+            instructions_path = self.tree.root / self.path.unrooted() / self.test._script
+        else:
+            instructions_path = self.tree.root / self.test._script
 
         try:
             instructions = instructions_path.read_text()
