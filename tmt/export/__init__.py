@@ -91,7 +91,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
         """
 
         if not hasattr(cls, '_export_plugin_registry'):
-            cls._export_plugin_registry = PluginRegistry()
+            cls._export_plugin_registry = PluginRegistry(f'export.{cls.__name__.lower()}')
 
         return cls._export_plugin_registry
 
