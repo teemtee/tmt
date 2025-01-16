@@ -20,7 +20,7 @@ from tmt.utils import Path
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
 FeatureClass = type['FeatureBase']
-_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
+_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry('prepare.feature')
 
 
 def provides_feature(feature: str) -> Callable[[FeatureClass], FeatureClass]:
