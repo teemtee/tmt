@@ -407,6 +407,8 @@ def render_rst(text: str, logger: Logger) -> str:
     Render a ReST document
     """
 
+    logger.debug('text', text, level=4, topic=tmt.log.Topic.HELP_RENDERING)
+
     document = parse_rst(text)
     visitor = RestVisitor(document, logger)
 

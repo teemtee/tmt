@@ -343,7 +343,9 @@ class PluginRegistry(Generic[RegisterableT]):
 
     _plugins: dict[str, RegisterableT]
 
-    def __init__(self) -> None:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
         self._plugins = {}
 
     def register_plugin(
@@ -408,6 +410,12 @@ class PluginRegistry(Generic[RegisterableT]):
     def items(self) -> Iterator[tuple[str, RegisterableT]]:
         yield from self._plugins.items()
 
+    def __len__(self) -> int:
+        return len(self._plugins)
+
+    def __bool__(self) -> bool:
+        return bool(self._plugins)
+
 
 class ModuleImporter(Generic[ModuleT]):
     """
@@ -437,3 +445,38 @@ class ModuleImporter(Generic[ModuleT]):
 
         assert self._module  # narrow type
         return self._module
+
+
+def iter_plugin_registries() -> Iterator[PluginRegistry[Any]]:
+    # TODO: maybe there is a better way, but as of now, registries do
+    # not report their existence, there is no method to iterate over
+    # them. Using a static list for now.
+    from tmt.base import Plan, Story, Test
+    from tmt.checks import _CHECK_PLUGIN_REGISTRY
+    from tmt.frameworks import _FRAMEWORK_PLUGIN_REGISTRY
+    from tmt.package_managers import _PACKAGE_MANAGER_PLUGIN_REGISTRY
+    from tmt.steps.discover import DiscoverPlugin
+    from tmt.steps.execute import ExecutePlugin
+    from tmt.steps.finish import FinishPlugin
+    from tmt.steps.prepare import PreparePlugin
+    from tmt.steps.provision import ProvisionPlugin
+    from tmt.steps.report import ReportPlugin
+
+    yield Story._export_plugin_registry
+    yield Plan._export_plugin_registry
+    yield Test._export_plugin_registry
+    yield _CHECK_PLUGIN_REGISTRY
+    yield _FRAMEWORK_PLUGIN_REGISTRY
+    yield _PACKAGE_MANAGER_PLUGIN_REGISTRY
+    yield DiscoverPlugin._supported_methods
+    yield ProvisionPlugin._supported_methods
+    yield PreparePlugin._supported_methods
+    yield ExecutePlugin._supported_methods
+    yield FinishPlugin._supported_methods
+    yield ReportPlugin._supported_methods
+
+
+def iter_plugins() -> Iterator[tuple[PluginRegistry[RegisterableT], str, RegisterableT]]:
+    for registry in iter_plugin_registries():
+        for plugin_id, plugin_class in registry.items():
+            yield registry, plugin_id, plugin_class
