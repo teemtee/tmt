@@ -14,7 +14,7 @@ TestFrameworkClass = type['TestFramework']
 
 
 _FRAMEWORK_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[TestFrameworkClass] = (
-    tmt.plugins.PluginRegistry()
+    tmt.plugins.PluginRegistry('test.framework')
 )
 
 
