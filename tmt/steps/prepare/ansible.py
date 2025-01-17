@@ -77,6 +77,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     Run Ansible playbooks against the guest, by running
     ``ansible-playbook`` for all given playbooks.
 
+    .. note::
+
+       The plugin requires a working Ansible to be available, which can
+       be achieved by installing ``tmt+ansible`` package.
+
     .. warning::
 
         When specifying playbooks with paths:

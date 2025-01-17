@@ -64,7 +64,8 @@ Obsoletes:      tmt-provision-container < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
 Requires:       podman
-Requires:       (ansible or ansible-collection-containers-podman)
+Requires:       tmt+ansible == %{version}-%{release}
+Requires: 	ansible-collection-containers-podman or ansible
 
 %description -n tmt+provision-container %_metapackage_description
 
@@ -78,7 +79,7 @@ Requires:       tmt == %{version}-%{release}
 Requires:       python3-testcloud >= 0.11.3
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
-Requires:       (ansible or ansible-core)
+Requires:       tmt+ansible == %{version}-%{release}
 # Recommend qemu system emulators for supported arches
 Recommends:     qemu-kvm-core
 %if 0%{?fedora}
@@ -110,6 +111,17 @@ Requires:       tmt == %{version}-%{release}
 Requires:       python3-mrack-beaker
 
 %description -n tmt+provision-beaker %_metapackage_description
+
+%package -n     tmt+ansible
+Summary:        Dependencies required for tmt using ansible
+Provides:       tmt+ansible == %{version}-%{release}
+%if 0%{?fedora} < 40
+Obsoletes:      tmt+ansible < %{version}-%{release}
+%endif
+Requires:       tmt == %{version}-%{release}
+Requires:       ansible-core
+
+%description -n tmt+ansible %_metapackage_description
 
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
