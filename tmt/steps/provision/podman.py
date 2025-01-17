@@ -242,12 +242,14 @@ class GuestContainer(tmt.Guest):
             )
         )
 
-    def reboot(self,
-               hard: bool = False,
-               command: Optional[Union[Command, ShellScript]] = None,
-               timeout: Optional[int] = None,
-               tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-               tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
@@ -284,17 +286,18 @@ class GuestContainer(tmt.Guest):
             self.podman(Command('container', 'restart', self.container))
 
             return self.reconnect(
-                timeout=timeout or CONNECTION_TIMEOUT,
-                tick=tick,
-                tick_increase=tick_increase)
+                timeout=timeout or CONNECTION_TIMEOUT, tick=tick, tick_increase=tick_increase
+            )
 
         if command:
             raise tmt.utils.ProvisionError(
-                "Custom reboot command not supported in podman provision.")
+                "Custom reboot command not supported in podman provision."
+            )
 
         raise tmt.steps.provision.RebootModeNotSupportedError(
             f"Guest '{self.multihost_name}' does not support soft reboot."
-            " Containers can only be stopped and started again (hard reboot).")
+            " Containers can only be stopped and started again (hard reboot)."
+        )
 
     def _run_ansible(
         self,
