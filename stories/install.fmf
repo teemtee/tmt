@@ -6,6 +6,20 @@ link:
 
 /minimal:
     summary: Minimal tmt installation with core features only
+    description: |
+        The minimal package provides basic functionality which
+        covers mainly these areas:
+
+        * explore and lint existing tests, plans and stories
+        * create new tests, plans and stories from templates
+        * execute tests on the :ref:`/plugins/provision/local`
+          host or :ref:`/plugins/provision/connect` to a remote
+          guest using ssh
+        * prepare guest using :ref:`/plugins/prepare/shell` and
+          :ref:`/plugins/prepare/install` plugins
+        * report test results to :ref:`/plugins/report/display`
+          or :ref:`/plugins/report/html`
+
     example: dnf install tmt
     link+:
       - verified-by: /plans/install/minimal
