@@ -207,7 +207,6 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     If there are admin rights required (for example in the prepare step)
     you might be asked for a ``sudo`` password.
 
-
     .. note::
 
         Neither hard nor soft reboot is supported.
