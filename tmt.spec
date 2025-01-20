@@ -36,6 +36,7 @@ It contains no code, just makes sure the dependencies are installed.}
 The tmt Python module and command line tool implement the test
 metadata specification (L1 and L2) and allows easy test execution.
 
+%pyproject_extras_subpkg -n tmt ansible
 %pyproject_extras_subpkg -n tmt export-polarion
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
@@ -111,17 +112,6 @@ Requires:       tmt == %{version}-%{release}
 Requires:       python3-mrack-beaker
 
 %description -n tmt+provision-beaker %_metapackage_description
-
-%package -n     tmt+ansible
-Summary:        Dependencies required for tmt using ansible
-Provides:       tmt+ansible == %{version}-%{release}
-%if 0%{?fedora} < 40
-Obsoletes:      tmt+ansible < %{version}-%{release}
-%endif
-Requires:       tmt == %{version}-%{release}
-Requires:       ansible-core
-
-%description -n tmt+ansible %_metapackage_description
 
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
