@@ -2395,7 +2395,7 @@ class GuestSsh(Guest):
         self._unlink_ssh_master_socket_path()
 
     def perform_reboot(self,
-                       action: Callable[[], tmt.utils.CommandOutput],
+                       action: Callable[[], Any],
                        timeout: Optional[int] = None,
                        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
                        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
