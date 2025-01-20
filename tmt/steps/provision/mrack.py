@@ -1183,8 +1183,12 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
         if self.is_dry_run:
             job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
-            self.print(re.sub(r'^\t+', lambda match: '  ' *
-                              len(match.group()), job.toxml(prettyxml=True), flags=re.MULTILINE))
+            """
+            mrack indents XML with tabs, tmt indents with spaces, let's make sure we
+            don't mix these two in tmt output & modify mrack's output to use spaces as well.
+            """
+            self.print(re.sub(r'^\t+', lambda match: '  ' * len(match.group()),
+                              job.toxml(prettyxml=True), flags=re.MULTILINE))
             return
         try:
             response = self.api.create(data)
