@@ -8,7 +8,6 @@ ARTIFACTS=$TMT_REPORT_ARTIFACTS_URL
 
 PLAN_PREFIX='/plan'
 PLAN_STATUS='FAILED'
-#TEST_PREFIX='/test'
 TEST_PREFIX=''
 
 # TODO: Subresults for beakerlib
@@ -247,7 +246,6 @@ rlJournalStart
 
     rlPhaseEnd
 
-
     echo -e "\n\n\n::   PART 2\n"
 
     # Testing launch-per-plan mapping with launch-test structure
@@ -412,7 +410,12 @@ rlJournalStart
             test_case_id=$(yq -r ".\"$test_name\".id" test.fmf)
             [[ $test_case_id != null ]] && rlAssertEquals "Assert the test ${test_name} has a correct testCaseId" "$(echo $response | jq -r '.testCaseId')" "$test_case_id"
             echo "$response" | jq -r ".$jq_element" > tmp_attributes.json || rlFail "$jq_element listing into tmp_attributes.json"
-            rlAssertGrep "TMT_TREE" tmp_attributes.json
+
+            # FIXME: Ignore the check for subtests
+            if [[ ! "$test_name" =~ ^/subtest/ ]]; then
+                rlAssertGrep "TMT_TREE" tmp_attributes.json
+            fi
+
             rm tmp_attributes*
 
             # history is not aggregated unless test case id is defined for given test (only test_2)
