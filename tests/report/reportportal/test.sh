@@ -163,6 +163,11 @@ rlJournalStart
             echo ""
             test_name[$i]=${test[$i,'name']}
             test_name=${test_name[$i]}
+
+            # Strip the '/test' prefix from the name cause the tests are saved
+            # in `test.fmf` without this prefix.
+            test_name=${test_name#/test}
+
             test_fullname=${test_fullname[$i]}
             test_uuid=${test_uuid[$i]}
             test_status[$i]=${test[$i,'status']}
@@ -176,14 +181,12 @@ rlJournalStart
             rlAssertEquals "Assert the name is correct" "$(echo $response | jq -r '.name')" "$test_fullname"
             rlAssertEquals "Assert the status is correct" "$(echo $response | jq -r '.status')" "$test_status"
             test_description=$(yq -er ".\"$test_name\".summary" test.fmf) || test_description=''
-            rlAssertEquals "Assert the description is correct" "$(echo $response | jq -r '.description')" "$test_description"
+            rlAssertEquals "Assert the description is correct" "$(echo $response | jq -r '.description // ""')" "$test_description"
             test_case_id=$(yq -r ".\"$test_name\".id" test.fmf)
+
             [[ $test_case_id != null ]] && rlAssertEquals "Assert the testCaseId is correct" "$(echo $response | jq -r '.testCaseId')" "$test_case_id"
 
             # Check the test attributes only for parent test items, do not check them for subresults
-
-
-
             if [[ ! "$test_name" =~ ^/subtest/ ]]; then
                 # Check all the common test attributes/parameters
                 for jq_element in attributes parameters; do
@@ -330,9 +333,6 @@ rlJournalStart
                 rlAssertEquals "Assert the name of suite item ${suite_name}" "$(echo $parent_item_json | jq -r .name)" "${suite_name}"
                 rlAssertEquals "Assert the description of suite item ${suite_name}" "$(echo $parent_item_json | jq -r .description)" "${plan_summary}<br>${launch_description}"
             else
-                # TODO: tady pokracovat... nejak to tady nevstupuje do podminky?
-                echo "$parent_item_json"
-                echo "$parent_item_name"
                 if jq -e '.name == "/test/subresults"' <<< "$parent_item_json" > /dev/null; then
                     # All parent tests with subresults must have child subresult items
                     rlAssertEquals "Assert the item (${parent_item_name}) has child items" "$(echo $parent_item_json | jq -r .hasChildren)" "true"
@@ -344,11 +344,6 @@ rlJournalStart
                 rlAssertEquals "Assert the UUID of test item ${test_fullname[$content_index]}" "$(echo $parent_item_json | jq -r .uuid)" "${test_uuid[$content_index]}"
             fi
         done
-
-        #######################
-        ## DEBUG
-        exit 99
-        #######################
 
     rlPhaseEnd
 
