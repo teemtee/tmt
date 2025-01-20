@@ -66,7 +66,7 @@ Obsoletes:      tmt-provision-container < %{version}-%{release}
 Requires:       tmt == %{version}-%{release}
 Requires:       podman
 Requires:       tmt+ansible == %{version}-%{release}
-Requires: 	ansible-collection-containers-podman or ansible
+Requires:       (ansible-collection-containers-podman or ansible)
 
 %description -n tmt+provision-container %_metapackage_description
 
