@@ -1,7 +1,7 @@
 #
 # A CentOS Stream 10 image tailored for tmt test suite
 #
-# tmt/tests/centos/stream10/upstream:latest
+# tmt/tests/centos/stream10:latest
 #
 
 FROM quay.io/centos/centos:stream10
