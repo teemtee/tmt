@@ -781,9 +781,16 @@ smooth and timely:
 * continually watch the issues & pull requests and gently push
   them forward if any of them seems to get stuck
 * bring attention especially to those with the high priority, the
-  ``must-have`` issues and pull requests should be finished
+  ``priority | must`` issues and pull requests should be finished
   ideally one week before the release deadline
 * regularly check the pull request progress and highlight those
   which are waiting for feedback on the review sessions
 * if there is anything not clear and needs discussion bring it to
   the chat or raise the topic on the weekly sessions
+* do not hesitate to contact assignees directly, e.g. on the chat,
+  if there is no update for a longer time, consider also
+  reassigning the issue to another contributor if necessary
+* if there are pull requests ready for merging but not included in
+  the release, it might make sense to squeeze them in, to make the
+  development more fluent, just make sure they do not slow down
+  important issues
