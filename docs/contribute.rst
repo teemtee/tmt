@@ -766,3 +766,24 @@ fix needs to be released before the regular schedule:
 * Tag the commit and publish the release in the same way as for
   regular release
 * Create a pull request with the hotfix release notes changes
+
+
+Releaser
+------------------------------------------------------------------
+
+Taking care of a new ``tmt`` release is not just about performing
+the final steps described above. In this role you should shepherd
+the issues and pull requests like sheep so that they make it to
+the ``main`` branch by the proposed deadline. Here's a couple of
+recommendations which could help you to make the release process
+smooth and timely:
+
+* continually watch the issues & pull requests and gently push
+  them forward if any of them seems to get stuck
+* bring attention especially to those with the high priority, the
+  ``must-have`` issues and pull requests should be finished
+  ideally one week before the release deadline
+* regularly check the pull request progress and highlight those
+  which are waiting for feedback on the review sessions
+* if there is anything not clear and needs discussion bring it to
+  the chat or raise the topic on the weekly sessions
