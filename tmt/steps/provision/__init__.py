@@ -1160,6 +1160,13 @@ class Guest(tmt.utils.Common):
             the eventual playbook path is not absolute.
         """
 
+        # Handle the individual types under the hood of `AnsibleApplicable`.
+        # Note that `isinstance()` calls do not use our fancy names,
+        # `AnsibleCollectionPlaybook` and `AnsiblePlaybook`. These are
+        # extremely helpful to type checkers, but Python interpreter
+        # sees only the aliased types, `Path` and `str`.
+
+        # First, a path:
         if isinstance(playbook, Path):
             # Some playbooks must be under playbook root, which is often
             # a metadata tree root.
@@ -1177,6 +1184,7 @@ class Guest(tmt.utils.Common):
 
             return playbook
 
+        # Second, a collection playbook:
         if isinstance(playbook, str):
             self.debug(f"Collection playbook: '{playbook}'", level=2)
 

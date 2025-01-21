@@ -138,8 +138,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         prepare --how ansible --playbook one.yml --playbook two.yml --extra-args '-vvv'
 
     Remote playbooks - provided as URLs starting with ``http://`` or
-    ``https://`` -, local playbooks - optionally starting with a
-    ``file://`` schema - , and playbooks bundled with collections can be
+    ``https://``, local playbooks - optionally starting with a
+    ``file://`` schema, and playbooks bundled with collections can be
     referenced as well as local ones, and all kinds can be intermixed:
 
     .. code-block:: yaml
