@@ -34,6 +34,7 @@ rlJournalStart
         rlRun -s "tmt tests show full"
         rlAssertGrep "summary Check the test keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "description Some description" $rlRun_LOG
+        rlAssertGrep "author Original Author <original@author.org>" $rlRun_LOG
         rlAssertGrep "contact Some Body <somebody@somewhere.org>" $rlRun_LOG
         rlAssertGrep "component package" $rlRun_LOG
         rlAssertGrep "id e3a9a8ed-4585-4e86-80e8-1d99eb5345a9" $rlRun_LOG
