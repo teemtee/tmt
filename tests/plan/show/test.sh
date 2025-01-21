@@ -34,7 +34,8 @@ rlJournalStart
 
     rlPhaseStartTest "Show a plan with -vvv in a normal, branched git repo"
         rlRun "cp -r \"$LOCAL_GIT_ROOT\" \"$show_dir0\""
-        rlRun "pushd $show_dir0/tmt/tests/plan/show/data"
+        # Use glob, git root dirname may be random
+        rlRun "pushd $show_dir0/*/tests/plan/show/data"
         rlRun "git checkout -b THIS_BRANCH"
         rlRun -s "tmt plans show -vvv mini"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
