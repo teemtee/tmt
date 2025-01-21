@@ -15,10 +15,13 @@ link:
         * execute tests on the :ref:`/plugins/provision/local`
           host or :ref:`/plugins/provision/connect` to a remote
           guest using ssh
-        * prepare guest using :ref:`/plugins/prepare/shell` and
-          :ref:`/plugins/prepare/install` plugins
+        * prepare guest using the
+          :ref:`/plugins/prepare/ansible`,
+          :ref:`/plugins/prepare/feature`,
+          :ref:`/plugins/prepare/install` and
+          :ref:`/plugins/prepare/shell` plugins
         * report test results to :ref:`/plugins/report/display`
-          or :ref:`/plugins/report/html`
+          or into an :ref:`/plugins/report/html` page
 
     example: dnf install tmt
     link+:
