@@ -212,6 +212,44 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
     Discover available tests from fmf metadata.
 
+    The following parameters are supported:
+
+    * ``url`` Git repository containing the metadata tree.
+            Current git repository used by default.
+    * ``ref`` Branch, tag or commit specifying the desired git
+            revision. Defaults to the remote repository's default
+            branch if url given or to the current ``HEAD`` if url
+            not provided.
+
+            Additionally, one can set ``ref`` dynamically. This is
+            possible using a special file in tmt format stored in
+            the *default* branch of a tests repository. This special
+            file should contain rules assigning attribute ``ref``
+            in an `adjust` block, for example depending on a test
+            run context.
+
+            Dynamic ``ref`` assignment is enabled whenever a test
+            plan reference has the format ``ref: @FILEPATH``.
+    * ``path`` Path to the metadata tree root. Must be relative to
+            the git repository root if url provided, absolute
+            local filesystem path otherwise. By default ``.`` is
+            used.
+    * ``test`` List of test names or regular expressions used to
+            select tests by name. Duplicate test names are allowed
+            to enable repetitive test execution, preserving the
+            listed test order.
+    * ``link`` Select tests using the link keys.
+            Values must be in the form of ``RELATION:TARGET``,
+            tests containing at least one of them are selected.
+            Regular expressions are supported for both relation
+            and target. Relation part can be omitted to match all
+            relations.
+    * ``filter`` Apply advanced filter based on test metadata
+            attributes. See ``pydoc fmf.filter`` for more info.
+    * ``exclude`` Exclude tests which match a regular expression.
+    * ``prune`` Copy only immediate directories of executed tests and
+            their required files.
+
     By default all available tests from the current repository are used
     so the minimal configuration looks like this:
 
@@ -267,9 +305,16 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     Related config options (all optional):
 
-    * ``modified-only`` - set to ``true`` if you want to filter modified tests
-    * ``modified-url`` - fetched as "reference" remote in the test dir
-    * ``modified-ref`` - the ref to compare against
+    * ``modified-only`` - Set to ``true`` if you want to filter modified tests
+            only.  The test is modified if its name starts with
+            the name of any directory modified since modified-ref.
+    * ``modified-url`` - An additional remote repository to be used as the
+            reference for comparison. Will be fetched as a
+            ``reference`` remote in the test dir.
+    * ``modified-ref`` - The ref to compare against. Defaults to the local
+            repository's default branch. Note that you need to
+            specify ``reference/<branch>`` to compare to a branch
+            from the repository specified in ``modified-url``.
 
     Example to compare local repo against upstream ``main`` branch:
 
