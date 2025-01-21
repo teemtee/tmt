@@ -21,7 +21,7 @@ description: |
        name: /test/one
 
        # fmf ID of the test.
-       fmf_id:
+       fmf-id:
          url: http://some.git.host.com/project/tests.git
          ref: main
          name: /test/one
@@ -206,7 +206,7 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
-    The ``serial-number``, ``guest`` and ``fmf_id`` keys, if present in the
+    The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
     test completes. This happens on purpose, to assure this vital
     information is correct.
