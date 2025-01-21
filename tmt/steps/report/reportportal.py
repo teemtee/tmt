@@ -785,6 +785,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     for subresult in result.subresult:
                         # Create a child item
                         self.info("sub-test", subresult.name, color="cyan", shift=1)
+
                         response = self.rp_api_post(
                             session=session,
                             path=f"item/{item_uuid}",
@@ -797,6 +798,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         child_item_uuid = yaml_to_dict(response.text).get("id")
                         assert child_item_uuid is not None
 
+                        child_item_status = self.TMT_TO_RP_RESULT_STATUS[subresult.result]
                         subtest_end_time = subresult.end_time or test_end_time
 
                         # Upload the subtest (child) logs
@@ -805,7 +807,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             session=session,
                             item_uuid=child_item_uuid,
                             launch_uuid=launch_uuid,
-                            timestamp=subtest_end_time)
+                            timestamp=subtest_end_time,
+                            write_out_failures=bool(child_item_status == "FAILED"))
 
                         # Finish the child item
                         response = self.rp_api_put(
@@ -813,7 +816,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             path=f"item/{child_item_uuid}",
                             json={
                                 "launchUuid": launch_uuid,
-                                "status": self.TMT_TO_RP_RESULT_STATUS[subresult.result],
+                                "status": child_item_status,
                                 "endTime": subtest_end_time})
 
                         self.verbose("uuid", child_item_uuid, "yellow", shift=2)
