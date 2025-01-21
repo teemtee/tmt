@@ -15,7 +15,7 @@ description: |
     Use the ``order`` attribute to select in which order the
     preparation should happen if there are multiple configs.
     The following are predefined ``order`` values of various
-    preparations:
+    preparations by tmt:
 
       30
           Installation of essential plugin and check requirements.
@@ -23,16 +23,17 @@ description: |
       50
           The default order of any object.
 
-      60
-          Application of patches by ``rpm-build`` command invoked by
-          :ref:`discover/fmf</plugins/discover/fmf>` plugin when
-          ``dist-git-source`` key is used.
-
       70
           Installation of packages :ref:`required</spec/tests/require>` by tests.
 
       75
           Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+
+      .. note::
+
+         Individual plugins may define their own special ``order`` values,
+         and you shall find the relevant information in :ref:`plugins`
+         documentation.
 
     .. note::
 

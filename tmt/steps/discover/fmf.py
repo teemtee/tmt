@@ -214,8 +214,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
-    For DistGit repo one can extract sources first and discover
-    tests from it by using ``distgit-source: true`` later in Prepare step.
+    For DistGit repo one can download sources and use code from them in
+    the tests. Sources are extracted into ``$TMT_SOURCE_DIR`` path,
+    patches are applied by default. See options to install build
+    dependencies or to just download sources without applying patches.
+    To apply patches, special ``prepare`` phase with order ``60`` is
+    added, and ``prepare`` step has to be enabled for it to run.
+
     It can be used together with ``ref``, ``path`` and ``url``,
     however ``ref`` is not possible without using ``url``.
 

@@ -83,10 +83,6 @@ DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
 PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
-#: Application of patches by ``rpm-build`` command invoked by
-#: :ref:`discover/fmf</plugins/discover/fmf>` plugin when
-#: ``dist-git-source`` key is used.
-PHASE_ORDER_PREPARE_DISTGIT_RPMBUILD = 60
 #: Installation of packages :ref:`required</spec/tests/require>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 #: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
