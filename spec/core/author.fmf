@@ -6,11 +6,11 @@ story:
     history or check various random files.
 
 description: |
-    This dedicated field provides the standard place for the
-    the original author as this information can be present in
-    various places so it's not always easy to find it. Also when
-    the test changes it's location to a different git repository
-    the information about the original author can be lost.
+    This dedicated field provides a standard location for
+    the original author's information, as it can be scattered
+    across various places and may be difficult to locate.
+    Additionally, when a test is moved to a different Git
+    repository, the original author's information can be lost.
 
 example:
   - |
