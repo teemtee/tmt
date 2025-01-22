@@ -54,20 +54,26 @@ class GuestLocal(tmt.Guest):
         """
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
-
-        return self._run_guest_command(
-            Command(
-                'sudo', '-E',
-                'ansible-playbook',
-                *self._ansible_verbosity(),
-                *self._ansible_extra_args(extra_args),
-                '-c', 'local',
-                '-i', 'localhost,',
-                playbook),
-            env=self._prepare_environment(),
-            friendly_command=friendly_command,
-            log=log,
-            silent=silent)
+        try:
+            return self._run_guest_command(
+                Command(
+                    'sudo', '-E',
+                    'ansible-playbook',
+                    *self._ansible_verbosity(),
+                    *self._ansible_extra_args(extra_args),
+                    '-c', 'local',
+                    '-i', 'localhost,',
+                    playbook),
+                env=self._prepare_environment(),
+                friendly_command=friendly_command,
+                log=log,
+                silent=silent)
+        except tmt.utils.RunError as exc:
+            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+                raise tmt.utils.GeneralError(
+                    "Seems that ansible is not installed on the test runner. "
+                    "Install `tmt[ansible]` optional dependency.") from exc
+            raise exc
 
     def execute(self,
                 command: Union[Command, ShellScript],

@@ -274,14 +274,20 @@ class GuestContainer(tmt.Guest):
             *self._ansible_extra_args(extra_args),
             '-c', 'podman', '-i', f'{self.container},', playbook
             ])
-
-        return self._run_guest_command(
-            podman_command,
-            cwd=self.parent.plan.worktree,
-            env=self._prepare_environment(),
-            friendly_command=friendly_command,
-            log=log,
-            silent=silent)
+        try:
+            return self._run_guest_command(
+                podman_command,
+                cwd=self.parent.plan.worktree,
+                env=self._prepare_environment(),
+                friendly_command=friendly_command,
+                log=log,
+                silent=silent)
+        except tmt.utils.RunError as exc:
+            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+                raise tmt.utils.GeneralError(
+                    "Seems that ansible is not installed on the test runner. "
+                    "Install `tmt[ansible]` optional dependency.") from exc
+            raise exc
 
     def podman(
             self,

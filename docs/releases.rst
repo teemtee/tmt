@@ -11,10 +11,11 @@ tmt-1.42.0
 The ``tmt show`` command now prints in verbose mode manual test
 instructions as well.
 
-Introducing new subpackage ``tmt+ansible``, to pull in Ansible
-requirements for plugins that use Ansible under the hood,
-:ref:`/plugins/prepare/ansible`, :ref:`/plugins/finish/ansible`,
-and :ref:`/plugins/prepare/feature`.
+The ``ansible-core`` package is now a recommended dependency package
+for tmt. It is usedby plugins that use Ansible under the hood,
+:ref:`prepare/ansible</plugins/prepare/ansible>`,
+:ref:`finish/ansible</plugins/finish/ansible>`,
+and :ref:`prepare/feature</plugins/prepare/feature>`.
 
 tmt-1.41.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

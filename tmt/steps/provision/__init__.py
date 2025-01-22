@@ -1860,14 +1860,20 @@ class GuestSsh(Guest):
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
-
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
+        try:
+            return self._run_guest_command(
+                ansible_command,
+                friendly_command=friendly_command,
+                silent=silent,
+                cwd=parent.plan.worktree,
+                env=self._prepare_environment(),
+                log=log)
+        except tmt.utils.RunError as exc:
+            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+                raise tmt.utils.GeneralError(
+                    "Seems that ansible is not installed on the test runner. "
+                    "Install `tmt[ansible]` optional dependency.") from exc
+            raise exc
 
     @property
     def is_ready(self) -> bool:

@@ -79,8 +79,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     .. note::
 
-       The plugin requires a working Ansible to be available, which can
-       be achieved by installing ``tmt+ansible`` package.
+       The plugin requires a working Ansible to be available on the
+       :ref:`test-runner`.
 
     .. warning::
 
