@@ -72,8 +72,12 @@ DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
 #
 # Following are default and predefined order values for various special phases
 # recognized by tmt. When adding new special phase, add its order below, and
-# do not forget to update the list in /spec/core/order. Please, keep the name
-# prefix, so it's easy to find all `PHASE_ORDER_*` constants for documentation.
+# do not forget to update either the corresponding step specification
+# where the list of step-specific `order` values should be documented,
+# or the documentation of plugin that defines the new value.
+#
+# Please, keep the name prefix, so it's easy to find all `PHASE_ORDER_*`
+# constants for documentation.
 #
 
 #: The default order of any object.
