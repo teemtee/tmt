@@ -12,6 +12,8 @@ description: |
     Additionally, when a test is moved to a different Git
     repository, the original author's information can be lost.
 
+    .. versionadded:: 1.42
+
 example:
   - |
     # Single author
