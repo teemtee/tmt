@@ -65,10 +65,14 @@ properties:
     type: string
 
   log-size-limit:
-    type: integer
+    anyOf:
+      - type: string
+      - type: integer
 
   traceback-size-limit:
-    type: integer
+    anyOf:
+      - type: string
+      - type: integer
 
   ssl-verify:
     type: boolean
