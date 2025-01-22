@@ -297,7 +297,7 @@ rlJournalStart
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
         if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then
-            if ! is_centos_7 "$image"; then
+            if ! is_centos_7 "$image" && ! is_fedora_39 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
                 rlPhaseEnd
