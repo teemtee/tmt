@@ -80,7 +80,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     .. note::
 
        The plugin requires a working Ansible to be available on the
-       :ref:`test-runner`.
+       test runner.
 
     .. warning::
 
