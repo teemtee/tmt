@@ -37,7 +37,6 @@ It contains no code, just makes sure the dependencies are installed.}
 The tmt Python module and command line tool implement the test
 metadata specification (L1 and L2) and allows easy test execution.
 
-%pyproject_extras_subpkg -n tmt ansible
 %pyproject_extras_subpkg -n tmt export-polarion
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
@@ -66,7 +65,7 @@ Obsoletes:      tmt-provision-container < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
 Requires:       podman
-Requires:       (ansible-collection-containers-podman or ansible)
+Requires:       ansible-collection-containers-podman
 
 %description -n tmt+provision-container %_metapackage_description
 

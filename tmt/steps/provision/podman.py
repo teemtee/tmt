@@ -9,6 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import show_step_method_hints
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
@@ -284,9 +285,7 @@ class GuestContainer(tmt.Guest):
                 silent=silent)
         except tmt.utils.RunError as exc:
             if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                raise tmt.utils.GeneralError(
-                    "Seems that ansible is not installed on the test runner. "
-                    "Install `tmt[ansible]` optional dependency.") from exc
+                show_step_method_hints('provision', 'ansible', self._logger)
             raise exc
 
     def podman(

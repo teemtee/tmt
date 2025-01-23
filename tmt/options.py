@@ -397,6 +397,10 @@ def show_step_method_hints(
                         "to run tests in 1minutetip OpenStack backend. "
                         "(Available only from the internal COPR repository.)",
                         color='blue')
+        if how == 'ansible':
+            logger.info(
+                'hint', "Seems that ansible is not installed on the test runner. "
+                "Use 'dnf install ansible-core'.", color='blue')
         logger.info(
             'hint', "Use the 'local' method to execute tests "
                     "directly on your localhost.", color='blue')

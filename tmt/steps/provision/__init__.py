@@ -42,7 +42,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
-from tmt.options import option
+from tmt.options import option, show_step_method_hints
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -1296,14 +1296,18 @@ class Guest(tmt.utils.Common):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-
-        output = self._run_ansible(
-            playbook,
-            playbook_root=playbook_root,
-            extra_args=extra_args,
-            friendly_command=friendly_command,
-            log=log if log else self._command_verbose_logger,
-            silent=silent)
+        try:
+            output = self._run_ansible(
+                playbook,
+                playbook_root=playbook_root,
+                extra_args=extra_args,
+                friendly_command=friendly_command,
+                log=log if log else self._command_verbose_logger,
+                silent=silent)
+        except tmt.utils.RunError as exc:
+            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+                show_step_method_hints('provision', 'ansible', self._logger)
+            raise exc
 
         self._ansible_summary(output.stdout)
 
@@ -1870,9 +1874,7 @@ class GuestSsh(Guest):
                 log=log)
         except tmt.utils.RunError as exc:
             if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                raise tmt.utils.GeneralError(
-                    "Seems that ansible is not installed on the test runner. "
-                    "Install `tmt[ansible]` optional dependency.") from exc
+                show_step_method_hints('provision', 'ansible', self._logger)
             raise exc
 
     @property
