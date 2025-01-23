@@ -815,6 +815,9 @@ class Core(
         if self.fmf_id.ref is None or self.fmf_id.url is None:
             return None
 
+        if not self.fmf_sources:
+            return None
+
         # Detect relative path of the last source from the metadata tree root
         relative_path = self.fmf_sources[-1].relative_to(self.node.root)
         relative_path = Path('/') if str(relative_path) == '.' else Path('/') / relative_path
