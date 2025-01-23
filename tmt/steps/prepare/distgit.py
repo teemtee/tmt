@@ -19,6 +19,11 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.prepare.install
 
+#: Application of patches by ``rpm-build`` command invoked by
+#: :ref:`discover/fmf</plugins/discover/fmf>` plugin when
+#: ``dist-git-source`` key is used.
+PHASE_ORDER_PREPARE_DISTGIT_RPMBUILD = 60
+
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
 FEDORA_BUILD_REQUIRES = [Package('@buildsys-build')]
@@ -59,7 +64,7 @@ def insert_to_prepare_step(
         how='install',
         name='requires (dist-git)',
         summary='Install required packages of tests detected by dist-git',
-        order=tmt.utils.DEFAULT_PLUGIN_ORDER_REQUIRES,
+        order=tmt.steps.PHASE_ORDER_PREPARE_INSTALL_REQUIRES,
         where=where,
         package=[])
     future_requires: PreparePlugin[Any] = cast(
@@ -72,7 +77,7 @@ def insert_to_prepare_step(
         how='install',
         name='recommends (dist-git)',
         summary='Install recommended packages of tests detected by dist-git',
-        order=tmt.utils.DEFAULT_PLUGIN_ORDER_RECOMMENDS,
+        order=tmt.steps.PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS,
         where=where,
         package=[],
         missing='skip')
@@ -116,7 +121,7 @@ class DistGitData(tmt.steps.prepare.PrepareStepData):
         option='--phase-name',
         help="Name of the discover step phase to inject tests to.",
         internal=True)
-    order: int = 60
+    order: int = PHASE_ORDER_PREPARE_DISTGIT_RPMBUILD
     install_builddeps: bool = field(
         default=False,
         option="--install-builddeps",

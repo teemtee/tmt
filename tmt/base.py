@@ -88,6 +88,7 @@ T = TypeVar('T')
 # metadata and 1h for scripts defined directly in plans (L2 metadata).
 DEFAULT_TEST_DURATION_L1 = '5m'
 DEFAULT_TEST_DURATION_L2 = '1h'
+#: The default order of any object.
 DEFAULT_ORDER = 50
 
 DEFAULT_TEST_RESTART_LIMIT = 1

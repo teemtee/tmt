@@ -68,8 +68,29 @@ if TYPE_CHECKING:
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
-DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
+#
+# Following are default and predefined order values for various special phases
+# recognized by tmt. When adding new special phase, add its order below, and
+# do not forget to update either the corresponding step specification
+# where the list of step-specific `order` values should be documented,
+# or the documentation of plugin that defines the new value.
+#
+# Please, keep the name prefix, so it's easy to find all `PHASE_ORDER_*`
+# constants for documentation.
+#
+
+#: The default order of any object.
+# TODO: this is a duplication of tmt.base.DEFAULT_ORDER. Unfortunately, tmt.base
+# imports tmt.steps, not the other way around.
+# `PHASE_ORDER_DEFAULT = tmt.base.DEFAULT_ORDER` would be way better.
+PHASE_ORDER_DEFAULT = 50
+#: Installation of essential plugin and check requirements.
+PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
+#: Installation of packages :ref:`required</spec/tests/require>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
+#: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
@@ -122,7 +143,7 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
     option(
         '--order',
         type=int,
-        default=DEFAULT_PLUGIN_METHOD_ORDER,
+        default=PHASE_ORDER_DEFAULT,
         help='Order in which the phase should be handled.')
     ])
 
@@ -189,7 +210,7 @@ class Phase(tmt.utils.Common):
     def __init__(
             self,
             *,
-            order: int = tmt.utils.DEFAULT_PLUGIN_ORDER,
+            order: int = PHASE_ORDER_DEFAULT,
             **kwargs: Any):
         super().__init__(**kwargs)
         self.order: int = order
@@ -291,7 +312,7 @@ class StepData(
     name: str = field(help='The name of the step phase.')
     how: str = field()
     order: int = field(
-        default=tmt.utils.DEFAULT_PLUGIN_ORDER,
+        default=PHASE_ORDER_DEFAULT,
         help='Order in which the phase should be handled.')
     when: list[str] = field(
         default_factory=list,
@@ -1171,7 +1192,7 @@ class Method:
             name: str,
             class_: Optional[PluginClass] = None,
             doc: Optional[str] = None,
-            order: int = DEFAULT_PLUGIN_METHOD_ORDER
+            order: int = PHASE_ORDER_DEFAULT
             ) -> None:
         """ Store method data """
 
@@ -1214,7 +1235,7 @@ class Method:
 def provides_method(
         name: str,
         doc: Optional[str] = None,
-        order: int = DEFAULT_PLUGIN_METHOD_ORDER) -> Callable[[PluginClass], PluginClass]:
+        order: int = PHASE_ORDER_DEFAULT) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
 
@@ -1593,7 +1614,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             value = self.get(key)
 
             # No need to show the default order
-            if key == 'order' and value == tmt.base.DEFAULT_ORDER:
+            if key == 'order' and value == PHASE_ORDER_DEFAULT:
                 return
 
             if value is None:

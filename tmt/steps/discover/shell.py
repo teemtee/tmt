@@ -60,8 +60,7 @@ class TestDescription(
     description: Optional[str] = None
     enabled: bool = True
     order: int = field(
-        # TODO: ugly circular dependency (see tmt.base.DEFAULT_ORDER)
-        default=50,
+        default=tmt.steps.PHASE_ORDER_DEFAULT,
         normalize=lambda key_address, raw_value, logger:
             50 if raw_value is None else int(raw_value)
         )
@@ -231,10 +230,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 test: ./smoke.sh
                 path: /tests/shell
 
-    For DistGit repo one can download sources and use code from them in the tests.
-    Sources are extracted into ``$TMT_SOURCE_DIR``, patches are applied by default.
-    See options to install build dependencies or to just download sources
-    without applying patches. To apply patches the ``prepare`` step has to be enabled.
+    For DistGit repo one can download sources and use code from them in
+    the tests. Sources are extracted into ``$TMT_SOURCE_DIR`` path,
+    patches are applied by default. See options to install build
+    dependencies or to just download sources without applying patches.
+    To apply patches, special ``prepare`` phase with order ``60`` is
+    added, and ``prepare`` step has to be enabled for it to run.
 
     .. code-block:: yaml
 
