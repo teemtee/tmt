@@ -1129,9 +1129,11 @@ class Execute(tmt.steps.Step):
         """ Execute tests """
         super().go(force=force)
 
-        # Clean up possible old results
+        # Clean up possible old results, by switching them to pending state
         if force:
-            self._results.clear()
+            for index, result in enumerate(self._results):
+                if result.result != ResultOutcome.PENDING:
+                    self._results[index] = Result(name=result.name, result=ResultOutcome.PENDING)
 
         if self.should_run_again:
             self.status('todo')
@@ -1201,7 +1203,11 @@ class Execute(tmt.steps.Step):
         # which would make results appear several times. Instead, we can reach
         # into the original plugin, and use it as a singleton "entry point" to
         # access all collected `_results`.
-        self._results += execute_phases[0].results()
+        #
+        # Go through all results and replace those which were pending
+        for index, result in enumerate(execute_phases[0].results()):
+            if self._results[index].result == ResultOutcome.PENDING:
+                self._results[index] = result
 
         # To separate "execute" from the follow-up logging visually
         self.info('')

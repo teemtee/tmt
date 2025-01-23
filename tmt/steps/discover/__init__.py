@@ -1,5 +1,6 @@
 import dataclasses
 from collections.abc import Iterator
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
@@ -17,6 +18,7 @@ import tmt.steps
 import tmt.utils
 from tmt.options import option
 from tmt.plugins import PluginRegistry
+from tmt.result import Result, ResultOutcome
 from tmt.steps import Action
 from tmt.utils import GeneralError, Path, field, key_to_option
 
@@ -414,6 +416,15 @@ class Discover(tmt.steps.Step):
                                 test.name == result.name and
                                 test.serial_number == result.serial_number):
                             self._failed_tests[test_phase].append(test)
+
+        # Initialize results with pending outcome if no results for it available
+        results = self.plan.execute.results()
+        for index, (test, result) in enumerate(zip_longest(self.tests(), results)):
+            if result is None:
+                results.insert(index, Result(name=test.name, result=ResultOutcome.PENDING))
+
+        # save the results
+        self.plan.execute._save_results(results)
 
         # Give a summary, update status and save
         self.summary()
