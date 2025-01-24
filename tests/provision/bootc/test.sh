@@ -12,6 +12,7 @@ rlJournalStart
         rlRun "mkdir -p /var/tmp/tmt"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
         rlRun "pushd data"
+        rlRun "df -h" 0 "Check available disk space"
     rlPhaseEnd
 
     rlPhaseStartTest "Image that needs dependencies"
