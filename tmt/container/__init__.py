@@ -269,7 +269,11 @@ def container_field(
         if field.name != key:
             continue
 
-        metadata = field.metadata.get('tmt', FieldMetadata())
+        metadata = cast(
+            FieldMetadata[Any],
+            field.metadata.get('tmt', cast(FieldMetadata[Any], FieldMetadata()))
+        )
+
         return (
             field.name,
             key_to_option(field.name),
@@ -808,24 +812,6 @@ def field(
             raise tmt.utils.GeneralError(
                 "Container field must have a boolean default value when it is a flag.")
 
-    metadata: FieldMetadata[T] = FieldMetadata(
-        internal=internal,
-        help=textwrap.dedent(help).strip() if help else None,
-        _metavar=metavar,
-        default=default,
-        default_factory=default_factory,
-        show_default=show_default,
-        is_flag=is_flag,
-        multiple=multiple,
-        _choices=choices,
-        envvar=envvar,
-        deprecated=deprecated,
-        cli_option=option,
-        normalize_callback=normalize,
-        serialize_callback=serialize,
-        unserialize_callback=unserialize,
-        export_callback=exporter)
-
     # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
     # field() is called with wider argument types than expected, because we use our own
@@ -833,5 +819,23 @@ def field(
     return dataclasses.field(  # type: ignore[call-overload]  # noqa: TID251
         default=default,
         default_factory=default_factory or dataclasses.MISSING,
-        metadata={'tmt': metadata}
+        metadata={
+            'tmt': FieldMetadata(
+                internal=internal,
+                help=textwrap.dedent(help).strip() if help else None,
+                _metavar=metavar,
+                default=default,
+                default_factory=default_factory,
+                show_default=show_default,
+                is_flag=is_flag,
+                multiple=multiple,
+                _choices=choices,
+                envvar=envvar,
+                deprecated=deprecated,
+                cli_option=option,
+                normalize_callback=normalize,
+                serialize_callback=serialize,
+                unserialize_callback=unserialize,
+                export_callback=exporter)
+            }
         )
