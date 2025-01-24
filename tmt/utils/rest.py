@@ -6,6 +6,7 @@ help texts.
 """
 
 import functools
+import sys
 from collections.abc import Mapping, Sequence
 from typing import Any, Optional
 
@@ -20,6 +21,16 @@ import docutils.utils
 import tmt.log
 from tmt.log import Logger
 from tmt.utils import GeneralError
+
+# We may be sharing parser structures with Sphinx, when it's generating
+# docs. And that lead to problems, our roles conflicting with those
+# registered by Sphinx, or parser calling Sphinx roles in our context.
+# Both Sphinx and docutils rely on global mutable states, and
+# monkeypatching it around our calls to parser does not work. To avoid
+# issues, ReST renderign is disabled when we know our code runs under
+# the control of Sphinx.
+REST_RENDERING_ALLOWED = ('sphinx-build' not in sys.argv[0])
+
 
 #: Special string representing a new-line in the stack of rendered
 #: paragraphs.
