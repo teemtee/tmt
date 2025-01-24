@@ -382,6 +382,11 @@ def show_step_method_hints(
     it must be an instance of a subclass of tmt.utils.Common (info method
     must be available).
     """
+
+    if how == 'ansible':
+        logger.info(
+            'hint', "Seems that ansible is not installed on the test runner. "
+            "Use 'dnf install ansible-core'.", color='blue')
     if step_name == 'provision':
         if how == 'virtual':
             logger.info(
@@ -397,10 +402,6 @@ def show_step_method_hints(
                         "to run tests in 1minutetip OpenStack backend. "
                         "(Available only from the internal COPR repository.)",
                         color='blue')
-        if how == 'ansible':
-            logger.info(
-                'hint', "Seems that ansible is not installed on the test runner. "
-                "Use 'dnf install ansible-core'.", color='blue')
         logger.info(
             'hint', "Use the 'local' method to execute tests "
                     "directly on your localhost.", color='blue')

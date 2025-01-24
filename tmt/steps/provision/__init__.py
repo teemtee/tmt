@@ -1305,8 +1305,9 @@ class Guest(tmt.utils.Common):
                 log=log if log else self._command_verbose_logger,
                 silent=silent)
         except tmt.utils.RunError as exc:
-            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                show_step_method_hints('provision', 'ansible', self._logger)
+            if ((exc.stderr and 'ansible-playbook: command not found' in exc.stderr)
+                    or "File 'ansible-playbook' not found." in exc.message):
+                show_step_method_hints('plugin', 'ansible', self._logger)
             raise exc
 
         self._ansible_summary(output.stdout)
@@ -1864,18 +1865,13 @@ class GuestSsh(Guest):
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
-        try:
-            return self._run_guest_command(
-                ansible_command,
-                friendly_command=friendly_command,
-                silent=silent,
-                cwd=parent.plan.worktree,
-                env=self._prepare_environment(),
-                log=log)
-        except tmt.utils.RunError as exc:
-            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                show_step_method_hints('provision', 'ansible', self._logger)
-            raise exc
+        return self._run_guest_command(
+            ansible_command,
+            friendly_command=friendly_command,
+            silent=silent,
+            cwd=parent.plan.worktree,
+            env=self._prepare_environment(),
+            log=log)
 
     @property
     def is_ready(self) -> bool:
