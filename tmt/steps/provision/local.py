@@ -54,6 +54,7 @@ class GuestLocal(tmt.Guest):
         """
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
+
         return self._run_guest_command(
             Command(
                 'sudo', '-E',

@@ -274,6 +274,7 @@ class GuestContainer(tmt.Guest):
             *self._ansible_extra_args(extra_args),
             '-c', 'podman', '-i', f'{self.container},', playbook
             ])
+
         return self._run_guest_command(
             podman_command,
             cwd=self.parent.plan.worktree,
