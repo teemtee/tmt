@@ -1865,6 +1865,7 @@ class GuestSsh(Guest):
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
+
         return self._run_guest_command(
             ansible_command,
             friendly_command=friendly_command,

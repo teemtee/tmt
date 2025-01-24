@@ -385,8 +385,8 @@ def show_step_method_hints(
 
     if how == 'ansible':
         logger.info(
-            'hint', "Seems that ansible is not installed on the test runner. "
-            "Use 'dnf install ansible-core'.", color='blue')
+            'hint', "Install 'ansible-core' to prepare "
+                    "guests using ansible playbooks.", color='blue')
     if step_name == 'provision':
         if how == 'virtual':
             logger.info(
