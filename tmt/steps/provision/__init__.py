@@ -1296,19 +1296,14 @@ class Guest(tmt.utils.Common):
         :param silent: if set, logging of steps taken by this function would be
             reduced.
         """
-        try:
-            output = self._run_ansible(
-                playbook,
-                playbook_root=playbook_root,
-                extra_args=extra_args,
-                friendly_command=friendly_command,
-                log=log if log else self._command_verbose_logger,
-                silent=silent)
-        except tmt.utils.RunError as exc:
-            if ((exc.stderr and 'ansible-playbook: command not found' in exc.stderr)
-                    or "File 'ansible-playbook' not found." in exc.message):
-                show_step_method_hints('plugin', 'ansible', self._logger)
-            raise exc
+
+        output = self._run_ansible(
+            playbook,
+            playbook_root=playbook_root,
+            extra_args=extra_args,
+            friendly_command=friendly_command,
+            log=log if log else self._command_verbose_logger,
+            silent=silent)
 
         self._ansible_summary(output.stdout)
 
@@ -1866,13 +1861,18 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
+        try:
+            return self._run_guest_command(
+                ansible_command,
+                friendly_command=friendly_command,
+                silent=silent,
+                cwd=parent.plan.worktree,
+                env=self._prepare_environment(),
+                log=log)
+        except tmt.utils.RunError as exc:
+            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+                show_step_method_hints('plugin', 'ansible', self._logger)
+            raise exc
 
     @property
     def is_ready(self) -> bool:

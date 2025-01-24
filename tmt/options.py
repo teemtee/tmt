@@ -387,7 +387,7 @@ def show_step_method_hints(
         logger.info(
             'hint', "Install 'ansible-core' to prepare "
                     "guests using ansible playbooks.", color='blue')
-    if step_name == 'provision':
+    elif step_name == 'provision':
         if how == 'virtual':
             logger.info(
                 'hint', "Install 'tmt+provision-virtual' "
