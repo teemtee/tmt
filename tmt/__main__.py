@@ -32,6 +32,9 @@ def run_cli() -> None:
         import_cli_commands()
 
         import tmt.cli._root
+        import tmt.utils.signals
+
+        tmt.utils.signals.install_handlers()
 
         tmt.cli._root.main()
 

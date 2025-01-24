@@ -11,6 +11,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.signals
 from tmt.container import container, field
 from tmt.utils import (
     ProvisionError,
@@ -567,15 +568,16 @@ class GuestArtemis(tmt.GuestSsh):
         if self.log_type:
             data['log_types'] = list({tuple(log.split('/', 1)) for log in self.log_type})
 
-        response = self.api.create('/guests/', data)
+        with tmt.utils.signals.PreventSignals(self._logger):
+            response = self.api.create('/guests/', data)
 
-        if response.status_code == 201:
+            if response.status_code != 201:
+                raise ArtemisProvisionError(
+                    'Failed to create', response=response, request_data=data)
+
             self.info('guest', 'has been requested', 'green')
+            self.guestname = response.json()['guestname']
 
-        else:
-            raise ArtemisProvisionError('Failed to create', response=response, request_data=data)
-
-        self.guestname = response.json()['guestname']
         self.info('guestname', self.guestname, 'green')
 
         with UpdatableMessage('state', indent_level=self._level()) as progress_message:
