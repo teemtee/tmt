@@ -6,6 +6,7 @@ import click
 import fmf
 import fmf.utils
 
+import tmt.container
 import tmt.identifier
 import tmt.log
 import tmt.utils
@@ -463,7 +464,8 @@ class Result(BaseResult):
 
     def to_subresult(self) -> 'SubResult':
         """ Convert result to tmt subresult """
-        options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
+        options = [
+            tmt.container.key_to_option(key) for key in tmt.container.container_keys(SubResult)]
 
         return SubResult.from_serialized(
             {option: value for option, value in self.to_serialized().items() if option in options})

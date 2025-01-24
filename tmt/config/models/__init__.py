@@ -1,5 +1,5 @@
 from tmt._compat.pydantic import BaseModel, Extra
-from tmt.utils import key_to_option
+from tmt.container import key_to_option
 
 
 class BaseConfig(BaseModel):
