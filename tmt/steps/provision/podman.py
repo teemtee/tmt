@@ -10,6 +10,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.options import show_step_method_hints
+from tmt.package_managers import FileSystemPath
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
@@ -218,6 +219,16 @@ class GuestContainer(tmt.Guest):
             '--user', self.user,
             self.image
             ))
+
+    def setup(self) -> None:
+        super().setup()
+        if not self.facts.is_superuser:
+            self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
+            self.execute(ShellScript(
+                f"""
+                    sudo chmod -R o+rwX {self.workdir_root};
+                    sudo setfacl -d -m o:rwX {self.workdir_root}
+                    """))
 
     def reboot(self, hard: bool = False,
                command: Optional[Union[Command, ShellScript]] = None,
