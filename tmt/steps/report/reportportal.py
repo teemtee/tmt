@@ -403,17 +403,22 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return str(dt_locator)
 
     def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
-        response = session.get(url=f"{self.url}/{path}", headers=self.headers)
+        response = session.get(url=f"{self.url}/{path}",
+                               headers=self.headers)
         self.handle_response(response)
         return response
 
     def rp_api_post(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.post(url=f"{self.url}/{path}", headers=self.headers, json=json)
+        response = session.post(url=f"{self.url}/{path}",
+                                headers=self.headers,
+                                json=json)
         self.handle_response(response)
         return response
 
     def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.put(url=f"{self.url}/{path}", headers=self.headers, json=json)
+        response = session.put(url=f"{self.url}/{path}",
+                               headers=self.headers,
+                               json=json)
         self.handle_response(response)
         return response
 
