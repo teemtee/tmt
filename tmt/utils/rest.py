@@ -6,17 +6,31 @@ help texts.
 """
 
 import functools
-from typing import Optional
+import sys
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional
 
 import click
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
+import docutils.parsers.rst.roles
+import docutils.parsers.rst.states
 import docutils.utils
 
 import tmt.log
 from tmt.log import Logger
 from tmt.utils import GeneralError
+
+# We may be sharing parser structures with Sphinx, when it's generating
+# docs. And that lead to problems, our roles conflicting with those
+# registered by Sphinx, or parser calling Sphinx roles in our context.
+# Both Sphinx and docutils rely on global mutable states, and
+# monkeypatching it around our calls to parser does not work. To avoid
+# issues, ReST renderign is disabled when we know our code runs under
+# the control of Sphinx.
+REST_RENDERING_ALLOWED = ('sphinx-build' not in sys.argv[0])
+
 
 #: Special string representing a new-line in the stack of rendered
 #: paragraphs.
@@ -259,8 +273,38 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         raise GeneralError(f"Unhandled ReST node '{node}'.")
 
 
+# Role handling works out of the box when building docs with Sphinx, but
+# for CLI rendering, we use docutils directly, and we need to provide
+# handlers for roles supported by Sphinx.
+#
+# It might be possible to reuse Sphinx implementation, but a brief
+# reading of Sphinx source gives an impression of pretty complex code.
+# And we don't need anything fancy, how hard could it be, right? See
+# https://docutils.sourceforge.io/docs/howto/rst-roles.html
+def role_ref(
+    name: str,
+    rawtext: str,
+    text: str,
+    lineno: int,
+    inliner: docutils.parsers.rst.states.Inliner,
+    options: Optional[Mapping[str, Any]] = None,
+    content: Optional[Sequence[str]] = None) \
+        -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
+    """
+    A handler for ``:ref:`` role.
+
+    :returns: a simple :py:class:`docutils.nodes.Text` node with text of
+        the "link": ``foo`` for both ``:ref:`foo``` and
+        ``:ref:`foo</bar>```.
+    """
+
+    return ([docutils.nodes.reference(rawtext, text)], [])
+
+
 def parse_rst(text: str) -> docutils.nodes.document:
     """ Parse a ReST document into docutils tree of nodes """
+
+    docutils.parsers.rst.roles.register_local_role('ref', role_ref)
 
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
