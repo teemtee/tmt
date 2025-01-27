@@ -1870,7 +1870,7 @@ class GuestSsh(Guest):
                 env=self._prepare_environment(),
                 log=log)
         except tmt.utils.RunError as exc:
-            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
+            if "File 'ansible-playbook' not found." in exc.message:
                 show_step_method_hints('plugin', 'ansible', self._logger)
             raise exc
 
