@@ -248,6 +248,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     To apply patches, special ``prepare`` phase with order ``60`` is
     added, and ``prepare`` step has to be enabled for it to run.
 
+    It can be used together with ``ref``, ``path`` and ``url``,
+    however ``ref`` is not possible without using ``url``.
+
     .. code-block:: yaml
 
         discover:
