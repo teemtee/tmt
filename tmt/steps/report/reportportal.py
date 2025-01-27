@@ -713,14 +713,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         timestamp=test_end_time,
                         write_out_failures=bool(item_status == "FAILED"))
 
-                    # Use the parent test start-time as a default
-                    subresult_start_time = test_start_time
-
                     # Create (and *finish*) the child test item for every tmt subresult and
                     # map it under the parent test item.
                     for subresult in result.subresult:
                         # Create a child item
                         self.info("sub-test", subresult.name, color="cyan", shift=1)
+
+                        # Use the parent test start-time as a default
+                        subresult_start_time = subresult.start_time or test_start_time
 
                         response = self.rp_api_post(
                             session=session,
@@ -729,7 +729,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 "name": subresult.name,
                                 "launchUuid": launch_uuid,
                                 "type": "step",
-                                "startTime": subresult.start_time or subresult_start_time})
+                                "startTime": subresult_start_time})
 
                         child_item_uuid = yaml_to_dict(response.text).get("id")
                         assert child_item_uuid is not None
