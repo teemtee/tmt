@@ -298,19 +298,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     in git since a given revision. This can be particularly useful when
     testing changes to tests themselves (e.g. in a pull request CI).
 
-    Related config options (all optional):
-
-    * ``modified-only`` - Set to ``true`` if you want to filter modified tests
-            only.  The test is modified if its name starts with
-            the name of any directory modified since modified-ref.
-    * ``modified-url`` - An additional remote repository to be used as the
-            reference for comparison. Will be fetched as a
-            ``reference`` remote in the test dir.
-    * ``modified-ref`` - The ref to compare against. Defaults to the local
-            repository's default branch. Note that you need to
-            specify ``reference/<branch>`` to compare to a branch
-            from the repository specified in ``modified-url``.
-
     Example to compare local repo against upstream ``main`` branch:
 
     .. code-block:: yaml
