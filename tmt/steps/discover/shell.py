@@ -194,14 +194,21 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         option="--ref",
         metavar='REVISION',
         default=None,
-        help="Branch, tag or commit specifying the git revision.",
+        help="""
+            Branch, tag or commit specifying the desired git revision.
+            Defaults to the remote repository's default branch.
+            """,
     )
 
     keep_git_metadata: bool = field(
         option="--keep-git-metadata",
         is_flag=True,
         default=False,
-        help="Keep the git metadata if a repo is synced to guest.",
+        help="""
+            By default the .git directory is removed to save disk space.
+            Set to true to sync the git metadata to guest as well.
+            Implicit if dist-git-source is used.
+            """,
     )
 
     def to_spec(self) -> tmt.steps._RawStepData:
