@@ -2402,7 +2402,7 @@ class TracebackVerbosity(enum.Enum):
     #: plus all local variables in each frame, trimmed to first 1024
     #: characters of their values.
     LOCALS = '2'
-    #: Render everything that can be show: all causes, their call
+    #: Render everything that can be shown: all causes, their call
     #: stacks, all frames and all locals in their completeness.
     FULL = 'full'
 
