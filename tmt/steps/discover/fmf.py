@@ -44,20 +44,35 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=cast(Optional[str], None),
         option=('-u', '--url'),
         metavar='REPOSITORY',
-        help='URL of the git repository with fmf metadata.',
+        help="""
+            Git repository containing the metadata tree.
+            Current git repository used by default.
+            """,
     )
+
     ref: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-r', '--ref'),
         metavar='REVISION',
-        help='Branch, tag or commit specifying the git revision.',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision. Defaults to the remote repository's default
+            branch if url given or to the current ``HEAD`` if url
+            not provided.
+            """,
         normalize=normalize_ref,
     )
+
     path: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-p', '--path'),
         metavar='ROOT',
-        help='Path to the metadata tree root.',
+        help="""
+            Path to the metadata tree root. Must be relative to
+            the git repository root if url provided, absolute
+            local filesystem path otherwise. By default '.' is
+            used.
+            """,
     )
 
     # Selecting tests
@@ -66,9 +81,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
-        help='Select tests by name.',
+        help="""
+            List of test names or regular expressions used to
+            select tests by name. Duplicate test names are allowed
+            to enable repetitive test execution, preserving the
+            listed test order.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
+
     link: list[str] = field(
         default_factory=list,
         option='--link',
@@ -76,9 +97,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         multiple=True,
         help="""
              Filter by linked objects (regular expressions are supported for both relation and
-             target).
+             target). Relation part can be omitted to match all relations.
              """,
     )
+
     filter: list[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
@@ -101,21 +123,32 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=False,
         option=('-m', '--modified-only'),
         is_flag=True,
-        help='If set, select only tests modified since reference revision.',
+        help="""
+            Set to true if you want to filter modified tests
+            only. The test is modified if its name starts with
+            the name of any directory modified since modified-ref.
+            """,
     )
+
     modified_url: Optional[str] = field(
         default=cast(Optional[str], None),
         option='--modified-url',
         metavar='REPOSITORY',
-        help='URL of the reference git repository with fmf metadata.',
+        help="""
+            An additional remote repository to be used as the
+            reference for comparison. Will be fetched as a
+            reference remote in the test dir.
+            """,
     )
+
     modified_ref: Optional[str] = field(
         default=cast(Optional[str], None),
         option='--modified-ref',
         metavar='REVISION',
         help="""
-            Branch, tag or commit specifying the reference git revision (if not provided, the
-            default branch is used).
+            The branch, tag or commit specifying the reference git revision (if not provided, the
+            default branch is used). Note that you need to specify ``reference/<branch>`` to
+            compare to a branch from the repository specified in modified-url.
             """,
     )
 
@@ -211,44 +244,6 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
 class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     """
     Discover available tests from fmf metadata.
-
-    The following parameters are supported:
-
-    * ``url`` Git repository containing the metadata tree.
-            Current git repository used by default.
-    * ``ref`` Branch, tag or commit specifying the desired git
-            revision. Defaults to the remote repository's default
-            branch if url given or to the current ``HEAD`` if url
-            not provided.
-
-            Additionally, one can set ``ref`` dynamically. This is
-            possible using a special file in tmt format stored in
-            the *default* branch of a tests repository. This special
-            file should contain rules assigning attribute ``ref``
-            in an `adjust` block, for example depending on a test
-            run context.
-
-            Dynamic ``ref`` assignment is enabled whenever a test
-            plan reference has the format ``ref: @FILEPATH``.
-    * ``path`` Path to the metadata tree root. Must be relative to
-            the git repository root if url provided, absolute
-            local filesystem path otherwise. By default ``.`` is
-            used.
-    * ``test`` List of test names or regular expressions used to
-            select tests by name. Duplicate test names are allowed
-            to enable repetitive test execution, preserving the
-            listed test order.
-    * ``link`` Select tests using the link keys.
-            Values must be in the form of ``RELATION:TARGET``,
-            tests containing at least one of them are selected.
-            Regular expressions are supported for both relation
-            and target. Relation part can be omitted to match all
-            relations.
-    * ``filter`` Apply advanced filter based on test metadata
-            attributes. See ``pydoc fmf.filter`` for more info.
-    * ``exclude`` Exclude tests which match a regular expression.
-    * ``prune`` Copy only immediate directories of executed tests and
-            their required files.
 
     By default all available tests from the current repository are used
     so the minimal configuration looks like this:
