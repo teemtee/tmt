@@ -27,7 +27,7 @@ from tmt.utils import Path, effective_workdir_root
 @verbosity_options
 def status(
         context: Context,
-        _workdir_root: Optional[str],
+        workdir_root: Optional[Path],
         abandoned: bool,
         active: bool,
         finished: bool,
@@ -50,7 +50,6 @@ def status(
             "Options --abandoned, --active and --finished cannot be "
             "used together.")
 
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
     status_obj = tmt.Status(

@@ -229,13 +229,11 @@ def main(
 @verbosity_options
 @force_dry_options
 @again_option
-def run(context: Context, id_: Optional[str], _workdir_root: Optional[str], **kwargs: Any) -> None:
+def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kwargs: Any) -> None:
     """ Run test steps. """
     # Initialize
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
-
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
 
     run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
@@ -1257,7 +1255,7 @@ def clean(context: Context,
           id_: tuple[str, ...],
           keep: Optional[int],
           skip: list[str],
-          _workdir_root: Optional[str],
+          workdir_root: Optional[Path],
           **kwargs: Any) -> None:
     """
     Clean workdirs, guests or images.
@@ -1274,7 +1272,6 @@ def clean(context: Context,
     if last and id_:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
@@ -1354,7 +1351,7 @@ def perform_clean(
 @dry_options
 def clean_runs(
         context: Context,
-        _workdir_root: Optional[str],
+        workdir_root: Optional[Path],
         last: bool,
         id_: tuple[str, ...],
         keep: Optional[int],
@@ -1370,7 +1367,6 @@ def clean_runs(
             "Options --last, --id and --keep cannot be used together.")
     if keep is not None and keep < 0:
         raise tmt.utils.GeneralError("--keep must not be a negative number.")
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
@@ -1407,7 +1403,7 @@ def clean_runs(
 @dry_options
 def clean_guests(
         context: Context,
-        _workdir_root: Optional[str],
+        workdir_root: Optional[Path],
         last: bool,
         id_: tuple[str, ...],
         keep: Optional[int],
@@ -1420,7 +1416,6 @@ def clean_guests(
     if last and bool(id_):
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
