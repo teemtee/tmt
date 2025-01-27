@@ -447,7 +447,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             except tmt.utils.FileError:
                 continue
 
-            level = "INFO" if log_path == result.log[0] else "TRACE"
+            level = "INFO" if index == 0 else "TRACE"
             message = _filter_log(log, settings=LogFilterSettings(size=self.data.log_size_limit))
 
             # Upload log
