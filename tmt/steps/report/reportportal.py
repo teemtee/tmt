@@ -764,12 +764,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 else:
                     item_uuid = self.data.test_uuids[serial_number]
 
+                # If the result end-time is not defined, use the latest result start-time as
+                # default.
+                test_end_time = test_start_time
+
                 # Support for idle tests
                 item_status = "SKIPPED"
                 if result:
-                    # Shift the timestamp to the end of a test. If the result end-time is not
-                    # defined, use the latest result start-time as default.
-                    test_end_time = result.end_time or test_start_time
+                    # Shift the timestamp to the end of a test.
+                    test_end_time = result.end_time or test_end_time
 
                     item_status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
