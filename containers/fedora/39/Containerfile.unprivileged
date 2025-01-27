@@ -8,6 +8,8 @@ FROM quay.io/fedora/fedora:39
 
     # Populate dnf cache
 RUN    dnf makecache \
+    # Make sure the image is built with the latest packages
+    && dnf update -y \
     # Create unprivileged user and setup sudo for it
     && dnf install -y /usr/sbin/useradd \
     && useradd fedora \
