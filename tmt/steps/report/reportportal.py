@@ -711,8 +711,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     test_end_time = result.end_time or test_end_time
 
                     item_status = self.TMT_TO_RP_RESULT_STATUS[result.result]
-
-                    # For each log
                     self.upload_result_logs(
                         result=result,
                         session=session,
