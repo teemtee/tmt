@@ -53,6 +53,28 @@ rlJournalStart
         rlAssertGrep "relates https://something.org/related" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Show a manual test"
+
+        # Basic mode
+        rlRun -s "tmt tests show manual"
+        rlAssertGrep "summary A simple manual test" $rlRun_LOG
+        rlAssertGrep "test manual.md" $rlRun_LOG
+        rlAssertGrep "path /tests" $rlRun_LOG
+        rlAssertGrep "manual true" $rlRun_LOG
+        rlAssertNotGrep "instructions" $rlRun_LOG
+
+        # Verbose mode
+        rlRun -s "tmt --verbose tests show manual"
+        rlAssertGrep "summary A simple manual test" $rlRun_LOG
+        rlAssertGrep "test manual.md" $rlRun_LOG
+        rlAssertGrep "path /tests" $rlRun_LOG
+        rlAssertGrep "manual true" $rlRun_LOG
+        rlAssertGrep "instructions" $rlRun_LOG
+        rlAssertGrep "# Test" $rlRun_LOG
+        rlAssertGrep "## Step" $rlRun_LOG
+        rlAssertGrep "Do this and that\." $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "List all tests by default"
         rlRun -s "tmt tests ls"
         rlAssertGrep "/tests/enabled" $rlRun_LOG

@@ -16,13 +16,15 @@ import tmt.config
 import tmt.log
 import tmt.steps
 import tmt.steps.execute
+import tmt.steps.prepare
+import tmt.steps.prepare.feature
 import tmt.steps.provision
 import tmt.templates
 import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import MetadataError, Path
+from tmt.utils import GeneralError, MetadataError, Path
 
 USER_PLAN_NAME = "/user/plan"
 
@@ -418,12 +420,23 @@ class Try(tmt.utils.Common):
         """ Enable EPEL repository """
 
         # tmt run prepare --how feature --epel enabled
-        from tmt.steps.prepare.feature import PrepareFeatureData
+        # cast: linters do not detect the class `get_class_data()`
+        # returns, it's reported as `type[Unknown]`. mypy does not care,
+        # pyright does.
+        prepare_data_class = cast(  # type: ignore[redundant-cast]
+            type[tmt.steps.prepare.feature.PrepareFeatureData],
+            tmt.steps.prepare.feature.PrepareFeature.get_data_class())
 
-        data = PrepareFeatureData(
+        if not tmt.utils.container_has_field(prepare_data_class, 'epel'):
+            raise GeneralError("Feature 'epel' is not available.")
+
+        # ignore[reportCallIssue,call-arg,unused-ignore]: thanks to
+        # dynamic nature of the data class, the field is indeed unknown
+        # to type checkers.
+        data = prepare_data_class(
             name="tmt-try-epel",
             how='feature',
-            epel="enabled")
+            epel="enabled")  # type: ignore[reportCallIssue,call-arg,unused-ignore]
 
         phase: PreparePlugin[Any] = cast(
             PreparePlugin[Any],

@@ -5,6 +5,18 @@
 ======================
 
 
+tmt-1.42.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``tmt show`` command now prints in verbose mode manual test
+instructions as well.
+
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
 tmt-1.41.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -17,8 +29,26 @@ The :ref:`/plugins/report/reportportal` plugin now exports all
 test contact information, rather than just the first contact
 instance.
 
-Add the ``--workdir-root`` option for the ``tmt clean images``
-command so that users can specify the directory they want.
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through the
+``beaker-job-group`` key. The submitting user must be a member of
+the given job group.
+
+The ``note`` field of tmt :ref:`/spec/results` changes from
+a string to a list of strings, to better accommodate multiple notes.
+
+The ``Node`` alias for the ``Core`` class has been dropped as it
+has been deprecated a long time ago.
+
+Previously when the test run was interrupted in the middle of the
+test execution the :ref:`/spec/plans/report` step would be skipped
+and no results would be reported. Now the report step is performed
+always so that users can access results of those tests which were
+successfully executed.
+
+The ``tmt try`` command now accepts the whole action word in
+addition to just a first letter, i.e. ``l`` and ``login`` now
+both work.
 
 
 tmt-1.40.0
@@ -231,7 +261,7 @@ committish reference, either branch, tag, git-describe, or if all
 fails the commit hash.  You may encounter this in the verbose log
 of ``tmt tests show`` or plan/test imports.
 
-:ref:`Result specification</spec/plans/results>` now defines
+:ref:`Result specification</spec/results>` now defines
 ``original-result`` key holding the original outcome of a test,
 subtest or test checks. The effective outcome, stored in
 ``result`` key, is computed from the original outcome, and it is
@@ -261,7 +291,7 @@ tmt-1.36.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
-file does not follow the :ref:`result specification</spec/plans/results>`.
+file does not follow the :ref:`result specification</spec/results>`.
 
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
@@ -596,7 +626,7 @@ The **avc** :ref:`/spec/tests/check` allows to detect avc denials
 which appear during the test execution.
 
 A new ``skip`` custom result outcome has been added to the
-:ref:`/spec/plans/results` specification.
+:ref:`/spec/results` specification.
 
 All context :ref:`/spec/context/dimension` values are now handled
 in a case insensitive way.

@@ -1027,7 +1027,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     debug3('incompatible step data')
 
-                    data_base = self._plugin_base_class._data_class
+                    data_base = cast(type[BasePlugin[StepData, Any]],
+                                     self._plugin_base_class).get_data_class()
 
                     debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
                     debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
@@ -1272,6 +1273,18 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
     _data_class: type[StepDataT]
+
+    @classmethod
+    def get_data_class(cls) -> type[StepDataT]:
+        """
+        Return step data class for this plugin.
+
+        By default, :py:attr:`_data_class` is returned, but plugin may
+        override this method to provide different class.
+        """
+
+        return cls._data_class
+
     data: StepDataT
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
@@ -1279,7 +1292,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     # (used for import/export to/from attributes during load and save)
     @property
     def _keys(self) -> list[str]:
-        return list(self._data_class.keys())
+        return list(self.get_data_class().keys())
 
     def __init__(
             self,
@@ -1330,8 +1343,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return [
             metadata.option
             for _, _, _, _, metadata in (
-                container_field(cls._data_class, key)
-                for key in container_keys(cls._data_class)
+                container_field(cls.get_data_class(), key)
+                for key in container_keys(cls.get_data_class())
                 )
             if metadata.option is not None
             ] + (
@@ -1461,7 +1474,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                     f"for the '{how}' method.", level=2)
 
                 plugin_class = method.class_
-                plugin_data_class = plugin_class._data_class
+                plugin_data_class = cast(
+                    type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class).get_data_class()
 
                 # If we're given raw data, construct a step data instance, applying
                 # normalization in the process.
@@ -1498,7 +1512,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     def default(self, option: str, default: Optional[Any] = None) -> Any:
         """ Return default data for given option """
 
-        value = self._data_class.default(option_to_key(option), default=default)
+        value = self.get_data_class().default(option_to_key(option), default=default)
 
         if value is None:
             return default
@@ -1651,9 +1665,9 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         selected ones.
         """
 
-        assert self.data.__class__ is self._data_class, \
+        assert self.data.__class__ is self.get_data_class(), \
             (f'Plugin {self.__class__.__name__} woken with incompatible '
-             f'data {self.data}, expects {self._data_class.__name__}')
+             f'data {self.data}, expects {self.get_data_class().__name__}')
 
         if self.step.status() == 'done':
             self.debug('step is done, not overwriting plugin data')

@@ -3038,6 +3038,10 @@ def container_fields(container: Container) -> Iterator[dataclasses.Field[Any]]:
     yield from dataclasses.fields(container)
 
 
+def container_has_field(container: Container, key: str) -> bool:
+    return key in list(container_keys(container))
+
+
 def container_keys(container: Container) -> Iterator[str]:
     """ Iterate over key names in a container """
 

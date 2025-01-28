@@ -1,4 +1,3 @@
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -100,14 +99,14 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.RESPECT,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.PASS,
-            None
+            []
             ),
         (
             ResultOutcome.FAIL,
             ResultInterpret.RESPECT,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.FAIL,
-            "check 'check1' failed"  # Note is set when check fails
+            ["check 'check1' failed"]  # Note is set when check fails
             ),
 
         # Test XFAIL interpretation
@@ -116,14 +115,14 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.XFAIL,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.PASS,
-            "check 'check1' failed, test failed as expected, original test result: fail"
+            ["check 'check1' failed", "test failed as expected", "original test result: fail"]
             ),
         (
             ResultOutcome.PASS,
             ResultInterpret.XFAIL,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.FAIL,
-            "test was expected to fail, original test result: pass"
+            ["test was expected to fail", "original test result: pass"]
             ),
 
         # Test INFO interpretation
@@ -132,14 +131,14 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.INFO,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.INFO,
-            "check 'check1' failed, test result overridden: info, original test result: fail"
+            ["check 'check1' failed", "test result overridden: info", "original test result: fail"]
             ),
         (
             ResultOutcome.PASS,
             ResultInterpret.INFO,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.INFO,
-            "test result overridden: info, original test result: pass"
+            ["test result overridden: info", "original test result: pass"]
             ),
 
         # Test WARN interpretation
@@ -148,7 +147,7 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.WARN,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.WARN,
-            "test result overridden: warn, original test result: pass"
+            ["test result overridden: warn", "original test result: pass"]
             ),
 
         # Test ERROR interpretation
@@ -157,7 +156,7 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.ERROR,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.ERROR,
-            "test result overridden: error, original test result: pass"
+            ["test result overridden: error", "original test result: pass"]
             ),
 
         # Test CUSTOM interpretation (should not modify result)
@@ -166,7 +165,7 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
             ResultInterpret.CUSTOM,
             {"check1": CheckResultInterpret.RESPECT},
             ResultOutcome.FAIL,
-            None
+            []
             ),
         ],
     ids=[
@@ -183,7 +182,7 @@ def test_result_interpret_all_cases(
         interpret: ResultInterpret,
         interpret_checks: dict[str, CheckResultInterpret],
         expected_outcome: ResultOutcome,
-        expected_note_contains: Optional[str]
+        expected_note_contains: list[str]
         ) -> None:
     """Test all possible combinations of result interpretations"""
     result = Result(
@@ -198,10 +197,11 @@ def test_result_interpret_all_cases(
     assert interpreted.result == expected_outcome
 
     if expected_note_contains:
-        assert interpreted.note is not None
-        assert expected_note_contains in interpreted.note
+        assert interpreted.note
+        for expected_note in expected_note_contains:
+            assert expected_note in interpreted.note
     else:
-        assert interpreted.note is None
+        assert not interpreted.note
 
 
 def test_result_interpret_check_phases() -> None:
@@ -238,10 +238,10 @@ def test_result_interpret_edge_cases() -> None:
     result = Result(name="test-case", result=ResultOutcome.FAIL)
     interpreted = result.interpret_result(ResultInterpret.RESPECT, {})
     assert interpreted.result == ResultOutcome.FAIL
-    assert interpreted.note is None
+    assert not interpreted.note
 
     # Test with empty check list
     result = Result(name="test-case", result=ResultOutcome.FAIL, check=[])
     interpreted = result.interpret_result(ResultInterpret.RESPECT, {})
     assert interpreted.result == ResultOutcome.FAIL
-    assert interpreted.note is None
+    assert not interpreted.note
