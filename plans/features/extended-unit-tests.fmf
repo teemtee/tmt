@@ -15,6 +15,7 @@ adjust+:
         how: shell
         script: |
             set -x
+            dnf install -y /usr/bin/netstat
             systemctl unmask systemd-resolved
             systemctl disable systemd-resolved
             systemctl stop systemd-resolved

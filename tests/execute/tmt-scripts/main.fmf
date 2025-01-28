@@ -3,6 +3,7 @@ summary: Verify correct location of tmt scripts
 /fedora:
   environment:
     IMAGE: registry.fedoraproject.org/fedora:rawhide
+    DEFAULT_TMT_SCRIPTS_DIR: /usr/local/bin
     FOUND: |
       /usr/local/bin/rhts-abort
       /usr/local/bin/rhts-reboot
@@ -26,6 +27,7 @@ summary: Verify correct location of tmt scripts
   environment:
     IMAGE: registry.fedoraproject.org/fedora:rawhide
     TMT_SCRIPTS_DIR: /usr/bin
+    DEFAULT_TMT_SCRIPTS_DIR: /usr/local/bin
     FOUND: |
       /usr/bin/rhts-abort
       /usr/bin/rhts-reboot
@@ -62,6 +64,7 @@ summary: Verify correct location of tmt scripts
 /fedora-bootc:
   environment:
     IMAGE: quay.io/fedora/fedora-bootc:rawhide
+    DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |
       /var/lib/tmt/scripts/rhts-abort
       /var/lib/tmt/scripts/rhts-reboot
@@ -93,12 +96,17 @@ summary: Verify correct location of tmt scripts
       /usr/local/bin/tmt-reboot
       /usr/local/bin/tmt-reboot-core
       /usr/local/bin/tmt-report-result
+  adjust:
+    result: info
+    when: distro == fedora-39
+    because: there is an irrelevant avc
 
 
 /fedora-bootc-force:
   environment:
     IMAGE: quay.io/fedora/fedora-bootc:rawhide
     TMT_SCRIPTS_DIR: /var/tmp/tmt/bin
+    DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |
       /etc/profile.d/tmt.sh
       /var/tmp/tmt/bin/rhts-abort
@@ -144,3 +152,7 @@ summary: Verify correct location of tmt scripts
       /var/lib/tmt/scripts/tmt-reboot
       /var/lib/tmt/scripts/tmt-reboot-core
       /var/lib/tmt/scripts/tmt-report-result
+  adjust:
+    result: info
+    when: distro == fedora-39
+    because: there is an irrelevant avc

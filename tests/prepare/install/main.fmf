@@ -12,3 +12,10 @@ tag+:
 
 # TODO: what test cases are safe enough to be executed against the localhost?
 #  - provision-local
+
+adjust+:
+  - check:
+      - how: avc
+        result: xfail
+    when: provision_how == container
+    because: https://bugzilla.redhat.com/show_bug.cgi?id=2342247

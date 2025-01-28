@@ -1,7 +1,7 @@
 story: As a user I want to start using tmt in my git repository.
 summary: Initialize a new metadata tree
 link:
-  - implemented-by: /tmt/cli.py
+  - implemented-by: /tmt/cli
   - verified-by: /tests/unit/.*/basic
 
 /empty:

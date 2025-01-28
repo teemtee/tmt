@@ -25,8 +25,23 @@ properties:
   file:
     type: string
 
+  flavor:
+    type: string
+    enum:
+      - default
+      - custom
+
+  template-path:
+    type: string
+
+  prettify:
+    type: boolean
+
   include-output-log:
     type: boolean
+
+  when:
+    $ref: "/schemas/common#/definitions/when"
 
 required:
   - how

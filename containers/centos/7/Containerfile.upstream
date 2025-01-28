@@ -12,4 +12,6 @@ RUN cd /etc/yum.repos.d/ \
     && sed 's|#baseurl=http://mirror.centos.org/centos/$releasever|baseurl=https://vault.centos.org/7.9.2009|' -i *repo
 
     # Populate yum cache
-RUN yum makecache
+RUN    yum makecache \
+    # Make sure the image is built with the latest packages
+    && yum update -y

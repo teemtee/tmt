@@ -1,3 +1,5 @@
+---
+
 - name: Copy and check test file
   hosts: all
   tasks:

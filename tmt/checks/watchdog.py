@@ -252,7 +252,7 @@ class WatchdogCheck(Check):
                 _handle_output(exc.stdout or '')
 
             else:
-                _handle_output('\n'.join(render_run_exception_streams(exc.stdout, exc.stderr)))
+                _handle_output('\n'.join(render_run_exception_streams(exc.output)))
 
     def do_ssh_ping(
             self,
@@ -337,7 +337,7 @@ class WatchdogCheck(Check):
                 _fail_connection_refused(exc.stderr or '')
 
             else:
-                _fail_unknown('\n'.join(render_run_exception_streams(exc.stdout, exc.stderr)))
+                _fail_unknown('\n'.join(render_run_exception_streams(exc.output)))
 
         logger.debug(
             f'failed {guest_context.ssh_ping_failures}'

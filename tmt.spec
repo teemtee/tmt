@@ -25,6 +25,7 @@ Obsoletes:      tmt-report-reportportal < %{version}-%{release}
 %endif
 
 Recommends:     bash-completion
+Recommends:	ansible-core
 
 %py_provides    python3-tmt
 
@@ -64,7 +65,7 @@ Obsoletes:      tmt-provision-container < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
 Requires:       podman
-Requires:       (ansible or ansible-collection-containers-podman)
+Requires:       ansible-collection-containers-podman
 
 %description -n tmt+provision-container %_metapackage_description
 
@@ -78,7 +79,6 @@ Requires:       tmt == %{version}-%{release}
 Requires:       python3-testcloud >= 0.11.3
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
-Requires:       (ansible or ansible-core)
 # Recommend qemu system emulators for supported arches
 Recommends:     qemu-kvm-core
 %if 0%{?fedora}
@@ -89,6 +89,16 @@ Recommends:     qemu-system-x86-core
 %endif
 
 %description -n tmt+provision-virtual %_metapackage_description
+
+%package -n     tmt+provision-bootc
+Summary:        Dependencies required for tmt bootc machine provisioner
+Provides:       tmt-provision-bootc == %{version}-%{release}
+Requires:       tmt == %{version}-%{release}
+Requires:       tmt+provision-virtual == %{version}-%{release}
+Requires:       podman
+Recommends:     podman-machine
+
+%description -n tmt+provision-bootc %_metapackage_description
 
 %package -n     tmt+provision-beaker
 Summary:        Dependencies required for tmt beaker provisioner
@@ -152,6 +162,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 
 %files -n tmt+provision-container -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-virtual -f %{_pyproject_ghost_distinfo}
+%files -n tmt+provision-bootc -f %{_pyproject_ghost_distinfo}
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*

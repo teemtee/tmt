@@ -1,0 +1,29 @@
+summary: Check libraries can end in '.git' suffix
+description:
+    User doesn't need to care/remember whether to use '.git'
+    suffix or not in the 'require' or 'recommend' section -
+    both are allowed.
+framework: shell
+test: rpm -q mariadb squid
+
+/name:
+    summary: Require using the library name
+    require:
+      - library(database/mariadb)
+      - library(squid/squid)
+
+/short:
+    summary: Use url without the '.git' suffix
+    require:
+      - url: https://github.com/beakerlib/database
+        name: /mariadb
+      - url: https://github.com/beakerlib/squid
+        name: /squid
+
+/long:
+    summary: Use url without the '.git' suffix
+    require:
+      - url: https://github.com/beakerlib/database.git
+        name: /mariadb
+      - url: https://github.com/beakerlib/squid.git
+        name: /squid

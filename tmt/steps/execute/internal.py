@@ -111,6 +111,10 @@ TEST_WRAPPER_FILENAME_TEMPLATE = \
 #   and simulation of tty not available for output is not run.
 #
 TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+if ! grep -q "{{ GUEST_SCRIPTS_PATH }}" <<< "${PATH}"; then
+    export PATH={{ GUEST_SCRIPTS_PATH }}:${PATH}
+fi
+
 {% macro enter() %}
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
 {%- endmacro %}
@@ -354,7 +358,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
             INTERACTIVE=self.data.interactive,
             TTY=test.tty,
-            REMOTE_COMMAND=ShellScript(command)
+            REMOTE_COMMAND=ShellScript(command),
+            GUEST_SCRIPTS_PATH=guest.scripts_path
             ).strip())
 
         def _test_output_logger(
@@ -454,16 +459,17 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
 
-        # Extract test results and store them in the invocation. Note
-        # that these results will be overwritten with a fresh set of
-        # results after a successful reboot in the middle of a test.
-        invocation.results = self.extract_results(invocation, logger)
-
+        # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
             invocation=invocation,
             environment=environment,
             logger=logger
             )
+
+        # Extract test results and store them in the invocation. Note
+        # that these results will be overwritten with a fresh set of
+        # results after a successful reboot in the middle of a test.
+        invocation.results = self.extract_results(invocation, logger)
 
         if invocation.is_guest_healthy:
             # Fetch #2: after-test checks might have produced remote files as well,
@@ -555,12 +561,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     except tmt.utils.RebootTimeoutError:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'reboot timeout'
+                            result.note.append('reboot timeout')
 
                     else:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'crashed too many times'
+                            result.note.append(
+                                'crashed too many times, '
+                                'you may want to set restart-max-count larger')
 
                 # Handle reboot, abort, exit-first
                 if invocation.reboot_requested:
@@ -573,12 +581,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     except tmt.utils.RebootTimeoutError:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note = 'reboot timeout'
+                            result.note.append('reboot timeout')
 
                 if invocation.abort_requested:
                     for result in invocation.results:
                         # In case of aborted all results in list will be aborted
-                        result.note = 'aborted'
+                        result.note.append('aborted')
 
                 self._results.extend(invocation.results)
 

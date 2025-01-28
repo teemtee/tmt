@@ -309,6 +309,28 @@ TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
     }
 
 
+def _template_test_unit(value: Any) -> bool:  # type: ignore[reportUnusedFunction,unused-ignore]
+    """
+    Return true if the object is a unit.
+
+    .. code-block:: jinja
+
+        {% if value is unit %}
+            Value is a Pint's ``Quantity`` instance.
+        {% endif %}
+    """
+
+    from pint import Quantity
+
+    return isinstance(value, Quantity)
+
+
+TEMPLATE_TESTS: dict[str, Callable[..., Any]] = {
+    _name.replace('_template_test_', ''): _obj
+    for _name, _obj in locals().items() if callable(_obj) and _name.startswith('_template_test_')
+    }
+
+
 def default_template_environment() -> jinja2.Environment:
     """
     Create a Jinja2 environment with default settings.
@@ -324,6 +346,7 @@ def default_template_environment() -> jinja2.Environment:
     environment = jinja2.Environment()  # noqa: S701
 
     environment.filters.update(TEMPLATE_FILTERS)
+    environment.tests.update(TEMPLATE_TESTS)
 
     environment.trim_blocks = True
     environment.lstrip_blocks = True

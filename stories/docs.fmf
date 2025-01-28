@@ -16,7 +16,7 @@ story:
         - tmt test import --help
     link:
       - verified-by: /tests/core/docs
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
 
 /man:
     story:

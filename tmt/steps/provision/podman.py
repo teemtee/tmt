@@ -9,6 +9,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.options import show_step_method_hints
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
@@ -275,13 +276,18 @@ class GuestContainer(tmt.Guest):
             '-c', 'podman', '-i', f'{self.container},', playbook
             ])
 
-        return self._run_guest_command(
-            podman_command,
-            cwd=self.parent.plan.worktree,
-            env=self._prepare_environment(),
-            friendly_command=friendly_command,
-            log=log,
-            silent=silent)
+        try:
+            return self._run_guest_command(
+                podman_command,
+                cwd=self.parent.plan.worktree,
+                env=self._prepare_environment(),
+                friendly_command=friendly_command,
+                log=log,
+                silent=silent)
+        except tmt.utils.RunError as exc:
+            if "File 'ansible-playbook' not found." in exc.message:
+                show_step_method_hints('plugin', 'ansible', self._logger)
+            raise exc
 
     def podman(
             self,

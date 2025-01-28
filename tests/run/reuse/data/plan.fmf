@@ -1,0 +1,3 @@
+execute:
+    how: tmt
+    script: touch $TMT_PLAN_DATA/works

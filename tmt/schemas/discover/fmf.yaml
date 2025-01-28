@@ -95,6 +95,9 @@ properties:
   where:
     $ref: "/schemas/common#/definitions/where"
 
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
   adjust-tests:
     $ref: "/schemas/core#/definitions/adjust"
 

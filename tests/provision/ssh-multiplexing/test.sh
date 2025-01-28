@@ -16,7 +16,7 @@ rlJournalStart
 
     rlPhaseStartTest "SSH multiplexing should be disabled when SSH socket path gets too long ($PROVISION_HOW)"
         rlRun "tmt -vv run -i $long_run -a provision -h $PROVISION_HOW"
-        rlAssertGrep "warn: SSH multiplexing will not be used because the SSH socket path '.*' is too long." "$long_run/log.txt"
+        rlAssertGrep "warn: SSH multiplexing will not be used because the SSH master socket path '.*' is too long." "$long_run/log.txt"
         rlAssertGrep "The SSH master process cannot be terminated because it is disabled." "$long_run/log.txt"
     rlPhaseEnd
 

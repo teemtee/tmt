@@ -1,12 +1,15 @@
 import asyncio
 import dataclasses
 import datetime
+import importlib.metadata
 import logging
 import os
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, Union, cast
+
+import packaging.version
 
 import tmt
 import tmt.hardware
@@ -23,6 +26,8 @@ from tmt.utils import (
     UpdatableMessage,
     field,
     )
+
+MRACK_VERSION: Optional[str] = None
 
 mrack: Any
 providers: Any
@@ -44,6 +49,16 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: How often Beaker session should be refreshed to pick up up-to-date
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
+
+
+def mrack_constructs_ks_pre() -> bool:
+    """ Kickstart construction has been improved in 1.21.0 """
+
+    assert MRACK_VERSION is not None
+
+    return packaging.version.Version(MRACK_VERSION) \
+        >= packaging.version.Version('1.21.0')
+
 
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
@@ -229,6 +244,18 @@ def _transform_beaker_pool(
         actual_value)
 
 
+def _transform_cpu_family(
+        constraint: tmt.hardware.IntegerConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('family', beaker_operator, actual_value)])
+
+
 def _transform_cpu_flag(
         constraint: tmt.hardware.TextConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
@@ -244,7 +271,7 @@ def _transform_cpu_flag(
 
 
 def _transform_cpu_model(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -256,7 +283,7 @@ def _transform_cpu_model(
 
 
 def _transform_cpu_processors(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -268,7 +295,7 @@ def _transform_cpu_processors(
 
 
 def _transform_cpu_cores(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -295,6 +322,30 @@ def _transform_cpu_model_name(
     return MrackHWGroup(
         'cpu',
         children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
+
+
+def _transform_cpu_frequency(
+        constraint: tmt.hardware.NumberConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(float(constraint.value.to('MHz').magnitude)))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('speed', beaker_operator, actual_value)])
+
+
+def _transform_cpu_stepping(
+        constraint: tmt.hardware.IntegerConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, _ = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    return MrackHWGroup(
+        'cpu',
+        children=[MrackHWBinOp('stepping', beaker_operator, actual_value)])
 
 
 def _transform_cpu_vendor_name(
@@ -556,7 +607,7 @@ def _transform_location_lab_controller(
 
 
 def _transform_system_numa_nodes(
-        constraint: tmt.hardware.NumberConstraint,
+        constraint: tmt.hardware.IntegerConstraint,
         logger: tmt.log.Logger) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator,
@@ -567,17 +618,54 @@ def _transform_system_numa_nodes(
         children=[MrackHWBinOp('numanodes', beaker_operator, actual_value)])
 
 
+def _transform_system_model_name(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup('system',
+                         children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+            ])
+
+    return MrackHWGroup('system',
+                        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+
+
+def _transform_system_vendor_name(
+        constraint: tmt.hardware.TextConstraint,
+        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator,
+        str(constraint.value))
+
+    if negate:
+        return MrackHWNotGroup(children=[
+            MrackHWGroup('system',
+                         children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+            ])
+
+    return MrackHWGroup('system',
+                        children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+
+
 ConstraintTransformer = Callable[[
     tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
+    'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
+    'cpu.family': _transform_cpu_family,  # type: ignore[dict-item]
     'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
+    'cpu.frequency': _transform_cpu_frequency,  # type: ignore[dict-item]
     'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
     'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
-    'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
-    'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
     'cpu.model_name': _transform_cpu_model_name,  # type: ignore[dict-item]
+    'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
+    'cpu.stepping': _transform_cpu_stepping,  # type: ignore[dict-item]
     'cpu.vendor_name': _transform_cpu_vendor_name,  # type: ignore[dict-item]
     'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
     'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
@@ -595,6 +683,8 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
+    'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
+    'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
     'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
     }
 
@@ -643,6 +733,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
     if _MRACK_IMPORTED:
         return
 
+    global MRACK_VERSION
     global mrack
     global providers
     global ProvisioningError
@@ -659,6 +750,8 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
         from mrack.providers.beaker import BeakerProvider
         from mrack.transformers.beaker import BeakerTransformer
+
+        MRACK_VERSION = importlib.metadata.version('mrack')
 
         # hack: remove mrack stdout and move the logfile to /tmp
         mrack.logger.removeHandler(mrack.console_handler)
@@ -683,17 +776,23 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             """ Return hw requirements from given hw dictionary """
 
             assert hw.constraint
-
-            transformed = MrackHWAndGroup(
-                children=[
-                    constraint_to_beaker_filter(constraint, logger)
-                    for constraint in hw.constraint.variant()
-                    ])
+            # Beaker, unlike instance-type-based infrastructures like AWS, does
+            # have the actual filtering, and can express `or` and `and`
+            # groups. And our `constraint_to_beaker_filter()` does that,
+            # even for groups nested deeper in the tree.
+            transformed = constraint_to_beaker_filter(hw.constraint, logger)
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
 
+            # Mrack does not handle well situation when the filter
+            # consists of just a single filtering element, e.g. just
+            # `hostname`. In that case, the element is converted into
+            # XML element incorrectly. Therefore wrapping our filter
+            # with `<and/>` group, even if it has just a single child,
+            # it works around the problem.
+            # See https://github.com/teemtee/tmt/issues/3442
             return {
-                'hostRequires': transformed.to_mrack()
+                'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()
                 }
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
@@ -705,6 +804,23 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
+
+            if host.kickstart:
+                if 'kernel-options' in host.kickstart:
+                    req['kernel_options'] = host.kickstart['kernel-options']
+
+                if 'kernel-options-post' in host.kickstart:
+                    req['kernel_options_post'] = host.kickstart['kernel-options-post']
+
+                if not mrack_constructs_ks_pre():
+                    ks_components: list[str] = []
+
+                    for ks_section in ('pre-install', 'script', 'post-install'):
+                        if ks_section in host.kickstart:
+                            ks_components.append(host.kickstart[ks_section])
+
+                    if ks_components:
+                        req['ks_append'] = ['\n'.join(ks_components)]
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
@@ -804,6 +920,24 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Submitting user must be a submission delegate for the ``USERNAME``.
              """)
 
+    public_key: list[str] = field(
+        default_factory=list,
+        option='--public-key',
+        metavar='PUBKEY',
+        help="""
+             Public keys to add among authorized SSH keys.
+             """,
+        multiple=True,
+        normalize=tmt.utils.normalize_string_list)
+
+    beaker_job_group: Optional[str] = field(
+        default=None,
+        option='--beaker-job-group',
+        metavar='GROUPNAME',
+        help="""
+             If set, Beaker jobs will be submitted on behalf of ``GROUPNAME``.
+             """)
+
 
 @dataclasses.dataclass
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -839,7 +973,8 @@ class CreateJobParameters:
     kickstart: dict[str, str]
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
-    group: str = 'linux'
+    public_key: list[str]
+    group: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -847,8 +982,18 @@ class CreateJobParameters:
         data['beaker'] = {}
 
         if self.kickstart:
-            data['beaker']['ks_meta'] = self.kickstart.get('metadata')
-            data['beaker']['ks_append'] = self.kickstart
+            kickstart = self.kickstart.copy()
+
+            if 'metadata' in kickstart:
+                data['beaker']['ks_meta'] = kickstart.pop('metadata')
+
+            # Mrack does not handle metadata-only kickstart nicely, ends
+            # up with just an empty string. Don't tempt it, don't let it
+            # see kickstart if it was just metadata.
+            if kickstart:
+                data['beaker']['ks_append'] = kickstart
+        if self.public_key:
+            data['beaker']['pubkeys'] = self.public_key
 
         return data
 
@@ -953,6 +1098,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     kickstart: dict[str, str]
 
     beaker_job_owner: Optional[str] = None
+    beaker_job_group: Optional[str] = None
 
     # Provided in Beaker response
     job_id: Optional[str]
@@ -960,6 +1106,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     # Timeouts and deadlines
     provision_timeout: int
     provision_tick: int
+    public_key: list[str]
     api_session_refresh_tick: int
 
     _api: Optional[BeakerAPI] = None
@@ -1028,7 +1175,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             os=self.image,
             name=f'{self.image}-{self.arch}',
             whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner)
+            beaker_job_owner=self.beaker_job_owner,
+            public_key=self.public_key,
+            group=self.beaker_job_group)
 
         try:
             response = self.api.create(data)
@@ -1048,6 +1197,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     raise ProvisionError(
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
                         "is not a valid submission delegate.") from exc
+
+                if 'is not a valid group' in cause.faultString:
+                    raise ProvisionError(
+                        f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
+                        "was refused as unknown.") from exc
+
+                if 'is not a member of group' in cause.faultString:
+                    raise ProvisionError(
+                        "Failed to create Beaker job, submitting user is not "
+                        "a member of group '{self.beaker_job_group}'") from exc
 
             raise ProvisionError('Failed to create Beaker job') from exc
 

@@ -13,10 +13,10 @@ execute:
     discover+:
         test: file
 
-/strip_git_suffix:
+/strip-git-suffix:
     summary: "Check libraries can end in '.git' suffix"
     discover+:
-        test: strip_git_suffix
+        test: strip-git-suffix
 
 /certificate:
     /rpm:

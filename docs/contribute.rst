@@ -499,6 +499,27 @@ variable to include additional file:
     override theme CSS, it is recommended to add ``!important`` flag.
 
 
+tldr pages
+------------------------------------------------------------------
+
+The ``tldr`` pages are maintained in the central `tldr-pages`__
+repository. To modify existing pages or add new ones, submit your
+changes directly there by following their `contribution
+guidelines`__.
+
+Translations of existing pages into other languages are welcomed.
+If you'd like to help translate pages, please follow the same
+contribution process described above.
+
+__ https://github.com/tldr-pages/tldr
+__ https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md
+
+.. note::
+
+   Changes made directly to documentation in this repository will
+   not be reflected in the tldr pages collection.
+
+
 Pull Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -511,6 +532,12 @@ During the pull request review it is recommended to add new
 commits with your changes on the top of the branch instead of
 amending the original commit and doing a force push. This will
 make it easier for the reviewers to see what has recently changed.
+
+It's good to keep the pull request up-to-date with the ``main``
+branch. Rebase regularly or use ``/packit build`` command in the
+pull request comment if there were significant changes on the
+default branch otherwise newly added tests might cause unexpected
+and irrelevant failures in your test jobs.
 
 Once the pull request has been successfully reviewed and all tests
 passed, please rebase on the latest ``main`` branch content and
@@ -739,3 +766,31 @@ fix needs to be released before the regular schedule:
 * Tag the commit and publish the release in the same way as for
   regular release
 * Create a pull request with the hotfix release notes changes
+
+
+Releaser
+------------------------------------------------------------------
+
+Taking care of a new ``tmt`` release is not just about performing
+the final steps described above. In this role you should shepherd
+the issues and pull requests like sheep so that they make it to
+the ``main`` branch by the proposed deadline. Here's a couple of
+recommendations which could help you to make the release process
+smooth and timely:
+
+* continually watch the issues & pull requests and gently push
+  them forward if any of them seems to get stuck
+* bring attention especially to those with the high priority, the
+  ``priority | must`` issues and pull requests should be finished
+  ideally one week before the release deadline
+* regularly check the pull request progress and highlight those
+  which are waiting for feedback on the review sessions
+* if there is anything not clear and needs discussion bring it to
+  the chat or raise the topic on the weekly sessions
+* do not hesitate to contact assignees directly, e.g. on the chat,
+  if there is no update for a longer time, consider also
+  reassigning the issue to another contributor if necessary
+* if there are pull requests ready for merging but not included in
+  the release, it might make sense to squeeze them in, to make the
+  development more fluent, just make sure they do not slow down
+  important issues

@@ -14,8 +14,11 @@ rlJournalStart
         rlAssertNotGrep "This test should not be executed." $rlRun_LOG
         rlAssertNotGrep "This should not be executed either." $rlRun_LOG
 
+
         rlAssertGrep "result: error" "${run}/plan/execute/results.yaml"
-        rlAssertGrep "note: aborted" "${run}/plan/execute/results.yaml"
+        rlAssertEquals "results should record the test aborted" \
+            "$(yq -r '.[] | .note | join(", ")' ${run}/plan/execute/results.yaml)" \
+            "beakerlib: State 'started', aborted"
     rlPhaseEnd
 
     rlPhaseStartCleanup

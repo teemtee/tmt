@@ -2,6 +2,3 @@ summary: Check whether the safe/unsafe mode can be controlled
 
 link:
   - verifies: /stories/features/feeling-safe
-
-# Until tmt-1.38 is released this will be failing
-result: xfail

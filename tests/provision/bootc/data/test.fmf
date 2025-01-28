@@ -1,0 +1,2 @@
+summary: Check that booted image matches expected pattern
+test: "bootc status && bootc status | grep $PATTERN"

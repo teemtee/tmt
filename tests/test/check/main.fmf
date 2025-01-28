@@ -16,6 +16,12 @@ tier: 2
       - provision-local
       - provision-virtual
 
+    adjust+:
+      - when: provision_how == local
+        check:
+          - how: avc
+            result: xfail
+
 /watchdog:
     test: ./test-watchdog.sh
     duration: 15m

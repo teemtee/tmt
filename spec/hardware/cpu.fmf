@@ -41,6 +41,10 @@ description: |
           # Number or string, an ID of CPU vendor.
           vendor: 1234|"> 1234"
 
+          # Float or string, CPU frequency.
+          # MHz are assumed when no unit is specified.
+          frequency: 2300.0|">= 2300.0"
+
           # Integer or string, CPU stepping.
           stepping: 10|">= 10"
 
@@ -61,9 +65,15 @@ description: |
     See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
     socket, core and thread distinction.
 
-    See e.g. https://en.wikichip.org/wiki/WikiChip for information on family,
-    model, stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu``
-    are also useful resources.
+    See e.g. https://www.cpu-world.com/ for information on family, model,
+    stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu`` are
+    also useful resources.
+
+    .. versionchanged:: 1.39
+       ``beaker`` plugins supports ``family`` and ``frequency``
+
+    .. versionchanged:: 1.38
+       ``beaker`` plugins supports ``stepping``
 
     .. versionchanged:: 1.35
        ``beaker`` plugins supports ``vendor-name``
@@ -108,8 +118,15 @@ example:
     cpu:
         hyper-threading: true
 
+  - |
+    # Request a CPU with specified stepping.
+    cpu:
+        stepping: 9
+
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``cpu.vendor``, ``cpu.vendor-name`` and ``cpu.hyper-threading`` not implemented yet"
+    note: "``cpu.vendor``, ``cpu.vendor-name``, ``cpu.frequency`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``cpu.flag``, ``cpu.processors``, ``cpu.model``, ``cpu.cores``, ``cpu.model-name``, ``cpu.hyper-threading`` and ``cpu.vendor-name`` only"
+    note: "``cpu.sockets``, ``cpu.threads``, ``cpu.cores-per-socket``, ``cpu.threads-per-core``, ``cpu.family-name``, ``cpu.vendor`` not implemented yet"
+  - implemented-by: /tmt/steps/provision/testcloud.py
+    note: "``cpu.processors`` only"

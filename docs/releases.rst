@@ -5,11 +5,139 @@
 ======================
 
 
+tmt-1.42.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``tmt show`` command now prints in verbose mode manual test
+instructions as well.
+
+The ``ansible-core`` package is now a recommended dependency package
+for tmt. It is used by plugins that use Ansible under the hood,
+:ref:`prepare/ansible</plugins/prepare/ansible>`,
+:ref:`finish/ansible</plugins/finish/ansible>`,
+and :ref:`prepare/feature</plugins/prepare/feature>`.
+
+tmt-1.41.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tests defined using the :ref:`/plugins/discover/shell` discover
+method are now executed in the exact order as listed in the config
+file. This fixes a problem which has been introduced in the recent
+``fmf`` update.
+
+The :ref:`/plugins/report/reportportal` plugin now exports all
+test contact information, rather than just the first contact
+instance.
+
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for submitting jobs on behalf of a group through the
+``beaker-job-group`` key. The submitting user must be a member of
+the given job group.
+
+The ``note`` field of tmt :ref:`/spec/results` changes from
+a string to a list of strings, to better accommodate multiple notes.
+
+The ``Node`` alias for the ``Core`` class has been dropped as it
+has been deprecated a long time ago.
+
+Previously when the test run was interrupted in the middle of the
+test execution the :ref:`/spec/plans/report` step would be skipped
+and no results would be reported. Now the report step is performed
+always so that users can access results of those tests which were
+successfully executed.
+
+The ``tmt try`` command now accepts the whole action word in
+addition to just a first letter, i.e. ``l`` and ``login`` now
+both work.
+
+
+tmt-1.40.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The execution of individual step configurations can be controlled
+using the new :ref:`when<when-config>` key. Enable and disable
+selected step phase easily with the same syntax as used for the
+context :ref:`/spec/core/adjust` rules.
+
+When the ``login`` command is used to enter an interactive session
+on the guest, for example during a ``tmt try`` session, the
+current working directory is set to the path of the last executed
+test, so that users can easily investigate the test code there and
+experiment with it directly on the guest.
+
+A new ``--workdir-root`` option is now supported in the ``tmt
+clean`` and ``tmt run`` commands so that users can specify the
+directory which should be cleaned up and where new test runs
+should be stored.
+
+New ``--keep`` option has been implemented for the ``tmt clean
+guests`` and ``tmt clean`` commands. Users can now choose to keep
+the selected number of latest guests, and maybe also runs, clean
+the rest to release the resources.
+
+The log file paths of tmt subresults created by shell tests by
+calling the ``tmt-report-result`` or by calling beakerlib's
+``rlPhaseEnd`` saved in ``results.yaml`` are now relative to the
+``execute`` directory.
+
+The :ref:`/plugins/report/reportportal` plugin now handles the
+timestamps for ``custom`` and ``restraint`` results correctly. It
+should prevent the ``start-time`` of a result being higher than
+the ``end-time``. It should be also ensured that the end time of
+all launch items is the same or higher than the start time of a
+parent item/launch.
+
+The :ref:`/plugins/provision/beaker` provision plugin gained
+support for adding public keys to the guest instance by populating
+the kickstart file.
+
+Documentation pages now use the `new tmt logo`__ designed by Maria
+Leonova.
+
+__ https://github.com/teemtee/docs/tree/main/logo
+
+
+tmt-1.39.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`system.model-name</spec/hardware/system>`,
+:ref:`system.vendor-name</spec/hardware/system>`,
+:ref:`cpu.family</spec/hardware/system>` and
+:ref:`cpu.frequency</spec/hardware/cpu>` hardware requirements.
+
+The ``tmt lint`` command now reports a failure if empty
+environment files are found.
+
+The ``tmt try`` command now supports the new
+:ref:`/stories/cli/try/option/arch` option.
+
+As a tech preview, a new :ref:`/plugins/provision/bootc` provision
+plugin has been implemented. It takes a container image as input,
+builds a bootc disk image from the container image, then uses the
+:ref:`/plugins/provision/virtual.testcloud` plugin to create a
+virtual machine using the bootc disk image.
+
+The ``tmt reportportal`` plugin has newly introduced size limit
+for logs uploaded to ReportPortal because large logs decreases
+ReportPortal UI usability. Default limit are 1 MB for a test
+output and 50 kB for a traceback (error log).
+Limits can be controlled using the newly introduced
+``reportportal`` plugin options ``--log-size-limit`` and
+``--traceback-size-limit`` or the respective environment
+variables.
+
+
 tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/plugins/report/junit` report plugin now removes all
-invalid XML characters from the final JUnit XML.
+Test checks affect the overall test result by default. The
+:ref:`/spec/tests/check` specification now supports a new
+``result`` key for individual checks. This attribute allows users
+to control how the result of each check affects the overall test
+result. Please note that tests, which were previously passing
+with failing checks will now fail by default, unless the ``xfail``
+or ``info`` is added.
 
 In order to prevent dangerous commands to be unintentionally run
 on user's system, the :ref:`/plugins/provision/local` provision
@@ -18,16 +146,28 @@ option or with the environment variable ``TMT_FEELING_SAFE`` set
 to ``True``. See the :ref:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
 
-The :ref:`/plugins/discover/fmf` discover plugin now supports
-a new ``adjust-tests`` key which allows modifying metadata of all
-discovered tests. This can be useful especially when fetching
-tests from remote repositories where the user does not have write
-access.
+The beakerlib test framework tests now generate tmt subresults.
+The behavior is very similar to the shell test framework with
+``tmt-report-result`` command calls (see above). The
+``tmt-report-result`` now gets called with every ``rlPhaseEnd``
+macro and the tmt subresult gets created. The difference is that
+the subresults outcomes are not evaluated by tmt. The tmt only
+captures them and then relies on a beakerlib and its result
+reporting, which does take the outcomes of phases into account to
+determine the final test outcome. The subresults are always
+assigned under the main tmt result and can be easily showed e.g.
+by :ref:`/plugins/report/display` plugin when verbose mode is
+enabled. There is only one exception - if the
+``result: restraint`` option is set to a beakerlib test, the
+phase subresults get converted as normal tmt custom results.
 
-A race condition in the
-:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
-thus multihost tests using this provision method should now work
-reliably without unexpected connection failures.
+Each execution of ``tmt-report-result`` command inside a shell
+test will now create a tmt subresult. The main result outcome is
+reduced from all subresults outcomes. If ``tmt-report-result`` is
+not called during the test, the shell test framework behavior
+remains the same - the test script exit code still has an impact
+on the main test result. See also
+:ref:`/stories/features/report-result`.
 
 Support for RHEL-like operating systems in `Image Mode`__ has been
 added. The destination directory of the scripts added by ``tmt``
@@ -36,11 +176,33 @@ all others the ``/usr/local/bin`` destination directory is used.
 A new environment variable ``TMT_SCRIPTS_DIR`` is available
 to override the default locations.
 
+The :ref:`/plugins/discover/fmf` discover plugin now supports
+a new ``adjust-tests`` key which allows modifying metadata of all
+discovered tests. This can be useful especially when fetching
+tests from remote repositories where the user does not have write
+access.
+
 __ https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux/image-mode
 
 The ``tmt link`` command now supports providing multiple links by
 using the ``--link`` option. See the :ref:`link-issues` section
 for example usage.
+
+The :ref:`/plugins/provision/beaker` provision plugin gains support
+for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
+
+The :ref:`/plugins/report/junit` report plugin now removes all
+invalid XML characters from the final JUnit XML.
+
+A new :ref:`test-runner` section has been added to the tmt
+:ref:`guide`. It describes some important differences between
+running tests on a :ref:`user-system` and scheduling test jobs in
+:ref:`testing-farm`.
+
+A race condition in the
+:ref:`/plugins/provision/virtual.testcloud` plugin has been fixed,
+thus multihost tests using this provision method should now work
+reliably without unexpected connection failures.
 
 
 tmt-1.37.0
@@ -99,7 +261,7 @@ committish reference, either branch, tag, git-describe, or if all
 fails the commit hash.  You may encounter this in the verbose log
 of ``tmt tests show`` or plan/test imports.
 
-:ref:`Result specification</spec/plans/results>` now defines
+:ref:`Result specification</spec/results>` now defines
 ``original-result`` key holding the original outcome of a test,
 subtest or test checks. The effective outcome, stored in
 ``result`` key, is computed from the original outcome, and it is
@@ -129,7 +291,7 @@ tmt-1.36.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
-file does not follow the :ref:`result specification</spec/plans/results>`.
+file does not follow the :ref:`result specification</spec/results>`.
 
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
@@ -464,7 +626,7 @@ The **avc** :ref:`/spec/tests/check` allows to detect avc denials
 which appear during the test execution.
 
 A new ``skip`` custom result outcome has been added to the
-:ref:`/spec/plans/results` specification.
+:ref:`/spec/results` specification.
 
 All context :ref:`/spec/context/dimension` values are now handled
 in a case insensitive way.

@@ -29,6 +29,8 @@ copy_outputfile_to_data_dir () {
     [[ ${fileprefix:0:1} == '_' ]] && fileprefix=$(echo "$fileprefix" | cut -c 2-)
     # Copy outputfile to data dir. Prefix with underscored test name.
     cp -f "$outputFile" "${TMT_TEST_DATA}/${fileprefix}_${filename}"
+    # Make sure that the log file is readable for guest.pull()
+    chmod a+r "${TMT_TEST_DATA}/${fileprefix}_${filename}"
     outputFile="$fileprefix"_"$filename"
 }
 

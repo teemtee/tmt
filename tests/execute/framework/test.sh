@@ -14,7 +14,7 @@ rlJournalStart
         rlAssertGrep "Execute '/tests/shell/explicit' as a 'shell' test." $rlRun_LOG
         rlAssertGrep "Execute '/tests/beakerlib' as a 'beakerlib' test." $rlRun_LOG
         # Beakerlib dependency should be detected from framework
-        rlAssertGrep "dnf install.*beakerlib" $rlRun_LOG
+        rlAssertGrep "dnf.* install.*beakerlib" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

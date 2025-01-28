@@ -4,9 +4,3 @@ require:
 - git-core
 - tmt
 tier: 4
-adjust:
-    when: distro == fedora-rawhide or distro == fedora-41
-    result: xfail
-    # Remove the xfail adjust once it starts passing.
-    # https://github.com/hgrecco/pint/issues/1969
-    because: "Un-installable dependencies on Python 3.13"

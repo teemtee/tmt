@@ -1,0 +1,13 @@
+[General]
+name=/empty_dependencies
+owner=Nobody <nobody@localhost.localdomain>
+description=Empty dependencies
+license=MIT
+confidential=no
+destructive=no
+
+[restraint]
+entry_point=bash -x ./runtest.sh
+dependencies=
+softDependencies=
+max_time=5m

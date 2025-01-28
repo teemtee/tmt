@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Literal,
     Optional,
     TypeVar,
     Union,
@@ -41,7 +42,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
-from tmt.options import option
+from tmt.options import option, show_step_method_hints
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -127,6 +128,121 @@ BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_opt
 #:
 SSH_MASTER_SOCKET_LENGTH_LIMIT = 104 - 20
 
+#: A minimal number of characters of guest ID hash used by
+#: :py:func:`_socket_path_hash` when looking for a free SSH socket
+#: filename.
+SSH_MASTER_SOCKET_MIN_HASH_LENGTH = 4
+
+#: A maximal number of characters of guest ID hash used by
+#: :py:func:`_socket_path_hash` when looking for a free SSH socket
+#: filename.
+SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
+
+
+@overload
+def _socket_path_trivial(
+        *,
+        socket_dir: Path,
+        guest_id: str,
+        limit_size: Literal[True] = True,
+        logger: tmt.log.Logger) -> Optional[Path]:
+    pass
+
+
+@overload
+def _socket_path_trivial(
+        *,
+        socket_dir: Path,
+        guest_id: str,
+        limit_size: Literal[False] = False,
+        logger: tmt.log.Logger) -> Path:
+    pass
+
+
+def _socket_path_trivial(
+        *,
+        socket_dir: Path,
+        guest_id: str,
+        limit_size: bool = True,
+        logger: tmt.log.Logger) -> Optional[Path]:
+    """ Generate SSH socket path using guest IDs """
+
+    socket_path = socket_dir / f'{guest_id}.socket'
+
+    logger.debug(
+        f"Possible SSH master socket path '{socket_path}' (trivial method).",
+        level=4)
+
+    if not limit_size:
+        return socket_path
+
+    return socket_path if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT else None
+
+
+def _socket_path_hash(
+        *,
+        socket_dir: Path,
+        guest_id: str,
+        limit_size: bool = True,
+        logger: tmt.log.Logger) -> Optional[Path]:
+    """
+    Generate SSH socket path using a hash of guest IDs.
+
+    Generates less readable, but hopefully shorter and therefore
+    acceptable filename. We try to make sure we create unique
+    names for sockets, names that are not shared by multiple
+    guests, and we try to make them reasonably short.
+    """
+
+    # We're using hashing function which should, in theory, be prone to
+    # conflicts enough for us to never hit a collision. However, we cannot
+    # rule out the chance of getting same hash for different guests, and
+    # letting one socket serve two different guests is extremely hard to
+    # debug.
+    #
+    # Therefore we try to avoid the collision by not using the
+    # full size of the hash, just its substring - if we really reach the
+    # point where more than one guest yields the same hash, the first
+    # would use N starting characters for its socket, the second would
+    # use N+1 starting characters, and so on.
+    #
+    # For each potential socket path, a "reservation" file is used as
+    # a placeholder: once atomically created, no other guest can grab
+    # the given socket path.
+    for i in range(SSH_MASTER_SOCKET_MIN_HASH_LENGTH, SSH_MASTER_SOCKET_MAX_HASH_LENGTH):
+        digest = hashlib \
+            .sha256(guest_id.encode()) \
+            .hexdigest()[:i]
+
+        socket_path = socket_dir / f'{digest}.socket'
+        socket_reservation_path = f'{socket_path}.reservation'
+
+        logger.debug(
+            f"Possible SSH master socket path '{socket_path}' (hash method).",
+            level=4)
+
+        if limit_size and len(str(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
+            return None
+
+        # O_CREAT | O_EXCL means "atomic create-and-fail-if-exists".
+        # It's pretty much what `tempfile` does, but we need to control
+        # the full name, not just a prefix or suffix.
+        try:
+            fd = os.open(socket_reservation_path, flags=os.O_CREAT | os.O_EXCL)
+
+        except FileExistsError:
+            logger.debug(f"Proposed SSH socket '{socket_path}' already reserved.", level=4)
+            continue
+
+        # Successfully reserved the socket path, we can close the
+        # reservation file & return the actual path.
+        os.close(fd)
+
+        return socket_path
+
+    return None
+
+
 # Default rsync options
 DEFAULT_RSYNC_OPTIONS = [
     "-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
@@ -139,6 +255,17 @@ DEFAULT_REBOOT_COMMAND = Command('reboot')
 
 #: A pattern to extract ``btime`` from ``/proc/stat`` file.
 STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
+
+
+# Note: returns a static list, but we cannot make it a mere list,
+# because `tmt.base` needs to be imported and that creates a circular
+# import loop.
+def essential_ansible_requires() -> list['tmt.base.Dependency']:
+    """ Return essential requirements for running Ansible modules """
+
+    return [
+        tmt.base.DependencySimple('/usr/bin/python3')
+        ]
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
@@ -505,7 +632,7 @@ GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
 
 def normalize_hardware(
         key_address: str,
-        raw_hardware: Optional[tmt.hardware.Spec],
+        raw_hardware: Union[None, tmt.hardware.Spec, tmt.hardware.Hardware],
         logger: tmt.log.Logger) -> Optional[tmt.hardware.Hardware]:
     """
     Normalize a ``hardware`` key value.
@@ -517,6 +644,9 @@ def normalize_hardware(
 
     if raw_hardware is None:
         return None
+
+    if isinstance(raw_hardware, tmt.hardware.Hardware):
+        return raw_hardware
 
     # From command line
     if isinstance(raw_hardware, (list, tuple)):
@@ -772,6 +902,17 @@ class Guest(tmt.utils.Common):
     # Used by save() to construct the correct container for keys.
     _data_class: type[GuestData] = GuestData
 
+    @classmethod
+    def get_data_class(cls) -> type[GuestData]:
+        """
+        Return step data class for this plugin.
+
+        By default, :py:attr:`_data_class` is returned, but plugin may
+        override this method to provide different class.
+        """
+
+        return cls._data_class
+
     role: Optional[str]
 
     #: Primary hostname or IP address for tmt/guest communication.
@@ -792,7 +933,7 @@ class Guest(tmt.utils.Common):
     # (used for import/export to/from attributes during load and save)
     @property
     def _keys(self) -> list[str]:
-        return list(self._data_class.keys())
+        return list(self.get_data_class().keys())
 
     def __init__(self,
                  *,
@@ -884,7 +1025,7 @@ class Guest(tmt.utils.Common):
         the guest. Everything needed to attach to a running instance
         should be added into the data dictionary by child classes.
         """
-        return self._data_class.extract_from(self)
+        return self.get_data_class().extract_from(self)
 
     def wake(self) -> None:
         """
@@ -1444,7 +1585,7 @@ class GuestSsh(Guest):
         """ Whether the SSH master socket path we create is acceptable by SSH """
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            self.warn("SSH multiplexing will not be used because the SSH socket path "
+            self.warn("SSH multiplexing will not be used because the SSH master socket path "
                       f"'{self._ssh_master_socket_path}' is too long.")
             return False
 
@@ -1466,7 +1607,8 @@ class GuestSsh(Guest):
     def _ssh_master_socket_path(self) -> Path:
         """ Return path to the SSH master socket """
 
-        assert isinstance(self.parent, tmt.steps.provision.Provision)
+        # Can be any step opening the connection
+        assert isinstance(self.parent, tmt.steps.Step)
         assert self.parent.plan.my_run is not None
         assert self.parent.plan.my_run.workdir is not None
 
@@ -1478,12 +1620,13 @@ class GuestSsh(Guest):
         except Exception as exc:
             raise ProvisionError(f"Failed to create SSH socket directory '{socket_dir}'.") from exc
 
-        # Try more informative, but possibly too long path, constructed from pieces
-        # humans can easily understand and follow.
+        # Try more informative, but possibly too long path, constructed
+        # from pieces humans can easily understand and follow.
         #
-        # The template is what seems to be a common template in general SSH discussions,
-        # hostname, port, username. Can we use guest name? Maybe, on the other hand, guest
-        # name is meaningless outside of its plan, it might be too ambiguous. Starting with
+        # The template is what seems to be a common template in general
+        # SSH discussions, hostname, port, username. Can we use guest
+        # name? Maybe, on the other hand, guest name is meaningless
+        # outside of its plan, it might be too ambiguous. Starting with
         # what SSH folk uses, we may amend it later.
 
         # This should be true, otherwise `is_ssh_multiplexing_enabled` would return `False`
@@ -1500,19 +1643,53 @@ class GuestSsh(Guest):
 
         guest_id = '-'.join(guest_id_components)
 
-        socket_path = socket_dir / f'{guest_id}.socket'
+        socket_path = _socket_path_trivial(
+            socket_dir=socket_dir,
+            guest_id=guest_id,
+            logger=self._logger)
 
-        if len(str(socket_path)) < SSH_MASTER_SOCKET_LENGTH_LIMIT:
+        if socket_path is not None:
+            self.debug(
+                f"SSH master socket path will be '{socket_path}' (trivial method).",
+                level=4)
+
             return socket_path
 
-        # Fall back to a less readable, but hopefully shorter and therefore acceptable filename.
-        # Note that we don't check the length anymore: giving up, this is the path, take it
-        # or leave it. And callers may very well leave it, we tried our best.
-        digest = hashlib \
-            .shake_128(guest_id.encode()) \
-            .hexdigest(16)
+        # The readable name was too long. Try different approach: use
+        # a hash of the pieces, and use just a substring of the hash,
+        # not all 64 or whatever characters. If the substring is already
+        # in use - extremely unlikely, yet possible - try a slightly
+        # longer one.
+        socket_path = _socket_path_hash(
+            socket_dir=socket_dir,
+            guest_id=guest_id,
+            logger=self._logger)
 
-        return socket_dir / f'{digest}.socket'
+        if socket_path is not None:
+            self.debug(
+                f"SSH master socket path will be '{socket_path}' (hash method).",
+                level=4)
+
+            return socket_path
+
+        # Not even the hashing function and short substrings helped.
+        # Return the most readable one, and let caller decide whether
+        # they use it or not. We run out of options.
+        socket_path = _socket_path_trivial(
+            socket_dir=socket_dir,
+            guest_id=guest_id,
+            limit_size=False,
+            logger=self._logger)
+
+        self.debug(
+            f"SSH master socket path will be '{socket_path}' (trivial method, no size limit).",
+            level=4)
+
+        return socket_path
+
+    @functools.cached_property
+    def _ssh_master_socket_reservation_path(self) -> Path:
+        return Path(f'{self._ssh_master_socket_path}.reservation')
 
     @property
     def _ssh_options(self) -> Command:
@@ -1634,11 +1811,13 @@ class GuestSsh(Guest):
 
             try:
                 self._ssh_master_socket_path.unlink(missing_ok=True)
+                self._ssh_master_socket_reservation_path.unlink(missing_ok=True)
 
             except OSError as error:
                 self.debug(f"Failed to remove the SSH master socket: {error}", level=3)
 
             del self._ssh_master_socket_path
+            del self._ssh_master_socket_reservation_path
 
     def _run_ansible(
             self,
@@ -1682,13 +1861,18 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
+        try:
+            return self._run_guest_command(
+                ansible_command,
+                friendly_command=friendly_command,
+                silent=silent,
+                cwd=parent.plan.worktree,
+                env=self._prepare_environment(),
+                log=log)
+        except tmt.utils.RunError as exc:
+            if "File 'ansible-playbook' not found." in exc.message:
+                show_step_method_hints('plugin', 'ansible', self._logger)
+            raise exc
 
     @property
     def is_ready(self) -> bool:
@@ -2519,7 +2703,11 @@ class Provision(tmt.steps.Step):
         # the order or their `order` key. We will group provisioning phases
         # not interrupted by action into batches, and run the sequence of
         # provisioning phases in parallel.
-        all_phases = self.phases(classes=(Action, ProvisionPlugin))
+        all_phases = [
+            p
+            for p in self.phases(classes=(Action, ProvisionPlugin))
+            if isinstance(p, Action) or p.enabled_by_when
+            ]
         all_phases.sort(key=lambda x: x.order)
 
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []

@@ -5,6 +5,11 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun 'pushd data'
         rlRun 'set -o pipefail'
+        # Copy vars.yaml from env/data
+        rlRun 'cp ../../env/data/vars.yaml .'
+        # Start local server
+        python3 ../../../utils/http_server.py &
+        server_pid=$!
     rlPhaseEnd
 
     good="plan --name /plan/good"
@@ -46,15 +51,18 @@ rlJournalStart
         # Good
         rlRun -s "tmt plan show fetch/good"
         rlAssertGrep "STR: O" $rlRun_LOG
-        rlAssertGrep "INT: 0"  $rlRun_LOG
+        rlAssertGrep "INT: 0" $rlRun_LOG
         # Bad
         rlRun -s "tmt plan show fetch/bad" 2
-        rlAssertGrep "Failed to extract variables from URL '.*/tests/core/env/data/wrong.yaml'."  $rlRun_LOG -E
-        rlAssertGrep "404 Client Error: Not Found for url: .*/tests/core/env/data/wrong.yaml" $rlRun_LOG -E
+        rlAssertGrep "Failed to extract variables from URL 'http://localhost:8000/wrong.yaml'." $rlRun_LOG
+        rlAssertGrep "404 Client Error: Not Found for url: http://localhost:8000/wrong.yaml" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun 'rm output'
+        # Kill the server
+        kill $server_pid
+        # Clean up copied files
+        rlRun 'rm vars.yaml output'
         rlRun 'popd'
     rlPhaseEnd
 rlJournalEnd

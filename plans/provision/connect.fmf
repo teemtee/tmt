@@ -5,3 +5,6 @@ provision:
 #    key: /home/psss/.ssh/devel_rsa
 #    user: root
 #    password: secret
+
+context+:
+  provision_how: connect

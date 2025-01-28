@@ -177,6 +177,24 @@ EOF
 EOF
     run_test
 
+    # Tests defined using the 'shell' discover method should be
+    # executed in the order provided in the config file
+
+    plan="/shell-preserve-order"
+
+    cat > $tmp/EXPECTED-DISCOVERY <<EOF
+/tests/one
+/tests/two
+/tests/three
+EOF
+
+    cat > $tmp/EXPECTED-EXECUTION <<EOF
+/guest/default-0/tests/one-1
+/guest/default-0/tests/two-2
+/guest/default-0/tests/three-3
+EOF
+    run_test
+
     rlPhaseStartCleanup
         rlRun 'rm -rf $tmp' 0 "Remove tmp directory"
     rlPhaseEnd

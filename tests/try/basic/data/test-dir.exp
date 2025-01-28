@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+# Try login to test directory
+
+set timeout 180
+spawn tmt try fedora@container
+
+expect "What do we do next?"
+send -- "l\r"
+expect "#"
+send -- "ls\r"
+send -- "exit\r"
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof

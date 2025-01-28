@@ -9,6 +9,7 @@ import re
 import shutil
 import textwrap
 from collections.abc import Iterable, Iterator, Sequence
+from contextlib import suppress
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
@@ -24,6 +25,7 @@ from typing import (
     )
 
 import click
+import fmf.context
 import fmf.utils
 import packaging.version
 from click import echo
@@ -66,8 +68,29 @@ if TYPE_CHECKING:
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
-DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
+#
+# Following are default and predefined order values for various special phases
+# recognized by tmt. When adding new special phase, add its order below, and
+# do not forget to update either the corresponding step specification
+# where the list of step-specific `order` values should be documented,
+# or the documentation of plugin that defines the new value.
+#
+# Please, keep the name prefix, so it's easy to find all `PHASE_ORDER_*`
+# constants for documentation.
+#
+
+#: The default order of any object.
+# TODO: this is a duplication of tmt.base.DEFAULT_ORDER. Unfortunately, tmt.base
+# imports tmt.steps, not the other way around.
+# `PHASE_ORDER_DEFAULT = tmt.base.DEFAULT_ORDER` would be way better.
+PHASE_ORDER_DEFAULT = 50
+#: Installation of essential plugin and check requirements.
+PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
+#: Installation of packages :ref:`required</spec/tests/require>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
+#: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
@@ -120,7 +143,7 @@ PHASE_OPTIONS = tmt.options.create_options_decorator([
     option(
         '--order',
         type=int,
-        default=DEFAULT_PLUGIN_METHOD_ORDER,
+        default=PHASE_ORDER_DEFAULT,
         help='Order in which the phase should be handled.')
     ])
 
@@ -187,13 +210,17 @@ class Phase(tmt.utils.Common):
     def __init__(
             self,
             *,
-            order: int = tmt.utils.DEFAULT_PLUGIN_ORDER,
+            order: int = PHASE_ORDER_DEFAULT,
             **kwargs: Any):
         super().__init__(**kwargs)
         self.order: int = order
 
     def enabled_on_guest(self, guest: 'Guest') -> bool:
         """ Phases are enabled across all guests by default """
+        return True
+
+    @functools.cached_property
+    def enabled_by_when(self) -> bool:
         return True
 
     @property
@@ -285,8 +312,14 @@ class StepData(
     name: str = field(help='The name of the step phase.')
     how: str = field()
     order: int = field(
-        default=tmt.utils.DEFAULT_PLUGIN_ORDER,
+        default=PHASE_ORDER_DEFAULT,
         help='Order in which the phase should be handled.')
+    when: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list,
+        metavar='RULE',
+        help='If specified, phase is run only if any rule matches plan context.'
+        )
     summary: Optional[str] = field(
         default=None,
         help='Concise summary describing purpose of the phase.')
@@ -1015,7 +1048,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     debug3('incompatible step data')
 
-                    data_base = self._plugin_base_class._data_class
+                    data_base = cast(type[BasePlugin[StepData, Any]],
+                                     self._plugin_base_class).get_data_class()
 
                     debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
                     debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
@@ -1158,7 +1192,7 @@ class Method:
             name: str,
             class_: Optional[PluginClass] = None,
             doc: Optional[str] = None,
-            order: int = DEFAULT_PLUGIN_METHOD_ORDER
+            order: int = PHASE_ORDER_DEFAULT
             ) -> None:
         """ Store method data """
 
@@ -1172,7 +1206,8 @@ class Method:
 
         self.name = name
         self.class_ = class_
-        self.doc = tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
+        self.doc = tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger()) \
+            if tmt.utils.rest.REST_RENDERING_ALLOWED else doc
         self.order = order
 
         # Parse summary and description from provided doc string
@@ -1201,7 +1236,7 @@ class Method:
 def provides_method(
         name: str,
         doc: Optional[str] = None,
-        order: int = DEFAULT_PLUGIN_METHOD_ORDER) -> Callable[[PluginClass], PluginClass]:
+        order: int = PHASE_ORDER_DEFAULT) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
 
@@ -1260,6 +1295,18 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
     _data_class: type[StepDataT]
+
+    @classmethod
+    def get_data_class(cls) -> type[StepDataT]:
+        """
+        Return step data class for this plugin.
+
+        By default, :py:attr:`_data_class` is returned, but plugin may
+        override this method to provide different class.
+        """
+
+        return cls._data_class
+
     data: StepDataT
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
@@ -1267,7 +1314,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     # (used for import/export to/from attributes during load and save)
     @property
     def _keys(self) -> list[str]:
-        return list(self._data_class.keys())
+        return list(self.get_data_class().keys())
 
     def __init__(
             self,
@@ -1318,8 +1365,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return [
             metadata.option
             for _, _, _, _, metadata in (
-                container_field(cls._data_class, key)
-                for key in container_keys(cls._data_class)
+                container_field(cls.get_data_class(), key)
+                for key in container_keys(cls.get_data_class())
                 )
             if metadata.option is not None
             ] + (
@@ -1449,7 +1496,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                     f"for the '{how}' method.", level=2)
 
                 plugin_class = method.class_
-                plugin_data_class = plugin_class._data_class
+                plugin_data_class = cast(
+                    type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class).get_data_class()
 
                 # If we're given raw data, construct a step data instance, applying
                 # normalization in the process.
@@ -1486,7 +1534,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     def default(self, option: str, default: Optional[Any] = None) -> Any:
         """ Return default data for given option """
 
-        value = self._data_class.default(option_to_key(option), default=default)
+        value = self.get_data_class().default(option_to_key(option), default=default)
 
         if value is None:
             return default
@@ -1567,7 +1615,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             value = self.get(key)
 
             # No need to show the default order
-            if key == 'order' and value == tmt.base.DEFAULT_ORDER:
+            if key == 'order' and value == PHASE_ORDER_DEFAULT:
                 return
 
             if value is None:
@@ -1599,6 +1647,21 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         for key in keys:
             _emit_key(key)
 
+    @functools.cached_property
+    def enabled_by_when(self) -> bool:
+        """ Check if the plugin is enabled by 'when' keyword """
+        fmf_context = fmf.context.Context(**self.step.plan._fmf_context)
+        when_rules = self.get('when', [])
+        if not when_rules:
+            # No 'when' -> enabled everywhere
+            return True
+        for when in when_rules:
+            with suppress(fmf.context.CannotDecide):
+                if fmf_context.matches(when):
+                    return True
+        # No 'when' ruled matched -> disabled
+        return False
+
     def enabled_on_guest(self, guest: 'Guest') -> bool:
         """ Check if the plugin is enabled on the specific guest """
 
@@ -1624,9 +1687,9 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         selected ones.
         """
 
-        assert self.data.__class__ is self._data_class, \
+        assert self.data.__class__ is self.get_data_class(), \
             (f'Plugin {self.__class__.__name__} woken with incompatible '
-             f'data {self.data}, expects {self._data_class.__name__}')
+             f'data {self.data}, expects {self.get_data_class().__name__}')
 
         if self.step.status() == 'done':
             self.debug('step is done, not overwriting plugin data')
@@ -1958,7 +2021,22 @@ class Login(Action):
             # Attempt to push the workdir to the guest
             try:
                 guest.push()
-                cwd = cwd or self.parent.plan.worktree
+                if not cwd:
+                    # Use path of the last executed test as the default
+                    # current working directory
+                    worktree = self.parent.plan.worktree
+                    tests = self.parent.plan.discover.tests()
+                    test_path = tests[-1].path if tests else None
+                    if test_path is None or worktree is None:
+                        cwd = worktree
+                    else:
+                        try:
+                            cwd = worktree.parent / "discover" / test_path.unrooted()
+                            guest.execute(tmt.utils.ShellScript("/bin/true"),
+                                          interactive=True, cwd=cwd, env=env)
+                        except RunError:
+                            cwd = worktree
+
             except tmt.utils.GeneralError:
                 self.warn("Failed to push workdir to the guest.")
                 cwd = None

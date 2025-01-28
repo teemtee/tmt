@@ -33,6 +33,6 @@ description: |
 # example:
 
 link:
-  - implemented-by: /tmt/cli.py
+  - implemented-by: /tmt/cli
   - implemented-by: /tmt/base.py
   - verified-by: /tests/core/feeling-safe

@@ -183,7 +183,9 @@ FIX_OPTIONS: list[ClickOptionDecoratorType] = [
 
 WORKDIR_ROOT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--workdir-root', metavar='PATH', envvar='TMT_WORKDIR_ROOT',
+        '--workdir-root', '_workdir_root',
+        metavar='PATH',
+        envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
         help=f"""
              Path to root directory containing run workdirs.
@@ -380,7 +382,12 @@ def show_step_method_hints(
     it must be an instance of a subclass of tmt.utils.Common (info method
     must be available).
     """
-    if step_name == 'provision':
+
+    if how == 'ansible':
+        logger.info(
+            'hint', "Install 'ansible-core' to prepare "
+                    "guests using ansible playbooks.", color='blue')
+    elif step_name == 'provision':
         if how == 'virtual':
             logger.info(
                 'hint', "Install 'tmt+provision-virtual' "

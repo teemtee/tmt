@@ -10,7 +10,7 @@ import fmf.utils
 import tmt.identifier
 import tmt.log
 import tmt.utils
-from tmt.checks import CheckEvent
+from tmt.checks import CheckEvent, CheckResultInterpret
 from tmt.utils import GeneralError, Path, SerializableContainer, field
 
 if TYPE_CHECKING:
@@ -36,6 +36,31 @@ class ResultOutcome(enum.Enum):
             return ResultOutcome(spec)
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid partial custom result '{spec}'.")
+
+    @staticmethod
+    def reduce(outcomes: list['ResultOutcome']) -> 'ResultOutcome':
+        """
+        Reduce several result outcomes into a single outcome
+
+        Convert multiple outcomes into a single one by picking the
+        worst. This is used when aggregating several test or check
+        results to present a single value to the user.
+        """
+
+        outcomes_by_severity = (
+            ResultOutcome.ERROR,
+            ResultOutcome.FAIL,
+            ResultOutcome.WARN,
+            ResultOutcome.PASS,
+            ResultOutcome.INFO,
+            ResultOutcome.SKIP,
+            )
+
+        for outcome in outcomes_by_severity:
+            if outcome in outcomes:
+                return outcome
+
+        raise GeneralError("No result outcome found to reduce.")
 
 
 # Cannot subclass enums :/
@@ -151,7 +176,9 @@ class BaseResult(SerializableContainer):
         serialize=lambda result: result.value,
         unserialize=ResultOutcome.from_spec
         )
-    note: Optional[str] = None
+    note: list[str] = field(
+        default_factory=cast(Callable[[], list[str]], list),
+        unserialize=lambda value: [] if value is None else value)
     log: list[Path] = field(
         default_factory=cast(Callable[[], list[Path]], list),
         serialize=lambda logs: [str(log) for log in logs],
@@ -175,9 +202,13 @@ class BaseResult(SerializableContainer):
             ]
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
+
+    @property
+    def printable_note(self) -> str:
+        return ', '.join(self.note)
 
 
 @dataclasses.dataclass
@@ -188,6 +219,11 @@ class CheckResult(BaseResult):
         default=CheckEvent.BEFORE_TEST,
         serialize=lambda event: event.value,
         unserialize=CheckEvent.from_spec)
+
+    def to_subcheck(self) -> 'SubCheckResult':
+        """ Convert check to a tmt SubCheckResult """
+
+        return SubCheckResult.from_serialized(self.to_serialized())
 
 
 @dataclasses.dataclass
@@ -267,9 +303,10 @@ class Result(BaseResult):
             *,
             invocation: 'tmt.steps.execute.TestInvocation',
             result: ResultOutcome,
-            note: Optional[str] = None,
+            note: Optional[list[str]] = None,
             ids: Optional[ResultIds] = None,
-            log: Optional[list[Path]] = None) -> 'Result':
+            log: Optional[list[Path]] = None,
+            subresult: Optional[list[SubResult]] = None) -> 'Result':
         """
         Create a result from a test invocation.
 
@@ -310,18 +347,66 @@ class Result(BaseResult):
             fmf_id=invocation.test.fmf_id,
             context=invocation.phase.step.plan._fmf_context,
             result=result,
-            note=note,
+            note=note or [],
             start_time=invocation.start_time,
             end_time=invocation.end_time,
             duration=invocation.real_duration,
             ids=ids,
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
-            data_path=invocation.relative_test_data_path)
+            data_path=invocation.relative_test_data_path,
+            subresult=subresult or [],
+            check=invocation.check_results or [])
 
-        return _result.interpret_result(invocation.test.result)
+        interpret_checks = {check.how: check.result for check in invocation.test.check}
 
-    def interpret_result(self, interpret: ResultInterpret) -> 'Result':
+        return _result.interpret_result(invocation.test.result, interpret_checks)
+
+    def interpret_check_result(
+            self,
+            check_name: str,
+            interpret_checks: dict[str, CheckResultInterpret]) -> ResultOutcome:
+        """
+        Aggregate all checks of given name and interpret the outcome
+
+        :param check_name: name of the check to be aggregated
+        :param interpret_checks: mapping of check:how and its result interpret
+        :returns: :py:class:`ResultOutcome` instance with the interpreted result
+        """
+
+        # Reduce all check outcomes into a single worst outcome
+        reduced_outcome = ResultOutcome.reduce(
+            [check.result for check in self.check if check.name == check_name])
+
+        # Now let's handle the interpretation
+        interpret = interpret_checks[check_name]
+        interpreted_outcome = reduced_outcome
+
+        if interpret == CheckResultInterpret.RESPECT:
+            if interpreted_outcome == ResultOutcome.FAIL:
+                self.note.append(f"check '{check_name}' failed")
+
+        elif interpret == CheckResultInterpret.INFO:
+            interpreted_outcome = ResultOutcome.INFO
+            self.note.append(f"check '{check_name}' is informational")
+
+        elif interpret == CheckResultInterpret.XFAIL:
+
+            if reduced_outcome == ResultOutcome.PASS:
+                interpreted_outcome = ResultOutcome.FAIL
+                self.note.append(f"check '{check_name}' did not fail as expected")
+
+            if reduced_outcome == ResultOutcome.FAIL:
+                interpreted_outcome = ResultOutcome.PASS
+                self.note.append(f"check '{check_name}' failed as expected")
+
+        return interpreted_outcome
+
+    def interpret_result(
+            self,
+            interpret: ResultInterpret,
+            interpret_checks: dict[str, CheckResultInterpret]
+            ) -> 'Result':
         """
         Interpret result according to a given interpretation instruction.
 
@@ -329,39 +414,59 @@ class Result(BaseResult):
         attributes, following the ``interpret`` value.
 
         :param interpret: how to interpret current result.
+        :param interpret_checks: mapping of check:how and its result interpret
         :returns: :py:class:`Result` instance containing the updated result.
         """
 
-        if interpret in (ResultInterpret.RESPECT, ResultInterpret.CUSTOM):
-            return self
-
-        # Extend existing note or set a new one
-        if self.note:
-            self.note += f', original result: {self.result.value}'
-
-        elif self.note is None:
-            self.note = f'original result: {self.result.value}'
-
-        else:
-            raise tmt.utils.SpecificationError(
-                f"Test result note '{self.note}' must be a string.")
-
-        if interpret == ResultInterpret.XFAIL:
-            # Swap just fail<-->pass, keep the rest as is (info, warn,
-            # error)
-            self.result = {
-                ResultOutcome.FAIL: ResultOutcome.PASS,
-                ResultOutcome.PASS: ResultOutcome.FAIL
-                }.get(self.result, self.result)
-
-        elif ResultInterpret.is_result_outcome(interpret):
-            self.result = ResultOutcome(interpret.value)
-
-        else:
+        if interpret not in ResultInterpret:
             raise tmt.utils.SpecificationError(
                 f"Invalid result '{interpret.value}' in test '{self.name}'.")
 
+        if interpret == ResultInterpret.CUSTOM:
+            return self
+
+        # Interpret check results (aggregated by the check name)
+        check_outcomes: list[ResultOutcome] = []
+        for check_name in tmt.utils.uniq([check.name for check in self.check]):
+            check_outcomes.append(self.interpret_check_result(check_name, interpret_checks))
+
+        # Aggregate check results with the main test result
+        self.result = ResultOutcome.reduce([self.result, *check_outcomes])
+
+        # Override result with result outcome provided by user
+        if interpret not in (ResultInterpret.RESPECT, ResultInterpret.XFAIL):
+            self.result = ResultOutcome(interpret.value)
+            self.note.append(f"test result overridden: {self.result.value}")
+
+            # Add original result to note if the result has changed
+            if self.result != self.original_result:
+                self.note.append(f"original test result: {self.original_result.value}")
+
+            return self
+
+        # Handle the expected fail
+        if interpret == ResultInterpret.XFAIL:
+
+            if self.result == ResultOutcome.PASS:
+                self.result = ResultOutcome.FAIL
+                self.note.append("test was expected to fail")
+
+            elif self.result == ResultOutcome.FAIL:
+                self.result = ResultOutcome.PASS
+                self.note.append("test failed as expected")
+
+        # Add original result to note if the result has changed
+        if self.result != self.original_result:
+            self.note.append(f"original test result: {self.original_result.value}")
+
         return self
+
+    def to_subresult(self) -> 'SubResult':
+        """ Convert result to tmt subresult """
+        options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
+
+        return SubResult.from_serialized(
+            {option: value for option, value in self.to_serialized().items() if option in options})
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
@@ -416,7 +521,7 @@ class Result(BaseResult):
             components.append(f'(on {format_guest_full_name(self.guest.name, self.guest.role)})')
 
         if self.note:
-            components.append(f'({self.note})')
+            components.append(f'({self.printable_note})')
 
         return ' '.join(components)
 

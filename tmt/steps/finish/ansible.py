@@ -10,6 +10,19 @@ class FinishAnsible(
     """
     Perform finishing tasks using ansible
 
+    .. warning::
+
+       The plugin may be a subject of various limitations, imposed by
+       Ansible itself:
+
+       * Ansible 2.17+ no longer supports Python 3.6 and older. Guests
+         where Python 3.7+ is not available cannot be prepared with the
+         ``ansible`` plugin. This has been observed when Fedora Rawhide
+         runner is used with CentOS 7 or CentOS Stream 8 guests. Possible
+         workarounds: downgrade Ansible tmt uses, or install Python 3.7+
+         before using ``ansible`` plugin from an alternative repository
+         or local build.
+
     Single playbook config:
 
     .. code-block:: yaml

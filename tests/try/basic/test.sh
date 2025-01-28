@@ -37,8 +37,7 @@ rlJournalStart
     rlPhaseStartTest "Install"
         rlRun -s "./install.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
-        rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf install -y  tree" $rlRun_LOG
-        rlAssertGrep "out: Installed:" $rlRun_LOG
+        rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf.* install -y  tree" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
@@ -70,6 +69,15 @@ rlJournalStart
         rlRun -s "TMT_CONFIG_DIR=$tmp ../../../local.exp" 0 "Try with local"
         rlAssertGrep "Let's try /tests/core/good with /default/plan" $rlRun_LOG
         rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Tests directory after login"
+        rlRun "pushd tests/core/bad"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ../../../test-dir.exp" 0 "Try with container"
+        rlAssertGrep "Let's try /tests/core/bad with /default/plan" $rlRun_LOG
+        rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlAssertGrep "bad-file.txt" $rlRun_LOG
         rlRun "popd"
     rlPhaseEnd
 

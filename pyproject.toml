@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
-license-files = { paths = ["LICENSE"] }
+license-file = "LICENSE"
 requires-python = ">=3.9"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
@@ -32,10 +32,11 @@ classifiers = [
 dependencies = [              # F39 / PyPI
     "click>=8.0.3,!=8.1.4",   # 8.1.3 / 8.1.6 TODO type annotations tmt.cli.Context -> click.core.Context click/issues/2558
     "docutils>=0.16",         # 0.16 is the current one available for RHEL9
-    "fmf>=1.4.0",
+    "fmf>=1.6.0",
     "jinja2>=2.11.3",         # 3.1.2 / 3.1.2
     "packaging>=20",          # 20 seems to be available with RHEL8
     "pint>=0.16.1",           # 0.16.1
+    "pydantic>=1.10.14",
     "pygments>=2.7.4",        # 2.7.4 is the current one available for RHEL9
     "requests>=2.25.1",       # 2.28.2 / 2.31.0
     "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
@@ -44,6 +45,9 @@ dependencies = [              # F39 / PyPI
     ]
 
 [project.optional-dependencies]
+ansible = [
+    "ansible-core",
+    ]
 test-convert = [
     "html2text>=2020.1.16",
     "markdown>=3.3.4",
@@ -54,12 +58,13 @@ export-polarion = [
     "pylero>=0.0.8",
     ]
 provision-beaker = [
-    "mrack>=1.15.1",
+    "mrack>=1.23.1",
     ]
 provision-virtual = [
     "testcloud>=0.11.3",
     ]
 provision-container = []
+provision-bootc = []
 report-junit = [
     # Required to support XML parsing and checking the XSD schemas.
     "lxml>=4.6.5",
@@ -75,6 +80,7 @@ all = [
     "tmt[test-convert]",
     "tmt[export-polarion]",
     "tmt[provision-container]",
+    "tmt[provision-bootc]",
     "tmt[provision-virtual]",
     "tmt[provision-beaker]",
     "tmt[report-junit]",
@@ -87,7 +93,7 @@ docs = [
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
     "Sphinx==7.3.7",
-    "fmf>=1.4.0",
+    "fmf>=1.6.0",
     ]
 
 [project.scripts]
@@ -232,6 +238,11 @@ module = [
     ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# Workaround for https://github.com/python/mypy/issues/12664
+module = "ruamel.*"
+cache_dir = "/dev/null"
+
 [tool.pyright]
 include = [
     "tmt/**/*.py",
@@ -240,13 +251,14 @@ ignore = [
     "docs/**",
     "examples/**",
     "tests/**",
+    "tmt/_compat/pydantic.py",
     "tmt/export/*.py",
     "tmt/plugins/*.py",
     "tmt/steps/*.py",
     "tmt/steps/discover/*.py",
     "tmt/steps/execute/*.py",
     "tmt/steps/finish/*.py",
-    "tmt/steps/prepare/feature.py",
+    "tmt/steps/prepare/feature/__init__.py",
     "tmt/steps/prepare/__init__.py",
     "tmt/steps/prepare/install.py",
     "tmt/steps/provision/*.py",
@@ -411,10 +423,14 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
+"pydantic".msg = "Use tmt._compat.pydantic instead."
 "warnings.deprecated".msg = "Use tmt._compat.warnings.deprecated instead."
 "os.path".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
 # Banning builtins is not yet supported: https://github.com/astral-sh/ruff/issues/10079
 # "builtins.open".msg = "Use Path.{write_text,append_text,read_text,write_bytes,read_bytes} instead."
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]
