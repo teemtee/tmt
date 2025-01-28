@@ -11,6 +11,11 @@ tmt-1.42.0
 The ``tmt show`` command now prints in verbose mode manual test
 instructions as well.
 
+A new context :ref:`/spec/context/dimension` ``deployment-mode``
+has been added to the specification. It can be used to
+:ref:`/spec/core/adjust` test and plan metadata for the
+``package`` or ``image`` mode context.
+
 The ``ansible-core`` package is now a recommended dependency package
 for tmt. It is used by plugins that use Ansible under the hood,
 :ref:`prepare/ansible</plugins/prepare/ansible>`,

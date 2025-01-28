@@ -14,6 +14,11 @@ description: |
         runs (fedora, fedora-33, centos, centos-8, centos-8.4,
         centos-stream, centos-stream-9, rhel, rhel-8, rhel-8.4).
 
+    deployment-mode
+        Deployment mode of the distribution, ``package`` for the
+        standard way using packages or ``image`` for the new way
+        of distributing using container images.
+
     variant
         The distribution variant (Client, Desktop, Server
         Workstation, Silverblue, CoreOS).
