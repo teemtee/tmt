@@ -14,6 +14,9 @@ instructions as well.
 Add the ``--workdir-root`` option for the ``tmt clean images``
 command so that users can specify the directory they want.
 
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
 The ``ansible-core`` package is now a recommended dependency package
 for tmt. It is used by plugins that use Ansible under the hood,
 :ref:`prepare/ansible</plugins/prepare/ansible>`,
