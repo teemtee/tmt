@@ -312,17 +312,17 @@ For example, the following images can be found:
 .. code-block::
 
     # Latest Alpine, with added Bash to simulate proper essential setup:
-    localhost/tmt/tests/container/alpine
+    localhost/tmt/container/test/alpine
 
     # Various CentOS releases:
-    localhost/tmt/tests/container/centos/7
-    localhost/tmt/tests/container/centos/stream9
+    localhost/tmt/container/test/centos/7
+    localhost/tmt/container/test/centos/stream9
 
     # Fedora rawhide, with dnf5 pre-installed:
-    localhost/tmt/tests/container/fedora/rawhide
+    localhost/tmt/container/test/fedora/rawhide
 
     # Same, but with password-less sudo set up:
-    localhost/tmt/tests/container/fedora/rawhide/unprivileged
+    localhost/tmt/container/test/fedora/rawhide/unprivileged
 
 __ https://ostreedev.github.io/ostree/
 
@@ -331,17 +331,17 @@ To build these images, run the following:
 .. code-block:: shell
 
     # Build all images...
-    make images-tests
+    make images/test
 
     # ... or just a single one:
-    make images-tests/tmt/tests/container/fedora/rawhide:latest
+    make images/test/tmt/container/test/fedora/rawhide:latest
 
 Tests that need to use various container images should trigger this
 command before running the actual test cases:
 
 .. code-block:: bash
 
-    rlRun "make -C images-tests"
+    rlRun "make -C images/test"
 
 To list built container images, run the following:
 
@@ -353,7 +353,7 @@ To remove these images from your local system, run the following:
 
 .. code-block:: shell
 
-    make clean-test-images
+    make clean/images/test
 
 
 .. _docs:
