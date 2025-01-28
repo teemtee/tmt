@@ -19,7 +19,8 @@ The First Steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Installing the main package with the core functionality is quite
-straightforward. No worry, there are just a few dependencies:
+straightforward. No worry, the :ref:`/stories/install/minimal`
+package has just a few dependencies:
 
 .. code-block:: shell
 
@@ -85,8 +86,8 @@ dependencies here:
     tmt run -a provision -h virtual
 
 Don't care about the disk space? Simply install ``tmt+all`` and
-you'll get all available functionality at hand. Check the help to
-list all supported provision methods:
+you'll get :ref:`/stories/install/all` available functionality at
+hand. Check the help to list all supported provision methods:
 
 .. code-block:: shell
 

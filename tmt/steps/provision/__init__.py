@@ -42,7 +42,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
-from tmt.options import option
+from tmt.options import option, show_step_method_hints
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -1861,13 +1861,18 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
+        try:
+            return self._run_guest_command(
+                ansible_command,
+                friendly_command=friendly_command,
+                silent=silent,
+                cwd=parent.plan.worktree,
+                env=self._prepare_environment(),
+                log=log)
+        except tmt.utils.RunError as exc:
+            if "File 'ansible-playbook' not found." in exc.message:
+                show_step_method_hints('plugin', 'ansible', self._logger)
+            raise exc
 
     @property
     def is_ready(self) -> bool:

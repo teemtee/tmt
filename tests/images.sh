@@ -21,6 +21,7 @@ _MAKEFILE_DIR="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/.."
 TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
+$TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/39/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/40/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/41/upstream:latest
@@ -37,6 +38,7 @@ $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 # TODO: enable Ubuntu
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
+centos-stream-10
 fedora-39
 fedora-40
 fedora-41
@@ -75,6 +77,13 @@ function is_fedora_39 () {
 function is_centos_stream_9 () {
     [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
     [[ "$1" = "centos-stream-9" ]] && return 0
+
+    return 1
+}
+
+function is_centos_stream_10 () {
+    [[ "$1" =~ ^.*centos/stream10[:/].* ]] && return 0
+    [[ "$1" = "centos-stream-10" ]] && return 0
 
     return 1
 }

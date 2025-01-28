@@ -301,9 +301,11 @@ class AvcDenials(CheckPlugin[Check]):
         # Avoid circular imports
         import tmt.base
 
+        # Note: yes, this will most likely explode in any distro outside
+        # of Fedora, CentOS and RHEL.
         return [
-            tmt.base.DependencySimple('/usr/sbin/sestatus'),
-            tmt.base.DependencySimple('/usr/sbin/ausearch')
+            tmt.base.DependencySimple('audit'),
+            tmt.base.DependencySimple('policycoreutils')
             ]
 
     @classmethod

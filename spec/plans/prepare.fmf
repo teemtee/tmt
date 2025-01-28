@@ -14,12 +14,26 @@ description: |
 
     Use the ``order`` attribute to select in which order the
     preparation should happen if there are multiple configs.
-    Default order is ``50``. For installation of essential plugin
-    and check requirements ``30`` is used, for installation of
-    required packages gathered from the :ref:`/spec/tests/require`
-    attribute of individual tests order ``70`` is used, for recommended
-    packages it is ``75``. The Dist-git prepare happens before those,
-    with order ``60``.
+    The following are predefined ``order`` values of various
+    preparations by tmt:
+
+      30
+          Installation of essential plugin and check requirements.
+
+      50
+          The default order of any object.
+
+      70
+          Installation of packages :ref:`required</spec/tests/require>` by tests.
+
+      75
+          Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+
+      .. note::
+
+         Individual plugins may define their own special ``order`` values,
+         and you shall find the relevant information in :ref:`plugins`
+         documentation.
 
     .. note::
 

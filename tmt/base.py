@@ -88,6 +88,7 @@ T = TypeVar('T')
 # metadata and 1h for scripts defined directly in plans (L2 metadata).
 DEFAULT_TEST_DURATION_L1 = '5m'
 DEFAULT_TEST_DURATION_L2 = '1h'
+#: The default order of any object.
 DEFAULT_ORDER = 50
 
 DEFAULT_TEST_RESTART_LIMIT = 1
@@ -666,6 +667,10 @@ class Core(
     # Core attributes (supported across all levels)
     summary: Optional[str] = None
     description: Optional[str] = None
+    author: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
     contact: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
@@ -696,6 +701,7 @@ class Core(
         # Basic stuff
         'summary',
         'description',
+        'author',
         'contact',
         'enabled',
         'order',
@@ -813,6 +819,9 @@ class Core(
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
         if self.fmf_id.ref is None or self.fmf_id.url is None:
+            return None
+
+        if not self.fmf_sources:
             return None
 
         # Detect relative path of the last source from the metadata tree root
@@ -1113,6 +1122,7 @@ class Test(
         # Basic test information
         'summary',
         'description',
+        'author',
         'contact',
         'component',
         'id',
@@ -2132,9 +2142,10 @@ class Plan(
         if self.description:
             echo(tmt.utils.format(
                 'description', self.description, key_color='green'))
+        if self.author:
+            echo(tmt.utils.format('author', self.author, key_color='green'))
         if self.contact:
-            echo(tmt.utils.format(
-                'contact', self.contact, key_color='green'))
+            echo(tmt.utils.format('contact', self.contact, key_color='green'))
 
         # Individual step details
         for step in self.steps(enabled_only=False):
@@ -2672,6 +2683,7 @@ class Story(
         'id',
         'priority',
         'description',
+        'author',
         'contact',
         'example',
         'enabled',

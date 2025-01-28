@@ -8,5 +8,7 @@ FROM docker.io/library/alpine:3.19
 
     # Populate apk cache
 RUN    apk update \
+    # Make sure the image is built with the latest packages
+    && apk upgrade \
     # Inject `bash` which is unavoidably required by tmt
     && apk add --no-cache bash

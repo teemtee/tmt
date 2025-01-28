@@ -1,7 +1,7 @@
 summary: Just enable a copr repository
 prepare:
     how: install
-    copr: psss/fmf
+    copr: "@teemtee/stable"
 execute:
     how: tmt
-    script: dnf repolist | grep 'Copr repo for fmf'
+    script: dnf repolist | grep 'Copr repo for stable owned by @teemtee'
