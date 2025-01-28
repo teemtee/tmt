@@ -13,8 +13,8 @@ jobs:
     steps:
     # Required because of https://github.com/hadolint/hadolint/issues/886
     - run: |
-        wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
-        chmod +x /bin/hadolint
+        wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+        chmod +x /usr/local/bin/hadolint
     - uses: actions/checkout@v4
       with:
         persist-credentials: false
