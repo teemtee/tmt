@@ -45,6 +45,9 @@ dependencies = [              # F39 / PyPI
     ]
 
 [project.optional-dependencies]
+ansible = [
+    "ansible-core",
+    ]
 test-convert = [
     "html2text>=2020.1.16",
     "markdown>=3.3.4",

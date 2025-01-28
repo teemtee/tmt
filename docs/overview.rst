@@ -407,10 +407,23 @@ TMT_FORCE_COLOR
 
 TMT_SHOW_TRACEBACK
     By default, when tmt reports an error, the corresponding
-    traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
-    set to any string except ``0``, traceback would be printed out.
-    When set to ``full``, traceback would list also local variables
-    in each stack frame.
+    traceback is not printed out. By setting this variable, the
+    traceback and details would be shown:
+
+    TMT_SHOW_TRACEBACK=0 (or unset)
+        Render only exception and its causes.
+
+    TMT_SHOW_TRACEBACK=1
+        Render also call stack for exception and each of its causes.
+
+    TMT_SHOW_TRACEBACK=2
+        Render also call stack for exception and each of its causes,
+        plus all local variables in each frame, trimmed to first 1024
+        characters of their values.
+
+    TMT_SHOW_TRACEBACK=full
+        Render everything that can be show: all causes, their call
+        stacks, all frames and all locals in their completeness.
 
 TMT_OUTPUT_WIDTH
     By default, the output width of commands like ``tmt * show`` is constrained

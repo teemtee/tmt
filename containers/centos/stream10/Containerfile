@@ -1,10 +1,10 @@
 #
-# A Fedora 40 image tailored for tmt test suite
+# A CentOS Stream 10 image tailored for tmt test suite
 #
-# tmt/tests/fedora/40/upstream:latest
+# tmt/tests/centos/stream10:latest
 #
 
-FROM quay.io/fedora/fedora:40
+FROM quay.io/centos/centos:stream10
 
     # Populate dnf cache
 RUN    dnf makecache \

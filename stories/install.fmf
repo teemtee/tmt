@@ -6,6 +6,29 @@ link:
 
 /minimal:
     summary: Minimal tmt installation with core features only
+    description: |
+        The minimal package provides basic functionality which
+        covers mainly these areas:
+
+        * explore and lint existing tests, plans and stories
+        * create new tests, plans and stories from templates
+        * execute tests on the :ref:`/plugins/provision/local`
+          host or :ref:`/plugins/provision/connect` to a remote
+          guest using ssh
+        * prepare guest using the
+          :ref:`/plugins/prepare/ansible`,
+          :ref:`/plugins/prepare/feature`,
+          :ref:`/plugins/prepare/install` and
+          :ref:`/plugins/prepare/shell` plugins
+        * report test results to :ref:`/plugins/report/display`
+          or into an :ref:`/plugins/report/html` page
+
+        .. note::
+
+            If you are used to install packages without optional
+            dependencies, ansible features might not be working as
+            they are a weak dependency of the minimal package.
+
     example: dnf install tmt
     link+:
       - verified-by: /plans/install/minimal
