@@ -4,6 +4,7 @@ import datetime
 import importlib.metadata
 import logging
 import os
+import re
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
@@ -1179,6 +1180,15 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             public_key=self.public_key,
             group=self.beaker_job_group)
 
+        if self.is_dry_run:
+            mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
+            job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
+
+            # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
+            # don't mix these two in tmt output & modify mrack's output to use spaces as well.
+            self.print(re.sub(r'^\t+', lambda match: '  ' * len(match.group()),
+                              job.toxml(prettyxml=True), flags=re.MULTILINE), shift=-2)
+            return
         try:
             response = self.api.create(data)
 

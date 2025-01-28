@@ -1,0 +1,32 @@
+summary: Author contact
+
+story:
+    As a user I would like to contact the original author of the
+    test, plan or story without having to dig through the git
+    history or check various random files.
+
+description: |
+    This dedicated field provides a standard location for
+    the original author's information, as it can be scattered
+    across various places and may be difficult to locate.
+    Additionally, when a test is moved to a different Git
+    repository, the original author's information can be lost.
+
+    .. versionadded:: 1.42
+
+example:
+  - |
+    # Single author
+    author: Name Surname <email@address.org>
+
+  - |
+    # Multiple authors
+    author:
+      - First Person <first@address.org>
+      - Second Person <second@address.org>
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/plan/show
+  - verified-by: /tests/story/show
+  - verified-by: /tests/test/show

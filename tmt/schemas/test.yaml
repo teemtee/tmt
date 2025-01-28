@@ -18,6 +18,10 @@ properties:
   adjust:
     $ref: "/schemas/core#/definitions/adjust"
 
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#author
+  author:
+    $ref: "/schemas/core#/definitions/author"
+
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#component
   component:
     $ref: "/schemas/common#/definitions/one_or_more_strings"

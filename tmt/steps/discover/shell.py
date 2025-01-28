@@ -92,6 +92,10 @@ class TestDescription(
         )
 
     # Basic test information
+    author: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
     contact: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list

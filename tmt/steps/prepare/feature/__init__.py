@@ -134,6 +134,11 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
     Enable or disable common features like repositories on the guest.
 
+    .. note::
+
+       The plugin requires a working Ansible to be available on the
+       test runner.
+
     .. warning::
 
        The plugin may be a subject of various limitations, imposed by

@@ -37,6 +37,11 @@ require+:
 
         enabled: true
 
+      - check:
+          - how: avc
+            result: xfail
+        because: https://bugzilla.redhat.com/show_bug.cgi?id=2342247
+
     /basic:
         summary: Basic unit tests (development packages)
         tier: 0
@@ -65,6 +70,11 @@ require+:
         because: Enable in CI only
 
         enabled: true
+
+      - check:
+          - how: avc
+            result: xfail
+        because: https://bugzilla.redhat.com/show_bug.cgi?id=2342247
 
     /basic:
         summary: Basic unit tests (system packages)

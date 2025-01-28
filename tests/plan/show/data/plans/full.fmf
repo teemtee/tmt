@@ -1,6 +1,7 @@
 # Core
 summary: Plan keys are correctly displayed
 description: Some description
+author: Original Author <original@author.org>
 contact: Some Body <somebody@somewhere.org>
 id: e3a9a8ed-4585-4e86-80e8-1d99eb5345a9
 enabled: true

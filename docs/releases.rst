@@ -16,6 +16,18 @@ has been added to the specification. It can be used to
 :ref:`/spec/core/adjust` test and plan metadata for the
 ``package`` or ``image`` mode context.
 
+The ``ansible-core`` package is now a recommended dependency package
+for tmt. It is used by plugins that use Ansible under the hood,
+:ref:`prepare/ansible</plugins/prepare/ansible>`,
+:ref:`finish/ansible</plugins/finish/ansible>`,
+and :ref:`prepare/feature</plugins/prepare/feature>`.
+
+A new core attribute :ref:`/spec/core/author` has been implemented
+for tracking the original author of the test, plan or story. In
+contrast to the :ref:`/spec/core/contact` key, this field is not
+supposed to be updated and can be useful when trying to track down
+the original author for consultation.
+
 
 tmt-1.41.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
