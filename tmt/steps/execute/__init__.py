@@ -1171,6 +1171,9 @@ class Execute(tmt.steps.Step):
                 # plugin, so we could point it to that discover phase rather than
                 # let is "see" all tests, or test in different discover phase.
                 for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
+                    if not discover.enabled_by_when:
+                        continue
+
                     phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
                     phase_copy.discover_phase = discover.name
 
