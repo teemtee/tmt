@@ -617,6 +617,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     serial_number = test.serial_number
                     if not test_name:
                         test_name = test.name
+                    if test.author:
+                        item_attributes += [
+                            {'key': 'author', 'value': author} for author in test.author]
                     if test.contact:
                         item_attributes += [
                             {'key': 'contact', 'value': contact} for contact in test.contact]
