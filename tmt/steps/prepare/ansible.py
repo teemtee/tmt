@@ -13,7 +13,12 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
 from tmt.result import PhaseResult
-from tmt.steps.provision import Guest
+from tmt.steps.provision import (
+    ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
+    AnsibleApplicable,
+    AnsibleCollectionPlaybook,
+    Guest,
+    )
 from tmt.utils import (
     DEFAULT_RETRIABLE_HTTP_CODES,
     ENVFILE_RETRY_SESSION_RETRIES,
@@ -132,8 +137,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         prepare --how ansible --playbook one.yml --playbook two.yml --extra-args '-vvv'
 
-    Remote playbooks can be referenced as well as local ones, and both
-    kinds can be intermixed:
+    Remote playbooks - provided as URLs starting with ``http://`` or
+    ``https://``, local playbooks - optionally starting with a
+    ``file://`` schema, and playbooks bundled with collections can be
+    referenced as well as local ones, and all kinds can be intermixed:
 
     .. code-block:: yaml
 
@@ -142,10 +149,15 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             playbook:
               - https://foo.bar/one.yml
               - two.yml
+              - file://three.yml
+              - ansible_galaxy_namespace.cool_collection.four
 
     .. code-block:: shell
 
-        prepare --how ansible --playbook https://foo.bar/two.yml --playbook two.yml
+        prepare --how ansible --playbook https://foo.bar/two.yml \\
+                              --playbook two.yml \\
+                              --playbook file://three.yml \\
+                              --playbook ansible_galaxy_namespace.cool_collection.four
     """
 
     _data_class = PrepareAnsibleData
@@ -160,13 +172,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
-        for playbook in self.data.playbook:
-            logger.info('playbook', playbook, 'green')
+        for _playbook in self.data.playbook:
+            logger.info('playbook', _playbook, 'green')
 
-            lowercased_playbook = playbook.lower()
-            playbook_path = Path(playbook)
+            lowercased_playbook = _playbook.lower()
 
-            if lowercased_playbook.startswith(('http://', 'https://')):
+            def normalize_remote_playbook(raw_playbook: str) -> Path:
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type
                 assert self.step.plan.my_run.tree.root is not None  # narrow type
@@ -176,15 +187,15 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     with retry_session(
                             retries=ENVFILE_RETRY_SESSION_RETRIES,
                             status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES) as session:
-                        response = session.get(playbook)
+                        response = session.get(raw_playbook)
 
                     if not response.ok:
                         raise PrepareError(
-                            f"Failed to fetch remote playbook '{playbook}'.")
+                            f"Failed to fetch remote playbook '{raw_playbook}'.")
 
                 except requests.RequestException as exc:
                     raise PrepareError(
-                        f"Failed to fetch remote playbook '{playbook}'.") from exc
+                        f"Failed to fetch remote playbook '{raw_playbook}'.") from exc
 
                 with tempfile.NamedTemporaryFile(
                         mode='w+b',
@@ -195,12 +206,33 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     file.write(response.content)
                     file.flush()
 
-                    playbook_path = Path(file.name).relative_to(root_path)
+                    return Path(file.name).relative_to(root_path)
 
-                logger.info('playbook-path', playbook_path, 'green')
+            def normalize_local_playbook(raw_playbook: str) -> Path:
+                if raw_playbook.startswith('file://'):
+                    return Path(raw_playbook[7:])
+
+                return Path(raw_playbook)
+
+            def normalize_collection_playbook(raw_playbook: str) -> AnsibleCollectionPlaybook:
+                return AnsibleCollectionPlaybook(raw_playbook)
+
+            playbook: AnsibleApplicable
+
+            if lowercased_playbook.startswith(('http://', 'https://')):
+                playbook = normalize_remote_playbook(lowercased_playbook)
+
+            elif lowercased_playbook.startswith('file://'):
+                playbook = normalize_local_playbook(lowercased_playbook)
+
+            elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
+                playbook = normalize_collection_playbook(lowercased_playbook)
+
+            else:
+                playbook = normalize_local_playbook(lowercased_playbook)
 
             guest.ansible(
-                playbook_path,
+                playbook,
                 playbook_root=self.step.plan.anchor_path,
                 extra_args=self.data.extra_args)
 

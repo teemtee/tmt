@@ -20,6 +20,7 @@ from typing import (
     Any,
     Callable,
     Literal,
+    NewType,
     Optional,
     TypeVar,
     Union,
@@ -48,6 +49,7 @@ from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
+    GeneralError,
     OnProcessStartCallback,
     Path,
     ProvisionError,
@@ -62,6 +64,7 @@ from tmt.utils import (
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
+    from tmt._compat.typing import TypeAlias
 
 
 #: How many seconds to wait for a connection to succeed after guest reboot.
@@ -77,6 +80,13 @@ REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIM
 # this many seconds.
 RECONNECT_WAIT_TICK = 5
 RECONNECT_WAIT_TICK_INCREASE = 1.0
+
+# Types for things Ansible can execute
+ANSIBLE_COLLECTION_PLAYBOOK_PATTERN = re.compile(r'[a-zA-z0-9_]+\.[a-zA-z0-9_]+\.[a-zA-z0-9_]+')
+
+AnsiblePlaybook: 'TypeAlias' = Path
+AnsibleCollectionPlaybook = NewType('AnsibleCollectionPlaybook', str)
+AnsibleApplicable = Union[AnsibleCollectionPlaybook, AnsiblePlaybook]
 
 
 def configure_ssh_options() -> tmt.utils.RawCommand:
@@ -1136,8 +1146,8 @@ class Guest(tmt.utils.Common):
 
     def _sanitize_ansible_playbook_path(
             self,
-            playbook: Path,
-            playbook_root: Optional[Path]) -> Path:
+            playbook: AnsibleApplicable,
+            playbook_root: Optional[Path]) -> AnsibleApplicable:
         """
         Prepare full ansible playbook path.
 
@@ -1150,21 +1160,37 @@ class Guest(tmt.utils.Common):
             the eventual playbook path is not absolute.
         """
 
-        # Some playbooks must be under playbook root, which is often
-        # a metadata tree root.
-        if playbook_root is not None:
-            playbook = playbook_root / playbook.unrooted()
+        # Handle the individual types under the hood of `AnsibleApplicable`.
+        # Note that `isinstance()` calls do not use our fancy names,
+        # `AnsibleCollectionPlaybook` and `AnsiblePlaybook`. These are
+        # extremely helpful to type checkers, but Python interpreter
+        # sees only the aliased types, `Path` and `str`.
 
-            if not playbook.is_relative_to(playbook_root):
-                raise tmt.utils.GeneralError(
-                    f"'{playbook}' is not relative to the expected root '{playbook_root}'.")
+        # First, a path:
+        if isinstance(playbook, Path):
+            # Some playbooks must be under playbook root, which is often
+            # a metadata tree root.
+            if playbook_root is not None:
+                playbook = playbook_root / playbook.unrooted()
 
-        if not playbook.exists():
-            raise tmt.utils.FileError(f"Playbook '{playbook}' does not exist.")
+                if not playbook.is_relative_to(playbook_root):
+                    raise tmt.utils.GeneralError(
+                        f"'{playbook}' is not relative to the expected root '{playbook_root}'.")
 
-        self.debug(f"Playbook full path: '{playbook}'", level=2)
+            if not playbook.exists():
+                raise tmt.utils.FileError(f"Playbook '{playbook}' does not exist.")
 
-        return playbook
+            self.debug(f"Playbook full path: '{playbook}'", level=2)
+
+            return playbook
+
+        # Second, a collection playbook:
+        if isinstance(playbook, str):
+            self.debug(f"Collection playbook: '{playbook}'", level=2)
+
+            return playbook
+
+        raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
     def _prepare_environment(
         self,
@@ -1243,7 +1269,7 @@ class Guest(tmt.utils.Common):
 
     def _run_ansible(
             self,
-            playbook: Path,
+            playbook: AnsibleApplicable,
             playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
@@ -1272,7 +1298,7 @@ class Guest(tmt.utils.Common):
 
     def ansible(
             self,
-            playbook: Path,
+            playbook: AnsibleApplicable,
             playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
@@ -1821,7 +1847,7 @@ class GuestSsh(Guest):
 
     def _run_ansible(
             self,
-            playbook: Path,
+            playbook: AnsibleApplicable,
             playbook_root: Optional[Path] = None,
             extra_args: Optional[str] = None,
             friendly_command: Optional[str] = None,
