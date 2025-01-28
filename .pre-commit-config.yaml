@@ -191,3 +191,9 @@ repos:
           - jinja-variable-lower-case
           - single-statement-per-line
           - "--"
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        files: ^containers/.*

@@ -159,7 +159,7 @@ lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
 type = ["mypy {args:tmt}"]
 check = ["lint", "type"]
 
-unit = "make images-tests && pytest -vvv -ra --showlocals -n 0 tests/unit"
+unit = "make images/test && pytest -vvv -ra --showlocals -n 0 tests/unit"
 smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
 cov = [
     "coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests",
