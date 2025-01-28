@@ -23,6 +23,12 @@ link:
         * report test results to :ref:`/plugins/report/display`
           or into an :ref:`/plugins/report/html` page
 
+        .. note::
+
+            If you are used to install packages without optional
+            dependencies, ansible features might not be working as
+            they are a weak dependency of the minimal package.
+
     example: dnf install tmt
     link+:
       - verified-by: /plans/install/minimal
