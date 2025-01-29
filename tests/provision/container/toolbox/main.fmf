@@ -19,5 +19,6 @@ adjust+:
   - check:
       - how: avc
         result: xfail
+    when: distro >= fedora-41
     because: |
       We are not interested in AVCs for this test due to complicated setup.
