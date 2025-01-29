@@ -7,3 +7,11 @@
 .logo {
     padding: 10px 50px !important;
 }
+
+.rst-content .note .admonition-title {
+  display: block !important;
+}
+
+.rst-content .warning .admonition-title {
+  display: block !important;
+}

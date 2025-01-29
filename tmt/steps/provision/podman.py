@@ -9,7 +9,6 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.options import show_step_method_hints
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
 
@@ -286,7 +285,9 @@ class GuestContainer(tmt.Guest):
                 silent=silent)
         except tmt.utils.RunError as exc:
             if "File 'ansible-playbook' not found." in exc.message:
-                show_step_method_hints('plugin', 'ansible', self._logger)
+                from tmt.utils.hints import print_hint
+
+                print_hint(id_='ansible-not-available', logger=self._logger)
             raise exc
 
     def podman(
@@ -438,7 +439,21 @@ class GuestContainer(tmt.Guest):
                     raise err
 
 
-@tmt.steps.provides_method('container')
+@tmt.steps.provides_method(
+    'container',
+    installation_hint="""
+        Make sure ``podman`` is installed and configured, it is required for container-backed
+        guests provided by ``provision/container`` plugin.
+
+        To quickly test ``podman`` functionality, you can try running ``podman images`` or
+        ``podman run --rm -it fedora:latest``.
+
+        * Users who installed tmt from system repositories should install
+          ``tmt+provision-container`` package.
+        * Users who installed tmt from PyPI should also install ``tmt+provision-container``
+          package, as it will install required system dependencies. After doing so, they should
+          install ``tmt[provision-container]`` extra.
+    """)
 class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     """
     Create a new container using ``podman``.

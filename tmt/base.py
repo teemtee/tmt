@@ -3993,8 +3993,7 @@ class Clean(tmt.utils.Common):
         self.info('images', color='blue')
         successful = True
         for method in tmt.steps.provision.ProvisionPlugin.methods():
-            # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1599
-            if not method.class_.clean_images(self, self.is_dry_run):  # type: ignore[union-attr]
+            if not method.class_.clean_images(self, self.is_dry_run):  # type: ignore[attr-defined]
                 successful = False
         return successful
 
