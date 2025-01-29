@@ -17,6 +17,7 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
 import tmt.utils
+import tmt.utils.hints
 from tmt.utils import ContainerClass, Path
 from tmt.utils.templates import render_template_file
 
@@ -195,6 +196,7 @@ def main() -> None:
         STEP=step_name,
         PLUGINS=plugin_generator,
         REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+        HINTS=tmt.utils.hints.HINTS,
         is_enum=is_enum,
         container_fields=tmt.utils.container_fields,
         container_field=tmt.utils.container_field,
