@@ -139,10 +139,31 @@ HINTS: dict[str, Hint] = {
                 ``ansible-playbook --help``.
 
                 * Users who installed tmt from system repositories should install ``ansible-core``
-                package.
+                  package.
                 * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
                 """,
                 [r'ansible-playbook.*not found'],
+            ),
+            'guest-not-healthy': (
+                """
+                Guest was not in a healthy state.
+
+                For some reason, the guest did not respond to any communication. This may be
+                a result of a ``prepare`` or ``finish`` script, or a test. Among possible
+                causes are kernel panic, stopped SSH daemon, new firewall rules blocking traffic,
+                disabled user account tmt was expected to use, networking issues, or other
+                infrastructure issues.
+                """,
+                [],
+            ),
+            'selinux-not-available': (
+                """
+                SELinux not detected on the guest.
+
+                To support SELinux-based functionality, SELinux must be installed and enabled.
+                To quickly test SELinux status, you can try running ``sestatus``.
+                """,
+                [],
             ),
             # TODO: once `minute` plugin provides its own hints, we can drop
             # this hint and move it to the plugin.
