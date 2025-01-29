@@ -205,11 +205,10 @@ rlJournalStart
                     if [[ $jq_element == attributes ]]; then
                         key="contact"
                         value="$(yq -r ".\"$test_name\".$key" test.fmf)"
+
                         if [[ $value != null ]]; then
-                            if [[ "$value" == *","* ]]; then
-                              # Get the contact items as CSV (separated by a comma)
-                              value="$(yq -r ". | @csv" <<< $value)"
-                            fi
+                            # Get the contact items as values separated by a comma
+                            value="$(yq -r '. | join(",")' <<< $value)"
                             rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
 
                             IFS=, read -r -a contact_items <<< "$value"
