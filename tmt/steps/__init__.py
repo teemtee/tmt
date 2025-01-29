@@ -47,7 +47,7 @@ from tmt.container import (
     key_to_option,
     option_to_key,
 )
-from tmt.options import option, show_step_method_hints
+from tmt.options import option
 from tmt.utils import (
     DEFAULT_NAME,
     Environment,
@@ -70,6 +70,8 @@ if TYPE_CHECKING:
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
+
+_PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
 
 #
 # Following are default and predefined order values for various special phases
@@ -1265,9 +1267,10 @@ class Method:
     def __init__(
         self,
         name: str,
-        class_: Optional[PluginClass] = None,
+        class_: PluginClass,
         doc: Optional[str] = None,
         order: int = PHASE_ORDER_DEFAULT,
+        installation_hint: Optional[str] = None,
     ) -> None:
         """
         Store method data
@@ -1280,6 +1283,13 @@ class Method:
                 raise tmt.utils.GeneralError(f"Plugin class '{class_}' provides no docstring.")
 
             raise tmt.utils.GeneralError(f"Plugin method '{name}' provides no docstring.")
+
+        if installation_hint is not None:
+            doc = (
+                doc
+                + '\n\n.. note::\n\n'
+                + textwrap.indent(textwrap.dedent(installation_hint), '   ')
+            )
 
         self.name = name
         self.class_ = class_
@@ -1323,6 +1333,7 @@ def provides_method(
     name: str,
     doc: Optional[str] = None,
     order: int = PHASE_ORDER_DEFAULT,
+    installation_hint: Optional[str] = None,
 ) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
@@ -1343,16 +1354,25 @@ def provides_method(
     """
 
     def _method(cls: PluginClass) -> PluginClass:
-        plugin_method = Method(name, class_=cls, doc=doc, order=order)
+        plugin_method = Method(
+            name, cls, doc=doc, order=order, installation_hint=installation_hint
+        )
 
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
         # TODO: BasePlugin[Any]: it's tempting to use StepDataT, but I was
         # unable to introduce the type var into annotations. Apparently, `cls`
         # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
         # space for type var. But it's still something to fix later.
-        cast('BasePlugin[Any, Any]', cls.__bases__[0])._supported_methods.register_plugin(
+        base_class = cast('BasePlugin[Any, Any]', cls.__bases__[0])
+
+        base_class._supported_methods.register_plugin(
             plugin_id=name, plugin=plugin_method, logger=tmt.log.Logger.get_bootstrap_logger()
         )
+
+        if installation_hint is not None:
+            from tmt.utils.hints import register_hint
+
+            register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
 
         return cls
 
@@ -1395,6 +1415,14 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return cls._data_class
 
     data: StepDataT
+
+    @classmethod
+    def get_step_name(cls) -> str:
+        match = _PLUGIN_CLASS_NAME_TO_STEP_PATTERN.match(cls.__module__)
+
+        assert match is not None  # must be
+
+        return match.group(1)
 
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
@@ -1631,7 +1659,11 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                 assert isinstance(plugin, BasePlugin)
                 return plugin
 
-        show_step_method_hints(step.name, how, step._logger)
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_=f'{step.name}/{how}', ignore_missing=True, logger=step._logger)
+        print_hint(id_=step.name, ignore_missing=True, logger=step._logger)
+
         # Report invalid method
         if step.plan is None:
             raise tmt.utils.GeneralError(f"Plan for {step.name} is not set.")

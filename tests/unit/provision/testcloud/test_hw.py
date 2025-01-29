@@ -17,7 +17,7 @@ from tmt.steps.provision.testcloud import (
     import_testcloud,
     )
 
-import_testcloud()
+import_testcloud(Logger.get_bootstrap_logger())
 
 # These must be imported *after* importing testcloud
 from tmt.steps.provision.testcloud import TPM_CONFIG_ALLOWS_VERSIONS, \
