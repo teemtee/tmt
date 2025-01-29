@@ -84,6 +84,12 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 {{ PLUGIN.__doc__ | dedent | trim }}
 {% endif %}
 
+{% if plugin_full_id in HINTS %}
+.. note::
+
+{{ HINTS[plugin_full_id] | indent(3, first=true) }}
+{% endif %}
+
 {% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
 
 {% if intrinsic_fields %}
