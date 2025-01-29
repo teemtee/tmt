@@ -95,7 +95,11 @@ class ExecuteUpgrade(ExecuteInternal):
     execution to differentiate between the stages of the test. It is set
     to ``old`` during the first execution and ``new`` during the second
     execution. Test names are prefixed with this value to make the names
-    unique.
+    unique. Based on this variable, the test can perform appropriate actions.
+
+    * ``old``: setup, test
+    * ``new``: test, cleanup
+    * ``without``: setup, test, cleanup
 
     The upgrade tasks performing the actual system upgrade are taken
     from a remote repository (specified by the ``url`` key) based on an upgrade
@@ -159,6 +163,36 @@ class ExecuteUpgrade(ExecuteInternal):
             how: upgrade
             url: https://github.com/teemtee/upgrade
             filter: "tag:fedora"
+
+    .. code-block:: yaml
+
+        # A simple beakerlib test using the $IN_PLACE_UPGRADE variable
+        . /usr/share/beakerlib/beakerlib.sh || exit 1
+
+        VENV_PATH=/var/tmp/venv_test
+
+        rlJournalStart
+            # Perform the setup only for the old distro
+            if [[ "$IN_PLACE_UPGRADE" !=  "new" ]]; then
+                rlPhaseStartSetup
+                    rlRun "python3.9 -m venv $VENV_PATH"
+                    rlRun "$VENV_PATH/bin/pip install pyjokes"
+                rlPhaseEnd
+            fi
+
+            # Execute the test for both old & new distro
+            rlPhaseStartTest
+                rlAsssertExists "$VENV_PATH/bin/pyjoke"
+                rlRun "$VENV_PATH/bin/pyjoke"
+            rlPhaseEnd
+
+            # Skip the cleanup phase when on the old distro
+            if [[ "$IN_PLACE_UPGRADE" !=  "old" ]]; then
+                rlPhaseStartCleanup
+                    rlRun "rm -rf $VENV_PATH"
+                rlPhaseEnd
+            fi
+        rlJournalEnd
     """
 
     _data_class = ExecuteUpgradeData
