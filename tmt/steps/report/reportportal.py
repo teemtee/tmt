@@ -243,6 +243,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         show_default=True,
         help="Enable/disable the SSL verification for communication with ReportPortal.")
 
+    upload_subresults: bool = field(
+        default=False,
+        option=('--upload-subresults / --no-upload-subresults'),
+        is_flag=True,
+        show_default=True,
+        help="Enable/disable uploading of tmt subresults into the ReportPortal.")
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -719,49 +726,50 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         timestamp=test_end_time,
                         write_out_failures=bool(item_status == "FAILED"))
 
-                    # Create (and *finish*) the child test item for every tmt subresult and
-                    # map it under the parent test item.
-                    for subresult in result.subresult:
-                        # Create a child item
-                        self.info("sub-test", subresult.name, color="cyan", shift=1)
+                    # If upload of subresults is required, create (and *finish*) the child test
+                    # item for every tmt subresult and map it under the parent test item.
+                    if self.data.upload_subresults:
+                        for subresult in result.subresult:
+                            # Create a child item
+                            self.info("sub-test", subresult.name, color="cyan", shift=1)
 
-                        # Use the parent test start-time as a default
-                        subresult_start_time = subresult.start_time or test_start_time
+                            # Use the parent test start-time as a default
+                            subresult_start_time = subresult.start_time or test_start_time
 
-                        response = self.rp_api_post(
-                            session=session,
-                            path=f"item/{item_uuid}",
-                            json={
-                                "name": subresult.name,
-                                "launchUuid": launch_uuid,
-                                "type": "step",
-                                "startTime": subresult_start_time})
+                            response = self.rp_api_post(
+                                session=session,
+                                path=f"item/{item_uuid}",
+                                json={
+                                    "name": subresult.name,
+                                    "launchUuid": launch_uuid,
+                                    "type": "step",
+                                    "startTime": subresult_start_time})
 
-                        child_item_uuid = yaml_to_dict(response.text).get("id")
-                        assert child_item_uuid is not None
+                            child_item_uuid = yaml_to_dict(response.text).get("id")
+                            assert child_item_uuid is not None
 
-                        child_item_status = self.TMT_TO_RP_RESULT_STATUS[subresult.result]
-                        subtest_end_time = subresult.end_time or test_end_time
+                            child_item_status = self.TMT_TO_RP_RESULT_STATUS[subresult.result]
+                            subtest_end_time = subresult.end_time or test_end_time
 
-                        # Upload the subtest (child) logs
-                        self.upload_result_logs(
-                            result=subresult,
-                            session=session,
-                            item_uuid=child_item_uuid,
-                            launch_uuid=launch_uuid,
-                            timestamp=subtest_end_time,
-                            write_out_failures=bool(child_item_status == "FAILED"))
+                            # Upload the subtest (child) logs
+                            self.upload_result_logs(
+                                result=subresult,
+                                session=session,
+                                item_uuid=child_item_uuid,
+                                launch_uuid=launch_uuid,
+                                timestamp=subtest_end_time,
+                                write_out_failures=bool(child_item_status == "FAILED"))
 
-                        # Finish the child item
-                        response = self.rp_api_put(
-                            session=session,
-                            path=f"item/{child_item_uuid}",
-                            json={
-                                "launchUuid": launch_uuid,
-                                "status": child_item_status,
-                                "endTime": subtest_end_time})
+                            # Finish the child item
+                            response = self.rp_api_put(
+                                session=session,
+                                path=f"item/{child_item_uuid}",
+                                json={
+                                    "launchUuid": launch_uuid,
+                                    "status": child_item_status,
+                                    "endTime": subtest_end_time})
 
-                        self.verbose("uuid", child_item_uuid, "yellow", shift=2)
+                            self.verbose("uuid", child_item_uuid, "yellow", shift=2)
 
                 # Finish the parent test item
                 response = self.rp_api_put(
