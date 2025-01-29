@@ -1,0 +1,80 @@
+{% extends "_base.xml.j2" %}
+
+{#
+    This flavor changes the level of `<testsuite>` and `<testcase>` tags. The
+    `tmt.Result` becomes ``<testsuite>`` instead of ``testcase`` and
+    ``<testcase>`` tags become ``tmt.SubResult``.
+#}
+
+{% block content %}
+    <testsuites disabled="0" errors="{{ RESULTS.errored | length }}" failures="{{ RESULTS.failed | length }}" tests="{{ RESULTS | length }}" time="{{ RESULTS.duration }}">
+
+    {% block testsuites %}
+        {% for result in RESULTS %}
+            {% set main_log = result.log | first | read_log %}
+            {% set main_log_failures = main_log | failures | e %}
+            {% set main_test_duration = result.duration | duration_to_seconds %}
+
+            {# TODO: Fix the test counts in testsuite tag #}
+            {# TODO: Also fix the counts because now with an additional testcase for parent results, the counts will not match. #}
+
+            <testsuite name="{{ result.name | trim | e }}" disabled="0" errors="{{ result.subresult.errored | length }}" failures="{{ result.subresult.failed | length }}" skipped="{{ result.subresult.skipped | length }}" tests="{{ result.subresult | length }}" time="{{ main_test_duration }}" timestamp="{{ result.start_time }}">
+
+                {#
+                    Always include a `testcase` representing the main result.
+                    The `error/failure/skipped` tags must not exists inside a
+                    `testsuite`, they are only allowed inside of a `testcase`.
+                #}
+                <testcase name="{{ result.name | e }}" {% if result_test_duration %}time="{{ result_test_duration }}"{% endif %}>
+                    {% if result.result.value == 'error' or result.result.value == 'warn' %}
+                        <error type="error" message="{{ result.result.value | e }}">{{ main_log_failures }}</error>
+                    {% elif result.result.value == 'fail' %}
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ main_log_failures }}</failure>
+                    {% elif result.result.value == 'info' %}
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ main_log_failures }}</skipped>
+                    {% endif %}
+
+                    {% if INCLUDE_OUTPUT_LOG and main_log %}
+                        <system-out>{{ main_log | e }}</system-out>
+                    {% endif %}
+                </testcase>
+
+                {% for subresult in result.subresult %}
+                    {% set subresult_log = subresult.log | first | read_log %}
+                    {% set subresult_log_failures = main_log | failures | e %}
+                    {% set subresult_test_duration = subresult.duration | duration_to_seconds %}
+
+                    <testcase name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %}>
+                        {% if subresult.result.value == 'error' or subresult.result.value == 'warn' %}
+                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</error>
+                        {% elif subresult.result.value == 'fail' %}
+                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</failure>
+                        {% elif subresult.result.value == 'info' %}
+                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</skipped>
+                        {% endif %}
+
+                        {% if INCLUDE_OUTPUT_LOG and subresult_log %}
+                            <system-out>{{ subresult_log | e }}</system-out>
+                        {% endif %}
+                    </testcase>
+                {% endfor %}
+
+                {# Optionally add the result properties #}
+                {% if result.properties is defined %}
+                    {% with properties=result.properties %}
+                        {% include "includes/_properties.xml.j2" %}
+                    {% endwith %}
+                {% endif %}
+            </testsuite>
+        {% endfor %}
+    {% endblock %}
+
+    {# Optionally include the properties section in testsuites tag #}
+    {% if RESULTS.properties is defined %}
+        {% with properties=RESULTS.properties %}
+            {% include "includes/_properties.xml.j2" %}
+        {% endwith %}
+    {% endif %}
+
+    </testsuites>
+{% endblock %}
