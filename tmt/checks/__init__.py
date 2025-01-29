@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, T
 import tmt.log
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.hints
 from tmt.plugins import PluginRegistry
 from tmt.utils import (
     NormalizeKeysMixin,
@@ -29,7 +30,9 @@ CheckPluginClass = type['CheckPlugin[Any]']
 _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry()
 
 
-def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]:
+def provides_check(
+        check: str,
+        hints: Optional[dict[str, str]] = None) -> Callable[[CheckPluginClass], CheckPluginClass]:
     """
     A decorator for registering test checks.
 
@@ -41,6 +44,9 @@ def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]
             plugin_id=check,
             plugin=check_cls,
             logger=tmt.log.Logger.get_bootstrap_logger())
+
+        for hint_id, hint in (hints or {}).items():
+            tmt.utils.hints.register_hint(f'test-checks/{check}/{hint_id}', hint)
 
         return check_cls
 

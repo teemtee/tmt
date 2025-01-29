@@ -6,6 +6,7 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.hints
 from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import (
@@ -257,7 +258,15 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
     return outcome, report_filepath
 
 
-@provides_check('avc')
+@provides_check(
+    'avc',
+    hints={
+        'detection-skipped':
+            """
+            The detection of AVC denials was skipped because the guest was not compatible.
+            """,
+        }
+    )
 class AvcDenials(CheckPlugin[Check]):
     """
     Check for SELinux AVC denials raised during the test.
@@ -332,10 +341,26 @@ class AvcDenials(CheckPlugin[Check]):
         if not invocation.guest.facts.has_selinux:
             return [CheckResult(
                 name='avc',
-                result=ResultOutcome.SKIP)]
+                result=ResultOutcome.SKIP,
+                note=[
+                    tmt.utils.hints.render_hints(
+                        'check/avc/detection-skipped',
+                        'selinux-not-available',
+                        logger=logger
+                        )
+                    ])
+                    ]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='avc',
+                result=ResultOutcome.SKIP,
+                note=[
+                    tmt.utils.hints.render_hints(
+                        'guest-not-healthy',
+                        logger=logger
+                        )
+                    ])]
 
         assert invocation.phase.step.workdir is not None  # narrow type
 
