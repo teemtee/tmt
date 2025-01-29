@@ -38,6 +38,13 @@ rlJournalStart
 
             rlAssertNotExists "$dump_before"
 
+            rlAssertEquals "result shall contain a note" \
+                           "$(yq -r '.[] | .check | .[] | .note | .[]' $results)" \
+                           "Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges."
+
         else
             assert_check_result "dmesg as a before-test should pass" "pass" "before-test" "harmless"
 
@@ -50,6 +57,13 @@ rlJournalStart
             assert_check_result "dmesg as an after-test should skip with containers" "skip" "after-test" "harmless"
 
             rlAssertNotExists "$dump_after"
+
+            rlAssertEquals "result shall contain a note" \
+                           "$(yq -r '.[] | .check | .[] | .note | .[]' $results)" \
+                           "Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges.
+Saving of the kernel ring buffer was skipped because of missing privileges."
 
         else
             assert_check_result "dmesg as an after-test should pass" "pass" "after-test" "harmless"
