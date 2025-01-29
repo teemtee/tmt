@@ -4,8 +4,12 @@
     Releases
 ======================
 
-The :ref:`/plugins/report/reportportal` plugin now supports
-importing of tmt subresults as child test items.
+
+A new ``--upload-subresults`` option was introduced for the
+:ref:`/plugins/report/reportportal` plugin that allows
+importing of tmt subresults as child test items into the
+ReportPortal. This behavior is optional and it's disabled by
+default.
 
 
 tmt-1.43

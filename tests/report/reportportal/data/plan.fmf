@@ -9,6 +9,7 @@ execute:
 report:
     how: reportportal
     project: test_tmt
+    upload-subresults: true
 
 context:
     component: tmt
