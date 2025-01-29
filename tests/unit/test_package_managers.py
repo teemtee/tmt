@@ -397,7 +397,7 @@ def _parametrize_test_install() -> \
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
-                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes tree", \
+                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -582,7 +582,7 @@ def _parametrize_test_install_nonexistent() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes tree-but-spelled-wrong", \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong", \
                 'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -676,7 +676,7 @@ def _parametrize_test_install_nonexistent_skip() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes tree-but-spelled-wrong \|\| /bin/true", \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong \|\| /bin/true", \
                 'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -774,7 +774,7 @@ def _parametrize_test_install_dont_check_first() -> \
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
-                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes tree", \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -1359,7 +1359,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
-                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes /usr/bin/dos2unix", \
+                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /usr/bin/dos2unix", \
                 "Installing 1 packages:\n  dos2unix-"  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -1476,7 +1476,7 @@ def _parametrize_test_install_multiple() -> \
             yield container, \
                 package_manager_class, \
                 (Package('tree'), Package('nano')), \
-                r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes tree nano", \
+                r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -1606,7 +1606,7 @@ def _parametrize_test_install_downloaded() -> \
                 package_manager_class, \
                 (Package('tree'), Package('cowsay')), \
                 ('tree*.x86_64.rpm', 'cowsay*.noarch.rpm'), \
-                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes /tmp/tree.rpm /tmp/cowsay.rpm", \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /tmp/tree.rpm /tmp/cowsay.rpm", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
