@@ -8,6 +8,7 @@ import tmt.base
 import tmt.config
 import tmt.log
 import tmt.utils
+import tmt.utils.hints
 from tmt.config.models.link import IssueTracker, IssueTrackerType
 from tmt.plugins import ModuleImporter
 
@@ -19,9 +20,20 @@ TmtObject = Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']
 
 
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
+    'jira', tmt.utils.ReportError, 'jira'
+)
+
+
+tmt.utils.hints.register_hint(
     'jira',
-    tmt.utils.ReportError,
-    "Install 'tmt+link-jira' to use the Jira linking.",
+    """
+    For linking tests, plans and stories to Jira, ``jira`` package is required by tmt.
+
+    To quickly test ``jira`` presence, you can try running ``python -c 'import jira'``.
+
+    * Users who installed tmt from system repositories should install ``tmt+link-jira`` package.
+    * Users who installed tmt from PyPI should install ``tmt[link-jira]`` extra.
+    """,
 )
 
 
