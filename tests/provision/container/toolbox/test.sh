@@ -39,7 +39,7 @@ rlJournalStart
         rlRun "type toolbox_run"
 
         # Install make and hatch
-        rlRun "toolbox_run sudo dnf -y make hatch"
+        rlRun "toolbox_run sudo dnf -y install make hatch"
 
         # Create a copy of the tmt tree, to mitigate possible permission issues
         rlRun "cp -Rf ${TMT_TREE} ${TOOLBOX_TREE}"
