@@ -23,7 +23,7 @@ rlJournalStart
         rlRun "echo export XDG_RUNTIME_DIR=/run/user/$toolbox_user_id >> /home/$toolbox_user/.bashrc"
         rlRun "echo export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$toolbox_user_id/bus >> /home/$toolbox_user/.bashrc"
 
-        rlRun "sudo -iu $toolbox_user toolbox create -y $toolbox_container_name"
+        rlRun "sudo -iu $toolbox_user toolbox create -i ${TOOLBOX_IMAGE} -y $toolbox_container_name"
     rlPhaseEnd
 
     toolbox_run() {

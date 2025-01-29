@@ -12,3 +12,12 @@ tag+:
   - provision-container
 require+:
   - toolbox
+adjust+:
+  - enabled: false
+    when: distro != fedora
+    because: Setting up toolbox on CS9 with default UBI9 toolbox image is a pain.
+  - check:
+      - how: avc
+        result: xfail
+    because: |
+      We are not interested in AVCs for this test due to complicated setup.
