@@ -1,1 +1,1 @@
-test: grep tmt /etc/os-release
+test: grep Fedora /etc/os-release
