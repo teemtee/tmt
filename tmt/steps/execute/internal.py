@@ -294,13 +294,43 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     Test result is based on the script exit code (for shell tests) or the
     results file (for beakerlib tests).
 
-    For each test, a separate directory is created for storing
-    artifacts related to the test execution. Its path is
-    constructed from the test name and it's stored under the
-    ``execute/data`` directory. It contains a ``metadata.yaml``
-    file with the aggregated L1 metadata which can be used by the
-    test framework. In addition to supported tests attributes it also
-    contains fmf ``name`` of the test.
+    The executor provides the following shell scripts which can be used by the tests
+    for certain operations.
+
+    ``tmt-file-submit`` - archive the given file in the tmt test data directory.
+    See the ``report-log`` section for more details.
+
+    ``tmt-reboot`` - soft reboot the machine from inside the test. After reboot
+    the execution starts from the test which rebooted the machine.
+    An environment variable ``TMT_REBOOT_COUNT`` is provided which
+    the test can use to handle the reboot. The variable holds the
+    number of reboots performed by the test. For more information
+    see the ``reboot`` feature documentation.
+
+    ``tmt-report-result`` - generate a result report file from inside the test.
+    Can be called multiple times by the test. The generated report
+    file will be overwritten if a higher hierarchical result is
+    reported by the test. The hierarchy is as follows:
+    SKIP, PASS, WARN, FAIL. For more information see the ``report-result``
+    feature documentation.
+
+    ``tmt-abort`` - generate an abort file from inside the test. This will
+    set the current test result to failed and terminate
+    the execution of subsequent tests. For more information see the
+    ``abort`` feature documentation.
+
+    The scripts are hosted by default in the ``/usr/local/bin`` directory, except
+    for guests using ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used.
+    The directory can be forced using the ``TMT_SCRIPTS_DIR`` environment variable.
+    Note that for guests using ``rpm-ostree``, the directory is added to
+    executable paths using the system-wide ``/etc/profile.d/tmt.sh`` profile script.
+
+    .. warning::
+
+        Please be aware that for guests using ``rpm-ostree``
+        the provided scripts will only be available in a shell that
+        loads the profile scripts. This is the default for
+        ``bash``-like shells, but might not work for others.
     """
 
     _data_class = ExecuteInternalData
