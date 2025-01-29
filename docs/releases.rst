@@ -12,6 +12,7 @@ Fedora Rawhide transitioned files from ``/usr/sbin`` to
 the AVC check. This update adjusts the check to rely on packages,
 restoring the functionality on Fedora Rawhide.
 
+
 tmt-1.42.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
