@@ -1,7 +1,10 @@
 summary: Test container provisioner in toolbox
 description:
-    Make sure that container provisioner works well
-    in a toolbox container.
+    Verify that container provisioner works well when tmt is run from
+    a toolbox container and podman is run on the host system using
+    `flatpak-spawn --host`. This is a common setup used in Fedora
+    Silverblue.
+
 require:
     - toolbox
 tag+:
