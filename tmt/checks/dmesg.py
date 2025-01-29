@@ -187,7 +187,10 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=['fetching of buffer content was not allowed'])]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
 
@@ -202,10 +205,16 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=['fetching of buffer content was not allowed'])]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=['guest was not healthy'])]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
