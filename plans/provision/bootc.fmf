@@ -21,7 +21,7 @@ adjust+:
         hardware:
             virtualization:
                 is-supported: true
-            memory: ">= 4 GB"
+            memory: ">= 8 GB"
     when: trigger == commit
 
   - prepare+:
