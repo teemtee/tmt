@@ -1,7 +1,6 @@
 """ Common options and the MethodCommand class """
 
 import contextlib
-import dataclasses
 import re
 import textwrap
 from collections.abc import Sequence
@@ -12,6 +11,7 @@ import click
 import tmt.lint
 import tmt.log
 import tmt.utils
+from tmt.container import container
 
 # When dealing with older Click packages (I'm looking at you, Python 3.6),
 # we need to define FC on our own.
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     import tmt.utils
 
 
-@dataclasses.dataclass(frozen=True)  # noqa: TID251
+@container(frozen=True)
 class Deprecated:
     """ Version information and hint for obsolete options """
 

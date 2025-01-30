@@ -1,4 +1,3 @@
-import dataclasses
 import datetime
 import re
 import threading
@@ -85,7 +84,7 @@ def report_progress(
         f.write('\n')
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class GuestContext:
     """ Per-guest watchdog context """
 

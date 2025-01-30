@@ -2,7 +2,6 @@
 
 import collections
 import copy
-import dataclasses
 import enum
 import functools
 import itertools
@@ -1601,7 +1600,7 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
-@dataclasses.dataclass(repr=False)  # noqa: TID251
+@container(repr=False)
 class LintableCollection(tmt.lint.Lintable['LintableCollection']):
     """ Linting rules applied to a collection of Tests, Plans or Stories """
 
@@ -4114,7 +4113,7 @@ class Clean(tmt.utils.Common):
         return successful
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class LinkNeedle:
     """
     A container to use for searching links.

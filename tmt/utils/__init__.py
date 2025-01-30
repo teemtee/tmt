@@ -64,6 +64,7 @@ from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
+from tmt.container import container
 from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
@@ -959,7 +960,7 @@ OnProcessStartCallback = Callable[
     ]
 
 
-@dataclasses.dataclass(frozen=True)  # noqa: TID251
+@container(frozen=True)
 class CommandOutput:
     stdout: Optional[str]
     stderr: Optional[str]
