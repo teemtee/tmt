@@ -382,10 +382,22 @@ class GuestContainer(tmt.Guest):
             self._run_guest_command(Command(
                 "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
                 ), shell=False, silent=True)
+
         # In case explicit destination is given, use `podman cp` to copy data
-        # to the container
+        # to the container. If running in toolbox, make sure to copy from the toolbox
+        # container instead of localhost.
         if source and destination:
-            self.podman(Command("cp", source, f"{self.container}:{destination}"))
+            container_name: Optional[str] = None
+            if self.parent.plan.my_run.runner.facts.is_toolbox:
+                container_name = self.parent.plan.my_run.runner.facts.toolbox_container_name
+            self.podman(
+                Command(
+                    "cp",
+                    f"{container_name}:{source}"
+                    if container_name else source,
+                    f"{self.container}:{destination}"
+                    )
+                )
 
     def pull(
             self,
