@@ -26,7 +26,6 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
-import dataclasses
 import enum
 import functools
 import itertools
@@ -207,7 +206,7 @@ class ConstraintNameComponents(NamedTuple):
     child_name: Optional[str]
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class ConstraintComponents:
     """
     Components of a constraint

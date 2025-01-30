@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Uni
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
+    import tmt.log
     import tmt.options
     from tmt._compat.typing import TypeAlias
 
-import tmt.log
 
 # A stand-in variable for generic use.
 T = TypeVar('T')
@@ -32,7 +32,7 @@ T = TypeVar('T')
 from dataclasses import dataclass as container  # noqa: TID251,E402
 
 #: Type of field's normalization callback.
-NormalizeCallback: 'TypeAlias' = Callable[[str, Any, tmt.log.Logger], T]
+NormalizeCallback: 'TypeAlias' = Callable[[str, Any, 'tmt.log.Logger'], T]
 
 #: Type of field's exporter callback.
 FieldExporter: 'TypeAlias' = Callable[[T], Any]
@@ -71,7 +71,7 @@ def option_to_key(option: str) -> str:
     return option.replace('-', '_')
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class FieldMetadata(Generic[T]):
     """
     A dataclass metadata container used by our custom dataclass field management.
@@ -593,7 +593,7 @@ class SerializableContainer(DataContainer):
     @staticmethod
     def unserialize(
             serialized: dict[str, Any],
-            logger: tmt.log.Logger
+            logger: 'tmt.log.Logger'
             ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
         """
         Convert from a serialized form loaded from a file.

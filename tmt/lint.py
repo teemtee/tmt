@@ -63,7 +63,6 @@ following examples:
        ...
 """
 
-import dataclasses
 import enum
 import re
 import textwrap
@@ -82,6 +81,7 @@ from click import style
 
 import tmt
 import tmt.utils
+from tmt.container import container
 
 if TYPE_CHECKING:
     import tmt.base
@@ -146,7 +146,7 @@ _LINTER_DESCRIPTION_PATTERN = re.compile(r"""
     """, re.VERBOSE)
 
 
-@dataclasses.dataclass(init=False)  # noqa: TID251
+@container(init=False)
 class Linter:
     """
     A single linter

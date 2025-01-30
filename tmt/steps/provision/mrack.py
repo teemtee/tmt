@@ -122,7 +122,7 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[
 # Therefore adding a thin layer of containers that describe what Mrack is willing
 # to accept, but with strict type annotations; the layer is aware of how to convert
 # its components into dictionaries.
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackBaseHWElement:
     """
     Base for Mrack hardware requirement elements
@@ -140,7 +140,7 @@ class MrackBaseHWElement:
         raise NotImplementedError
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackHWElement(MrackBaseHWElement):
     """
     An element with name and attributes.
@@ -156,7 +156,7 @@ class MrackHWElement(MrackBaseHWElement):
             }
 
 
-@dataclasses.dataclass(init=False)  # noqa: TID251
+@container(init=False)
 class MrackHWBinOp(MrackHWElement):
     """
     An element describing a binary operation, a "check"
@@ -171,7 +171,7 @@ class MrackHWBinOp(MrackHWElement):
             }
 
 
-@dataclasses.dataclass(init=False)  # noqa: TID251
+@container(init=False)
 class MrackHWKeyValue(MrackHWElement):
     """
     A key-value element
@@ -187,7 +187,7 @@ class MrackHWKeyValue(MrackHWElement):
             }
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackHWGroup(MrackBaseHWElement):
     """
     An element with child elements.
@@ -210,7 +210,7 @@ class MrackHWGroup(MrackBaseHWElement):
             }
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackHWAndGroup(MrackHWGroup):
     """
     Represents ``<and/>`` element
@@ -219,7 +219,7 @@ class MrackHWAndGroup(MrackHWGroup):
     name: str = 'and'
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackHWOrGroup(MrackHWGroup):
     """
     Represents ``<or/>`` element
@@ -228,7 +228,7 @@ class MrackHWOrGroup(MrackHWGroup):
     name: str = 'or'
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class MrackHWNotGroup(MrackHWGroup):
     """
     Represents ``<not/>`` element
@@ -992,7 +992,7 @@ GUEST_STATE_COLORS = {
     }
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class CreateJobParameters:
     """
     Collect all parameters for a future Beaker job

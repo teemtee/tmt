@@ -70,7 +70,7 @@ DEFAULT_SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
 SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DIR'
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class Script:
     """
     Represents a script provided by the internal executor.
@@ -108,7 +108,7 @@ class Script:
         pass
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class ScriptCreatingFile(Script):
     """
     Represents a script which creates a file.
@@ -119,7 +119,7 @@ class ScriptCreatingFile(Script):
     created_file: str
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class ScriptTemplate(Script):
     """
     Represents a Jinja2 templated script.
@@ -262,7 +262,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class TestInvocation:
     """
     A bundle describing one test invocation.
@@ -594,7 +594,7 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class ResultCollection:
     """
     Collection of raw results loaded from a file

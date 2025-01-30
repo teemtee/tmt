@@ -4,7 +4,6 @@ Step Classes
 """
 
 import collections
-import dataclasses
 import functools
 import itertools
 import re
@@ -2442,7 +2441,7 @@ class Topology(SerializableContainer):
         return environment
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class ActionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run an action
@@ -2468,7 +2467,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         self.phase.go()
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
                  Generic[StepDataT, PluginReturnValueT]):
     """
@@ -2541,7 +2540,7 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
             ))
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class PushTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
@@ -2563,7 +2562,7 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         guest.push()
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class PullTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir pull from a guest

@@ -46,6 +46,7 @@ import click
 
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
+from tmt.container import container
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -254,7 +255,7 @@ def indent(
         + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class LogRecordDetails:
     """
     tmt's log message components attached to log records

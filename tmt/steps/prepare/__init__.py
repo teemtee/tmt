@@ -117,7 +117,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
 # same time.
 
 
-@dataclasses.dataclass  # noqa: TID251
+@container
 class DependencyCollection:
     """
     Bundle guests and packages to install on them
