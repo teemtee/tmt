@@ -4,11 +4,8 @@ import pytest
 
 import tmt.log
 import tmt.utils
-from tmt.container import container, field
-from tmt.utils import (
-    SerializableContainer,
-    dataclass_normalize_field,
-    )
+from tmt.container import SerializableContainer, container, field
+from tmt.utils import dataclass_normalize_field
 
 
 def test_sanity():

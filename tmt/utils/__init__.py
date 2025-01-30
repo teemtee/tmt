@@ -27,7 +27,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread

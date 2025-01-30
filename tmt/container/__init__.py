@@ -20,22 +20,31 @@ import tmt.log
 # A stand-in variable for generic use.
 T = TypeVar('T')
 
-container = dataclasses.dataclass  # noqa: TID251
+# According to [1], this is the easiest way how to notify type checker
+# `container` is an alias for `dataclass`. Assignment is not recognized
+# by neither mypy nor pyright.
+#
+# There is also PEP681 and `dataclass_transform`, see [2], and when we
+# switch to
+#
+# [1] https://github.com/python/mypy/issues/5383#issuecomment-1691288663
+# [2] https://typing.readthedocs.io/en/latest/spec/dataclasses.html#dataclass-transform
+from dataclasses import dataclass as container  # noqa: TID251,E402
 
 #: Type of field's normalization callback.
-NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
+NormalizeCallback: 'TypeAlias' = Callable[[str, Any, tmt.log.Logger], T]
 
 #: Type of field's exporter callback.
-FieldExporter = Callable[[T], Any]
+FieldExporter: 'TypeAlias' = Callable[[T], Any]
 
 #: Type of field's CLI option specification.
-FieldCLIOption = Union[str, Sequence[str]]
+FieldCLIOption: 'TypeAlias' = Union[str, Sequence[str]]
 
 #: Type of field's serialization callback.
-SerializeCallback = Callable[[T], Any]
+SerializeCallback: 'TypeAlias' = Callable[[T], Any]
 
 #: Type of field's unserialization callback.
-UnserializeCallback = Callable[[Any], T]
+UnserializeCallback: 'TypeAlias' = Callable[[Any], T]
 
 #: Types for generic "data container" classes and instances. In tmt code, this
 #: reduces to data classes and data class instances. Our :py:class:`DataContainer`
@@ -43,7 +52,7 @@ UnserializeCallback = Callable[[Any], T]
 #: on raw data classes, not just on ``DataContainer`` instances.
 ContainerClass: 'TypeAlias' = type['DataclassInstance']
 ContainerInstance: 'TypeAlias' = 'DataclassInstance'
-Container = Union[ContainerClass, ContainerInstance]
+Container: 'TypeAlias' = Union[ContainerClass, ContainerInstance]
 
 
 def key_to_option(key: str) -> str:
@@ -271,8 +280,10 @@ def container_field(
 
         metadata = cast(
             FieldMetadata[Any],
-            field.metadata.get('tmt', cast(FieldMetadata[Any], FieldMetadata()))
-        )
+            field.metadata.get(
+                'tmt',
+                cast(FieldMetadata[Any], FieldMetadata())  # type: ignore[redundant-cast]
+                ))
 
         return (
             field.name,
@@ -816,6 +827,9 @@ def field(
     # as if returning the value of type matching the field declaration, and the original
     # field() is called with wider argument types than expected, because we use our own
     # overloading to narrow types *our* custom field() accepts.
+    # ignore[reportArgumentType]: not sure why these pop up, but `bool` keeps appearing
+    # in the type of `default` value, and I was unable to sort things out in a way which
+    # would make the `T` match.
     return dataclasses.field(  # type: ignore[call-overload]  # noqa: TID251
         default=default,
         default_factory=default_factory or dataclasses.MISSING,
@@ -834,8 +848,8 @@ def field(
                 deprecated=deprecated,
                 cli_option=option,
                 normalize_callback=normalize,
-                serialize_callback=serialize,
+                serialize_callback=serialize,  # type: ignore[reportArgumentType,unused-ignore]
                 unserialize_callback=unserialize,
-                export_callback=exporter)
+                export_callback=exporter)  # type: ignore[reportArgumentType,unused-ignore]
             }
         )
