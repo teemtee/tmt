@@ -2,6 +2,7 @@
 
 import contextlib
 import dataclasses
+import pathlib
 import re
 import textwrap
 from collections.abc import Sequence
@@ -44,6 +45,60 @@ class Deprecated:
             message = f'{message}, {self.hint}'
 
         return f'{message}.'
+
+
+class Path(click.ParamType):
+    name = 'path'
+
+    def convert(
+            self,
+            value: Any,
+            param: Optional[click.Parameter],
+            ctx: Optional[click.Context]
+            ) -> Optional[tmt.utils.Path]:
+        """Convert the value to the correct type. This is not called if
+        the value is ``None`` (the missing value).
+
+        This must accept string values from the command line, as well as
+        values that are already the correct type. It may also convert
+        other compatible types.
+
+        The ``param`` and ``ctx`` arguments may be ``None`` in certain
+        situations, such as when converting prompt input.
+
+        If the value cannot be converted, call :meth:`fail` with a
+        descriptive message.
+
+        :param value: The value to convert.
+        :param param: The parameter that is using this type to convert
+            its value. May be ``None``.
+        :param ctx: The current context that arrived at this value. May
+            be ``None``.
+        """
+
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            return tmt.utils.Path(value)
+
+        if isinstance(value, tmt.utils.Path):
+            return value
+
+        if isinstance(value, pathlib.Path):  # noqa: TID251
+            return tmt.utils.Path(str(value))
+
+        if param is None:
+            self.fail(
+                f"A path-like string was expected, '{type(value).__name__}' found.",
+                param=param,
+                ctx=ctx)
+
+        # RET503: ruff does not recognize NoReturn annotation of `self.fail`.
+        self.fail(  # noqa: RET503
+            f"Field '{param.name}' must be a path-like string, '{type(value).__name__}' found.",
+            param=param,
+            ctx=ctx)
 
 
 MethodDictType = dict[str, click.core.Command]
@@ -183,10 +238,11 @@ FIX_OPTIONS: list[ClickOptionDecoratorType] = [
 
 WORKDIR_ROOT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--workdir-root', '_workdir_root',
+        '--workdir-root',
         metavar='PATH',
         envvar='TMT_WORKDIR_ROOT',
         default=tmt.utils.WORKDIR_ROOT,
+        type=Path(),
         help=f"""
              Path to root directory containing run workdirs.
              Defaults to '{tmt.utils.WORKDIR_ROOT}'.
