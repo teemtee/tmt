@@ -4,15 +4,6 @@
     Releases
 ======================
 
-tmt-1.41.1
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Fedora Rawhide transitioned files from ``/usr/sbin`` to
-``/usr/bin``, breaking path-based requirements installation for
-the AVC check. This update adjusts the check to rely on packages,
-restoring the functionality on Fedora Rawhide.
-
-
 tmt-1.42.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -40,6 +31,39 @@ The ``container`` executor now works in `Fedora Toolbx`__ when Podman is run
 using ``flatpak-spawn --host`` on the host system.
 
 __ https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/
+
+Add support for running playbooks from Ansible collections specified
+using the ``namespace.collection.playbook`` notation.
+
+Added ``--dry`` option for the ``beaker`` provision plugin. When
+used it prints the Beaker Job XML without submitting it.
+
+:ref:`Results specification documentation</spec/results>` has now
+a dedicated place in the specification for improved discoverability.
+
+The ``rpm-ostree`` package installation now includes the
+``--assumeyes`` option for improved compatibility.
+
+Verbosity levels in ``tmt * show`` commands are now honored.
+
+Added new traceback verbosity level, ``TMT_SHOW_TRACEBACK=2``, which
+prints local variables in every frame, shorterning long values. See
+:ref:`command-variables` for details.
+
+Fixed an issue where ``execute`` step incorrectly attempted to run
+disabled ``discover`` phases.
+
+Pre-defined order values of :ref:`prepare phases</spec/plans/prepare>`
+were documented.
+
+
+tmt-1.41.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fedora Rawhide transitioned files from ``/usr/sbin`` to
+``/usr/bin``, breaking path-based requirements installation for
+the AVC check. This update adjusts the check to rely on packages,
+restoring the functionality on Fedora Rawhide.
 
 
 tmt-1.41.0
