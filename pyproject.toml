@@ -397,6 +397,13 @@ lint.typing-modules = ["tmt._compat.typing"]
     "S108",  # Probable insecure usage of temporary file or directory: "{}"
     "FLY002",  # Use f-string instead of .join
     ]
+# The naming scheme of tmt/_compat will overshadow stdlib modules
+"tmt/_compat/pathlib.py" = ["A005"]
+"tmt/_compat/typing.py" = ["A005"]
+"tmt/_compat/warnings.py" = ["A005"]
+# Following files also overshadow stdlib modules
+"tmt/queue.py" = ["A005"]
+"tmt/steps/report/html.py" = ["A005"]
 # The purpose of tmt/_compat is to be used with TID251 (banned imports)
 "tmt/_compat/**.py" = ["TID251"]
 "docs/conf.py" = ["TID251"]

@@ -2313,7 +2313,10 @@ class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
         # name, which is always the same, would be the name of the discover
         # phase it's supposed to process.
         if isinstance(self.phase, ExecutePlugin):
-            return self.phase.discover_phase or self.phase.discover.name
+            # mypy reports `self.phase` as `Never` type, probably some
+            # issue in how it's declared above.
+            return cast(ExecutePlugin[Any], self.phase).discover_phase \
+                or cast(ExecutePlugin[Any], self.phase).discover.name
 
         return self.phase.name
 
@@ -2467,7 +2470,7 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
     3. the phase name is included to avoid reuse of the filename by different
        phases. A plugin may be invoked by multiple phases, and it might use a
        "constant" name for the file. That would lead to the filename being
-       re-used by different plugin executions. Adding the phase name should
+       reused by different plugin executions. Adding the phase name should
        lower confusion: it would be immediately clear which phase used which
        filename, or whether a filename was or was not created by given phase.
 
