@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.3.1'
+    rev: 'v2.3.2'
     hooks:
       - id: autopep8
 
@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.13.0"
+    rev: "v1.14.1"
     hooks:
       - id: mypy
         language_version: "3.9"
@@ -69,7 +69,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.390
+    rev: v1.1.393
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -115,7 +115,7 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.30.0"
+    rev: "0.31.1"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -128,7 +128,7 @@ repos:
         files: ^tmt/(?:schemas|steps/prepare/feature)/.*\.yaml
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v24.10.0
+    rev: v25.1.1
     hooks:
       - id: ansible-lint
         args:
@@ -144,7 +144,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.8.1
+    rev: v0.9.4
     hooks:
       - id: ruff
         args:
@@ -152,7 +152,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.39.0
+    rev: 1.42.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
@@ -167,14 +167,14 @@ repos:
         - "typing-extensions>=4.9.0; python_version < '3.13'"
         - "fmf>=1.6.0"
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
           - tomli  # Required for python < 3.11
 
   - repo: https://github.com/djlint/djLint
-    rev: v1.36.3
+    rev: v1.36.4
     hooks:
       - id: djlint
         files: "\\.j2"

@@ -47,7 +47,7 @@ class FinishAnsible(
     should happen if there are multiple configs. Default order is '50'.
     """
 
-    # We are re-using "prepare" step for "finish",
+    # We are reusing "prepare" step for "finish",
     # and they both have different expectations
     _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData
 
