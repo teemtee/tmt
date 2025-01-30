@@ -248,6 +248,11 @@ class SubResult(BaseResult):
             SubCheckResult.from_serialized(check) for check in serialized]
         )
 
+    @staticmethod
+    def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:
+        """ Filter stdout and get only messages with certain type """
+        return Result.failures(log, msg_type)
+
 
 @dataclasses.dataclass
 class PhaseResult(BaseResult):
