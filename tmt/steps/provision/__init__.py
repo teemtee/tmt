@@ -1051,6 +1051,12 @@ class Guest(tmt.utils.Common):
             default=tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
             if self.facts.is_ostree else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR)
 
+    @property
+    def lognames(self) -> list[str]:
+        """ Return name list of logs the guest could provide. """
+
+        return []
+
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
         """ Prepare command line options related to guests """
@@ -1561,6 +1567,59 @@ class Guest(tmt.utils.Common):
         """
 
         return []
+
+    def acquire_log(self, logname: str) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :param logname: name of the log.
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+        raise NotImplementedError
+
+    def store_log(
+            self,
+            path: Path,
+            content: str,
+            logname: Optional[str] = None) -> None:
+        """
+        Save log content to a file.
+
+        :param path: a path to save into, could be a directory
+            or a file path.
+        :param content: content of the log.
+        :param logname: name of the log, if not set, logpath
+            is supposed to be a file path.
+        """
+        # if path is file path
+        if not path.is_dir():
+            path.write_text(content)
+        # if path is a directory
+        elif logname:
+            (path / logname).write_text(content)
+        else:
+            raise tmt.utils.GeneralError(
+                'Log path is a directory but log name is not defined.')
+
+    def fetch_logs(self,
+                   dirpath: Optional[Path] = None,
+                   lognames: Optional[list[str]] = None) -> None:
+        """
+        Get log content and save it to a directory.
+
+        :param dirpath: a directory to save into. If not set, step's working directory
+            (:py:attr:`workdir`) or current working directory will be used.
+        :param lognames: name list of logs need to be handled. If not set, all guest logs
+            would be collected, as reported by :py:attr:`lognames`.
+        """
+        lognames = lognames or self.lognames
+        dirpath = dirpath or self.workdir or Path.cwd()
+        for logname in lognames:
+            content = self.acquire_log(logname)
+            if content:
+                self.store_log(dirpath, content, logname)
+            else:
+                self.store_log(dirpath, '', logname)
 
 
 @dataclasses.dataclass
