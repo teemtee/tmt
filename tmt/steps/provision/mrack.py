@@ -19,13 +19,13 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     Command,
     Path,
     ProvisionError,
     ShellScript,
     UpdatableMessage,
-    field,
     )
 
 MRACK_VERSION: Optional[str] = None
@@ -120,7 +120,7 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[
 # Therefore adding a thin layer of containers that describe what Mrack is willing
 # to accept, but with strict type annotations; the layer is aware of how to convert
 # its components into dictionaries.
-@dataclasses.dataclass
+@container
 class MrackBaseHWElement:
     """ Base for Mrack hardware requirement elements """
 
@@ -133,7 +133,7 @@ class MrackBaseHWElement:
         raise NotImplementedError
 
 
-@dataclasses.dataclass
+@container
 class MrackHWElement(MrackBaseHWElement):
     """
     An element with name and attributes.
@@ -141,7 +141,7 @@ class MrackHWElement(MrackBaseHWElement):
     This type of element is not allowed to have any child elements.
     """
 
-    attributes: dict[str, str] = dataclasses.field(default_factory=dict)
+    attributes: dict[str, str] = dataclasses.field(default_factory=dict)  # noqa: TID251
 
     def to_mrack(self) -> dict[str, Any]:
         return {
@@ -149,7 +149,7 @@ class MrackHWElement(MrackBaseHWElement):
             }
 
 
-@dataclasses.dataclass(init=False)
+@container(init=False)
 class MrackHWBinOp(MrackHWElement):
     """ An element describing a binary operation, a "check" """
 
@@ -162,7 +162,7 @@ class MrackHWBinOp(MrackHWElement):
             }
 
 
-@dataclasses.dataclass(init=False)
+@container(init=False)
 class MrackHWKeyValue(MrackHWElement):
     """ A key-value element """
 
@@ -176,7 +176,7 @@ class MrackHWKeyValue(MrackHWElement):
             }
 
 
-@dataclasses.dataclass
+@container
 class MrackHWGroup(MrackBaseHWElement):
     """
     An element with child elements.
@@ -184,7 +184,7 @@ class MrackHWGroup(MrackBaseHWElement):
     This type of element is not allowed to have any attributes.
     """
 
-    children: list[MrackBaseHWElement] = dataclasses.field(default_factory=list)
+    children: list[MrackBaseHWElement] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     def to_mrack(self) -> dict[str, Any]:
         # Another unexpected behavior of mrack dictionary tree: if there is just
@@ -199,21 +199,21 @@ class MrackHWGroup(MrackBaseHWElement):
             }
 
 
-@dataclasses.dataclass
+@container
 class MrackHWAndGroup(MrackHWGroup):
     """ Represents ``<and/>`` element """
 
     name: str = 'and'
 
 
-@dataclasses.dataclass
+@container
 class MrackHWOrGroup(MrackHWGroup):
     """ Represents ``<or/>`` element """
 
     name: str = 'or'
 
 
-@dataclasses.dataclass
+@container
 class MrackHWNotGroup(MrackHWGroup):
     """ Represents ``<not/>`` element """
 
@@ -844,7 +844,7 @@ def async_run(func: Any) -> Any:
     return update_wrapper
 
 
-@dataclasses.dataclass
+@container
 class BeakerGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
     user: str = field(
@@ -940,7 +940,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """)
 
 
-@dataclasses.dataclass
+@container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 
@@ -962,7 +962,7 @@ GUEST_STATE_COLORS = {
     }
 
 
-@dataclasses.dataclass
+@container
 class CreateJobParameters:
     """ Collect all parameters for a future Beaker job """
 

@@ -1,7 +1,6 @@
 """ Test Metadata Utilities """
 
 
-import dataclasses
 import functools
 import os
 import re
@@ -12,6 +11,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
+from tmt.container import container
 from tmt.utils import (
     Command,
     CommandOutput,
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     import tmt.base
 
 
-@dataclasses.dataclass
+@container
 class GitInfo:
     """ Data container for commonly queried git data. """
 

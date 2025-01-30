@@ -1,4 +1,3 @@
-import dataclasses
 import os
 from shlex import quote
 from typing import Any, Optional, Union, cast
@@ -9,9 +8,10 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.options import show_step_method_hints
 from tmt.steps.provision import GuestCapability
-from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, field, retry
+from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, retry
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -25,7 +25,7 @@ DEFAULT_PULL_INTERVAL = 5
 DEFAULT_STOP_TIME = 1
 
 
-@dataclasses.dataclass
+@container
 class PodmanGuestData(tmt.steps.provision.GuestData):
     image: str = field(
         default=DEFAULT_IMAGE,
@@ -84,7 +84,7 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         normalize=tmt.utils.normalize_int)
 
 
-@dataclasses.dataclass
+@container
 class ProvisionPodmanData(PodmanGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

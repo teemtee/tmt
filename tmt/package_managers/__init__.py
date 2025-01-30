@@ -7,6 +7,7 @@ import tmt
 import tmt.log
 import tmt.plugins
 import tmt.utils
+from tmt.container import container
 from tmt.utils import Command, CommandOutput, Path
 
 if TYPE_CHECKING:
@@ -112,10 +113,10 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 
 
 # TODO: find a better name, "options" is soooo overloaded...
-@dataclasses.dataclass(frozen=True)
+@container(frozen=True)
 class Options:
     #: A list of packages to exclude from installation.
-    excluded_packages: list[Package] = dataclasses.field(default_factory=list)
+    excluded_packages: list[Package] = dataclasses.field(default_factory=list)  # noqa: TID251
 
     #: If set, a failure to install a given package would not cause an error.
     skip_missing: bool = False

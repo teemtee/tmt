@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
+from tmt.container import container
 from tmt.log import Logger
 
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 TaskResultT = TypeVar('TaskResultT')
 
 
-@dataclasses.dataclass
+@container
 class Task(Generic[TaskResultT]):
     """
     A base class for queueable actions.
@@ -119,7 +120,7 @@ def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
     return loggers
 
 
-@dataclasses.dataclass
+@container
 class GuestlessTask(Task[TaskResultT]):
     """
     A task not assigned to a particular set of guests.
@@ -174,7 +175,7 @@ class GuestlessTask(Task[TaskResultT]):
             yield self
 
 
-@dataclasses.dataclass
+@container
 class MultiGuestTask(Task[TaskResultT]):
     """
     A task assigned to a particular set of guests.

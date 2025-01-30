@@ -17,6 +17,7 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 import tmt.utils.rest
+from tmt.container import container
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Concatenate, ParamSpec
@@ -76,7 +77,7 @@ class TmtExitCode(enum.IntEnum):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-@dataclasses.dataclass
+@container
 class ContextObject:
     """
     Click Context Object container.
@@ -94,10 +95,10 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
-    steps: set[str] = dataclasses.field(default_factory=set)
+    steps: set[str] = dataclasses.field(default_factory=set)  # noqa: TID251
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
-    clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = dataclasses.field(
+    clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = dataclasses.field(  # noqa: TID251
         default_factory=lambda: collections.defaultdict(list))
     run: Optional[tmt.Run] = None
 
@@ -139,7 +140,7 @@ def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]'
     return click.pass_context(fn)  # type: ignore[arg-type]
 
 
-@dataclasses.dataclass
+@container
 class CliInvocation:
     """
     A single CLI invocation of a tmt subcommand.

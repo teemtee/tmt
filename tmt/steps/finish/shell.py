@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Any, Optional, cast
 
 import fmf
@@ -7,15 +6,16 @@ import tmt
 import tmt.steps
 import tmt.steps.finish
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript, field
+from tmt.utils import ShellScript
 
 FINISH_WRAPPER_FILENAME = 'tmt-finish-wrapper.sh'
 
 
-@dataclasses.dataclass
+@container
 class FinishShellData(tmt.steps.finish.FinishStepData):
     script: list[ShellScript] = field(
         default_factory=list,
