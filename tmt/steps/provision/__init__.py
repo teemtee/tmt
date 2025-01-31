@@ -1808,7 +1808,7 @@ class GuestSsh(Guest):
     def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
         """ Spawn the SSH master process """
 
-        # NOTE: do not modify `command`, it might be re-used by the caller. To
+        # NOTE: do not modify `command`, it might be reused by the caller. To
         # be safe, include it in our own command.
         ssh_master_command = self._base_ssh_command \
             + self._ssh_options \
