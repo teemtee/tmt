@@ -345,7 +345,11 @@ class Try(tmt.utils.Common):
 
         plan.discover.go()
         plan.provision.go()
-        plan.prepare.go()
+        try:
+            plan.prepare.go()
+        except GeneralError as error:
+            self.print(click.style(f"\n{error}.", fg="red"))
+            return
         plan.execute.go()
 
     def action_start_login(self, plan: Plan) -> None:
@@ -356,7 +360,11 @@ class Try(tmt.utils.Common):
         self.action_start(plan)
 
         plan.provision.go()
-        plan.prepare.go()
+        try:
+            plan.prepare.go()
+        except GeneralError as error:
+            self.print(click.style(f"\n{error}.", fg="red"))
+            return
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
@@ -453,7 +461,10 @@ class Try(tmt.utils.Common):
         Prepare the guest
         """
 
-        plan.prepare.go(force=True)
+        try:
+            plan.prepare.go(force=True)
+        except GeneralError as error:
+            self.print(click.style(f"\n{error}.", fg="red"))
 
     def action_execute(self, plan: Plan) -> None:
         """
