@@ -10,6 +10,8 @@ tmt-1.43
 Add the ``--workdir-root`` option for the ``tmt clean images``
 command so that users can specify the directory they want.
 
+When running ``tmt try`` failure in ``prepare`` phase drops the user
+to the menu to be able to login to the machine and possibly try it again.
 
 tmt-1.42.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
