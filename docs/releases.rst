@@ -4,7 +4,7 @@
     Releases
 ======================
 
-tmt-1.42.0
+tmt-1.42.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``tmt show`` command now prints in verbose mode manual test
