@@ -8,6 +8,7 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.hints
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
@@ -127,7 +128,17 @@ class DmesgCheck(Check):
         return outcome, path.relative_to(invocation.phase.step.workdir)
 
 
-@provides_check('dmesg')
+@provides_check(
+    'dmesg',
+    hints={
+        'fetching-skipped':
+            """
+            Saving of the kernel ring buffer was skipped because the account, used by tmt,
+            lacks necessary privileges. See ``man 2 syslog`` for more details on capabilities
+            required for the kernel ring buffer access.
+            """
+        }
+    )
 class Dmesg(CheckPlugin[DmesgCheck]):
     """
     Save the content of kernel ring buffer (aka "console") into a file.
@@ -187,7 +198,15 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=[
+                    tmt.utils.hints.render_hints(
+                        'check/dmesg/fetching-skipped',
+                        logger=logger
+                        )
+                    ])]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
 
@@ -202,10 +221,26 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=[
+                    tmt.utils.hints.render_hints(
+                        'check/dmesg/fetching-skipped',
+                        logger=logger
+                        )
+                    ])]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='dmesg',
+                result=ResultOutcome.SKIP,
+                note=[
+                    tmt.utils.hints.render_hints(
+                        'guest-not-healthy',
+                        logger=logger
+                        )
+                    ])]
 
         outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
 
