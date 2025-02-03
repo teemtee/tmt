@@ -332,10 +332,14 @@ class AvcDenials(CheckPlugin[Check]):
         if not invocation.guest.facts.has_selinux:
             return [CheckResult(
                 name='avc',
-                result=ResultOutcome.SKIP)]
+                result=ResultOutcome.SKIP,
+                note=['guest did not support SELinux'])]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(
+                name='avc',
+                result=ResultOutcome.SKIP,
+                note=['guest was not healthy'])]
 
         assert invocation.phase.step.workdir is not None  # narrow type
 
