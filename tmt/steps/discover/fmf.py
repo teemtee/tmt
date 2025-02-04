@@ -70,7 +70,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             Path to the metadata tree root. Must be relative to
             the git repository root if url provided, absolute
-            local filesystem path otherwise. By default . is
+            local filesystem path otherwise. By default ``.`` is
             used.
             """,
     )
