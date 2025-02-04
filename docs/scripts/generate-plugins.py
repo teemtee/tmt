@@ -158,9 +158,7 @@ def _create_feature_plugin_iterator(
         for plugin_id in registry.iter_plugin_ids():
             plugin = registry.get_plugin(plugin_id)
 
-            # TODO: once data class becomes composed from plugin data
-            # classes, the main one is all we have.
-            yield plugin_id, plugin, tmt.steps.prepare.feature.PrepareFeature._data_class
+            yield plugin_id, plugin, plugin._data_class
 
     return plugin_iterator
 

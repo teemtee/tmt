@@ -22,5 +22,4 @@ Here you will find documentation for plugins shipped with tmt.
     Execute <execute>
     Finish <finish>
     Report <report>
-    prepare/feature <prepare-feature>
     Test Checks <test-checks>

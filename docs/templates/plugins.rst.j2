@@ -1,4 +1,7 @@
 :tocdepth: 0
+{% if STEP == 'prepare-feature' %}
+:orphan:
+{% endif %}
 
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
     {% set _, option, _, _, metadata = container_field(plugin_data_class, field_name) %}
@@ -51,7 +54,7 @@
 .. include:: {{ STEP }}-header.inc.rst
 
 {% for PLUGIN_ID, PLUGIN, PLUGIN_DATA_CLASS in PLUGINS() %}
-    {% if loop.first %}
+    {% if loop.first and STEP != 'prepare-feature' %}
 .. _/plugins/{{ STEP }}/common-keys:
 
 Common Keys
@@ -96,7 +99,9 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 Configuration
 ^^^^^^^^^^^^^
 
+{% if STEP != 'prepare-feature' %}
 See also :ref:`Common Keys{# djlint:off H025 #}</plugins/{{ STEP }}/common-keys>{# djlint:on H025 #}` accepted by the plugin.
+{% endif %}
 
 {% for field_name in intrinsic_fields %}
 {{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
