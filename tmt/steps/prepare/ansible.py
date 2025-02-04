@@ -10,10 +10,24 @@ import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.prepare
+import tmt.steps.provision
 import tmt.utils
 from tmt.result import PhaseResult
-from tmt.steps.provision import Guest
-from tmt.utils import Path, PrepareError, field, normalize_string_list, retry_session
+from tmt.steps.provision import (
+    ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
+    AnsibleApplicable,
+    AnsibleCollectionPlaybook,
+    Guest,
+    )
+from tmt.utils import (
+    DEFAULT_RETRIABLE_HTTP_CODES,
+    ENVFILE_RETRY_SESSION_RETRIES,
+    Path,
+    PrepareError,
+    field,
+    normalize_string_list,
+    retry_session,
+    )
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -68,10 +82,32 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     Run Ansible playbooks against the guest, by running
     ``ansible-playbook`` for all given playbooks.
 
+    .. note::
+
+       The plugin requires a working Ansible to be available on the
+       test runner.
+
     .. warning::
 
-        When specifying playbooks with paths, all paths must be
-        relative to the metadata tree root.
+        When specifying playbooks with paths:
+
+        * If a metadata tree root exists, all paths must be relative to
+          the metadata tree root.
+        * If the metadata tree root does not exist,
+          all paths must be relative to the current working directory.
+
+    .. warning::
+
+       The plugin may be a subject of various limitations, imposed by
+       Ansible itself:
+
+       * Ansible 2.17+ no longer supports Python 3.6 and older. Guests
+         where Python 3.7+ is not available cannot be prepared with the
+         ``ansible`` plugin. This has been observed when Fedora Rawhide
+         runner is used with CentOS 7 or CentOS Stream 8 guests. Possible
+         workarounds: downgrade Ansible tmt uses, or install Python 3.7+
+         before using ``ansible`` plugin from an alternative repository
+         or local build.
 
     Run a single playbook on the guest:
 
@@ -101,8 +137,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         prepare --how ansible --playbook one.yml --playbook two.yml --extra-args '-vvv'
 
-    Remote playbooks can be referenced as well as local ones, and both
-    kinds can be intermixed:
+    Remote playbooks - provided as URLs starting with ``http://`` or
+    ``https://``, local playbooks - optionally starting with a
+    ``file://`` schema, and playbooks bundled with collections can be
+    referenced as well as local ones, and all kinds can be intermixed:
 
     .. code-block:: yaml
 
@@ -111,10 +149,15 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             playbook:
               - https://foo.bar/one.yml
               - two.yml
+              - file://three.yml
+              - ansible_galaxy_namespace.cool_collection.four
 
     .. code-block:: shell
 
-        prepare --how ansible --playbook https://foo.bar/two.yml --playbook two.yml
+        prepare --how ansible --playbook https://foo.bar/two.yml \\
+                              --playbook two.yml \\
+                              --playbook file://three.yml \\
+                              --playbook ansible_galaxy_namespace.cool_collection.four
     """
 
     _data_class = PrepareAnsibleData
@@ -129,29 +172,30 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
-        for playbook in self.data.playbook:
-            logger.info('playbook', playbook, 'green')
+        for _playbook in self.data.playbook:
+            logger.info('playbook', _playbook, 'green')
 
-            lowercased_playbook = playbook.lower()
-            playbook_path = Path(playbook)
+            lowercased_playbook = _playbook.lower()
 
-            if lowercased_playbook.startswith(('http://', 'https://')):
+            def normalize_remote_playbook(raw_playbook: str) -> Path:
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type
                 assert self.step.plan.my_run.tree.root is not None  # narrow type
                 root_path = self.step.plan.my_run.tree.root
 
                 try:
-                    with retry_session() as session:
-                        response = session.get(playbook)
+                    with retry_session(
+                            retries=ENVFILE_RETRY_SESSION_RETRIES,
+                            status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES) as session:
+                        response = session.get(raw_playbook)
 
                     if not response.ok:
                         raise PrepareError(
-                            f"Failed to fetch remote playbook '{playbook}'.")
+                            f"Failed to fetch remote playbook '{raw_playbook}'.")
 
                 except requests.RequestException as exc:
                     raise PrepareError(
-                        f"Failed to fetch remote playbook '{playbook}'.") from exc
+                        f"Failed to fetch remote playbook '{raw_playbook}'.") from exc
 
                 with tempfile.NamedTemporaryFile(
                         mode='w+b',
@@ -162,13 +206,34 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     file.write(response.content)
                     file.flush()
 
-                    playbook_path = Path(file.name).relative_to(root_path)
+                    return Path(file.name).relative_to(root_path)
 
-                logger.info('playbook-path', playbook_path, 'green')
+            def normalize_local_playbook(raw_playbook: str) -> Path:
+                if raw_playbook.startswith('file://'):
+                    return Path(raw_playbook[7:])
+
+                return Path(raw_playbook)
+
+            def normalize_collection_playbook(raw_playbook: str) -> AnsibleCollectionPlaybook:
+                return AnsibleCollectionPlaybook(raw_playbook)
+
+            playbook: AnsibleApplicable
+
+            if lowercased_playbook.startswith(('http://', 'https://')):
+                playbook = normalize_remote_playbook(lowercased_playbook)
+
+            elif lowercased_playbook.startswith('file://'):
+                playbook = normalize_local_playbook(lowercased_playbook)
+
+            elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
+                playbook = normalize_collection_playbook(lowercased_playbook)
+
+            else:
+                playbook = normalize_local_playbook(lowercased_playbook)
 
             guest.ansible(
-                playbook_path,
-                playbook_root=self.step.plan.fmf_root,
+                playbook,
+                playbook_root=self.step.plan.anchor_path,
                 extra_args=self.data.extra_args)
 
         return results
@@ -183,6 +248,4 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         :returns: a list of requirements.
         """
 
-        return [
-            tmt.base.DependencySimple('/usr/bin/python3')
-            ]
+        return tmt.steps.provision.essential_ansible_requires()

@@ -23,7 +23,7 @@ description: |
         test needs to create its own ``results.yaml`` or
         ``results.json`` file in the ``${TMT_TEST_DATA}``
         directory. The format of the file, notes and detailed examples
-        are documented at :ref:`/spec/plans/results`.
+        are documented at :ref:`/spec/results`.
     restraint
         handle ``tmt-report-result``, ``rstrnt-report-result`` and
         ``rhts-report-result`` commands as a separate test and

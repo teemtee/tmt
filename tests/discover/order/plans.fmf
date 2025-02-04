@@ -90,3 +90,15 @@ finish:
         test: echo $TMT_TEST_DATA >> $TMT_PLAN_DATA/execution_order
       - name: /order-default
         test: echo $TMT_TEST_DATA >> $TMT_PLAN_DATA/execution_order
+
+/shell-preserve-order:
+    summary: Tests should run in the provided order
+    discover:
+        how: shell
+        tests:
+          - name: /tests/one
+            test: echo $TMT_TEST_DATA >> $TMT_PLAN_DATA/execution_order
+          - name: /tests/two
+            test: echo $TMT_TEST_DATA >> $TMT_PLAN_DATA/execution_order
+          - name: /tests/three
+            test: echo $TMT_TEST_DATA >> $TMT_PLAN_DATA/execution_order

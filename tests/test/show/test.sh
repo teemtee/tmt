@@ -34,6 +34,7 @@ rlJournalStart
         rlRun -s "tmt tests show full"
         rlAssertGrep "summary Check the test keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "description Some description" $rlRun_LOG
+        rlAssertGrep "author Original Author <original@author.org>" $rlRun_LOG
         rlAssertGrep "contact Some Body <somebody@somewhere.org>" $rlRun_LOG
         rlAssertGrep "component package" $rlRun_LOG
         rlAssertGrep "id e3a9a8ed-4585-4e86-80e8-1d99eb5345a9" $rlRun_LOG
@@ -51,6 +52,28 @@ rlJournalStart
         rlAssertGrep "tag foo" $rlRun_LOG
         rlAssertGrep "tier 3" $rlRun_LOG
         rlAssertGrep "relates https://something.org/related" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a manual test"
+
+        # Basic mode
+        rlRun -s "tmt tests show manual"
+        rlAssertGrep "summary A simple manual test" $rlRun_LOG
+        rlAssertGrep "test manual.md" $rlRun_LOG
+        rlAssertGrep "path /tests" $rlRun_LOG
+        rlAssertGrep "manual true" $rlRun_LOG
+        rlAssertNotGrep "instructions" $rlRun_LOG
+
+        # Verbose mode
+        rlRun -s "tmt --verbose tests show manual"
+        rlAssertGrep "summary A simple manual test" $rlRun_LOG
+        rlAssertGrep "test manual.md" $rlRun_LOG
+        rlAssertGrep "path /tests" $rlRun_LOG
+        rlAssertGrep "manual true" $rlRun_LOG
+        rlAssertGrep "instructions" $rlRun_LOG
+        rlAssertGrep "# Test" $rlRun_LOG
+        rlAssertGrep "## Step" $rlRun_LOG
+        rlAssertGrep "Do this and that\." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "List all tests by default"
@@ -121,6 +144,20 @@ rlJournalStart
         rlAssertNotGrep "/tests/enabled02" $rlRun_LOG
         rlAssertNotGrep "/tests/disabled01" $rlRun_LOG
         rlAssertGrep    "/tests/disabled02" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test whether 'tmt', 'tests' and 'show' accept verbosity option"
+        rlRun -s "tmt    tests    show    /tests/full"
+        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    tests    show -v /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    tests -v show    /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt -v tests    show    /tests/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

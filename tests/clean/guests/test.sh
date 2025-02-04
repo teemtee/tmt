@@ -61,10 +61,21 @@ rlJournalStart
         rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmprun/run2" "output" -E
     rlPhaseEnd
 
+    rlPhaseStartTest "Test keep"
+        rlRun "tmpkeep=\$(mktemp -d)" 0 "Create a temporary directory for keep test"
+        rlRun "tmt run -i $tmpkeep/run1 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt run -i $tmpkeep/run2 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun "tmt clean guests --workdir-root $tmpkeep --keep 1"
+        rlRun "tmt status --workdir-root $tmpkeep -vv | tee output"
+        rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmpkeep/run1" "output" -E
+        rlAssertGrep "(done\s+){2}(todo\s+){4}$tmpkeep/run2" "output" -E
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $runid" 0 "Remove initial run"
         rlRun "rm -r $tmp" 0 "Remove tmp directory"
         rlRun "rm -r $tmprun" 0 "Remove a temporary directory for runs"
+        rlRun "rm -r $tmpkeep" 0 "Remove the temporary directory for keep test"
     rlPhaseEnd
 rlJournalEnd

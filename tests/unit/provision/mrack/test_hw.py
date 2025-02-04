@@ -3,7 +3,7 @@ import textwrap
 import pytest
 
 import tmt.utils
-from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS
+from tests.unit.test_hardware import FULL_HARDWARE_REQUIREMENTS, OR_HARDWARE_REQUIREMENTS
 from tmt.hardware import (
     Hardware,
     Operator,
@@ -98,9 +98,31 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 }
                             }
                         },
+                    {
+                        'cpu': {
+                            'family': {
+                                '_op': '<',
+                                '_value': '6'
+                                }
+                            }
+                        },
                     {'or': []},
-                    {'or': []},
-                    {'or': []},
+                    {
+                        'cpu': {
+                            'stepping': {
+                                '_op': '!=',
+                                '_value': '10',
+                                },
+                            },
+                        },
+                    {
+                        'cpu': {
+                            'speed': {
+                                '_op': '>=',
+                                '_value': '2300.0',
+                                },
+                            },
+                        },
                     {'or': []},
                     {
                         'not':
@@ -274,7 +296,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             {
                 'and': [
                     {'or': []},
-                    {'or': []},
+                    {
+                        'system': {
+                            'vendor': {
+                                '_op': 'like',
+                                '_value': 'Dell%',
+                                },
+                            },
+                        },
                     {'or': []},
                     {
                         'system': {
@@ -284,7 +313,14 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                                 },
                             },
                         },
-                    {'or': []},
+                    {
+                        'system': {
+                            'model': {
+                                '_op': 'like',
+                                '_value': 'PowerEdge R750',
+                                },
+                            },
+                        },
                     ]
                 },
             {
@@ -381,6 +417,20 @@ def test_cpu_cores(root_logger: Logger) -> None:
             'cores': {
                 '_op': '==',
                 '_value': '2'
+                }
+            }
+        }
+
+
+def test_cpu_stepping(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['cpu.stepping'](
+        _parse_cpu({'stepping': '10'}), root_logger)
+
+    assert result.to_mrack() == {
+        'cpu': {
+            'stepping': {
+                '_op': '==',
+                '_value': '10'
                 }
             }
         }
@@ -863,4 +913,63 @@ def test_system_numa_nodes(root_logger: Logger) -> None:
                 '_value': '2'
                 }
             }
+        }
+
+
+def test_system_model_name(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['system.model_name'](
+        _parse_system({'model-name': '!~ PowerEdge R750.*'}), root_logger)
+
+    assert result.to_mrack() == {
+        'not': {
+            'system': {
+                'model': {
+                    '_op': 'like',
+                    '_value': 'PowerEdge R750%'
+                    }
+                }
+            }
+        }
+
+
+def test_or_constraint(root_logger: Logger) -> None:
+    hw = Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(OR_HARDWARE_REQUIREMENTS)))
+    assert hw.constraint is not None
+
+    result = constraint_to_beaker_filter(hw.constraint, root_logger)
+    assert result.to_mrack() == {
+        'or': [
+            {
+                'hostname': {
+                    '_op': '==',
+                    '_value': 'dummy1.redhat.com',
+                    },
+                },
+            {
+                'or': [
+                    {
+                        'hostname': {
+                            '_op': '==',
+                            '_value': 'dummy2.redhat.com',
+                            },
+                        },
+                    {
+                        'or': [
+                            {
+                                'hostname': {
+                                    '_op': '==',
+                                    '_value': 'dummy3.redhat.com',
+                                    },
+                                },
+                            {
+                                'hostname': {
+                                    '_op': '==',
+                                    '_value': 'dummy4.redhat.com',
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
         }

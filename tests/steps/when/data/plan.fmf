@@ -1,0 +1,52 @@
+execute:
+  how: tmt
+
+provision:
+  how: local
+
+/sanity:
+  discover:
+    how: shell
+    tests:
+      - name: /
+        test: touch $TMT_PLAN_DATA/when-in-discover
+    when: trigger == commit
+
+  prepare:
+    - how: shell
+      script: touch $TMT_PLAN_DATA/when-prepare-always
+    - how: shell
+      script: touch $TMT_PLAN_DATA/when-prepare-fedora
+      when: distro == fedora
+
+  finish:
+    - how: shell
+      script: touch $TMT_PLAN_DATA/when-finish-no-distro
+      when:
+      - initiator == human
+      - distro is not defined
+
+  report:
+    - how: junit
+      file: $TMT_PLAN_DATA/when-report-fedora
+      when: distro == fedora
+    - how: display
+
+/execute-must-obey:
+  link:
+    - verifies: https://github.com/teemtee/tmt/issues/3492
+
+  discover:
+      - how: shell
+        name: shell-not-run
+        tests:
+         - name: nope
+           test: echo
+        when: flag == on
+
+      - how: shell
+        name: shell-run
+        tests:
+         - name: yes
+           test: echo
+        when: flag is not defined

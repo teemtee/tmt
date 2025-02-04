@@ -36,6 +36,7 @@ from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.base
 import tmt.checks
+import tmt.config
 import tmt.convert
 import tmt.export
 import tmt.frameworks
@@ -87,6 +88,7 @@ T = TypeVar('T')
 # metadata and 1h for scripts defined directly in plans (L2 metadata).
 DEFAULT_TEST_DURATION_L1 = '5m'
 DEFAULT_TEST_DURATION_L2 = '1h'
+#: The default order of any object.
 DEFAULT_ORDER = 50
 
 DEFAULT_TEST_RESTART_LIMIT = 1
@@ -665,6 +667,10 @@ class Core(
     # Core attributes (supported across all levels)
     summary: Optional[str] = None
     description: Optional[str] = None
+    author: list[str] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_string_list
+        )
     contact: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list
@@ -695,6 +701,7 @@ class Core(
         # Basic stuff
         'summary',
         'description',
+        'author',
         'contact',
         'enabled',
         'order',
@@ -772,12 +779,19 @@ class Core(
 
     # TODO: cached_property candidates
     @property
-    def fmf_root(self) -> Path:
-        return Path(self.node.root)
+    def fmf_root(self) -> Optional[Path]:
+        # Check if fmf root is defined
+        if self.node.root is not None:
+            return Path(self.node.root)
+        return None
+
+    @property
+    def anchor_path(self) -> Path:
+        return self.fmf_root or Path.cwd()
 
     @property
     def git_root(self) -> Optional[Path]:
-        return tmt.utils.git.git_root(fmf_root=self.fmf_root, logger=self._logger)
+        return tmt.utils.git.git_root(fmf_root=self.anchor_path, logger=self._logger)
 
     # Caching properties does not play nicely with mypy and annotations,
     # and constructing a workaround would be hard because of support of
@@ -795,7 +809,7 @@ class Core(
 
         return tmt.utils.fmf_id(
             name=self.name,
-            fmf_root=self.fmf_root,
+            fmf_root=self.anchor_path,
             logger=self._logger)
 
     @functools.cached_property
@@ -805,6 +819,9 @@ class Core(
     def web_link(self) -> Optional[str]:
         """ Return a clickable web link to the fmf metadata location """
         if self.fmf_id.ref is None or self.fmf_id.url is None:
+            return None
+
+        if not self.fmf_sources:
             return None
 
         # Detect relative path of the last source from the metadata tree root
@@ -1027,9 +1044,6 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
-Node = Core
-
-
 @dataclasses.dataclass(repr=False)
 class Test(
         Core,
@@ -1108,6 +1122,7 @@ class Test(
         # Basic test information
         'summary',
         'description',
+        'author',
         'contact',
         'component',
         'id',
@@ -1331,6 +1346,27 @@ class Test(
 
         return any(destination in (guest.name, guest.role) for destination in self.where)
 
+    def show_manual(self) -> None:
+        """ Show manual test instructions """
+
+        if self.tree is None or self.tree.root is None:
+            return
+
+        if self.test is None or self.test._script is None:
+            return
+
+        if self.path is not None:
+            instructions_path = self.tree.root / self.path.unrooted() / self.test._script
+        else:
+            instructions_path = self.tree.root / self.test._script
+
+        try:
+            instructions = instructions_path.read_text()
+            echo(tmt.utils.format('instructions', instructions))
+
+        except FileNotFoundError:
+            self.warn(f"Manual test instructions file '{instructions_path}' not found.")
+
     def show(self) -> None:
         """ Show test details """
         self.ls()
@@ -1363,6 +1399,11 @@ class Test(
                 continue
             if value not in [None, [], {}]:
                 echo(tmt.utils.format(key, value))
+
+            # Show test instructions for manual tests in verbose mode
+            if key == "manual" and self.manual and self.verbosity_level:
+                self.show_manual()
+
         if self.verbosity_level:
             self._show_additional_keys()
         if self.verbosity_level >= 2:
@@ -2101,9 +2142,10 @@ class Plan(
         if self.description:
             echo(tmt.utils.format(
                 'description', self.description, key_color='green'))
+        if self.author:
+            echo(tmt.utils.format('author', self.author, key_color='green'))
         if self.contact:
-            echo(tmt.utils.format(
-                'contact', self.contact, key_color='green'))
+            echo(tmt.utils.format('contact', self.contact, key_color='green'))
 
         # Individual step details
         for step in self.steps(enabled_only=False):
@@ -2340,6 +2382,23 @@ class Plan(
         yield from _lint_step('execute')
         yield from _lint_step('finish')
 
+    def lint_empty_env_files(self) -> LinterReturn:
+        """ P008: environment files are not empty """
+
+        env_files = self.node.get("environment-file") or []
+
+        if not env_files:
+            yield LinterOutcome.SKIP, 'no environment files found'
+            return
+
+        for env_file in env_files:
+            env_file = (self.anchor_path / Path(env_file)).resolve()
+            if not env_file.stat().st_size:
+                yield LinterOutcome.FAIL, f"the environment file '{env_file}' is empty"
+                return
+
+        yield LinterOutcome.PASS, 'no empty environment files'
+
     def wake(self) -> None:
         """ Wake up all steps """
 
@@ -2424,10 +2483,13 @@ class Plan(
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
                     self._source_plan_environment_file()
-        # Make sure we run 'finish' step always if enabled
+        # Make sure we run 'report' and 'finish' steps always if enabled
         finally:
-            if not abort and self.finish.enabled:
-                self.finish.go()
+            if not abort:
+                if self.report.enabled and self.report.status() != "done":
+                    self.report.go()
+                if self.finish.enabled:
+                    self.finish.go()
 
     def _export(
             self,
@@ -2621,6 +2683,7 @@ class Story(
         'id',
         'priority',
         'description',
+        'author',
         'contact',
         'example',
         'enabled',
@@ -3008,7 +3071,8 @@ class Tree(tmt.utils.Common):
             unique: bool = True,
             links: Optional[list['LinkNeedle']] = None,
             excludes: Optional[list[str]] = None,
-            apply_command_line: bool = True
+            apply_command_line: bool = True,
+            sort: bool = True
             ) -> list[Test]:
         """ Search available tests """
         # Handle defaults, apply possible command line options
@@ -3051,8 +3115,8 @@ class Tree(tmt.utils.Common):
 
         if Test._opt('source'):
             tests = [
-                Test(node=test, logger=self._logger.descend()) for test in self.tree.prune(
-                    keys=keys, sources=cmd_line_names)]
+                Test(node=test, logger=self._logger.descend())
+                for test in self.tree.prune(keys=keys, sources=cmd_line_names, sort=sort)]
 
         elif not unique and names:
             # First let's build the list of test objects based on keys & names.
@@ -3067,7 +3131,9 @@ class Tree(tmt.utils.Common):
                         logger=logger.descend(
                             logger_name=test.get('name', None)
                             )  # .apply_verbosity_options(**self._options),
-                        ) for test in name_filter(self.tree.prune(keys=keys, names=[name]))]
+                        ) for test in name_filter(
+                            self.tree.prune(keys=keys, names=[name], sort=sort))
+                    ]
                 tests.extend(sorted(selected_tests, key=lambda test: test.order))
         # Otherwise just perform a regular key/name filtering
         else:
@@ -3078,7 +3144,8 @@ class Tree(tmt.utils.Common):
                     logger=logger.descend(
                         logger_name=test.get('name', None)
                         )  # .apply_verbosity_options(**self._options),
-                    ) for test in name_filter(self.tree.prune(keys=keys, names=names))]
+                    ) for test in name_filter(
+                        self.tree.prune(keys=keys, names=names, sort=sort))]
             tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
@@ -3360,10 +3427,11 @@ class Run(tmt.utils.Common):
                  tree: Optional[Tree] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  parent: Optional[tmt.utils.Common] = None,
+                 workdir_root: Optional[Path] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
-        self.config = tmt.utils.Config()
+        self.config = tmt.config.Config()
 
         if cli_invocation is not None:
             if cli_invocation.options.get('last'):
@@ -3380,7 +3448,11 @@ class Run(tmt.utils.Common):
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(cli_invocation=cli_invocation, logger=logger, parent=parent)
+        super().__init__(
+            cli_invocation=cli_invocation,
+            logger=logger,
+            parent=parent,
+            workdir_root=workdir_root)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
@@ -3871,7 +3943,7 @@ class Status(tmt.utils.Common):
     def show(self) -> None:
         """ Display the current status """
         # Prepare absolute workdir path if --id was used
-        root_path = Path(self.opt('workdir-root'))
+        root_path = Path(self.workdir_root)
         self.print_header()
         assert self._cli_context_object is not None  # narrow type
         assert self._cli_context_object.tree is not None  # narrow type
@@ -3895,6 +3967,7 @@ class Clean(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  name: Optional[str] = None,
                  workdir: tmt.utils.WorkdirArgumentType = None,
+                 workdir_root: Optional[Path] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  logger: tmt.log.Logger) -> None:
         """
@@ -3912,6 +3985,7 @@ class Clean(tmt.utils.Common):
             parent=parent,
             name=name,
             workdir=workdir,
+            workdir_root=workdir_root,
             cli_invocation=cli_invocation)
 
     def images(self) -> bool:
@@ -3971,10 +4045,10 @@ class Clean(tmt.utils.Common):
                         self.cli_invocation.options['quiet'] = quiet
         return successful
 
-    def guests(self, run_ids: tuple[str, ...]) -> bool:
+    def guests(self, run_ids: tuple[str, ...], keep: Optional[int]) -> bool:
         """ Clean guests of runs """
         self.info('guests', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -3982,7 +4056,13 @@ class Clean(tmt.utils.Common):
                 Run(logger=self._logger, cli_invocation=self.cli_invocation))
         successful = True
         assert self._cli_context_object is not None  # narrow type
-        for abs_path in tmt.utils.generate_runs(root_path, run_ids):
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, run_ids))
+        if keep is not None:
+            # Sort by modify time of the workdirs to keep the newest guests
+            all_workdirs.sort(
+                key=lambda workdir: Path(workdir / 'run.yaml').stat().st_mtime, reverse=True)
+            all_workdirs = all_workdirs[keep:]
+        for abs_path in all_workdirs:
             run = Run(
                 logger=self._logger,
                 id_=abs_path,
@@ -4005,10 +4085,10 @@ class Clean(tmt.utils.Common):
                 return False
         return True
 
-    def runs(self, id_: tuple[str, ...]) -> bool:
+    def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
         """ Clean workdirs of runs """
         self.info('runs', color='blue')
-        root_path = Path(self.opt('workdir-root'))
+        self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
@@ -4016,8 +4096,7 @@ class Clean(tmt.utils.Common):
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)
-        all_workdirs = list(tmt.utils.generate_runs(root_path, id_))
-        keep = self.opt('keep')
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs
             all_workdirs.sort(

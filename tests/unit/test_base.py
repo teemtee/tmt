@@ -7,7 +7,7 @@ import jsonschema
 import pytest
 
 import tmt
-import tmt.cli
+import tmt.cli._root
 import tmt.result
 from tests import CliRunner
 from tmt.base import FmfId, Link, LinkNeedle, Links, expand_node_data
@@ -21,10 +21,10 @@ def test_invalid_yaml_syntax():
     tmp = tempfile.mkdtemp()
     original_directory = os.getcwd()
     os.chdir(tmp)
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'mini'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'mini'])
     with open('plans/example.fmf', 'a') as plan:
         plan.write('bad line')
-    result = runner.invoke(tmt.cli.main)
+    result = runner.invoke(tmt.cli._root.main)
     assert isinstance(result.exception, tmt.utils.GeneralError)
     assert result.exit_code != 0
     os.chdir(original_directory)

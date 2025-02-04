@@ -9,6 +9,9 @@ environment:
 # Exercise prepare and finish as well. We use the very same commands,
 # just in different steps.
 prepare:
+  - how: install
+    package: python3
+
   - how: shell
     script: STEP=prepare ./shell.sh
 

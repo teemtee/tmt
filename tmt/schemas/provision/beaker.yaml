@@ -49,5 +49,13 @@ properties:
   beaker-job-owner:
     type: string
 
+  public-key:
+    type: array
+    items:
+      type: string
+
+  beaker-job-group:
+    type: string
+
 required:
   - how

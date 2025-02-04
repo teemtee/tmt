@@ -35,7 +35,7 @@ rlJournalStart
         rlRun -s "$tmt missing/repository" 2
         rlAssertGrep 'Authentication failed.*something' $rlRun_LOG
         rlRun -s "$tmt missing/library" 2
-        rlAssertGrep 'dnf install.*openssl/wrong' $rlRun_LOG
+        rlAssertGrep 'dnf.*install.*openssl/wrong' $rlRun_LOG
         rlRun -s "$tmt missing/metadata" 2
         rlAssertGrep 'Repository .* does not contain fmf metadata.' $rlRun_LOG
         rlRun -s "$tmt missing/reference" 2
@@ -50,14 +50,10 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Strip git suffix"
-        rlRun -s "$tmt strip_git_suffix" 0
+        rlRun -s "$tmt strip-git-suffix" 0
         rlAssertGrep "summary: 3 tests selected" $rlRun_LOG
-        rlAssertGrep "/strip_git_suffix/test2" $rlRun_LOG
-        rlAssertGrep \
-            "Detected library.*https://github.com/teemtee/fmf.git" \
-            "$rlRun_LOG"
-        rlAssertNotGrep 'Library.*conflicts with already fetched library' \
-            "$rlRun_LOG"
+        rlAssertGrep "Detected library.*beakerlib/database.git.*mariadb" "$rlRun_LOG"
+        rlAssertNotGrep "Library.*conflicts with already fetched library" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Attempt github/beakerlib lookup just once per repo"
@@ -66,12 +62,13 @@ rlJournalStart
         rlAssertGrep "git clone .*beakerlib/FOOBAR" "$tmp/querying/log.txt"
         # We know it doesn't exist
         rlAssertGrep "Repository 'https://github.com/beakerlib/FOOBAR' not found." "$tmp/querying/log.txt"
-        # We do two attempts for clone (with --depth=1 and without it)
-        LINES=$(grep "git clone .*beakerlib/FOOBAR" "$tmp/querying/log.txt" | wc -l)
-        rlAssertEquals "Just two clone calls on non-existent repository" "2" "$LINES"
+        # We do two attempts for clone (with --depth=1 and three retries without it)
+        LINES=$(grep "Run command: git clone .*beakerlib/FOOBAR" "$tmp/querying/log.txt" | wc -l)
+        rlAssertEquals "Just four clone calls on non-existent repository" "4" "$LINES"
         # However we do it all just once
         LINES=$(grep "Repository 'https://github.com/beakerlib/FOOBAR' not found." "$tmp/querying/log.txt" | wc -l)
         rlAssertEquals "Just one attempt on non-existent repository" "1" "$LINES"
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

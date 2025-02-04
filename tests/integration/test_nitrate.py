@@ -9,7 +9,7 @@ from requre import RequreTestCase
 from ruamel.yaml import YAML
 
 import tmt.base
-import tmt.cli
+import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.utils import ConvertError, Path
@@ -53,7 +53,7 @@ class NitrateExport(Base):
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
              "--create", "--general", "--append-summary", "."],
             catch_exceptions=False)
@@ -68,7 +68,7 @@ class NitrateExport(Base):
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
              "--create", "--dry", "--general", "--append-summary", "."],
             catch_exceptions=False)
@@ -84,7 +84,7 @@ class NitrateExport(Base):
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
              "--create", "--general", "--append-summary", "."],
             catch_exceptions=False)
@@ -97,7 +97,7 @@ class NitrateExport(Base):
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--how", "nitrate", "--ignore-git-validation",
              "--debug", "--dry", "--general", "--bugzilla", "--append-summary", "."],
             catch_exceptions=False)
@@ -109,7 +109,7 @@ class NitrateExport(Base):
 
         os.chdir(self.tmpdir / "existing_dryrun_release_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli.main,
+        self.runner_output = runner.invoke(tmt.cli._root.main,
                                            ["test",
                                             "export",
                                             "--how",
@@ -135,7 +135,7 @@ class NitrateExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli.main,
+        self.runner_output = runner.invoke(tmt.cli._root.main,
                                            ["test",
                                             "export",
                                             "--how",
@@ -152,7 +152,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         with pytest.raises(ConvertError):
             self.runner_output = runner.invoke(
-                tmt.cli.main,
+                tmt.cli._root.main,
                 ["test", "export", "--how", "nitrate",
                  "--debug", "--dry", "."],
                 catch_exceptions=False)
@@ -165,7 +165,7 @@ class NitrateExport(Base):
         runner = CliRunner()
         with pytest.raises(ConvertError) as error:
             self.runner_output = runner.invoke(
-                tmt.cli.main,
+                tmt.cli._root.main,
                 ["test", "export", "--nitrate", "--debug", "--dry", "--append-summary", "."],
                 catch_exceptions=False)
         assert "Uncommitted changes" in str(error.value)
@@ -179,7 +179,7 @@ class NitrateExport(Base):
         runner = CliRunner()
 
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ["test", "export", "--nitrate", "--debug", "--ignore-git-validation",
              "--append-summary", "."],
             catch_exceptions=False)
@@ -193,7 +193,7 @@ class NitrateImport(Base):
         runner = CliRunner()
         # TODO: import does not respect --root param anyhow (could)
         self.runner_output = runner.invoke(
-            tmt.cli.main,
+            tmt.cli._root.main,
             ['-vvvvdddd', '--root', self.tmpdir / "import_case",
              "test", "import", "--no-general", "--nitrate", "--manual", "--case=609704"],
             catch_exceptions=False)
@@ -220,8 +220,9 @@ class NitrateImport(Base):
     def test_import_manual_proposed(self):
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main, ['--root', self.tmpdir / "import_case", "test",
-                           "import", "--no-general", "--nitrate", "--manual", "--case=609705"],
+            tmt.cli._root.main, ['--root', self.tmpdir / "import_case", "test",
+                                 "import", "--no-general", "--nitrate", "--manual",
+                                 "--case=609705"],
             catch_exceptions=False)
         assert self.runner_output.exit_code == 0
         # TODO: This is strange, expect at least some output in
@@ -297,7 +298,7 @@ extra-task: /tmt/integration
         assert "test.md" not in files
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main, [
+            tmt.cli._root.main, [
                 "test", "import", "--nitrate"], catch_exceptions=False)
         assert self.runner_output.exit_code == 0
         files = os.listdir()
@@ -318,7 +319,7 @@ extra-task: /tmt/integration
         assert files == ["Makefile"]
         runner = CliRunner()
         self.runner_output = runner.invoke(
-            tmt.cli.main, [
+            tmt.cli._root.main, [
                 "test", "import", "--nitrate", "--no-general"], catch_exceptions=False)
         assert self.runner_output.exit_code == 0
 

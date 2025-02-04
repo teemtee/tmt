@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.3.1'
+    rev: 'v2.3.2'
     hooks:
       - id: autopep8
 
@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.12.0"
+    rev: "v1.14.1"
     hooks:
       - id: mypy
         language_version: "3.9"
@@ -38,6 +38,7 @@ repos:
           - "jinja2>=2.11.3"         # 3.1.2 / 3.1.2
           - "packaging>=20"          # 20 seems to be available with RHEL8
           - "pint>=0.16.1"           # 0.16.1
+          - "pydantic>=1.10.14"
           - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
@@ -66,10 +67,9 @@ repos:
           - "types-lxml"
 
         pass_filenames: false
-        args: [--config-file=pyproject.toml]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.385
+    rev: v1.1.393
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -86,6 +86,7 @@ repos:
           - "jinja2>=2.11.3"         # 3.1.2 / 3.1.2
           - "packaging>=20"          # 20 seems to be available with RHEL8
           - "pint>=0.16.1"           # 0.16.1 / 0.19.x  TODO: Pint 0.20 requires larger changes to tmt.hardware
+          - "pydantic>=1.10.14"
           - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
           - "requests>=2.25.1"       # 2.28.2 / 2.31.0
           - "ruamel.yaml>=0.16.6"    # 0.17.32 / 0.17.32
@@ -114,7 +115,7 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.29.4"
+    rev: "0.31.1"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -124,10 +125,10 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
-        files: ^tmt/schemas/.*\.yaml
+        files: ^tmt/(?:schemas|steps/prepare/feature)/.*\.yaml
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v24.9.2
+    rev: v25.1.1
     hooks:
       - id: ansible-lint
         args:
@@ -143,7 +144,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.7.0
+    rev: v0.9.4
     hooks:
       - id: ruff
         args:
@@ -151,27 +152,29 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.37.0
+    rev: 1.42.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
         - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
         - "packaging>=20"          # 20 seems to be available with RHEL8
         - "pint<0.20"
+        - "pydantic>=1.10.14"
         - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
         # Help installation by reducing the set of inspected botocore release.
         # There is *a lot* of them, and hatch might fetch many of them.
         - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
         - "typing-extensions>=4.9.0; python_version < '3.13'"
+        - "fmf>=1.6.0"
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
           - tomli  # Required for python < 3.11
 
   - repo: https://github.com/djlint/djLint
-    rev: v1.35.2
+    rev: v1.36.4
     hooks:
       - id: djlint
         files: "\\.j2"

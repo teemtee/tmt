@@ -19,7 +19,8 @@ The First Steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Installing the main package with the core functionality is quite
-straightforward. No worry, there are just a few dependencies:
+straightforward. No worry, the :ref:`/stories/install/minimal`
+package has just a few dependencies:
 
 .. code-block:: shell
 
@@ -85,8 +86,8 @@ dependencies here:
     tmt run -a provision -h virtual
 
 Don't care about the disk space? Simply install ``tmt+all`` and
-you'll get all available functionality at hand. Check the help to
-list all supported provision methods:
+you'll get :ref:`/stories/install/all` available functionality at
+hand. Check the help to list all supported provision methods:
 
 .. code-block:: shell
 
@@ -873,6 +874,40 @@ copied to the guest.
     ``finish`` steps yet.
 
 
+.. _when-config:
+
+Conditional step configuration
+------------------------------
+
+.. versionadded:: 1.40
+
+Sometimes, the plan is expected to cover a broad set of environments;
+however, some step configurations may not be applicable everywhere.
+While :ref:`/spec/core/adjust` can be used to construct the plan
+in this way, it soon becomes difficult to read.
+
+Using the ``when`` key makes it easier to restrict a step configuration
+to run only if any of the specified rules matches.
+The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+
+.. code-block:: yaml
+
+    prepare:
+      - name: Prepare config to run only on Fedora
+        when: distro == fedora
+        how: shell
+        script: ./fedora_specific.sh
+      - name: Runs always
+        how: shell
+        script: ./setup.sh
+      - name: More rules in 'when' key
+        how: shell
+        script: ./something.sh
+        when:
+        - arch != x86_64
+        - initiator == human && distro == fedora
+
+
 .. _multihost-testing:
 
 Multihost Testing
@@ -937,7 +972,7 @@ to their services, synchronization, etc.
 
 tmt fully supports one test being executed multiple times. This is
 especially visible in the format of results, see
-:ref:`/spec/plans/results`. Every test is assigned a "serial
+:ref:`/spec/results`. Every test is assigned a "serial
 number", if the same test appears in multiple discover phases, each
 instance would be given a different serial number. The serial number
 and the guest from which a result comes from are then saved for each

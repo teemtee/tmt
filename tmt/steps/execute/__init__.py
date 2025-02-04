@@ -793,74 +793,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         return collection
 
-    def _process_results_reduce(
-            self,
-            invocation: TestInvocation,
-            results: list['tmt.result.RawResult']) -> list['tmt.result.Result']:
-        """
-        Reduce given results to one outcome.
-
-        This is the default behavior applied to test results, all
-        results will be reduced to the worst outcome possible.
-
-        :param invocation: test invocation to which the results belong to.
-        :param results: results to reduce.
-        :returns: list of results.
-        """
-
-        # The worst result outcome we can find among loaded results...
-        original_outcome: Optional[ResultOutcome] = None
-        # ... and the actual outcome we decided is the best representing
-        # the results.
-        # The original one may be left unset - malformed results file,
-        # for example, provides no usable original outcome.
-        actual_outcome: ResultOutcome
-        note: Optional[str] = None
-
-        try:
-            outcomes = [
-                ResultOutcome.from_spec(result.get('result'))
-                for result in results
-                ]
-
-        except tmt.utils.SpecificationError as exc:
-            actual_outcome = ResultOutcome.ERROR
-            note = exc.message
-
-        else:
-            hierarchy = [
-                ResultOutcome.SKIP,
-                ResultOutcome.PASS,
-                ResultOutcome.WARN,
-                ResultOutcome.FAIL]
-            outcome_indices = [hierarchy.index(outcome) for outcome in outcomes]
-            actual_outcome = original_outcome = hierarchy[max(outcome_indices)]
-
-        # Find a usable log - the first one matching our "interim" outcome.
-        # We cannot use the "actual" outcome, because that one may not even
-        # exist in the results file - tmt might have conjured it based on
-        # provided results, or set it to "error" because of errors. Only
-        # the "interim" is guaranteed to be found among the results.
-        test_logs = [invocation.relative_path / TEST_OUTPUT_FILENAME]
-
-        if original_outcome is not None:
-            for result in results:
-                if result.get('result') != original_outcome.value:
-                    continue
-
-                result_logs: list[str] = result.get('log', [])
-
-                if result_logs:
-                    test_logs.append(invocation.relative_test_data_path / result_logs[0])
-
-                break
-
-        return [tmt.Result.from_test_invocation(
-            invocation=invocation,
-            result=actual_outcome,
-            log=test_logs,
-            note=note)]
-
     def _process_results_partials(
             self,
             invocation: TestInvocation,
@@ -892,15 +824,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
             else:
                 if not partial_result.name.startswith('/'):
-                    if partial_result.note and isinstance(partial_result.note, str):
-                        partial_result.note += ", custom test result name should start with '/'"
-                    else:
-                        partial_result.note = "custom test result name should start with '/'"
+                    partial_result.note.append("custom test result name should start with '/'")
                     partial_result.name = '/' + partial_result.name
                 partial_result.name = test.name + partial_result.name
 
-            # Fix log paths as user provides relative path to TMT_TEST_DATA
-            # but Result has to point relative to the execute workdir
+            # Fix log paths as user provides relative path to `TMT_TEST_DATA`, but Result has to
+            # point relative to the execute workdir
             partial_result.log = [
                 invocation.relative_test_data_path / log for log in partial_result.log]
 
@@ -946,13 +875,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if not collection.file_exists:
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
-                note=f"custom results file not found in '{invocation.test_data_path}'",
+                note=[f"custom results file not found in '{invocation.test_data_path}'"],
                 result=ResultOutcome.ERROR)]
 
         if not collection.results:
             return [tmt.Result.from_test_invocation(
                 invocation=invocation,
-                note="no custom results were provided",
+                note=["no custom results were provided"],
                 result=ResultOutcome.ERROR)]
 
         collection.validate()
@@ -960,11 +889,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._process_results_partials(invocation, collection.results)
 
     def extract_tmt_report_results(self, invocation: TestInvocation) -> list["tmt.Result"]:
-        """
-        Extract results from the file generated by ``tmt-report-result`` script.
-
-        All recorded results are reduced to one result eventually.
-        """
+        """ Extract results from a file generated by ``tmt-report-result`` script """
 
         collection = self._load_tmt_report_results_file(invocation)
 
@@ -983,7 +908,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         collection.validate()
 
-        return self._process_results_reduce(invocation, collection.results)
+        # Fix log paths created by `tmt-report-result` on the guest, which are by default relative
+        # to the `TMT_TEST_DATA`, to be relative to the `execute` directory.
+        for result in collection.results:
+            result["log"] = [
+                str(invocation.relative_test_data_path / log) for log in result.get("log", [])]
+
+        return [tmt.Result.from_serialized(result) for result in collection.results]
 
     def extract_tmt_report_results_restraint(
             self,
@@ -1033,11 +964,14 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 invocation=invocation,
                 default_log=invocation.relative_path / TEST_OUTPUT_FILENAME)
 
-        # Handle the 'tmt-report-result' command results as a single test
+        # Load the results from the `tmt-report-results.yaml` if a file was generated.
+        results = []
         if self._tmt_report_results_filepath(invocation).exists():
-            return self.extract_tmt_report_results(invocation)
+            results = self.extract_tmt_report_results(invocation)
 
-        return invocation.test.test_framework.extract_results(invocation, logger)
+        # Propagate loaded `results` to test framework, which will handle these results accordingly
+        # (e.g. saves them as a tmt subresults).
+        return invocation.test.test_framework.extract_results(invocation, results, logger)
 
     def check_abort_file(self, invocation: TestInvocation) -> bool:
         """
@@ -1237,6 +1171,9 @@ class Execute(tmt.steps.Step):
                 # plugin, so we could point it to that discover phase rather than
                 # let is "see" all tests, or test in different discover phase.
                 for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
+                    if not discover.enabled_by_when:
+                        continue
+
                     phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
                     phase_copy.discover_phase = discover.name
 
@@ -1294,7 +1231,7 @@ class Execute(tmt.steps.Step):
         """
         Results from executed tests
 
-        Return a dictionary with test results according to the spec:
+        Return a list with test results according to the spec:
         https://tmt.readthedocs.io/en/latest/spec/plans.html#execute
         """
         return self._results

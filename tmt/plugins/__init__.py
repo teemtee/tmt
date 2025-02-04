@@ -73,6 +73,7 @@ def _discover_packages() -> list[tuple[str, Path]]:
         ('tmt.frameworks', Path('frameworks')),
         ('tmt.checks', Path('checks')),
         ('tmt.package_managers', Path('package_managers')),
+        ('tmt.steps.prepare.feature', Path('steps/prepare/feature')),
         ]
 
 
@@ -291,14 +292,6 @@ def import_member(
         raise tmt.utils.GeneralError(f"No such member '{member}' in module '{module}'.")
 
     return (imported, getattr(imported, member))
-
-
-# Small helper for one specific package - export plugins are needed when
-# generating docs.
-def explore_export_package(logger: Logger) -> None:
-    """ Import all plugins bundled into tmt.export package """
-
-    _explore_package('tmt.export', _TMT_ROOT / 'export', logger.descend())
 
 
 RegisterableT = TypeVar('RegisterableT')

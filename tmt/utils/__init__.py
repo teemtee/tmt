@@ -24,12 +24,12 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
+import warnings
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
-from contextlib import suppress
 from math import ceil
 from re import Pattern
-from threading import Thread
+from threading import RLock, Thread
 from types import ModuleType
 from typing import (
     IO,
@@ -53,6 +53,7 @@ import jsonschema
 import requests
 import requests.adapters
 import urllib3
+import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, style, wrap_text
@@ -60,6 +61,7 @@ from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
+from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
@@ -73,6 +75,7 @@ if TYPE_CHECKING:
     import tmt.options
     import tmt.steps
     from tmt._compat.typing import Self, TypeAlias
+    from tmt.hardware import Size
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -119,6 +122,10 @@ def configure_constant(default: int, envvar: str) -> int:
 log = fmf.utils.Logging('tmt').logger
 
 
+#: How many leading characters to display in tracebacks with
+#: ``TMT_SHOW_TRACEBACK=2``.
+TRACEBACK_LOCALS_TRIM = 1024
+
 # Default workdir root and max
 WORKDIR_ROOT = Path('/var/tmp/tmt')  # noqa: S108 insecure usage of temporary dir
 WORKDIR_MAX = 1000
@@ -138,29 +145,8 @@ OUTPUT_WIDTH: int = configure_constant(DEFAULT_OUTPUT_WIDTH, 'TMT_OUTPUT_WIDTH')
 # Hierarchy indent
 INDENT = 4
 
-# Default name and order for step plugins
+# Default name for step plugins
 DEFAULT_NAME = 'default'
-DEFAULT_PLUGIN_ORDER = 50
-DEFAULT_PLUGIN_ORDER_MULTIHOST = 10
-DEFAULT_PLUGIN_ORDER_REQUIRES = 70
-DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
-
-# Config directory
-DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
-
-
-def effective_config_dir() -> Path:
-    """
-    Find out what the actual config directory is.
-
-    If ``TMT_CONFIG_DIR`` variable is set, it is used. Otherwise,
-    :py:const:`DEFAULT_CONFIG_DIR` is picked.
-    """
-
-    if 'TMT_CONFIG_DIR' in os.environ:
-        return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
-
-    return DEFAULT_CONFIG_DIR.expanduser()
 
 
 # Special process return codes
@@ -227,6 +213,16 @@ DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 0.1
 ENVFILE_RETRY_SESSION_RETRIES: int = 10
 ENVFILE_RETRY_SESSION_BACKOFF_FACTOR: float = 1
 
+# Defaults for HTTP/HTTPS codes that are considered retriable
+DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
+    403,  # Forbidden (but Github uses it for rate limiting)
+    429,  # Too Many Requests
+    500,  # Internal Server Error
+    502,  # Bad Gateway
+    503,  # Service Unavailable
+    504   # Gateway Timeout
+    )
+
 # Default for wait()-related options
 DEFAULT_WAIT_TICK: float = 30.0
 DEFAULT_WAIT_TICK_INCREASE: float = 1.0
@@ -249,13 +245,16 @@ T = TypeVar('T')
 WriteMode = Literal['w', 'a']
 
 
-def effective_workdir_root() -> Path:
+def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     """
     Find out what the actual workdir root is.
 
-    If ``TMT_WORKDIR_ROOT`` variable is set, it is used as the workdir root.
-    Otherwise, the default of :py:data:`WORKDIR_ROOT` is used.
+    If the ``workdir-root`` cli option is set, it is used as the workdir root.
+    Otherwise, the ``TMT_WORKDIR_ROOT`` environment variable is used if set.
+    If neither is specified, the default value of :py:data:``WORKDIR_ROOT`` is used.
     """
+    if workdir_root_option:
+        return workdir_root_option
 
     if 'TMT_WORKDIR_ROOT' in os.environ:
         return Path(os.environ['TMT_WORKDIR_ROOT'])
@@ -562,13 +561,8 @@ class Environment(dict[str, EnvVarValue]):
                 retries=ENVFILE_RETRY_SESSION_RETRIES,
                 backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
                 allowed_methods=('GET',),
-                status_forcelist=(
-                    429,  # Too Many Requests
-                    500,  # Internal Server Error
-                    502,  # Bad Gateway
-                    503,  # Service Unavailable
-                    504   # Gateway Timeout
-                    ),
+                status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
+                logger=logger,
                 )
             try:
                 response = session.get(filename)
@@ -866,55 +860,6 @@ PLAN_SCHEMA_IGNORED_IDS: list[str] = [
     '/schemas/provision/hardware',
     '/schemas/provision/kickstart'
     ]
-
-
-class Config:
-    """ User configuration """
-
-    def __init__(self) -> None:
-        """ Initialize config directory path """
-        self.path = effective_config_dir()
-
-        try:
-            self.path.mkdir(parents=True, exist_ok=True)
-        except OSError as error:
-            raise GeneralError(
-                f"Failed to create config '{self.path}'.") from error
-
-    @property
-    def _last_run_symlink(self) -> Path:
-        return self.path / 'last-run'
-
-    @property
-    def last_run(self) -> Optional[Path]:
-        """ Get the last run workdir path """
-        return self._last_run_symlink.resolve() if self._last_run_symlink.is_symlink() else None
-
-    @last_run.setter
-    def last_run(self, workdir: Path) -> None:
-        """ Set the last run to the given run workdir """
-
-        with suppress(OSError):
-            self._last_run_symlink.unlink()
-
-        try:
-            self._last_run_symlink.symlink_to(workdir)
-        except FileExistsError:
-            # Race when tmt runs in parallel
-            log.warning(
-                f"Unable to mark '{workdir}' as the last run, "
-                "'tmt run --last' might not pick the right run directory.")
-        except OSError as error:
-            raise GeneralError(
-                f"Unable to save last run '{self.path}'.\n{error}")
-
-    @functools.cached_property
-    def fmf_tree(self) -> fmf.Tree:
-        """ Return the configuration tree """
-        try:
-            return fmf.Tree(self.path)
-        except fmf.utils.RootError as error:
-            raise MetadataError(f"Config tree not found in '{self.path}'.") from error
 
 
 # TODO: `StreamLogger` is a dedicated thread following given stream, passing their content to
@@ -1491,6 +1436,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             parent: Optional[CommonDerivedType] = None,
             name: Optional[str] = None,
             workdir: WorkdirArgumentType = None,
+            workdir_root: Optional[Path] = None,
             relative_indent: int = 1,
             cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
             logger: tmt.log.Logger,
@@ -1516,6 +1462,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self.name = name or self.__class__.__name__.lower()
         self.parent = parent
 
+        self._workdir_root = workdir_root
         self.cli_invocation = cli_invocation
 
         self.inject_logger(logger)
@@ -2036,18 +1983,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
         Initialize the work directory
 
-        The workdir root is acquired by calling :py:func:`effective_workdir_root`.
-
         If 'id' is a path, that directory is used instead. Otherwise a
         new workdir is created under the workdir root directory.
         """
 
-        workdir_root = effective_workdir_root()
-
         # Prepare the workdir name from given id or path
         if isinstance(id_, Path):
             # Use provided directory if full path given
-            workdir = id_ if '/' in str(id_) else workdir_root / id_
+            workdir = id_ if '/' in str(id_) else self.workdir_root / id_
             # Resolve any relative paths
             workdir = workdir.resolve()
         # Weird workdir id
@@ -2057,12 +2000,12 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         def _check_or_create_workdir_root_with_perms() -> None:
             """ If created workdir_root has to be 1777 for multi-user"""
-            if not workdir_root.is_dir():
+            if not self.workdir_root.is_dir():
                 try:
-                    workdir_root.mkdir(exist_ok=True, parents=True)
-                    workdir_root.chmod(0o1777)
+                    self.workdir_root.mkdir(exist_ok=True, parents=True)
+                    self.workdir_root.chmod(0o1777)
                 except OSError as error:
-                    raise FileError(f"Failed to prepare workdir '{workdir_root}': {error}")
+                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
 
         if id_ is None:
             # Prepare workdir_root first
@@ -2071,7 +2014,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             # Generated unique id or fail, has to be atomic call
             for id_bit in range(1, WORKDIR_MAX + 1):
                 directory = f"run-{str(id_bit).rjust(3, '0')}"
-                workdir = workdir_root / directory
+                workdir = self.workdir_root / directory
                 try:
                     # Call is atomic, no race possible
                     workdir.mkdir(parents=True)
@@ -2080,13 +2023,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     pass
             else:
                 raise GeneralError(
-                    f"Workdir full. Cleanup the '{workdir_root}' directory.")
+                    f"Workdir full. Cleanup the '{self.workdir_root}' directory.")
         else:
             # Cleanup possible old workdir if called with --scratch
             if self.opt('scratch'):
                 self._workdir_cleanup(workdir)
 
-            if workdir.is_relative_to(workdir_root):
+            if workdir.is_relative_to(self.workdir_root):
                 _check_or_create_workdir_root_with_perms()
 
             # Create the workdir
@@ -2163,6 +2106,18 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
         return self._clone_dirpath
+
+    @property
+    def workdir_root(self) -> Path:
+        if self._workdir_root:
+            return self._workdir_root
+        if self.parent:
+            return self.parent.workdir_root
+        return effective_workdir_root()
+
+    @workdir_root.setter
+    def workdir_root(self, workdir_root: Path) -> None:
+        self._workdir_root = workdir_root
 
 
 class _MultiInvokableCommonMeta(_CommonMeta):
@@ -2287,6 +2242,21 @@ class RunError(GeneralError):
         # with logger inherited from `provision` but may run under `prepare` or
         # `finish`), save a logger for later.
         self.logger = caller._logger if isinstance(caller, Common) else None
+
+    @functools.cached_property
+    def output(self) -> CommandOutput:
+        """
+        Captured output of the command.
+
+        .. note::
+
+           This field contains basically the same info as :py:attr:`stdout`
+           and :py:attr:`stderr`, but it's bundled into a single object.
+           This is how command output is passed between functions, therefore
+           the exception should offer it as well.
+        """
+
+        return CommandOutput(self.stdout, self.stderr)
 
 
 class MetadataError(GeneralError):
@@ -2428,7 +2398,12 @@ class TracebackVerbosity(enum.Enum):
     DEFAULT = '0'
     #: Render also call stack for exception and each of its causes.
     VERBOSE = '1'
-    #: Render also call stack and local variables for exception and each of its causes.
+    #: Render also call stack for exception and each of its causes,
+    #: plus all local variables in each frame, trimmed to first 1024
+    #: characters of their values.
+    LOCALS = '2'
+    #: Render everything that can be shown: all causes, their call
+    #: stacks, all frames and all locals in their completeness.
     FULL = 'full'
 
     @classmethod
@@ -2445,27 +2420,104 @@ class TracebackVerbosity(enum.Enum):
 
 
 def render_run_exception_streams(
-        stdout: Optional[str],
-        stderr: Optional[str],
-        verbose: int = 0) -> Iterator[str]:
+        output: CommandOutput,
+        verbose: int = 0,
+        comment_sign: str = '#') -> Iterator[str]:
     """ Render run exception output streams for printing """
 
-    for name, output in (('stdout', stdout), ('stderr', stderr)):
-        if not output:
+    for name, content in (('stdout', output.stdout), ('stderr', output.stderr)):
+        if not content:
             continue
-        output_lines = output.strip().split('\n')
+        content_lines = content.strip().split('\n')
         # Show all lines in verbose mode, limit to maximum otherwise
         if verbose > 0:
-            line_summary = f"{len(output_lines)}"
+            line_summary = f"{len(content_lines)}"
         else:
-            line_summary = f"{min(len(output_lines), OUTPUT_LINES)}/{len(output_lines)}"
-            output_lines = output_lines[-OUTPUT_LINES:]
+            line_summary = f"{min(len(content_lines), OUTPUT_LINES)}/{len(content_lines)}"
+            content_lines = content_lines[-OUTPUT_LINES:]
 
-        yield f'{name} ({line_summary} lines)'
-        yield OUTPUT_WIDTH * '~'
-        yield from output_lines
-        yield OUTPUT_WIDTH * '~'
+        line_intro = f'{comment_sign} '
+
+        yield line_intro + f'{name} ({line_summary} lines)'
+        yield line_intro + (OUTPUT_WIDTH - 2) * '~'
+        yield from content_lines
+        yield line_intro + (OUTPUT_WIDTH - 2) * '~'
         yield ''
+
+
+@overload
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: CommandOutput,
+        exc: None = None) -> Iterator[str]:
+    pass
+
+
+@overload
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: None = None,
+        exc: RunError) -> Iterator[str]:
+    pass
+
+
+def render_command_report(
+        *,
+        label: str,
+        command: Optional[Union[ShellScript, Command]] = None,
+        output: Optional[CommandOutput] = None,
+        exc: Optional[RunError] = None,
+        comment_sign: str = '#') -> Iterator[str]:
+    """
+    Format a command output for a report file.
+
+    To provide unified look of various files reporting command outputs,
+    this helper would combine its arguments and emit lines the caller
+    may then write to a file. The following template is used:
+
+    .. code-block::
+
+        ## ${label}
+
+        # ${command}
+
+        # stdout (N lines)
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ...
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        # stderr (N lines)
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ...
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    :param label: a string describing the intent of the command. It is
+        useful for user who reads the report file eventually.
+    :param command: command that was executed.
+    :param output: if set, it contains output of the command. It has
+        higher priority than ``exc``.
+    :param exc: if set, it represents a failed command, and input stored
+        in it is rendered.
+    :param comment_sign: a character to mark lines with comments that
+        document the report.
+    """
+
+    yield f'{comment_sign}{comment_sign} {label}'
+    yield ''
+
+    if command:
+        yield f'{comment_sign} {command.to_element()}'
+        yield ''
+
+    if output is not None:
+        yield from render_run_exception_streams(output, verbose=1)
+
+    elif exc is not None:
+        yield from render_run_exception_streams(exc.output, verbose=1)
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
@@ -2479,7 +2531,7 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
     else:
         verbose = 0
 
-    yield from render_run_exception_streams(exception.stdout, exception.stderr, verbose=verbose)
+    yield from render_run_exception_streams(exception.output, verbose=verbose)
 
 
 def render_exception_stack(
@@ -2506,11 +2558,19 @@ def render_exception_stack(
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
         yield f'  {B(frame.line)}'
 
-        if traceback_verbosity is TracebackVerbosity.FULL and frame.locals:
+        if frame.locals:
             yield ''
 
-            for k, v in frame.locals.items():
-                yield f'  {B(k)} = {Y(v)}'
+            if traceback_verbosity is TracebackVerbosity.LOCALS:
+                for k, v in frame.locals.items():
+                    v_formatted = (v[:TRACEBACK_LOCALS_TRIM] + '...') \
+                        if len(v) > TRACEBACK_LOCALS_TRIM else v
+
+                    yield f'  {B(k)} = {Y(v_formatted)}'
+
+            elif traceback_verbosity is TracebackVerbosity.FULL:
+                for k, v in frame.locals.items():
+                    yield f'  {B(k)} = {Y(v)}'
 
             yield ''
 
@@ -2609,7 +2669,7 @@ def show_exception(
                         GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
                         include_logfiles=False)
 
-            for line in _render_exception(traceback_verbosity=TracebackVerbosity.FULL):
+            for line in _render_exception(traceback_verbosity=TracebackVerbosity.LOCALS):
                 for stream in logfile_streams:
                     logger.print(line, file=stream)
 
@@ -2988,6 +3048,10 @@ class FieldMetadata(Generic[T]):
 
 def container_fields(container: Container) -> Iterator[dataclasses.Field[Any]]:
     yield from dataclasses.fields(container)
+
+
+def container_has_field(container: Container, key: str) -> bool:
+    return key in list(container_keys(container))
 
 
 def container_keys(container: Container) -> Iterator[str]:
@@ -4235,6 +4299,34 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 
 
 class RetryStrategy(urllib3.util.retry.Retry):
+    def __init__(self, *args: Any, logger: Optional[tmt.log.Logger] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.logger = logger
+
+    def new(self, **kw: Any) -> 'Self':
+        new_retry = super().new(**kw)
+        new_retry.logger = self.logger
+        return new_retry
+
+    def _log_rate_limit_info(self, headers: urllib3._collections.HTTPHeaderDict) -> None:
+        """Log current GitHub rate limit information"""
+        if not self.logger:
+            return
+
+        self.logger.debug("Limit", headers.get('X-RateLimit-Limit', 'unknown'))
+        self.logger.debug("Remaining", headers.get('X-RateLimit-Remaining', 'unknown'))
+        self.logger.debug("Reset", headers.get('X-RateLimit-Reset', 'unknown'))
+        self.logger.debug("Resource", headers.get('X-RateLimit-Resource', 'unknown'))
+
+    def _log_response_info(self, response: HTTPResponse) -> None:
+        """Log detailed response information for debugging"""
+        if not self.logger:
+            return
+
+        self.logger.debug("Response status", response.status)
+        self.logger.debug("Response headers", dict(response.headers))
+        self.logger.debug("Response text", response.data.decode('utf-8'))
+
     def increment(
             self,
             *args: Any,
@@ -4265,7 +4357,89 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
                 raise GeneralError(message) from error
 
+        # Handle GitHub-specific responses
+        # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit
+        response = cast(Optional[urllib3.response.HTTPResponse], kwargs.get('response'))
+        if response is None or 'X-GitHub-Request-Id' not in response.headers:
+            return super().increment(*args, **kwargs)
+
+        headers = response.headers
+
+        # Log rate limit information if available
+        if any(key.startswith('X-RateLimit-') for key in list(headers.keys())):
+            # mypy complains without converting headers keys to list
+            self._log_rate_limit_info(headers)
+
+        if response.status not in (403, 429):
+            return super().increment(*args, **kwargs)
+        # Log response info for problematic responses
+        self._log_response_info(response)
+
+        # Check if this is actually a rate limit issue
+        if 'X-RateLimit-Resource' in headers:
+            # Primary rate limit exceeded
+            if ('X-RateLimit-Remaining' in headers and
+                    int(headers['X-RateLimit-Remaining']) == 0):
+                reset_time = int(headers['X-RateLimit-Reset'])
+                wait_time = reset_time - int(time.time())
+                if wait_time > 0:
+                    # Add 1 second buffer
+                    wait_time += 1
+
+                    if self.logger:
+                        self.logger.info("Primary rate limit exceeded. Waiting "
+                                         f"{wait_time + 1} seconds.")
+                    time.sleep(wait_time)
+
+            if 'Retry-After' in headers:
+                retry_after = int(headers['Retry-After'])
+                retry_after += 1
+                if self.logger:
+                    self.logger.info(
+                        f"Secondary rate limit hit. Waiting {retry_after} seconds."
+                        )
+                time.sleep(retry_after)
+
+            # Exponential backoff for unclear rate limit cases
+            if self.total is not None:
+                wait_time = min(2 ** self.total, 60)
+                if self.logger:
+                    self.logger.info(
+                        "Rate limit detected but no wait time specified. "
+                        f"Using exponential backoff: {wait_time} seconds"
+                        )
+                time.sleep(wait_time)
+
+        # Handle other 403 cases
+        elif 'X-GitHub-Request-Id' in headers:
+            try:
+                error_msg = json.loads(response.data.decode('utf-8')
+                                       ).get('message', '').lower()
+                if self.logger:
+                    self.logger.warning(f"GitHub API error: {error_msg}")
+            except (ValueError, AttributeError) as e:
+                if self.logger:
+                    self.logger.warning(
+                        f"Failed to parse error message from response: {e}")
+
         return super().increment(*args, **kwargs)
+
+    def _is_rate_limit_error(self, response: requests.Response) -> bool:
+        if not response or 'X-GitHub-Request-Id' not in response.headers:
+            return False
+
+        try:
+            error_msg = response.json().get('message', '').lower()
+            is_rate_limit = ('rate limit exceeded' in error_msg or
+                             'secondary rate limit' in error_msg)
+            if self.logger:
+                self.logger.debug(
+                    f"Rate limit error detection: {is_rate_limit} (message: {error_msg})")
+            return is_rate_limit
+        except (ValueError, AttributeError) as e:
+            if self.logger:
+                self.logger.warning(f"Failed to check rate limit error: {e}")
+            return False
 
 
 # ignore[type-arg]: base class is a generic class, but we cannot list
@@ -4279,7 +4453,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
             allowed_methods: Optional[tuple[str, ...]] = None,
             status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            logger: Optional[tmt.log.Logger] = None
             ) -> requests.Session:
 
         # `method_whitelist`` has been renamed to `allowed_methods` since
@@ -4292,14 +4467,16 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 total=retries,
                 status_forcelist=status_forcelist,
                 method_whitelist=allowed_methods,
-                backoff_factor=backoff_factor)
+                backoff_factor=backoff_factor,
+                logger=logger)
 
         else:
             retry_strategy = RetryStrategy(
                 total=retries,
                 status_forcelist=status_forcelist,
                 allowed_methods=allowed_methods,
-                backoff_factor=backoff_factor)
+                backoff_factor=backoff_factor,
+                logger=logger)
 
         if timeout is not None:
             http_adapter: requests.adapters.HTTPAdapter = TimeoutHTTPAdapter(
@@ -4320,7 +4497,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
             allowed_methods: Optional[tuple[str, ...]] = None,
             status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            logger: Optional[tmt.log.Logger] = None
             ) -> None:
         self.retries = retries
         self.backoff_factor = backoff_factor
@@ -4356,6 +4534,9 @@ def generate_runs(
             run_path = Path(id_name)
             if '/' not in id_name:
                 run_path = path / run_path
+            if not run_path.exists():
+                raise tmt.utils.GeneralError(
+                    f"Directory '{run_path}' does not exist.")
             if run_path.is_absolute() and run_path.exists():
                 yield run_path
         else:
@@ -5540,6 +5721,24 @@ def normalize_string_dict(
         key_address, value, 'a dictionary or a list of KEY=VALUE strings')
 
 
+def normalize_data_amount(
+        key_address: str,
+        raw_value: Any,
+        logger: tmt.log.Logger) -> 'Size':
+
+    from pint import Quantity
+
+    if isinstance(raw_value, Quantity):
+        return raw_value
+
+    if isinstance(raw_value, str):
+        import tmt.hardware
+
+        return tmt.hardware.UNITS(raw_value)
+
+    raise NormalizationError(key_address, raw_value, 'a quantity or a string')
+
+
 class NormalizeKeysMixin(_CommonBase):
     """
     Mixin adding support for loading fmf keys into object attributes.
@@ -6097,3 +6296,33 @@ def is_url(url: str) -> bool:
     """ Check if the given string is a valid URL """
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
+
+
+# Handle the thread synchronization for the `catch_warnings(...)` context manager
+_catch_warning_lock = RLock()
+ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
+
+
+@contextlib.contextmanager
+def catch_warnings_safe(
+        action: ActionType,
+        category: type[Warning] = Warning) -> Iterator[None]:
+    """
+    Optionally catch the given warning category.
+
+    Using this context manager you can catch/suppress given warnings category. These warnings gets
+    re-enabled/reset with an exit from this context manager.
+
+    This function uses a reentrant lock for thread synchronization to be a thread-safe. That's why
+    it's wrapping :py:meth:`warnings.catch_warnings` instead of using it directly.
+
+    The example can be suppressing of the urllib insecure request warning:
+
+    .. code-block:: python
+
+        with catch_warnings_safe('ignore', urllib3.exceptions.InsecureRequestWarning):
+            ...
+    """
+    with _catch_warning_lock, warnings.catch_warnings():
+        warnings.simplefilter(action=action, category=category)
+        yield

@@ -33,6 +33,13 @@ rlJournalStart
                 continue
             fi
 
+            if rlIsFedora ">=42" && (is_centos_7 "$image" || is_ubi_8 "$image"); then
+                    rlLogInfo "Skipping because Ansible shipped with Fedora does not support Python 3.6"
+                rlPhaseEnd
+
+                continue
+            fi
+
             [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
 
             # Run given method

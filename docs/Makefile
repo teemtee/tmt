@@ -8,6 +8,9 @@ REPODIR = ..
 # Path to tmt source directory
 TMTDIR = $(REPODIR)/tmt
 
+# Path to docs source directory
+DOCSDIR = $(REPODIR)/docs
+
 # Path to directory with scripts generating documentation sources
 SCRIPTSDIR = scripts
 
@@ -26,12 +29,6 @@ STEPS = discover provision prepare execute finish report
 # A list of `plugins/*.rst` files to generate
 PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/test-checks.rst
 
-# A source of logo picture for Sphinx docs favicon
-LOGO_SRC = https://raw.githubusercontent.com/teemtee/docs/main/logo/tmt-small.png
-
-# Local filepath to fetched logo
-LOGO_DST = _static/tmt-small.png
-
 .DEFAULT_GOAL := help
 
 .PHONY: help \
@@ -39,13 +36,13 @@ LOGO_DST = _static/tmt-small.png
         generate-plugins \
         $(PLUGIN_TARGETS) \
         generate-stories \
-        generate-template-filters \
+        generate-template-extensions \
         generate-autodocs clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-lint-checks generate-template-filters generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-extensions generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -72,20 +69,15 @@ define plugins-checks-dependencies =
 $(SCRIPTSDIR)/generate-plugins.py $(PLUGINS_TEMPLATE) $(TMTDIR)/steps/__init__.py $(TMTDIR)/checks/*.py
 endef
 
-# We can ignore the error: later, during the build, if the logo is
-# missing, Sphinx will complain.
-$(LOGO_DST):
-	-curl -f $(LOGO_SRC) -o $(LOGO_DST)
-
 # Generate plugin documentation sources for a given step
 define build-plugins =
 $(SCRIPTSDIR)/generate-plugins.py $(call plugins-to-step,$@) $(PLUGINS_TEMPLATE) $@
 endef
 
-code/template-filters.rst: $(SCRIPTSDIR)/generate-template-filters.py \
-                           $(TEMPLATESDIR)/template-filters.rst.j2 \
-                           $(TMTDIR)/utils/templates.py
-	$(SCRIPTSDIR)/generate-template-filters.py $(TEMPLATESDIR)/template-filters.rst.j2 $@
+code/template-extensions.rst: $(SCRIPTSDIR)/generate-template-extensions.py \
+                              $(TEMPLATESDIR)/template-extensions.rst.j2 \
+                              $(TMTDIR)/utils/templates.py
+	$(SCRIPTSDIR)/generate-template-extensions.py $(TEMPLATESDIR)/template-extensions.rst.j2 $@
 
 plugins/discover.rst: $(call plugins-dependencies)
 	$(call build-plugins)
@@ -113,6 +105,11 @@ plugins/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
                           $(shell find $(REPODIR)/spec/hardware -name '*.fmf')
 	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
 
+guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-test-runner-guest-matrix.py \
+                                                      $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
+                                                      $(DOCSDIR)/test-runner-guest-compatibility.yaml
+	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
+
 spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
                $(TEMPLATESDIR)/lint-checks.rst.j2 \
                $(TMTDIR)/base.py
@@ -130,13 +127,15 @@ generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate docume
 
 generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requirement support matrix
 
+generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.rst  ## Generate runner vs. guest compatibility matrix
+
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
-generate-template-filters: code/template-filters.rst  ## Generate documentation sources for Jinja2 template filters
+generate-template-extensions: code/template-extensions.rst  ## Generate documentation sources for Jinja2 template extensions
 
 clean:  ## Remove all generated content
-	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-filters.rst plugins/hardware-matrix.rst $(PLUGIN_TARGETS) $(LOGO_DST)
+	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-extensions.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS)
 
 ##
 ## Help!

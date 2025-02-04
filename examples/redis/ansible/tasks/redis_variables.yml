@@ -1,3 +1,5 @@
+---
+
 - name: Set variables into redis database
   ansible.builtin.command: |
     redis-cli set key value1

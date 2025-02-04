@@ -64,6 +64,22 @@ properties:
   api-version:
     type: string
 
+  log-size-limit:
+    anyOf:
+      - type: string
+      - type: integer
+
+  traceback-size-limit:
+    anyOf:
+      - type: string
+      - type: integer
+
+  ssl-verify:
+    type: boolean
+
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
 required:
   - how
   - project

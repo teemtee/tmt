@@ -29,6 +29,7 @@ rlJournalStart
         rlAssertGrep "title Concise title" $rlRun_LOG
         rlAssertGrep "story As a user I want this and that" $rlRun_LOG
         rlAssertGrep "description Some description" $rlRun_LOG
+        rlAssertGrep "author Original Author <original@author.org>" $rlRun_LOG
         rlAssertGrep "contact Some Body <somebody@somewhere.org>" $rlRun_LOG
         rlAssertGrep "priority must have" $rlRun_LOG
         rlAssertGrep "example Inspiring example" $rlRun_LOG
@@ -84,6 +85,20 @@ rlJournalStart
         rlAssertGrep "enabled" $rlRun_LOG
         rlRun -s "tmt stories show $(printf '\x1b[31m'$story_name'\x1b[0m')" "1-255"
         rlAssertGrep "Invalid name.*$story_name" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test whether 'tmt', 'stories' and 'show' accept verbosity option"
+        rlRun -s "tmt    stories    show    /stories/full"
+        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    stories    show -v /stories/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    stories -v show    /stories/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt -v stories    show    /stories/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

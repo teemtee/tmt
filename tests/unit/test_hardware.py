@@ -192,6 +192,7 @@ FULL_HARDWARE_REQUIREMENTS = """
             - "= avx2"
             - "!= smep"
         hyper-threading: true
+        frequency: ">= 2300.0"
     device:
       device-name: '~ .*Thunderbolt.*'
       device: 79
@@ -240,6 +241,16 @@ FULL_HARDWARE_REQUIREMENTS = """
         mode: "CCA"
 """
 
+OR_HARDWARE_REQUIREMENTS = """
+    or:
+      - hostname: == dummy1.redhat.com
+      - or:
+        - hostname: == dummy2.redhat.com
+        - or:
+          - hostname: == dummy3.redhat.com
+          - hostname: == dummy4.redhat.com
+"""
+
 
 def test_parse_maximal_constraint() -> None:
     hw_spec_out = """
@@ -260,6 +271,7 @@ def test_parse_maximal_constraint() -> None:
               - cpu.family: < 6
               - cpu.vendor: == 32902
               - cpu.stepping: '!= 10'
+              - cpu.frequency: '>= 2300.0 megahertz'
               - cpu.family-name: == Skylake
               - cpu.model-name: '!~ Haswell'
               - cpu.vendor-name: ~ Intel.*
@@ -326,3 +338,19 @@ def test_parse_maximal_constraint() -> None:
     print(textwrap.dedent(hw_spec_out))
 
     assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+
+
+def test_parse_or_constraint() -> None:
+    hw_spec_out = """
+     or:
+       - hostname: == dummy1.redhat.com
+       - or:
+           - hostname: == dummy2.redhat.com
+           - or:
+               - hostname: == dummy3.redhat.com
+               - hostname: == dummy4.redhat.com
+    """
+
+    hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
+    assert tmt.utils.dict_to_yaml(
+        hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()

@@ -14,12 +14,29 @@ rlJournalStart
         rlRun "set -o pipefail"
         rlRun "output=\$(mktemp)"
         rlRun "show_tmp=\$(mktemp)"
+        rlRun "show_dir0=\$(mktemp -d)"
         rlRun "show_dir1=\$(mktemp -d)"
         rlRun "show_dir2=\$(mktemp -d)"
         rlRun "show_dir3=\$(mktemp -d)"
+        rlRun "export LOCAL_GIT_ROOT=$(git rev-parse --show-toplevel)"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in a normal git repo"
+        rlRun -s "tmt plans show -vvv mini"
+        dump_fmf_id_block $rlRun_LOG > $show_tmp
+        rlRun "cat $show_tmp"
+        rlAssertGrep "url:" $show_tmp
+        # Cannot assert 'ref' here as it could run on the default branch'
+        rlAssertGrep "path:" $show_tmp
+        rlAssertGrep "name:" $show_tmp
+        rlAssertGrep "web" $show_tmp
+    rlPhaseEnd
+
+    rlPhaseStartTest "Show a plan with -vvv in a normal, branched git repo"
+        rlRun "cp -r \"$LOCAL_GIT_ROOT\" \"$show_dir0\""
+        # Use glob, git root dirname may be random
+        rlRun "pushd $show_dir0/*/tests/plan/show/data"
+        rlRun "git checkout -b THIS_BRANCH"
         rlRun -s "tmt plans show -vvv mini"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
@@ -28,6 +45,7 @@ rlJournalStart
         rlAssertGrep "path:" $show_tmp
         rlAssertGrep "name:" $show_tmp
         rlAssertGrep "web" $show_tmp
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in an empty git repo"
@@ -110,6 +128,7 @@ rlJournalStart
         rlAssertGrep "summary Plan keys are correctly displayed" $rlRun_LOG
         rlAssertGrep "description Some description" $rlRun_LOG
         rlAssertGrep "contact Some Body <somebody@somewhere.org>" $rlRun_LOG
+        rlAssertGrep "author Original Author <original@author.org>" $rlRun_LOG
         rlAssertGrep "id e3a9a8ed-4585-4e86-80e8-1d99eb5345a9" $rlRun_LOG
         rlAssertGrep "enabled true" $rlRun_LOG
         rlAssertGrep "order 70" $rlRun_LOG
@@ -183,6 +202,20 @@ rlJournalStart
 
         rlRun -s "tmt plan show -e ENV_SCRIPT=dummy-script /plans/envvars" 0 "Export plan"
         rlAssertEquals "script shall be an replaced" "$(grep ' script ' $rlRun_LOG | awk '{print $2}')" "dummy-script"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test whether 'tmt', 'plans' and 'show' accept verbosity option"
+        rlRun -s "tmt    plans    show    /plans/full"
+        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    plans    show -v /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt    plans -v show    /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun -s "tmt -v plans    show    /plans/full"
+        rlAssertGrep "fmf-id url" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

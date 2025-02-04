@@ -13,7 +13,7 @@ from tmt.utils import (
     Path,
     ShellScript,
     format_timestamp,
-    render_run_exception_streams,
+    render_command_report,
     )
 
 if TYPE_CHECKING:
@@ -117,21 +117,13 @@ def _run_script(
 def _report_success(label: str, output: tmt.utils.CommandOutput) -> list[str]:
     """ Format successful command output for the report """
 
-    return [
-        f'# {label}',
-        output.stdout or '',
-        ''
-        ]
+    return list(render_command_report(label=label, output=output))
 
 
 def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
     """ Format failed command output for the report """
 
-    return [
-        f'# {label}',
-        "\n".join(render_run_exception_streams(exc.stdout, exc.stderr, verbose=1)),
-        ''
-        ]
+    return list(render_command_report(label=label, exc=exc))
 
 
 def create_ausearch_timestamp(
@@ -243,11 +235,7 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
         got_ausearch = True
         got_denials = True
 
-        report += [
-            '# ausearch',
-            "\n".join(render_run_exception_streams(output.stdout, output.stderr, verbose=1)),
-            ''
-            ]
+        report += list(render_command_report(label='ausearch', output=output))
 
     else:
         if exc.returncode == 1 and exc.stderr and '<no matches>' in exc.stderr.strip():
@@ -289,9 +277,9 @@ class AvcDenials(CheckPlugin[Check]):
         To work correctly, the check requires SELinux to be enabled on the
         guest, and ``auditd`` must be running. Without SELinux, the
         check will turn into no-op, reporting
-        :ref:`skip</spec/plans/results/outcomes>` result, and
+        :ref:`skip</spec/results/outcomes>` result, and
         without ``auditd``, the check will discover no AVC denials,
-        reporting :ref:`pass</spec/plans/results/outcomes>`.
+        reporting :ref:`pass</spec/results/outcomes>`.
 
         If the test manipulates ``auditd`` or SELinux in general, the
         check may report unexpected results.
@@ -313,9 +301,11 @@ class AvcDenials(CheckPlugin[Check]):
         # Avoid circular imports
         import tmt.base
 
+        # Note: yes, this will most likely explode in any distro outside
+        # of Fedora, CentOS and RHEL.
         return [
-            tmt.base.DependencySimple('/usr/sbin/sestatus'),
-            tmt.base.DependencySimple('/usr/sbin/ausearch')
+            tmt.base.DependencySimple('audit'),
+            tmt.base.DependencySimple('policycoreutils')
             ]
 
     @classmethod

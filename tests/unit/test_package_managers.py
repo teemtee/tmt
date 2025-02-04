@@ -46,6 +46,8 @@ CONTAINER_FEDORA_40 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/40/upstream:latest')
 CONTAINER_FEDORA_39 = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/39/upstream:latest')
+CONTAINER_CENTOS_STREAM_10 = Container(
+    url='containers-storage:localhost/tmt/tests/container/centos/stream10/upstream:latest')
 CONTAINER_CENTOS_STREAM_9 = Container(
     url='containers-storage:localhost/tmt/tests/container/centos/stream9/upstream:latest')
 CONTAINER_CENTOS_7 = Container(
@@ -54,6 +56,8 @@ CONTAINER_UBI_8 = Container(
     url='containers-storage:localhost/tmt/tests/container/ubi/8/upstream:latest')
 CONTAINER_UBUNTU_2204 = Container(
     url='containers-storage:localhost/tmt/tests/container/ubuntu/22.04/upstream:latest')
+CONTAINER_DEBIAN_127 = Container(
+    url='containers-storage:localhost/tmt/tests/container/debian/12.7/upstream:latest')
 CONTAINER_FEDORA_COREOS = Container(
     url='containers-storage:localhost/tmt/tests/container/fedora/coreos:stable')
 CONTAINER_FEDORA_COREOS_OSTREE = Container(
@@ -146,6 +150,7 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_39, PACKAGE_MANAGER_YUM),
 
     # CentOS Stream
+    (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_YUM),
 
@@ -158,6 +163,9 @@ CONTAINER_BASE_MATRIX = [
 
     # Ubuntu
     (CONTAINER_UBUNTU_2204, PACKAGE_MANAGER_APT),
+
+    # Debian
+    (CONTAINER_DEBIAN_127, PACKAGE_MANAGER_APT),
 
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),
@@ -389,7 +397,7 @@ def _parametrize_test_install() -> \
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
-                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
+                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -428,6 +436,87 @@ def test_install(
         root_logger)
 
     output = package_manager.install(package)
+
+    assert_log(caplog, message=MATCH(
+        rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
+
+    assert_output(expected_output, output.stdout, output.stderr)
+
+
+def _parametrize_test_refresh_metadata() -> \
+        Iterator[tuple[
+            Container,
+            PackageManagerClass,
+            str,
+            Optional[str]]]:
+
+    for container, package_manager_class in CONTAINER_BASE_MATRIX:
+        if package_manager_class is tmt.package_managers.dnf.Yum:
+            yield container, \
+                package_manager_class, \
+                r"yum makecache", \
+                'Metadata'
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield container, \
+                package_manager_class, \
+                r"dnf makecache -y --refresh", \
+                'Metadata cache created'
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf5:
+            yield container, \
+                package_manager_class, \
+                r"dnf5 makecache -y --refresh", \
+                'Metadata cache created'
+
+        elif package_manager_class is tmt.package_managers.apt.Apt:
+            yield container, \
+                package_manager_class, \
+                r"export DEBIAN_FRONTEND=noninteractive; apt update", \
+                'packages'
+
+        elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                r"rpm-ostree refresh-md --force",
+                'Available',
+                marks=pytest.mark.skip(reason="refresh-md does not work with how tmt runs ostree container")  # noqa: E501
+                )
+
+        elif package_manager_class is tmt.package_managers.apk.Apk:
+            yield container, \
+                package_manager_class, \
+                r"apk update", \
+                'OK:'
+
+        else:
+            pytest.fail(f"Unhandled package manager class '{package_manager_class}'.")
+
+
+@pytest.mark.containers
+@pytest.mark.parametrize(('container_per_test',
+                          'package_manager_class',
+                          'expected_command',
+                          'expected_output'),
+                         list(_parametrize_test_refresh_metadata()),
+                         indirect=["container_per_test"],
+                         ids=CONTAINER_MATRIX_IDS)
+def test_refresh_metadata(
+        container_per_test: ContainerData,
+        guest_per_test: GuestContainer,
+        package_manager_class: PackageManagerClass,
+        expected_command: str,
+        expected_output: Optional[str],
+        root_logger: tmt.log.Logger,
+        caplog: _pytest.logging.LogCaptureFixture) -> None:
+    package_manager = create_package_manager(
+        container_per_test,
+        guest_per_test,
+        package_manager_class,
+        root_logger)
+
+    output = package_manager.refresh_metadata()
 
     assert_log(caplog, message=MATCH(
         rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
@@ -493,7 +582,7 @@ def _parametrize_test_install_nonexistent() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree-but-spelled-wrong", \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong", \
                 'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -587,7 +676,7 @@ def _parametrize_test_install_nonexistent_skip() -> \
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree-but-spelled-wrong \|\| /bin/true", \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong \|\| /bin/true", \
                 'no package provides tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -685,8 +774,8 @@ def _parametrize_test_install_dont_check_first() -> \
             yield container, \
                 package_manager_class, \
                 Package('tree'), \
-                r"rpm-ostree install --apply-live --idempotent --allow-inactive  tree", \
-                'Installing: tree'
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, \
@@ -1270,7 +1359,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
             yield container, \
                 package_manager_class, \
                 FileSystemPath('/usr/bin/dos2unix'), \
-                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  /usr/bin/dos2unix", \
+                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /usr/bin/dos2unix", \
                 "Installing 1 packages:\n  dos2unix-"  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -1333,11 +1422,18 @@ def _parametrize_test_install_multiple() -> \
                     r"rpm -q --whatprovides dconf libpng \|\| yum install -y  dconf libpng && rpm -q --whatprovides dconf libpng", \
                     'Complete!'  # noqa: E501
 
-            else:
+            elif 'centos' in container.url:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"rpm -q --whatprovides tree diffutils \|\| yum install -y  tree diffutils && rpm -q --whatprovides tree diffutils", \
+                    'Complete!'  # noqa: E501
+
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('nano')), \
+                    r"rpm -q --whatprovides tree nano \|\| yum install -y  tree nano && rpm -q --whatprovides tree nano", \
                     'Complete!'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
@@ -1348,32 +1444,39 @@ def _parametrize_test_install_multiple() -> \
                     r"rpm -q --whatprovides dconf libpng \|\| dnf install -y  dconf libpng", \
                     'Complete!'
 
-            else:
+            elif 'centos' in container.url:
                 yield container, \
                     package_manager_class, \
                     (Package('tree'), Package('diffutils')), \
                     r"rpm -q --whatprovides tree diffutils \|\| dnf install -y  tree diffutils", \
                     'Complete!'
 
+            else:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('nano')), \
+                    r"rpm -q --whatprovides tree nano \|\| dnf install -y  tree nano", \
+                    'Complete!'
+
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
-                (Package('tree'), Package('diffutils')), \
-                r"rpm -q --whatprovides tree diffutils \|\| dnf5 install -y  tree diffutils", \
+                (Package('tree'), Package('nano')), \
+                r"rpm -q --whatprovides tree nano \|\| dnf5 install -y  tree nano", \
                 None
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield container, \
                 package_manager_class, \
-                (Package('tree'), Package('diffutils')), \
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils", \
+                (Package('tree'), Package('nano')), \
+                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano", \
                 'Setting up tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                (Package('tree'), Package('diffutils')), \
-                r"rpm -q --whatprovides tree diffutils \|\| rpm-ostree install --apply-live --idempotent --allow-inactive  tree diffutils", \
+                (Package('tree'), Package('nano')), \
+                r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
@@ -1424,6 +1527,7 @@ def _parametrize_test_install_downloaded() -> \
             Container,
             PackageManagerClass,
             tuple[Package, Package],
+            tuple[str, str],
             str,
             Optional[str]]]:
 
@@ -1433,8 +1537,9 @@ def _parametrize_test_install_downloaded() -> \
                 yield pytest.param(
                     container,
                     package_manager_class,
-                    (Package('tree'), Package('diffutils')),
-                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true",  # noqa: E501
+                    (Package('tree'), Package('nano')),
+                    ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/nano.rpm \|\| /bin/true",
                     'Complete!',
                     marks=pytest.mark.skip(reason="CentOS 7 does not support 'download' command")
                     )
@@ -1443,51 +1548,74 @@ def _parametrize_test_install_downloaded() -> \
                 yield container, \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
+                    ('dconf*.x86_64.rpm', 'libpng*.x86_64.rpm'), \
                     r"yum install -y --skip-broken /tmp/dconf.rpm /tmp/libpng.rpm \|\| /bin/true", \
+                    'Complete!'  # noqa: E501
+
+            elif 'centos' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
+                    ('tree*.x86_64.rpm', 'diffutils*.x86_64.rpm'), \
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
                     'Complete!'  # noqa: E501
 
             else:
                 yield container, \
                     package_manager_class, \
-                    (Package('tree'), Package('diffutils')), \
-                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/diffutils.rpm \|\| /bin/true", \
-                    'Complete!'  # noqa: E501
+                    (Package('tree'), Package('nano')), \
+                    ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'), \
+                    r"yum install -y --skip-broken /tmp/tree.rpm /tmp/nano.rpm \|\| /bin/true", \
+                    'Complete!'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'ubi/8' in container.url:
                 yield container, \
                     package_manager_class, \
                     (Package('dconf'), Package('libpng')), \
+                    ('dconf*.x86_64.rpm', 'libpng*.x86_64.rpm'), \
                     r"dnf install -y  /tmp/dconf.rpm /tmp/libpng.rpm", \
+                    'Complete!'
+
+            elif 'centos/stream9' in container.url:
+                yield container, \
+                    package_manager_class, \
+                    (Package('tree'), Package('diffutils')), \
+                    ('tree*.x86_64.rpm', 'diffutils*.x86_64.rpm'), \
+                    r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
                     'Complete!'
 
             else:
                 yield container, \
                     package_manager_class, \
-                    (Package('tree'), Package('diffutils')), \
-                    r"dnf install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                    (Package('tree'), Package('nano')), \
+                    ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'), \
+                    r"dnf install -y  /tmp/tree.rpm /tmp/nano.rpm", \
                     'Complete!'
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield container, \
                 package_manager_class, \
-                (Package('tree'), Package('diffutils')), \
-                r"dnf5 install -y  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                (Package('tree'), Package('nano')), \
+                ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'), \
+                r"dnf5 install -y  /tmp/tree.rpm /tmp/nano.rpm", \
                 None
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, \
                 package_manager_class, \
-                (Package('tree'), Package('diffutils')), \
-                r"rpm-ostree install --apply-live --idempotent --allow-inactive  /tmp/tree.rpm /tmp/diffutils.rpm", \
+                (Package('tree'), Package('cowsay')), \
+                ('tree*.x86_64.rpm', 'cowsay*.noarch.rpm'), \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /tmp/tree.rpm /tmp/cowsay.rpm", \
                 'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield pytest.param(
                 container,
                 package_manager_class,
-                (Package('tree'), Package('diffutils')),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree diffutils \|\| apt install -y  tree diffutils",  # noqa: E501
+                (Package('tree'), Package('nano')),
+                ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
+                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano",  # noqa: E501
                 'Setting up tree',
                 marks=pytest.mark.skip(reason="not supported yet")
             )
@@ -1496,8 +1624,9 @@ def _parametrize_test_install_downloaded() -> \
             yield pytest.param(
                 container,
                 package_manager_class,
-                (Package('tree'), Package('diffutils')),
-                r"apk info -e tree diffutils \|\| apk add tree diffutils",
+                (Package('tree'), Package('nano')),
+                ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
+                r"apk info -e tree nano \|\| apk add tree nano",
                 'Installing tree',
                 marks=pytest.mark.skip(reason="not supported yet")
                 )
@@ -1510,6 +1639,7 @@ def _parametrize_test_install_downloaded() -> \
 @pytest.mark.parametrize(('container_per_test',
                           'package_manager_class',
                           'packages',
+                          'artifacts',
                           'expected_command',
                           'expected_output'),
                          list(_parametrize_test_install_downloaded()),
@@ -1520,6 +1650,7 @@ def test_install_downloaded(
         guest_per_test: GuestContainer,
         package_manager_class: PackageManagerClass,
         packages: tuple[Package, Package],
+        artifacts: tuple[str, str],
         expected_command: str,
         expected_output: Optional[str],
         root_logger: tmt.log.Logger,
@@ -1538,7 +1669,7 @@ def test_install_downloaded(
         (yum download --destdir /tmp {packages[0]} {packages[1]} \
         || (dnf install -y 'dnf-command(download)' && dnf download --destdir /tmp {packages[0]} {packages[1]}) \
         || (dnf5 install -y 'dnf-command(download)' && dnf5 download --destdir /tmp {packages[0]} {packages[1]})) \
-        && mv /tmp/{packages[0]}*.x86_64.rpm /tmp/{packages[0]}.rpm && mv /tmp/{packages[1]}*.x86_64.rpm /tmp/{packages[1]}.rpm
+        && mv /tmp/{artifacts[0]} /tmp/{packages[0]}.rpm && mv /tmp/{artifacts[1]} /tmp/{packages[1]}.rpm
         """))  # noqa: E501
 
     # TODO: yum and downloaded packages results in post-install `rpm -q`

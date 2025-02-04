@@ -11,7 +11,7 @@ rlJournalStart
         # List of paths to check, on a single line
         PATHS=$(echo $FOUND $NOT_FOUND)
 
-        rlRun -s "tmt run -vvv -e IMAGE=$IMAGE -e \"PATHS='$PATHS'\" --id $run" 2 "Run the plan"
+        rlRun -s "tmt run -vvv -e IMAGE=$IMAGE -e \"PATHS='$PATHS'\" --id $run" 0 "Run the plan"
 
         for FOUND_PATH in $FOUND; do
             rlAssertGrep "out: $FOUND_PATH" $rlRun_LOG
@@ -20,6 +20,9 @@ rlJournalStart
         for NOT_FOUND_PATH in $NOT_FOUND; do
             rlAssertGrep "ls: cannot access '$NOT_FOUND_PATH': No such file or directory" $rlRun_LOG
         done
+
+        TMT_SCRIPTS_DIR=${TMT_SCRIPTS_DIR:-$DEFAULT_TMT_SCRIPTS_DIR}
+        rlAssertGrep "PATH=.*$TMT_SCRIPTS_DIR.*" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

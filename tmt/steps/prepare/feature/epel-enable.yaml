@@ -1,12 +1,16 @@
+---
+
 - name: Enable EPEL repositories
   hosts: all
   tasks:
     - name: Enable EPEL repos on RHEL 7
-      when: ansible_distribution == "RedHat" and ansible_distribution_major_version | int == 7
+      when:
+        - ansible_distribution == "RedHat"
+        - ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
 
@@ -29,13 +33,13 @@
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
 
         - name: Install package 'epel-next-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
           # EPEL Next is available for CentOS Stream 9 and newer only
@@ -59,7 +63,9 @@
           when: ansible_distribution_major_version | int >= 9
 
     - name: Enable EPEL repos on CentOS 7
-      when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int == 7
+      when:
+        - ansible_distribution == "CentOS"
+        - ansible_distribution_major_version | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:

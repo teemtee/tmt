@@ -80,12 +80,20 @@ rlJournalStart
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
 
+            elif is_centos_stream_10 "$image"; then
+                rlRun "distro=centos-stream-10"
+                rlRun "package_manager=dnf"
+
             elif is_centos_7 "$image"; then
                 rlRun "distro=centos-7"
                 rlRun "package_manager=yum"
 
             elif is_ubuntu "$image"; then
                 rlRun "distro=ubuntu"
+                rlRun "package_manager=apt"
+
+            elif is_debian "$image"; then
+                rlRun "distro=debian"
                 rlRun "package_manager=apt"
 
             elif is_fedora_coreos "$image"; then
@@ -125,7 +133,7 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_ubuntu "$image"; then
+            if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -142,7 +150,7 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_ubuntu "$image"; then
+            if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -238,7 +246,7 @@ rlJournalStart
             elif is_fedora_39 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ubuntu "$image"; then
+            elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then
@@ -275,7 +283,7 @@ rlJournalStart
             elif is_fedora_39 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_ubuntu "$image"; then
+            elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then
@@ -289,7 +297,7 @@ rlJournalStart
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
         if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then
-            if ! is_centos_7 "$image"; then
+            if ! is_centos_7 "$image" && ! is_fedora_39 "$image" && ! is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
                 rlPhaseEnd

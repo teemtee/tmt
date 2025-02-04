@@ -117,6 +117,11 @@
             width: 22ex;
         }
 
+        #results ul {
+            margin: 0px;
+            padding-inline-start: 16px;
+        }
+
         .context-dimension {
             display: inline-block;
             text-align: center;
@@ -266,7 +271,17 @@ Context:
         {% endfor %}
         </td>
         <td class="data"><a href="{{ base_dir | linkable_path | urlencode }}/{{ result.data_path | urlencode }}">data</a></td>
-        <td class="note">{% if result.note %}{{ result.note | e }}{% else %}-{% endif %}</td>
+        <td class="note">
+          {% if result.note %}
+            <ul>
+              {% for note in result.note %}
+                <li class="note">{{ note | e }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            -
+          {% endif %}
+        </td>
         <td class="action">
             {% if result.check %}
             <button onclick="toggle_row_visibility(this, 'check-{{ loop.index }}')" title="Show / hide checks">checks&nbsp;[+]</button>

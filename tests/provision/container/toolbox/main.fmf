@@ -1,0 +1,24 @@
+summary: Test container provisioner in toolbox
+description:
+    Verify that container provisioner works well when tmt is run from
+    a toolbox container and podman is run on the host system using
+    `flatpak-spawn --host`. This is a common setup used in Fedora
+    Silverblue.
+
+require:
+    - toolbox
+tag+:
+  - provision-only
+  - provision-container
+require+:
+  - toolbox
+adjust+:
+  - enabled: false
+    when: distro != fedora
+    because: Setting up toolbox on CS9 with default UBI9 toolbox image is a pain.
+  - check:
+      - how: avc
+        result: xfail
+    when: distro >= fedora-41
+    because: |
+      We are not interested in AVCs for this test due to complicated setup.

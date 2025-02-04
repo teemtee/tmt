@@ -73,8 +73,14 @@ properties:
   fips:
     type: boolean
 
+  prettify:
+    type: boolean
+
   include-output-log:
     type: boolean
+
+  when:
+    $ref: "/schemas/common#/definitions/when"
 
 required:
   - how

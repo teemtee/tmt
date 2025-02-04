@@ -10,18 +10,25 @@ rlJournalStart
 
     # would be set by TMT_TEST_DATA
     tmt_test_data="default/plan/execute/data/guest/default-0/default-1/data"
+    tmt_results_yaml_file="$tmp/default/plan/execute/results.yaml"
 
     rlPhaseStartTest
         rlRun "tmt run -vfi $tmp -a provision -h container"
         FILE_PATH=$tmp/$tmt_test_data/this_file.txt
-        BUNDLE_PATH=$tmp/$tmt_test_data/tmp-bundle_name.tar.gz
+
+        # The `TESTID` is set to same value as `TMT_TEST_SERIAL_NUMBER`. Get
+        # the serial number of a first test.
+        tmt_test_serial_number=$(yq -e '.[] | select(.name == "/") | .["serial-number"]' "$tmt_results_yaml_file")
+
+        # The bundle name is suffixed with `TESTID` value
+        BUNDLE_PATH="$tmp/$tmt_test_data/tmp-bundle_name-${tmt_test_serial_number}.tar.gz"
 
         # File was submitted and has correct content
-        rlAssertExists $FILE_PATH
-        rlAssertGrep "YES" $FILE_PATH
+        rlAssertExists "$FILE_PATH"
+        rlAssertGrep "YES" "$FILE_PATH"
 
         # Bundle was submitted and has correct content
-        rlAssertExists $BUNDLE_PATH
+        rlAssertExists "$BUNDLE_PATH"
         rlRun "tar tzf $BUNDLE_PATH | grep /this_file.txt" \
             0 "Bundle contains an expected file"
 

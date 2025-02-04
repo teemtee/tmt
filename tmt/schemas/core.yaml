@@ -17,6 +17,10 @@ definitions:
       - type: array
       - type: object
 
+  # https://tmt.readthedocs.io/en/stable/spec/core.html#author
+  author:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#contact
   contact:
     $ref: "/schemas/common#/definitions/one_or_more_strings"

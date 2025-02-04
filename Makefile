@@ -96,6 +96,8 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos:stable \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos/ostree:stable \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide:latest \
@@ -111,7 +113,8 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/39/unprivileged:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/upstream:latest \
-                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream:latest
 
 TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images-tests/$(subst :,\:,$(image)))
 
@@ -142,6 +145,12 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
 	$(call build-test-container-image,$@,centos/7/Containerfile.upstream)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10\:latest:
+	$(call build-test-container-image,$@,centos/stream10/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10/upstream\:latest:
+	$(call build-test-container-image,$@,centos/stream10/Containerfile.upstream)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream9\:latest:
 	$(call build-test-container-image,$@,centos/stream9/Containerfile)
@@ -197,11 +206,14 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/up
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream\:latest:
 	$(call build-test-container-image,$@,ubuntu/22.04/Containerfile.upstream)
 
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream\:latest:
+	$(call build-test-container-image,$@,debian/12.7/Containerfile.upstream)
+
 ##
 ## Development
 ##
 develop: _deps  ## Install development requirements
-	sudo dnf install -y gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
+	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
 
 # Git vim tags and cleanup
 tags:

@@ -259,11 +259,15 @@ Then you can install either everything or only those you need::
     sudo dnf install tmt-redhat-all
     sudo dnf install tmt-redhat-*
 
-Impatient to try the fresh features as soon as possible? Install
-the latest greatest version from the ``copr`` repository::
+Do you like to check the released bits as soon as they are out?
+Enable the ``stable`` copr repository and install from there::
 
-    sudo dnf copr enable @teemtee/tmt
-    sudo dnf install tmt
+    sudo dnf copr enable @teemtee/stable
+
+Impatient to try the fresh features as soon as they are merged
+into the ``main`` branch? Enable the ``latest`` copr repository::
+
+    sudo dnf copr enable @teemtee/latest
 
 Not sure, just want to try out how it works? Experiment safely and
 easily inside a container::
@@ -403,10 +407,23 @@ TMT_FORCE_COLOR
 
 TMT_SHOW_TRACEBACK
     By default, when tmt reports an error, the corresponding
-    traceback is not printed out. When ``TMT_SHOW_TRACEBACK`` is
-    set to any string except ``0``, traceback would be printed out.
-    When set to ``full``, traceback would list also local variables
-    in each stack frame.
+    traceback is not printed out. By setting this variable, the
+    traceback and details would be shown:
+
+    TMT_SHOW_TRACEBACK=0 (or unset)
+        Render only exception and its causes.
+
+    TMT_SHOW_TRACEBACK=1
+        Render also call stack for exception and each of its causes.
+
+    TMT_SHOW_TRACEBACK=2
+        Render also call stack for exception and each of its causes,
+        plus all local variables in each frame, trimmed to first 1024
+        characters of their values.
+
+    TMT_SHOW_TRACEBACK=full
+        Render everything that can be show: all causes, their call
+        stacks, all frames and all locals in their completeness.
 
 TMT_OUTPUT_WIDTH
     By default, the output width of commands like ``tmt * show`` is constrained
@@ -777,7 +794,8 @@ James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
 Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
-Koscielniak and Han Han.
+Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
+Chris Kyrouac and Xiaofeng Wang.
 
 
 Copyright

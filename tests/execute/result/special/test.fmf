@@ -1,0 +1,9 @@
+"/0..7 special: characters: *$@|&>< in: the: name":
+    summary: Basic test with special characters in the test/subtest name
+    result: restraint
+    test: "tmt-report-result '0..7 \"special\": \" characters: *$@|&>< in: the: name' PASS"
+
+/beakerlib-special-names:
+    summary: Beakerlib phases with special characters
+    framework: beakerlib
+    test: ./beaker-phases-special-names.sh

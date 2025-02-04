@@ -14,6 +14,29 @@ description: |
     panic detection, core dump collection or collection of system
     logs.
 
+    By default, the check results affect the overall test outcome.
+    To change this behaviour, use the ``result`` key, which accepts
+    the following values:
+
+        respect
+            The check result is respected and affects the overall
+            test result. This is the default.
+
+        xfail
+            The check result is expected to fail (pass becomes
+            fail and vice-versa).
+
+        info
+            The check result is treated as an informational
+            message and does not affect the overall test result.
+
+    .. warning::
+
+        Note that running one check multiple times for the same
+        test is not yet supported.
+
+    .. versionchanged:: 1.38.0 the ``result`` key added
+
     See :ref:`/plugins/test-checks` for the list of available checks.
 
 example:
@@ -37,7 +60,23 @@ example:
       - how: test-inspector
         enable: false
 
+  - |
+    # Expect the AVC check to fail
+    check:
+      - how: avc
+        result: xfail
+      - how: dmesg
+        result: respect
+
+  - |
+    # Treat the dmesg check as informational only
+    check:
+      - how: dmesg
+        result: info
+
 link:
   - implemented-by: /tmt/checks
+  - implemented-by: /tmt/result.py
   - verified-by: /tests/test/check/avc
   - verified-by: /tests/test/check/dmesg
+  - verified-by: /tests/execute/result/check

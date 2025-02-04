@@ -144,6 +144,9 @@ items:
     duration:
       $ref: "#/definitions/duration"
 
+    data-path:
+      type: string
+
     ids:
       type: object
       patternProperties:

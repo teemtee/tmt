@@ -1,0 +1,78 @@
+---
+
+#
+# JSON Schema definition for `bootc` provision plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#bootc
+#
+
+$id: /schemas/provision/bootc
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - bootc
+
+  name:
+    type: string
+
+  image:
+    type: string
+
+  user:
+    type: string
+
+  become:
+    type: boolean
+
+  key:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
+  memory:
+    type: integer
+
+  disk:
+    type: integer
+
+  connection:
+    type: string
+    enum:
+      - session
+      - system
+
+  arch:
+    $ref: "/schemas/common#/definitions/arch"
+
+  role:
+    $ref: "/schemas/common#/definitions/role"
+
+  container-file:
+    type: string
+
+  container-file-workdir:
+    type: string
+
+  container-image:
+    type: string
+
+  add-tmt-dependencies:
+    type: boolean
+
+  image-builder:
+    type: string
+
+  rootfs:
+    type: string
+    enum:
+      - ext4
+      - xfs
+      - btrfs
+
+required:
+  - how

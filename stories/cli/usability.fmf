@@ -10,7 +10,7 @@ story:
             - tmt st sh
             - tmt s s
         link:
-          - implemented-by: /tmt/cli.py
+          - implemented-by: /tmt/cli
 
     /options:
         summary: Allow option abbreviation

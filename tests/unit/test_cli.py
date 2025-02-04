@@ -7,7 +7,7 @@ import tempfile
 import _pytest.monkeypatch
 import pytest
 
-import tmt.cli
+import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.utils import Path
@@ -28,7 +28,7 @@ def test_mini():
     """ Minimal smoke test """
     tmp = tempfile.mkdtemp()
     result = runner.invoke(
-        tmt.cli.main,
+        tmt.cli._root.main,
         ['--root', example('mini'), 'run', '-i', tmp, '-dv', 'discover'])
     assert result.exit_code == 0
     assert 'Found 1 plan.' in result.output
@@ -42,24 +42,24 @@ def test_init():
     tmp = tempfile.mkdtemp()
     original_directory = os.getcwd()
     os.chdir(tmp)
-    result = runner.invoke(tmt.cli.main, ['init'])
+    result = runner.invoke(tmt.cli._root.main, ['init'])
     assert 'Initialized the fmf tree root' in result.output
-    result = runner.invoke(tmt.cli.main, ['init'])
+    result = runner.invoke(tmt.cli._root.main, ['init'])
     assert 'already exists' in result.output
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'mini'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'mini'])
     assert 'plans/example' in result.output
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'mini'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'mini'])
     assert result.exception
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'full',
-                                          '--force'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'full',
+                                                '--force'])
     assert 'overwritten' in result.output
     # tmt init --template mini in a clean directory
     os.system('rm -rf .fmf *')
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'mini'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'mini'])
     assert 'plans/example' in result.output
     # tmt init --template full in a clean directory
     os.system('rm -rf .fmf *')
-    result = runner.invoke(tmt.cli.main, ['init', '--template', 'full'])
+    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'full'])
     assert 'tests/example' in result.output
     os.chdir(original_directory)
     shutil.rmtree(tmp)
@@ -82,7 +82,7 @@ def test_create():
         'story create -t full test',
         ]
     for command in commands:
-        result = runner.invoke(tmt.cli.main, command.split())
+        result = runner.invoke(tmt.cli._root.main, command.split())
         assert result.exit_code == 0
         os.system('rm -rf *')
     # Test directory cleanup
@@ -95,7 +95,8 @@ def test_step():
     for step in ['discover', 'provision', 'prepare']:
         tmp = tempfile.mkdtemp()
         result = runner.invoke(
-            tmt.cli.main, ['--feeling-safe', '--root', example('local'), 'run', '-i', tmp, step])
+            tmt.cli._root.main,
+            ['--feeling-safe', '--root', example('local'), 'run', '-i', tmp, step])
         assert result.exit_code == 0
         assert step in result.output
         assert 'finish' not in result.output
@@ -108,7 +109,7 @@ def test_step_execute():
     step = 'execute'
 
     result = runner.invoke(
-        tmt.cli.main, ['--root', example('local'), 'run', '-i', tmp, step])
+        tmt.cli._root.main, ['--root', example('local'), 'run', '-i', tmp, step])
 
     # Test execute empty with discover output missing
     assert result.exit_code != 0
@@ -123,11 +124,11 @@ def test_step_execute():
 def test_systemd():
     """ Check systemd example """
     result = runner.invoke(
-        tmt.cli.main, ['--root', example('systemd'), 'plan'])
+        tmt.cli._root.main, ['--root', example('systemd'), 'plan'])
     assert result.exit_code == 0
     assert 'Found 2 plans' in result.output
     result = runner.invoke(
-        tmt.cli.main, ['--root', example('systemd'), 'plan', 'show'])
+        tmt.cli._root.main, ['--root', example('systemd'), 'plan', 'show'])
     assert result.exit_code == 0
     assert 'Tier two functional tests' in result.output
 

@@ -4,7 +4,7 @@ story: 'As a developer I want to comfortably work with stories'
     story: 'List available stories'
     example: tmt story ls
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - verified-by: /tests/core/ls
       - documented-by: /docs/examples.rst#explore-stories
 
@@ -12,7 +12,7 @@ story: 'As a developer I want to comfortably work with stories'
     story: 'Show story details'
     example: tmt story show
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#explore-stories
 
 /filter:
@@ -33,7 +33,7 @@ story: 'As a developer I want to comfortably work with stories'
         - tmt story ls --documented
         - tmt story ls --undocumented
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#filter-stories
 
 /create:
@@ -46,7 +46,7 @@ story: 'As a developer I want to comfortably work with stories'
         - tmt story create /stories/area/story --template mini
         - tmt story create /stories/area/story --template mini --force
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#create-stories
 
 /coverage:
@@ -56,7 +56,7 @@ story: 'As a developer I want to comfortably work with stories'
         have been implemented, are covered by tests and
         documented and which still need work to be done.
     link:
-      - implemented-by: /tmt/cli.py
+      - implemented-by: /tmt/cli
       - documented-by: /docs/examples.rst#story-coverage
 
     /overview:
@@ -93,7 +93,7 @@ story: 'As a developer I want to comfortably work with stories'
             So that they can be included in tmt documentation.
         example: tmt story export --rst
         link:
-          - implemented-by: /tmt/cli.py
+          - implemented-by: /tmt/cli
           - implemented-by: /tmt/base.py
 
     /html:
