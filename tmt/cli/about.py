@@ -48,7 +48,7 @@ def _render_plugins_list_rest() -> str:
 
             {% if registry %}
                 {% for plugin_id in registry.iter_plugin_ids() %}
-        * `{{ plugin_id }}`
+        * ``{{ plugin_id }}``
                 {% endfor %}
             {% else %}
         No plugins discovered.
