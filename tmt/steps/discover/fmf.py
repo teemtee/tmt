@@ -65,7 +65,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             Path to the metadata tree root. Must be relative to
             the git repository root if url provided, absolute
-            local filesystem path otherwise. By default . is
+            local filesystem path otherwise. By default ``.`` is
             used.
             """)
 
@@ -131,7 +131,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         metavar='REVISION',
         help="""
             The branch, tag or commit specifying the reference git revision (if not provided, the
-            default branch is used). Note that you need to specify reference/<branch> to
+            default branch is used). Note that you need to specify ``reference/<branch>`` to
             compare to a branch from the repository specified in modified-url.
             """)
 
