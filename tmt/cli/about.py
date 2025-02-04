@@ -5,6 +5,8 @@ import re
 import textwrap
 from typing import Any
 
+from click import echo
+
 import tmt.utils
 import tmt.utils.rest
 from tmt.cli import Context, CustomGroup, pass_context
@@ -16,8 +18,12 @@ from tmt.utils.templates import render_template
 
 
 @main.group(invoke_without_command=True, cls=CustomGroup)
-def about() -> None:
+@pass_context
+def about(context: Context) -> None:
     """ Show info about tmt itself """
+
+    if context.invoked_subcommand is None:
+        echo(context.get_help(), color=context.color)
 
 
 def _render_plugins_list_rest() -> str:
@@ -62,10 +68,11 @@ def _render_plugins_list_rest() -> str:
     return render_template(template, REGISTRIES=iter_plugin_registries(), find_intro=find_intro)
 
 
-@about.group()
+@about.group(invoke_without_command=True, cls=CustomGroup)
 @pass_context
 def plugins(context: Context) -> None:
-    pass
+    if context.invoked_subcommand is None:
+        echo(context.get_help(), color=context.color)
 
 
 @plugins.command(name='ls')
