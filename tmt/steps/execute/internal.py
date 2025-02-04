@@ -68,8 +68,8 @@ def effective_pidfile_root() -> Path:
 # the test. Test script may be a single command, but also a multiline,
 # complicated shell script. To avoid issues with quotes and escaping
 # things here and there, tmt saves the test script into the inner
-# wrapper, and then the outer wrapper can work with just a single a
-# single executable shell script.
+# wrapper, and then the outer wrapper can work with just a single
+# executable shell script.
 #
 # For the duration of the test, the outer wrapper creates so-called
 # "test pidfile". The pidfile contains outer wrapper PID and path to the
