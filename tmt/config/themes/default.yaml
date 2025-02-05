@@ -1,0 +1,23 @@
+# restructuredtext-text:
+
+restructuredtext-literal:
+  fg: green
+restructuredtext-emphasis:
+  fg: blue
+restructuredtext-strong:
+  fg: blue
+  bold: true
+
+restructuredtext-literalblock:
+  fg: green
+restructuredtext-literalblock-yaml:
+  fg: cyan
+restructuredtext-literalblock-shell:
+  fg: yellow
+
+restructuredtext-admonition-note:
+  fg: blue
+  bold: true
+restructuredtext-admonition-warning:
+  fg: yellow
+  bold: true
