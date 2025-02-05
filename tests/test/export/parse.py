@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-""" A simple script to parse the output of 'tmt test export .' """
+"""
+A simple script to parse the output of 'tmt test export .'
+"""
 
 import sys
 

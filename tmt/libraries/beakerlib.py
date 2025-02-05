@@ -159,7 +159,10 @@ class BeakerLib(Library):
 
     @property
     def hostname(self) -> str:
-        """ Get hostname from url or default to local """
+        """
+        Get hostname from url or default to local
+        """
+
         if self.url:
             matched = re.match(r'(?:git|http|https|ssh)(?:@|://)(.*?)[/:]', self.url)
             if matched:
@@ -168,13 +171,19 @@ class BeakerLib(Library):
 
     @property
     def fmf_node_path(self) -> Path:
-        """ Path to fmf node """
+        """
+        Path to fmf node
+        """
+
         if self.path:
             return self.path / self.name.strip('/')
         return super().fmf_node_path
 
     def __str__(self) -> str:
-        """ Use repo/name for string representation """
+        """
+        Use repo/name for string representation
+        """
+
         return f"{self.repo}{self.name[self.name.rindex('/'):]}"
 
     @property
@@ -195,7 +204,10 @@ class BeakerLib(Library):
         return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
 
     def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
-        """ Merge all inherited metadata into one metadata file """
+        """
+        Merge all inherited metadata into one metadata file
+        """
+
         for f in local_library_path.glob(r'*\.fmf'):
             f.unlink()
         write(
@@ -204,7 +216,10 @@ class BeakerLib(Library):
             quiet=True)
 
     def fetch(self) -> None:
-        """ Fetch the library (unless already fetched) """
+        """
+        Fetch the library (unless already fetched)
+        """
+
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self)]

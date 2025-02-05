@@ -65,7 +65,10 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Perform finishing tasks on given guest """
+        """
+        Perform finishing tasks on given guest
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary

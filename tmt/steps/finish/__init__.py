@@ -34,7 +34,9 @@ FinishStepDataT = TypeVar('FinishStepDataT', bound=FinishStepData)
 
 
 class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
-    """ Common parent of finish plugins """
+    """
+    Common parent of finish plugins
+    """
 
     # ignore[assignment]: as a base class, FinishStepData is not included in
     # FinishStepDataT.
@@ -48,7 +50,9 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
             cls,
             usage: str,
             method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all finish plugins) """
+        """
+        Create base click command (common for all finish plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -98,7 +102,10 @@ class Finish(tmt.steps.Step):
         'results.yaml']
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         super().wake()
 
         # Choose the right plugin and wake it up
@@ -122,12 +129,18 @@ class Finish(tmt.steps.Step):
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise summary """
+        """
+        Give a concise summary
+        """
+
         tasks = fmf.utils.listed(self.phases(), 'task')
         self.info('summary', f'{tasks} completed', 'green', shift=1)
 
     def go(self, force: bool = False) -> None:
-        """ Execute finishing tasks """
+        """
+        Execute finishing tasks
+        """
+
         super().go(force=force)
 
         # Nothing more to do if already done

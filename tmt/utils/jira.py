@@ -49,10 +49,14 @@ def prepare_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
 
 
 class JiraInstance:
-    """ A Jira instance configured with url and token """
+    """
+    A Jira instance configured with url and token
+    """
 
     def __init__(self, issue_tracker: IssueTracker, logger: tmt.log.Logger):
-        """ Initialize Jira instance from the issue tracker config """
+        """
+        Initialize Jira instance from the issue tracker config
+        """
 
         self.url = str(issue_tracker.url)
         self.tmt_web_url = str(issue_tracker.tmt_web_url)
@@ -72,7 +76,9 @@ class JiraInstance:
             cls,
             issue_url: str,
             logger: tmt.log.Logger) -> Optional['JiraInstance']:
-        """ Search configured issues trackers for matching Jira instance """
+        """
+        Search configured issues trackers for matching Jira instance
+        """
 
         # Check for the 'link' config section, exit if config missing
         try:
@@ -100,7 +106,9 @@ class JiraInstance:
             self,
             issue_url: str,
             tmt_objects: Sequence[TmtObject]) -> None:
-        """ Link one or more tmt objects to the given Jira issue """
+        """
+        Link one or more tmt objects to the given Jira issue
+        """
 
         # Prepare a nice title for the link
         title = "tmt: " + fmf.utils.listed(
@@ -124,7 +132,10 @@ def save_link_to_metadata(
         tmt_object: TmtObject,
         link: 'tmt.base.Link',
         logger: tmt.log.Logger) -> None:
-    """ Store the link into the object metadata on disk """
+    """
+    Store the link into the object metadata on disk
+    """
+
     # Try to add the link relation to object's data if it is not already there
     #
     # cast & ignore: data is basically a container with test/plan/story

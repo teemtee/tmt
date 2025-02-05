@@ -1,4 +1,6 @@
-""" ``tmt try`` implementation """
+"""
+``tmt try`` implementation
+"""
 
 import re
 from typing import Any
@@ -87,7 +89,10 @@ def try_command(context: Context, **kwargs: Any) -> None:
 
 
 def _construct_trying_provision_options(params: Any) -> dict[str, Any]:
-    """ Convert try-specific options into generic option format """
+    """
+    Convert try-specific options into generic option format
+    """
+
     options: dict[str, Any] = {}
 
     if params['image_and_how']:

@@ -168,7 +168,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guests """
+        """
+        Prepare the guests
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest

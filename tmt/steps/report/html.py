@@ -60,10 +60,15 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     _data_class = ReportHtmlData
 
     def prune(self, logger: tmt.log.Logger) -> None:
-        """ Do not prune generated html report """
+        """
+        Do not prune generated html report
+        """
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Process results """
+        """
+        Process results
+        """
+
         super().go(logger=logger)
 
         # Prepare the template

@@ -312,13 +312,19 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     @property
     def is_in_standalone_mode(self) -> bool:
-        """ Enable standalone mode when listing fmf ids """
+        """
+        Enable standalone mode when listing fmf ids
+        """
+
         if self.opt('fmf_id'):
             return True
         return super().is_in_standalone_mode
 
     def get_git_root(self, directory: Path) -> Path:
-        """ Find git root of the path """
+        """
+        Find git root of the path
+        """
+
         output = self.run(
             Command("git", "rev-parse", "--show-toplevel"),
             cwd=directory,
@@ -327,7 +333,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         return Path(output.stdout.strip("\n"))
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Discover available tests """
+        """
+        Discover available tests
+        """
+
         super().go(logger=logger)
 
         # Check url and path, prepare test directory
@@ -514,7 +523,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.do_the_discovery(path)
 
     def do_the_discovery(self, path: Optional[Path] = None) -> None:
-        """ Discover the tests """
+        """
+        Discover the tests
+        """
+
         # Original path might adjusted already in go()
         if path is None:
             path = Path(cast(str, self.get('path'))) if self.get('path') else None
@@ -676,7 +688,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             shutil.rmtree(self.clone_dirpath, ignore_errors=True)
 
     def post_dist_git(self, created_content: list[Path]) -> None:
-        """ Discover tests after dist-git applied patches """
+        """
+        Discover tests after dist-git applied patches
+        """
+
         # Directory to copy out from sources
         dist_git_extract = self.get('dist-git-extract', None)
         dist_git_init = self.get('dist-git-init', False)
@@ -779,7 +794,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             *,
             phase_name: Optional[str] = None,
             enabled: Optional[bool] = None) -> list['tmt.Test']:
-        """ Return all discovered tests """
+        """
+        Return all discovered tests
+        """
 
         if phase_name is not None and phase_name != self.name:
             return []

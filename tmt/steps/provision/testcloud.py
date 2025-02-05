@@ -57,7 +57,10 @@ TPMConfiguration: Any
 
 
 def import_testcloud() -> None:
-    """ Import testcloud module only when needed """
+    """
+    Import testcloud module only when needed
+    """
+
     global testcloud
     global libvirt
     global Workarounds
@@ -385,7 +388,9 @@ def _apply_hw_tpm(
         hardware: Optional[tmt.hardware.Hardware],
         domain: 'DomainConfiguration',
         logger: tmt.log.Logger) -> None:
-    """ Apply ``tpm`` constraint to given VM domain """
+    """
+    Apply ``tpm`` constraint to given VM domain
+    """
 
     domain.tpm_configuration = None
 
@@ -442,12 +447,16 @@ def _apply_hw_disk_size(
         hardware: Optional[tmt.hardware.Hardware],
         domain: 'DomainConfiguration',
         logger: tmt.log.Logger) -> None:
-    """ Apply ``disk`` constraint to given VM domain """
+    """
+    Apply ``disk`` constraint to given VM domain
+    """
 
     final_size: Size = DEFAULT_DISK
 
     def _generate_disk_filepaths() -> Iterator[Path]:
-        """ Generate paths to use for files representing VM storage """
+        """
+        Generate paths to use for files representing VM storage
+        """
 
         # Start with the path already decided by testcloud...
         yield Path(domain.local_disk)
@@ -539,7 +548,9 @@ def _apply_hw_cpu_processors(
         hardware: Optional[tmt.hardware.Hardware],
         domain: 'DomainConfiguration',
         logger: tmt.log.Logger) -> None:
-    """ Apply ``cpu.processors`` constraint to given VM domain """
+    """
+    Apply ``cpu.processors`` constraint to given VM domain
+    """
 
     domain.cpu_count = DEFAULT_CPU_COUNT
 
@@ -681,7 +692,9 @@ class GuestTestcloud(tmt.GuestSsh):
         return bool(re.search('coreos|rhcos', self.image.lower()))
 
     def _get_url(self, url: str, message: str) -> requests.Response:
-        """ Get url, retry when fails, return response """
+        """
+        Get url, retry when fails, return response
+        """
 
         def try_get_url() -> requests.Response:
             try:
@@ -706,7 +719,9 @@ class GuestTestcloud(tmt.GuestSsh):
                 f'Failed to {message} in {CONNECT_TIMEOUT}s.')
 
     def _guess_image_url(self, name: str) -> str:
-        """ Guess image url for given name """
+        """
+        Guess image url for given name
+        """
 
         # Try to check if given url is a local file
         name_as_path = Path(name)
@@ -727,7 +742,10 @@ class GuestTestcloud(tmt.GuestSsh):
         return url
 
     def wake(self) -> None:
-        """ Wake up the guest """
+        """
+        Wake up the guest
+        """
+
         self.debug(
             f"Waking up testcloud instance '{self.instance_name}'.",
             level=2, shift=0)
@@ -749,7 +767,10 @@ class GuestTestcloud(tmt.GuestSsh):
             connection=f"qemu:///{self.connection}")
 
     def prepare_ssh_key(self, key_type: Optional[str] = None) -> str:
-        """ Prepare ssh key for authentication """
+        """
+        Prepare ssh key for authentication
+        """
+
         assert self.workdir is not None
 
         # Use existing key
@@ -773,7 +794,10 @@ class GuestTestcloud(tmt.GuestSsh):
         return public_key
 
     def prepare_config(self) -> None:
-        """ Prepare common configuration """
+        """
+        Prepare common configuration
+        """
+
         import_testcloud()
 
         # Get configuration
@@ -792,7 +816,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.STORE_DIR = TESTCLOUD_IMAGES
 
     def _combine_hw_memory(self) -> None:
-        """ Combine ``hardware`` with ``--memory`` option """
+        """
+        Combine ``hardware`` with ``--memory`` option
+        """
 
         if not self.hardware:
             self.hardware = tmt.hardware.Hardware.from_spec({})
@@ -806,7 +832,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self.hardware.and_(memory_constraint)
 
     def _combine_hw_disk_size(self) -> None:
-        """ Combine ``hardware`` with ``--disk`` option """
+        """
+        Combine ``hardware`` with ``--disk`` option
+        """
 
         if not self.hardware:
             self.hardware = tmt.hardware.Hardware.from_spec({})
@@ -821,7 +849,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self.hardware.and_(disk_size_constraint)
 
     def _apply_hw_memory(self, domain: 'DomainConfiguration') -> None:
-        """ Apply ``memory`` constraint to given VM domain """
+        """
+        Apply ``memory`` constraint to given VM domain
+        """
 
         if not self.hardware or not self.hardware.constraint:
             self.debug(
@@ -891,7 +921,10 @@ class GuestTestcloud(tmt.GuestSsh):
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
 
     def start(self) -> None:
-        """ Start provisioned guest """
+        """
+        Start provisioned guest
+        """
+
         if self.is_dry_run:
             return
         # Make sure required directories exist
@@ -1047,7 +1080,10 @@ class GuestTestcloud(tmt.GuestSsh):
                 f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
 
     def stop(self) -> None:
-        """ Stop provisioned guest """
+        """
+        Stop provisioned guest
+        """
+
         super().stop()
         # Stop only if the instance successfully booted
         if self._instance and self.primary_address:
@@ -1062,7 +1098,10 @@ class GuestTestcloud(tmt.GuestSsh):
             self.info('guest', 'stopped', 'green')
 
     def remove(self) -> None:
-        """ Remove the guest (disk cleanup) """
+        """
+        Remove the guest (disk cleanup)
+        """
+
         if self._instance:
             self.debug(f"Removing testcloud instance '{self.instance_name}'.")
             try:
@@ -1079,7 +1118,10 @@ class GuestTestcloud(tmt.GuestSsh):
                timeout: Optional[int] = None,
                tick: float = tmt.utils.DEFAULT_WAIT_TICK,
                tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
-        """ Reboot the guest, return True if successful """
+        """
+        Reboot the guest, return True if successful
+        """
+
         # Use custom reboot command if provided
         if command:
             return super().reboot(hard=hard, command=command, timeout=timeout)
@@ -1153,7 +1195,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Provision the testcloud instance """
+        """
+        Provision the testcloud instance
+        """
+
         super().go(logger=logger)
 
         if self.data.list_local_images:
@@ -1209,11 +1254,17 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         self._guest.setup()
 
     def guest(self) -> Optional[tmt.Guest]:
-        """ Return the provisioned guest """
+        """
+        Return the provisioned guest
+        """
+
         return self._guest
 
     def _print_local_images(self) -> None:
-        """ Print images which are already cached """
+        """
+        Print images which are already cached
+        """
+
         self.info("Locally available images")
         for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
@@ -1221,7 +1272,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """ Remove the testcloud images """
+        """
+        Remove the testcloud images
+        """
+
         clean.info('testcloud', shift=1, color='green')
         if not TESTCLOUD_IMAGES.exists():
             clean.warn(

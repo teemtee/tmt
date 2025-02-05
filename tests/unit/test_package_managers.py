@@ -95,7 +95,9 @@ def has_legacy_dnf(container: ContainerData) -> bool:
 
 
 def has_dnf5_preinstalled(container: ContainerData) -> bool:
-    """ Checks whether a container provides ``dnf5`` """
+    """
+    Checks whether a container provides ``dnf5``
+    """
 
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,

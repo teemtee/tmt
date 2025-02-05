@@ -55,7 +55,9 @@ def insert_to_prepare_step(
         discover_plugin: 'tmt.steps.discover.DiscoverPlugin[Any]',
         sourcedir: Path,
         ) -> None:
-    """ Single place to call when inserting PrepareDistGit from discover """
+    """
+    Single place to call when inserting PrepareDistGit from discover
+    """
 
     prepare_step = discover_plugin.step.plan.prepare
     where = cast(tmt.steps.discover.DiscoverStepData, discover_plugin.data).where
@@ -180,7 +182,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guests for building rpm sources """
+        """
+        Prepare the guests for building rpm sources
+        """
 
         results = super().go(guest=guest, environment=environment, logger=logger)
 

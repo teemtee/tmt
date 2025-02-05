@@ -17,14 +17,19 @@ class ProvisionLocalData(tmt.steps.provision.GuestData, tmt.steps.provision.Prov
 
 
 class GuestLocal(tmt.Guest):
-    """ Local Host """
+    """
+    Local Host
+    """
 
     localhost = True
     parent: Optional[tmt.steps.Step]
 
     @property
     def is_ready(self) -> bool:
-        """ Local is always ready """
+        """
+        Local is always ready
+        """
+
         return True
 
     def _run_ansible(
@@ -87,7 +92,10 @@ class GuestLocal(tmt.Guest):
                 interactive: bool = False,
                 on_process_start: Optional[OnProcessStartCallback] = None,
                 **kwargs: Any) -> tmt.utils.CommandOutput:
-        """ Execute command on localhost """
+        """
+        Execute command on localhost
+        """
+
         # Prepare the environment (plan/cli variables override)
         environment = tmt.utils.Environment()
         environment.update(env or {})
@@ -112,7 +120,9 @@ class GuestLocal(tmt.Guest):
             **kwargs)
 
     def start(self) -> None:
-        """ Start the guest """
+        """
+        Start the guest
+        """
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
@@ -120,7 +130,9 @@ class GuestLocal(tmt.Guest):
         self.verbose('topology address', self.topology_address, 'green')
 
     def stop(self) -> None:
-        """ Stop the guest """
+        """
+        Stop the guest
+        """
 
         self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
@@ -128,7 +140,9 @@ class GuestLocal(tmt.Guest):
                hard: bool = False,
                command: Optional[Union[Command, ShellScript]] = None,
                timeout: Optional[int] = None) -> bool:
-        """ Reboot the guest, return True if successful """
+        """
+        Reboot the guest, return True if successful
+        """
 
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
 
@@ -140,7 +154,9 @@ class GuestLocal(tmt.Guest):
             destination: Optional[Path] = None,
             options: Optional[list[str]] = None,
             superuser: bool = False) -> None:
-        """ Nothing to be done to push workdir """
+        """
+        Nothing to be done to push workdir
+        """
 
     def pull(
             self,
@@ -148,7 +164,9 @@ class GuestLocal(tmt.Guest):
             destination: Optional[Path] = None,
             options: Optional[list[str]] = None,
             extend_options: Optional[list[str]] = None) -> None:
-        """ Nothing to be done to pull workdir """
+        """
+        Nothing to be done to pull workdir
+        """
 
 
 @tmt.steps.provides_method('local')
@@ -187,7 +205,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Provision the container """
+        """
+        Provision the container
+        """
+
         super().go(logger=logger)
 
         # Create a GuestLocal instance
@@ -205,5 +226,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         self._guest.setup()
 
     def guest(self) -> Optional[GuestLocal]:
-        """ Return the provisioned guest """
+        """
+        Return the provisioned guest
+        """
+
         return self._guest

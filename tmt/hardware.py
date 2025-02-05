@@ -76,7 +76,9 @@ T = TypeVar('T', bound='Constraint')  # type: ignore[type-arg]
 
 
 class Operator(enum.Enum):
-    """ Binary operators defined by specification """
+    """
+    Binary operators defined by specification
+    """
 
     EQ = '=='
     NEQ = '!='
@@ -192,7 +194,9 @@ ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool, float)
 
 
 class ConstraintNameComponents(NamedTuple):
-    """ Components of a constraint name """
+    """
+    Components of a constraint name
+    """
 
     #: ``disk`` of ``disk[1].size``
     name: str
@@ -204,7 +208,9 @@ class ConstraintNameComponents(NamedTuple):
 
 @dataclasses.dataclass
 class ConstraintComponents:
-    """ Components of a constraint """
+    """
+    Components of a constraint
+    """
 
     name: str
     peer_index: Optional[int]
@@ -307,7 +313,9 @@ ReducerType = Callable[[Iterable[bool]], bool]
 
 
 class ParseError(tmt.utils.MetadataError):
-    """ Raised when HW requirement parsing fails """
+    """
+    Raised when HW requirement parsing fails
+    """
 
     def __init__(self, constraint_name: str, raw_value: str,
                  message: Optional[str] = None) -> None:
@@ -331,7 +339,9 @@ class ParseError(tmt.utils.MetadataError):
 
 @dataclasses.dataclass(repr=False)
 class BaseConstraint(SpecBasedContainer[Spec, Spec]):
-    """ Base class for all classes representing one or more constraints """
+    """
+    Base class for all classes representing one or more constraints
+    """
 
     @classmethod
     def from_spec(cls, spec: Any) -> 'BaseConstraint':
@@ -394,7 +404,9 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
 @dataclasses.dataclass(repr=False)
 class CompoundConstraint(BaseConstraint):
-    """ Base class for all *compound* constraints """
+    """
+    Base class for all *compound* constraints
+    """
 
     def __init__(
             self,
@@ -465,7 +477,9 @@ class CompoundConstraint(BaseConstraint):
 
 @dataclasses.dataclass(repr=False)
 class Constraint(BaseConstraint, Generic[ConstraintValueT]):
-    """ A constraint imposing a particular limit to one of the guest properties """
+    """
+    A constraint imposing a particular limit to one of the guest properties
+    """
 
     # Name of the constraint. Used for logging purposes, usually matches the
     # name of the system property.
@@ -659,7 +673,9 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
 
 class SizeConstraint(Constraint['Size']):
-    """ A constraint representing a size of resource, usually a storage """
+    """
+    A constraint representing a size of resource, usually a storage
+    """
 
     @classmethod
     def from_specification(
@@ -681,7 +697,9 @@ class SizeConstraint(Constraint['Size']):
 
 
 class FlagConstraint(Constraint[bool]):
-    """ A constraint representing a boolean flag, enabled/disabled, has/has not, etc. """
+    """
+    A constraint representing a boolean flag, enabled/disabled, has/has not, etc.
+    """
 
     @classmethod
     def from_specification(
@@ -702,7 +720,9 @@ class FlagConstraint(Constraint[bool]):
 
 
 class IntegerConstraint(Constraint[int]):
-    """ A constraint representing a dimension-less int number """
+    """
+    A constraint representing a dimension-less int number
+    """
 
     @classmethod
     def from_specification(
@@ -738,7 +758,9 @@ class IntegerConstraint(Constraint[int]):
 
 
 class NumberConstraint(Constraint['Quantity']):
-    """ A constraint representing a float number """
+    """
+    A constraint representing a float number
+    """
 
     @classmethod
     def from_specification(
@@ -772,7 +794,9 @@ class NumberConstraint(Constraint['Quantity']):
 
 
 class TextConstraint(Constraint[str]):
-    """ A constraint representing a string, e.g. a name """
+    """
+    A constraint representing a string, e.g. a name
+    """
 
     @classmethod
     def from_specification(
@@ -793,7 +817,9 @@ class TextConstraint(Constraint[str]):
 
 @dataclasses.dataclass(repr=False)
 class And(CompoundConstraint):
-    """ Represents constraints that are grouped in ``and`` fashion """
+    """
+    Represents constraints that are grouped in ``and`` fashion
+    """
 
     def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
@@ -849,7 +875,9 @@ class And(CompoundConstraint):
 
 @dataclasses.dataclass(repr=False)
 class Or(CompoundConstraint):
-    """ Represents constraints that are grouped in ``or`` fashion """
+    """
+    Represents constraints that are grouped in ``or`` fashion
+    """
 
     def __init__(self, constraints: Optional[list[BaseConstraint]] = None) -> None:
         """
@@ -942,7 +970,9 @@ def _parse_int_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
-    """ Parse number-like constraints defined by a given set of keys, to int """
+    """
+    Parse number-like constraints defined by a given set of keys, to int
+    """
 
     return [
         IntegerConstraint.from_specification(
@@ -960,7 +990,9 @@ def _parse_number_constraints(
         prefix: str,
         constraint_keys: tuple[str, ...],
         default_unit: Optional[Any] = None) -> list[BaseConstraint]:
-    """ Parse number-like constraints defined by a given set of keys, to float """
+    """
+    Parse number-like constraints defined by a given set of keys, to float
+    """
 
     return [
         NumberConstraint.from_specification(
@@ -978,7 +1010,9 @@ def _parse_size_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
-    """ Parse size-like constraints defined by a given set of keys """
+    """
+    Parse size-like constraints defined by a given set of keys
+    """
 
     return [
         SizeConstraint.from_specification(
@@ -996,7 +1030,9 @@ def _parse_text_constraints(
         prefix: str,
         constraint_keys: tuple[str, ...],
         allowed_operators: Optional[tuple[Operator, ...]] = None) -> list[BaseConstraint]:
-    """ Parse text-like constraints defined by a given set of keys """
+    """
+    Parse text-like constraints defined by a given set of keys
+    """
 
     allowed_operators = allowed_operators or (
         Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH)
@@ -1015,7 +1051,9 @@ def _parse_flag_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
-    """ Parse flag-like constraints defined by a given set of keys """
+    """
+    Parse flag-like constraints defined by a given set of keys
+    """
 
     return [
         FlagConstraint.from_specification(

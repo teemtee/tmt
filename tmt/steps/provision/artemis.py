@@ -472,7 +472,9 @@ class GuestArtemis(tmt.GuestSsh):
 
     @property
     def is_ready(self) -> bool:
-        """ Detect the guest is ready or not """
+        """
+        Detect the guest is ready or not
+        """
 
         # FIXME: A more robust solution should be provided. Currently just
         #        return True if self.guest is not None
@@ -620,7 +622,9 @@ class GuestArtemis(tmt.GuestSsh):
         self.verbose('topology address', self.topology_address, 'green')
 
     def remove(self) -> None:
-        """ Remove the guest """
+        """
+        Remove the guest
+        """
 
         if self.guestname is None:
             return
@@ -710,7 +714,10 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Provision the guest """
+        """
+        Provision the guest
+        """
+
         super().go(logger=logger)
 
         if self.data.api_version not in SUPPORTED_API_VERSIONS:
@@ -729,5 +736,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         self._guest.setup()
 
     def guest(self) -> Optional[GuestArtemis]:
-        """ Return the provisioned guest """
+        """
+        Return the provisioned guest
+        """
+
         return self._guest

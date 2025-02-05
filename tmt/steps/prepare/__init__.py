@@ -46,7 +46,9 @@ class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps.RawWhereableStepData
 
 
 class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
-    """ Common parent of prepare plugins """
+    """
+    Common parent of prepare plugins
+    """
 
     # ignore[assignment]: as a base class, PrepareStepData is not included in
     # PrepareStepDataT.
@@ -60,7 +62,9 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
             cls,
             usage: str,
             method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all prepare plugins) """
+        """
+        Create base click command (common for all prepare plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -85,7 +89,9 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
             guest: 'tmt.steps.provision.Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guest (common actions) """
+        """
+        Prepare the guest (common actions)
+        """
 
         self.go_prolog(logger)
 
@@ -112,7 +118,9 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
 
 @dataclasses.dataclass
 class DependencyCollection:
-    """ Bundle guests and packages to install on them """
+    """
+    Bundle guests and packages to install on them
+    """
 
     # Guest*s*, not a guest. The list will start with just one guest at
     # first, but when grouping guests by same requirements, we'd start
@@ -150,12 +158,18 @@ class Prepare(tmt.steps.Step):
             plan: 'Plan',
             data: tmt.steps.RawStepDataArgument,
             logger: tmt.log.Logger) -> None:
-        """ Initialize prepare step data """
+        """
+        Initialize prepare step data
+        """
+
         super().__init__(plan=plan, data=data, logger=logger)
         self.preparations_applied = 0
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         super().wake()
 
         # Choose the right plugin and wake it up
@@ -179,13 +193,19 @@ class Prepare(tmt.steps.Step):
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise summary of the preparation """
+        """
+        Give a concise summary of the preparation
+        """
+
         preparations = fmf.utils.listed(
             self.preparations_applied, 'preparation')
         self.info('summary', f'{preparations} applied', 'green', shift=1)
 
     def go(self, force: bool = False) -> None:
-        """ Prepare the guests """
+        """
+        Prepare the guests
+        """
+
         super().go(force=force)
 
         # Nothing more to do if already done

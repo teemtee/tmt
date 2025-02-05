@@ -1,4 +1,6 @@
-""" Test Management Tool """
+"""
+Test Management Tool
+"""
 
 import importlib.metadata
 

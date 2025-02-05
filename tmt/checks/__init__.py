@@ -71,7 +71,9 @@ class _RawCheck(TypedDict):
 
 
 class CheckEvent(enum.Enum):
-    """ Events in test runtime when a check can be executed """
+    """
+    Events in test runtime when a check can be executed
+    """
 
     BEFORE_TEST = 'before-test'
     AFTER_TEST = 'after-test'
@@ -192,7 +194,9 @@ class Check(
 
 
 class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
-    """ Base class for plugins providing extra checks before, during and after tests """
+    """
+    Base class for plugins providing extra checks before, during and after tests
+    """
 
     _check_class: type[CheckT]
 
@@ -206,7 +210,9 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             *,
             raw_data: _RawCheck,
             logger: tmt.log.Logger) -> Check:
-        """ Create a check data instance for the plugin """
+        """
+        Create a check data instance for the plugin
+        """
 
         return cast(CheckPlugin[CheckT], find_plugin(raw_data['how'])) \
             ._check_class.from_spec(raw_data, logger)
@@ -253,7 +259,9 @@ def normalize_test_check(
         key_address: str,
         raw_test_check: Any,
         logger: tmt.log.Logger) -> Check:
-    """ Normalize a single test check """
+    """
+    Normalize a single test check
+    """
 
     if isinstance(raw_test_check, str):
         try:
@@ -285,7 +293,9 @@ def normalize_test_checks(
         key_address: str,
         raw_checks: Any,
         logger: tmt.log.Logger) -> list[Check]:
-    """ Normalize (prepare/finish/test) checks """
+    """
+    Normalize (prepare/finish/test) checks
+    """
 
     if raw_checks is None:
         return []
