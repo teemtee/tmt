@@ -13,7 +13,7 @@ jobs:
     steps:
     # Required because of https://github.com/hadolint/hadolint/issues/886
     - run: |
-        wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/latest/hadolint-Linux-x86_64
+        wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
         chmod +x /usr/local/bin/hadolint
     - uses: actions/checkout@v4
       with:
