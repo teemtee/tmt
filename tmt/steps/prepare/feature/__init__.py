@@ -167,6 +167,12 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         prepare:
             how: feature
             epel: disabled
+
+    .. note::
+
+       Features available via this plugin are implemented and shipped as
+       plugins too. See :ref:`/plugins/prepare-feature` for the list of
+       available feature plugins and their configuration.
     """
 
     _data_class = PrepareFeatureData
