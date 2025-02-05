@@ -9,7 +9,7 @@ RUN set -x && \
 RUN set -x && \
     dnf install -y dnf-plugins-core && \
     dnf copr enable -y @teemtee/stable && \
-    dnf install -y tmt-[0-9].[0-9][0-9].[0-9]* && \
+    dnf install -y tmt && \
     dnf autoremove -y && \
     dnf clean all
 
