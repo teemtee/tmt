@@ -149,7 +149,7 @@ images/test/bases:  ## Download base images for custom test images
 
 # Build a single container: <image name> <containerfile>
 define do-build-container-image =
-@ echo "$(ccgreen)Building $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
+@ echo "$(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
 podman build --squash -t ${1} -f ./containers/${2} .
 @ echo
 endef
