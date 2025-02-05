@@ -108,15 +108,6 @@ your commits to the project:
 
     pre-commit install
 
-.. note::
-
-    One of the pre-commit checks, ``hadolint``, suffers from `a bug`__
-    and does not install the necessary ``hadolint`` binary. To make the
-    pre-commit fully functional, please download the binary from its
-    `project page`__.
-
-    __ https://github.com/hadolint/hadolint/issues/886
-    __ https://github.com/hadolint/hadolint/releases
 
 Tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

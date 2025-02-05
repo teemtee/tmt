@@ -1,6 +1,5 @@
 FROM registry.fedoraproject.org/fedora:latest
 
-# hadolint ignore=DL3040
 RUN <<EOF
 set -ex
 
@@ -13,6 +12,7 @@ dnf install -y dnf-plugins-core
 dnf copr enable -y @teemtee/stable
 dnf install -y tmt+all-[0-9].[0-9][0-9].[0-9]* beakerlib
 dnf autoremove -y
+dnf clean all
 
 # Prepare a directory for experimenting
 mkdir /tmt
