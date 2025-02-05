@@ -152,7 +152,7 @@ repos:
           - '--show-fixes'
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.42.0
+    rev: 1.42.1
     hooks:
     - id: tmt-lint
       additional_dependencies:
