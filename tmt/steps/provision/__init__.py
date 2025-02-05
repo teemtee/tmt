@@ -43,7 +43,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.log import Logger
-from tmt.options import option, show_step_method_hints
+from tmt.options import option
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -1942,7 +1942,9 @@ class GuestSsh(Guest):
                 log=log)
         except tmt.utils.RunError as exc:
             if "File 'ansible-playbook' not found." in exc.message:
-                show_step_method_hints('plugin', 'ansible', self._logger)
+                from tmt.utils.hints import print_hint
+
+                print_hint(id_='ansible-not-available', logger=self._logger)
             raise exc
 
     @property
