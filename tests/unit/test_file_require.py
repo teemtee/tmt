@@ -7,7 +7,10 @@ import tmt.utils
 
 
 def test_basic(root_logger, source_dir, target_dir):
-    """ Test basic scenario for file requirement """
+    """
+    Test basic scenario for file requirement
+    """
+
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     tmt.libraries.library_factory(
         logger=root_logger,
@@ -23,7 +26,10 @@ def test_basic(root_logger, source_dir, target_dir):
 
 
 def test_full_copy(root_logger, source_dir, target_dir):
-    """ Test copying everything from the source directory """
+    """
+    Test copying everything from the source directory
+    """
+
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     tmt.libraries.library_factory(
         logger=root_logger,
@@ -35,7 +41,10 @@ def test_full_copy(root_logger, source_dir, target_dir):
 
 
 def test_nothing_found(root_logger, source_dir, target_dir):
-    """ Test Library error is thrown when no files are found """
+    """
+    Test Library error is thrown when no files are found
+    """
+
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     with pytest.raises(tmt.utils.MetadataError):
         tmt.libraries.library_factory(

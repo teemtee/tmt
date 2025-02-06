@@ -68,7 +68,9 @@ class Exporter(Protocol):
 
 
 class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
-    """ Mixin class adding support for exportability of class instances """
+    """
+    Mixin class adding support for exportability of class instances
+    """
 
     # Declare export plugin registry as a class variable, but do not initialize it. If initialized
     # here, the mapping would be shared by all classes, which is not a desirable attribute.
@@ -83,7 +85,9 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
     # Cannot use @property as this must remain classmethod
     @classmethod
     def get_export_plugin_registry(cls) -> PluginRegistry[ExportClass]:
-        """ Return - or initialize - export plugin registry """
+        """
+        Return - or initialize - export plugin registry
+        """
 
         if not hasattr(cls, '_export_plugin_registry'):
             cls._export_plugin_registry = PluginRegistry()
@@ -143,7 +147,9 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
         raise NotImplementedError
 
     def export(self, *, format: str, keys: Optional[list[str]] = None, **kwargs: Any) -> str:
-        """ Export this instance in a given format """
+        """
+        Export this instance in a given format
+        """
 
         return self.export_collection(
             # TODO: adding cast to make mypy happy, it seems to be puzzled by the
@@ -163,7 +169,9 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
             format: str,
             keys: Optional[list[str]] = None,
             **kwargs: Any) -> str:
-        """ Export collection of instances in a given format """
+        """
+        Export collection of instances in a given format
+        """
 
         exporter = cls._get_exporter(format)
 
@@ -176,11 +184,16 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
 
 
 class ExportPlugin:
-    """ Base class for plugins providing metadata export functionality """
+    """
+    Base class for plugins providing metadata export functionality
+    """
 
     @classmethod
     def export_fmfid_collection(cls, fmf_ids: list['tmt.base.FmfId'], **kwargs: Any) -> str:
-        """ Export collection of fmf ids """
+        """
+        Export collection of fmf ids
+        """
+
         raise NotImplementedError
 
     @classmethod
@@ -188,7 +201,10 @@ class ExportPlugin:
                                tests: list['tmt.base.Test'],
                                keys: Optional[list[str]] = None,
                                **kwargs: Any) -> str:
-        """ Export collection of tests """
+        """
+        Export collection of tests
+        """
+
         raise NotImplementedError
 
     @classmethod
@@ -196,7 +212,10 @@ class ExportPlugin:
                                plans: list['tmt.base.Plan'],
                                keys: Optional[list[str]] = None,
                                **kwargs: Any) -> str:
-        """ Export collection of plans """
+        """
+        Export collection of plans
+        """
+
         raise NotImplementedError
 
     @classmethod
@@ -204,7 +223,10 @@ class ExportPlugin:
                                 stories: list['tmt.base.Story'],
                                 keys: Optional[list[str]] = None,
                                 **kwargs: Any) -> str:
-        """ Export collection of stories """
+        """
+        Export collection of stories
+        """
+
         raise NotImplementedError
 
 # It's tempting to make this the default implementation of `ExporterPlugin` class,
@@ -281,7 +303,10 @@ class TrivialExporter(ExportPlugin):
 
 
 def get_bz_instance() -> BugzillaInstance:
-    """ Import the bugzilla module and return BZ instance """
+    """
+    Import the bugzilla module and return BZ instance
+    """
+
     try:
         import bugzilla
     except ImportError:
@@ -302,7 +327,10 @@ def get_bz_instance() -> BugzillaInstance:
 
 
 def bz_set_coverage(bug_ids: list[int], case_id: str, tracker_id: int) -> None:
-    """ Set coverage in Bugzilla """
+    """
+    Set coverage in Bugzilla
+    """
+
     bz_instance = get_bz_instance()
 
     overall_pass = True
@@ -366,6 +394,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     Return list of warnings, empty list if no problems found.
     """
+
     import tmt.base
     warnings_list = []
     sections_headings = tmt.base.SECTIONS_HEADINGS

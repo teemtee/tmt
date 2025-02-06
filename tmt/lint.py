@@ -148,7 +148,9 @@ _LINTER_DESCRIPTION_PATTERN = re.compile(r"""
 
 @dataclasses.dataclass(init=False)
 class Linter:
-    """ A single linter """
+    """
+    A single linter
+    """
 
     callback: LinterCallback
     id: str
@@ -186,7 +188,9 @@ class Linter:
 
 
 class Lintable(Generic[LintableT]):
-    """ Mixin class adding support for linting of class instances """
+    """
+    Mixin class adding support for linting of class instances
+    """
 
     # Declare linter registry as a class variable, but do not initialize it. If initialized
     # here, the mapping would be shared by all classes, which is not a desirable attribute.
@@ -200,7 +204,9 @@ class Lintable(Generic[LintableT]):
     # Cannot use @property as this must remain classmethod
     @classmethod
     def get_linter_registry(cls) -> list[Linter]:
-        """ Return - or initialize - linter registry """
+        """
+        Return - or initialize - linter registry
+        """
 
         if not hasattr(cls, '_linter_registry'):
             cls._linter_registry = []

@@ -5,7 +5,10 @@ import threading
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def send_error(self, code, message=None):
-        """Override to match GitHub's error format"""
+        """
+        Override to match GitHub's error format
+        """
+
         self.send_response(code)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -15,11 +18,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def run_server(port=8000):
-    """Run HTTP server in a daemon thread.
+    """
+    Run HTTP server in a daemon thread.
 
     Args:
         port: Port number to listen on (default: 8000)
     """
+
     httpd = socketserver.TCPServer(("", port), Handler)
     server_thread = threading.Thread(target=httpd.serve_forever)
     server_thread.daemon = True

@@ -24,6 +24,7 @@ def _combine(default: TemplatesType, custom: TemplatesType) -> TemplatesType:
     Combines default templates and custom templates.
     Custom templates have priority and potentially override default templates.
     """
+
     result: TemplatesType = {}
     for key in default:
         result[key] = {**default[key], **custom.get(key, {})}
@@ -35,6 +36,7 @@ def _get_template_file_paths(path: Path) -> dict[str, Path]:
     Get a dictionary of template names and their file paths.
     :param path: Path to the directory to search for templates.
     """
+
     return {
         file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file for file in path.iterdir()
         if file.is_file() and file.suffix == TEMPLATE_FILE_SUFFIX
@@ -46,6 +48,7 @@ def _get_templates(root_dir: Path) -> TemplatesType:
     Get all templates in given root directory.
     :param root_dir: Path to the directory to search for templates.
     """
+
     templates: TemplatesType = {}
     for template_type in TEMPLATE_TYPES:
         templates_dir = root_dir / template_type
@@ -57,7 +60,10 @@ def _get_templates(root_dir: Path) -> TemplatesType:
 
 
 def _append_newline_if_missing(input_string: str) -> str:
-    """ Append newline to the input if it doesn't end with one. """
+    """
+    Append newline to the input if it doesn't end with one.
+    """
+
     return input_string if input_string.endswith('\n') else input_string + '\n'
 
 
@@ -75,12 +81,18 @@ class TemplateManager:
 
     @functools.cached_property
     def templates(self) -> TemplatesType:
-        """ Return all available templates (default and optional). """
+        """
+        Return all available templates (default and optional).
+        """
+
         return _combine(self.default_templates, self.custom_templates)
 
     @functools.cached_property
     def default_templates(self) -> TemplatesType:
-        """ Return all default templates. """
+        """
+        Return all default templates.
+        """
+
         templates_dir = tmt.utils.resource_files('templates/')
         templates = _get_templates(templates_dir)
         if not templates:
@@ -89,11 +101,17 @@ class TemplateManager:
 
     @functools.cached_property
     def custom_templates(self) -> TemplatesType:
-        """ Return all custom templates. """
+        """
+        Return all custom templates.
+        """
+
         return _get_templates(self.custom_template_path)
 
     def render_default_plan(self) -> str:
-        """ Return default plan template. """
+        """
+        Return default plan template.
+        """
+
         try:
             path = self.default_templates['default']['plan']
         except KeyError:
@@ -107,6 +125,7 @@ class TemplateManager:
         :param url: URL to the template file.
         :param variables: variables to be passed to the template.
         """
+
         template = tmt.utils.get_url_content(url)
         template = tmt.utils.templates.render_template(
             template, None, self._environment, **variables)
@@ -118,11 +137,15 @@ class TemplateManager:
         :param path: path to the template file.
         :param variables: variables to be passed to the template.
         """
+
         template = tmt.utils.templates.render_template_file(path, self._environment, **variables)
         return _append_newline_if_missing(template)
 
     def _init_custom_templates_folder(self) -> None:
-        """ Create custom template folders if they don't exist. """
+        """
+        Create custom template folders if they don't exist.
+        """
+
         for key in TEMPLATE_TYPES:
             path = self.custom_template_path / key
             try:

@@ -44,7 +44,9 @@ class Dnf(tmt.package_managers.PackageManager):
         return (command, options)
 
     def _extra_dnf_options(self, options: Options, command: Optional[Command] = None) -> Command:
-        """ Collect additional options for ``yum``/``dnf`` based on given options """
+        """
+        Collect additional options for ``yum``/``dnf`` based on given options
+        """
 
         command = command or self._base_command
 

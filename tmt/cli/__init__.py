@@ -1,4 +1,6 @@
-""" Basic classes and code for tmt command line interface """
+"""
+Basic classes and code for tmt command line interface
+"""
 
 import collections
 import dataclasses
@@ -162,7 +164,10 @@ class CliInvocation:
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> 'CliInvocation':
-        """ Inject custom options coming from the command line """
+        """
+        Inject custom options coming from the command line
+        """
+
         invocation = CliInvocation(context=None, options=options)
 
         # ignore[reportGeneralTypeIssues]: pyright has troubles understanding it
@@ -189,12 +194,17 @@ class CliInvocation:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class CustomGroup(click.Group):
-    """ Custom Click Group """
+    """
+    Custom Click Group
+    """
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
     def list_commands(self, context: Context) -> list[str]:  # type: ignore[override]
-        """ Prevent alphabetical sorting """
+        """
+        Prevent alphabetical sorting
+        """
+
         return list(self.commands.keys())
 
     # ignore[override]: expected, we want to use more specific `Context`
@@ -204,7 +214,10 @@ class CustomGroup(click.Group):
             context: Context,
             cmd_name: str
             ) -> Optional[click.Command]:
-        """ Allow command shortening """
+        """
+        Allow command shortening
+        """
+
         # Backward-compatible 'test convert' (just temporary for now FIXME)
         cmd_name = cmd_name.replace('convert', 'import')
         # Support both story & stories
@@ -223,7 +236,9 @@ class CustomGroup(click.Group):
 
 
 class HelpFormatter(click.HelpFormatter):
-    """ Custom help formatter capable of rendering ReST syntax """
+    """
+    Custom help formatter capable of rendering ReST syntax
+    """
 
     # Override parent implementation
     def write_dl(

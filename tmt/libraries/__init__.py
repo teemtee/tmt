@@ -1,4 +1,6 @@
-""" Handle libraries """
+"""
+Handle libraries
+"""
 
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -29,7 +31,9 @@ LibraryDependenciesType = tuple[
 
 
 class LibraryError(Exception):
-    """ Used when library cannot be parsed from the identifier """
+    """
+    Used when library cannot be parsed from the identifier
+    """
 
 
 class Library:
@@ -44,7 +48,10 @@ class Library:
             *,
             parent: Optional[tmt.utils.Common] = None,
             logger: tmt.log.Logger) -> None:
-        """ Process the library identifier and fetch the library """
+        """
+        Process the library identifier and fetch the library
+        """
+
         # Use an empty common class if parent not provided (for logging, cache)
         self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
         self._logger: tmt.log.Logger = logger
@@ -56,16 +63,25 @@ class Library:
 
     @property
     def hostname(self) -> str:
-        """ Get hostname from url or default to local """
+        """
+        Get hostname from url or default to local
+        """
+
         return 'local'
 
     @property
     def fmf_node_path(self) -> Path:
-        """ Path to fmf node """
+        """
+        Path to fmf node
+        """
+
         return Path(self.name.strip('/'))
 
     def __str__(self) -> str:
-        """ Use repo/name for string representation """
+        """
+        Use repo/name for string representation
+        """
+
         return f"{self.repo}{self.name}"
 
 
@@ -76,7 +92,10 @@ def library_factory(
         logger: tmt.log.Logger,
         source_location: Optional[Path] = None,
         target_location: Optional[Path] = None) -> LibraryType:
-    """ Factory function to get correct library instance """
+    """
+    Factory function to get correct library instance
+    """
+
     from .beakerlib import BeakerLib
     from .file import File
 
@@ -137,6 +156,7 @@ def dependencies(
     Avoid infinite recursion by keeping track of imported library identifiers
     and not trying to fetch those again.
     """
+
     # Initialize lists, use set for require & recommend
     processed_require: set[Dependency] = set()
     processed_recommend: set[Dependency] = set()

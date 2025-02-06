@@ -14,11 +14,15 @@ ID_KEY = "id"
 
 
 class IdError(Exception):
-    """ General Identifier Error """
+    """
+    General Identifier Error
+    """
 
 
 class IdLeafError(IdError):
-    """ Identifier not stored in a leaf """
+    """
+    Identifier not stored in a leaf
+    """
 
 
 def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
@@ -30,6 +34,7 @@ def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
     is defined in the node itself. The 'IdLeafError' exception is
     raised when the key is inherited from parent.
     """
+
     if node.get(ID_KEY) is None:
         return None
     if leaf_only and not is_key_origin(node, ID_KEY):
@@ -40,7 +45,9 @@ def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
 
 
 def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Optional[str]:
-    """ Add UUID into node and return it unless already defined """
+    """
+    Add UUID into node and return it unless already defined
+    """
 
     # Already defined
     if is_key_origin(node, ID_KEY):
@@ -69,6 +76,7 @@ def id_command(context: 'tmt.cli.Context', node: fmf.Tree, node_type: str, dry: 
 
     Show a brief summary when adding UUIDs to nodes.
     """
+
     generated = add_uuid_if_not_defined(node, dry, context.obj.logger)
     if generated:
         print(

@@ -2,7 +2,9 @@ import sys
 
 
 def import_cli_commands() -> None:
-    """ Import CLI commands from their packages """
+    """
+    Import CLI commands from their packages
+    """
 
     # TODO: some kind of `import tmt.cli.*` would be nice
     import tmt.cli._root  # type: ignore[reportUnusedImport,unused-ignore]
@@ -23,6 +25,7 @@ def run_cli() -> None:
     Import utils first, before CLI gets a chance to spawn a logger. Without
     tmt.utils, we would not be able to intercept the exception below.
     """
+
     try:
         import tmt.utils  # noqa: F401,I001,RUF100
 

@@ -1,4 +1,6 @@
-""" Convert metadata into the new format """
+"""
+Convert metadata into the new format
+"""
 
 import copy
 import os
@@ -57,7 +59,10 @@ def read_manual(
         disabled: bool,
         with_script: bool,
         logger: tmt.log.Logger) -> None:
-    """ Reads metadata of manual test cases from Nitrate """
+    """
+    Reads metadata of manual test cases from Nitrate
+    """
+
     import tmt.export.nitrate
     nitrate = tmt.export.nitrate.import_nitrate()
     # Turns off nitrate caching
@@ -118,7 +123,10 @@ def read_manual(
 
 
 def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
-    """ Read test data from manual fields """
+    """
+    Read test data from manual fields
+    """
+
     md_content = {}
     md_content['setup'] = html_to_markdown(testcase.setup)
     md_content['action'] = html_to_markdown(testcase.action)
@@ -128,7 +136,10 @@ def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
 
 
 def html_to_markdown(html: str) -> str:
-    """ Convert html to markdown """
+    """
+    Convert html to markdown
+    """
+
     try:
         import html2text
         md_handler = html2text.HTML2Text()
@@ -143,7 +154,10 @@ def html_to_markdown(html: str) -> str:
 
 
 def write_markdown(path: Path, content: dict[str, str]) -> None:
-    """ Write gathered metadata in the markdown format """
+    """
+    Write gathered metadata in the markdown format
+    """
+
     to_print = ""
     if content['setup']:
         to_print += "# Setup\n" + content['setup'] + '\n\n'
@@ -165,7 +179,10 @@ def write_markdown(path: Path, content: dict[str, str]) -> None:
 
 def add_link(target: str, data: NitrateDataType,
              system: int = SYSTEM_BUGZILLA, type_: str = 'relates') -> None:
-    """ Add relevant link into data under the 'link' key """
+    """
+    Add relevant link into data under the 'link' key
+    """
+
     new_link = {}
     if system == SYSTEM_BUGZILLA:
         new_link[type_] = f"{BUGZILLA_URL}{target}"
@@ -320,7 +337,10 @@ def read_datafile(
             echo(format_value(data['environment']))
 
     def sanitize_name(name: str) -> str:
-        """ Raise if package name starts with '-' (negative require) """
+        """
+        Raise if package name starts with '-' (negative require)
+        """
+
         if name.startswith('-'):
             # Beaker supports excluding packages but tmt does not
             # https://github.com/teemtee/tmt/issues/1165#issuecomment-1122293224
@@ -508,7 +528,10 @@ def read(
 
         # Warn if makefile has extra lines in run target
         def target_content_run() -> list[str]:
-            """ Extract lines from the run content """
+            """
+            Extract lines from the run content
+            """
+
             newline_stub = '_XXX_NEWLINE_0x734'
             datafile_test = datafile
             if '\\\n' in datafile:
@@ -526,7 +549,10 @@ def read(
 
         # Warn if makefile has extra lines in build target
         def target_content_build() -> list[str]:
-            """ Extract lines from the build content """
+            """
+            Extract lines from the build content
+            """
+
             regexp = r'^build:.*\n((?:\t[^\n]*\n?)*)'
             search_result = re.search(regexp, datafile, re.MULTILINE)
             if search_result is None:
@@ -613,7 +639,10 @@ def read(
 def filter_common_data(
         common_data: NitrateDataType,
         individual_data: list[NitrateDataType]) -> None:
-    """ Filter common data out from individual data """
+    """
+    Filter common data out from individual data
+    """
+
     common_candidates = copy.copy(individual_data[0])
     histogram = {}
     for key in individual_data[0]:
@@ -655,7 +684,9 @@ def read_nitrate(
         dry_run: bool,
         logger: tmt.log.Logger
         ) -> ReadOutputType:
-    """ Read old metadata from nitrate test cases """
+    """
+    Read old metadata from nitrate test cases
+    """
 
     # Need to import nitrate only when really needed. Otherwise we get
     # traceback when nitrate is not installed or config file not available.
@@ -754,6 +785,7 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
     Check for the tier attribute, if there are multiple TierX tags, pick
     the one with the lowest index.
     """
+
     tier_match = re.match(r'^Tier ?(?P<num>\d+)$', tag, re.IGNORECASE)
     if tier_match:
         num = tier_match.group('num')
@@ -773,7 +805,10 @@ def read_polarion(
         link_polarion: bool,
         filenames: list[str],
         dry_run: bool) -> None:
-    """ Read data from Polarion """
+    """
+    Read data from Polarion
+    """
+
     if not polarion_case_id:
         read_polarion_case(common_data, None, link_polarion, dry_run)
     elif len(polarion_case_id) == 1:
@@ -816,7 +851,10 @@ def read_polarion_case(
         polarion_case_id: Optional[str],
         link_polarion: bool,
         dry_run: bool) -> None:
-    """ Read data of specific case from Polarion """
+    """
+    Read data of specific case from Polarion
+    """
+
     import tmt.export.polarion
     file_name: Optional[str] = None
 
@@ -970,7 +1008,10 @@ RelevancyType = Union[str, list[str]]
 def extract_relevancy(
         notes: str,
         field: StructuredField) -> Optional[RelevancyType]:
-    """ Get relevancy from testcase, respecting sf priority """
+    """
+    Get relevancy from testcase, respecting sf priority
+    """
+
     try:
         if "relevancy" in field:
             return field.get("relevancy")
@@ -996,7 +1037,10 @@ def read_nitrate_case(
         general: bool = False,
         logger: tmt.log.Logger
         ) -> NitrateDataType:
-    """ Read old metadata from nitrate test case """
+    """
+    Read old metadata from nitrate test case
+    """
+
     import tmt.export.nitrate
 
     data: NitrateDataType = {'tag': []}
@@ -1110,7 +1154,9 @@ def read_nitrate_case(
 
 
 def adjust_runtest(path: Path) -> None:
-    """ Adjust runtest.sh content and permission """
+    """
+    Adjust runtest.sh content and permission
+    """
 
     # Nothing to do if there is no runtest.sh
     if not path.exists():
@@ -1151,7 +1197,10 @@ def adjust_runtest(path: Path) -> None:
 
 
 def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
-    """ Write gathered metadata in the fmf format """
+    """
+    Write gathered metadata in the fmf format
+    """
+
     # Put keys into a reasonable order
     extra_keys = [
         'adjust', 'extra-nitrate',
@@ -1182,6 +1231,7 @@ def relevancy_to_adjust(
     Expects a string or list of strings with relevancy rules.
     Returns a list of dictionaries with adjust rules.
     """
+
     rules = []
     rule = {}
     if isinstance(relevancy, list):

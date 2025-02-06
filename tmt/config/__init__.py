@@ -30,10 +30,15 @@ def effective_config_dir() -> Path:
 
 
 class Config:
-    """ User configuration """
+    """
+    User configuration
+    """
 
     def __init__(self) -> None:
-        """ Initialize config directory path """
+        """
+        Initialize config directory path
+        """
+
         self.path = effective_config_dir()
         self.logger = tmt.utils.log
 
@@ -49,12 +54,17 @@ class Config:
 
     @property
     def last_run(self) -> Optional[Path]:
-        """ Get the last run workdir path """
+        """
+        Get the last run workdir path
+        """
+
         return self._last_run_symlink.resolve() if self._last_run_symlink.is_symlink() else None
 
     @last_run.setter
     def last_run(self, workdir: Path) -> None:
-        """ Set the last run to the given run workdir """
+        """
+        Set the last run to the given run workdir
+        """
 
         with suppress(OSError):
             self._last_run_symlink.unlink()
@@ -72,7 +82,10 @@ class Config:
 
     @functools.cached_property
     def fmf_tree(self) -> fmf.Tree:
-        """ Return the configuration tree """
+        """
+        Return the configuration tree
+        """
+
         try:
             return fmf.Tree(self.path)
         except fmf.utils.RootError as error:
@@ -80,7 +93,10 @@ class Config:
 
     @property
     def link(self) -> Optional[LinkConfig]:
-        """ Return the link configuration, if present. """
+        """
+        Return the link configuration, if present.
+        """
+
         link_config = cast(Optional[fmf.Tree], self.fmf_tree.find('/link'))
         if not link_config:
             return None

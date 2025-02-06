@@ -22,7 +22,10 @@ def config_path(tmppath: Path, monkeypatch) -> Path:
 
 
 def test_config(config_path: Path):
-    """ Config smoke test """
+    """
+    Config smoke test
+    """
+
     run = Path('/var/tmp/tmt/test')
     config1 = tmt.config.Config()
     config1.last_run = run
@@ -31,7 +34,10 @@ def test_config(config_path: Path):
 
 
 def test_last_run_race(tmppath: Path, monkeypatch):
-    """ Race in last run symlink shouldn't be fatal """
+    """
+    Race in last run symlink shouldn't be fatal
+    """
+
     config_path = tmppath / 'config'
     config_path.mkdir()
     monkeypatch.setattr(tmt.config, 'effective_config_dir', MagicMock(return_value=config_path))

@@ -22,7 +22,9 @@ class RpmOstree(tmt.package_managers.PackageManager):
     probe_priority = 100
 
     def prepare_command(self) -> tuple[Command, Command]:
-        """ Prepare installation command for rpm-ostree"""
+        """
+        Prepare installation command for rpm-ostree
+        """
 
         command = Command()
 

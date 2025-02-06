@@ -115,13 +115,17 @@ def _run_script(
 
 
 def _report_success(label: str, output: tmt.utils.CommandOutput) -> list[str]:
-    """ Format successful command output for the report """
+    """
+    Format successful command output for the report
+    """
 
     return list(render_command_report(label=label, output=output))
 
 
 def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
-    """ Format failed command output for the report """
+    """
+    Format failed command output for the report
+    """
 
     return list(render_command_report(label=label, exc=exc))
 
@@ -129,7 +133,9 @@ def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
 def create_ausearch_timestamp(
         invocation: 'TestInvocation',
         logger: tmt.log.Logger) -> None:
-    """ Save a timestamp for ``ausearch`` in a file on the guest """
+    """
+    Save a timestamp for ``ausearch`` in a file on the guest
+    """
 
     ausearch_timestamp_filepath = invocation.check_files_path / AUSEARCH_TIMESTAMP_FILENAME
 
@@ -167,7 +173,9 @@ cat {ausearch_timestamp_filepath}
 def create_final_report(
         invocation: 'TestInvocation',
         logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
-    """ Collect the data, evaluate and create the final report """
+    """
+    Collect the data, evaluate and create the final report
+    """
 
     if invocation.start_time is None:
         raise tmt.utils.GeneralError(

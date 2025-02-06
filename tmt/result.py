@@ -127,7 +127,9 @@ RawResult = Any
 
 @dataclasses.dataclass
 class ResultGuestData(SerializableContainer):
-    """ Describes what tmt knows about a guest the result was produced on """
+    """
+    Describes what tmt knows about a guest the result was produced on
+    """
 
     name: str = f'{tmt.utils.DEFAULT_NAME}-0'
     role: Optional[str] = None
@@ -163,7 +165,9 @@ def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
 
 @dataclasses.dataclass
 class BaseResult(SerializableContainer):
-    """ Describes what tmt knows about a result """
+    """
+    Describes what tmt knows about a result
+    """
 
     name: str
     result: ResultOutcome = field(
@@ -192,7 +196,9 @@ class BaseResult(SerializableContainer):
         self.original_result = self.result
 
     def show(self) -> str:
-        """ Return a nicely colored result with test name (and note) """
+        """
+        Return a nicely colored result with test name (and note)
+        """
 
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
@@ -213,7 +219,9 @@ class BaseResult(SerializableContainer):
 
 @dataclasses.dataclass
 class CheckResult(BaseResult):
-    """ Describes what tmt knows about a single test check result """
+    """
+    Describes what tmt knows about a single test check result
+    """
 
     event: CheckEvent = field(
         default=CheckEvent.BEFORE_TEST,
@@ -221,7 +229,9 @@ class CheckResult(BaseResult):
         unserialize=CheckEvent.from_spec)
 
     def to_subcheck(self) -> 'SubCheckResult':
-        """ Convert check to a tmt SubCheckResult """
+        """
+        Convert check to a tmt SubCheckResult
+        """
 
         return SubCheckResult.from_serialized(self.to_serialized())
 
@@ -239,7 +249,9 @@ class SubCheckResult(CheckResult):
 
 @dataclasses.dataclass
 class SubResult(BaseResult):
-    """ Describes what tmt knows about a single test subresult """
+    """
+    Describes what tmt knows about a single test subresult
+    """
 
     check: list[SubCheckResult] = field(
         default_factory=cast(Callable[[], list[SubCheckResult]], list),
@@ -251,12 +263,16 @@ class SubResult(BaseResult):
 
 @dataclasses.dataclass
 class PhaseResult(BaseResult):
-    """ Describes what tmt knows about result of individual phases, e.g. prepare ansible """
+    """
+    Describes what tmt knows about result of individual phases, e.g. prepare ansible
+    """
 
 
 @dataclasses.dataclass
 class Result(BaseResult):
-    """ Describes what tmt knows about a single test result """
+    """
+    Describes what tmt knows about a single test result
+    """
 
     serial_number: int = 0
     fmf_id: Optional['tmt.base.FmfId'] = field(
@@ -462,7 +478,10 @@ class Result(BaseResult):
         return self
 
     def to_subresult(self) -> 'SubResult':
-        """ Convert result to tmt subresult """
+        """
+        Convert result to tmt subresult
+        """
+
         options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
 
         return SubResult.from_serialized(
@@ -470,7 +489,10 @@ class Result(BaseResult):
 
     @staticmethod
     def total(results: list['Result']) -> dict[ResultOutcome, int]:
-        """ Return dictionary with total stats for given results """
+        """
+        Return dictionary with total stats for given results
+        """
+
         stats = {result: 0 for result in RESULT_OUTCOME_COLORS}
 
         for result in results:
@@ -479,7 +501,10 @@ class Result(BaseResult):
 
     @staticmethod
     def summary(results: list['Result']) -> str:
-        """ Prepare a nice human summary of provided results """
+        """
+        Prepare a nice human summary of provided results
+        """
+
         stats = Result.total(results)
         comments = []
         if stats.get(ResultOutcome.PASS):
@@ -504,7 +529,9 @@ class Result(BaseResult):
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
     def show(self, display_guest: bool = True) -> str:
-        """ Return a nicely colored result with test name (and note) """
+        """
+        Return a nicely colored result with test name (and note)
+        """
 
         from tmt.steps.provision import format_guest_full_name
 
@@ -527,7 +554,10 @@ class Result(BaseResult):
 
     @staticmethod
     def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:
-        """ Filter stdout and get only messages with certain type """
+        """
+        Filter stdout and get only messages with certain type
+        """
+
         if not log:
             return ''
         filtered = ''
@@ -575,7 +605,9 @@ class Result(BaseResult):
 
 
 def results_to_exit_code(results: list[Result]) -> int:
-    """ Map results to a tmt exit code """
+    """
+    Map results to a tmt exit code
+    """
 
     from tmt.cli import TmtExitCode
 
