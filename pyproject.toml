@@ -295,7 +295,6 @@ target-version = "py39"
 
 [tool.ruff.format]
 quote-style = "preserve"  # TODO: Convert to a specific quote style
-skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 select = [
@@ -436,7 +435,6 @@ runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tmt"]
-split-on-trailing-comma = false
 
 [tool.pytest.ini_options]
 markers = [
