@@ -1,20 +1,24 @@
-FROM registry.fedoraproject.org/fedora
+FROM registry.fedoraproject.org/fedora:latest
+
+RUN <<EOF
+set -ex
 
 # Adjust system defaults
-RUN set -x && \
-    sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf && \
-    echo "Set disable_coredump false" >> /etc/sudo.conf
+sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf
+echo "Set disable_coredump false" >> /etc/sudo.conf
 
 # Install necessary packages
-RUN set -x && \
-    dnf install -y dnf-plugins-core && \
-    dnf copr enable -y @teemtee/stable && \
-    dnf install -y tmt && \
-    dnf autoremove -y && \
-    dnf clean all
+dnf install -y dnf-plugins-core
+dnf copr enable -y @teemtee/stable
+dnf install -y tmt
+dnf autoremove -y
+dnf clean all
+
+# Prepare a directory for experimenting
+mkdir /tmt
+EOF
 
 # Prepare files for experimenting
-RUN mkdir /tmt
 COPY .fmf /tmt/.fmf
 COPY tests /tmt/tests
 COPY plans/main.fmf /tmt/plans/main.fmf
@@ -22,4 +26,4 @@ COPY plans/features/core.fmf /tmt/plans/core.fmf
 
 # Run all plans under the regular user by default
 WORKDIR /tmt
-CMD tmt run -av provision -h local
+CMD ["tmt", "run", "-av", "provision", "-h", "local"]

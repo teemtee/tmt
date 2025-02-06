@@ -37,33 +37,33 @@ logger.add_console_handler()
 # Explore available plugins
 tmt.plugins.explore(logger)
 
-# Local images created via `make images-tests`, reference to local registry
+# Local images created via `make images/test`, reference to local registry
 CONTAINER_FEDORA_RAWHIDE = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/rawhide/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/fedora/rawhide/upstream:latest')
 CONTAINER_FEDORA_41 = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/41/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/fedora/41/upstream:latest')
 CONTAINER_FEDORA_40 = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/40/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/fedora/40/upstream:latest')
 CONTAINER_FEDORA_39 = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/39/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/fedora/39/upstream:latest')
 CONTAINER_CENTOS_STREAM_10 = Container(
-    url='containers-storage:localhost/tmt/tests/container/centos/stream10/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/centos/stream10/upstream:latest')
 CONTAINER_CENTOS_STREAM_9 = Container(
-    url='containers-storage:localhost/tmt/tests/container/centos/stream9/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/centos/stream9/upstream:latest')
 CONTAINER_CENTOS_7 = Container(
-    url='containers-storage:localhost/tmt/tests/container/centos/7/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/centos/7/upstream:latest')
 CONTAINER_UBI_8 = Container(
-    url='containers-storage:localhost/tmt/tests/container/ubi/8/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/ubi/8/upstream:latest')
 CONTAINER_UBUNTU_2204 = Container(
-    url='containers-storage:localhost/tmt/tests/container/ubuntu/22.04/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/ubuntu/22.04/upstream:latest')
 CONTAINER_DEBIAN_127 = Container(
-    url='containers-storage:localhost/tmt/tests/container/debian/12.7/upstream:latest')
+    url='containers-storage:localhost/tmt/container/test/debian/12.7/upstream:latest')
 CONTAINER_FEDORA_COREOS = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/coreos:stable')
+    url='containers-storage:localhost/tmt/container/test/fedora/coreos:stable')
 CONTAINER_FEDORA_COREOS_OSTREE = Container(
-    url='containers-storage:localhost/tmt/tests/container/fedora/coreos/ostree:stable')
+    url='containers-storage:localhost/tmt/container/test/fedora/coreos/ostree:stable')
 CONTAINER_ALPINE = Container(
-    url='containers-storage:localhost/tmt/tests/container/alpine:latest')
+    url='containers-storage:localhost/tmt/container/test/alpine:latest')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
 PACKAGE_MANAGER_DNF = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf')
