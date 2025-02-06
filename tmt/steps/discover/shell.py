@@ -195,13 +195,20 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         option="--ref",
         metavar='REVISION',
         default=None,
-        help="Branch, tag or commit specifying the git revision.")
+        help="""
+            Branch, tag or commit specifying the desired git revision.
+            Defaults to the remote repository's default branch.
+            """)
 
     keep_git_metadata: bool = field(
         option="--keep-git-metadata",
         is_flag=True,
         default=False,
-        help="Keep the git metadata if a repo is synced to guest.")
+        help="""
+            By default the ``.git`` directory is removed to save disk space.
+            Set to true to sync the git metadata to guest as well.
+            Implicit if ``dist-git-source`` is used.
+            """)
 
     def to_spec(self) -> tmt.steps._RawStepData:
         """
@@ -224,8 +231,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     Use provided list of shell script tests.
 
     List of test cases to be executed can be defined manually directly
-    in the plan as a list of dictionaries containing test name, actual
-    test script and optionally a path to the test. Example config:
+    in the plan as a list of dictionaries containing test ``name``, actual
+    test ``script`` and optionally the ``duration`` or a ``path`` to the test.
+    The default duration for tests defined directly in the discover step is ``1h``.
+    Example config:
 
     .. code-block:: yaml
 
