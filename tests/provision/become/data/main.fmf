@@ -8,7 +8,7 @@ adjust:
     - when: provisiontest == container
       provision+:
         how: container
-        image: localhost/tmt/tests/container/fedora/rawhide/unprivileged:latest
+        image: localhost/tmt/container/test/fedora/rawhide/unprivileged:latest
 
 execute:
     how: tmt

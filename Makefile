@@ -82,14 +82,33 @@ ver2spec:
 ##
 ## Containers
 ##
-images:  ## Build tmt images for podman/docker
-	podman build -t tmt --squash -f ./containers/Containerfile.mini .
-	podman build -t tmt-all --squash -f ./containers/Containerfile.full .
 
+# Base images of our tmt container images, collected from `FROM ...` directives in Containerfiles.
+TMT_DISTRO_IMAGE_BASES = $(shell grep -h 'FROM ' containers/Containerfile.* | cut -d' ' -f2 | sort | uniq)
+
+# All tmt image targets will begin with this string.
+TMT_DISTRO_IMAGE_TARGET_PREFIX = images
+
+# All tmt container images will begin with this string.
+TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX = tmt/container
+
+# The list of tmt container images.
+TMT_DISTRO_CONTAINER_IMAGES := $(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt:latest \
+                               $(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt-all:latest
+
+# The list of targets building individual tmt images.
+TMT_DISTRO_IMAGES_TARGETS := $(foreach image,$(TMT_DISTRO_CONTAINER_IMAGES),images/$(subst :,\:,$(image)))
+
+# Base images of our test images, collected from `FROM ...` directives in Containerfiles
 TMT_TEST_IMAGE_BASES = $(shell grep -rh 'FROM ' containers/ | cut -d' ' -f2 | sort | uniq)
-TMT_TEST_IMAGE_TARGET_PREFIX = images-tests
-TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/tests/container
 
+# All tmt test image targets will begin with this string.
+TMT_TEST_IMAGE_TARGET_PREFIX = images/test
+
+# All tmt test container images will begin with this string.
+TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX = tmt/container/test
+
+# The list of tmt test container images.
 TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
@@ -116,23 +135,50 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream:latest
 
-TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images-tests/$(subst :,\:,$(image)))
+# The list of targets building individual tmt test images.
+TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images/test/$(subst :,\:,$(image)))
 
-images-tests: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
+images: $(TMT_DISTRO_IMAGES_TARGETS)  ## Build tmt images for podman/docker
+	podman images | grep 'localhost/$(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/' | sort
+
+images/test: $(TMT_TEST_IMAGES_TARGETS)  ## Build customized images for tests
 	podman images | grep 'localhost/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/' | sort
 
-images-tests-bases:  ## Download base images for custom test images
+images/test/bases:  ## Download base images for custom test images
 	podman pull $(TMT_TEST_IMAGE_BASES)
 
+# Build a single container: <image name> <containerfile>
+define do-build-container-image =
+@ echo "$(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
+podman build --squash -t ${1} -f ./containers/${2} .
+@ echo
+endef
+
+# Return an image name from the given target: <image target>
+define container-image-target-to-name =
+$(subst $(TMT_DISTRO_IMAGE_TARGET_PREFIX)/,,${1})
+endef
+
+# Return a test image name from the given target: <image target>
 define test-container-image-target-to-name =
 $(subst $(TMT_TEST_IMAGE_TARGET_PREFIX)/,,${1})
 endef
 
-define build-test-container-image =
-@ echo "$(ccgreen)Building $(ccred)$(call test-container-image-target-to-name,$@)$(ccend) $(ccgreen)image...$(ccend)"
-podman build -t $(call test-container-image-target-to-name,${1}) -f ./containers/${2} .
-@ echo
+# Build tmt image: <image name> <containerfile>
+define build-container-image =
+$(call do-build-container-image,$(call container-image-target-to-name,${1}),${2})
 endef
+
+# Build tmt test image: <image name> <containerfile>
+define build-test-container-image =
+$(call do-build-container-image,$(call test-container-image-target-to-name,${1}),${2})
+endef
+
+$(TMT_DISTRO_IMAGE_TARGET_PREFIX)/$(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt\:latest:
+	$(call build-container-image,$@,Containerfile.mini)
+
+$(TMT_DISTRO_IMAGE_TARGET_PREFIX)/$(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt-all\:latest:
+	$(call build-container-image,$@,Containerfile.full)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine\:latest:
 	$(call build-test-container-image,$@,alpine/Containerfile)
@@ -213,7 +259,7 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/1
 ## Development
 ##
 develop: _deps  ## Install development requirements
-	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9
+	sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah hadolint /usr/bin/python3.9
 
 # Git vim tags and cleanup
 tags:
@@ -231,7 +277,12 @@ clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -rf examples/convert/{main.fmf,test.md,Manual} Manual
 	rm -f tests/full/repo_copy.tgz
 
-clean-test-images:  ## Remove all custom images built for tests
+clean/images:  ## Remove tmt images
+	for image in $(TMT_DISTRO_CONTAINER_IMAGES); do \
+	    podman rmi -i "$$image"; \
+	done
+
+clean/images/test:  ## Remove all custom images built for tests
 	for image in $(TMT_TEST_CONTAINER_IMAGES); do \
 	    podman rmi -i "$$image"; \
 	done
