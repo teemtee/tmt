@@ -25,8 +25,8 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         help='Shell script to be executed. Can be used multiple times.',
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
-        )
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
 
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
@@ -60,11 +60,12 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
     _data_class = FinishShellData
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
         """
         Perform finishing tasks on given guest
         """
@@ -93,7 +94,8 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             guest.push(
                 source=finish_wrapper_path,
                 destination=finish_wrapper_path,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],
+            )
             command: ShellScript
             if guest.become and not guest.facts.is_superuser:
                 command = tmt.utils.ShellScript(f'sudo -E {finish_wrapper_path}')

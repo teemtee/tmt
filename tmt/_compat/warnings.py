@@ -9,4 +9,4 @@ else:
 
 __all__ = [
     "deprecated",
-    ]
+]

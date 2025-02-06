@@ -1,4 +1,3 @@
-
 import urllib.parse
 
 from tmt.utils import DistGitHandler, Path

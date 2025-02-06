@@ -88,7 +88,7 @@ class Action(enum.Enum):
 
         before = click.style(self.action[0:index], fg="bright_blue")
         key = click.style(self.key, fg="blue", bold=True, underline=True)
-        after = click.style(self.action[index + 1:], fg="bright_blue")
+        after = click.style(self.action[index + 1 :], fg="bright_blue")
 
         longest = max(len(action.name) for action in Action)
         padding = " " * (longest + 3 - len(self.action))
@@ -111,13 +111,13 @@ class Action(enum.Enum):
 
 
 class Try(tmt.utils.Common):
-
     def __init__(
-            self,
-            *,
-            tree: tmt.Tree,
-            logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
+        self,
+        *,
+        tree: tmt.Tree,
+        logger: tmt.log.Logger,
+        **kwargs: Any,
+    ) -> None:
         """
         Just store the tree
         """
@@ -137,7 +137,9 @@ class Try(tmt.utils.Common):
 
         # Use the interactive mode during test execution
         tmt.steps.execute.Execute.store_cli_invocation(
-            context=None, options={"interactive": True})
+            context=None,
+            options={"interactive": True},
+        )
 
     def check_tree(self) -> None:
         """
@@ -164,7 +166,8 @@ class Try(tmt.utils.Common):
             self.tests = self.tree.tests(names=test_names)
             if not self.tests:
                 raise tmt.utils.GeneralError(
-                    f"No test matching '{fmf.utils.listed(test_names)}' found.")
+                    f"No test matching '{fmf.utils.listed(test_names)}' found."
+                )
 
         # Default to tests under the current working directory
         else:
@@ -227,7 +230,8 @@ class Try(tmt.utils.Common):
             self.plans = self.tree.plans(names=plan_names, run=run)
             if not self.plans:
                 raise tmt.utils.GeneralError(
-                    f"No plan matching '{fmf.utils.listed(plan_names)}' found.")
+                    f"No plan matching '{fmf.utils.listed(plan_names)}' found."
+                )
 
         # Use default plans if no plan names requested
         else:
@@ -240,7 +244,8 @@ class Try(tmt.utils.Common):
             plan.login = tmt.steps.Login(
                 logger=plan.provision._logger.descend(),
                 step=plan.provision,
-                order=tmt.steps.PHASE_END)
+                order=tmt.steps.PHASE_END,
+            )
 
     def welcome(self) -> None:
         """
@@ -282,8 +287,8 @@ class Try(tmt.utils.Common):
             plans=[plan.name for plan in self.plans],
             steps=list(self._cli_context_object.steps),
             environment=self.environment,
-            remove=self.opt('remove')
-            )
+            remove=self.opt('remove'),
+        )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
     def choose_action(self) -> Action:
@@ -292,23 +297,25 @@ class Try(tmt.utils.Common):
         """
 
         while True:
-            self.print(textwrap.dedent(f"""
-                What do we do next?
+            self.print(
+                textwrap.dedent(f"""
+                    What do we do next?
 
-                    {Action.TEST.menu}
-                    {Action.LOGIN.menu}
-                    {Action.VERBOSE.menu}
-                    {Action.DEBUG.menu}
+                        {Action.TEST.menu}
+                        {Action.LOGIN.menu}
+                        {Action.VERBOSE.menu}
+                        {Action.DEBUG.menu}
 
-                    {Action.DISCOVER.menu}
-                    {Action.PREPARE.menu}
-                    {Action.EXECUTE.menu}
-                    {Action.REPORT.menu}
-                    {Action.FINISH.menu}
+                        {Action.DISCOVER.menu}
+                        {Action.PREPARE.menu}
+                        {Action.EXECUTE.menu}
+                        {Action.REPORT.menu}
+                        {Action.FINISH.menu}
 
-                    {Action.KEEP.menu}
-                    {Action.QUIT.menu}
-                """))
+                        {Action.KEEP.menu}
+                        {Action.QUIT.menu}
+                """)
+            )
 
             try:
                 answer = input("> ")
@@ -511,7 +518,8 @@ class Try(tmt.utils.Common):
         # pyright does.
         prepare_data_class = cast(  # type: ignore[redundant-cast]
             type[tmt.steps.prepare.feature.PrepareFeatureData],
-            tmt.steps.prepare.feature.PrepareFeature.get_data_class())
+            tmt.steps.prepare.feature.PrepareFeature.get_data_class(),
+        )
 
         if not tmt.utils.container_has_field(prepare_data_class, 'epel'):
             raise GeneralError("Feature 'epel' is not available.")
@@ -522,11 +530,13 @@ class Try(tmt.utils.Common):
         data = prepare_data_class(
             name="tmt-try-epel",
             how='feature',
-            epel="enabled")  # type: ignore[reportCallIssue,call-arg,unused-ignore]
+            epel="enabled",
+        )  # type: ignore[reportCallIssue,call-arg,unused-ignore]
 
         phase: PreparePlugin[Any] = cast(
             PreparePlugin[Any],
-            PreparePlugin.delegate(plan.prepare, data=data))
+            PreparePlugin.delegate(plan.prepare, data=data),
+        )
 
         plan.prepare._phases.append(phase)
 
@@ -541,11 +551,13 @@ class Try(tmt.utils.Common):
         data = PrepareInstallData(
             name="tmt-try-install",
             how='install',
-            package=list(self.opt("install")))
+            package=list(self.opt("install")),
+        )
 
         phase: PreparePlugin[Any] = cast(
             PreparePlugin[Any],
-            PreparePlugin.delegate(plan.prepare, data=data))
+            PreparePlugin.delegate(plan.prepare, data=data),
+        )
 
         plan.prepare._phases.append(phase)
 
