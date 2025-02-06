@@ -1,4 +1,6 @@
-""" Base Metadata Classes """
+"""
+Base Metadata Classes
+"""
 
 import collections
 import copy
@@ -165,14 +167,18 @@ class FmfId(
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_dict(self) -> _RawFmfId:  # type: ignore[override]
-        """ Return keys and values in the form of a dictionary """
+        """
+        Return keys and values in the form of a dictionary
+        """
 
         return cast(_RawFmfId, super().to_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_minimal_dict(self) -> _RawFmfId:  # type: ignore[override]
-        """ Convert to a mapping with unset keys omitted """
+        """
+        Convert to a mapping with unset keys omitted
+        """
 
         return cast(_RawFmfId, super().to_minimal_dict())
 
@@ -187,7 +193,9 @@ class FmfId(
         return exported
 
     def to_spec(self) -> _RawFmfId:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         spec = self.to_dict()
 
@@ -197,7 +205,9 @@ class FmfId(
         return self._drop_nonexportable(spec)
 
     def to_minimal_spec(self) -> _RawFmfId:
-        """ Convert to specification, skip default values """
+        """
+        Convert to specification, skip default values
+        """
 
         spec = cast(_RawFmfId, super().to_minimal_spec())
 
@@ -208,7 +218,9 @@ class FmfId(
 
     @classmethod
     def from_spec(cls, raw: _RawFmfId) -> 'FmfId':
-        """ Convert from a specification file or from a CLI option """
+        """
+        Convert from a specification file or from a CLI option
+        """
 
         # TODO: with mandatory validation, this can go away.
         ref = raw.get('ref', None)
@@ -392,7 +404,9 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
 # See https://tmt.readthedocs.io/en/latest/spec/tests.html#require
 
 class DependencySimple(str):
-    """ A basic, simple dependency, usually a package """
+    """
+    A basic, simple dependency, usually a package
+    """
 
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
@@ -447,12 +461,16 @@ class DependencyFmfId(
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_minimal_dict(self) -> _RawDependencyFmfId:  # type: ignore[override]
-        """ Convert to a mapping with unset keys omitted """
+        """
+        Convert to a mapping with unset keys omitted
+        """
 
         return cast(_RawDependencyFmfId, super().to_minimal_dict())
 
     def to_spec(self) -> _RawDependencyFmfId:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         spec = self.to_dict()
 
@@ -462,7 +480,9 @@ class DependencyFmfId(
         return spec
 
     def to_minimal_spec(self) -> _RawDependencyFmfId:
-        """ Convert to specification, skip default values """
+        """
+        Convert to specification, skip default values
+        """
 
         spec = self.to_minimal_dict()
 
@@ -475,7 +495,9 @@ class DependencyFmfId(
     # specific types than those declared in superclass.
     @classmethod
     def from_spec(cls, raw: _RawDependencyFmfId) -> 'DependencyFmfId':  # type: ignore[override]
-        """ Convert from a specification file or from a CLI option """
+        """
+        Convert from a specification file or from a CLI option
+        """
 
         # TODO: with mandatory validation, this can go away.
         ref = raw.get('ref', None)
@@ -526,20 +548,26 @@ class DependencyFile(
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_dict(self) -> _RawDependencyFile:  # type: ignore[override]
-        """ Return keys and values in the form of a dictionary """
+        """
+        Return keys and values in the form of a dictionary
+        """
         return cast(_RawDependencyFile, super().to_dict())
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
     def to_minimal_dict(self) -> _RawDependencyFile:  # type: ignore[override]
-        """ Convert to a mapping with unset keys omitted """
+        """
+        Convert to a mapping with unset keys omitted
+        """
         return cast(_RawDependencyFile, super().to_minimal_dict())
 
     # ignore[override]: expected, we do want to accept and return more
     # specific types than those declared in superclass.
     @classmethod
     def from_spec(cls, raw: _RawDependencyFile) -> 'DependencyFile':
-        """ Convert from a specification file or from a CLI option """
+        """
+        Convert from a specification file or from a CLI option
+        """
         dependency = cls()
 
         raw_patterns = raw.get('pattern', [])
@@ -576,7 +604,9 @@ Dependency = Union[DependencySimple, DependencyFmfId, DependencyFile]
 
 
 def dependency_factory(raw_dependency: Optional[_RawDependencyItem]) -> Dependency:
-    """ Select the correct require class """
+    """
+    Select the correct require class
+    """
     if isinstance(raw_dependency, dict):
         dependency_type = raw_dependency.get('type', 'library')
         if dependency_type == 'library':  # can't use isinstance check with TypedDict
@@ -721,7 +751,9 @@ class Core(
                  parent: Optional[tmt.utils.Common] = None,
                  logger: tmt.log.Logger,
                  **kwargs: Any) -> None:
-        """ Initialize the node """
+        """
+        Initialize the node
+        """
         super().__init__(node=node, logger=logger, parent=parent, name=node.name, **kwargs)
 
         self.node = node
@@ -740,7 +772,9 @@ class Core(
         self._metadata = self.node.data.copy()
 
     def __str__(self) -> str:
-        """ Node name """
+        """
+        Node name
+        """
         return self.name
 
     @classmethod
@@ -758,12 +792,16 @@ class Core(
         return cast(list[T], getattr(tree, f'{cls.__name__.lower()}s')())
 
     def _update_metadata(self) -> None:
-        """ Update the _metadata attribute """
+        """
+        Update the _metadata attribute
+        """
         self._metadata.update(self._export())
         self._metadata['name'] = self.name
 
     def _show_additional_keys(self) -> None:
-        """ Show source files """
+        """
+        Show source files
+        """
         if self.id is not None:
             echo(tmt.utils.format('id', self.id, key_color='magenta'))
         echo(tmt.utils.format('sources', self.fmf_sources, key_color='magenta'))
@@ -773,7 +811,9 @@ class Core(
             echo(tmt.utils.format('web', web_link, key_color='magenta', wrap=False))
 
     def _fmf_id(self) -> None:
-        """ Show fmf identifier """
+        """
+        Show fmf identifier
+        """
         echo(tmt.utils.format('fmf-id', cast(dict[str, Any],
              self.fmf_id.to_minimal_spec()), key_color='magenta'))
 
@@ -799,7 +839,9 @@ class Core(
     # https://github.com/python/mypy/issues/5858
     @property
     def fmf_id(self) -> FmfId:
-        """ Return full fmf identifier of the node """
+        """
+        Return full fmf identifier of the node
+        """
 
         # When the object is built from an fmf node without a root, it's
         # probably not possible for the object to have any fmf ID in the
@@ -817,7 +859,9 @@ class Core(
         return [Path(source) for source in self.node.sources]
 
     def web_link(self) -> Optional[str]:
-        """ Return a clickable web link to the fmf metadata location """
+        """
+        Return a clickable web link to the fmf metadata location
+        """
         if self.fmf_id.ref is None or self.fmf_id.url is None:
             return None
 
@@ -839,7 +883,9 @@ class Core(
             cls,
             context: Optional['tmt.cli.Context'],
             options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
-        """ Save provided command line context for future use """
+        """
+        Save provided command line context for future use
+        """
         invocation = super().store_cli_invocation(context, options)
 
         # Handle '.' as an alias for the current working directory
@@ -861,13 +907,17 @@ class Core(
         return invocation
 
     def name_and_summary(self) -> str:
-        """ Node name and optional summary """
+        """
+        Node name and optional summary
+        """
         if self.summary:
             return f'{self.name} ({self.summary})'
         return self.name
 
     def ls(self, summary: bool = False) -> None:
-        """ List node """
+        """
+        List node
+        """
         echo(style(self.name, fg='red'))
         if summary and self.summary:
             echo(tmt.utils.format('summary', self.summary))
@@ -915,7 +965,9 @@ class Core(
         return data
 
     def _lint_keys(self, additional_keys: list[str]) -> list[str]:
-        """ Return list of invalid keys used, empty when all good """
+        """
+        Return list of invalid keys used, empty when all good
+        """
 
         known_keys: list[str] = []
 
@@ -932,7 +984,9 @@ class Core(
         return [key for key in self.node.get() if key not in known_keys]
 
     def lint_validate(self) -> LinterReturn:
-        """ C000: fmf node should pass the schema validation """
+        """
+        C000: fmf node should pass the schema validation
+        """
 
         schema_name = self.__class__.__name__.lower()
 
@@ -1023,7 +1077,9 @@ class Core(
         yield LinterOutcome.PASS, 'fmf node passes schema validation'
 
     def lint_summary_exists(self) -> LinterReturn:
-        """ C001: summary key should be set and should be reasonably long """
+        """
+        C001: summary key should be set and should be reasonably long
+        """
 
         if not self.summary:
             yield LinterOutcome.WARN, 'summary key is missing'
@@ -1036,7 +1092,9 @@ class Core(
         yield LinterOutcome.PASS, 'summary key is set and is reasonably long'
 
     def has_link(self, needle: 'LinkNeedle') -> bool:
-        """ Whether object contains specified link """
+        """
+        Whether object contains specified link
+        """
 
         if self.link is None:
             return False
@@ -1049,7 +1107,9 @@ class Test(
         Core,
         tmt.export.Exportable['Test'],
         tmt.lint.Lintable['Test']):
-    """ Test object (L1 Metadata) """
+    """
+    Test object (L1 Metadata)
+    """
 
     # Basic test information
     component: list[str] = field(
@@ -1231,7 +1291,9 @@ class Test(
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
-        """ Show overview of available tests """
+        """
+        Show overview of available tests
+        """
         tests = [
             style(str(test), fg='red') for test in tree.tests()]
         echo(style(
@@ -1251,7 +1313,9 @@ class Test(
             force: bool = False,
             dry: Optional[bool] = None,
             logger: tmt.log.Logger) -> None:
-        """ Create a new test """
+        """
+        Create a new test
+        """
         if dry is None:
             dry = Test._opt('dry')
 
@@ -1339,7 +1403,9 @@ class Test(
         return framework
 
     def enabled_on_guest(self, guest: tmt.steps.provision.Guest) -> bool:
-        """ Check if the test is enabled on the specific guest """
+        """
+        Check if the test is enabled on the specific guest
+        """
 
         if not self.where:
             return True
@@ -1347,7 +1413,9 @@ class Test(
         return any(destination in (guest.name, guest.role) for destination in self.where)
 
     def show_manual(self) -> None:
-        """ Show manual test instructions """
+        """
+        Show manual test instructions
+        """
 
         if self.tree is None or self.tree.root is None:
             return
@@ -1368,7 +1436,9 @@ class Test(
             self.warn(f"Manual test instructions file '{instructions_path}' not found.")
 
     def show(self) -> None:
-        """ Show test details """
+        """
+        Show test details
+        """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
             _, _, value, _, metadata = container_field(self, key)
@@ -1418,7 +1488,9 @@ class Test(
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
-        """ T001: all keys are known """
+        """
+        T001: all keys are known
+        """
 
         # We don't want adjust in show/export so it is not yet in Test._keys
         invalid_keys = self._lint_keys(EXTRA_TEST_KEYS + OBSOLETED_TEST_KEYS + ['adjust'])
@@ -1432,7 +1504,9 @@ class Test(
         yield LinterOutcome.PASS, 'correct keys are used'
 
     def lint_defined_test(self) -> LinterReturn:
-        """ T002: test script must be defined """
+        """
+        T002: test script must be defined
+        """
 
         if not self.test:
             yield LinterOutcome.FAIL, 'test script is not defined'
@@ -1441,7 +1515,9 @@ class Test(
         yield LinterOutcome.PASS, 'test script is defined'
 
     def lint_absolute_path(self) -> LinterReturn:
-        """ T003: test directory path must be absolute """
+        """
+        T003: test directory path must be absolute
+        """
 
         if not self.path:
             yield LinterOutcome.FAIL, 'directory path is not set'
@@ -1454,7 +1530,9 @@ class Test(
         yield LinterOutcome.PASS, 'directory path is absolute'
 
     def lint_path_exists(self) -> LinterReturn:
-        """ T004: test directory path must exist """
+        """
+        T004: test directory path must exist
+        """
 
         if not self.path:
             yield LinterOutcome.FAIL, 'directory path is not set'
@@ -1469,7 +1547,9 @@ class Test(
         yield LinterOutcome.PASS, f"test path '{test_path}' does exist"
 
     def lint_legacy_relevancy_rules(self) -> LinterReturn:
-        """ T005: relevancy has been obsoleted by adjust """
+        """
+        T005: relevancy has been obsoleted by adjust
+        """
 
         relevancy = self.node.get('relevancy')
 
@@ -1498,7 +1578,9 @@ class Test(
         yield LinterOutcome.FIXED, 'relevancy converted into adjust'
 
     def lint_legacy_coverage_key(self) -> LinterReturn:
-        """ T006: coverage has been obsoleted by link """
+        """
+        T006: coverage has been obsoleted by link
+        """
 
         coverage = self.node.get('coverage')
 
@@ -1511,7 +1593,9 @@ class Test(
     # Check if the format of Markdown file respects the specification
     # https://tmt.readthedocs.io/en/latest/spec/tests.html#manual
     def lint_manual_test_path_exists(self) -> LinterReturn:
-        """ T007: manual test path is not an actual path """
+        """
+        T007: manual test path is not an actual path
+        """
 
         if not self.manual:
             yield LinterOutcome.SKIP, 'not a manual test'
@@ -1528,7 +1612,9 @@ class Test(
         yield LinterOutcome.PASS, f'manual test path "{self.manual_test_path}" does exist'
 
     def lint_manual_valid_markdown(self) -> LinterReturn:
-        """ T008: manual test should be valid markdown """
+        """
+        T008: manual test should be valid markdown
+        """
 
         if not self.manual:
             yield LinterOutcome.SKIP, 'not a manual test'
@@ -1551,7 +1637,9 @@ class Test(
         yield LinterOutcome.PASS, 'correct manual test syntax'
 
     def lint_require_type_field(self) -> LinterReturn:
-        """ T009: require fields should have type field """
+        """
+        T009: require fields should have type field
+        """
 
         self.node.get('require')
         missing_type = []
@@ -1600,14 +1688,18 @@ class Test(
 
 @dataclasses.dataclass(repr=False)
 class LintableCollection(tmt.lint.Lintable['LintableCollection']):
-    """ Linting rules applied to a collection of Tests, Plans or Stories """
+    """
+    Linting rules applied to a collection of Tests, Plans or Stories
+    """
 
     def __init__(self, objs: list["tmt.base.Core"], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.objs = objs
 
     def lint_no_duplicate_ids(self) -> LinterReturn:
-        """ G001: no duplicate ids """
+        """
+        G001: no duplicate ids
+        """
         ids: collections.defaultdict[str, list[str]] = collections.defaultdict(list)
         for obj in self.objs:
             if obj.id is None:
@@ -1632,7 +1724,9 @@ class LintableCollection(tmt.lint.Lintable['LintableCollection']):
 
 
 def expand_node_data(data: T, fmf_context: FmfContext) -> T:
-    """ Recursively expand variables in node data """
+    """
+    Recursively expand variables in node data
+    """
     if isinstance(data, str):
         # Expand environment and context variables. This is a bit
         # tricky as we do need to process each type individually and
@@ -1697,7 +1791,9 @@ class Plan(
         Core,
         tmt.export.Exportable['Plan'],
         tmt.lint.Lintable['Plan']):
-    """ Plan object (L2 Metadata) """
+    """
+    Plan object (L2 Metadata)
+    """
 
     # `environment` and `environment-file` are NOT promoted to instance variables.
     context: FmfContext = field(
@@ -1742,7 +1838,9 @@ class Plan(
             raise_on_validation_error: bool = False,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
-        """ Initialize the plan """
+        """
+        Initialize the plan
+        """
         kwargs.setdefault('run', run)
         super().__init__(
             node=node,
@@ -1833,7 +1931,9 @@ class Plan(
 
     @property
     def environment(self) -> Environment:
-        """ Return combined environment from plan data, command line and original plan """
+        """
+        Return combined environment from plan data, command line and original plan
+        """
 
         # Store 'environment' and 'environment-file' keys content
         environment_from_spec = Environment.from_inputs(
@@ -1869,7 +1969,9 @@ class Plan(
         return Environment({**environment_from_spec, **environment_from_original_plan})
 
     def _source_plan_environment_file(self) -> None:
-        """ Add variables from the plan environment file to the environment """
+        """
+        Add variables from the plan environment file to the environment
+        """
         if (self.my_run and self.plan_environment_file.exists()
                 and self.plan_environment_file.stat().st_size > 0):
             # Use __wrapped__ to force the reload of the file
@@ -1960,7 +2062,9 @@ class Plan(
 
     @property
     def _fmf_context(self) -> tmt.utils.FmfContext:
-        """ Return combined context from plan data and command line """
+        """
+        Return combined context from plan data and command line
+        """
 
         combined = FmfContext()
 
@@ -1971,7 +2075,9 @@ class Plan(
 
     @staticmethod
     def edit_template(raw_content: str) -> str:
-        """ Edit the default template with custom values """
+        """
+        Edit the default template with custom values
+        """
 
         content = tmt.utils.yaml_to_dict(raw_content)
 
@@ -2015,7 +2121,9 @@ class Plan(
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
-        """ Show overview of available plans """
+        """
+        Show overview of available plans
+        """
         plans = [
             style(str(plan), fg='red') for plan in tree.plans()]
         echo(style(
@@ -2034,7 +2142,9 @@ class Plan(
             force: bool = False,
             dry: Optional[bool] = None,
             logger: tmt.log.Logger) -> None:
-        """ Create a new plan """
+        """
+        Create a new plan
+        """
         # Prepare paths
         if dry is None:
             dry = Plan._opt('dry')
@@ -2135,7 +2245,9 @@ class Plan(
             yield name
 
     def show(self) -> None:
-        """ Show plan details """
+        """
+        Show plan details
+        """
 
         # Summary, description and contact first
         self.ls(summary=True)
@@ -2194,7 +2306,9 @@ class Plan(
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
-        """ P001: all keys are known """
+        """
+        P001: all keys are known
+        """
 
         invalid_keys = self._lint_keys(
             list(self.step_names(enabled_only=False)) + self._extra_l2_keys)
@@ -2208,7 +2322,9 @@ class Plan(
         yield LinterOutcome.PASS, 'correct keys are used'
 
     def lint_execute_not_defined(self) -> LinterReturn:
-        """ P002: execute step must be defined with "how" """
+        """
+        P002: execute step must be defined with "how"
+        """
 
         if not self.node.get('execute'):
             yield LinterOutcome.FAIL, 'execute step must be defined with "how"'
@@ -2217,7 +2333,9 @@ class Plan(
         yield LinterOutcome.PASS, 'execute step defined with "how"'
 
     def _step_phase_nodes(self, step: str) -> list[dict[str, Any]]:
-        """ List raw fmf nodes for the given step """
+        """
+        List raw fmf nodes for the given step
+        """
 
         _phases = self.node.get(step)
 
@@ -2233,7 +2351,9 @@ class Plan(
             self,
             step: str,
             plugin_class: tmt.steps.PluginClass) -> LinterReturn:
-        """ P003: execute step methods must be known """
+        """
+        P003: execute step methods must be known
+        """
 
         phases = self._step_phase_nodes(step)
 
@@ -2262,17 +2382,23 @@ class Plan(
     # by better schema & lint cooperation - e.g. unknown methods shall be reported
     # by schema-based validation already.
     def lint_execute_unknown_method(self) -> LinterReturn:
-        """ P003: execute step methods must be known """
+        """
+        P003: execute step methods must be known
+        """
 
         yield from self._lint_step_methods('execute', tmt.steps.execute.ExecutePlugin)
 
     def lint_discover_unknown_method(self) -> LinterReturn:
-        """ P004: discover step methods must be known """
+        """
+        P004: discover step methods must be known
+        """
 
         yield from self._lint_step_methods('discover', tmt.steps.discover.DiscoverPlugin)
 
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
-        """ P005: remote fmf ids must be valid """
+        """
+        P005: remote fmf ids must be valid
+        """
 
         fmf_ids: list[tuple[FmfId, dict[str, Any]]] = []
 
@@ -2308,7 +2434,9 @@ class Plan(
         yield LinterOutcome.SKIP, 'no remote fmf ids defined'
 
     def lint_unique_names(self) -> LinterReturn:
-        """ P006: phases must have unique names """
+        """
+        P006: phases must have unique names
+        """
         passed = True
         for step_name in self.step_names(enabled_only=False):
             phase_name: str
@@ -2321,7 +2449,9 @@ class Plan(
             yield LinterOutcome.PASS, 'phases have unique names'
 
     def lint_phases_have_guests(self) -> LinterReturn:
-        """ P007: step phases require existing guests and roles """
+        """
+        P007: step phases require existing guests and roles
+        """
 
         guest_names: list[str] = []
         guest_roles: list[str] = []
@@ -2383,7 +2513,9 @@ class Plan(
         yield from _lint_step('finish')
 
     def lint_empty_env_files(self) -> LinterReturn:
-        """ P008: environment files are not empty """
+        """
+        P008: environment files are not empty
+        """
 
         env_files = self.node.get("environment-file") or []
 
@@ -2400,7 +2532,9 @@ class Plan(
         yield LinterOutcome.PASS, 'no empty environment files'
 
     def wake(self) -> None:
-        """ Wake up all steps """
+        """
+        Wake up all steps
+        """
 
         self.debug('wake', color='cyan', shift=0, level=2)
         for step in self.steps(enabled_only=False):
@@ -2427,7 +2561,9 @@ class Plan(
             self.verbose('summary', self.summary, 'green')
 
     def go(self) -> None:
-        """ Execute the plan """
+        """
+        Execute the plan
+        """
         self.header()
 
         # Additional debug info like plan environment
@@ -2517,11 +2653,15 @@ class Plan(
 
     @property
     def is_remote_plan_reference(self) -> bool:
-        """ Check whether the plan is a remote plan reference """
+        """
+        Check whether the plan is a remote plan reference
+        """
         return self._remote_plan_fmf_id is not None
 
     def import_plan(self) -> Optional['Plan']:
-        """ Import plan from a remote repository, return a Plan instance """
+        """
+        Import plan from a remote repository, return a Plan instance
+        """
         if not self.is_remote_plan_reference:
             return None
 
@@ -2628,7 +2768,9 @@ class Plan(
         return self._imported_plan
 
     def prune(self) -> None:
-        """ Remove all uninteresting files from the plan workdir """
+        """
+        Remove all uninteresting files from the plan workdir
+        """
 
         logger = self._logger.descend(extra_shift=1)
 
@@ -2661,7 +2803,9 @@ class Story(
         Core,
         tmt.export.Exportable['Story'],
         tmt.lint.Lintable['Story']):
-    """ User story object """
+    """
+    User story object
+    """
 
     example: list[str] = field(
         default_factory=list,
@@ -2702,7 +2846,9 @@ class Story(
             raise_on_validation_error: bool = False,
             logger: tmt.log.Logger,
             **kwargs: Any) -> None:
-        """ Initialize the story """
+        """
+        Initialize the story
+        """
         super().__init__(
             node=node,
             tree=tree,
@@ -2719,22 +2865,30 @@ class Story(
 
     @property
     def documented(self) -> list['Link']:
-        """ Return links to relevant documentation """
+        """
+        Return links to relevant documentation
+        """
         return self.link.get('documented-by') if self.link else []
 
     @property
     def verified(self) -> list['Link']:
-        """ Return links to relevant test coverage """
+        """
+        Return links to relevant test coverage
+        """
         return self.link.get('verified-by') if self.link else []
 
     @property
     def implemented(self) -> list['Link']:
-        """ Return links to relevant source code """
+        """
+        Return links to relevant source code
+        """
         return self.link.get('implemented-by') if self.link else []
 
     @property
     def status(self) -> list[str]:
-        """ Aggregate story status from implemented-, verified- and documented-by links """
+        """
+        Aggregate story status from implemented-, verified- and documented-by links
+        """
         status = []
 
         if self.implemented:
@@ -2751,7 +2905,9 @@ class Story(
     def _match(
             self, implemented: bool, verified: bool, documented: bool, covered: bool,
             unimplemented: bool, unverified: bool, undocumented: bool, uncovered: bool) -> bool:
-        """ Return true if story matches given conditions """
+        """
+        Return true if story matches given conditions
+        """
         if implemented and not self.implemented:
             return False
         if verified and not self.verified:
@@ -2781,7 +2937,9 @@ class Story(
             force: bool = False,
             dry: Optional[bool] = None,
             logger: tmt.log.Logger) -> None:
-        """ Create a new story """
+        """
+        Create a new story
+        """
         if dry is None:
             dry = Story._opt('dry')
 
@@ -2833,7 +2991,9 @@ class Story(
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
-        """ Show overview of available stories """
+        """
+        Show overview of available stories
+        """
         stories = [
             style(str(story), fg='red') for story in tree.stories()]
         echo(style(
@@ -2844,7 +3004,9 @@ class Story(
                 ), fg='blue'))
 
     def show(self) -> None:
-        """ Show story details """
+        """
+        Show story details
+        """
         self.ls()
         for key in self._KEYS_SHOW_ORDER:
             _, _, value, _, metadata = container_field(self, key)
@@ -2869,7 +3031,9 @@ class Story(
             self._show_additional_keys()
 
     def coverage(self, code: bool, test: bool, docs: bool) -> tuple[bool, bool, bool]:
-        """ Show story coverage """
+        """
+        Show story coverage
+        """
         if code:
             code = bool(self.implemented)
             verdict(code, good='done ', bad='todo ', nl=False)
@@ -2884,7 +3048,9 @@ class Story(
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
-        """ S001: all keys are known """
+        """
+        S001: all keys are known
+        """
 
         invalid_keys = self._lint_keys(EXTRA_STORY_KEYS)
 
@@ -2897,7 +3063,9 @@ class Story(
         yield LinterOutcome.PASS, 'correct keys are used'
 
     def lint_story(self) -> LinterReturn:
-        """ S002: story key must be defined """
+        """
+        S002: story key must be defined
+        """
 
         if not self.node.get('story'):
             yield LinterOutcome.FAIL, 'story is required'
@@ -2913,7 +3081,9 @@ LintableCollection.discover_linters()
 
 
 class Tree(tmt.utils.Common):
-    """ Test Metadata Tree """
+    """
+    Test Metadata Tree
+    """
 
     def __init__(self,
                  *,
@@ -2922,7 +3092,9 @@ class Tree(tmt.utils.Common):
                  fmf_context: Optional[FmfContext] = None,
                  additional_rules: Optional[list[_RawAdjustRule]] = None,
                  logger: tmt.log.Logger) -> None:
-        """ Initialize tmt tree from directory path or given fmf tree """
+        """
+        Initialize tmt tree from directory path or given fmf tree
+        """
 
         # TODO: not calling parent __init__ on purpose?
         self.inject_logger(logger)
@@ -2967,7 +3139,9 @@ class Tree(tmt.utils.Common):
 
     @property
     def _fmf_context(self) -> FmfContext:
-        """ Use custom fmf context if provided, default otherwise """
+        """
+        Use custom fmf context if provided, default otherwise
+        """
         return self._custom_fmf_context or super()._fmf_context
 
     def _filters_conditions(
@@ -2977,7 +3151,9 @@ class Tree(tmt.utils.Common):
             conditions: list[str],
             links: list['LinkNeedle'],
             excludes: list[str]) -> list[CoreT]:
-        """ Apply filters and conditions, return pruned nodes """
+        """
+        Apply filters and conditions, return pruned nodes
+        """
         result = []
         for node in nodes:
             filter_vars = copy.deepcopy(node._metadata)
@@ -3023,7 +3199,9 @@ class Tree(tmt.utils.Common):
         return result
 
     def sanitize_cli_names(self, names: list[str]) -> list[str]:
-        """ Sanitize CLI names in case name includes control character """
+        """
+        Sanitize CLI names in case name includes control character
+        """
         for name in names:
             if not name.isprintable():
                 raise tmt.utils.GeneralError(f"Invalid name {name!r} as it's not printable.")
@@ -3031,7 +3209,9 @@ class Tree(tmt.utils.Common):
 
     @property
     def tree(self) -> fmf.Tree:
-        """ Initialize tree only when accessed """
+        """
+        Initialize tree only when accessed
+        """
         if self._tree is None:
             try:
                 self._tree = fmf.Tree(str(self._path))
@@ -3055,7 +3235,9 @@ class Tree(tmt.utils.Common):
 
     @property
     def root(self) -> Optional[Path]:
-        """ Metadata root """
+        """
+        Metadata root
+        """
         if self.tree is None or self.tree.root is None:
             return None
 
@@ -3074,7 +3256,9 @@ class Tree(tmt.utils.Common):
             apply_command_line: bool = True,
             sort: bool = True
             ) -> list[Test]:
-        """ Search available tests """
+        """
+        Search available tests
+        """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['test']
@@ -3100,7 +3284,9 @@ class Tree(tmt.utils.Common):
         cmd_line_names = self.sanitize_cli_names(cmd_line_names)
 
         def name_filter(nodes: Iterable[fmf.Tree]) -> list[fmf.Tree]:
-            """ Filter nodes based on names provided on the command line """
+            """
+            Filter nodes based on names provided on the command line
+            """
             if not cmd_line_names:
                 return list(nodes)
             return [
@@ -3164,7 +3350,9 @@ class Tree(tmt.utils.Common):
             excludes: Optional[list[str]] = None,
             apply_command_line: bool = True
             ) -> list[Plan]:
-        """ Search available plans """
+        """
+        Search available plans
+        """
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
         local_plan_keys = (keys or []) + ['execute']
@@ -3242,7 +3430,9 @@ class Tree(tmt.utils.Common):
             excludes: Optional[list[str]] = None,
             apply_command_line: Optional[bool] = True
             ) -> list[Story]:
-        """ Search available stories """
+        """
+        Search available stories
+        """
         # Handle defaults, apply possible command line options
         logger = logger or self._logger
         keys = (keys or []) + ['story']
@@ -3293,7 +3483,9 @@ class Tree(tmt.utils.Common):
             template: str,
             force: bool,
             logger: tmt.log.Logger) -> None:
-        """ Initialize a new tmt tree, optionally with a template """
+        """
+        Initialize a new tmt tree, optionally with a template
+        """
         path = path.resolve()
         dry = Tree._opt('dry')
 
@@ -3417,7 +3609,9 @@ class RunData(SerializableContainer):
 
 
 class Run(tmt.utils.Common):
-    """ Test run, a container of plans """
+    """
+    Test run, a container of plans
+    """
 
     tree: Optional[Tree]
 
@@ -3429,7 +3623,9 @@ class Run(tmt.utils.Common):
                  parent: Optional[tmt.utils.Common] = None,
                  workdir_root: Optional[Path] = None,
                  logger: tmt.log.Logger) -> None:
-        """ Initialize tree, workdir and plans """
+        """
+        Initialize tree, workdir and plans
+        """
         # Use the last run id if requested
         self.config = tmt.config.Config()
 
@@ -3473,7 +3669,9 @@ class Run(tmt.utils.Common):
             logger=self._logger)
 
     def _use_default_plan(self) -> None:
-        """ Prepare metadata tree with only the default plan """
+        """
+        Prepare metadata tree with only the default plan
+        """
         default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
         # The default discover method for this case is 'shell'
         default_plan[tmt.templates.DEFAULT_PLAN_NAME]['discover']['how'] = 'shell'
@@ -3481,7 +3679,9 @@ class Run(tmt.utils.Common):
         self.debug("No metadata found, using the default plan.")
 
     def _save_tree(self, tree: Optional[Tree]) -> None:
-        """ Save metadata tree, handle the default plan """
+        """
+        Save metadata tree, handle the default plan
+        """
         default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
         try:
             self.tree = tree if tree else tmt.Tree(logger=self._logger, path=Path('.'))
@@ -3510,7 +3710,9 @@ class Run(tmt.utils.Common):
 
     @property
     def environment(self) -> Environment:
-        """ Return environment combined from wake up and command line """
+        """
+        Return environment combined from wake up and command line
+        """
         # Gather environment variables from options only once
         if self._environment_from_options is None:
             assert self.tree is not None  # narrow type
@@ -3528,7 +3730,9 @@ class Run(tmt.utils.Common):
         return combined
 
     def save(self) -> None:
-        """ Save list of selected plans and enabled steps """
+        """
+        Save list of selected plans and enabled steps
+        """
         assert self.tree is not None  # narrow type
         assert self._cli_context_object is not None  # narrow type
         data = RunData(
@@ -3579,7 +3783,9 @@ class Run(tmt.utils.Common):
                     skip_validation=True))
 
     def load(self) -> None:
-        """ Load list of selected plans and enabled steps """
+        """
+        Load list of selected plans and enabled steps
+        """
         try:
             data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read(Path('run.yaml'))))
         except tmt.utils.FileError:
@@ -3623,14 +3829,18 @@ class Run(tmt.utils.Common):
 
     @property
     def plans(self) -> list[Plan]:
-        """ Test plans for execution """
+        """
+        Test plans for execution
+        """
         if self._plans is None:
             assert self.tree is not None  # narrow type
             self._plans = self.tree.plans(run=self, filters=['enabled:true'])
         return self._plans
 
     def finish(self) -> None:
-        """ Check overall results, return appropriate exit code """
+        """
+        Check overall results, return appropriate exit code
+        """
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute
         report = self.plans[0].report
@@ -3661,7 +3871,9 @@ class Run(tmt.utils.Common):
         raise SystemExit(tmt.result.results_to_exit_code(results))
 
     def follow(self) -> None:
-        """ Periodically check for new lines in the log. """
+        """
+        Periodically check for new lines in the log.
+        """
         assert self.workdir is not None  # narrow type
         with open(self.workdir / tmt.log.LOG_FILENAME) as logfile:
             # Move to the end of the file
@@ -3686,7 +3898,9 @@ class Run(tmt.utils.Common):
                     time.sleep(0.5)
 
     def show_runner(self, logger: tmt.log.Logger) -> None:
-        """ Log facts about the machine on which tmt runs """
+        """
+        Log facts about the machine on which tmt runs
+        """
 
         # populate facts before logging
         _ = self.runner.facts
@@ -3699,7 +3913,9 @@ class Run(tmt.utils.Common):
             log(key_formatted, value_formatted, shift=1)
 
     def prepare_for_try(self, tree: Tree) -> None:
-        """ Prepare the run for the try command """
+        """
+        Prepare the run for the try command
+        """
         self.tree = tree
         self._save_tree(self.tree)
         self._workdir_load(self._workdir_path)
@@ -3707,7 +3923,9 @@ class Run(tmt.utils.Common):
         self.info(str(self.workdir), color='magenta')
 
     def go(self) -> None:
-        """ Go and do test steps for selected plans """
+        """
+        Go and do test steps for selected plans
+        """
         # Create the workdir and save last run
         self._save_tree(self._tree)
         self._workdir_load(self._workdir_path)
@@ -3818,14 +4036,18 @@ class Run(tmt.utils.Common):
 
 
 class Status(tmt.utils.Common):
-    """ Status of tmt work directories. """
+    """
+    Status of tmt work directories.
+    """
 
     LONGEST_STEP = max(tmt.steps.STEPS, key=lambda k: len(k))
     FIRST_COL_LEN = len(LONGEST_STEP) + 2
 
     @staticmethod
     def get_overall_plan_status(plan: Plan) -> str:
-        """ Examines the plan status (find the last done step) """
+        """
+        Examines the plan status (find the last done step)
+        """
         steps = list(plan.steps())
         step_names = list(plan.step_names())
         for i in range(len(steps) - 1, -1, -1):
@@ -3837,7 +4059,9 @@ class Status(tmt.utils.Common):
         return 'todo'
 
     def plan_matches_filters(self, plan: Plan) -> bool:
-        """ Check if the given plan matches filters from the command line """
+        """
+        Check if the given plan matches filters from the command line
+        """
         if self.opt('abandoned'):
             return (plan.provision.status() == 'done'
                     and plan.finish.status() == 'todo')
@@ -3849,18 +4073,24 @@ class Status(tmt.utils.Common):
 
     @staticmethod
     def colorize_column(content: str) -> str:
-        """ Add color to a status column """
+        """
+        Add color to a status column
+        """
         if 'done' in content:
             return style(content, fg='green')
         return style(content, fg='yellow')
 
     @classmethod
     def pad_with_spaces(cls, string: str) -> str:
-        """ Append spaces to string to properly align the first column """
+        """
+        Append spaces to string to properly align the first column
+        """
         return string + (cls.FIRST_COL_LEN - len(string)) * ' '
 
     def run_matches_filters(self, run: Run) -> bool:
-        """ Check if the given run matches filters from the command line """
+        """
+        Check if the given run matches filters from the command line
+        """
         if self.opt('abandoned') or self.opt('active'):
             # Any of the plans must be abandoned/active for the whole
             # run to be abandoned/active
@@ -3871,7 +4101,9 @@ class Status(tmt.utils.Common):
         return True
 
     def print_run_status(self, run: Run) -> None:
-        """ Display the overall status of the run """
+        """
+        Display the overall status of the run
+        """
         if not self.run_matches_filters(run):
             return
         # Find the earliest step in all plans' status
@@ -3898,7 +4130,9 @@ class Status(tmt.utils.Common):
         echo(run.workdir)
 
     def print_plans_status(self, run: Run) -> None:
-        """ Display the status of each plan of the given run """
+        """
+        Display the status of each plan of the given run
+        """
         for plan in run.plans:
             if self.plan_matches_filters(plan):
                 plan_status = self.get_overall_plan_status(plan)
@@ -3907,7 +4141,9 @@ class Status(tmt.utils.Common):
                 echo(f'{run.workdir}  {plan.name}')
 
     def print_verbose_status(self, run: Run) -> None:
-        """ Display the status of each step of the given run """
+        """
+        Display the status of each step of the given run
+        """
         for plan in run.plans:
             if self.plan_matches_filters(plan):
                 for step in plan.steps(enabled_only=False):
@@ -3916,7 +4152,9 @@ class Status(tmt.utils.Common):
                 echo(f' {run.workdir}  {plan.name}')
 
     def process_run(self, run: Run) -> None:
-        """ Display the status of the given run based on verbosity """
+        """
+        Display the status of the given run based on verbosity
+        """
         loaded, error = tmt.utils.load_run(run)
         if not loaded:
             self.warn(f"Failed to load run '{run.workdir}': {error}")
@@ -3929,7 +4167,9 @@ class Status(tmt.utils.Common):
             self.print_verbose_status(run)
 
     def print_header(self) -> None:
-        """ Print the header of the status table based on verbosity """
+        """
+        Print the header of the status table based on verbosity
+        """
         header = ''
         if self.verbosity_level >= 2:
             for step in tmt.steps.STEPS:
@@ -3941,7 +4181,9 @@ class Status(tmt.utils.Common):
         echo(style(header, fg='blue'))
 
     def show(self) -> None:
-        """ Display the current status """
+        """
+        Display the current status
+        """
         # Prepare absolute workdir path if --id was used
         root_path = Path(self.workdir_root)
         self.print_header()
@@ -3960,7 +4202,9 @@ CleanCallback = Callable[[], bool]
 
 
 class Clean(tmt.utils.Common):
-    """ A class for cleaning up workdirs, guests or images """
+    """
+    A class for cleaning up workdirs, guests or images
+    """
 
     def __init__(self,
                  *,
@@ -3989,7 +4233,9 @@ class Clean(tmt.utils.Common):
             cli_invocation=cli_invocation)
 
     def images(self) -> bool:
-        """ Clean images of provision plugins """
+        """
+        Clean images of provision plugins
+        """
         self.info('images', color='blue')
         successful = True
         for method in tmt.steps.provision.ProvisionPlugin.methods():
@@ -3999,7 +4245,9 @@ class Clean(tmt.utils.Common):
         return successful
 
     def _matches_how(self, plan: Plan) -> bool:
-        """ Check if the given plan matches options """
+        """
+        Check if the given plan matches options
+        """
         how = plan.provision.data[0].how
         # FIXME: cast() - typeless "dispatcher" method
         target_how = cast(Optional[str], self.opt('how'))
@@ -4009,7 +4257,9 @@ class Clean(tmt.utils.Common):
         return True
 
     def _stop_running_guests(self, run: Run) -> bool:
-        """ Stop all running guests of a run """
+        """
+        Stop all running guests of a run
+        """
         loaded, error = tmt.utils.load_run(run)
         if not loaded:
             self.warn(f"Failed to load run '{run.workdir}': {error}")
@@ -4046,7 +4296,9 @@ class Clean(tmt.utils.Common):
         return successful
 
     def guests(self, run_ids: tuple[str, ...], keep: Optional[int]) -> bool:
-        """ Clean guests of runs """
+        """
+        Clean guests of runs
+        """
         self.info('guests', color='blue')
         self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
@@ -4073,7 +4325,9 @@ class Clean(tmt.utils.Common):
         return successful
 
     def _clean_workdir(self, path: Path) -> bool:
-        """ Remove a workdir (unless in dry mode) """
+        """
+        Remove a workdir (unless in dry mode)
+        """
         if self.is_dry_run:
             self.verbose(f"Would remove workdir '{path}'.", shift=1)
         else:
@@ -4086,7 +4340,9 @@ class Clean(tmt.utils.Common):
         return True
 
     def runs(self, id_: tuple[str, ...], keep: Optional[int]) -> bool:
-        """ Clean workdirs of runs """
+        """
+        Clean workdirs of runs
+        """
         self.info('runs', color='blue')
         self.verbose('workdir root', self.workdir_root)
         if self.opt('last'):
@@ -4146,7 +4402,9 @@ class LinkNeedle:
         return f'{self.relation}:{self.target}'
 
     def matches(self, link: 'Link') -> bool:
-        """ Find out whether a given link matches this needle """
+        """
+        Find out whether a given link matches this needle
+        """
 
         # Rule out the simple case, mismatching relation.
         if not re.search(self.relation, link.relation):
@@ -4307,7 +4565,9 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
     _links: list[Link]
 
     def __init__(self, *, data: Optional[_RawLinks] = None):
-        """ Create a collection from raw link data """
+        """
+        Create a collection from raw link data
+        """
 
         # TODO: this should not happen with mandatory validation
         if data is not None and not isinstance(data, (str, dict, list)):
@@ -4347,13 +4607,17 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
             ]
 
     def get(self, relation: Optional[_RawLinkRelationName] = None) -> list[Link]:
-        """ Get links with given relation, all by default """
+        """
+        Get links with given relation, all by default
+        """
         return [
             link for link in self._links
             if relation is None or link.relation == relation]
 
     def show(self) -> None:
-        """ Format a list of links with their relations """
+        """
+        Format a list of links with their relations
+        """
         for link in self._links:
             # TODO: needs a format for fmf id target
             echo(tmt.utils.format(

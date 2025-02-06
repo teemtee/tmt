@@ -144,7 +144,9 @@ class TestDescription(
             cls: type[T],
             raw_data: dict[str, Any],
             logger: tmt.log.Logger) -> T:
-        """ Convert from a specification file or from a CLI option """
+        """
+        Convert from a specification file or from a CLI option
+        """
 
         data = cls(name=raw_data['name'], test=raw_data['test'])
         data._load_keys(raw_data, cls.__name__, logger)
@@ -152,7 +154,9 @@ class TestDescription(
         return data
 
     def to_spec(self) -> dict[str, Any]:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         data = super().to_spec()
         data['link'] = self.link.to_spec() if self.link else None
@@ -200,7 +204,9 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         help="Keep the git metadata if a repo is synced to guest.")
 
     def to_spec(self) -> tmt.steps._RawStepData:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         data = super().to_spec()
         # ignore[typeddict-unknown-key]: the `tests` key is unknown to generic raw step data,
@@ -270,7 +276,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     _tests: list[tmt.base.Test] = []
 
     def show(self, keys: Optional[list[str]] = None) -> None:
-        """ Show config details """
+        """
+        Show config details
+        """
+
         super().show([])
 
         if self.data.tests:
@@ -282,7 +291,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             ref: Optional[str],
             testdir: Path,
             keep_git_metadata: bool = False) -> None:
-        """ Fetch remote git repo from given url to testdir """
+        """
+        Fetch remote git repo from given url to testdir
+        """
+
         # Nothing to do if no url provided
         if not url:
             return
@@ -324,7 +336,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             shutil.rmtree(testdir / '.git')
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Discover available tests """
+        """
+        Discover available tests
+        """
+
         super().go(logger=logger)
         tests = fmf.Tree({'summary': 'tests'})
 

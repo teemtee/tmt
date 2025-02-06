@@ -1,4 +1,6 @@
-""" ``tmt status`` implementation """
+"""
+``tmt status`` implementation
+"""
 
 from typing import Any, Optional
 
@@ -45,6 +47,7 @@ def status(
     displayed with the most verbosity (-vv).
 
     """
+
     if [abandoned, active, finished].count(True) > 1:
         raise tmt.utils.GeneralError(
             "Options --abandoned, --active and --finished cannot be "

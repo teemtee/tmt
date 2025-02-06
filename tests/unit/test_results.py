@@ -184,7 +184,10 @@ def test_result_interpret_all_cases(
         expected_outcome: ResultOutcome,
         expected_note_contains: list[str]
         ) -> None:
-    """Test all possible combinations of result interpretations"""
+    """
+    Test all possible combinations of result interpretations
+    """
+
     result = Result(
         name="test-case",
         result=result_outcome,
@@ -205,7 +208,10 @@ def test_result_interpret_all_cases(
 
 
 def test_result_interpret_check_phases() -> None:
-    """Test the interpretation of check results with different phases"""
+    """
+    Test the interpretation of check results with different phases
+    """
+
     result = Result(
         name="test-case",
         check=[
@@ -233,7 +239,10 @@ def test_result_interpret_check_phases() -> None:
 
 
 def test_result_interpret_edge_cases() -> None:
-    """Test edge cases in result interpretation"""
+    """
+    Test edge cases in result interpretation
+    """
+
     # Test with no checks
     result = Result(name="test-case", result=ResultOutcome.FAIL)
     interpreted = result.interpret_result(ResultInterpret.RESPECT, {})

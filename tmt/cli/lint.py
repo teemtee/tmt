@@ -1,4 +1,6 @@
-""" ``tmt lint`` and ``tmt * lint`` implementation """
+"""
+``tmt lint`` and ``tmt * lint`` implementation
+"""
 
 from typing import Any, Optional, Union
 
@@ -31,7 +33,9 @@ def _apply_linters(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome]) -> tuple[
             bool, Optional[list[tmt.lint.LinterRuling]]]:
-    """Apply linters on a lintable and filter out disallowed outcomes."""
+    """
+    Apply linters on a lintable and filter out disallowed outcomes.
+    """
 
     valid, rulings = lintable.lint(
         linters=linters,
@@ -63,7 +67,9 @@ def _lint_class(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Lint a single class of objects """
+    """
+    Lint a single class of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -102,7 +108,9 @@ def _lint_collection(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Lint a collection of objects """
+    """
+    Lint a collection of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -149,7 +157,9 @@ def do_lint(
         enforce_checks: list[str],
         outcomes: list[tmt.lint.LinterOutcome],
         **kwargs: Any) -> int:
-    """ Core of all ``lint`` commands """
+    """
+    Core of all ``lint`` commands
+    """
 
     if list_checks:
         for klass in klasses:

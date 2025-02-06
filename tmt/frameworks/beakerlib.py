@@ -87,7 +87,9 @@ class Beakerlib(TestFramework):
             invocation: 'TestInvocation',
             results: list[tmt.result.Result],
             logger: tmt.log.Logger) -> list[tmt.result.Result]:
-        """ Check result of a beakerlib test """
+        """
+        Check result of a beakerlib test
+        """
 
         # The outcome of a main tmt result must be never modified based on subresults outcomes.
         # The main result outcome will be always set to outcome reported by a beakerlib. The

@@ -110,7 +110,9 @@ def main(
         show_time: bool,
         pre_check: bool,
         **kwargs: Any) -> None:
-    """ Test Management Tool """
+    """
+    Test Management Tool
+    """
 
     # Let Click know about the output width - this affects mostly --help output.
     click_contex.max_content_width = tmt.utils.OUTPUT_WIDTH
@@ -230,7 +232,10 @@ def main(
 @force_dry_options
 @again_option
 def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kwargs: Any) -> None:
-    """ Run test steps. """
+    """
+    Run test steps.
+    """
+
     # Initialize
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
@@ -281,6 +286,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
+
     tmt.base.Plan.store_cli_invocation(context)
 
 
@@ -312,6 +318,7 @@ def run_tests(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
+
     tmt.base.Test.store_cli_invocation(context)
 
 
@@ -325,7 +332,10 @@ def finito(
         commands: Any,
         *args: Any,
         **kwargs: Any) -> None:
-    """ Run tests if run defined """
+    """
+    Run tests if run defined
+    """
+
     if click_context.obj.run:
         click_context.obj.run.go()
 
@@ -368,6 +378,7 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
+
     tmt.Test.store_cli_invocation(context)
     for test in context.obj.tree.tests():
         test.ls()
@@ -386,6 +397,7 @@ def tests_show(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
+
     tmt.Test.store_cli_invocation(context)
 
     logger = context.obj.logger.clone() \
@@ -431,6 +443,7 @@ def tests_create(
     Specify directory name or use '.' to create tests under the
     current working directory.
     """
+
     assert context.obj.tree.root is not None  # narrow type
     tmt.Test.store_cli_invocation(context)
     tmt.Test.create(
@@ -531,6 +544,7 @@ def tests_import(
     nitrate ...... contact, component, tag, environment, relevancy, enabled
     polarion ..... summary, enabled, assignee, id, component, tag, description, link
     """
+
     tmt.Test.store_cli_invocation(context)
 
     if manual:
@@ -679,6 +693,7 @@ def tests_export(
     Regular expression can be used to filter tests by name.
     Use '.' to select tests under the current working directory.
     """
+
     tmt.Test.store_cli_invocation(context)
 
     if nitrate:
@@ -727,6 +742,7 @@ def tests_id(context: Context, **kwargs: Any) -> None:
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
+
     tmt.Test.store_cli_invocation(context)
     for test in context.obj.tree.tests():
         tmt.identifier.id_command(context, test.node, "test", dry=kwargs["dry"])
@@ -773,6 +789,7 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
+
     tmt.Plan.store_cli_invocation(context)
     for plan in context.obj.tree.plans():
         plan.ls()
@@ -793,6 +810,7 @@ def plans_show(context: Context, **kwargs: Any) -> None:
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
+
     tmt.Plan.store_cli_invocation(context)
 
     logger = context.obj.logger.clone() \
@@ -842,7 +860,10 @@ def plans_create(
         template: str,
         force: bool,
         **kwargs: Any) -> None:
-    """ Create a new plan based on given template. """
+    """
+    Create a new plan based on given template.
+    """
+
     assert context.obj.tree.root is not None  # narrow type
     tmt.Plan.store_cli_invocation(context)
     tmt.Plan.create(
@@ -890,6 +911,7 @@ def plans_export(
     Regular expression can be used to filter plans by name.
     Use '.' to select plans under the current working directory.
     """
+
     tmt.Plan.store_cli_invocation(context)
 
     if format != _test_export_default:
@@ -919,6 +941,7 @@ def plans_id(context: Context, **kwargs: Any) -> None:
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
+
     tmt.Plan.store_cli_invocation(context)
     for plan in context.obj.tree.plans():
         tmt.identifier.id_command(context, plan.node, "plan", dry=kwargs["dry"])
@@ -974,6 +997,7 @@ def stories_ls(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
+
     tmt.Story.store_cli_invocation(context)
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
@@ -1005,6 +1029,7 @@ def stories_show(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
+
     tmt.Story.store_cli_invocation(context)
 
     logger = context.obj.logger.clone() \
@@ -1038,7 +1063,10 @@ def stories_create(
         template: str,
         force: bool,
         **kwargs: Any) -> None:
-    """ Create a new story based on given template. """
+    """
+    Create a new story based on given template.
+    """
+
     assert context.obj.tree.root is not None  # narrow type
     tmt.Story.store_cli_invocation(context)
     tmt.Story.create(
@@ -1082,10 +1110,14 @@ def stories_coverage(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
+
     tmt.Story.store_cli_invocation(context)
 
     def headfoot(text: str) -> None:
-        """ Format simple header/footer """
+        """
+        Format simple header/footer
+        """
+
         echo(style(text.rjust(4) + ' ', fg='blue'), nl=False)
 
     header = False
@@ -1173,6 +1205,7 @@ def stories_export(
     Regular expression can be used to filter stories by name.
     Use '.' to select stories under the current working directory.
     """
+
     tmt.Story.store_cli_invocation(context)
 
     if format != _test_export_default:
@@ -1218,6 +1251,7 @@ def stories_id(
     filter and the value is stored to disk. Existing identifiers
     are kept intact.
     """
+
     tmt.Story.store_cli_invocation(context)
     for story in context.obj.tree.stories():
         if story._match(implemented, verified, documented, covered,
@@ -1269,6 +1303,7 @@ def clean(context: Context,
     the same, irrespective of the order on the command line. First, all
     the guests are cleaned, followed by runs and images.
     """
+
     if last and id_:
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
@@ -1327,6 +1362,7 @@ def perform_clean(
     We need to ensure that guests are always cleaned before the run workdirs
     even if the user specified them in reverse order.
     """
+
     clean_order = ("guests", "runs", "images")
     exit_code = 0
     for phase in clean_order:
@@ -1361,6 +1397,7 @@ def clean_runs(
 
     Remove all runs in '/var/tmp/tmt' by default.
     """
+
     defined = [last is True, bool(id_), keep is not None]
     if defined.count(True) > 1:
         raise tmt.utils.GeneralError(
@@ -1413,6 +1450,7 @@ def clean_guests(
 
     Stop guests of all runs in '/var/tmp/tmt' by default.
     """
+
     if last and bool(id_):
         raise tmt.utils.GeneralError(
             "Options --last and --id cannot be used together.")
@@ -1446,6 +1484,7 @@ def clean_images(context: Context, **kwargs: Any) -> None:
     Currently supported methods are:
      - testcloud
     """
+
     # FIXME: If there are more provision methods supporting this,
     #        we should add options to specify which provision should be
     #        cleaned, similarly to guests.
@@ -1466,7 +1505,9 @@ def clean_images(context: Context, **kwargs: Any) -> None:
 
 @main.group(cls=CustomGroup)
 def setup(**kwargs: Any) -> None:
-    """ Setup the environment for working with tmt """
+    """
+    Setup the environment for working with tmt
+    """
 
 
 @setup.group(cls=CustomGroup)
@@ -1486,7 +1527,10 @@ COMPLETE_SCRIPT = 'tmt-complete'
 
 
 def setup_completion(shell: str, install: bool, context: Context) -> None:
-    """ Setup completion based on the shell """
+    """
+    Setup completion based on the shell
+    """
+
     config = tmt.config.Config()
     # Fish gets installed into its special location where it is automatically
     # loaded.
@@ -1529,7 +1573,10 @@ def setup_completion(shell: str, install: bool, context: Context) -> None:
          '~/.bashrc'.
          """)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for bash """
+    """
+    Setup shell completions for bash
+    """
+
     setup_completion('bash', install, context)
 
 
@@ -1542,7 +1589,10 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
          '~/.zshrc'.
          """)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for zsh """
+    """
+    Setup shell completions for zsh
+    """
+
     setup_completion('zsh', install, context)
 
 
@@ -1552,7 +1602,10 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     '--install', '-i', 'install', is_flag=True,
     help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
-    """ Setup shell completions for fish """
+    """
+    Setup shell completions for fish
+    """
+
     setup_completion('fish', install, context)
 
 

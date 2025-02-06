@@ -43,7 +43,9 @@ class Apk(tmt.package_managers.PackageManager):
     _sudo_prefix: Command
 
     def prepare_command(self) -> tuple[Command, Command]:
-        """ Prepare installation command for apk """
+        """
+        Prepare installation command for apk
+        """
 
         if self.guest.facts.is_superuser is False:
             self._sudo_prefix = Command('sudo')

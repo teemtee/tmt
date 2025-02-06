@@ -256,7 +256,9 @@ def indent(
 
 @dataclasses.dataclass
 class LogRecordDetails:
-    """ tmt's log message components attached to log records """
+    """
+    tmt's log message components attached to log records
+    """
 
     key: str
     value: Optional[LoggableValue] = None
@@ -516,12 +518,17 @@ class Logger:
 
     @property
     def labels_span(self) -> int:
-        """ Length of rendered labels """
+        """
+        Length of rendered labels
+        """
+
         return len(render_labels(self.labels))
 
     @staticmethod
     def _normalize_logger(logger: logging.Logger) -> logging.Logger:
-        """ Reset properties of a given :py:class:`logging.Logger` instance """
+        """
+        Reset properties of a given :py:class:`logging.Logger` instance
+        """
 
         logger.propagate = True
         logger.level = logging.DEBUG
@@ -586,7 +593,9 @@ class Logger:
             )
 
     def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
-        """ Attach a log file handler to this logger """
+        """
+        Attach a log file handler to this logger
+        """
 
         handler = LogfileHandler(filepath)
 
@@ -747,7 +756,9 @@ class Logger:
             color: Optional[str] = None,
             shift: int = 0,
             ) -> str:
-        """ Format the given text in a way suitable for :py:meth:`print` """
+        """
+        Format the given text in a way suitable for :py:meth:`print`
+        """
 
         text = indent(
             text,

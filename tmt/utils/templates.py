@@ -299,6 +299,7 @@ def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ig
         -> https://github.com/teemtee/tmt/tree/main/tmt/base.py
 
     """
+
     path = Path(path_str) if path_str else None
     return web_git_url(url, ref, path)
 
@@ -372,7 +373,9 @@ def render_template(
     environment = environment or default_template_environment()
 
     def raise_error(message: str) -> None:
-        """ An in-template helper for raising exceptions """
+        """
+        An in-template helper for raising exceptions
+        """
 
         raise Exception(message)
 

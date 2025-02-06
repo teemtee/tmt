@@ -64,7 +64,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guests """
+        """
+        Prepare the guests
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()

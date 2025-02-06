@@ -248,7 +248,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation: TestInvocation,
             extra_environment: Optional[Environment] = None,
             logger: tmt.log.Logger) -> Environment:
-        """ Return test environment """
+        """
+        Return test environment
+        """
 
         extra_environment = extra_environment or Environment()
 
@@ -291,7 +293,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             shift: int = 2,
             level: int = 3,
             topic: Optional[tmt.log.Topic] = None) -> None:
-        """ Custom logger for test output with shift 2 and level 3 defaults """
+        """
+        Custom logger for test output with shift 2 and level 3 defaults
+        """
+
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
     def execute(
@@ -300,7 +305,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation: TestInvocation,
             extra_environment: Optional[Environment] = None,
             logger: tmt.log.Logger) -> list[Result]:
-        """ Run test on the guest """
+        """
+        Run test on the guest
+        """
 
         test, guest = invocation.test, invocation.guest
 
@@ -499,7 +506,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             guest: 'Guest',
             environment: Optional[tmt.utils.Environment] = None,
             logger: tmt.log.Logger) -> None:
-        """ Execute available tests """
+        """
+        Execute available tests
+        """
+
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
@@ -515,7 +525,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             guest: Guest,
             extra_environment: Optional[Environment] = None,
             logger: tmt.log.Logger) -> None:
-        """ Execute tests on provided guest """
+        """
+        Execute tests on provided guest
+        """
 
         # Prepare tests and helper scripts, check options
         test_invocations = self.prepare_tests(guest, logger)
@@ -645,7 +657,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         guest.pull(source=self.step.plan.data_directory)
 
     def results(self) -> list[Result]:
-        """ Return test results """
+        """
+        Return test results
+        """
+
         return self._results
 
     def essential_requires(self) -> list[tmt.base.Dependency]:

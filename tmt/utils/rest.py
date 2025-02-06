@@ -76,7 +76,9 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
     @property
     def rendered(self) -> str:
-        """ Return the rendered document as a single string """
+        """
+        Return the rendered document as a single string
+        """
 
         # Drop any trailing empty lines
         while self._rendered_paragraphs and self._rendered_paragraphs[-1] == NL:
@@ -85,17 +87,23 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         return '\n'.join(self._rendered_paragraphs)
 
     def _emit(self, s: str) -> None:
-        """ Add a string to the paragraph being rendered """
+        """
+        Add a string to the paragraph being rendered
+        """
 
         self._rendered_paragraph.append(s)
 
     def _emit_paragraphs(self, paragraphs: list[str]) -> None:
-        """ Add new rendered paragraphs """
+        """
+        Add new rendered paragraphs
+        """
 
         self._rendered_paragraphs += paragraphs
 
     def flush(self) -> None:
-        """ Finalize rendering of the current paragraph """
+        """
+        Finalize rendering of the current paragraph
+        """
 
         if not self._rendered_paragraph:
             self.nl()
@@ -105,7 +113,9 @@ class RestVisitor(docutils.nodes.NodeVisitor):
             self._rendered_paragraph = []
 
     def nl(self) -> None:
-        """ Render a new, empty line """
+        """
+        Render a new, empty line
+        """
 
         # To simplify the implementation, this is merging of multiple
         # empty lines into one. Rendering of nodes than does not have
@@ -302,7 +312,9 @@ def role_ref(
 
 
 def parse_rst(text: str) -> docutils.nodes.document:
-    """ Parse a ReST document into docutils tree of nodes """
+    """
+    Parse a ReST document into docutils tree of nodes
+    """
 
     docutils.parsers.rst.roles.register_local_role('ref', role_ref)
 
@@ -317,7 +329,9 @@ def parse_rst(text: str) -> docutils.nodes.document:
 
 
 def render_rst(text: str, logger: Logger) -> str:
-    """ Render a ReST document """
+    """
+    Render a ReST document
+    """
 
     document = parse_rst(text)
     visitor = RestVisitor(document, logger)

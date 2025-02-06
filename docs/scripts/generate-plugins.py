@@ -38,7 +38,9 @@ def _is_ignored(
         container: ContainerClass,
         field: dataclasses.Field[Any],
         metadata: tmt.utils.FieldMetadata) -> bool:
-    """ Check whether a given field is to be ignored in documentation """
+    """
+    Check whether a given field is to be ignored in documentation
+    """
 
     if field.name in ('how', '_OPTIONLESS_FIELDS'):
         return True
@@ -53,7 +55,9 @@ def _is_inherited(
         container: ContainerClass,
         field: dataclasses.Field[Any],
         metadata: tmt.utils.FieldMetadata) -> bool:
-    """ Check whether a given field is inherited from step data base class """
+    """
+    Check whether a given field is inherited from step data base class
+    """
 
     # TODO: for now, it's a list, but inspecting the actual tree of classes
     # would be more generic. It's good enough for now.
@@ -61,7 +65,9 @@ def _is_inherited(
 
 
 def container_ignored_fields(container: ContainerClass) -> list[str]:
-    """ Collect container field names that are never displayed """
+    """
+    Collect container field names that are never displayed
+    """
 
     field_names: list[str] = []
 
@@ -75,7 +81,9 @@ def container_ignored_fields(container: ContainerClass) -> list[str]:
 
 
 def container_inherited_fields(container: ContainerClass) -> list[str]:
-    """ Collect container field names that are inherited from step data base class """
+    """
+    Collect container field names that are inherited from step data base class
+    """
 
     field_names: list[str] = []
 
@@ -89,7 +97,9 @@ def container_inherited_fields(container: ContainerClass) -> list[str]:
 
 
 def container_intrinsic_fields(container: ContainerClass) -> list[str]:
-    """ Collect container fields specific for the given step data """
+    """
+    Collect container fields specific for the given step data
+    """
 
     field_names: list[str] = []
 
@@ -108,13 +118,17 @@ def container_intrinsic_fields(container: ContainerClass) -> list[str]:
 
 
 def is_enum(value: Any) -> bool:
-    """ Find out whether a given value is an enum member """
+    """
+    Find out whether a given value is an enum member
+    """
 
     return isinstance(value, enum.Enum)
 
 
 def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
-    """ Create iterator over plugins of a given registry """
+    """
+    Create iterator over plugins of a given registry
+    """
 
     def plugin_iterator():
         for plugin_id in registry.iter_plugin_ids():
@@ -130,7 +144,9 @@ def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.
 
 
 def _create_test_check_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
-    """ Create iterator over plugins of a test check registry """
+    """
+    Create iterator over plugins of a test check registry
+    """
 
     def plugin_iterator():
         for plugin_id in registry.iter_plugin_ids():

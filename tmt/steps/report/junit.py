@@ -60,7 +60,10 @@ def _duration_to_seconds_filter(duration: None) -> None: pass
 
 
 def _duration_to_seconds_filter(duration: Optional[str]) -> Optional[int]:
-    """ Convert valid duration string in to seconds """
+    """
+    Convert valid duration string in to seconds
+    """
+
     if duration is None:
         return None
     try:
@@ -71,7 +74,9 @@ def _duration_to_seconds_filter(duration: Optional[str]) -> Optional[int]:
 
 
 def _escape_control_chars_filter(func: Callable[[str], str]) -> Callable[[str], str]:
-    """ Wrap the escape filter function and escape ASCII chosen control characters """
+    """
+    Wrap the escape filter function and escape ASCII chosen control characters
+    """
 
     def wrapper(value: str) -> str:
         # Define unicode characters which are not allowed in the XML and need to be removed.
@@ -123,7 +128,9 @@ class ImplementProperties:
     """
 
     class PropertyDict(TypedDict):
-        """ Defines a property dict, which gets propagated into the final template properties. """
+        """
+        Defines a property dict, which gets propagated into the final template properties.
+        """
 
         name: str
         value: str
@@ -158,7 +165,10 @@ class ResultWrapper(ImplementProperties):
         self._subresults_context_class = subresults_context_class
 
     def __getattr__(self, name: str) -> Any:
-        """ Returns an attribute of a wrapped ``tmt.Result`` instance """
+        """
+        Returns an attribute of a wrapped ``tmt.Result`` instance
+        """
+
         return getattr(self._wrapped, name)
 
     @property
@@ -186,7 +196,10 @@ class ResultsContext(ImplementProperties):
     """
 
     def __init__(self, results: Union[list[tmt.Result], list[tmt.result.SubResult]]) -> None:
-        """ Decorate/wrap all the ``Result`` and ``SubResult`` instances with more attributes """
+        """
+        Decorate/wrap all the ``Result`` and ``SubResult`` instances with more attributes
+        """
+
         super().__init__()
 
         # Decorate all the tmt.Results with more attributes
@@ -194,36 +207,57 @@ class ResultsContext(ImplementProperties):
             ResultWrapper(r, subresults_context_class=self.__class__) for r in results]
 
     def __iter__(self) -> Iterator[ResultWrapper]:
-        """ Possibility to iterate over results by iterating an instance """
+        """
+        Possibility to iterate over results by iterating an instance
+        """
+
         return iter(self._results)
 
     def __len__(self) -> int:
-        """ Returns the number of results """
+        """
+        Returns the number of results
+        """
+
         return len(self._results)
 
     @functools.cached_property
     def passed(self) -> list[ResultWrapper]:
-        """ Returns results of passed tests """
+        """
+        Returns results of passed tests
+        """
+
         return [r for r in self._results if r.result == ResultOutcome.PASS]
 
     @functools.cached_property
     def skipped(self) -> list[ResultWrapper]:
-        """ Returns results of skipped tests """
+        """
+        Returns results of skipped tests
+        """
+
         return [r for r in self._results if r.result in (ResultOutcome.SKIP, ResultOutcome.INFO)]
 
     @functools.cached_property
     def failed(self) -> list[ResultWrapper]:
-        """ Returns results of failed tests """
+        """
+        Returns results of failed tests
+        """
+
         return [r for r in self._results if r.result == ResultOutcome.FAIL]
 
     @functools.cached_property
     def errored(self) -> list[ResultWrapper]:
-        """ Returns results of tests with error/warn outcome """
+        """
+        Returns results of tests with error/warn outcome
+        """
+
         return [r for r in self._results if r.result in (ResultOutcome.ERROR, ResultOutcome.WARN)]
 
     @functools.cached_property
     def duration(self) -> int:
-        """ Returns the total duration of all tests in seconds """
+        """
+        Returns the total duration of all tests in seconds
+        """
+
         # cast: mypy does not understand the proxy-ness of `ResultWrapper`. `r.duration`
         # will exists, therefore adding a `cast` to convince mypy the list is pretty much
         # nothing but the list of results.
@@ -269,7 +303,10 @@ def make_junit_xml(
             searchpath=tmt.utils.resource_files(DEFAULT_TEMPLATE_DIR))
 
     def _read_log_filter(log: Path) -> str:
-        """ Read the contents of a given result log """
+        """
+        Read the contents of a given result log
+        """
+
         if not log:
             return ''
 
@@ -432,7 +469,9 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     _data_class = ReportJUnitData
 
     def check_options(self) -> None:
-        """ Check the module options """
+        """
+        Check the module options
+        """
 
         if self.data.flavor == 'custom' and not self.data.template_path:
             raise tmt.utils.ReportError(
@@ -443,10 +482,15 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
                 "The '--template-path' can be used only with '--flavor=custom'.")
 
     def prune(self, logger: tmt.log.Logger) -> None:
-        """ Do not prune generated junit report """
+        """
+        Do not prune generated junit report
+        """
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Read executed tests and write junit """
+        """
+        Read executed tests and write junit
+        """
+
         super().go(logger=logger)
 
         self.check_options()

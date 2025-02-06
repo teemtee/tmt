@@ -1,4 +1,6 @@
-""" ``tmt init`` implementation """
+"""
+``tmt init`` implementation
+"""
 
 from typing import Any
 

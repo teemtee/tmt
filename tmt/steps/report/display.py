@@ -57,7 +57,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         """
 
         def _display_log_info(log: Path, shift: int) -> None:
-            """ Display info about a single result log """
+            """
+            Display info about a single result log
+            """
 
             # TODO: are we sure it cannot be None?
             assert self.step.plan.execute.workdir is not None
@@ -69,7 +71,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 shift=shift)
 
         def _display_log_content(log: Path, shift: int) -> None:
-            """ Display content of a single result log """
+            """
+            Display content of a single result log
+            """
 
             # TODO: are we sure it cannot be None?
             assert self.step.plan.execute.workdir is not None
@@ -81,7 +85,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 shift=shift)
 
         def display_outcome(result: BaseResult) -> None:
-            """ Display a single result outcome """
+            """
+            Display a single result outcome
+            """
 
             if isinstance(result, SubCheckResult):
                 self.verbose(
@@ -100,7 +106,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 self.verbose(result.show(display_guest=display_guest), shift=TEST_SHIFT)
 
         def display_log_info(result: BaseResult) -> None:
-            """ Display info about result logs """
+            """
+            Display info about result logs
+            """
 
             # TODO: are we sure it cannot be None?
             assert self.step.plan.execute.workdir is not None
@@ -111,7 +119,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 _display_log_info(log, shift)
 
         def display_log_content(result: BaseResult) -> None:
-            """ Display content of interesting result logs """
+            """
+            Display content of interesting result logs
+            """
 
             # TODO: are we sure it cannot be None?
             assert self.step.plan.execute.workdir is not None
@@ -125,7 +135,9 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                     _display_log_content(log, shift)
 
         def display_subresults(results: Sequence[BaseResult]) -> None:
-            """ Display subresults, checks and subresult checks """
+            """
+            Display subresults, checks and subresult checks
+            """
 
             for subresult in results:
                 display_outcome(subresult)
@@ -155,7 +167,10 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
         display_subresults(result.subresult)
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Discover available tests """
+        """
+        Discover available tests
+        """
+
         super().go(logger=logger)
         # Show individual test results only in verbose mode
         if not self.verbosity_level:

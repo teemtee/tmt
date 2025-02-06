@@ -146,7 +146,9 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             tick_increase=tick_increase)
 
     def start(self) -> None:
-        """ Start the guest """
+        """
+        Start the guest
+        """
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
@@ -198,7 +200,10 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Prepare the connection """
+        """
+        Prepare the connection
+        """
+
         super().go(logger=logger)
 
         # Check guest and auth info
@@ -233,5 +238,8 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         self._guest.setup()
 
     def guest(self) -> Optional[tmt.GuestSsh]:
-        """ Return the provisioned guest """
+        """
+        Return the provisioned guest
+        """
+
         return self._guest

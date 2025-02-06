@@ -17,7 +17,10 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
     """
 
     def show(self):
-        """ Show plugin details for given or all available keys """
+        """
+        Show plugin details for given or all available keys
+        """
+
         super().show([])
         print("show() called")
 
@@ -28,6 +31,7 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
         If a list of option names is provided, their value will be
         checked and stored in self.data unless empty or undefined.
         """
+
         print("wake() called")
 
         # Check provided tests, default to an empty list
@@ -41,6 +45,7 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
 
         Discover available tests in this case.
         """
+
         super().go()
         print("go() called")
 
@@ -57,4 +62,5 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
         Each DiscoverPlugin has to implement this method.
         Should return a list of Test() objects.
         """
+
         return self._tests

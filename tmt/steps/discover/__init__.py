@@ -76,7 +76,9 @@ DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
 
 
 class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
-    """ Common parent of discover plugins """
+    """
+    Common parent of discover plugins
+    """
 
     # ignore[assignment]: as a base class, DiscoverStepData is not included in
     # DiscoverStepDataT.
@@ -90,7 +92,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             cls,
             usage: str,
             method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all discover plugins) """
+        """
+        Create base click command (common for all discover plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -110,7 +114,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         return discover
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         self.go_prolog(logger or self._logger)
 
@@ -125,6 +131,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Each DiscoverPlugin has to implement this method.
         Should return a list of Test() objects.
         """
+
         raise NotImplementedError
 
     def download_distgit_source(
@@ -137,6 +144,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
         distgit_dir is path to the DistGit repository
         """
+
         tmt.utils.distgit_download(
             distgit_dir=distgit_dir,
             target_dir=target_dir,
@@ -146,7 +154,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             )
 
     def log_import_plan_details(self) -> None:
-        """ Log details about the imported plan """
+        """
+        Log details about the imported plan
+        """
+
         parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
         if parent and parent.plan._original_plan and \
                 parent.plan._original_plan._remote_plan_fmf_id:
@@ -158,11 +169,15 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                 self.verbose(f'import {key}', value, 'green')
 
     def post_dist_git(self, created_content: list[Path]) -> None:
-        """ Discover tests after dist-git applied patches """
+        """
+        Discover tests after dist-git applied patches
+        """
 
 
 class Discover(tmt.steps.Step):
-    """ Gather information about test cases to be executed. """
+    """
+    Gather information about test cases to be executed.
+    """
 
     _plugin_base_class = DiscoverPlugin
     _preserved_workdir_members = ['step.yaml', 'tests.yaml']
@@ -173,7 +188,10 @@ class Discover(tmt.steps.Step):
             plan: 'tmt.base.Plan',
             data: tmt.steps.RawStepDataArgument,
             logger: tmt.log.Logger) -> None:
-        """ Store supported attributes, check for sanity """
+        """
+        Store supported attributes, check for sanity
+        """
+
         super().__init__(plan=plan, data=data, logger=logger)
 
         # Collection of discovered tests
@@ -184,7 +202,10 @@ class Discover(tmt.steps.Step):
         self.extract_tests_later: bool = False
 
     def load(self) -> None:
-        """ Load step data from the workdir """
+        """
+        Load step data from the workdir
+        """
+
         if self.should_run_again:
             self.debug('Run discover again when reexecuting to capture changes in plans')
         else:
@@ -227,7 +248,10 @@ class Discover(tmt.steps.Step):
             self.debug('Discovered tests not found.', level=2)
 
     def save(self) -> None:
-        """ Save step data to the workdir """
+        """
+        Save step data to the workdir
+        """
+
         super().save()
 
         # Create tests.yaml with the full test data
@@ -246,7 +270,9 @@ class Discover(tmt.steps.Step):
         self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
 
     def _discover_from_execute(self) -> None:
-        """ Check the execute step for possible shell script tests """
+        """
+        Check the execute step for possible shell script tests
+        """
 
         # Check scripts for command line and data, convert to list if needed
         scripts = self.plan.execute.opt('script')
@@ -295,7 +321,10 @@ class Discover(tmt.steps.Step):
                 )
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         super().wake()
 
         # Check execute step for possible tests (unless already done)
@@ -321,7 +350,10 @@ class Discover(tmt.steps.Step):
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise summary of the discovery """
+        """
+        Give a concise summary of the discovery
+        """
+
         # Summary of selected tests
         text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
         self.info('summary', text, 'green', shift=1)
@@ -330,7 +362,10 @@ class Discover(tmt.steps.Step):
             self.verbose(test.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
-        """ Discover all tests """
+        """
+        Discover all tests
+        """
+
         super().go(force=force)
 
         # Nothing more to do if already done

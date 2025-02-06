@@ -293,7 +293,9 @@ class MultiGuestTask(Task[TaskResultT]):
 
 
 class Queue(list[TaskT]):
-    """ Queue class for running tasks """
+    """
+    Queue class for running tasks
+    """
 
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
@@ -302,7 +304,9 @@ class Queue(list[TaskT]):
         self._logger = logger
 
     def enqueue_task(self, task: TaskT) -> None:
-        """ Put new task into a queue """
+        """
+        Put new task into a queue
+        """
 
         self.append(task)
 

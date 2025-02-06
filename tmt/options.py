@@ -1,4 +1,6 @@
-""" Common options and the MethodCommand class """
+"""
+Common options and the MethodCommand class
+"""
 
 import contextlib
 import dataclasses
@@ -32,7 +34,9 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass(frozen=True)
 class Deprecated:
-    """ Version information and hint for obsolete options """
+    """
+    Version information and hint for obsolete options
+    """
 
     since: str
     hint: Optional[str] = None
@@ -487,14 +491,20 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
     """
 
     def is_likely_subcommand(arg: str, subcommands: list[str]) -> bool:
-        """ Return true if arg is the beginning characters of a subcommand """
+        """
+        Return true if arg is the beginning characters of a subcommand
+        """
+
         return any(subcommand.startswith(arg) for subcommand in subcommands)
 
     class MethodCommand(click.Command):
         _method: Optional[click.Command] = None
 
         def _check_method(self, context: 'tmt.cli.Context', args: list[str]) -> None:
-            """ Manually parse the --how option """
+            """
+            Manually parse the --how option
+            """
+
             # Avoiding circular imports
             import tmt.steps
 

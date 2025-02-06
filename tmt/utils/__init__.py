@@ -1,4 +1,6 @@
-""" Test Metadata Utilities """
+"""
+Test Metadata Utilities
+"""
 
 import contextlib
 import copy
@@ -184,7 +186,9 @@ class ProcessExitCodes(enum.IntEnum):
 
     @classmethod
     def format(cls, exit_code: int) -> Optional[str]:
-        """ Format a given exit code for nicer logging """
+        """
+        Format a given exit code for nicer logging
+        """
 
         member = cls._value2member_map_.get(exit_code)
 
@@ -253,6 +257,7 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     Otherwise, the ``TMT_WORKDIR_ROOT`` environment variable is used if set.
     If neither is specified, the default value of :py:data:``WORKDIR_ROOT`` is used.
     """
+
     if workdir_root_option:
         return workdir_root_option
 
@@ -338,7 +343,9 @@ class FmfContext(dict[str, list[str]]):
         raise NormalizationError(key_address, spec, 'a list of strings or a dictionary')
 
     def to_spec(self) -> dict[str, Any]:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         return dict(self)
 
@@ -352,7 +359,9 @@ EnvVarName: 'TypeAlias' = str
 
 
 class EnvVarValue(str):
-    """ A type of environment variable value """
+    """
+    A type of environment variable value
+    """
 
     def __new__(cls, raw_value: Any) -> 'EnvVarValue':
         if isinstance(raw_value, str):
@@ -740,7 +749,10 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_dict(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
-        """ Create environment variables from a dictionary """
+        """
+        Create environment variables from a dictionary
+        """
+
         if not data:
             return Environment()
 
@@ -751,7 +763,9 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_environ(cls) -> 'Environment':
-        """ Extract environment variables from the live environment """
+        """
+        Extract environment variables from the live environment
+        """
 
         return Environment({
             key: EnvVarValue(value) for key, value in os.environ.items()
@@ -759,7 +773,9 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_fmf_context(cls, fmf_context: FmfContext) -> 'Environment':
-        """ Create environment variables from an fmf context """
+        """
+        Create environment variables from an fmf context
+        """
 
         return Environment({
             key: EnvVarValue(','.join(value))
@@ -768,7 +784,9 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_fmf_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
-        """ Create environment from an fmf specification """
+        """
+        Create environment from an fmf specification
+        """
 
         if not data:
             return Environment()
@@ -778,19 +796,25 @@ class Environment(dict[str, EnvVarValue]):
             })
 
     def to_fmf_spec(self) -> dict[str, str]:
-        """ Convert to an fmf specification """
+        """
+        Convert to an fmf specification
+        """
 
         return {
             key: str(value) for key, value in self.items()
             }
 
     def to_popen(self) -> dict[str, str]:
-        """ Convert to a form accepted by :py:class:`subprocess.Popen` """
+        """
+        Convert to a form accepted by :py:class:`subprocess.Popen`
+        """
 
         return self.to_environ()
 
     def to_environ(self) -> dict[str, str]:
-        """ Convert to a form compatible with :py:attr:`os.environ` """
+        """
+        Convert to a form compatible with :py:attr:`os.environ`
+        """
 
         return {
             key: str(value) for key, value in self.items()
@@ -805,7 +829,9 @@ class Environment(dict[str, EnvVarValue]):
             key_address: str,
             value: Any,
             logger: tmt.log.Logger) -> 'Environment':
-        """ Normalize value of ``environment`` key """
+        """
+        Normalize value of ``environment`` key
+        """
 
         # Note: this normalization callback is an exception, it does not
         # bother with CLI input. Environment handling is complex, and CLI
@@ -970,7 +996,9 @@ class CommandOutput:
 
 
 class ShellScript:
-    """ A shell script, a free-form blob of text understood by a shell. """
+    """
+    A shell script, a free-form blob of text understood by a shell.
+    """
 
     def __init__(self, script: str) -> None:
         """
@@ -1020,7 +1048,9 @@ class ShellScript:
         return ShellScript('; '.join(script._script for script in scripts if bool(script)))
 
     def to_element(self) -> _CommandElement:
-        """ Convert a shell script to a command element """
+        """
+        Convert a shell script to a command element
+        """
 
         return self._script
 
@@ -1036,7 +1066,9 @@ class ShellScript:
 
 
 class Command:
-    """ A command with its arguments. """
+    """
+    A command with its arguments.
+    """
 
     def __init__(self, *elements: RawCommandElement) -> None:
         self._command = [str(element) for element in elements]
@@ -1071,7 +1103,9 @@ class Command:
         return ShellScript(' '.join(shlex.quote(s) for s in self._command))
 
     def to_popen(self) -> list[str]:
-        """ Convert a command to form accepted by :py:mod:`subprocess.Popen` """
+        """
+        Convert a command to form accepted by :py:mod:`subprocess.Popen`
+        """
 
         return list(self._command)
 
@@ -1511,7 +1545,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return sanitize_name(self.name, allow_slash=False)
 
     def __str__(self) -> str:
-        """ Name is the default string representation """
+        """
+        Name is the default string representation
+        """
+
         return self.name
 
     #
@@ -1653,7 +1690,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def _fmf_context(self) -> FmfContext:
-        """ An fmf context set for this object. """
+        """
+        An fmf context set for this object.
+        """
 
         # By default, the only fmf context available is one provided via CLI.
         # But some derived classes can and will override this, because fmf
@@ -1672,7 +1711,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @classmethod
     def _opt(cls, option: str, default: Any = None) -> Any:
-        """ Get an option from the command line context (class version) """
+        """
+        Get an option from the command line context (class version)
+        """
+
         if cls.ignore_class_options:
             return default
 
@@ -1696,6 +1738,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         Environment variables override command line options.
         """
+
         # Translate dashes to underscores to match click's conversion
         option = option.replace('-', '_')
 
@@ -1711,29 +1754,41 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def debug_level(self) -> int:
-        """ The current debug level applied to this object """
+        """
+        The current debug level applied to this object
+        """
 
         return self._logger.debug_level
 
     @debug_level.setter
     def debug_level(self, level: int) -> None:
-        """ Update the debug level attached to this object """
+        """
+        Update the debug level attached to this object
+        """
+
         self._logger.debug_level = level
 
     @property
     def verbosity_level(self) -> int:
-        """ The current verbosity level applied to this object """
+        """
+        The current verbosity level applied to this object
+        """
 
         return self._logger.verbosity_level
 
     @verbosity_level.setter
     def verbosity_level(self, level: int) -> None:
-        """ Update the verbosity level attached to this object """
+        """
+        Update the verbosity level attached to this object
+        """
+
         self._logger.verbosity_level = level
 
     @property
     def quietness(self) -> bool:
-        """ The current quietness level applied to this object """
+        """
+        The current quietness level applied to this object
+        """
 
         return self._logger.quiet
 
@@ -1771,30 +1826,41 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def is_dry_run(self) -> bool:
-        """ Whether the current run is a dry-run """
+        """
+        Whether the current run is a dry-run
+        """
 
         return self._get_cli_flag('is_dry_run', 'dry', False)
 
     @property
     def is_forced_run(self) -> bool:
-        """ Whether the current run is allowed to overwrite files and data """
+        """
+        Whether the current run is allowed to overwrite files and data
+        """
 
         return self._get_cli_flag('is_forced_run', 'force', False)
 
     @property
     def should_run_again(self) -> bool:
-        """ Whether selected step or the whole run should be run again """
+        """
+        Whether selected step or the whole run should be run again
+        """
 
         return self._get_cli_flag('should_run_again', 'again', False)
 
     @property
     def is_feeling_safe(self) -> bool:
-        """ Whether the current run is allowed to run unsafe actions """
+        """
+        Whether the current run is allowed to run unsafe actions
+        """
 
         return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
 
     def _level(self) -> int:
-        """ Hierarchy level """
+        """
+        Hierarchy level
+        """
+
         if self.parent is None:
             return -1
         return self.parent._level() + self._relative_indent
@@ -1805,7 +1871,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             value: Optional[str] = None,
             color: Optional[str] = None,
             shift: int = 0) -> str:
-        """ Indent message according to the object hierarchy """
+        """
+        Indent message according to the object hierarchy
+        """
 
         return tmt.log.indent(
             key,
@@ -1837,7 +1905,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             value: Optional[LoggableValue] = None,
             color: Optional[str] = None,
             shift: int = 0) -> None:
-        """ Show a message unless in quiet mode """
+        """
+        Show a message unless in quiet mode
+        """
+
         self._logger.info(key, value=value, color=color, shift=shift)
 
     def verbose(
@@ -1853,6 +1924,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         In quiet mode verbose messages are not displayed.
         """
+
         self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def debug(
@@ -1868,14 +1940,21 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         In quiet mode debug messages are not displayed.
         """
+
         self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def warn(self, message: str, shift: int = 0) -> None:
-        """ Show a yellow warning message on info level, send to stderr """
+        """
+        Show a yellow warning message on info level, send to stderr
+        """
+
         self._logger.warning(message, shift=shift)
 
     def fail(self, message: str, shift: int = 0) -> None:
-        """ Show a red failure message on info level, send to stderr """
+        """
+        Show a red failure message on info level, send to stderr
+        """
+
         self._logger.fail(message, shift=shift)
 
     def _command_verbose_logger(
@@ -1892,6 +1971,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
+
         self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def run(self,
@@ -1945,7 +2025,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             )
 
     def read(self, path: Path, level: int = 2) -> str:
-        """ Read a file from the workdir """
+        """
+        Read a file from the workdir
+        """
+
         if self.workdir:
             path = self.workdir / path
         self.debug(f"Read file '{path}'.", level=level)
@@ -1961,7 +2044,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             data: str,
             mode: WriteMode = 'w',
             level: int = 2) -> None:
-        """ Write a file to the workdir """
+        """
+        Write a file to the workdir
+        """
+
         if self.workdir:
             path = self.workdir / path
         action = 'Append to' if mode == 'a' else 'Write'
@@ -1999,7 +2085,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                 f"Invalid workdir '{id_}', expected a path or None.")
 
         def _check_or_create_workdir_root_with_perms() -> None:
-            """ If created workdir_root has to be 1777 for multi-user"""
+            """
+            If created workdir_root has to be 1777 for multi-user
+            """
+
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
@@ -2050,7 +2139,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._workdir = workdir
 
     def _workdir_name(self) -> Optional[Path]:
-        """ Construct work directory name from parent workdir """
+        """
+        Construct work directory name from parent workdir
+        """
+
         # Need the parent workdir
         if self.parent is None or self.parent.workdir is None:
             return None
@@ -2063,13 +2155,17 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         If workdir=True, the directory name is automatically generated.
         """
+
         if workdir is True:
             self._workdir_init()
         elif workdir is not None:
             self._workdir_init(workdir)
 
     def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
-        """ Clean up the work directory """
+        """
+        Clean up the work directory
+        """
+
         directory = path or self._workdir_name()
         if directory is not None and directory.is_dir():
             self.debug(f"Clean up workdir '{directory}'.", level=2)
@@ -2078,7 +2174,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def workdir(self) -> Optional[Path]:
-        """ Get the workdir, create if does not exist """
+        """
+        Get the workdir, create if does not exist
+        """
+
         if self._workdir is None:
             self._workdir = self._workdir_name()
             # Workdir not enabled, even parent does not have one
@@ -2102,6 +2201,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         else) from cloned repos for filtering purposes, it is removed at
         the end of relevant step.
         """
+
         if not self._clone_dirpath:
             self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
@@ -2184,7 +2284,9 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
 
 
 class GeneralError(Exception):
-    """ General error """
+    """
+    General error
+    """
 
     def __init__(
             self,
@@ -2210,15 +2312,21 @@ class GeneralError(Exception):
 
 
 class GitUrlError(GeneralError):
-    """ Remote git url is not reachable """
+    """
+    Remote git url is not reachable
+    """
 
 
 class FileError(GeneralError):
-    """ File operation error """
+    """
+    File operation error
+    """
 
 
 class RunError(GeneralError):
-    """ Command execution error """
+    """
+    Command execution error
+    """
 
     def __init__(
             self,
@@ -2260,11 +2368,15 @@ class RunError(GeneralError):
 
 
 class MetadataError(GeneralError):
-    """ General metadata error """
+    """
+    General metadata error
+    """
 
 
 class SpecificationError(MetadataError):
-    """ Metadata specification error """
+    """
+    Metadata specification error
+    """
 
     def __init__(
             self,
@@ -2277,7 +2389,9 @@ class SpecificationError(MetadataError):
 
 
 class NormalizationError(SpecificationError):
-    """ Raised when a key normalization fails """
+    """
+    Raised when a key normalization fails
+    """
 
     def __init__(
             self,
@@ -2310,22 +2424,30 @@ class NormalizationError(SpecificationError):
 
 
 class ConvertError(MetadataError):
-    """ Metadata conversion error """
+    """
+    Metadata conversion error
+    """
 
 
 class StructuredFieldError(GeneralError):
-    """ StructuredField parsing error """
+    """
+    StructuredField parsing error
+    """
 
 
 class WaitingIncompleteError(GeneralError):
-    """ Waiting incomplete """
+    """
+    Waiting incomplete
+    """
 
     def __init__(self) -> None:
         super().__init__('Waiting incomplete')
 
 
 class WaitingTimedOutError(GeneralError):
-    """ Waiting ran out of time """
+    """
+    Waiting ran out of time
+    """
 
     def __init__(
             self,
@@ -2350,49 +2472,69 @@ class WaitingTimedOutError(GeneralError):
 
 
 class RetryError(GeneralError):
-    """ Retries unsuccessful """
+    """
+    Retries unsuccessful
+    """
 
     def __init__(self, label: str, causes: list[Exception]) -> None:
         super().__init__(f"Retries of '{label}' unsuccessful.", causes)
 
 
 class BackwardIncompatibleDataError(GeneralError):
-    """ A backward incompatible data cannot be processed """
+    """
+    A backward incompatible data cannot be processed
+    """
 
 
 # Step exceptions
 
 
 class DiscoverError(GeneralError):
-    """ Discover step error """
+    """
+    Discover step error
+    """
 
 
 class ProvisionError(GeneralError):
-    """ Provision step error """
+    """
+    Provision step error
+    """
 
 
 class PrepareError(GeneralError):
-    """ Prepare step error """
+    """
+    Prepare step error
+    """
 
 
 class ExecuteError(GeneralError):
-    """ Execute step error """
+    """
+    Execute step error
+    """
 
 
 class RebootTimeoutError(ExecuteError):
-    """ Reboot failed due to a timeout """
+    """
+    Reboot failed due to a timeout
+    """
 
 
 class ReportError(GeneralError):
-    """ Report step error """
+    """
+    Report step error
+    """
 
 
 class FinishError(GeneralError):
-    """ Finish step error """
+    """
+    Finish step error
+    """
 
 
 class TracebackVerbosity(enum.Enum):
-    """ Levels of logged traveback verbosity """
+    """
+    Levels of logged traveback verbosity
+    """
 
     #: Render only exception and its causes.
     DEFAULT = '0'
@@ -2423,7 +2565,9 @@ def render_run_exception_streams(
         output: CommandOutput,
         verbose: int = 0,
         comment_sign: str = '#') -> Iterator[str]:
-    """ Render run exception output streams for printing """
+    """
+    Render run exception output streams for printing
+    """
 
     for name, content in (('stdout', output.stdout), ('stderr', output.stderr)):
         if not content:
@@ -2521,7 +2665,9 @@ def render_command_report(
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
-    """ Render detailed output upon command execution errors for printing """
+    """
+    Render detailed output upon command execution errors for printing
+    """
 
     # Check verbosity level used during raising exception,
     if exception.logger:
@@ -2537,7 +2683,9 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
 def render_exception_stack(
         exception: BaseException,
         traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
-    """ Render traceback of the given exception """
+    """
+    Render traceback of the given exception
+    """
 
     exception_traceback = traceback.TracebackException(
         type(exception),
@@ -2578,7 +2726,9 @@ def render_exception_stack(
 def render_exception(
         exception: BaseException,
         traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
-    """ Render the exception and its causes for printing """
+    """
+    Render the exception and its causes for printing
+    """
 
     def _indent(iterable: Iterable[str]) -> Iterator[str]:
         for item in iterable:
@@ -2680,12 +2830,18 @@ def show_exception(
 
 
 def uniq(values: list[T]) -> list[T]:
-    """ Return a list of all unique items from ``values`` """
+    """
+    Return a list of all unique items from ``values``
+    """
+
     return list(set(values))
 
 
 def duplicates(values: Iterable[Optional[T]]) -> Iterator[T]:
-    """ Iterate over all duplicate values in ``values`` """
+    """
+    Iterate over all duplicate values in ``values``
+    """
+
     seen = Counter(values)
     for value, count in seen.items():
         if value is None or count == 1:
@@ -2709,12 +2865,18 @@ def flatten(lists: Iterable[list[T]], unique: bool = False) -> list[T]:
 
 
 def quote(string: str) -> str:
-    """ Surround a string with double quotes """
+    """
+    Surround a string with double quotes
+    """
+
     return f'"{string}"'
 
 
 def pure_ascii(text: Any) -> bytes:
-    """ Transliterate special unicode characters into pure ascii """
+    """
+    Transliterate special unicode characters into pure ascii
+    """
+
     if not isinstance(text, str):
         text = str(text)
     return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
@@ -2727,6 +2889,7 @@ def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     Go through fmf tree nodes using given relative node path
     and return full data as dictionary.
     """
+
     try:
         return fmf.Tree(fmf_tree_path).find(node_path).data
     except AttributeError:
@@ -2739,6 +2902,7 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
 
     Returns list of matching paths.
     """
+
     all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
     alldirs = [str(d) for d in all_paths if d.is_dir()]
     allfiles = [str(file) for file in all_paths if not file.is_dir()]
@@ -2766,7 +2930,10 @@ def dict_to_yaml(
         width: Optional[int] = None,
         sort: bool = False,
         start: bool = False) -> str:
-    """ Convert dictionary into yaml """
+    """
+    Convert dictionary into yaml
+    """
+
     output = io.StringIO()
     yaml = YAML()
     yaml.indent(mapping=4, sequence=4, offset=2)
@@ -2818,7 +2985,10 @@ YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 def yaml_to_dict(data: Any,
                  yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
-    """ Convert yaml into dictionary """
+    """
+    Convert yaml into dictionary
+    """
+
     yaml = YAML(typ=yaml_type)
     loaded_data = yaml.load(data)
     if loaded_data is None:
@@ -2832,7 +3002,10 @@ def yaml_to_dict(data: Any,
 
 def yaml_to_list(data: Any,
                  yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
-    """ Convert yaml into list """
+    """
+    Convert yaml into list
+    """
+
     yaml = YAML(typ=yaml_type)
     try:
         loaded_data = yaml.load(data)
@@ -2849,7 +3022,9 @@ def yaml_to_list(data: Any,
 
 
 def json_to_list(data: Any) -> list[Any]:
-    """ Convert json into list """
+    """
+    Convert json into list
+    """
 
     try:
         loaded_data = json.loads(data)
@@ -2891,13 +3066,17 @@ Container = Union[ContainerClass, ContainerInstance]
 
 
 def key_to_option(key: str) -> str:
-    """ Convert a key name to corresponding option name """
+    """
+    Convert a key name to corresponding option name
+    """
 
     return key.replace('_', '-')
 
 
 def option_to_key(option: str) -> str:
-    """ Convert an option name to corresponding key name """
+    """
+    Convert an option name to corresponding key name
+    """
 
     return option.replace('-', '_')
 
@@ -2975,7 +3154,9 @@ class FieldMetadata(Generic[T]):
 
     @functools.cached_property
     def choices(self) -> Optional[Sequence[str]]:
-        """ A list of allowed values the field can take """
+        """
+        A list of allowed values the field can take
+        """
 
         if isinstance(self._choices, (list, tuple)):
             return list(self._choices)
@@ -2987,7 +3168,9 @@ class FieldMetadata(Generic[T]):
 
     @functools.cached_property
     def metavar(self) -> Optional[str]:
-        """ Placeholder for field's value in documentation and help """
+        """
+        Placeholder for field's value in documentation and help
+        """
 
         if self._metavar:
             return self._metavar
@@ -2999,14 +3182,18 @@ class FieldMetadata(Generic[T]):
 
     @property
     def has_default(self) -> bool:
-        """ Whether the field has a default value """
+        """
+        Whether the field has a default value
+        """
 
         return self.default_factory is not None \
             or self.default is not dataclasses.MISSING
 
     @property
     def materialized_default(self) -> Optional[T]:
-        """ Returns the actual default value of the field """
+        """
+        Returns the actual default value of the field
+        """
 
         if self.default_factory is not None:
             return self.default_factory()
@@ -3055,21 +3242,27 @@ def container_has_field(container: Container, key: str) -> bool:
 
 
 def container_keys(container: Container) -> Iterator[str]:
-    """ Iterate over key names in a container """
+    """
+    Iterate over key names in a container
+    """
 
     for field in container_fields(container):
         yield field.name
 
 
 def container_values(container: ContainerInstance) -> Iterator[Any]:
-    """ Iterate over values in a container """
+    """
+    Iterate over values in a container
+    """
 
     for field in container_fields(container):
         yield container.__dict__[field.name]
 
 
 def container_items(container: ContainerInstance) -> Iterator[tuple[str, Any]]:
-    """ Iterate over key/value pairs in a container """
+    """
+    Iterate over key/value pairs in a container
+    """
 
     for field in container_fields(container):
         yield field.name, container.__dict__[field.name]
@@ -3111,7 +3304,9 @@ def container_field(
 
 @dataclasses.dataclass
 class DataContainer:
-    """ A base class for objects that have keys and values """
+    """
+    A base class for objects that have keys and values
+    """
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -3140,17 +3335,23 @@ class DataContainer:
     # 2. some functionality makes use of this knowledge.
     @classmethod
     def keys(cls) -> Iterator[str]:
-        """ Iterate over key names """
+        """
+        Iterate over key names
+        """
 
         yield from container_keys(cls)
 
     def values(self) -> Iterator[Any]:
-        """ Iterate over key values """
+        """
+        Iterate over key values
+        """
 
         yield from container_values(self)
 
     def items(self) -> Iterator[tuple[str, Any]]:
-        """ Iterate over key/value pairs """
+        """
+        Iterate over key/value pairs
+        """
 
         yield from container_items(self)
 
@@ -3276,7 +3477,9 @@ SerializableContainerDerivedType = TypeVar(
 
 @dataclasses.dataclass
 class SerializableContainer(DataContainer):
-    """ A mixin class for saving and loading objects """
+    """
+    A mixin class for saving and loading objects
+    """
 
     @classmethod
     def default(cls, key: str, default: Any = None) -> Any:
@@ -3287,7 +3490,9 @@ class SerializableContainer(DataContainer):
     #
 
     def inject_to(self, obj: Any) -> None:
-        """ Inject keys from this container into attributes of a given object """
+        """
+        Inject keys from this container into attributes of a given object
+        """
 
         for name, value in self.items():
             setattr(obj, name, value)
@@ -3295,7 +3500,9 @@ class SerializableContainer(DataContainer):
     @classmethod
     def extract_from(cls: type[SerializableContainerDerivedType],
                      obj: Any) -> SerializableContainerDerivedType:
-        """ Extract keys from given object, and save them in a container """
+        """
+        Extract keys from given object, and save them in a container
+        """
 
         data = cls()
         # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
@@ -3439,6 +3646,7 @@ def markdown_to_html(filename: Path) -> str:
     Expects: Markdown document as a file.
     Returns: An HTML document as a string.
     """
+
     try:
         import markdown
     except ImportError:
@@ -3483,6 +3691,7 @@ def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -
     Optional 'injected_default' argument to evaluate 'duration' when
     it contains only multiplication.
     """
+
     units = {
         's': 1,
         'm': 60,
@@ -3604,7 +3813,9 @@ FormatWrap = Literal[True, False, 'auto']
 
 
 class ListFormat(enum.Enum):
-    """ How to format lists """
+    """
+    How to format lists
+    """
 
     #: Use :py:func:`fmf.utils.listed`.
     LISTED = enum.auto()
@@ -3642,7 +3853,9 @@ def _format_bool(
         key_color: Optional[str],
         list_format: ListFormat,
         wrap: FormatWrap) -> Iterator[str]:
-    """ Format a ``bool`` value """
+    """
+    Format a ``bool`` value
+    """
 
     assert_window_size(window_size)
 
@@ -3655,7 +3868,9 @@ def _format_list(
         key_color: Optional[str],
         list_format: ListFormat,
         wrap: FormatWrap) -> Iterator[str]:
-    """ Format a list """
+    """
+    Format a list
+    """
 
     assert_window_size(window_size)
 
@@ -3723,7 +3938,9 @@ def _format_str(
         key_color: Optional[str],
         list_format: ListFormat,
         wrap: FormatWrap) -> Iterator[str]:
-    """ Format a string """
+    """
+    Format a string
+    """
 
     assert_window_size(window_size)
 
@@ -3770,7 +3987,9 @@ def _format_dict(
         key_color: Optional[str],
         list_format: ListFormat,
         wrap: FormatWrap) -> Iterator[str]:
-    """ Format a dictionary """
+    """
+    Format a dictionary
+    """
 
     assert_window_size(window_size)
 
@@ -4246,7 +4465,9 @@ def fmf_id(
         name: str,
         fmf_root: Path,
         logger: tmt.log.Logger) -> 'tmt.base.FmfId':
-    """ Return full fmf identifier of the node """
+    """
+    Return full fmf identifier of the node
+    """
 
     from tmt.base import FmfId
     from tmt.utils.git import GitInfo
@@ -4272,7 +4493,9 @@ def fmf_id(
 
 
 class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
-    """ Spice up request's session with custom timeout """
+    """
+    Spice up request's session with custom timeout
+    """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.timeout = kwargs.pop('timeout', None)
@@ -4309,7 +4532,10 @@ class RetryStrategy(urllib3.util.retry.Retry):
         return new_retry
 
     def _log_rate_limit_info(self, headers: urllib3._collections.HTTPHeaderDict) -> None:
-        """Log current GitHub rate limit information"""
+        """
+        Log current GitHub rate limit information
+        """
+
         if not self.logger:
             return
 
@@ -4319,7 +4545,10 @@ class RetryStrategy(urllib3.util.retry.Retry):
         self.logger.debug("Resource", headers.get('X-RateLimit-Resource', 'unknown'))
 
     def _log_response_info(self, response: HTTPResponse) -> None:
-        """Log detailed response information for debugging"""
+        """
+        Log detailed response information for debugging
+        """
+
         if not self.logger:
             return
 
@@ -4445,7 +4674,9 @@ class RetryStrategy(urllib3.util.retry.Retry):
 # ignore[type-arg]: base class is a generic class, but we cannot list
 # its parameter type, because in Python 3.6 the class "is not subscriptable".
 class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
-    """ Context manager for :py:class:`requests.Session` with retries and timeout """
+    """
+    Context manager for :py:class:`requests.Session` with retries and timeout
+    """
 
     @staticmethod
     def create(
@@ -4519,14 +4750,20 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
 
 
 def remove_color(text: str) -> str:
-    """ Remove ansi color sequences from the string """
+    """
+    Remove ansi color sequences from the string
+    """
+
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
 def generate_runs(
         path: Path,
         id_: tuple[str, ...]) -> Iterator[Path]:
-    """ Generate absolute paths to runs from path """
+    """
+    Generate absolute paths to runs from path
+    """
+
     # Prepare absolute workdir path if --id was used
     run_path = None
     for id_name in id_:
@@ -4559,7 +4796,10 @@ def generate_runs(
 
 
 def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
-    """ Load a run and its steps from the workdir """
+    """
+    Load a run and its steps from the workdir
+    """
+
     try:
         run.load_from_workdir()
 
@@ -4574,7 +4814,9 @@ def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
 
 
 class DistGitHandler:
-    """ Common functionality for DistGit handlers """
+    """
+    Common functionality for DistGit handlers
+    """
 
     sources_file_name = 'sources'
     uri = "/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
@@ -4593,6 +4835,7 @@ class DistGitHandler:
 
         The 'cwd' parameter has to be a DistGit directory.
         """
+
         cwd = cwd or Path.cwd()
         # Assumes <package>.spec
         globbed = list(cwd.glob('*.spec'))
@@ -4622,12 +4865,17 @@ class DistGitHandler:
         return ret_values
 
     def its_me(self, remotes: list[str]) -> bool:
-        """ True if self can work with remotes """
+        """
+        True if self can work with remotes
+        """
+
         return any(self.remote_substring.search(item) for item in remotes)
 
 
 class FedoraDistGit(DistGitHandler):
-    """ Fedora Handler """
+    """
+    Fedora Handler
+    """
 
     usage_name = "fedora"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -4636,7 +4884,9 @@ class FedoraDistGit(DistGitHandler):
 
 
 class CentOSDistGit(DistGitHandler):
-    """ CentOS Handler """
+    """
+    CentOS Handler
+    """
 
     usage_name = "centos"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -4645,7 +4895,9 @@ class CentOSDistGit(DistGitHandler):
 
 
 class RedHatGitlab(DistGitHandler):
-    """ Red Hat on Gitlab """
+    """
+    Red Hat on Gitlab
+    """
 
     usage_name = "redhatgitlab"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -4663,6 +4915,7 @@ def get_distgit_handler(
     Pick the DistGitHandler class which understands specified
     remotes or by usage_name.
     """
+
     for candidate_class in DistGitHandler.__subclasses__():
         if usage_name is not None and usage_name == candidate_class.usage_name:
             return candidate_class()
@@ -4674,7 +4927,10 @@ def get_distgit_handler(
 
 
 def get_distgit_handler_names() -> list[str]:
-    """ All known distgit handlers """
+    """
+    All known distgit handlers
+    """
+
     return [i.usage_name for i in DistGitHandler.__subclasses__()]
 
 
@@ -4691,6 +4947,7 @@ def distgit_download(
 
     distgit_dir is path to the DistGit repository
     """
+
     # Get the handler unless specified
     if handler_name is None:
         cmd = Command("git", "config", "--get-regexp", '^remote\\..*.url')
@@ -4716,7 +4973,9 @@ def distgit_download(
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
 # in Python 3.6 the class "is not subscriptable".
 class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-arg]
-    """ Updatable message suitable for progress-bar-like reporting """
+    """
+    Updatable message suitable for progress-bar-like reporting
+    """
 
     def __init__(
             self,
@@ -4774,7 +5033,9 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         sys.stdout.flush()
 
     def clear(self) -> None:
-        """ Clear the message area """
+        """
+        Clear the message area
+        """
 
         self._update_message_area('')
 
@@ -4834,6 +5095,7 @@ def find_fmf_root(path: Path, ignore_paths: Optional[list[Path]] = None) -> list
 
     Raise `MetadataError` if no fmf root is found.
     """
+
     fmf_roots = []
     for _root, _, files in os.walk(path):
         root = Path(_root)
@@ -5034,7 +5296,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     import tmt.steps
 
     def _process_step(step_name: str, step: dict[Any, Any]) -> None:
-        """ Process a single step configuration """
+        """
+        Process a single step configuration
+        """
 
         # If `how` is set, don't touch it, and there's nothing to do.
         if 'how' in step:
@@ -5065,7 +5329,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         step['how'] = step_class.DEFAULT_HOW
 
     def _process_step_collection(step_name: str, step_collection: Any) -> None:
-        """ Process a collection of step configurations """
+        """
+        Process a collection of step configurations
+        """
 
         # Ignore anything that is not a step.
         if step_name not in tmt.steps.STEPS:
@@ -5128,7 +5394,9 @@ def validate_fmf_node(
         node: fmf.Tree,
         schema_name: str,
         logger: tmt.log.Logger) -> list[tuple[jsonschema.ValidationError, str]]:
-    """ Validate a given fmf node """
+    """
+    Validate a given fmf node
+    """
 
     node = _prenormalize_fmf_node(node, schema_name, logger)
 
@@ -5257,7 +5525,9 @@ class ValidateFmfMixin(_CommonBase):
             node: fmf.Tree,
             raise_on_validation_error: bool,
             logger: tmt.log.Logger) -> None:
-        """ Validate a given fmf node """
+        """
+        Validate a given fmf node
+        """
 
         errors = validate_fmf_node(
             node, f'{self.__class__.__name__.lower()}.yaml', logger)
@@ -5557,7 +5827,9 @@ def normalize_path(
         key_address: str,
         value: Any,
         logger: tmt.log.Logger) -> Optional[Path]:
-    """ Normalize content of the test `path` key """
+    """
+    Normalize content of the test `path` key
+    """
 
     if value is None:
         return None
@@ -5820,7 +6092,9 @@ class NormalizeKeysMixin(_CommonBase):
     # type annotations land, there should be no need for extra _keys attribute.
     @classmethod
     def _keys(cls) -> list[str]:
-        """ Return a list of names of object's keys. """
+        """
+        Return a list of names of object's keys.
+        """
 
         return list(cls.keys())
 
@@ -5829,7 +6103,9 @@ class NormalizeKeysMixin(_CommonBase):
             key_source: dict[str, Any],
             key_source_name: str,
             logger: tmt.log.Logger) -> None:
-        """ Extract values for class-level attributes, and verify they match declared types. """
+        """
+        Extract values for class-level attributes, and verify they match declared types.
+        """
 
         log_shift, log_level = 2, 4
 
@@ -6202,6 +6478,7 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
     :param package: package in which to search for the file/directory.
     :returns: an absolute path to the requested file or directory.
     """
+
     return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
 
 
@@ -6226,13 +6503,17 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
-    """ Convert timestamp to a human readable format """
+    """
+    Convert timestamp to a human readable format
+    """
 
     return timestamp.isoformat()
 
 
 def format_duration(duration: datetime.timedelta) -> str:
-    """ Convert duration to a human readable format """
+    """
+    Convert duration to a human readable format
+    """
 
     # A helper variable to hold the duration while we cut away days, hours and seconds.
     counter = int(duration.total_seconds())
@@ -6262,6 +6543,7 @@ def retry(
     :param label: action to retry
     :returns: propagates return value of ``func``.
     """
+
     exceptions: list[Exception] = []
     for i in range(attempts):
         try:
@@ -6278,7 +6560,10 @@ def retry(
 
 
 def get_url_content(url: str) -> str:
-    """ Get content of a given URL as a string """
+    """
+    Get content of a given URL as a string
+    """
+
     try:
         with retry_session() as session:
             response = session.get(url)
@@ -6293,7 +6578,10 @@ def get_url_content(url: str) -> str:
 
 
 def is_url(url: str) -> bool:
-    """ Check if the given string is a valid URL """
+    """
+    Check if the given string is a valid URL
+    """
+
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
 
@@ -6323,6 +6611,7 @@ def catch_warnings_safe(
         with catch_warnings_safe('ignore', urllib3.exceptions.InsecureRequestWarning):
             ...
     """
+
     with _catch_warning_lock, warnings.catch_warnings():
         warnings.simplefilter(action=action, category=category)
         yield
