@@ -22,10 +22,13 @@ def main() -> None:
     template_filepath = Path(sys.argv[1])
     output_filepath = Path(sys.argv[2])
 
-    output_filepath.write_text(render_template_file(
-        template_filepath,
-        FILTERS=TEMPLATE_FILTERS,
-        TESTS=TEMPLATE_TESTS))
+    output_filepath.write_text(
+        render_template_file(
+            template_filepath,
+            FILTERS=TEMPLATE_FILTERS,
+            TESTS=TEMPLATE_TESTS,
+        )
+    )
 
 
 if __name__ == '__main__':

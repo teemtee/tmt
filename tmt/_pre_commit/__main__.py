@@ -32,13 +32,13 @@ def _run_precommit() -> None:  # pyright: ignore[reportUnusedFunction] (used by 
 
     # At this point we need to check and re-order the arguments if needed
     for pattern, nargs in [
-            (r"(--root$|-r)", 1),
-            (r"(--root=.*)", 0),
-            (r"(--verbose$|-v+)", 0),
-            (r"(--debug$|-d+)", 0),
-            (r"(--pre-check$)", 0),
-            ]:
-        if any(match := re.match(pattern, arg) for arg in argv[1:last_arg + 1]):
+        (r"(--root$|-r)", 1),
+        (r"(--root=.*)", 0),
+        (r"(--verbose$|-v+)", 0),
+        (r"(--debug$|-d+)", 0),
+        (r"(--pre-check$)", 0),
+    ]:
+        if any(match := re.match(pattern, arg) for arg in argv[1 : last_arg + 1]):
             assert match
             # Actual argument matched
             actual_arg = match.group(1)
@@ -55,8 +55,12 @@ def _run_precommit() -> None:  # pyright: ignore[reportUnusedFunction] (used by 
             #   ["some_file"]
             # After reorder:
             # ["tmt", "--root", "/some/path", "tests", "lint", "--fix", "some_file"]
-            argv = (argv[0:1] + argv[index: index + 1 + nargs] +
-                    argv[1:index] + argv[index + 1 + nargs:])
+            argv = (
+                argv[0:1]
+                + argv[index : index + 1 + nargs]
+                + argv[1:index]
+                + argv[index + 1 + nargs :]
+            )
     # Finally move the reordered args to sys.argv and run the cli
     sys.argv = argv
     run_cli()

@@ -14,7 +14,8 @@ class EpelStepData(PrepareFeatureData):
         default=None,
         option='--epel',
         metavar='enabled|disabled',
-        help='Whether EPEL repository should be installed & enabled or disabled.')
+        help='Whether EPEL repository should be installed & enabled or disabled.',
+    )
 
 
 @provides_feature('epel')

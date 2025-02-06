@@ -18,17 +18,21 @@ from tmt.utils import Path
 @pass_context
 @click.argument('path', default='.')
 @option(
-    '-t', '--template', default='empty',
+    '-t',
+    '--template',
+    default='empty',
     choices=['empty', *tmt.templates.INIT_TEMPLATES],
-    help="Use this template to populate the tree.")
+    help="Use this template to populate the tree.",
+)
 @verbosity_options
 @force_dry_options
 def init(
-        context: Context,
-        path: str,
-        template: str,
-        force: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    path: str,
+    template: str,
+    force: bool,
+    **kwargs: Any,
+) -> None:
     """
     Initialize a new tmt tree.
 

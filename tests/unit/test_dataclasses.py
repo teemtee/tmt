@@ -21,15 +21,16 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
             return int(raw_value)
 
         except ValueError as exc:
-            raise tmt.utils.NormalizationError(key_address, raw_value, 'unset or an integer') \
-                from exc
+            raise tmt.utils.NormalizationError(
+                key_address, raw_value, 'unset or an integer'
+            ) from exc
 
     @container
     class DummyContainer(SerializableContainer):
         foo: Optional[int] = field(
             default=1,
-            normalize=_normalize_foo
-            )
+            normalize=_normalize_foo,
+        )
 
     # Initialize a data package
     data = DummyContainer()
@@ -45,8 +46,9 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
     assert data.foo == 3
 
     with pytest.raises(
-            tmt.utils.SpecificationError,
-            match=r"Field ':foo' must be unset or an integer, 'str' found."):
+        tmt.utils.SpecificationError,
+        match=r"Field ':foo' must be unset or an integer, 'str' found.",
+    ):
         dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
 
     assert data.foo == 3
@@ -58,8 +60,8 @@ def test_field_custom_serialize():
         foo: list[str] = field(
             default_factory=list,
             serialize=lambda foo: ['serialized-into'],
-            unserialize=lambda serialized_foo: ['unserialized-from']
-            )
+            unserialize=lambda serialized_foo: ['unserialized-from'],
+        )
         bar: str = field(default='should-never-change')
 
     # Initialize a data package

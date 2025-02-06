@@ -25,8 +25,8 @@ from tmt.utils.templates import render_template_file
 REVIEWED_PLUGINS: tuple[str, ...] = (
     'prepare/ansible',
     'test-checks/avc',
-    'test-checks/dmesg'
-    )
+    'test-checks/dmesg',
+)
 
 
 HELP = textwrap.dedent("""
@@ -37,9 +37,10 @@ Generate pages for step plugins sources.
 
 
 def _is_ignored(
-        container: ContainerClass,
-        field: dataclasses.Field[Any],
-        metadata: tmt.container.FieldMetadata) -> bool:
+    container: ContainerClass,
+    field: dataclasses.Field[Any],
+    metadata: tmt.container.FieldMetadata,
+) -> bool:
     """
     Check whether a given field is to be ignored in documentation
     """
@@ -54,9 +55,10 @@ def _is_ignored(
 
 
 def _is_inherited(
-        container: ContainerClass,
-        field: dataclasses.Field[Any],
-        metadata: tmt.container.FieldMetadata) -> bool:
+    container: ContainerClass,
+    field: dataclasses.Field[Any],
+    metadata: tmt.container.FieldMetadata,
+) -> bool:
     """
     Check whether a given field is inherited from step data base class
     """
@@ -178,27 +180,33 @@ def main() -> None:
 
     if step_name == 'discover':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.discover.DiscoverPlugin._supported_methods)
+            tmt.steps.discover.DiscoverPlugin._supported_methods
+        )
 
     elif step_name == 'execute':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.execute.ExecutePlugin._supported_methods)
+            tmt.steps.execute.ExecutePlugin._supported_methods
+        )
 
     elif step_name == 'finish':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.finish.FinishPlugin._supported_methods)
+            tmt.steps.finish.FinishPlugin._supported_methods
+        )
 
     elif step_name == 'prepare':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.prepare.PreparePlugin._supported_methods)
+            tmt.steps.prepare.PreparePlugin._supported_methods
+        )
 
     elif step_name == 'provision':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.provision.ProvisionPlugin._supported_methods)
+            tmt.steps.provision.ProvisionPlugin._supported_methods
+        )
 
     elif step_name == 'report':
         plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.report.ReportPlugin._supported_methods)
+            tmt.steps.report.ReportPlugin._supported_methods
+        )
 
     elif step_name == 'test-checks':
         plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
@@ -219,6 +227,21 @@ def main() -> None:
         container_ignored_fields=container_ignored_fields,
         container_inherited_fields=container_inherited_fields,
         container_intrinsic_fields=container_intrinsic_fields))
+    output_filepath.write_text(
+        render_template_file(
+            template_filepath,
+            LOGGER=logger,
+            STEP=step_name,
+            PLUGINS=plugin_generator,
+            REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+            is_enum=is_enum,
+            container_fields=tmt.container.container_fields,
+            container_field=tmt.container.container_field,
+            container_ignored_fields=container_ignored_fields,
+            container_inherited_fields=container_inherited_fields,
+            container_intrinsic_fields=container_intrinsic_fields,
+        )
+    )
 
 
 if __name__ == '__main__':
