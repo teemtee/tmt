@@ -201,9 +201,9 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         is_flag=True,
         default=False,
         help="""
-            By default the .git directory is removed to save disk space.
+            By default the ``.git`` directory is removed to save disk space.
             Set to true to sync the git metadata to guest as well.
-            Implicit if dist-git-source is used.
+            Implicit if ``dist-git-source`` is used.
             """)
 
     def to_spec(self) -> tmt.steps._RawStepData:
@@ -225,8 +225,8 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
     Use provided list of shell script tests.
 
     List of test cases to be executed can be defined manually directly
-    in the plan as a list of dictionaries containing ``test name``, actual
-    ``test script`` and optionally the ``duration`` or a ``path`` to the test.
+    in the plan as a list of dictionaries containing test ``name``, actual
+    test ``script`` and optionally the ``duration`` or a ``path`` to the test.
     The default duration for tests defined directly in the discover step is ``1h``.
     Example config:
 

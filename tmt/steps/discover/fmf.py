@@ -54,8 +54,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             Branch, tag or commit specifying the desired git
             revision. Defaults to the remote repository's default
-            branch if url given or to the current ``HEAD`` if url
-            not provided.
+            branch if ``url`` was set or to the current ``HEAD``
+            of the current repository.
             """,
         normalize=normalize_ref)
     path: Optional[str] = field(
@@ -64,7 +64,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         metavar='ROOT',
         help="""
             Path to the metadata tree root. Must be relative to
-            the git repository root if url provided, absolute
+            the git repository root if ``url`` was provided, absolute
             local filesystem path otherwise. By default ``.`` is used.
             """)
 
@@ -113,7 +113,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             Set to true if you want to filter modified tests
             only. The test is modified if its name starts with
-            the name of any directory modified since modified-ref.
+            the name of any directory modified since ``modified-ref``.
             """)
     modified_url: Optional[str] = field(
         default=cast(Optional[str], None),
