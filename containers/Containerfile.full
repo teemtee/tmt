@@ -10,7 +10,7 @@ echo "Set disable_coredump false" >> /etc/sudo.conf
 # Install necessary packages
 dnf install -y dnf-plugins-core
 dnf copr enable -y @teemtee/stable
-dnf install -y tmt+all-[0-9].[0-9][0-9].[0-9]* beakerlib
+dnf install -y tmt+all beakerlib
 dnf autoremove -y
 dnf clean all
 
