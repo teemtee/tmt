@@ -87,6 +87,12 @@
         - ansible_distribution == "CentOS"
         - ansible_distribution_major_version | int >= 8
       block:
+        - name: Ensure the crb repository is enabled
+          community.general.dnf_config_manager:
+            name: crb
+            state: enabled
+          when: ansible_distribution_major_version | int >= 9
+
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
             name: epel-release
