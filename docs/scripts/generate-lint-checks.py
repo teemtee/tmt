@@ -36,7 +36,7 @@ def main() -> None:
         'PLAN_LINTERS': _sort_linters(Plan.get_linter_registry()),
         'STORY_LINTERS': _sort_linters(Story.get_linter_registry()),
         'COLLECTION_LINTERS': _sort_linters(LintableCollection.get_linter_registry()),
-        }
+    }
 
     output_filepath.write_text(render_template_file(template_filepath, **linters))
 

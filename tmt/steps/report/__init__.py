@@ -39,9 +39,10 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
 
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
         """
         Create base click command (common for all report plugins)
         """
@@ -54,8 +55,11 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
         @click.command(cls=method_class, help=usage)
         @click.pass_context
         @option(
-            '-h', '--how', metavar='METHOD',
-            help='Use specified method for results reporting.')
+            '-h',
+            '--how',
+            metavar='METHOD',
+            help='Use specified method for results reporting.',
+        )
         @tmt.steps.PHASE_OPTIONS
         def report(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('report')
@@ -93,14 +97,14 @@ class Report(tmt.steps.Step):
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
             plugin = cast(
                 ReportPlugin[ReportStepData],
-                ReportPlugin.delegate(self, data=data))
+                ReportPlugin.delegate(self, data=data),
+            )
             plugin.wake()
             self._phases.append(plugin)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
-            self.debug(
-                'Report wake up complete (already done before).', level=2)
+            self.debug('Report wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
         else:
             self.status('todo')

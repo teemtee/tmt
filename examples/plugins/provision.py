@@ -1,4 +1,3 @@
-
 import tmt
 import tmt.steps
 from tmt.options import option
@@ -37,12 +36,19 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
 
         return [
             option(
-                '-w', '--what', metavar='WHAT',
-                help="Example how to pass value."),
+                '-w',
+                '--what',
+                metavar='WHAT',
+                help="Example how to pass value.",
+            ),
             option(
-                '-s', '--switch', is_flag=True,
-                help="Example how to enable something."),
-            *super().options(how)]
+                '-s',
+                '--switch',
+                is_flag=True,
+                help="Example how to enable something.",
+            ),
+            *super().options(how),
+        ]
 
     def default(self, option, default=None):
         """
@@ -52,7 +58,7 @@ class ProvisionExample(tmt.steps.provision.ProvisionPlugin):
         defaults = {
             'what': 'default value',
             'switch': False,
-            }
+        }
         return defaults.get(option, default)
 
     def show(self):
@@ -209,8 +215,7 @@ class GuestExample(tmt.Guest):
         if self._some_your_internal_stuff():
             return
 
-        raise tmt.utils.ProvisionError(
-            "All attempts to provision a machine with example failed.")
+        raise tmt.utils.ProvisionError("All attempts to provision a machine with example failed.")
 
     def setup(self):
         """

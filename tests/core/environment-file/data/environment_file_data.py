@@ -12,8 +12,8 @@ env_vars_parametrization = (
         ("YAML_STR", "yaml_str_overwritten"),
         ("YAML_INT", "1"),
         ("SPECIAL", "/=(;-)"),
-        ),
-    )
+    ),
+)
 
 
 @pytest.mark.parametrize(*env_vars_parametrization)

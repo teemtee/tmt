@@ -6,7 +6,8 @@ from tmt.steps.prepare.ansible import PrepareAnsible
 
 @tmt.steps.provides_method('ansible')
 class FinishAnsible(
-        tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible):
+    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible
+):
     """
     Perform finishing tasks using ansible
 

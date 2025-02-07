@@ -18,7 +18,7 @@ __all__ = [
     'Story',
     'Test',
     'Tree',
-    ]
+]
 
 from tmt.base import Clean, Plan, Run, Status, Story, Test, Tree
 from tmt.log import Logger

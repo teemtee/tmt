@@ -35,5 +35,6 @@ if __name__ == '__main__':
     run_server()
     # Keep the script running
     import time
+
     while True:
         time.sleep(1)
