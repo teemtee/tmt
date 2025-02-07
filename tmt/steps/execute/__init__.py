@@ -1242,7 +1242,7 @@ class Execute(tmt.steps.Step):
             return
 
         # Make sure that guests are prepared
-        if not self.plan.provision.guests():
+        if not self.plan.provision.ready_guests:
             raise tmt.utils.ExecuteError("No guests available for execution.")
 
         # Execute the tests, store results
@@ -1279,7 +1279,7 @@ class Execute(tmt.steps.Step):
                         phase=phase_copy,
                         guests=[
                             guest
-                            for guest in self.plan.provision.guests()
+                            for guest in self.plan.provision.ready_guests
                             if discover.enabled_on_guest(guest)
                         ],
                     )

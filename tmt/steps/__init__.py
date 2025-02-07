@@ -2064,7 +2064,7 @@ class Reboot(Action):
         assert isinstance(self.parent, Step)
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
-        for guest in self.parent.plan.provision.guests():
+        for guest in self.parent.plan.provision.ready_guests:
             guest.reboot(hard=self.opt('hard'))
         self.info('reboot', 'Reboot finished', color='yellow')
 
@@ -2224,7 +2224,7 @@ class Login(Action):
             for script in self.opt('command', (DEFAULT_LOGIN_COMMAND,))
         ]
         self.info('login', 'Starting interactive shell', color='yellow')
-        for guest in self.parent.plan.provision.guests():
+        for guest in self.parent.plan.provision.ready_guests:
             # Attempt to push the workdir to the guest
             try:
                 guest.push()
