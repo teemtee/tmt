@@ -396,6 +396,3 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             rootless=self._rootless)
         self._guest.start()
         self._guest.setup()
-
-    def guest(self) -> Optional[tmt.steps.provision.Guest]:
-        return self._guest

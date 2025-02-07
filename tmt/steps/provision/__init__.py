@@ -1196,6 +1196,9 @@ class Guest(tmt.utils.Common):
         if self.is_dry_run:
             return
 
+        if not self.is_ready:
+            return
+
         for key, key_formatted, value_formatted in self.facts.format():
             if key in GUEST_FACTS_INFO_FIELDS:
                 self.info(key_formatted, value_formatted, color='green')
@@ -2525,15 +2528,14 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             guest.wake()
             self._guest = guest
 
+    # TODO: getter. Like in Java. Do we need it?
+    @property
     def guest(self) -> Optional[Guest]:
         """
-        Return provisioned guest
-
-        Each ProvisionPlugin has to implement this method.
-        Should return a provisioned Guest() instance.
+        Return the provisioned guest.
         """
 
-        raise NotImplementedError
+        return self._guest
 
     def essential_requires(self) -> list['tmt.base.Dependency']:
         """
@@ -2649,7 +2651,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=exc,
                         phases=[]
@@ -2659,7 +2661,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=exc,
                         requested_exit=None,
                         phases=[]
@@ -2669,7 +2671,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=phase.guest(),
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=None,
                         phases=[],
@@ -2780,9 +2782,8 @@ class Provision(tmt.steps.Step):
             # If guest data loaded, perform a complete wake up
             plugin.wake(data=self._guest_data.get(plugin.name))
 
-            guest = plugin.guest()
-            if guest:
-                self._guests.append(guest)
+            if plugin.guest:
+                self._guests.append(plugin.guest)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
@@ -2853,15 +2854,10 @@ class Provision(tmt.steps.Step):
 
                     failed_tasks.append(outcome)
 
-                    continue
+                if outcome.guest:
+                    outcome.guest.show()
 
-                guest = outcome.guest
-
-                if guest:
-                    guest.show()
-
-                    if guest.is_ready or self.is_dry_run:
-                        self._guests.append(guest)
+                    self._guests.append(outcome.guest)
 
             return all_tasks, failed_tasks
 
