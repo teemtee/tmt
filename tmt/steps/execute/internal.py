@@ -289,35 +289,35 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     Use the internal tmt executor to execute tests.
 
     The internal tmt executor runs tests on the guest one by one directly
-    from the tmt code which shows testing progress and supports interactive
-    debugging as well. This is the default execute step implementation.
-    Test result is based on the script exit code (for shell tests) or the
-    results file (for beakerlib tests).
+    from the tmt code which shows testing :ref:`/stories/cli/steps/execute/progress`
+    and supports :ref:`/stories/cli/steps/execute/interactive` debugging as well.
+    This is the default execute step implementation. Test result is based on the
+    script exit code (for shell tests) or the results file (for beakerlib tests).
 
     The executor provides the following shell scripts which can be used by the tests
     for certain operations.
 
     ``tmt-file-submit`` - archive the given file in the tmt test data directory.
-    See the ``report-log`` section for more details.
+    See the :ref:`/stories/features/report-log` section for more details.
 
     ``tmt-reboot`` - soft reboot the machine from inside the test. After reboot
     the execution starts from the test which rebooted the machine.
     An environment variable ``TMT_REBOOT_COUNT`` is provided which
     the test can use to handle the reboot. The variable holds the
     number of reboots performed by the test. For more information
-    see the ``reboot`` feature documentation.
+    see the :ref:`/stories/features/reboot` feature documentation.
 
     ``tmt-report-result`` - generate a result report file from inside the test.
     Can be called multiple times by the test. The generated report
     file will be overwritten if a higher hierarchical result is
     reported by the test. The hierarchy is as follows:
-    SKIP, PASS, WARN, FAIL. For more information see the ``report-result``
-    feature documentation.
+    SKIP, PASS, WARN, FAIL. For more information see the
+    :ref:`/stories/features/report-result` feature documentation.
 
     ``tmt-abort`` - generate an abort file from inside the test. This will
     set the current test result to failed and terminate
     the execution of subsequent tests. For more information see the
-    ``abort`` feature documentation.
+    :ref:`/stories/features/abort` feature documentation.
 
     The scripts are hosted by default in the ``/usr/local/bin`` directory, except
     for guests using ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used.
