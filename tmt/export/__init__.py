@@ -106,7 +106,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
             cls.get_export_plugin_registry().register_plugin(
                 plugin_id=format,
                 plugin=export_cls,
-                logger=tmt.log.Logger.get_bootstrap_logger())
+                logger=tmt.log.Logger.get_bootstrap_logger(),)
 
             return export_cls
 
@@ -200,7 +200,7 @@ class ExportPlugin:
     def export_test_collection(cls,
                                tests: list['tmt.base.Test'],
                                keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+                               **kwargs: Any,) -> str:
         """
         Export collection of tests
         """
@@ -211,7 +211,7 @@ class ExportPlugin:
     def export_plan_collection(cls,
                                plans: list['tmt.base.Plan'],
                                keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+                               **kwargs: Any,) -> str:
         """
         Export collection of plans
         """
@@ -222,7 +222,7 @@ class ExportPlugin:
     def export_story_collection(cls,
                                 stories: list['tmt.base.Story'],
                                 keys: Optional[list[str]] = None,
-                                **kwargs: Any) -> str:
+                                **kwargs: Any,) -> str:
         """
         Export collection of stories
         """
@@ -265,7 +265,7 @@ class TrivialExporter(ExportPlugin):
     def export_fmfid_collection(cls,
                                 fmf_ids: list['tmt.base.FmfId'],
                                 keys: Optional[list[str]] = None,
-                                **kwargs: Any) -> str:
+                                **kwargs: Any,) -> str:
         # Special case: fmf id export shall not display `ref` if it is equal
         # to the default branch.
         exported_fmf_ids: list[tmt.base._RawFmfId] = []
@@ -284,21 +284,21 @@ class TrivialExporter(ExportPlugin):
     def export_test_collection(cls,
                                tests: list['tmt.base.Test'],
                                keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+                               **kwargs: Any,) -> str:
         return cls._export([test._export(keys=keys) for test in tests])
 
     @classmethod
     def export_plan_collection(cls,
                                plans: list['tmt.base.Plan'],
                                keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+                               **kwargs: Any,) -> str:
         return cls._export([plan._export(keys=keys) for plan in plans])
 
     @classmethod
     def export_story_collection(cls,
                                 stories: list['tmt.base.Story'],
                                 keys: Optional[list[str]] = None,
-                                **kwargs: Any) -> str:
+                                **kwargs: Any,) -> str:
         return cls._export([story._export(keys=keys) for story in stories])
 
 
@@ -337,7 +337,7 @@ def bz_set_coverage(bug_ids: list[int], case_id: str, tracker_id: int) -> None:
     no_email = 1  # Do not send emails about the change
     get_bz_dict = {
         'ids': bug_ids,
-        'include_fields': ['id', 'external_bugs', 'flags']}
+        'include_fields': ['id', 'external_bugs', 'flags'],}
     bugs_data = bz_instance._proxy.Bug.get(get_bz_dict)
     for bug in bugs_data['bugs']:
         # Process flag (might fail for some types)

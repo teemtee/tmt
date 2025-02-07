@@ -167,7 +167,7 @@ class Dnf(tmt.package_managers.PackageManager):
     def install(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         return self.guest.execute(self._construct_install_script(
             *installables,
             options=options))
@@ -175,7 +175,7 @@ class Dnf(tmt.package_managers.PackageManager):
     def reinstall(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         return self.guest.execute(self._construct_reinstall_script(
             *installables,
             options=options
@@ -184,7 +184,7 @@ class Dnf(tmt.package_managers.PackageManager):
     def install_debuginfo(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         # Make sure debuginfo-install is present on the target system
         self.install(FileSystemPath('/usr/bin/debuginfo-install'))
 

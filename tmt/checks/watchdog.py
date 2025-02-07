@@ -59,7 +59,7 @@ def report_progress(
         log: Path,
         check_name: str,
         report: Iterable[str],
-        command_output: Optional[str] = None) -> None:
+        command_output: Optional[str] = None,) -> None:
     """
     Add new report into a report file.
 
@@ -109,7 +109,7 @@ class GuestContext:
 class WatchdogCheck(Check):
     interval: int = field(
         default=60,
-        help='How often should the watchdog run, in seconds.')
+        help='How often should the watchdog run, in seconds.',)
 
     reboot: bool = field(
         default=False,
@@ -120,7 +120,7 @@ class WatchdogCheck(Check):
         help="If enabled, watchdog would probe guest's responsiveness with ICMP packets.")
     ping_packets: int = field(
         default=1,
-        help='How many ICMP packates to send as one probe.')
+        help='How many ICMP packates to send as one probe.',)
     ping_threshold: int = field(
         default=10,
         help='How many failed ping probes before taking any further action.')
@@ -133,7 +133,7 @@ class WatchdogCheck(Check):
              """)
     ssh_ping_threshold: int = field(
         default=10,
-        help='How many failed SSH connections before taking any further action.')
+        help='How many failed SSH connections before taking any further action.',)
 
     def notify(self, invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
         """
@@ -150,7 +150,7 @@ class WatchdogCheck(Check):
             self,
             invocation: 'TestInvocation',
             guest_context: GuestContext,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Perform a ping check
         """
@@ -274,7 +274,7 @@ class WatchdogCheck(Check):
             self,
             invocation: 'TestInvocation',
             guest_context: GuestContext,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Perform a "SSH ping" check
         """

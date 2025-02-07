@@ -214,7 +214,7 @@ def explore(logger: Logger, again: bool = False) -> None:
 def _import(
         *,
         module: str,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+        logger: Logger,) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module.
 
@@ -251,7 +251,7 @@ def _import_or_raise(
         module: str,
         exc_class: type[BaseException],
         exc_message: str,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+        logger: Logger,) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module, or raise an exception.
 
@@ -276,7 +276,7 @@ def import_module(
         *,
         module: str,
         path: Optional[Path] = None,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+        logger: Logger,) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module.
 
@@ -301,7 +301,7 @@ def import_member(
         *,
         module: str,
         member: str,
-        logger: Logger) -> tuple[ModuleT, Any]:
+        logger: Logger,) -> tuple[ModuleT, Any]:
     """
     Import member from given module, handle errors nicely
     """
@@ -406,7 +406,7 @@ class ModuleImporter(Generic[ModuleT]):
             self,
             module: str,
             exc_class: type[Exception],
-            exc_message: str) -> None:
+            exc_message: str,) -> None:
         self._module_name = module
         self._exc_class = exc_class
         self._exc_message = exc_message

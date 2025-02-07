@@ -47,7 +47,7 @@ class Library:
             self,
             *,
             parent: Optional[tmt.utils.Common] = None,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Process the library identifier and fetch the library
         """

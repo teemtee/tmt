@@ -155,14 +155,14 @@ CONSTRAINT_COMPONENTS_PATTERN = re.compile(rf"""
 #: A list of constraint names that operate over sequence of entities.
 INDEXABLE_CONSTRAINTS: tuple[str, ...] = (
     'disk',
-    'network'
+    'network',
     )
 
 #: A list of constraint names that do not have child properties.
 CHILDLESS_CONSTRAINTS: tuple[str, ...] = (
     'arch',
     'memory',
-    'hostname'
+    'hostname',
     )
 
 
@@ -969,7 +969,7 @@ def ungroupify_indexed(
 def _parse_int_constraints(
         spec: Spec,
         prefix: str,
-        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
     """
     Parse number-like constraints defined by a given set of keys, to int
     """
@@ -989,7 +989,7 @@ def _parse_number_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...],
-        default_unit: Optional[Any] = None) -> list[BaseConstraint]:
+        default_unit: Optional[Any] = None,) -> list[BaseConstraint]:
     """
     Parse number-like constraints defined by a given set of keys, to float
     """
@@ -1009,7 +1009,7 @@ def _parse_number_constraints(
 def _parse_size_constraints(
         spec: Spec,
         prefix: str,
-        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
     """
     Parse size-like constraints defined by a given set of keys
     """
@@ -1029,7 +1029,7 @@ def _parse_text_constraints(
         spec: Spec,
         prefix: str,
         constraint_keys: tuple[str, ...],
-        allowed_operators: Optional[tuple[Operator, ...]] = None) -> list[BaseConstraint]:
+        allowed_operators: Optional[tuple[Operator, ...]] = None,) -> list[BaseConstraint]:
     """
     Parse text-like constraints defined by a given set of keys
     """
@@ -1050,7 +1050,7 @@ def _parse_text_constraints(
 def _parse_flag_constraints(
         spec: Spec,
         prefix: str,
-        constraint_keys: tuple[str, ...]) -> list[BaseConstraint]:
+        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
     """
     Parse flag-like constraints defined by a given set of keys
     """

@@ -64,7 +64,7 @@ class Path(pathlib.PosixPath):
             self,
             encoding: Optional[str] = None,
             errors: Optional[str] = None,
-            keepends: bool = False) -> Iterator[str]:
+            keepends: bool = False,) -> Iterator[str]:
         """
         Yield decoded lines of the pointed-to file as a sequence of strings
         """

@@ -41,7 +41,7 @@ def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]
         _CHECK_PLUGIN_REGISTRY.register_plugin(
             plugin_id=check,
             plugin=check_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),)
 
         return check_cls
 
@@ -107,7 +107,7 @@ class CheckResultInterpret(enum.Enum):
 class Check(
         SpecBasedContainer[_RawCheck, _RawCheck],
         SerializableContainer,
-        NormalizeKeysMixin):
+        NormalizeKeysMixin,):
     """
     Represents a single check from test's ``check`` field.
 
@@ -119,7 +119,7 @@ class Check(
     enabled: bool = field(
         default=True,
         is_flag=True,
-        help='Whether the check is enabled or not.')
+        help='Whether the check is enabled or not.',)
     result: CheckResultInterpret = field(
         default=CheckResultInterpret.RESPECT,
         help='How to interpret the check result.',
@@ -136,7 +136,7 @@ class Check(
     def from_spec(  # type: ignore[override]
             cls,
             raw_data: _RawCheck,
-            logger: tmt.log.Logger) -> 'Check':
+            logger: tmt.log.Logger,) -> 'Check':
         data = cls(how=raw_data['how'])
         data._load_keys(cast(dict[str, Any], raw_data), cls.__name__, logger)
         if raw_data.get("result"):
@@ -182,14 +182,14 @@ class Check(
                 check=self,
                 invocation=invocation,
                 environment=environment,
-                logger=logger)
+                logger=logger,)
 
         if event == CheckEvent.AFTER_TEST:
             return self.plugin.after_test(
                 check=self,
                 invocation=invocation,
                 environment=environment,
-                logger=logger)
+                logger=logger,)
 
         raise tmt.utils.GeneralError(f"Unsupported test check event '{event}'.")
 
@@ -210,7 +210,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             cls,
             *,
             raw_data: _RawCheck,
-            logger: tmt.log.Logger) -> Check:
+            logger: tmt.log.Logger,) -> Check:
         """
         Create a check data instance for the plugin
         """
@@ -223,7 +223,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
             cls,
             guest: 'Guest',
             test: 'tmt.base.Test',
-            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+            logger: tmt.log.Logger,) -> list['tmt.base.DependencySimple']:
         """
         Collect all essential requirements of the test check.
 
@@ -259,7 +259,7 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
 def normalize_test_check(
         key_address: str,
         raw_test_check: Any,
-        logger: tmt.log.Logger) -> Check:
+        logger: tmt.log.Logger,) -> Check:
     """
     Normalize a single test check
     """
@@ -278,7 +278,7 @@ def normalize_test_check(
         try:
             return CheckPlugin.delegate(
                 raw_data=cast(_RawCheck, raw_test_check),
-                logger=logger)
+                logger=logger,)
 
         except Exception as exc:
             raise tmt.utils.SpecificationError(
@@ -293,7 +293,7 @@ def normalize_test_check(
 def normalize_test_checks(
         key_address: str,
         raw_checks: Any,
-        logger: tmt.log.Logger) -> list[Check]:
+        logger: tmt.log.Logger,) -> list[Check]:
     """
     Normalize (prepare/finish/test) checks
     """

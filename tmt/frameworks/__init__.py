@@ -28,7 +28,7 @@ def provides_framework(framework: str) -> Callable[[TestFrameworkClass], TestFra
         _FRAMEWORK_PLUGIN_REGISTRY.register_plugin(
             plugin_id=framework,
             plugin=framework_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),)
 
         return framework_cls
 
@@ -47,7 +47,7 @@ class TestFramework:
     def get_requirements(
             cls,
             test: 'Test',
-            logger: tmt.log.Logger) -> list['DependencySimple']:
+            logger: tmt.log.Logger,) -> list['DependencySimple']:
         """
         Provide additional test requirements needed by its framework.
 
@@ -62,7 +62,7 @@ class TestFramework:
     def get_environment_variables(
             cls,
             invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> tmt.utils.Environment:
+            logger: tmt.log.Logger,) -> tmt.utils.Environment:
         """
         Provide additional environment variables for the test.
 
@@ -79,7 +79,7 @@ class TestFramework:
     def get_test_command(
             cls,
             invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> tmt.utils.ShellScript:
+            logger: tmt.log.Logger,) -> tmt.utils.ShellScript:
         """
         Provide a test command.
 
@@ -96,7 +96,7 @@ class TestFramework:
     def get_pull_options(
             cls,
             invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> list[str]:
+            logger: tmt.log.Logger,) -> list[str]:
         """
         Provide additional options for pulling test data directory.
 
@@ -113,7 +113,7 @@ class TestFramework:
             cls,
             invocation: 'TestInvocation',
             results: list[tmt.result.Result],
-            logger: tmt.log.Logger) -> list[tmt.result.Result]:
+            logger: tmt.log.Logger,) -> list[tmt.result.Result]:
         """
         Extract test results.
 

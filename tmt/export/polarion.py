@@ -48,7 +48,7 @@ def import_polarion() -> None:
 
 def get_polarion_ids(
         query_result: list[Any],
-        preferred_project: Optional[str] = None) -> tuple[str, Optional[str]]:
+        preferred_project: Optional[str] = None,) -> tuple[str, Optional[str]]:
     """
     Return case and project ids from query results
     """
@@ -396,7 +396,7 @@ class PolarionExporter(tmt.export.ExportPlugin):
     def export_test_collection(cls,
                                tests: list[tmt.base.Test],
                                keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+                               **kwargs: Any,) -> str:
         for test in tests:
             export_to_polarion(test)
 

@@ -58,7 +58,7 @@ def _save_report(
 
     report = [
         f'# Reported at {format_timestamp(timestamp)}',
-        *report
+        *report,
         ]
 
     invocation.phase.write(report_filepath, '\n'.join(report), mode='a' if append else 'w')
@@ -172,7 +172,7 @@ cat {ausearch_timestamp_filepath}
 
 def create_final_report(
         invocation: 'TestInvocation',
-        logger: tmt.log.Logger) -> tuple[ResultOutcome, Path]:
+        logger: tmt.log.Logger,) -> tuple[ResultOutcome, Path]:
     """
     Collect the data, evaluate and create the final report
     """
@@ -302,7 +302,7 @@ class AvcDenials(CheckPlugin[Check]):
             cls,
             guest: 'Guest',
             test: 'tmt.base.Test',
-            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+            logger: tmt.log.Logger,) -> list['tmt.base.DependencySimple']:
         if not guest.facts.has_selinux:
             return []
 

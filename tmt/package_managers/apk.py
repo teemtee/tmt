@@ -133,7 +133,7 @@ class Apk(tmt.package_managers.PackageManager):
     def install(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         options = options or Options()
 
         packages = self._reduce_to_packages(*installables)
@@ -154,7 +154,7 @@ class Apk(tmt.package_managers.PackageManager):
     def reinstall(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         options = options or Options()
 
         packages = self._reduce_to_packages(*installables)
@@ -174,5 +174,5 @@ class Apk(tmt.package_managers.PackageManager):
     def install_debuginfo(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")

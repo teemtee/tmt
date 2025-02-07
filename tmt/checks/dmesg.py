@@ -65,7 +65,7 @@ class DmesgCheck(Check):
     def _fetch_dmesg(
             cls,
             guest: tmt.steps.provision.Guest,
-            logger: tmt.log.Logger) -> tmt.utils.CommandOutput:
+            logger: tmt.log.Logger,) -> tmt.utils.CommandOutput:
 
         def _test_output_logger(
                 key: str,
@@ -168,7 +168,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
             cls,
             guest: 'Guest',
             test: 'tmt.base.Test',
-            logger: tmt.log.Logger) -> list['tmt.base.DependencySimple']:
+            logger: tmt.log.Logger,) -> list['tmt.base.DependencySimple']:
         if not guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return []
 

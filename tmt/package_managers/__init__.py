@@ -188,19 +188,19 @@ class PackageManager(tmt.utils.Common):
     def install(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise NotImplementedError
 
     def reinstall(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise NotImplementedError
 
     def install_debuginfo(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise NotImplementedError
 
     def refresh_metadata(self) -> CommandOutput:

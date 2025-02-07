@@ -687,7 +687,7 @@ def _normalize_link(key_address: str, value: _RawLinks, logger: tmt.log.Logger) 
 class Core(
         tmt.utils.ValidateFmfMixin,
         tmt.utils.LoadFmfKeysMixin,
-        tmt.utils.Common):
+        tmt.utils.Common,):
     """
     General node object
 
@@ -701,11 +701,11 @@ class Core(
     description: Optional[str] = None
     author: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
     contact: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
     enabled: bool = True
     order: int = field(
@@ -719,7 +719,7 @@ class Core(
     id: Optional[str] = None
     tag: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,)
     tier: Optional[str] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger:
@@ -1108,7 +1108,7 @@ class Core(
 class Test(
         Core,
         tmt.export.Exportable['Test'],
-        tmt.lint.Lintable['Test']):
+        tmt.lint.Lintable['Test'],):
     """
     Test object (L1 Metadata)
     """
@@ -1116,7 +1116,7 @@ class Test(
     # Basic test information
     component: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
 
     # Test execution data
@@ -1792,7 +1792,7 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 class Plan(
         Core,
         tmt.export.Exportable['Plan'],
-        tmt.lint.Lintable['Plan']):
+        tmt.lint.Lintable['Plan'],):
     """
     Plan object (L2 Metadata)
     """
@@ -1804,7 +1804,7 @@ class Plan(
         exporter=lambda value: value.to_spec())
     gate: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,)
 
     # Optional Login instance attached to the plan for easy login in tmt try
     login: Optional[tmt.steps.Login] = None
@@ -1885,32 +1885,32 @@ class Plan(
         self.discover = tmt.steps.discover.Discover(
             logger=logger.descend(logger_name='discover'),
             plan=self,
-            data=self.node.get('discover')
+            data=self.node.get('discover'),
             )
         self.provision = tmt.steps.provision.Provision(
             logger=logger.descend(logger_name='provision'),
             plan=self,
-            data=self.node.get('provision')
+            data=self.node.get('provision'),
             )
         self.prepare = tmt.steps.prepare.Prepare(
             logger=logger.descend(logger_name='prepare'),
             plan=self,
-            data=self.node.get('prepare')
+            data=self.node.get('prepare'),
             )
         self.execute = tmt.steps.execute.Execute(
             logger=logger.descend(logger_name='execute'),
             plan=self,
-            data=self.node.get('execute')
+            data=self.node.get('execute'),
             )
         self.report = tmt.steps.report.Report(
             logger=logger.descend(logger_name='report'),
             plan=self,
-            data=self.node.get('report')
+            data=self.node.get('report'),
             )
         self.finish = tmt.steps.finish.Finish(
             logger=logger.descend(logger_name='finish'),
             plan=self,
-            data=self.node.get('finish')
+            data=self.node.get('finish'),
             )
 
         self._update_metadata()
@@ -2182,7 +2182,7 @@ class Plan(
                 path=plan_path.parent,
                 name='plan directory',
                 dry=dry,
-                logger=logger)
+                logger=logger,)
 
             tmt.utils.create_file(
                 path=plan_path,
@@ -2190,7 +2190,7 @@ class Plan(
                 content=plan_content,
                 dry=dry,
                 force=force,
-                logger=logger)
+                logger=logger,)
 
             if links.get('verifies') and dry is False:
                 plans = Tree(
@@ -2804,14 +2804,14 @@ class StoryPriority(enum.Enum):
 class Story(
         Core,
         tmt.export.Exportable['Story'],
-        tmt.lint.Lintable['Story']):
+        tmt.lint.Lintable['Story'],):
     """
     User story object
     """
 
     example: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,)
     # TODO: `story` is mandatory, but it's defined after attributes with default
     # values. Try to find a way how to drop the need for a dummy default.
     story: Optional[str] = None

@@ -232,7 +232,7 @@ class Lintable(Generic[LintableT]):
     def resolve_enabled_linters(
             cls,
             enable_checks: Optional[list[str]] = None,
-            disable_checks: Optional[list[str]] = None
+            disable_checks: Optional[list[str]] = None,
             ) -> list[Linter]:
         """
         Produce a list of enabled linters from all registered ones.
@@ -349,7 +349,7 @@ class Lintable(Generic[LintableT]):
 
 def filter_allowed_checks(
         rulings: Iterable[LinterRuling],
-        outcomes: Optional[list[LinterOutcome]] = None) -> Iterator[LinterRuling]:
+        outcomes: Optional[list[LinterOutcome]] = None,) -> Iterator[LinterRuling]:
     """
     Filter only rulings whose outcomes are allowed.
 

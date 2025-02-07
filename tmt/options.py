@@ -58,7 +58,7 @@ class Path(click.ParamType):
             self,
             value: Any,
             param: Optional[click.Parameter],
-            ctx: Optional[click.Context]
+            ctx: Optional[click.Context],
             ) -> Optional[tmt.utils.Path]:
         """Convert the value to the correct type. This is not called if
         the value is ``None`` (the missing value).
@@ -195,7 +195,7 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
         help='Provide debugging information. Repeat to see more details.'),
     option(
         '-q', '--quiet', is_flag=True,
-        help='Be quiet. Exit code is just enough for me.'),
+        help='Be quiet. Exit code is just enough for me.',),
     option(
         '--log-topic',
         choices=[topic.value for topic in tmt.log.Topic],
@@ -207,19 +207,19 @@ VERBOSITY_OPTIONS: list[ClickOptionDecoratorType] = [
 DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-n', '--dry', is_flag=True, default=False,
-        help='Run in dry mode. No changes, please.'),
+        help='Run in dry mode. No changes, please.',),
     ]
 
 FORCE_DRY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '-f', '--force', is_flag=True,
-        help='Overwrite existing files and step data.'),
+        help='Overwrite existing files and step data.',),
     *DRY_OPTIONS]
 
 AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     option(
         '--again', is_flag=True,
-        help='Run again, even if already done before.'),
+        help='Run again, even if already done before.',),
     ]
 
 FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
@@ -282,10 +282,10 @@ FILTERING_OPTIONS: list[ClickOptionDecoratorType] = [
         help="Use arbitrary Python expression for filtering."),
     option(
         '--enabled', is_flag=True,
-        help="Show only enabled tests, plans or stories."),
+        help="Show only enabled tests, plans or stories.",),
     option(
         '--disabled', is_flag=True,
-        help="Show only disabled tests, plans or stories."),
+        help="Show only disabled tests, plans or stories.",),
     option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
         help="""
@@ -307,10 +307,10 @@ FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
         help="Use arbitrary Python expression for filtering."),
     option(
         '--enabled', is_flag=True,
-        help="Show only enabled tests, plans or stories."),
+        help="Show only enabled tests, plans or stories.",),
     option(
         '--disabled', is_flag=True,
-        help="Show only disabled tests, plans or stories."),
+        help="Show only disabled tests, plans or stories.",),
     option(
         '--link', 'links', metavar="RELATION:TARGET", multiple=True,
         help="""
@@ -367,7 +367,7 @@ LINT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--list-checks',
         is_flag=True,
-        help='List all available checks.'),
+        help='List all available checks.',),
     option(
         '--enable-check',
         'enable_checks',
@@ -392,7 +392,7 @@ LINT_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--failed-only',
         is_flag=True,
-        help='Display only tests/plans/stories that fail a check.'),
+        help='Display only tests/plans/stories that fail a check.',),
     option(
         '--outcome-only',
         multiple=True,
@@ -434,7 +434,7 @@ def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callabl
 def show_step_method_hints(
         step_name: str,
         how: str,
-        logger: tmt.log.Logger) -> None:
+        logger: tmt.log.Logger,) -> None:
     """
     Show hints about available step methods' installation
 
@@ -475,10 +475,10 @@ def show_step_method_hints(
                         "in JUnit format.", color='blue')
         logger.info(
             'hint', "Use the 'display' method to show test results "
-                    "on the terminal.", color='blue')
+                    "on the terminal.", color='blue',)
         logger.info(
             'hint', "See 'tmt run report --help' for all "
-                    "available report options.", color='blue')
+                    "available report options.", color='blue',)
 
 
 def create_method_class(methods: MethodDictType) -> type[click.Command]:

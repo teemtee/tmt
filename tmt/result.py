@@ -96,7 +96,7 @@ class ResultInterpret(enum.Enum):
             cls,
             key_address: str,
             value: Any,
-            logger: tmt.log.Logger) -> 'ResultInterpret':
+            logger: tmt.log.Logger,) -> 'ResultInterpret':
         if isinstance(value, ResultInterpret):
             return value
 
@@ -382,7 +382,7 @@ class Result(BaseResult):
     def interpret_check_result(
             self,
             check_name: str,
-            interpret_checks: dict[str, CheckResultInterpret]) -> ResultOutcome:
+            interpret_checks: dict[str, CheckResultInterpret],) -> ResultOutcome:
         """
         Aggregate all checks of given name and interpret the outcome
 
@@ -422,7 +422,7 @@ class Result(BaseResult):
     def interpret_result(
             self,
             interpret: ResultInterpret,
-            interpret_checks: dict[str, CheckResultInterpret]
+            interpret_checks: dict[str, CheckResultInterpret],
             ) -> 'Result':
         """
         Interpret result according to a given interpretation instruction.

@@ -636,7 +636,7 @@ class SerializableContainer(DataContainer):
         klass = import_member(
             module=klass_info['module'],
             member=klass_info['name'],
-            logger=logger)[1]
+            logger=logger,)[1]
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.

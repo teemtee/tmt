@@ -330,7 +330,7 @@ def add_to_nitrate_runs(
         nitrate_case: NitrateTestCase,
         general_plan: NitrateTestPlan,
         test: 'tmt.Test',
-        dry_mode: bool) -> None:
+        dry_mode: bool,) -> None:
     """
     Add nitrate test case to all active runs under given general plan
 
@@ -387,13 +387,13 @@ def find_general_plan(component: str) -> NitrateTestPlan:
     found: list[NitrateTestPlan] = nitrate.TestPlan.search(
         type__name="General",
         is_active=True,
-        component__name=f"{component}")
+        component__name=f"{component}",)
     # Attempt to find by name if no test plan found
     if not found:
         found = nitrate.TestPlan.search(
             type__name="General",
             is_active=True,
-            name=f"{component} / General")
+            name=f"{component} / General",)
     # No general -> raise error
     if not found:
         raise nitrate.NitrateError(

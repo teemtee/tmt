@@ -152,7 +152,7 @@ class Apt(tmt.package_managers.PackageManager):
     def install(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -179,7 +179,7 @@ class Apt(tmt.package_managers.PackageManager):
     def reinstall(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -203,5 +203,5 @@ class Apt(tmt.package_managers.PackageManager):
     def install_debuginfo(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")

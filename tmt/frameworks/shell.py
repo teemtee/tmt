@@ -93,7 +93,7 @@ class Shell(TestFramework):
             cls,
             invocation: 'TestInvocation',
             results: list[tmt.result.Result],
-            logger: tmt.log.Logger) -> list[tmt.result.Result]:
+            logger: tmt.log.Logger,) -> list[tmt.result.Result]:
         """
         Check result of a shell test.
 

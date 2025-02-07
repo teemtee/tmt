@@ -561,7 +561,7 @@ class Logger:
     def descend(
             self,
             logger_name: Optional[str] = None,
-            extra_shift: int = 1
+            extra_shift: int = 1,
             ) -> 'Logger':
         """
         Create a copy of this logger instance, but with a new raw logger.
@@ -629,7 +629,7 @@ class Logger:
     def apply_verbosity_options(
             self,
             cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-            **kwargs: Any) -> 'Logger':
+            **kwargs: Any,) -> 'Logger':
         """
         Update logger's settings to match given CLI options.
 
@@ -718,7 +718,7 @@ class Logger:
             self,
             level: int,
             details: LogRecordDetails,
-            message: str = ''
+            message: str = '',
             ) -> None:
         """
         Emit a log record describing the message and related properties.
@@ -775,7 +775,7 @@ class Logger:
             text: str,
             color: Optional[str] = None,
             shift: int = 0,
-            file: Optional[TextIO] = None
+            file: Optional[TextIO] = None,
             ) -> None:
         file = file or sys.stdout
 
@@ -840,7 +840,7 @@ class Logger:
     def warning(
             self,
             message: str,
-            shift: int = 0
+            shift: int = 0,
             ) -> None:
         self._log(
             logging.WARNING,
@@ -855,14 +855,14 @@ class Logger:
     def warn(
             self,
             message: str,
-            shift: int
+            shift: int,
             ) -> None:
         return self.warning(message, shift)
 
     def fail(
             self,
             message: str,
-            shift: int = 0
+            shift: int = 0,
             ) -> None:
         self._log(
             logging.ERROR,

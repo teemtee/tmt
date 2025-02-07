@@ -121,7 +121,7 @@ class RpmOstree(tmt.package_managers.PackageManager):
     def install(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -142,11 +142,11 @@ class RpmOstree(tmt.package_managers.PackageManager):
     def reinstall(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise GeneralError("rpm-ostree does not support reinstall operation.")
 
     def install_debuginfo(
             self,
             *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+            options: Optional[Options] = None,) -> CommandOutput:
         raise GeneralError("rpm-ostree does not support debuginfo packages.")

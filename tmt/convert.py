@@ -58,7 +58,7 @@ def read_manual(
         case_id: int,
         disabled: bool,
         with_script: bool,
-        logger: tmt.log.Logger) -> None:
+        logger: tmt.log.Logger,) -> None:
     """
     Reads metadata of manual test cases from Nitrate
     """
@@ -178,7 +178,7 @@ def write_markdown(path: Path, content: dict[str, str]) -> None:
 
 
 def add_link(target: str, data: NitrateDataType,
-             system: int = SYSTEM_BUGZILLA, type_: str = 'relates') -> None:
+             system: int = SYSTEM_BUGZILLA, type_: str = 'relates',) -> None:
     """
     Add relevant link into data under the 'link' key
     """
@@ -206,7 +206,7 @@ def read_datafile(
         filename: str,
         datafile: str,
         types: list[str],
-        testinfo: Optional[str] = None
+        testinfo: Optional[str] = None,
         ) -> tuple[str, NitrateDataType]:
     """
     Read data values from supplied Makefile or metadata file.
@@ -287,7 +287,7 @@ def read_datafile(
                 search_result = re.search(
                     makefile_regex_test,
                     makefile_path.read_text(encoding='utf-8'),
-                    re.MULTILINE)
+                    re.MULTILINE,)
             except OSError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
@@ -638,7 +638,7 @@ def read(
 
 def filter_common_data(
         common_data: NitrateDataType,
-        individual_data: list[NitrateDataType]) -> None:
+        individual_data: list[NitrateDataType],) -> None:
     """
     Filter common data out from individual data
     """
@@ -731,7 +731,7 @@ def read_nitrate(
             testcase=testcase,
             makefile_data=common_data,
             general=general,
-            logger=logger)
+            logger=logger,)
         individual_data.append(data)
         # Check testcase for manual data
         md_content_tmp = read_manual_data(testcase)
@@ -1224,7 +1224,7 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
 
 def relevancy_to_adjust(
         relevancy: RelevancyType,
-        logger: tmt.log.Logger) -> list[NitrateDataType]:
+        logger: tmt.log.Logger,) -> list[NitrateDataType]:
     """
     Convert the old test case relevancy into adjust rules
 
