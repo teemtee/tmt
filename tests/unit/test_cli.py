@@ -1,4 +1,3 @@
-import dataclasses
 import os
 import shutil
 import sys
@@ -10,6 +9,7 @@ import pytest
 import tmt.cli._root
 import tmt.log
 from tests import CliRunner
+from tmt.container import container
 from tmt.utils import Path
 
 # Prepare path to examples
@@ -154,7 +154,7 @@ def test_systemd():
     assert 'Tier two functional tests' in result.output
 
 
-@dataclasses.dataclass
+@container
 class DecideColorizationTestcase:
     """
     A single test case for :py:func:`tmt.log.decide_colorization`

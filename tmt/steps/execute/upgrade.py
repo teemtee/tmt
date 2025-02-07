@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Any, Optional, Union, cast
 
 import fmf.utils
@@ -11,13 +10,14 @@ import tmt.steps.discover.fmf
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field, key_to_option
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
-from tmt.utils import Environment, EnvVarValue, Path, field
+from tmt.utils import Environment, EnvVarValue, Path
 
 STATUS_VARIABLE = 'IN_PLACE_UPGRADE'
 BEFORE_UPGRADE_PREFIX = 'old'
@@ -28,7 +28,7 @@ UPGRADE_DIRECTORY = 'upgrade'
 PROPAGATE_TO_DISCOVER_KEYS = ['url', 'ref', 'filter', 'test', 'exclude', 'upgrade_path']
 
 
-@dataclasses.dataclass
+@container
 class ExecuteUpgradeData(ExecuteInternalData):
     url: Optional[str] = field(
         default=cast(Optional[str], None),
@@ -312,7 +312,7 @@ class ExecuteUpgrade(ExecuteInternal):
             'how': 'fmf'
             }
         remote_raw_data.update(cast(tmt.steps._RawStepData, {
-            tmt.utils.key_to_option(key): value
+            key_to_option(key): value
             for key, value in data.items()
             if key in PROPAGATE_TO_DISCOVER_KEYS
             }))

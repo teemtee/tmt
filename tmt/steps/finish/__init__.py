@@ -1,5 +1,4 @@
 import copy
-import dataclasses
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -7,6 +6,7 @@ import fmf
 
 import tmt
 import tmt.steps
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import tmt.cli
 
 
-@dataclasses.dataclass
+@container
 class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     pass
 

@@ -4,7 +4,6 @@ Base Metadata Classes
 
 import collections
 import copy
-import dataclasses
 import enum
 import functools
 import itertools
@@ -59,6 +58,14 @@ import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
 from tmt.checks import Check
+from tmt.container import (
+    SerializableContainer,
+    SpecBasedContainer,
+    container,
+    container_field,
+    container_fields,
+    field,
+    )
 from tmt.lint import LinterOutcome, LinterReturn
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
@@ -67,14 +74,9 @@ from tmt.utils import (
     EnvVarValue,
     FmfContext,
     Path,
-    SerializableContainer,
     ShellScript,
-    SpecBasedContainer,
     WorkdirArgumentType,
-    container_field,
-    container_fields,
     dict_to_yaml,
-    field,
     normalize_shell_script,
     verdict,
     )
@@ -141,7 +143,7 @@ class _RawFmfId(TypedDict, total=False):
 
 
 # An internal fmf id representation.
-@dataclasses.dataclass
+@container
 class FmfId(
         SpecBasedContainer[_RawFmfId, _RawFmfId],
         SerializableContainer,
@@ -427,7 +429,7 @@ class _RawDependencyFmfId(_RawFmfId):
     type: Optional[str]
 
 
-@dataclasses.dataclass
+@container
 class DependencyFmfId(
         FmfId,
         # Repeat the SpecBasedContainer, with more fitting in/out spec type.
@@ -524,7 +526,7 @@ class _RawDependencyFile(TypedDict):
     pattern: Optional[list[str]]
 
 
-@dataclasses.dataclass
+@container
 class DependencyFile(
         SpecBasedContainer[_RawDependencyFile, _RawDependencyFile],
         SerializableContainer,
@@ -681,7 +683,7 @@ def _normalize_link(key_address: str, value: _RawLinks, logger: tmt.log.Logger) 
     return Links(data=value)
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Core(
         tmt.utils.ValidateFmfMixin,
         tmt.utils.LoadFmfKeysMixin,
@@ -1102,7 +1104,7 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Test(
         Core,
         tmt.export.Exportable['Test'],
@@ -1686,7 +1688,7 @@ class Test(
         yield LinterOutcome.FIXED, 'added type to requirements'
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class LintableCollection(tmt.lint.Lintable['LintableCollection']):
     """
     Linting rules applied to a collection of Tests, Plans or Stories
@@ -1786,7 +1788,7 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
     return data
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Plan(
         Core,
         tmt.export.Exportable['Plan'],
@@ -2798,7 +2800,7 @@ class StoryPriority(enum.Enum):
         return self.value
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Story(
         Core,
         tmt.export.Exportable['Story'],
@@ -3593,7 +3595,7 @@ class Tree(tmt.utils.Common):
                 logger=logger)
 
 
-@dataclasses.dataclass
+@container
 class RunData(SerializableContainer):
     root: Optional[str]
     plans: Optional[list[str]]
@@ -4367,7 +4369,7 @@ class Clean(tmt.utils.Common):
         return successful
 
 
-@dataclasses.dataclass
+@container
 class LinkNeedle:
     """
     A container to use for searching links.
@@ -4424,7 +4426,7 @@ class LinkNeedle:
         return False
 
 
-@dataclasses.dataclass
+@container
 class Link(SpecBasedContainer[Any, _RawLinkRelation]):
     """
     An internal "link" as defined by tmt specification.

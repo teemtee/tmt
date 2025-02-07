@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Any, Optional, Union
 
 import tmt
@@ -7,11 +6,12 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.options import show_step_method_hints
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
 
 
-@dataclasses.dataclass
+@container
 class ProvisionLocalData(tmt.steps.provision.GuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

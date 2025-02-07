@@ -4,12 +4,14 @@ from typing import Callable, Optional, cast
 
 import tmt
 import tmt.base
+import tmt.container
 import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
@@ -55,7 +57,7 @@ def find_plugin(name: str) -> 'FeatureClass':
     return plugin
 
 
-@dataclasses.dataclass
+@container
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     pass
 
@@ -196,13 +198,13 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             # from classes returned by plugins. These fields will be
             # provided by the base class, and repeating them would raise
             # an exception.
-            baseclass_fields = list(tmt.utils.container_fields(PrepareFeatureData))
+            baseclass_fields = list(tmt.container.container_fields(PrepareFeatureData))
             baseclass_field_names = [field.name for field in baseclass_fields]
 
             component_fields = [
                 field
                 for plugin in _FEATURE_PLUGIN_REGISTRY.iter_plugins()
-                for field in tmt.utils.container_fields(plugin.get_data_class())
+                for field in tmt.container.container_fields(plugin.get_data_class())
                 if field.name not in baseclass_field_names
                 ]
 

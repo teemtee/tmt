@@ -26,7 +26,6 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
-import dataclasses
 import enum
 import functools
 import itertools
@@ -49,7 +48,8 @@ import pint
 
 import tmt.log
 import tmt.utils
-from tmt.utils import SpecBasedContainer, SpecificationError
+from tmt.container import SpecBasedContainer, container
+from tmt.utils import SpecificationError
 
 if TYPE_CHECKING:
     from pint import Quantity
@@ -206,7 +206,7 @@ class ConstraintNameComponents(NamedTuple):
     child_name: Optional[str]
 
 
-@dataclasses.dataclass
+@container
 class ConstraintComponents:
     """
     Components of a constraint
@@ -337,7 +337,7 @@ class ParseError(tmt.utils.MetadataError):
 # Constraint classes
 #
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class BaseConstraint(SpecBasedContainer[Spec, Spec]):
     """
     Base class for all classes representing one or more constraints
@@ -402,7 +402,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
         return variants[0]
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class CompoundConstraint(BaseConstraint):
     """
     Base class for all *compound* constraints
@@ -475,7 +475,7 @@ class CompoundConstraint(BaseConstraint):
         raise NotImplementedError
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     """
     A constraint imposing a particular limit to one of the guest properties
@@ -815,7 +815,7 @@ class TextConstraint(Constraint[str]):
             )
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class And(CompoundConstraint):
     """
     Represents constraints that are grouped in ``and`` fashion
@@ -873,7 +873,7 @@ class And(CompoundConstraint):
                 + simple_constraints
 
 
-@dataclasses.dataclass(repr=False)
+@container(repr=False)
 class Or(CompoundConstraint):
     """
     Represents constraints that are grouped in ``or`` fashion
@@ -1623,7 +1623,7 @@ def parse_hw_requirements(spec: Spec) -> BaseConstraint:
     return _parse_block(spec)
 
 
-@dataclasses.dataclass
+@container
 class Hardware(SpecBasedContainer[Spec, Spec]):
     constraint: Optional[BaseConstraint]
     spec: Spec

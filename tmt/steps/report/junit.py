@@ -1,4 +1,3 @@
-import dataclasses
 import functools
 import re
 import sys
@@ -15,9 +14,10 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+from tmt.container import container, field
 from tmt.plugins import ModuleImporter
 from tmt.result import ResultOutcome
-from tmt.utils import Path, field
+from tmt.utils import Path
 from tmt.utils.templates import default_template_environment, render_template_file
 
 if TYPE_CHECKING:
@@ -413,7 +413,7 @@ def make_junit_xml(
     return str(xml_output.decode('utf-8'))
 
 
-@dataclasses.dataclass
+@container
 class ReportJUnitData(tmt.steps.report.ReportStepData):
     file: Optional[Path] = field(
         default=None,

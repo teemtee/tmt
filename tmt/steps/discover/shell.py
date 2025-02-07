@@ -1,5 +1,4 @@
 import copy
-import dataclasses
 import shutil
 from typing import Any, Optional, TypeVar, cast
 
@@ -13,22 +12,20 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
+from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
     Environment,
     EnvVarValue,
     Path,
-    SerializableContainer,
     ShellScript,
-    SpecBasedContainer,
-    field,
     )
 
 T = TypeVar('T', bound='TestDescription')
 
 
-@dataclasses.dataclass
+@container
 class TestDescription(
         SpecBasedContainer[dict[str, Any], dict[str, Any]],
         tmt.utils.NormalizeKeysMixin,
@@ -167,7 +164,7 @@ class TestDescription(
         return data
 
 
-@dataclasses.dataclass
+@container
 class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
     tests: list[TestDescription] = field(
         default_factory=list,

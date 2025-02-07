@@ -1,4 +1,3 @@
-import dataclasses
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
@@ -7,12 +6,13 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.package_managers import Package
 from tmt.result import PhaseResult
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
 from tmt.steps.provision import Guest
-from tmt.utils import Command, Path, ShellScript, field, uniq
+from tmt.utils import Command, Path, ShellScript, uniq
 
 if TYPE_CHECKING:
     import tmt.base
@@ -109,7 +109,7 @@ def insert_to_prepare_step(
         )
 
 
-@dataclasses.dataclass
+@container
 class DistGitData(tmt.steps.prepare.PrepareStepData):
     source_dir: Optional[Path] = field(
         default=None,
