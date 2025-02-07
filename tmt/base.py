@@ -658,11 +658,7 @@ def _normalize_link(key_address: str, value: _RawLinks, logger: tmt.log.Logger) 
 
 
 @dataclasses.dataclass(repr=False)
-class Core(
-    tmt.utils.ValidateFmfMixin,
-    tmt.utils.LoadFmfKeysMixin,
-    tmt.utils.Common,
-):
+class Core(tmt.utils.ValidateFmfMixin, tmt.utils.LoadFmfKeysMixin, tmt.utils.Common):
     """
     General node object
 
@@ -674,14 +670,8 @@ class Core(
     # Core attributes (supported across all levels)
     summary: Optional[str] = None
     description: Optional[str] = None
-    author: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
-    contact: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
+    author: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
+    contact: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     enabled: bool = True
     order: int = field(
         default=DEFAULT_ORDER,
@@ -695,10 +685,7 @@ class Core(
         exporter=lambda value: value.to_spec() if value is not None else [],
     )
     id: Optional[str] = None
-    tag: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
+    tag: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     tier: Optional[str] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: None
@@ -1097,20 +1084,13 @@ class Core(
 
 
 @dataclasses.dataclass(repr=False)
-class Test(
-    Core,
-    tmt.export.Exportable['Test'],
-    tmt.lint.Lintable['Test'],
-):
+class Test(Core, tmt.export.Exportable['Test'], tmt.lint.Lintable['Test']):
     """
     Test object (L1 Metadata)
     """
 
     # Basic test information
-    component: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
+    component: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
 
     # Test execution data
     # TODO: mandatory schema validation would remove the need for Optional...
@@ -1801,11 +1781,7 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 
 
 @dataclasses.dataclass(repr=False)
-class Plan(
-    Core,
-    tmt.export.Exportable['Plan'],
-    tmt.lint.Lintable['Plan'],
-):
+class Plan(Core, tmt.export.Exportable['Plan'], tmt.lint.Lintable['Plan']):
     """
     Plan object (L2 Metadata)
     """
@@ -1816,10 +1792,7 @@ class Plan(
         normalize=tmt.utils.FmfContext.from_spec,
         exporter=lambda value: value.to_spec(),
     )
-    gate: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
+    gate: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
 
     # Optional Login instance attached to the plan for easy login in tmt try
     login: Optional[tmt.steps.Login] = None
@@ -1909,24 +1882,16 @@ class Plan(
             data=self.node.get('provision'),
         )
         self.prepare = tmt.steps.prepare.Prepare(
-            logger=logger.descend(logger_name='prepare'),
-            plan=self,
-            data=self.node.get('prepare'),
+            logger=logger.descend(logger_name='prepare'), plan=self, data=self.node.get('prepare')
         )
         self.execute = tmt.steps.execute.Execute(
-            logger=logger.descend(logger_name='execute'),
-            plan=self,
-            data=self.node.get('execute'),
+            logger=logger.descend(logger_name='execute'), plan=self, data=self.node.get('execute')
         )
         self.report = tmt.steps.report.Report(
-            logger=logger.descend(logger_name='report'),
-            plan=self,
-            data=self.node.get('report'),
+            logger=logger.descend(logger_name='report'), plan=self, data=self.node.get('report')
         )
         self.finish = tmt.steps.finish.Finish(
-            logger=logger.descend(logger_name='finish'),
-            plan=self,
-            data=self.node.get('finish'),
+            logger=logger.descend(logger_name='finish'), plan=self, data=self.node.get('finish')
         )
 
         self._update_metadata()
@@ -2203,10 +2168,7 @@ class Plan(
 
             # Create directory & plan
             tmt.utils.create_directory(
-                path=plan_path.parent,
-                name='plan directory',
-                dry=dry,
-                logger=logger,
+                path=plan_path.parent, name='plan directory', dry=dry, logger=logger
             )
 
             tmt.utils.create_file(
@@ -2843,19 +2805,12 @@ class StoryPriority(enum.Enum):
 
 
 @dataclasses.dataclass(repr=False)
-class Story(
-    Core,
-    tmt.export.Exportable['Story'],
-    tmt.lint.Lintable['Story'],
-):
+class Story(Core, tmt.export.Exportable['Story'], tmt.lint.Lintable['Story']):
     """
     User story object
     """
 
-    example: list[str] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_string_list,
-    )
+    example: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
     # TODO: `story` is mandatory, but it's defined after attributes with default
     # values. Try to find a way how to drop the need for a dummy default.
     story: Optional[str] = None
