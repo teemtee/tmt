@@ -1,5 +1,4 @@
 import copy
-import dataclasses
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast
 
 import click
@@ -12,7 +11,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
-from tmt.container import container
+from tmt.container import container, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
@@ -127,7 +126,7 @@ class DependencyCollection:
     # first, but when grouping guests by same requirements, we'd start
     # adding guests to the list when spotting same set of dependencies.
     guests: list[Guest]
-    dependencies: list['tmt.base.DependencySimple'] = dataclasses.field(default_factory=list)  # noqa: TID251
+    dependencies: list['tmt.base.DependencySimple'] = simple_field(default_factory=list)
 
     @property
     def as_key(self) -> 'DependencyCollectionKey':

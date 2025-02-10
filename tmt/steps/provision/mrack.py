@@ -19,7 +19,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.container import container, field
+from tmt.container import container, field, simple_field
 from tmt.utils import (
     Command,
     Path,
@@ -148,7 +148,7 @@ class MrackHWElement(MrackBaseHWElement):
     This type of element is not allowed to have any child elements.
     """
 
-    attributes: dict[str, str] = dataclasses.field(default_factory=dict)  # noqa: TID251
+    attributes: dict[str, str] = simple_field(default_factory=dict)
 
     def to_mrack(self) -> dict[str, Any]:
         return {
@@ -195,7 +195,7 @@ class MrackHWGroup(MrackBaseHWElement):
     This type of element is not allowed to have any attributes.
     """
 
-    children: list[MrackBaseHWElement] = dataclasses.field(default_factory=list)  # noqa: TID251
+    children: list[MrackBaseHWElement] = simple_field(default_factory=list)
 
     def to_mrack(self) -> dict[str, Any]:
         # Another unexpected behavior of mrack dictionary tree: if there is just

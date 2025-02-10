@@ -437,8 +437,8 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "os.path".msg = "Use tmt._compat.pathlib.Path and pathlib instead."
 # Banning builtins is not yet supported: https://github.com/astral-sh/ruff/issues/10079
 # "builtins.open".msg = "Use Path.{write_text,append_text,read_text,write_bytes,read_bytes} instead."
-"dataclasses.dataclass".msg = "Are you sure you don't want tmt.container.container instead."
-"dataclasses.field".msg = "Are you sure you don't want tmt.container.field instead."
+"dataclasses.dataclass".msg = "Use tmt.container.container instead."
+"dataclasses.field".msg = "Use tmt.container.field instead."
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]

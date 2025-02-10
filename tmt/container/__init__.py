@@ -31,6 +31,14 @@ T = TypeVar('T')
 # [2] https://typing.readthedocs.io/en/latest/spec/dataclasses.html#dataclass-transform
 from dataclasses import dataclass as container  # noqa: TID251,E402
 
+# Importing the original dataclass `field` too. Be aware that this is
+# not the end, eventually we will need a field representing metadata key,
+# and a field for common containers. It will take a couple of patches to
+# put things in the right slots. Maybe `simple_field` will be `field`,
+# and `field` would become `metadata_field`, to align them more with
+# their use cases.
+from dataclasses import field as simple_field  # noqa: TID251, E402
+
 #: Type of field's normalization callback.
 NormalizeCallback: 'TypeAlias' = Callable[[str, Any, 'tmt.log.Logger'], T]
 
@@ -137,7 +145,7 @@ class FieldMetadata(Generic[T]):
 
     #: CLI option parameters, for lazy option creation.
     _option_args: Optional['FieldCLIOption'] = None
-    _option_kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)  # noqa: TID251
+    _option_kwargs: dict[str, Any] = simple_field(default_factory=dict)
 
     #: A :py:func:`click.option` decorator defining a corresponding CLI option.
     _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
@@ -830,7 +838,7 @@ def field(
     # ignore[reportArgumentType]: not sure why these pop up, but `bool` keeps appearing
     # in the type of `default` value, and I was unable to sort things out in a way which
     # would make the `T` match.
-    return dataclasses.field(  # type: ignore[call-overload]  # noqa: TID251
+    return simple_field(  # type: ignore[call-overload]
         default=default,
         default_factory=default_factory or dataclasses.MISSING,
         metadata={

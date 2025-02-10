@@ -1,4 +1,3 @@
-import dataclasses
 import shlex
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
@@ -7,7 +6,7 @@ import tmt
 import tmt.log
 import tmt.plugins
 import tmt.utils
-from tmt.container import container
+from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, Path
 
 if TYPE_CHECKING:
@@ -124,7 +123,7 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 @container(frozen=True)
 class Options:
     #: A list of packages to exclude from installation.
-    excluded_packages: list[Package] = dataclasses.field(default_factory=list)  # noqa: TID251
+    excluded_packages: list[Package] = simple_field(default_factory=list)
 
     #: If set, a failure to install a given package would not cause an error.
     skip_missing: bool = False

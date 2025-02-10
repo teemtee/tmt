@@ -1,5 +1,4 @@
 import copy
-import dataclasses
 import functools
 import json
 import os
@@ -20,7 +19,7 @@ import tmt.log
 import tmt.steps
 import tmt.utils
 from tmt.checks import CheckEvent
-from tmt.container import container, field
+from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
@@ -281,12 +280,12 @@ class TestInvocation:
     #: implementation and the test, it may be, for example, a shell process,
     #: SSH process, or a ``podman`` process.
     process: Optional[subprocess.Popen[bytes]] = None
-    process_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)  # noqa: TID251
+    process_lock: threading.Lock = simple_field(default_factory=threading.Lock)
 
-    results: list[Result] = dataclasses.field(default_factory=list)  # noqa: TID251
-    check_results: list[CheckResult] = dataclasses.field(default_factory=list)  # noqa: TID251
+    results: list[Result] = simple_field(default_factory=list)
+    check_results: list[CheckResult] = simple_field(default_factory=list)
 
-    check_data: dict[str, Any] = dataclasses.field(default_factory=dict)  # noqa: TID251
+    check_data: dict[str, Any] = simple_field(default_factory=dict)
 
     return_code: Optional[int] = None
     start_time: Optional[str] = None
@@ -604,7 +603,7 @@ class ResultCollection:
 
     filepaths: list[Path]
     file_exists: bool = False
-    results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)  # noqa: TID251
+    results: list['tmt.result.RawResult'] = simple_field(default_factory=list)
 
     def validate(self) -> None:
         """
