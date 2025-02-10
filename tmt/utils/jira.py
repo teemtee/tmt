@@ -21,7 +21,8 @@ TmtObject = Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
     'jira',
     tmt.utils.ReportError,
-    "Install 'tmt+link-jira' to use the Jira linking.",)
+    "Install 'tmt+link-jira' to use the Jira linking.",
+)
 
 
 def prepare_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
@@ -38,7 +39,7 @@ def prepare_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
     url_params: dict[str, Any] = {
         f'{tmt_type}-url': fmf_id.url,
         f'{tmt_type}-name': fmf_id.name,
-        }
+    }
 
     if fmf_id.path:
         url_params[f'{tmt_type}-path'] = fmf_id.path
@@ -68,14 +69,15 @@ class JiraInstance:
         # ignore[attr-defined]: it is defined, but mypy seems to fail
         # detecting it correctly.
         self.jira = jira_module.JIRA(  # type: ignore[attr-defined]
-            server=self.url,
-            token_auth=self.token)
+            server=self.url, token_auth=self.token
+        )
 
     @classmethod
     def from_issue_url(
-            cls,
-            issue_url: str,
-            logger: tmt.log.Logger,) -> Optional['JiraInstance']:
+        cls,
+        issue_url: str,
+        logger: tmt.log.Logger,
+    ) -> Optional['JiraInstance']:
         """
         Search configured issues trackers for matching Jira instance
         """
@@ -103,24 +105,24 @@ class JiraInstance:
         return None
 
     def add_link_to_issue(
-            self,
-            issue_url: str,
-            tmt_objects: Sequence[TmtObject],) -> None:
+        self,
+        issue_url: str,
+        tmt_objects: Sequence[TmtObject],
+    ) -> None:
         """
         Link one or more tmt objects to the given Jira issue
         """
 
         # Prepare a nice title for the link
-        title = "tmt: " + fmf.utils.listed(
-                [tmt_object.name for tmt_object in tmt_objects])
+        title = "tmt: " + fmf.utils.listed([tmt_object.name for tmt_object in tmt_objects])
 
         # Prepare the tmt web service link from all tmt objects
         web_link_parameters: dict[str, str] = {}
         for tmt_object in tmt_objects:
             web_link_parameters.update(prepare_url_params(tmt_object))
         web_link = urllib.parse.urljoin(
-            self.tmt_web_url,
-            "?" + urllib.parse.urlencode(web_link_parameters))
+            self.tmt_web_url, "?" + urllib.parse.urlencode(web_link_parameters)
+        )
 
         # Add link to the issue
         issue_id = issue_url.split('/')[-1]
@@ -129,9 +131,10 @@ class JiraInstance:
 
 
 def save_link_to_metadata(
-        tmt_object: TmtObject,
-        link: 'tmt.base.Link',
-        logger: tmt.log.Logger,) -> None:
+    tmt_object: TmtObject,
+    link: 'tmt.base.Link',
+    logger: tmt.log.Logger,
+) -> None:
     """
     Store the link into the object metadata on disk
     """
@@ -160,11 +163,12 @@ def save_link_to_metadata(
 
 
 def link(
-        *,
-        tmt_objects: Sequence[TmtObject],
-        links: 'tmt.base.Links',
-        separate: bool = False,
-        logger: tmt.log.Logger) -> None:
+    *,
+    tmt_objects: Sequence[TmtObject],
+    links: 'tmt.base.Links',
+    separate: bool = False,
+    logger: tmt.log.Logger,
+) -> None:
     """
     Link provided tmt object(s) with related Jira issue(s)
 
@@ -183,7 +187,6 @@ def link(
 
     # TODO: Shall we cover all relations instead?
     for link in links.get("verifies"):
-
         # Save the link to test/plan/story metadata on disk
         for tmt_object in tmt_objects:
             save_link_to_metadata(tmt_object, link, logger)

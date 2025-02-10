@@ -2,7 +2,6 @@
 Test Metadata Utilities
 """
 
-
 import functools
 import os
 import re
